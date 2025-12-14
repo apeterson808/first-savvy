@@ -82,6 +82,8 @@ export default function BudgetSetupTab() {
   const [editGroupSheetOpen, setEditGroupSheetOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState(null);
   const [isAutoCreating, setIsAutoCreating] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState(null);
   const [undoStack, setUndoStack] = useState([]);
   const [isReorderingGroups, setIsReorderingGroups] = useState(false);
   
@@ -229,12 +231,51 @@ export default function BudgetSetupTab() {
     queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
   };
 
+  const handleAnalyzeWithAI = async () => {
+    setIsAnalyzing(true);
+
+    try {
+      const twelveMonthsAgo = subMonths(new Date(), 12);
+      const recentTransactions = transactions.filter(t =>
+        new Date(t.date) >= twelveMonthsAgo && t.status === 'posted'
+      );
+
+      const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-budget-ai`;
+      const headers = {
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        'Content-Type': 'application/json',
+      };
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          transactions: recentTransactions,
+          categories: customCategories
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to analyze budget');
+      }
+
+      const data = await response.json();
+      setAiSuggestions(data.suggestions);
+    } catch (error) {
+      console.error('Error analyzing budget:', error);
+      toast.error('Failed to analyze spending. Creating basic budget instead.');
+      await handleAutoCreateBasic();
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
   const handleAutoCreate = async () => {
     setIsAutoCreating(true);
-    
+
     // Get spending from last 12 months
     const twelveMonthsAgo = subMonths(new Date(), 12);
-    const recentTransactions = transactions.filter(t => 
+    const recentTransactions = transactions.filter(t =>
       new Date(t.date) >= twelveMonthsAgo && t.status === 'posted'
     );
 
@@ -341,6 +382,73 @@ export default function BudgetSetupTab() {
     queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
     queryClient.invalidateQueries({ queryKey: ['budgets'] });
     setIsAutoCreating(false);
+  };
+
+  const handleAutoCreateBasic = async () => {
+    await handleAutoCreate();
+  };
+
+  const handleCreateFromSuggestions = async () => {
+    if (!aiSuggestions) return;
+
+    setIsAutoCreating(true);
+
+    try {
+      const incomeSuggestions = aiSuggestions.filter(s => s.type === 'income');
+      const expenseSuggestions = aiSuggestions.filter(s => s.type === 'expense');
+
+      if (incomeSuggestions.length > 0) {
+        const incomeGroup = await base44.entities.BudgetGroup.create({
+          name: 'Income',
+          type: 'income',
+          order: 0
+        });
+
+        for (let i = 0; i < incomeSuggestions.length; i++) {
+          const suggestion = incomeSuggestions[i];
+          await base44.entities.Budget.create({
+            name: suggestion.category_name,
+            category_id: suggestion.category_id,
+            limit_amount: suggestion.suggested_amount,
+            group_id: incomeGroup.id,
+            order: i,
+            color: suggestion.color || getNextColor(new Set()),
+            is_active: true
+          });
+        }
+      }
+
+      if (expenseSuggestions.length > 0) {
+        const expenseGroup = await base44.entities.BudgetGroup.create({
+          name: 'Expenses',
+          type: 'expense',
+          order: 1
+        });
+
+        for (let i = 0; i < expenseSuggestions.length; i++) {
+          const suggestion = expenseSuggestions[i];
+          await base44.entities.Budget.create({
+            name: suggestion.category_name,
+            category_id: suggestion.category_id,
+            limit_amount: suggestion.suggested_amount,
+            group_id: expenseGroup.id,
+            order: i,
+            color: suggestion.color || getNextColor(new Set()),
+            is_active: true
+          });
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      setAiSuggestions(null);
+      toast.success('Budget created successfully!');
+    } catch (error) {
+      console.error('Error creating budget:', error);
+      toast.error('Failed to create budget');
+    } finally {
+      setIsAutoCreating(false);
+    }
   };
 
   const toggleGroup = (groupId) => {
@@ -874,7 +982,7 @@ export default function BudgetSetupTab() {
                       ))}
                     </div>
 
-      {groups.length === 0 && (
+      {groups.length === 0 && !aiSuggestions && (
         <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30">
           <div className="text-center max-w-xl px-6">
             <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -890,12 +998,12 @@ export default function BudgetSetupTab() {
             <div className="flex gap-3 justify-center">
               {transactions.length > 0 && (
                 <Button
-                  onClick={handleAutoCreate}
-                  disabled={isAutoCreating}
+                  onClick={handleAnalyzeWithAI}
+                  disabled={isAnalyzing}
                   className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                   size="lg"
                 >
-                  {isAutoCreating ? (
+                  {isAnalyzing ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                   ) : (
                     <Sparkles className="w-4 h-4 mr-2" />
@@ -906,6 +1014,115 @@ export default function BudgetSetupTab() {
               <Button onClick={() => setAddSheetOpen(true)} variant="outline" size="lg" className="border-slate-300">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Manually
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {aiSuggestions && (
+        <div className="min-h-[600px] bg-slate-50/30 p-6">
+          <div className="max-w-4xl mx-auto">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-2xl font-semibold text-slate-900 mb-2">AI Budget Suggestions</h2>
+                <p className="text-slate-600">Review and adjust your personalized budget based on 12 months of spending data</p>
+              </div>
+              <Button
+                onClick={() => setAiSuggestions(null)}
+                variant="ghost"
+                size="sm"
+              >
+                Start Over
+              </Button>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              {aiSuggestions.filter(s => s.type === 'income').length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Income</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {aiSuggestions.filter(s => s.type === 'income').map((suggestion) => (
+                      <div key={suggestion.category_id} className="flex items-start gap-4 p-3 bg-white rounded-lg border border-slate-200">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: suggestion.color || '#64748b' }}>
+                          {suggestion.icon && ICON_MAP[suggestion.icon] && React.createElement(ICON_MAP[suggestion.icon], { className: "w-5 h-5 text-white" })}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-slate-900">{suggestion.category_name}</h4>
+                            <span className="text-lg font-semibold text-slate-900">${suggestion.suggested_amount.toLocaleString()}/mo</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mb-2">{suggestion.reasoning}</p>
+                          <div className="flex items-center gap-4 text-xs text-slate-600">
+                            <span>Avg: ${suggestion.monthly_average.toLocaleString()}</span>
+                            <span className={`px-2 py-0.5 rounded-full ${
+                              suggestion.trend === 'increasing' ? 'bg-green-100 text-green-700' :
+                              suggestion.trend === 'decreasing' ? 'bg-red-100 text-red-700' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {suggestion.trend === 'increasing' ? '↑' : suggestion.trend === 'decreasing' ? '↓' : '→'} {suggestion.trend}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+
+              {aiSuggestions.filter(s => s.type === 'expense').length > 0 && (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <h3 className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Expenses</h3>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {aiSuggestions.filter(s => s.type === 'expense').map((suggestion) => (
+                      <div key={suggestion.category_id} className="flex items-start gap-4 p-3 bg-white rounded-lg border border-slate-200">
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: suggestion.color || '#64748b' }}>
+                          {suggestion.icon && ICON_MAP[suggestion.icon] && React.createElement(ICON_MAP[suggestion.icon], { className: "w-5 h-5 text-white" })}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <h4 className="font-medium text-slate-900">{suggestion.category_name}</h4>
+                            <span className="text-lg font-semibold text-slate-900">${suggestion.suggested_amount.toLocaleString()}/mo</span>
+                          </div>
+                          <p className="text-xs text-slate-500 mb-2">{suggestion.reasoning}</p>
+                          <div className="flex items-center gap-4 text-xs text-slate-600">
+                            <span>Avg: ${suggestion.monthly_average.toLocaleString()}</span>
+                            <span className={`px-2 py-0.5 rounded-full ${
+                              suggestion.trend === 'increasing' ? 'bg-red-100 text-red-700' :
+                              suggestion.trend === 'decreasing' ? 'bg-green-100 text-green-700' :
+                              'bg-slate-100 text-slate-700'
+                            }`}>
+                              {suggestion.trend === 'increasing' ? '↑' : suggestion.trend === 'decreasing' ? '↓' : '→'} {suggestion.trend}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            <div className="flex gap-3 justify-center">
+              <Button
+                onClick={handleCreateFromSuggestions}
+                disabled={isAutoCreating}
+                className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                size="lg"
+              >
+                {isAutoCreating ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <Sparkles className="w-4 h-4 mr-2" />
+                )}
+                Create Budget
+              </Button>
+              <Button onClick={() => setAiSuggestions(null)} variant="outline" size="lg">
+                Cancel
               </Button>
             </div>
           </div>
