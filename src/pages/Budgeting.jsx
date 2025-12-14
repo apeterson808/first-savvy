@@ -22,7 +22,12 @@ export default function Budgeting() {
     queryFn: () => base44.entities.BudgetGroup.list()
   });
 
-  const hasSetupStarted = budgetGroups.length > 0;
+  const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
+    queryKey: ['budgets'],
+    queryFn: () => base44.entities.Budget.filter({ is_active: true })
+  });
+
+  const hasSetupStarted = budgets.length > 0;
 
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -33,13 +38,13 @@ export default function Budgeting() {
 
   // Set initial tab based on whether setup has started
   useEffect(() => {
-    if (!groupsLoading && activeTab === null) {
+    if (!groupsLoading && !budgetsLoading && activeTab === null) {
       const tab = hasSetupStarted ? 'overview' : 'setup';
       const newUrl = `${window.location.pathname}?tab=${tab}`;
       window.history.replaceState({}, '', newUrl);
       setActiveTab(tab);
     }
-  }, [groupsLoading, hasSetupStarted, activeTab]);
+  }, [groupsLoading, budgetsLoading, hasSetupStarted, activeTab]);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -57,11 +62,6 @@ export default function Budgeting() {
       clearInterval(interval);
     };
   }, []);
-
-  const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.filter({ is_active: true })
-  });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
@@ -174,7 +174,7 @@ export default function Budgeting() {
   };
 
   // Show loading state while determining which tab to show
-  if (groupsLoading || activeTab === null) {
+  if (groupsLoading || budgetsLoading || activeTab === null) {
     return (
       <div className="p-6 max-w-6xl mx-auto">
         <div className="animate-pulse space-y-4">
