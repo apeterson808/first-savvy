@@ -382,6 +382,14 @@ export default function BudgetSetupTab() {
     queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
     queryClient.invalidateQueries({ queryKey: ['budgets'] });
     setIsAutoCreating(false);
+
+    toast.success('Budget created successfully! Check out your Overview tab.');
+
+    setTimeout(() => {
+      const newUrl = `${window.location.pathname}?tab=overview`;
+      window.history.pushState({}, '', newUrl);
+      window.dispatchEvent(new Event('popstate'));
+    }, 1500);
   };
 
   const handleAutoCreateBasic = async () => {
@@ -442,7 +450,13 @@ export default function BudgetSetupTab() {
       queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       setAiSuggestions(null);
-      toast.success('Budget created successfully!');
+      toast.success('Budget created successfully! Check out your Overview tab.');
+
+      setTimeout(() => {
+        const newUrl = `${window.location.pathname}?tab=overview`;
+        window.history.pushState({}, '', newUrl);
+        window.dispatchEvent(new Event('popstate'));
+      }, 1500);
     } catch (error) {
       console.error('Error creating budget:', error);
       toast.error('Failed to create budget');
