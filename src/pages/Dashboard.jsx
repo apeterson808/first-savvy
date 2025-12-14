@@ -9,7 +9,7 @@ import TimeRangeDropdown from '../components/common/TimeRangeDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../utils';
+import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear } from 'date-fns';
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
