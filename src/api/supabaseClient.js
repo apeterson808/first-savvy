@@ -130,6 +130,11 @@ export const createSupabaseClient = () => {
         const { data, error } = await supabase.auth.getUser();
         if (error) throw error;
         return data.user;
+      },
+      async me() {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        return data.user;
       }
     }
   };
