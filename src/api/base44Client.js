@@ -1,6 +1,3 @@
-import { createClient } from '@base44/sdk';
+import { createSupabaseClient } from './supabaseClient';
 
-export const base44 = createClient({
-  appId: "691922f27f68103164a7760e",
-  requiresAuth: false
-});
+export const base44 = createSupabaseClient();
