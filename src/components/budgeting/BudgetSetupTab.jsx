@@ -661,11 +661,11 @@ export default function BudgetSetupTab() {
   };
 
   return (
-    <div className="flex gap-3 p-3">
+    <div className={groups.length === 0 ? "" : "flex gap-3 p-6"}>
       {/* Left column - Budget Groups */}
-      <div className="flex-1 space-y-3">
+      <div className={groups.length === 0 ? "" : "flex-1 space-y-3"}>
       {groups.length > 0 && (
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center mb-3">
                   <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Organize your budget categories into groups</p>
                   <div className="flex gap-2">
                     <div className="flex border rounded-md overflow-hidden">
@@ -875,24 +875,25 @@ export default function BudgetSetupTab() {
                     </div>
 
       {groups.length === 0 && (
-        <Card className="shadow-sm border-slate-200">
-          <CardContent className="py-12 text-center">
-            <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Sparkles className="w-8 h-8 text-blue-600" />
+        <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30">
+          <div className="text-center max-w-xl px-6">
+            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="w-7 h-7 text-blue-600" />
             </div>
-            <h2 className="text-xl font-semibold text-slate-800 mb-2">Set Up Your Budget</h2>
-            <p className="text-slate-500 mb-6 max-w-md mx-auto">
-              {transactions.length > 0 
+            <h2 className="text-2xl font-semibold text-slate-900 mb-3">Set Up Your Budget</h2>
+            <p className="text-slate-600 mb-8 leading-relaxed">
+              {transactions.length > 0
                 ? "We can automatically create budget categories based on your spending and income history from the last 12 months."
                 : "Start by creating budget groups to organize your spending categories."
               }
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="flex gap-3 justify-center">
               {transactions.length > 0 && (
-                <Button 
-                  onClick={handleAutoCreate} 
+                <Button
+                  onClick={handleAutoCreate}
                   disabled={isAutoCreating}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                  size="lg"
                 >
                   {isAutoCreating ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -902,13 +903,13 @@ export default function BudgetSetupTab() {
                   Auto-Create from History
                 </Button>
               )}
-              <Button onClick={() => setAddSheetOpen(true)} variant="outline">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create Manually
-                              </Button>
+              <Button onClick={() => setAddSheetOpen(true)} variant="outline" size="lg" className="border-slate-300">
+                <Plus className="w-4 h-4 mr-2" />
+                Create Manually
+              </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Edit Budget Group Sheet */}
