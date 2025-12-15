@@ -561,31 +561,6 @@ For each transaction, return the category_id that best matches. Consider:
 
   // Auto-categorize uncategorized transactions on load - batched to avoid rate limits
   React.useEffect(() => {
-    // First, check for transfer keywords and auto-categorize
-    const transferKeywords = ['transfer', 'savings', 'to sav', 'from chk', 'from checking', 'to checking', 'from savings', 'to savings'];
-    const transferCategories = {
-      income: categories.find(c => c.type === 'income' && c.detail_type === 'transfer'),
-      expense: categories.find(c => c.type === 'expense' && c.detail_type === 'transfer')
-    };
-    
-    filteredTransactions.forEach(t => {
-      if (!t.category_id && transferCategories[t.type]) {
-        const description = (t.description || '').toLowerCase();
-        const hasTransferKeyword = transferKeywords.some(keyword => description.includes(keyword));
-        
-        if (hasTransferKeyword) {
-          updateMutation.mutate({
-            id: t.id,
-            data: { 
-              ...t,
-              category_id: transferCategories[t.type].id,
-              ai_suggested_category_id: transferCategories[t.type].id
-            }
-          });
-        }
-      }
-    });
-    
     // Find transactions that need AI suggestions (ones without existing ai_suggested_category_id)
     const needsSuggestion = filteredTransactions.filter(t => 
       !t.ai_suggested_category_id && 
@@ -630,8 +605,7 @@ For each transaction, return the category_id that best matches. Consider:
                 updateMutation.mutate({
                   id: transaction.id,
                   data: {
-                    ai_suggested_category_id: matchingCategory.id,
-                    category_id: matchingCategory.id
+                    ai_suggested_category_id: matchingCategory.id
                   }
                 });
               }
@@ -729,9 +703,8 @@ For each transaction, return the category_id that best matches. Consider:
               if (transaction) {
                 updateMutation.mutate({
                   id: match.transaction_id,
-                  data: { 
-                    ai_suggested_contact_id: match.contact_id,
-                    contact_id: match.contact_id
+                  data: {
+                    ai_suggested_contact_id: match.contact_id
                   }
                 });
               }
