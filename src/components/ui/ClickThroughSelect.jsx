@@ -194,7 +194,7 @@ export function ClickThroughSelect({
           )}
         >
           <span className="flex-1 min-w-0 flex items-center">
-            {renderValue ? renderValue(selectedValue, displayText) : <span className="truncate">{displayText}</span>}
+            {renderValue ? renderValue(selectedValue, displayText) : <span className={cn("truncate", displayText === placeholder && "text-slate-400")}>{displayText}</span>}
           </span>
           <ChevronDown className={cn("h-3 w-3 opacity-50 ml-1 flex-shrink-0 transition-transform", isOpen && "rotate-180")} />
         </button>
