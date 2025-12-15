@@ -232,8 +232,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   React.useEffect(() => {
     if (newDescription.length >= 2) {
-      const suggestion = suggestCategory(newDescription, transactions, categorizationRules);
-      setCategorySuggestion(suggestion);
+      suggestCategory(newDescription, transactions, categorizationRules).then(suggestion => {
+        setCategorySuggestion(suggestion);
+      });
     } else {
       setCategorySuggestion(null);
     }

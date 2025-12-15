@@ -13,3 +13,5 @@ export const plaidExchangeToken = base44.functions.plaidExchangeToken;
 
 export const plaidCompleteImport = base44.functions.plaidCompleteImport;
 
+export const aiCategorizeTransaction = base44.functions.aiCategorizeTransaction;
+

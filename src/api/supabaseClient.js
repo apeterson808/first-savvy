@@ -136,6 +136,43 @@ export const createSupabaseClient = () => {
         if (error) throw error;
         return data.user;
       }
+    },
+    functions: {
+      async parseOfx(body) {
+        const { data, error } = await supabase.functions.invoke('parse-ofx', { body });
+        if (error) throw error;
+        return data;
+      },
+      async parseCsv(body) {
+        const { data, error } = await supabase.functions.invoke('parse-csv', { body });
+        if (error) throw error;
+        return data;
+      },
+      async fixImportedTransactions(body) {
+        const { data, error } = await supabase.functions.invoke('fix-imported-transactions', { body });
+        if (error) throw error;
+        return data;
+      },
+      async plaidCreateLinkToken(body) {
+        const { data, error } = await supabase.functions.invoke('plaid-create-link-token', { body });
+        if (error) throw error;
+        return data;
+      },
+      async plaidExchangeToken(body) {
+        const { data, error } = await supabase.functions.invoke('plaid-exchange-token', { body });
+        if (error) throw error;
+        return data;
+      },
+      async plaidCompleteImport(body) {
+        const { data, error } = await supabase.functions.invoke('plaid-complete-import', { body });
+        if (error) throw error;
+        return data;
+      },
+      async aiCategorizeTransaction(body) {
+        const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
+        if (error) throw error;
+        return data;
+      }
     }
   };
 };
