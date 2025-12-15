@@ -42,6 +42,7 @@ import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
+import { formatTransactionDescription } from '../utils/formatters';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
@@ -1219,11 +1220,11 @@ For each transaction, return the category_id that best matches. Consider:
                         <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
                           {statusFilter === 'pending' ? (
                             <Input
-                              defaultValue={transaction.description}
+                              defaultValue={formatTransactionDescription(transaction.description)}
                               disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                               className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
                               onBlur={(e) => {
-                                if (e.target.value !== transaction.description) {
+                                if (e.target.value !== formatTransactionDescription(transaction.description)) {
                                   updateMutation.mutate({
                                     id: transaction.id,
                                     data: { ...transaction, description: e.target.value }
@@ -1237,7 +1238,7 @@ For each transaction, return the category_id that best matches. Consider:
                               }}
                             />
                           ) : (
-                            <span className="text-xs px-1">{transaction.description}</span>
+                            <span className="text-xs px-1">{formatTransactionDescription(transaction.description)}</span>
                           )}
                         </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
@@ -1903,7 +1904,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                           />
                                                           <div className="flex items-center gap-2 flex-1 min-w-0">
                                                             <span className="text-xs text-slate-600 whitespace-nowrap">{format(parseISO(match.date), 'MM/dd/yy')}</span>
-                                                            <span className="font-medium text-slate-900 truncate">{match.description}</span>
+                                                            <span className="font-medium text-slate-900 truncate">{formatTransactionDescription(match.description)}</span>
                                                             <span className="font-semibold text-slate-900 whitespace-nowrap">
                                                               {match.amount < 0 ? '-' : ''}${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                             </span>

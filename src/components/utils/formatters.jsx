@@ -40,3 +40,55 @@ export function formatCurrency(amount, options = {}) {
 export function formatPercent(value, decimals = 0) {
   return `${value.toFixed(decimals)}%`;
 }
+
+/**
+ * Formats a transaction description from bank format (UPPERCASE) to readable format
+ * @param {string} description - The description to format
+ * @returns {string} Formatted description
+ */
+export function formatTransactionDescription(description) {
+  if (!description) return '';
+
+  const commonAcronyms = ['ATM', 'POS', 'ACH', 'LLC', 'INC', 'CO', 'USA', 'US', 'UK', 'NY', 'CA', 'TX', 'FL'];
+  const commonWords = ['THE', 'AND', 'OR', 'OF', 'IN', 'ON', 'AT', 'TO', 'FOR', 'WITH'];
+
+  const words = description.split(/\s+/);
+
+  const formatted = words.map((word, index) => {
+    if (!word) return '';
+
+    if (word.includes('.COM') || word.includes('.NET') || word.includes('.ORG')) {
+      const parts = word.split('.');
+      return parts.map((part, i) =>
+        i === parts.length - 1 ? part.toLowerCase() :
+        part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      ).join('.');
+    }
+
+    if (word.match(/^#\d+$/)) {
+      return word;
+    }
+
+    if (word.match(/^\d/)) {
+      return word;
+    }
+
+    if (commonAcronyms.includes(word.toUpperCase())) {
+      return word.toUpperCase();
+    }
+
+    if (index > 0 && commonWords.includes(word.toUpperCase()) && word.length <= 3) {
+      return word.toLowerCase();
+    }
+
+    if (word.includes('-')) {
+      return word.split('-').map(part =>
+        part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+      ).join('-');
+    }
+
+    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+  });
+
+  return formatted.join(' ');
+}

@@ -10,6 +10,7 @@ import CategoryDropdown from '../common/CategoryDropdown';
 import AddFinancialAccountSheet from '../banking/AddFinancialAccountSheet';
 import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
+import { formatTransactionDescription } from '../utils/formatters';
 
 export default function RecentTransactionsCard() {
   const navigate = useNavigate();
@@ -102,8 +103,7 @@ export default function RecentTransactionsCard() {
                 updateMutation.mutate({
                   id: transaction.id,
                   data: {
-                    ai_suggested_category_id: matchingCategory.id,
-                    ...(transaction.category_id ? {} : { category_id: matchingCategory.id })
+                    ai_suggested_category_id: matchingCategory.id
                   }
                 });
               }
@@ -145,7 +145,7 @@ export default function RecentTransactionsCard() {
             {recentTransactions.map((transaction) => (
               <div key={transaction.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-slate-800 truncate">{transaction.description}</p>
+                  <p className="text-xs font-medium text-slate-800 truncate">{formatTransactionDescription(transaction.description)}</p>
                   <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM d')} · {accounts.find(a => a.id === transaction.bank_account_id)?.account_name || 'N/A'}</p>
                 </div>
                 <span className={`text-xs font-semibold whitespace-nowrap ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
