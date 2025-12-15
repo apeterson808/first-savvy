@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Plus } from 'lucide-react';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 
@@ -14,7 +15,8 @@ import BudgetSetupTab from '../components/budgeting/BudgetSetupTab';
 export default function Budgeting() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
-  const [excludeTransfers, setExcludeTransfers] = useState(true);
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
   const queryClient = useQueryClient();
 
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
@@ -29,39 +31,11 @@ export default function Budgeting() {
 
   const hasSetupStarted = budgets.length > 0;
 
-  const [activeTab, setActiveTab] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlTab = urlParams.get('tab');
-    // Don't default to overview - wait for data to determine
-    return urlTab || null;
-  });
-
-  // Set initial tab based on whether setup has started
   useEffect(() => {
-    if (!groupsLoading && !budgetsLoading && activeTab === null) {
-      const tab = hasSetupStarted ? 'overview' : 'setup';
-      const newUrl = `${window.location.pathname}?tab=${tab}`;
-      window.history.replaceState({}, '', newUrl);
-      setActiveTab(tab);
+    if (!groupsLoading && !budgetsLoading && !hasSetupStarted) {
+      setShowSetupModal(true);
     }
-  }, [groupsLoading, budgetsLoading, hasSetupStarted, activeTab]);
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      setActiveTab(urlParams.get('tab') || 'overview');
-    };
-    window.addEventListener('popstate', handlePopState);
-    const interval = setInterval(() => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const currentTab = urlParams.get('tab') || 'overview';
-      setActiveTab(prev => prev !== currentTab ? currentTab : prev);
-    }, 100);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      clearInterval(interval);
-    };
-  }, []);
+  }, [groupsLoading, budgetsLoading, hasSetupStarted]);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
@@ -173,8 +147,7 @@ export default function Budgeting() {
     deleteMutation.mutate(id);
   };
 
-  // Show loading state while determining which tab to show
-  if (groupsLoading || budgetsLoading || activeTab === null) {
+  if (groupsLoading || budgetsLoading) {
     return (
       <div className="p-6 max-w-6xl mx-auto">
         <div className="animate-pulse space-y-4">
@@ -187,43 +160,55 @@ export default function Budgeting() {
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
-    const newUrl = `${window.location.pathname}?tab=${tab}`;
-    window.history.pushState({}, '', newUrl);
   };
 
   return (
     <div className="p-0">
-      {hasSetupStarted && (
-        <div className="bg-white border-b border-slate-200">
-          <div className="px-6 pt-6 pb-0">
-            <h2 className="text-lg font-medium text-slate-900 mb-4">Welcome, User</h2>
-            <div className="flex gap-6">
-              <button
-                onClick={() => handleTabChange('overview')}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'overview'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Overview
-              </button>
-              <button
-                onClick={() => handleTabChange('setup')}
-                className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === 'setup'
-                    ? 'border-blue-600 text-blue-600'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Setup
-              </button>
+      <Dialog open={showSetupModal} onOpenChange={(open) => {
+        if (!open && hasSetupStarted) {
+          setShowSetupModal(false);
+        }
+      }}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0" onInteractOutside={(e) => {
+          if (!hasSetupStarted) {
+            e.preventDefault();
+          }
+        }}>
+          <BudgetSetupTab onSetupComplete={() => setShowSetupModal(false)} />
+        </DialogContent>
+      </Dialog>
+
+      {!showSetupModal && (
+        <>
+          <div className="bg-white border-b border-slate-200">
+            <div className="px-6 pt-6 pb-0">
+              <h2 className="text-lg font-medium text-slate-900 mb-4">Welcome, User</h2>
+              <div className="flex gap-6">
+                <button
+                  onClick={() => handleTabChange('overview')}
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'overview'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Overview
+                </button>
+                <button
+                  onClick={() => handleTabChange('setup')}
+                  className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'setup'
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Setup
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      {activeTab === 'overview' && hasSetupStarted && (
+          {activeTab === 'overview' && (
         <div className="p-6">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -296,8 +281,10 @@ export default function Budgeting() {
         </div>
       )}
 
-      {(activeTab === 'setup' || !hasSetupStarted) && (
-        <BudgetSetupTab />
+          {activeTab === 'setup' && (
+            <BudgetSetupTab />
+          )}
+        </>
       )}
     </div>
   );
