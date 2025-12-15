@@ -44,17 +44,24 @@ export function ClickThroughSelect({
       }
       // Close for clicks outside
       if (containerRef.current && !containerRef.current.contains(e.target)) {
+        // If search term is empty, clear the selection
+        if (searchTerm === '') {
+          setSelectedValue('');
+          if (onValueChange) {
+            onValueChange('');
+          }
+        }
         handleOpenChange(false);
       }
     };
 
     // Use mousedown without capture to let item mousedowns fire first
     document.addEventListener('mousedown', handleClickOutside);
-    
+
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, searchTerm]);
 
   useEffect(() => {
     if (isOpen && containerRef.current) {

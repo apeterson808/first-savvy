@@ -84,6 +84,7 @@ export default function CategoryDropdown({
           <ClickThroughSelectItem
             key={suggestedCategory.id}
             value={suggestedCategory.id}
+            isRecommended={true}
             data-display={getAccountDisplayName({
               account_type: suggestedCategory.type,
               detail_type: suggestedCategory.detail_type,
