@@ -120,7 +120,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
                matchesCategory;
       });
       
-      const spent = monthTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const spent = monthTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
       
       data.push({
         month: format(date, 'MMM'),

@@ -164,7 +164,7 @@ export default function Dashboard() {
           return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
         });
 
-        const dailySpending = dayTransactions.reduce((sum, t) => sum + t.amount, 0);
+        const dailySpending = dayTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
         cumulativeSpending += dailySpending;
 
@@ -204,7 +204,7 @@ export default function Dashboard() {
 
         const spending = monthTransactions
           .filter(t => t.type === 'expense')
-          .reduce((sum, t) => sum + t.amount, 0);
+          .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
         const income = monthTransactions
           .filter(t => t.type === 'income')

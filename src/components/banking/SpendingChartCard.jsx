@@ -72,7 +72,7 @@ export default function SpendingChartCard({
                matchesAccount;
       });
 
-      const daySpending = dayTransactions.reduce((sum, t) => sum + t.amount, 0);
+      const daySpending = dayTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
       cumulativeSpending += daySpending;
 
@@ -98,7 +98,7 @@ export default function SpendingChartCard({
           });
 
           const daySpendingForMonth = pastDayTransactions
-            .reduce((sum, t) => sum + t.amount, 0);
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0);
           
           totalPastDaySpending += daySpendingForMonth;
           validMonthCount++;

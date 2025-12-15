@@ -64,7 +64,7 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
         // Prioritize budget color, then category color
         acc[categoryName] = { amount: 0, color: budget?.color || category?.color, categoryId: t.category_id };
       }
-      acc[categoryName].amount += t.amount;
+      acc[categoryName].amount += Math.abs(t.amount);
       return acc;
     }, {});
 
