@@ -14,9 +14,29 @@ import BudgetSetupTab from '../components/budgeting/BudgetSetupTab';
 export default function Budgeting() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
+  const [activeTab, setActiveTab] = useState(() => {
+    return new URLSearchParams(window.location.search).get('tab') || 'overview';
+  });
   const queryClient = useQueryClient();
 
-  const activeTab = new URLSearchParams(window.location.search).get('tab') || 'overview';
+  React.useEffect(() => {
+    const handleUrlChange = () => {
+      const tab = new URLSearchParams(window.location.search).get('tab') || 'overview';
+      setActiveTab(tab);
+    };
+
+    window.addEventListener('popstate', handleUrlChange);
+
+    const interval = setInterval(() => {
+      const tab = new URLSearchParams(window.location.search).get('tab') || 'overview';
+      setActiveTab(prev => prev !== tab ? tab : prev);
+    }, 100);
+
+    return () => {
+      window.removeEventListener('popstate', handleUrlChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
     queryKey: ['budgetGroups'],
