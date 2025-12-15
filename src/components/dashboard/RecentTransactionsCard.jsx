@@ -167,17 +167,6 @@ export default function RecentTransactionsCard() {
                     setCategorySearchTerm(searchTerm);
                     setAddCategorySheetOpen(true);
                   }}
-                  transactionId={transaction.id}
-                  transactionDescription={transaction.description}
-                  transactionAmount={transaction.amount}
-                  onSuggestionGenerated={(suggestionId) => {
-                    updateMutation.mutate({
-                      id: transaction.id,
-                      data: {
-                        ai_suggested_category_id: suggestionId
-                      }
-                    });
-                  }}
                 />
                 <Button
                   size="sm"

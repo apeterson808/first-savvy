@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
 import { getAccountDisplayName } from '../utils/constants';
-import { suggestCategory } from '../banking/CategorySuggestion';
 
 export default function CategoryDropdown({
   value,
@@ -16,14 +15,10 @@ export default function CategoryDropdown({
   triggerClassName = "h-7 border-slate-300",
   placeholder = "Select category",
   isTransactionTransfer = false,
-  transactionAmount = 0,
-  transactionId = null,
-  transactionDescription = '',
-  onSuggestionGenerated = null
+  transactionAmount = 0
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [isGeneratingSuggestion, setIsGeneratingSuggestion] = useState(false);
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
@@ -49,63 +44,16 @@ export default function CategoryDropdown({
       : nonTransferCategories.filter(c => c.type === 'income');
   }
 
-  const { data: allTransactions = [], refetch: refetchTransactions } = useQuery({
-    queryKey: ['fullPostedTransactions'],
-    queryFn: () => base44.entities.Transaction.filter({ status: 'posted' }, '-date', 10000),
-    enabled: false,
-    staleTime: 5 * 60 * 1000
-  });
-
-  const { data: categorizationRules = [], refetch: refetchRules } = useQuery({
-    queryKey: ['categorizationRules'],
-    queryFn: () => base44.entities.CategorizationRule.list('-priority'),
-    enabled: false,
-    staleTime: 5 * 60 * 1000
-  });
-
   const suggestedCategory = aiSuggestionId ? availableCategories.find(c => c.id === aiSuggestionId) : null;
   const otherCategories = availableCategories.filter(c => c.id !== aiSuggestionId);
   const sortedCategories = suggestedCategory
     ? [suggestedCategory, ...otherCategories]
     : availableCategories;
 
-  const handleOpenChange = async (open) => {
+  const handleOpenChange = (open) => {
     setIsOpen(open);
     if (!open) {
       setSearchTerm('');
-      return;
-    }
-
-    if (open && !aiSuggestionId && !isGeneratingSuggestion && transactionId && transactionDescription && onSuggestionGenerated && !isTransactionTransfer) {
-      setIsGeneratingSuggestion(true);
-      try {
-        const [transactionsResult, rulesResult] = await Promise.all([
-          refetchTransactions(),
-          refetchRules()
-        ]);
-
-        const suggestion = await suggestCategory(
-          transactionDescription,
-          transactionsResult.data || [],
-          rulesResult.data || [],
-          transactionAmount
-        );
-
-        if (suggestion && suggestion.category) {
-          const matchingCategory = categories.find(c =>
-            c.name.toLowerCase() === suggestion.category.toLowerCase() &&
-            c.type === suggestion.type
-          );
-
-          if (matchingCategory) {
-            onSuggestionGenerated(matchingCategory.id);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to generate suggestion:', err);
-      } finally {
-        setIsGeneratingSuggestion(false);
-      }
     }
   };
 

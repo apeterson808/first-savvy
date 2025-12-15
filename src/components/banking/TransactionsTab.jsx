@@ -241,6 +241,50 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   }, [newDescription, transactions, categorizationRules]);
 
+  React.useEffect(() => {
+    const generateSuggestions = async () => {
+      if (!fullPendingTransactions.length || !categories.length || !fullPostedTransactions.length) return;
+
+      const transactionsNeedingSuggestions = fullPendingTransactions.filter(
+        t => !t.ai_suggested_category_id && !t.category_id && t.type !== 'transfer' && t.description
+      );
+
+      if (transactionsNeedingSuggestions.length === 0) return;
+
+      const batchSize = 5;
+      for (let i = 0; i < Math.min(batchSize, transactionsNeedingSuggestions.length); i++) {
+        const transaction = transactionsNeedingSuggestions[i];
+
+        try {
+          const suggestion = await suggestCategory(
+            transaction.description,
+            fullPostedTransactions,
+            categorizationRules,
+            transaction.amount
+          );
+
+          if (suggestion && suggestion.category) {
+            const matchingCategory = categories.find(c =>
+              c.name.toLowerCase() === suggestion.category.toLowerCase() &&
+              c.type === suggestion.type
+            );
+
+            if (matchingCategory) {
+              await base44.entities.Transaction.update(transaction.id, {
+                ai_suggested_category_id: matchingCategory.id
+              });
+              queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+            }
+          }
+        } catch (err) {
+          console.error('Failed to generate suggestion for transaction:', transaction.id, err);
+        }
+      }
+    };
+
+    generateSuggestions();
+  }, [fullPendingTransactions.length, categories.length, fullPostedTransactions.length]);
+
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: () => {
@@ -1387,16 +1431,6 @@ For each transaction, return the category_id that best matches. Consider:
                                   placeholder="Select category"
                                   isTransactionTransfer={transaction.type === 'transfer'}
                                   transactionAmount={transaction.amount}
-                                  transactionId={transaction.id}
-                                  transactionDescription={transaction.description}
-                                  onSuggestionGenerated={(suggestionId) => {
-                                    updateMutation.mutate({
-                                      id: transaction.id,
-                                      data: {
-                                        ai_suggested_category_id: suggestionId
-                                      }
-                                    });
-                                  }}
                                 />
                               );
                             })()
