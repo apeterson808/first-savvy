@@ -9,6 +9,7 @@ import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AddFinancialAccountSheet from '../banking/AddFinancialAccountSheet';
 import { sanitizeForLLM } from '../utils/validation';
+import { suggestCategory } from '../banking/CategorySuggestion';
 
 export default function RecentTransactionsCard() {
   const navigate = useNavigate();
@@ -39,6 +40,16 @@ export default function RecentTransactionsCard() {
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: () => base44.entities.Category.list('name')
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['fullPostedTransactions'],
+    queryFn: () => base44.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
+  });
+
+  const { data: categorizationRules = [] } = useQuery({
+    queryKey: ['categorizationRules'],
+    queryFn: () => base44.entities.CategorizationRule.list('-priority')
   });
 
   const updateMutation = useMutation({
@@ -72,89 +83,33 @@ export default function RecentTransactionsCard() {
 
     const getSuggestions = async () => {
       try {
-        // Filter to only active categories
-        const activeCategories = categories.filter(c => c.is_active !== false);
-        const categoryList = activeCategories.map(c => ({
-          id: c.id,
-          name: c.name,
-          type: c.type
-        }));
+        for (const transaction of needsSuggestion) {
+          try {
+            const suggestion = await suggestCategory(
+              transaction.description,
+              transactions,
+              categorizationRules,
+              transaction.amount
+            );
 
-        const transactionDescriptions = needsSuggestion.map(t => ({
-          id: t.id,
-          description: sanitizeForLLM(t.description),
-          amount: t.amount,
-          type: t.type
-        }));
+            if (suggestion && suggestion.category) {
+              const matchingCategory = categories.find(c =>
+                c.name.toLowerCase() === suggestion.category.toLowerCase() &&
+                c.type === suggestion.type
+              );
 
-        const incomeCategories = categoryList.filter(c => c.type === 'income');
-        const expenseCategories = categoryList.filter(c => c.type === 'expense');
-
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `You are a financial transaction categorizer. Given these transactions and available categories, assign the most appropriate category to each transaction.
-
-CRITICAL RULE: You MUST match the category type to the transaction type:
-- Income transactions can ONLY use income categories
-- Expense transactions can ONLY use expense categories
-
-Available Income Categories (use ONLY for income transactions):
-${incomeCategories.length > 0 ? incomeCategories.map(c => `- "${c.name}" [ID: ${c.id}]`).join('\n') : '(none available)'}
-
-Available Expense Categories (use ONLY for expense transactions):
-${expenseCategories.length > 0 ? expenseCategories.map(c => `- "${c.name}" [ID: ${c.id}]`).join('\n') : '(none available)'}
-
-Transactions to categorize:
-${transactionDescriptions.map(t => `- ID: ${t.id}, Description: "${t.description}", Amount: $${t.amount}, Type: ${t.type.toUpperCase()}`).join('\n')}
-
-For each transaction, pick the best matching category from the correct type list.`,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              categorizations: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    transaction_id: { type: "string" },
-                    category_id: { type: "string" }
-                  },
-                  required: ["transaction_id", "category_id"]
-                }
-              }
-            },
-            required: ["categorizations"]
-          }
-        });
-        
-        if (result.categorizations) {
-          // Save AI suggestions to the transaction entity
-          for (const cat of result.categorizations) {
-            const transaction = needsSuggestion.find(t => t.id === cat.transaction_id);
-            if (!transaction) continue;
-
-            let categoryId = cat.category_id;
-            const suggestedCat = categoryId ? categories.find(c => c.id === categoryId) : null;
-
-            // If no valid suggestion or type mismatch, use default for income
-            if (!suggestedCat || suggestedCat.type !== transaction.type) {
-              if (transaction.type === 'income') {
-                const otherIncome = categories.find(c => c.name === 'Other Income' && c.type === 'income' && c.is_active !== false);
-                categoryId = otherIncome?.id;
-              } else {
-                categoryId = null; // Skip expense transactions with no valid match
+              if (matchingCategory) {
+                updateMutation.mutate({
+                  id: transaction.id,
+                  data: {
+                    ai_suggested_category_id: matchingCategory.id,
+                    ...(transaction.category_id ? {} : { category_id: matchingCategory.id })
+                  }
+                });
               }
             }
-
-            if (categoryId) {
-              updateMutation.mutate({
-                id: cat.transaction_id,
-                data: { 
-                  ai_suggested_category_id: categoryId,
-                  // Only auto-populate category if not already set
-                  ...(transaction.category_id ? {} : { category_id: categoryId })
-                }
-              });
-            }
+          } catch (err) {
+            console.error(`Failed to categorize transaction ${transaction.id}:`, err);
           }
         }
       } catch (err) {
