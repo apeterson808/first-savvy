@@ -25,13 +25,23 @@ const createEntityAPI = (tableName) => {
       return data || [];
     },
 
-    async filter(conditions = {}) {
+    async filter(conditions = {}, orderBy = null, limit = null) {
       let query = supabase.from(tableName).select('*');
 
       for (const [key, value] of Object.entries(conditions)) {
         if (value !== undefined && value !== null) {
           query = query.eq(key, value);
         }
+      }
+
+      if (orderBy) {
+        const isDescending = orderBy.startsWith('-');
+        const column = isDescending ? orderBy.substring(1) : orderBy;
+        query = query.order(column, { ascending: !isDescending });
+      }
+
+      if (limit) {
+        query = query.limit(limit);
       }
 
       const { data, error } = await query;
