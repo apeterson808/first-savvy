@@ -49,16 +49,18 @@ export default function CategoryDropdown({
       : nonTransferCategories.filter(c => c.type === 'income');
   }
 
-  const { data: allTransactions = [] } = useQuery({
+  const { data: allTransactions = [], refetch: refetchTransactions } = useQuery({
     queryKey: ['fullPostedTransactions'],
     queryFn: () => base44.entities.Transaction.filter({ status: 'posted' }, '-date', 10000),
-    enabled: false
+    enabled: false,
+    staleTime: 5 * 60 * 1000
   });
 
-  const { data: categorizationRules = [] } = useQuery({
+  const { data: categorizationRules = [], refetch: refetchRules } = useQuery({
     queryKey: ['categorizationRules'],
     queryFn: () => base44.entities.CategorizationRule.list('-priority'),
-    enabled: false
+    enabled: false,
+    staleTime: 5 * 60 * 1000
   });
 
   const suggestedCategory = aiSuggestionId ? availableCategories.find(c => c.id === aiSuggestionId) : null;
@@ -77,10 +79,15 @@ export default function CategoryDropdown({
     if (open && !aiSuggestionId && !isGeneratingSuggestion && transactionId && transactionDescription && onSuggestionGenerated && !isTransactionTransfer) {
       setIsGeneratingSuggestion(true);
       try {
+        const [transactionsResult, rulesResult] = await Promise.all([
+          refetchTransactions(),
+          refetchRules()
+        ]);
+
         const suggestion = await suggestCategory(
           transactionDescription,
-          allTransactions,
-          categorizationRules,
+          transactionsResult.data || [],
+          rulesResult.data || [],
           transactionAmount
         );
 
