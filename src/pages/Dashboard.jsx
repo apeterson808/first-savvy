@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
-import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear } from 'date-fns';
+import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AddFinancialAccountSheet from '../components/banking/AddFinancialAccountSheet';
@@ -132,6 +132,37 @@ export default function Dashboard() {
 
   const netWorthChange = calculateNetWorthChange();
 
+  const getTimeRangeConfig = (timeRange) => {
+    const today = new Date();
+
+    switch (timeRange) {
+      case '7d':
+        return { startDate: subDays(today, 7), monthsToShow: 1 };
+      case '30d':
+        return { startDate: subDays(today, 30), monthsToShow: 1 };
+      case '90d':
+        return { startDate: subDays(today, 90), monthsToShow: 3 };
+      case 'mtd':
+        return { startDate: startOfMonth(today), monthsToShow: 1 };
+      case 'qtd':
+        return { startDate: startOfQuarter(today), monthsToShow: (today.getMonth() % 3) + 1 };
+      case 'lastQuarter': {
+        const lastQ = subQuarters(today, 1);
+        return { startDate: startOfQuarter(lastQ), monthsToShow: 3 };
+      }
+      case 'ytd':
+        return { startDate: startOfYear(today), monthsToShow: today.getMonth() + 1 };
+      case 'lastYear': {
+        const lastYearDate = subYears(today, 1);
+        return { startDate: getStartOfYear(lastYearDate), monthsToShow: 12 };
+      }
+      case 'all':
+        return { startDate: null, monthsToShow: null };
+      default:
+        return { startDate: addDays(subMonths(today, parseInt(timeRange)), 1), monthsToShow: parseInt(timeRange) };
+    }
+  };
+
   // Generate chart data
     const generateChartData = () => {
       const data = [];
@@ -140,10 +171,15 @@ export default function Dashboard() {
       if (chartView === 'spending') {
         // Generate daily cumulative data for spending
         let cumulativeSpending = 0;
-        const startDate = timeRange === 'ytd' 
-          ? startOfYear(today)
-          : addDays(subMonths(today, parseInt(timeRange)), 1);
-        const days = eachDayOfInterval({ start: startDate, end: today });
+        const { startDate } = getTimeRangeConfig(timeRange);
+
+        const finalStartDate = timeRange === 'all'
+          ? (transactions.length > 0
+              ? new Date(Math.min(...transactions.map(t => new Date(t.date).getTime())))
+              : subMonths(today, 12))
+          : startDate;
+
+        const days = eachDayOfInterval({ start: finalStartDate, end: today });
 
       // Get active account IDs for filtering
       const activeAccountIds = accounts.map(a => a.id);
@@ -180,10 +216,15 @@ export default function Dashboard() {
       });
     } else {
       // Monthly aggregation for income and balance views
-      const monthsToShow = timeRange === 'ytd' 
-        ? today.getMonth() + 1 
-        : parseInt(timeRange);
-      for (let i = monthsToShow - 1; i >= 0; i--) {
+      const { monthsToShow } = getTimeRangeConfig(timeRange);
+
+      const finalMonthsToShow = timeRange === 'all'
+        ? (transactions.length > 0
+            ? Math.ceil((today - new Date(Math.min(...transactions.map(t => new Date(t.date).getTime())))) / (1000 * 60 * 60 * 24 * 30))
+            : 12)
+        : monthsToShow;
+
+      for (let i = finalMonthsToShow - 1; i >= 0; i--) {
         const date = subMonths(new Date(), i);
         const monthStartStr = format(startOfMonth(date), 'yyyy-MM-dd');
         const monthEndStr = i === 0 ? format(today, 'yyyy-MM-dd') : format(endOfMonth(date), 'yyyy-MM-dd');
