@@ -72,7 +72,7 @@ export default function Banking() {
       const creditCards = await base44.entities.CreditCard.list('-updated_at');
       const assets = await base44.entities.Asset.list('-updated_at');
       const liabilities = await base44.entities.Liability.list('-updated_at');
-      const categories = await base44.entities.Category.list('-updated_at');
+      const categories = await base44.entities.Category.list('name');
 
       const allAccounts = [
         ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
