@@ -243,7 +243,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   React.useEffect(() => {
     const generateSuggestions = async () => {
-      if (!fullPendingTransactions.length || !categories.length || !fullPostedTransactions.length) return;
+      if (!fullPendingTransactions.length || !categories.length) return;
 
       const transactionsNeedingSuggestions = fullPendingTransactions.filter(
         t => !t.ai_suggested_category_id && !t.category_id && t.type !== 'transfer' && t.description
