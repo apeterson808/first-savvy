@@ -14,34 +14,52 @@ import BudgetSetupTab from '../components/budgeting/BudgetSetupTab';
 export default function Budgeting() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
-  const [activeTab, setActiveTab] = useState(() => {
-    return new URLSearchParams(window.location.search).get('tab') || 'overview';
-  });
   const queryClient = useQueryClient();
+
+  const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
+    queryKey: ['budgetGroups'],
+    queryFn: () => base44.entities.BudgetGroup.list()
+  });
+
+  const hasSetupStarted = budgetGroups.length > 0;
+  const defaultTab = hasSetupStarted ? 'overview' : 'setup';
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    return urlTab || defaultTab;
+  });
+
+  React.useEffect(() => {
+    const urlTab = new URLSearchParams(window.location.search).get('tab');
+    if (!urlTab && !groupsLoading) {
+      const correctTab = hasSetupStarted ? 'overview' : 'setup';
+      if (activeTab !== correctTab) {
+        setActiveTab(correctTab);
+        window.history.replaceState({}, '', `${window.location.pathname}?tab=${correctTab}`);
+      }
+    }
+  }, [hasSetupStarted, groupsLoading, activeTab]);
 
   React.useEffect(() => {
     const handleUrlChange = () => {
-      const tab = new URLSearchParams(window.location.search).get('tab') || 'overview';
-      setActiveTab(tab);
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const correctTab = urlTab || (hasSetupStarted ? 'overview' : 'setup');
+      setActiveTab(correctTab);
     };
 
     window.addEventListener('popstate', handleUrlChange);
 
     const interval = setInterval(() => {
-      const tab = new URLSearchParams(window.location.search).get('tab') || 'overview';
-      setActiveTab(prev => prev !== tab ? tab : prev);
+      const urlTab = new URLSearchParams(window.location.search).get('tab');
+      const correctTab = urlTab || (hasSetupStarted ? 'overview' : 'setup');
+      setActiveTab(prev => prev !== correctTab ? correctTab : prev);
     }, 100);
 
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
       clearInterval(interval);
     };
-  }, []);
-
-  const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
-    queryKey: ['budgetGroups'],
-    queryFn: () => base44.entities.BudgetGroup.list()
-  });
+  }, [hasSetupStarted]);
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets'],
