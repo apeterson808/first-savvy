@@ -68,11 +68,11 @@ export default function Banking() {
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['allAccounts'],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.list('-updated_date');
-      const creditCards = await base44.entities.CreditCard.list('-updated_date');
-      const assets = await base44.entities.Asset.list('-updated_date');
-      const liabilities = await base44.entities.Liability.list('-updated_date');
-      const categories = await base44.entities.Category.list('-updated_date');
+      const bankAccounts = await base44.entities.BankAccount.list('-updated_at');
+      const creditCards = await base44.entities.CreditCard.list('-updated_at');
+      const assets = await base44.entities.Asset.list('-updated_at');
+      const liabilities = await base44.entities.Liability.list('-updated_at');
+      const categories = await base44.entities.Category.list('-updated_at');
 
       const allAccounts = [
         ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),

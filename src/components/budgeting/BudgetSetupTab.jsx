@@ -1160,12 +1160,12 @@ export default function BudgetSetupTab() {
           const groupBudgetsToDelete = getGroupBudgets(id);
           const group = groups.find(g => g.id === id);
           if (group) {
-            const { id: groupId, created_date, updated_date, created_by, ...groupData } = group;
-            pushUndo({ 
-              type: 'delete_group', 
+            const { id: groupId, created_at, updated_at, user_id, ...groupData } = group;
+            pushUndo({
+              type: 'delete_group',
               data: groupData,
               budgets: groupBudgetsToDelete.map(b => {
-                const { id, created_date, updated_date, created_by, group_id, ...bData } = b;
+                const { id, created_at, updated_at, user_id, group_id, ...bData } = b;
                 return bData;
               })
             });
@@ -1212,7 +1212,7 @@ export default function BudgetSetupTab() {
         onDelete={(id) => {
           const budget = budgets.find(b => b.id === id);
           if (budget) {
-            const { id: budgetId, created_date, updated_date, created_by, ...budgetData } = budget;
+            const { id: budgetId, created_at, updated_at, user_id, ...budgetData } = budget;
             pushUndo({ type: 'delete_budget', data: budgetData });
           }
           deleteBudgetMutation.mutate(id);
