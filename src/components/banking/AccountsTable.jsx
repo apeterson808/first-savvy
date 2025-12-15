@@ -224,7 +224,7 @@ export default function AccountsTable({ accounts, isLoading }) {
       // If reactivating a bank account, reverse the transfer from Beginning Balance Equity
       if (newActiveState && entityType === 'BankAccount') {
         const beginningBalanceAccount = await getOrCreateBeginningBalanceAccount();
-        const allTransactions = await base44.entities.Transaction.list('-created_date', 1000);
+        const allTransactions = await base44.entities.Transaction.list('-created_at', 1000);
         
         // Find the original deactivation transfer transaction
         const deactivationTx = allTransactions.find(t => 

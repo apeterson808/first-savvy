@@ -2519,7 +2519,7 @@ For each transaction, return the category_id that best matches. Consider:
               <div className="text-xs text-slate-500 bg-slate-50 rounded-md p-3 space-y-1">
                 <p className="font-medium text-slate-600">Bank Data</p>
                 <p>Original description: {editingTransaction.original_description || editingTransaction.description}</p>
-                <p>Date imported: {editingTransaction.created_date && !isNaN(new Date(editingTransaction.created_date).getTime()) ? new Date(editingTransaction.created_date).toLocaleDateString() : 'N/A'}</p>
+                <p>Date imported: {editingTransaction.created_at && !isNaN(new Date(editingTransaction.created_at).getTime()) ? new Date(editingTransaction.created_at).toLocaleDateString() : 'N/A'}</p>
               </div>
             )}
 
