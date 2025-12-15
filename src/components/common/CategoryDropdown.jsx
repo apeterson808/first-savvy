@@ -81,10 +81,6 @@ export default function CategoryDropdown({
       )}
       {suggestedCategory && (
         <>
-          <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3 text-blue-500" />
-            AI Recommended
-          </div>
           <ClickThroughSelectItem
             key={suggestedCategory.id}
             value={suggestedCategory.id}
@@ -104,11 +100,6 @@ export default function CategoryDropdown({
             </span>
             <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
           </ClickThroughSelectItem>
-          {otherCategories.length > 0 && (
-            <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 border-b border-slate-200">
-              All Categories
-            </div>
-          )}
         </>
       )}
       {otherCategories.map((cat) => {
