@@ -1369,8 +1369,8 @@ For each transaction, return the category_id that best matches. Consider:
                                     const selectedCategory = categories.find(c => c.id === value);
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { 
-                                        ...transaction, 
+                                      data: {
+                                        ...transaction,
                                         category_id: value,
                                         type: selectedCategory ? selectedCategory.type : transaction.type
                                       }
@@ -1387,6 +1387,16 @@ For each transaction, return the category_id that best matches. Consider:
                                   placeholder="Select category"
                                   isTransactionTransfer={transaction.type === 'transfer'}
                                   transactionAmount={transaction.amount}
+                                  transactionId={transaction.id}
+                                  transactionDescription={transaction.description}
+                                  onSuggestionGenerated={(suggestionId) => {
+                                    updateMutation.mutate({
+                                      id: transaction.id,
+                                      data: {
+                                        ai_suggested_category_id: suggestionId
+                                      }
+                                    });
+                                  }}
                                 />
                               );
                             })()
