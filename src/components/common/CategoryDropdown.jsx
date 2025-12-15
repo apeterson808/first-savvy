@@ -79,18 +79,47 @@ export default function CategoryDropdown({
           + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
         </ClickThroughSelectItem>
       )}
-      {sortedCategories.map((cat) => {
-        const displayName = getAccountDisplayName({ 
-          account_type: cat.type, 
+      {suggestedCategory && (
+        <>
+          <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 border-b border-slate-200 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-blue-500" />
+            AI Recommended
+          </div>
+          <ClickThroughSelectItem
+            key={suggestedCategory.id}
+            value={suggestedCategory.id}
+            data-display={getAccountDisplayName({
+              account_type: suggestedCategory.type,
+              detail_type: suggestedCategory.detail_type,
+              name: suggestedCategory.name
+            })}
+            className="flex items-center justify-between whitespace-nowrap bg-blue-50 font-medium"
+          >
+            <span className="truncate">
+              {getAccountDisplayName({
+                account_type: suggestedCategory.type,
+                detail_type: suggestedCategory.detail_type,
+                name: suggestedCategory.name
+              })}
+            </span>
+            <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
+          </ClickThroughSelectItem>
+          {otherCategories.length > 0 && (
+            <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 border-b border-slate-200">
+              All Categories
+            </div>
+          )}
+        </>
+      )}
+      {otherCategories.map((cat) => {
+        const displayName = getAccountDisplayName({
+          account_type: cat.type,
           detail_type: cat.detail_type,
-          name: cat.name 
+          name: cat.name
         });
         return (
           <ClickThroughSelectItem key={cat.id} value={cat.id} data-display={displayName} className="flex items-center justify-between whitespace-nowrap">
             <span className="truncate">{displayName}</span>
-            {cat.id === aiSuggestionId && (
-              <Sparkles className="w-3 h-3 text-purple-500 ml-2 flex-shrink-0" />
-            )}
           </ClickThroughSelectItem>
         );
       })}
