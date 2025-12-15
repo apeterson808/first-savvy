@@ -164,16 +164,8 @@ export default function Budgeting() {
 
   return (
     <div className="p-0">
-      <Dialog open={showSetupModal} onOpenChange={(open) => {
-        if (!open && hasSetupStarted) {
-          setShowSetupModal(false);
-        }
-      }}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0" onInteractOutside={(e) => {
-          if (!hasSetupStarted) {
-            e.preventDefault();
-          }
-        }}>
+      <Dialog open={showSetupModal} onOpenChange={setShowSetupModal}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto p-0">
           <BudgetSetupTab onSetupComplete={() => setShowSetupModal(false)} />
         </DialogContent>
       </Dialog>
