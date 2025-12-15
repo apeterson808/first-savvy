@@ -3,7 +3,7 @@ import { Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { aiCategorizeTransaction } from '@/api/functions';
 
-export async function suggestCategory(description, transactions, rules, amount = null) {
+export async function suggestCategory(description, transactions, rules, amount = null, categories = []) {
   if (!description || description.length < 2) return null;
 
   const descLower = description.toLowerCase().trim();
@@ -44,16 +44,20 @@ export async function suggestCategory(description, transactions, rules, amount =
     }
   }
 
-  if (transactions && transactions.length > 0) {
+  if (transactions && transactions.length > 0 && categories.length > 0) {
     const categoryCount = {};
 
     transactions.forEach(t => {
-      if (!t.description || !t.category) return;
+      if (!t.description || !t.category_id) return;
+
+      const category = categories.find(c => c.id === t.category_id);
+      if (!category) return;
+
       const tDescLower = t.description.toLowerCase();
 
       if (tDescLower.includes(descLower) || descLower.includes(tDescLower) ||
           (descLower.length > 4 && tDescLower.includes(descLower.substring(0, 4)))) {
-        const key = `${t.category}|${t.type}`;
+        const key = `${category.name}|${t.type}`;
         categoryCount[key] = (categoryCount[key] || 0) + 1;
       }
     });

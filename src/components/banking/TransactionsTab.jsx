@@ -233,13 +233,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   React.useEffect(() => {
     if (newDescription.length >= 2) {
-      suggestCategory(newDescription, transactions, categorizationRules).then(suggestion => {
+      suggestCategory(newDescription, transactions, categorizationRules, null, categories).then(suggestion => {
         setCategorySuggestion(suggestion);
       });
     } else {
       setCategorySuggestion(null);
     }
-  }, [newDescription, transactions, categorizationRules]);
+  }, [newDescription, transactions, categorizationRules, categories]);
 
   React.useEffect(() => {
     const generateSuggestions = async () => {
@@ -251,6 +251,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (transactionsNeedingSuggestions.length === 0) return;
 
+      console.log(`Generating AI suggestions for ${Math.min(5, transactionsNeedingSuggestions.length)} transactions...`);
+
       const batchSize = 5;
       for (let i = 0; i < Math.min(batchSize, transactionsNeedingSuggestions.length); i++) {
         const transaction = transactionsNeedingSuggestions[i];
@@ -260,7 +262,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             transaction.description,
             fullPostedTransactions,
             categorizationRules,
-            transaction.amount
+            transaction.amount,
+            categories
           );
 
           if (suggestion && suggestion.category) {
@@ -270,6 +273,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             );
 
             if (matchingCategory) {
+              console.log(`Suggested ${suggestion.category} for "${transaction.description}"`);
               await base44.entities.Transaction.update(transaction.id, {
                 ai_suggested_category_id: matchingCategory.id
               });
@@ -283,7 +287,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     };
 
     generateSuggestions();
-  }, [fullPendingTransactions.length, categories.length, fullPostedTransactions.length]);
+  }, [fullPendingTransactions.length, categories.length, fullPostedTransactions.length, categorizationRules.length]);
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
