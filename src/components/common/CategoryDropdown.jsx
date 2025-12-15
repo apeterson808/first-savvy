@@ -90,7 +90,7 @@ export default function CategoryDropdown({
               detail_type: suggestedCategory.detail_type,
               name: suggestedCategory.name
             })}
-            className="flex items-center justify-between whitespace-nowrap bg-blue-50 font-medium"
+            className="flex items-center justify-between whitespace-nowrap"
           >
             <span className="truncate">
               {getAccountDisplayName({
