@@ -14,8 +14,9 @@ import BudgetSetupTab from '../components/budgeting/BudgetSetupTab';
 export default function Budgeting() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
   const queryClient = useQueryClient();
+
+  const activeTab = new URLSearchParams(window.location.search).get('tab') || 'overview';
 
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
     queryKey: ['budgetGroups'],
@@ -148,40 +149,8 @@ export default function Budgeting() {
     );
   }
 
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-  };
-
   return (
     <div className="p-0">
-      <div className="bg-white border-b border-slate-200">
-        <div className="px-6 pt-6 pb-0">
-          <h2 className="text-lg font-medium text-slate-900 mb-4">Welcome, User</h2>
-          <div className="flex gap-6">
-            <button
-              onClick={() => handleTabChange('overview')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'overview'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Overview
-            </button>
-            <button
-              onClick={() => handleTabChange('setup')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'setup'
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Setup
-            </button>
-          </div>
-        </div>
-      </div>
-
       {activeTab === 'overview' && (
         <div className="p-6">
           <div className="flex items-center justify-between mb-3">
