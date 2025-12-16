@@ -24,6 +24,8 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Plus, Search } from 'lucide-react';
 import ContactDetailSheet from '@/components/contacts/ContactDetailSheet';
+import AccountDetectionField from '@/components/contacts/AccountDetectionField';
+import { toast } from 'sonner';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -43,6 +45,8 @@ export default function Contacts() {
   const [viewingContact, setViewingContact] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneValue, setPhoneValue] = useState('');
+  const [emailValue, setEmailValue] = useState('');
+  const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: contacts = [], isLoading } = useQuery({
@@ -88,14 +92,82 @@ export default function Contacts() {
     }
   });
 
+  const handleConnectionRequest = async (user) => {
+    try {
+      const currentUser = await base44.auth.me();
+      if (!currentUser) {
+        toast.error('You must be logged in to connect with contacts');
+        return;
+      }
+
+      await base44.entities.UserRelationship.create({
+        user_id: currentUser.id,
+        related_user_id: user.id,
+        relationship_type: 'friend',
+        status: 'pending',
+        created_by: currentUser.id,
+        permissions: {}
+      });
+
+      setDetectedUser(user);
+      toast.success('Connection request sent!');
+    } catch (error) {
+      console.error('Failed to send connection request:', error);
+      toast.error('Failed to send connection request');
+    }
+  };
+
+  const handleSendInvitation = async (value, type) => {
+    try {
+      const currentUser = await base44.auth.me();
+      if (!currentUser) {
+        toast.error('You must be logged in to send invitations');
+        return;
+      }
+
+      const invitationData = {
+        inviter_user_id: currentUser.id,
+        invitation_type: 'user_connection',
+        relationship_metadata: { relationship_type: 'friend' },
+        status: 'pending'
+      };
+
+      if (type === 'email') {
+        invitationData.invitee_email = value;
+      } else if (type === 'phone') {
+        invitationData.invitee_phone = value.replace(/[^\d]/g, '');
+      }
+
+      const invitation = await base44.entities.Invitation.create(invitationData);
+
+      try {
+        await base44.functions.sendInvitationNotification({
+          invitationId: invitation.id,
+          inviterName: currentUser.email || 'A user',
+          inviteeEmail: type === 'email' ? value : undefined,
+          inviteePhone: type === 'phone' ? value : undefined,
+          invitationType: 'user_connection',
+          invitationToken: invitation.token
+        });
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError);
+      }
+
+      toast.success(`Invitation sent to ${value}!`);
+      return invitation;
+    } catch (error) {
+      console.error('Failed to send invitation:', error);
+      toast.error('Failed to send invitation');
+    }
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
 
-    const phone = formData.get('phone');
-    const phoneDigits = phone ? phone.replace(/[^\d]/g, '') : '';
+    const phoneDigits = phoneValue ? phoneValue.replace(/[^\d]/g, '') : '';
 
-    if (phone && phoneDigits.length > 0 && phoneDigits.length < 10) {
+    if (phoneValue && phoneDigits.length > 0 && phoneDigits.length < 10) {
       alert('Phone number must include area code (10 digits)');
       return;
     }
@@ -116,12 +188,14 @@ export default function Contacts() {
     const data = {
       name: formData.get('name'),
       type,
-      email: formData.get('email') || undefined,
-      phone: phone || undefined,
+      email: emailValue || undefined,
+      phone: phoneValue || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
       default_category_id: formData.get('default_category_id') || undefined,
-      status
+      status,
+      linked_user_id: detectedUser?.id || undefined,
+      connection_status: detectedUser ? 'platform_user' : 'not_checked'
     };
 
     if (editingContact) {
@@ -151,6 +225,8 @@ export default function Contacts() {
               onClick={() => {
                 setEditingContact(null);
                 setPhoneValue('');
+                setEmailValue('');
+                setDetectedUser(null);
                 setDialogOpen(true);
               }}
               className="bg-blue-600 hover:bg-blue-700 h-9"
@@ -182,18 +258,19 @@ export default function Contacts() {
                   <TableHead className="h-9">Email</TableHead>
                   <TableHead className="h-9">Phone</TableHead>
                   <TableHead className="h-9">Status</TableHead>
+                  <TableHead className="h-9">Connection</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow className="h-12">
-                    <TableCell colSpan={5} className="text-center text-slate-500 h-12">
+                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredContacts.length === 0 ? (
                   <TableRow className="h-12">
-                    <TableCell colSpan={5} className="text-center text-slate-500 h-12">
+                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
                       No contacts found
                     </TableCell>
                   </TableRow>
@@ -221,6 +298,23 @@ export default function Contacts() {
                               : 'bg-gray-100 text-gray-800'
                           }`}>
                             {contact.status}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="py-2">
+                        {contact.connection_status === 'connected' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            Connected
+                          </span>
+                        ) : contact.connection_status === 'invited' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            Invited
+                          </span>
+                        ) : contact.connection_status === 'platform_user' ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            On Platform
                           </span>
                         ) : (
                           <span className="text-slate-400">-</span>
@@ -284,8 +378,19 @@ export default function Contacts() {
                 id="email"
                 name="email"
                 type="email"
-                defaultValue={editingContact?.email}
+                value={emailValue}
+                onChange={(e) => setEmailValue(e.target.value)}
                 placeholder="contact@example.com"
+              />
+              <p className="text-xs text-slate-500 mt-1">
+                Add email or phone to check if they have an account
+              </p>
+              <AccountDetectionField
+                type="email"
+                value={emailValue}
+                onConnectionRequest={handleConnectionRequest}
+                onInviteSend={handleSendInvitation}
+                disabled={!!editingContact}
               />
             </div>
 
@@ -300,7 +405,16 @@ export default function Contacts() {
                 placeholder="(555) 123-4567"
                 maxLength={14}
               />
-              <p className="text-xs text-slate-500 mt-1">Must include area code</p>
+              <p className="text-xs text-slate-500 mt-1">
+                Must include area code. Add to check if they have an account.
+              </p>
+              <AccountDetectionField
+                type="phone"
+                value={phoneValue}
+                onConnectionRequest={handleConnectionRequest}
+                onInviteSend={handleSendInvitation}
+                disabled={!!editingContact}
+              />
             </div>
 
             <div>

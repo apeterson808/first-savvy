@@ -25,6 +25,8 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Mail, Phone, MapPin, Tag, FileText, TrendingUp, DollarSign, Hash, Calendar, Edit2, Save, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
+import AccountDetectionField from './AccountDetectionField';
+import { toast } from 'sonner';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -40,6 +42,8 @@ function formatPhoneNumber(value) {
 export default function ContactDetailSheet({ contact, open, onOpenChange }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [phoneValue, setPhoneValue] = useState('');
+  const [emailValue, setEmailValue] = useState('');
+  const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', 'contact', contact?.id],
@@ -81,10 +85,94 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
     }
   });
 
+  const handleConnectionRequest = async (user) => {
+    try {
+      const currentUser = await base44.auth.me();
+      if (!currentUser) {
+        toast.error('You must be logged in to connect with contacts');
+        return;
+      }
+
+      await base44.entities.UserRelationship.create({
+        user_id: currentUser.id,
+        related_user_id: user.id,
+        relationship_type: 'friend',
+        status: 'pending',
+        created_by: currentUser.id,
+        permissions: {}
+      });
+
+      setDetectedUser(user);
+
+      await base44.entities.Contact.update(contact.id, {
+        linked_user_id: user.id,
+        connection_status: 'connected'
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success('Connection request sent!');
+    } catch (error) {
+      console.error('Failed to send connection request:', error);
+      toast.error('Failed to send connection request');
+    }
+  };
+
+  const handleSendInvitation = async (value, type) => {
+    try {
+      const currentUser = await base44.auth.me();
+      if (!currentUser) {
+        toast.error('You must be logged in to send invitations');
+        return;
+      }
+
+      const invitationData = {
+        inviter_user_id: currentUser.id,
+        invitation_type: 'user_connection',
+        relationship_metadata: { relationship_type: 'friend' },
+        status: 'pending'
+      };
+
+      if (type === 'email') {
+        invitationData.invitee_email = value;
+      } else if (type === 'phone') {
+        invitationData.invitee_phone = value.replace(/[^\d]/g, '');
+      }
+
+      const invitation = await base44.entities.Invitation.create(invitationData);
+
+      try {
+        await base44.functions.sendInvitationNotification({
+          invitationId: invitation.id,
+          inviterName: currentUser.email || 'A user',
+          inviteeEmail: type === 'email' ? value : undefined,
+          inviteePhone: type === 'phone' ? value : undefined,
+          invitationType: 'user_connection',
+          invitationToken: invitation.token
+        });
+      } catch (notifError) {
+        console.error('Failed to send notification:', notifError);
+      }
+
+      await base44.entities.Contact.update(contact.id, {
+        invitation_id: invitation.id,
+        connection_status: 'invited'
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      toast.success(`Invitation sent to ${value}!`);
+      return invitation;
+    } catch (error) {
+      console.error('Failed to send invitation:', error);
+      toast.error('Failed to send invitation');
+    }
+  };
+
   useEffect(() => {
     if (open && contact) {
       setIsEditMode(false);
       setPhoneValue(contact.phone || '');
+      setEmailValue(contact.email || '');
+      setDetectedUser(null);
     }
   }, [open, contact]);
 
@@ -161,12 +249,14 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
     const data = {
       name: formData.get('name'),
       type,
-      email: formData.get('email') || undefined,
-      phone: phone || undefined,
+      email: emailValue || undefined,
+      phone: phoneValue || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
       default_category_id: formData.get('default_category_id') || undefined,
-      status
+      status,
+      linked_user_id: detectedUser?.id || contact.linked_user_id || undefined,
+      connection_status: detectedUser ? 'platform_user' : (contact.connection_status || 'not_checked')
     };
 
     updateMutation.mutate({ id: contact.id, data });
@@ -201,6 +291,21 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
                       }
                     >
                       {contact.status}
+                    </Badge>
+                  )}
+                  {contact.connection_status === 'connected' && (
+                    <Badge className="bg-blue-100 text-blue-800">
+                      Connected
+                    </Badge>
+                  )}
+                  {contact.connection_status === 'invited' && (
+                    <Badge className="bg-yellow-100 text-yellow-800">
+                      Invited
+                    </Badge>
+                  )}
+                  {contact.connection_status === 'platform_user' && (
+                    <Badge className="bg-purple-100 text-purple-800">
+                      On Platform
                     </Badge>
                   )}
                 </div>
@@ -305,8 +410,19 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
                       id="email"
                       name="email"
                       type="email"
-                      defaultValue={contact.email}
+                      value={emailValue}
+                      onChange={(e) => setEmailValue(e.target.value)}
                       placeholder="contact@example.com"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Add email or phone to check if they have an account
+                    </p>
+                    <AccountDetectionField
+                      type="email"
+                      value={emailValue}
+                      onConnectionRequest={handleConnectionRequest}
+                      onInviteSend={handleSendInvitation}
+                      disabled={contact?.connection_status === 'connected' || contact?.connection_status === 'invited'}
                     />
                   </div>
 
@@ -321,7 +437,16 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
                       placeholder="(555) 123-4567"
                       maxLength={14}
                     />
-                    <p className="text-xs text-slate-500 mt-1">Must include area code</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Must include area code. Add to check if they have an account.
+                    </p>
+                    <AccountDetectionField
+                      type="phone"
+                      value={phoneValue}
+                      onConnectionRequest={handleConnectionRequest}
+                      onInviteSend={handleSendInvitation}
+                      disabled={contact?.connection_status === 'connected' || contact?.connection_status === 'invited'}
+                    />
                   </div>
 
                   <div>

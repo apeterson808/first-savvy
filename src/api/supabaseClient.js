@@ -188,6 +188,11 @@ export const createSupabaseClient = () => {
         const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
         if (error) throw error;
         return data;
+      },
+      async sendInvitationNotification(body) {
+        const { data, error } = await supabase.functions.invoke('send-invitation-notification', { body });
+        if (error) throw error;
+        return data;
       }
     }
   };
