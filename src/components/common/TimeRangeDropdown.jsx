@@ -20,8 +20,8 @@ export default function TimeRangeDropdown({
       </SelectTrigger>
       <SelectContent>
         <SelectItem value="ytd" className="text-xs">YTD</SelectItem>
-        <SelectItem value="30d" className="text-xs">Last 30 Days</SelectItem>
         <SelectItem value="mtd" className="text-xs">MTD</SelectItem>
+        <SelectItem value="30d" className="text-xs">Last 30 Days</SelectItem>
         <SelectItem value="3" className="text-xs">3 Months</SelectItem>
         <SelectItem value="6" className="text-xs">6 Months</SelectItem>
         <SelectItem value="12" className="text-xs">12 Months</SelectItem>
