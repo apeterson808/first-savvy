@@ -22,6 +22,10 @@ import { format } from 'date-fns';
 import AccountDetectionField from '@/components/contacts/AccountDetectionField';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TransactionTimeline from '@/components/contacts/TransactionTimeline';
+import CategoryBreakdown from '@/components/contacts/CategoryBreakdown';
+import TransactionVolume from '@/components/contacts/TransactionVolume';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -581,7 +585,7 @@ export default function ContactDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
               <div className="p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center gap-2 text-slate-600 mb-1">
                   <Hash className="w-4 h-4" />
@@ -616,7 +620,7 @@ export default function ContactDetail() {
             </div>
 
             {analytics.firstTransaction && (
-              <div className="mt-4 pt-4 border-t text-sm text-slate-600">
+              <div className="mb-6 pb-6 border-b text-sm text-slate-600">
                 <p>
                   First transaction: <span className="font-medium">{format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}</span>
                   {analytics.lastTransaction && (
@@ -625,6 +629,35 @@ export default function ContactDetail() {
                 </p>
               </div>
             )}
+
+            <Tabs defaultValue="timeline" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                <TabsTrigger value="categories">Categories</TabsTrigger>
+                <TabsTrigger value="volume">Volume</TabsTrigger>
+              </TabsList>
+              <TabsContent value="timeline" className="mt-6">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Income vs Expenses Over Time</h3>
+                  <p className="text-xs text-slate-500">Monthly breakdown of income and expenses</p>
+                  <TransactionTimeline transactions={transactions} />
+                </div>
+              </TabsContent>
+              <TabsContent value="categories" className="mt-6">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Spending by Category</h3>
+                  <p className="text-xs text-slate-500">Distribution of transaction amounts across categories</p>
+                  <CategoryBreakdown transactions={transactions} categories={categories} />
+                </div>
+              </TabsContent>
+              <TabsContent value="volume" className="mt-6">
+                <div className="space-y-2">
+                  <h3 className="text-sm font-semibold text-slate-700">Transaction Activity</h3>
+                  <p className="text-xs text-slate-500">Monthly transaction counts by type</p>
+                  <TransactionVolume transactions={transactions} />
+                </div>
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
