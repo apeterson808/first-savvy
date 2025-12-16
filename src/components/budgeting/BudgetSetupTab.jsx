@@ -270,6 +270,15 @@ export default function BudgetSetupTab() {
     }
   };
 
+  React.useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'auto-create' && groups.length === 0 && !aiSuggestions && !isAnalyzing && transactions.length > 0) {
+      handleAnalyzeWithAI();
+      const newUrl = window.location.pathname + '?' + Array.from(urlParams.entries()).filter(([key]) => key !== 'action').map(([key, val]) => `${key}=${val}`).join('&');
+      window.history.replaceState({}, '', newUrl || window.location.pathname);
+    }
+  }, [groups.length, aiSuggestions, isAnalyzing, transactions.length]);
+
   const handleAutoCreate = async () => {
     setIsAutoCreating(true);
 

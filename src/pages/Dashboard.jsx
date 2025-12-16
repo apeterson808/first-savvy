@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import AccountDropdown from '../components/common/AccountDropdown';
 import TimeRangeDropdown from '../components/common/TimeRangeDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle } from 'lucide-react';
+import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
@@ -491,26 +491,60 @@ export default function Dashboard() {
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {budgetUtilization.slice(0, 4).map((item, index) => (
-            <div key={index} className="p-2 bg-slate-50 rounded-lg">
-              <div className="flex items-center justify-between mb-1">
-                <p className="font-medium text-xs capitalize truncate">{item.categoryName}</p>
-                <span className="text-xs text-slate-600">
-                  ${item.spent.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  /${item.limit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                </span>
+        {budgetUtilization.length > 0 ? (
+          <div className="space-y-2">
+            {budgetUtilization.slice(0, 4).map((item, index) => (
+              <div key={index} className="p-2 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="font-medium text-xs capitalize truncate">{item.categoryName}</p>
+                  <span className="text-xs text-slate-600">
+                    ${item.spent.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    /${item.limit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full rounded-full transition-all"
+                    style={{ width: `${Math.min(item.percentage, 100)}%`, backgroundColor: item.color || '#64748b' }}
+                  />
+                </div>
+                <p className="text-[10px] text-slate-500 mt-0.5">{item.percentage.toFixed(0)}% used</p>
               </div>
-              <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-all"
-                  style={{ width: `${Math.min(item.percentage, 100)}%`, backgroundColor: item.color || '#64748b' }}
-                />
-              </div>
-              <p className="text-[10px] text-slate-500 mt-0.5">{item.percentage.toFixed(0)}% used</p>
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-8 px-4">
+            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-3">
+              <Sparkles className="w-6 h-6 text-blue-600" />
             </div>
-          ))}
-        </div>
+            <h3 className="text-sm font-semibold text-slate-900 mb-1">No Budget Yet</h3>
+            <p className="text-xs text-slate-600 text-center mb-4 max-w-[200px]">
+              {transactions.length > 0
+                ? "Create a budget from your spending history"
+                : "Start tracking your spending with a budget"
+              }
+            </p>
+            <div className="flex flex-col gap-2 w-full">
+              <Button
+                onClick={() => navigate(`${createPageUrl('Budgeting')}?action=auto-create`)}
+                className="w-full h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                size="sm"
+              >
+                <Sparkles className="w-3 h-3 mr-1.5" />
+                Auto-Create
+              </Button>
+              <Button
+                onClick={() => navigate(createPageUrl('Budgeting'))}
+                variant="outline"
+                className="w-full h-8 text-xs"
+                size="sm"
+              >
+                <Plus className="w-3 h-3 mr-1.5" />
+                Create Manually
+              </Button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   </div>
