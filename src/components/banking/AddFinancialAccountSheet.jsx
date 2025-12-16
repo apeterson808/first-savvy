@@ -113,15 +113,12 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
     return DEFAULT_DETAIL_TYPES[accType] || [];
   };
 
-  // Auto-fill name from detail_type for Income and Expense accounts
+  // Auto-set detail_type for Income and Expense accounts
   React.useEffect(() => {
-    if ((accountType === 'income' || accountType === 'expense') && detailType) {
-      const detailTypeLabel = DEFAULT_DETAIL_TYPES[accountType]?.find(
-        dt => dt.value === detailType
-      )?.label || detailType;
-      setName(detailTypeLabel);
+    if (accountType === 'income' || accountType === 'expense') {
+      setDetailType(accountType);
     }
-  }, [accountType, detailType]);
+  }, [accountType]);
 
   useEffect(() => {
     if (editingAccount) {
@@ -443,7 +440,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       } else if (accountType === 'income' || accountType === 'expense') {
         updateCategoryMutation.mutate({
           id: editingAccount.id,
-          data: { name, type: accountType, is_active: isActive }
+          data: { name, type: accountType, detail_type: accountType, is_active: isActive }
         });
       }
     } else {
@@ -505,7 +502,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         const categoryData = {
           name: name.charAt(0).toUpperCase() + name.slice(1),
           type: accountType,
-          detail_type: detailType,
+          detail_type: accountType,
         };
         if (isSubaccount && parentAccountId) {
           categoryData.parent_account_id = parentAccountId;
@@ -790,11 +787,13 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
               </ClickThroughSelect>
             </div>
 
-            <div>
+            {/* Detail Type - Hidden for income/expense (auto-set) */}
+            {accountType !== 'income' && accountType !== 'expense' && (
+              <div>
                 <Label htmlFor="detailType">Detail Type*</Label>
-                <ClickThroughSelect 
+                <ClickThroughSelect
                   key={accountType}
-                  value={detailType} 
+                  value={detailType}
                   onValueChange={setDetailType}
                   placeholder="Select detail type"
                   triggerClassName="hover:bg-slate-50"
@@ -805,7 +804,8 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                     </ClickThroughSelectItem>
                   ))}
                 </ClickThroughSelect>
-            </div>
+              </div>
+            )}
                   </div>
 
                   {/* Sub-account toggle and parent selection */}

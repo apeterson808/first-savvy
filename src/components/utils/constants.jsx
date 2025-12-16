@@ -83,43 +83,10 @@ export const DEFAULT_DETAIL_TYPES = {
     { value: 'other_liability', label: 'Other Liability' },
   ],
   income: [
-    { value: 'salary', label: 'Salary' },
-    { value: 'bonus', label: 'Bonus' },
-    { value: 'freelance_income', label: 'Freelance Income' },
-    { value: 'interest_earned', label: 'Interest Earned' },
-    { value: 'investment_income', label: 'Investment Income' },
-    { value: 'rental_income', label: 'Rental Income' },
-    { value: 'gifts_received', label: 'Gifts Received' },
-    { value: 'tax_refund', label: 'Tax Refund' },
-    { value: 'reimbursements', label: 'Reimbursements' },
-    { value: 'other_income', label: 'Other Income' },
-    { value: 'transfer', label: 'Transfer' },
+    { value: 'income', label: 'Income' },
   ],
   expense: [
-    { value: 'groceries', label: 'Groceries' },
-    { value: 'dining_out', label: 'Dining Out' },
-    { value: 'gas_fuel', label: 'Gas & Fuel' },
-    { value: 'transportation', label: 'Transportation' },
-    { value: 'rent_mortgage_interest', label: 'Rent / Mortgage Interest' },
-    { value: 'utilities', label: 'Utilities' },
-    { value: 'insurance', label: 'Insurance' },
-    { value: 'healthcare', label: 'Healthcare' },
-    { value: 'subscriptions', label: 'Subscriptions' },
-    { value: 'shopping', label: 'Shopping' },
-    { value: 'clothing', label: 'Clothing' },
-    { value: 'personal_care', label: 'Personal Care' },
-    { value: 'entertainment', label: 'Entertainment' },
-    { value: 'travel', label: 'Travel' },
-    { value: 'education', label: 'Education' },
-    { value: 'kids_childcare', label: 'Kids / Childcare' },
-    { value: 'pet_care', label: 'Pet Care' },
-    { value: 'gifts_donations', label: 'Gifts & Donations' },
-    { value: 'home_improvement', label: 'Home Improvement' },
-    { value: 'taxes', label: 'Taxes' },
-    { value: 'debt_payments', label: 'Debt Payments' },
-    { value: 'fees_charges', label: 'Fees & Charges' },
-    { value: 'other_expenses', label: 'Other Expenses' },
-    { value: 'transfer', label: 'Transfer' },
+    { value: 'expense', label: 'Expense' },
   ],
 };
 
@@ -141,12 +108,12 @@ export function getDetailTypeDisplayName(detailType) {
 // Helper function to get display name for accounts (QuickBooks-style)
 export function getAccountDisplayName(account) {
   if (!account) return '';
-  
-  // For Income and Expense accounts, use the detail_type as display name
-  if (account.account_type === 'income' || account.account_type === 'expense') {
-    return getDetailTypeDisplayName(account.detail_type);
+
+  // For Income and Expense categories, use the name field (user's custom display name)
+  if (account.account_type === 'income' || account.account_type === 'expense' || account.type === 'income' || account.type === 'expense') {
+    return account.name || account.account_name || '';
   }
-  
+
   // For all other account types, use the account name
   return account.account_name || account.name || '';
 }
