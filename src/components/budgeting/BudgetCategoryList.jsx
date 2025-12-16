@@ -198,33 +198,29 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, onEdit
         const category = getCategoryById(budget.category_id);
 
         return (
-          <div 
-            key={budget.id} 
-            className="py-2.5 flex items-center gap-3 hover:bg-slate-50 -mx-4 px-4 transition-colors group cursor-pointer"
+          <div
+            key={budget.id}
+            className="py-3 flex items-center gap-3 hover:bg-slate-50/50 -mx-4 px-4 transition-colors group cursor-pointer"
             onClick={() => {
               setSelectedBudget(budget);
               setDetailSheetOpen(true);
             }}
           >
             {/* Category name with icon on colored background */}
-            <div className="min-w-[7rem] flex items-center gap-2">
-              <div 
-                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" 
+            <div className="w-44 flex items-center gap-2.5 flex-shrink-0">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: budgetColor }}
               >
                 {category?.icon && ICON_MAP[category.icon] && React.createElement(ICON_MAP[category.icon], { className: "w-4 h-4 text-white" })}
               </div>
-              <div className="flex-1">
-                <span className="text-sm font-medium text-slate-800">{budget.name || category?.name}</span>
-              </div>
+              <span className="text-sm font-medium text-slate-900">{budget.name || category?.name}</span>
             </div>
 
             {/* Progress bar */}
-            <div 
-              className="flex-1 flex items-center gap-3"
-            >
-              <div className="flex-1 relative h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                <div 
+            <div className="flex-1 flex items-center">
+              <div className="w-full relative h-2 bg-slate-200 rounded-full overflow-hidden">
+                <div
                   className="absolute left-0 top-0 h-full rounded-full transition-all"
                   style={{ width: `${Math.min(percent, 100)}%`, backgroundColor: budgetColor }}
                 />
@@ -233,7 +229,7 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, onEdit
 
             {/* Amounts */}
             <div className="w-32 text-right flex-shrink-0">
-              <span className="text-xs text-slate-500">
+              <span className="text-xs text-slate-600 font-medium">
                 ${spent.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
               <span className="text-xs text-slate-400"> / </span>
@@ -252,8 +248,8 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, onEdit
                   />
                 </span>
               ) : (
-                <span 
-                  className="text-xs text-slate-600 cursor-pointer hover:text-blue-600 hover:underline"
+                <span
+                  className="text-xs text-slate-600 font-medium cursor-pointer hover:text-blue-600 hover:underline"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleStartEdit(budget);
@@ -265,7 +261,7 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, onEdit
             </div>
 
             {/* Remaining/Over */}
-            <div className="w-24 text-right flex-shrink-0">
+            <div className="w-28 text-right flex-shrink-0">
               {isIncome ? (
                 <span className={`text-xs font-medium ${remaining <= 0 ? 'text-green-600' : 'text-slate-500'}`}>
                   {remaining <= 0 ? 'Goal met!' : `$${remaining.toLocaleString(undefined, { maximumFractionDigits: 0 })} to go`}
@@ -276,9 +272,6 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, onEdit
                 </span>
               )}
             </div>
-
-            {/* Spacer for alignment */}
-            <div className="h-6 w-6" />
             </div>
             );
             })}

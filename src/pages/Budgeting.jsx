@@ -183,15 +183,15 @@ export default function Budgeting() {
   }
 
   return (
-    <div className="p-3">
+    <div className="p-6">
       {activeTab === 'overview' && (
         <>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
               <p className="text-sm text-slate-500">{format(today, 'MMMM yyyy')}</p>
             </div>
-            <Button onClick={() => setDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={() => setDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
               <Plus className="w-4 h-4 mr-2" />
               Add Budget
             </Button>
@@ -223,11 +223,11 @@ export default function Budgeting() {
             if (groupBudgets.length === 0 && unbudgetedAmount === 0) return null;
 
             return (
-              <Card key={group.id} className="mt-3 shadow-sm border-slate-200">
-                <CardHeader className="pb-2 pt-4 px-4">
+              <Card key={group.id} className="mt-4 shadow-sm border-slate-200 bg-white">
+                <CardHeader className="pb-3 pt-4 px-6">
                   <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{group.name}</p>
                 </CardHeader>
-                <CardContent className="px-4 pb-4">
+                <CardContent className="px-6 pb-4">
                   <BudgetCategoryList
                     budgets={groupBudgets}
                     spendingByCategory={dataByCategory}
