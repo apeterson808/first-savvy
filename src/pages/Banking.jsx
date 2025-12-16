@@ -151,9 +151,9 @@ export default function Banking() {
         <TabsContent value="overview" className="space-y-3">
           {/* Chart and Categories Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-            <SpendingChartCard 
+            <SpendingChartCard
               transactions={transactions}
-              accounts={accounts}
+              accounts={accounts.filter(a => a.entityType === 'BankAccount' || a.entityType === 'CreditCard')}
               selectedMonth={selectedMonth}
               setSelectedMonth={setSelectedMonth}
               selectedAccount={selectedAccount}
