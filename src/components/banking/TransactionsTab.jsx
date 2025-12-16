@@ -246,7 +246,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!fullPendingTransactions.length || !categories.length) return;
 
       const transactionsNeedingSuggestions = fullPendingTransactions.filter(
-        t => !t.ai_suggested_category_id && !t.category_id && t.type !== 'transfer' && t.description
+        t => !t.ai_suggested_category_id && t.type !== 'transfer' && t.description
       );
 
       if (transactionsNeedingSuggestions.length === 0) return;
@@ -1408,16 +1408,6 @@ For each transaction, return the category_id that best matches. Consider:
                                     </ClickThroughSelectItem>
                                   </ClickThroughSelect>
                                 );
-                              }
-
-                              if (!transaction.category_id) {
-                                console.log('Transaction needing category:', {
-                                  id: transaction.id,
-                                  description: transaction.description,
-                                  type: transaction.type,
-                                  ai_suggested_category_id: transaction.ai_suggested_category_id,
-                                  category_id: transaction.category_id
-                                });
                               }
 
                               return (

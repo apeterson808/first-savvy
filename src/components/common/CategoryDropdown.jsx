@@ -46,27 +46,9 @@ export default function CategoryDropdown({
 
   const suggestedCategory = aiSuggestionId ? categories.find(c => c.id === aiSuggestionId) : null;
 
-  console.log('CategoryDropdown Debug:', {
-    aiSuggestionId,
-    suggestedCategoryFound: !!suggestedCategory,
-    suggestedCategoryName: suggestedCategory?.name,
-    suggestedCategoryType: suggestedCategory?.type,
-    transactionType,
-    isTransactionTransfer,
-    availableCategoriesBeforeAdd: availableCategories.length,
-    totalCategoriesCount: categories.length,
-    allCategories: categories.map(c => ({ id: c.id, name: c.name, type: c.type }))
-  });
-
   if (suggestedCategory && !availableCategories.find(c => c.id === aiSuggestionId)) {
-    console.log('Adding suggested category to available categories');
     availableCategories = [suggestedCategory, ...availableCategories];
   }
-
-  console.log('CategoryDropdown After Add:', {
-    availableCategoriesAfterAdd: availableCategories.length,
-    suggestedCategoryInList: availableCategories.some(c => c.id === aiSuggestionId)
-  });
 
   const otherCategories = availableCategories.filter(c => c.id !== aiSuggestionId);
   const sortedCategories = suggestedCategory
@@ -102,7 +84,7 @@ export default function CategoryDropdown({
           + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
         </ClickThroughSelectItem>
       )}
-      {suggestedCategory && (
+      {suggestedCategory && suggestedCategory.id !== value && (
         <>
           <ClickThroughSelectItem
             key={suggestedCategory.id}
