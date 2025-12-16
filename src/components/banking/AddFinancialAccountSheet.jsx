@@ -613,7 +613,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         if (!newOpen && plaidActive) return;
         onOpenChange(newOpen);
       }} modal={!plaidActive}>
-        <SheetContent className="overflow-y-auto" ref={(el) => {
+        <SheetContent className="overflow-y-auto sm:max-w-[600px]" ref={(el) => {
           if (el && open) {
             el.scrollTop = 0;
           }
