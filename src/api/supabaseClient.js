@@ -119,7 +119,13 @@ export const createSupabaseClient = () => {
       DataRetentionPolicy: createEntityAPI('data_retention_policies'),
       UserConsent: createEntityAPI('user_consents'),
       DataExportRequest: createEntityAPI('data_export_requests'),
-      DataDeletionRequest: createEntityAPI('data_deletion_requests')
+      DataDeletionRequest: createEntityAPI('data_deletion_requests'),
+      ServiceConnection: createEntityAPI('service_connections'),
+      UserRelationship: createEntityAPI('user_relationships'),
+      SharedResource: createEntityAPI('shared_resources'),
+      HouseholdGroup: createEntityAPI('household_groups'),
+      HouseholdMember: createEntityAPI('household_members'),
+      Invitation: createEntityAPI('invitations')
     },
     auth: {
       async signUp(email, password) {

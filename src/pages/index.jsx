@@ -16,26 +16,34 @@ import ConnectAccount from "./ConnectAccount";
 
 import Contacts from "./Contacts";
 
+import Integrations from "./Integrations";
+
+import Collaboration from "./Collaboration";
+
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 
 const PAGES = {
-    
+
     Dashboard: Dashboard,
-    
+
     Transactions: Transactions,
-    
+
     Banking: Banking,
-    
+
     Budgeting: Budgeting,
-    
+
     NetWorth: NetWorth,
-    
+
     CreditScore: CreditScore,
-    
+
     ConnectAccount: ConnectAccount,
-    
+
     Contacts: Contacts,
-    
+
+    Integrations: Integrations,
+
+    Collaboration: Collaboration,
+
 }
 
 function _getCurrentPage(url) {
@@ -78,7 +86,11 @@ function PagesContent() {
                 <Route path="/ConnectAccount" element={<ConnectAccount />} />
                 
                 <Route path="/Contacts" element={<Contacts />} />
-                
+
+                <Route path="/Integrations" element={<Integrations />} />
+
+                <Route path="/Collaboration" element={<Collaboration />} />
+
             </Routes>
         </Layout>
     );
