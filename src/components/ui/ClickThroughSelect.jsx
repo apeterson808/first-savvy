@@ -71,14 +71,10 @@ export function ClickThroughSelect({
         left: rect.left,
         width: rect.width
       });
-      // Pre-fill search with selected value when opening
-      if (selectedValue && displayText !== placeholder) {
-        setSearchTerm(displayText);
-      }
+      setSearchTerm('');
       // Focus search input when dropdown opens
       setTimeout(() => {
         searchInputRef.current?.focus();
-        searchInputRef.current?.select();
       }, 0);
     } else {
       setSearchTerm('');
