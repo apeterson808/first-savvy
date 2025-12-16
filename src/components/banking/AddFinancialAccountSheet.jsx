@@ -392,14 +392,11 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         updateBankAccountMutation.mutate({ id: editingAccount.id, data: bankData });
       } else if (accountType === 'credit_card') {
         const creditCardData = {
-          account_name: name,
-          account_type: 'credit_card',
+          name: name,
           current_balance: validatedBalance,
-          bank_name: bankName,
-          logo_url: institutionLogoUrl || null,
           is_active: isActive,
         };
-        if (startDate) creditCardData.start_date = startDate;
+        if (accountNumber) creditCardData.last_four = accountNumber.slice(-4);
         if (isSubaccount && parentAccountId) {
           creditCardData.parent_account_id = parentAccountId;
         } else {
@@ -464,17 +461,11 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         createBankAccountMutation.mutate(bankData);
       } else if (accountType === 'credit_card') {
         const creditCardData = {
-          account_name: name.charAt(0).toUpperCase() + name.slice(1),
-          account_type: 'credit_card',
+          name: name.charAt(0).toUpperCase() + name.slice(1),
           current_balance: validatedBalance,
           is_active: true,
-          bank_name: bankName,
-          logo_url: institutionLogoUrl || null,
         };
-        if (startDate) creditCardData.start_date = startDate;
-        if (isSubaccount && parentAccountId) {
-          creditCardData.parent_account_id = parentAccountId;
-        }
+        if (accountNumber) creditCardData.last_four = accountNumber.slice(-4);
         console.log('💳 Calling createCreditCardMutation.mutate with:', creditCardData);
         createCreditCardMutation.mutate(creditCardData);
       } else if (accountType === 'asset') {
