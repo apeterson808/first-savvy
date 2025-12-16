@@ -39,12 +39,16 @@ export default function CategoryDropdown({
     }
   } else {
     const nonTransferCategories = categories.filter(c => c.is_active !== false && c.detail_type !== 'transfer');
-    availableCategories = transactionType === 'expense' 
+    availableCategories = transactionType === 'expense'
       ? nonTransferCategories.filter(c => c.type === 'expense')
       : nonTransferCategories.filter(c => c.type === 'income');
   }
 
-  const suggestedCategory = aiSuggestionId ? availableCategories.find(c => c.id === aiSuggestionId) : null;
+  const suggestedCategory = aiSuggestionId ? categories.find(c => c.id === aiSuggestionId) : null;
+
+  if (suggestedCategory && !availableCategories.find(c => c.id === aiSuggestionId)) {
+    availableCategories = [suggestedCategory, ...availableCategories];
+  }
   const otherCategories = availableCategories.filter(c => c.id !== aiSuggestionId);
   const sortedCategories = suggestedCategory
     ? [suggestedCategory, ...otherCategories]
