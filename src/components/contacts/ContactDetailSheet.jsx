@@ -1,5 +1,5 @@
-import React, { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useMemo, useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import {
   Sheet,
@@ -9,6 +9,10 @@ import {
 } from "@/components/ui/sheet";
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import {
   Table,
@@ -18,10 +22,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Mail, Phone, MapPin, Tag, FileText, TrendingUp, DollarSign, Hash, Calendar } from 'lucide-react';
+import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
+import { Mail, Phone, MapPin, Tag, FileText, TrendingUp, DollarSign, Hash, Calendar, Edit2, Save, X, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
+function formatPhoneNumber(value) {
+  if (!value) return value;
+  const phoneNumber = value.replace(/[^\d]/g, '');
+  const phoneNumberLength = phoneNumber.length;
+  if (phoneNumberLength < 4) return phoneNumber;
+  if (phoneNumberLength < 7) {
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+  }
+  return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+}
+
 export default function ContactDetailSheet({ contact, open, onOpenChange }) {
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [phoneValue, setPhoneValue] = useState('');
+  const queryClient = useQueryClient();
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', 'contact', contact?.id],
     queryFn: async () => {
@@ -40,6 +59,34 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
     queryFn: () => base44.entities.Category.get(contact.default_category_id),
     enabled: !!contact?.default_category_id,
   });
+
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => base44.entities.Category.list('name')
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Contact.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      setIsEditMode(false);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => base44.entities.Contact.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      onOpenChange(false);
+    }
+  });
+
+  useEffect(() => {
+    if (open && contact) {
+      setIsEditMode(false);
+      setPhoneValue(contact.phone || '');
+    }
+  }, [open, contact]);
 
   const analytics = useMemo(() => {
     if (!transactions || transactions.length === 0) {
@@ -81,28 +128,130 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
     }).format(amount);
   };
 
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhoneValue(formatted);
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    const phone = formData.get('phone');
+    const phoneDigits = phone ? phone.replace(/[^\d]/g, '') : '';
+
+    if (phone && phoneDigits.length > 0 && phoneDigits.length < 10) {
+      alert('Phone number must include area code (10 digits)');
+      return;
+    }
+
+    const type = formData.get('type');
+    const status = formData.get('status');
+
+    if (!type) {
+      alert('Type is required');
+      return;
+    }
+
+    if (!status) {
+      alert('Status is required');
+      return;
+    }
+
+    const data = {
+      name: formData.get('name'),
+      type,
+      email: formData.get('email') || undefined,
+      phone: phone || undefined,
+      address: formData.get('address') || undefined,
+      notes: formData.get('notes') || undefined,
+      default_category_id: formData.get('default_category_id') || undefined,
+      status
+    };
+
+    updateMutation.mutate({ id: contact.id, data });
+  };
+
+  const handleDelete = () => {
+    if (confirm('Are you sure you want to delete this contact?')) {
+      deleteMutation.mutate(contact.id);
+    }
+  };
+
   if (!contact) return null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto w-full sm:max-w-2xl">
         <SheetHeader className="mb-6">
-          <SheetTitle className="text-2xl">{contact.name}</SheetTitle>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="outline" className="capitalize">
-              {contact.type}
-            </Badge>
-            {contact.status && (
-              <Badge
-                className={
-                  contact.status.toLowerCase() === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }
-              >
-                {contact.status}
-              </Badge>
-            )}
+          <div className="flex items-start justify-between">
+            <div>
+              <SheetTitle className="text-2xl">{contact.name}</SheetTitle>
+              {!isEditMode && (
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline" className="capitalize">
+                    {contact.type}
+                  </Badge>
+                  {contact.status && (
+                    <Badge
+                      className={
+                        contact.status.toLowerCase() === 'active'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-gray-100 text-gray-800'
+                      }
+                    >
+                      {contact.status}
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {!isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditMode(true)}
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleDelete}
+                    className="text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setPhoneValue(contact.phone || '');
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    form="edit-contact-form"
+                    type="submit"
+                    className="bg-blue-600 hover:bg-blue-700"
+                    disabled={updateMutation.isPending}
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    {updateMutation.isPending ? 'Saving...' : 'Save'}
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
         </SheetHeader>
 
@@ -111,59 +260,163 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
             <CardHeader className="pb-3">
               <CardTitle className="text-base font-semibold">Contact Information</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {contact.email && (
-                <div className="flex items-start gap-3">
-                  <Mail className="w-4 h-4 mt-0.5 text-slate-500" />
+            <CardContent>
+              {isEditMode ? (
+                <form id="edit-contact-form" onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Email</p>
-                    <p className="text-sm">{contact.email}</p>
+                    <Label htmlFor="name">Name *</Label>
+                    <Input
+                      id="name"
+                      name="name"
+                      defaultValue={contact.name}
+                      placeholder="e.g., Starbucks, Employer XYZ"
+                      required
+                    />
                   </div>
-                </div>
-              )}
 
-              {contact.phone && (
-                <div className="flex items-start gap-3">
-                  <Phone className="w-4 h-4 mt-0.5 text-slate-500" />
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Phone</p>
-                    <p className="text-sm">{contact.phone}</p>
-                  </div>
-                </div>
-              )}
-
-              {contact.address && (
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 mt-0.5 text-slate-500" />
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Address</p>
-                    <p className="text-sm whitespace-pre-line">{contact.address}</p>
-                  </div>
-                </div>
-              )}
-
-              {category && (
-                <div className="flex items-start gap-3">
-                  <Tag className="w-4 h-4 mt-0.5 text-slate-500" />
-                  <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Default Category</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      {category.icon && (
-                        <span className="text-sm">{category.icon}</span>
-                      )}
-                      <span className="text-sm">{category.name}</span>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="type">Type *</Label>
+                      <ClickThroughSelect
+                        name="type"
+                        defaultValue={contact.type || 'vendor'}
+                        placeholder="Select type"
+                      >
+                        <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
+                        <ClickThroughSelectItem value="customer">Customer</ClickThroughSelectItem>
+                      </ClickThroughSelect>
+                    </div>
+                    <div>
+                      <Label htmlFor="status">Status *</Label>
+                      <ClickThroughSelect
+                        name="status"
+                        defaultValue={contact.status || 'active'}
+                        placeholder="Select status"
+                      >
+                        <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
+                        <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
+                      </ClickThroughSelect>
                     </div>
                   </div>
-                </div>
-              )}
 
-              {contact.notes && (
-                <div className="flex items-start gap-3">
-                  <FileText className="w-4 h-4 mt-0.5 text-slate-500" />
                   <div>
-                    <p className="text-xs text-slate-500 uppercase tracking-wide">Notes</p>
-                    <p className="text-sm whitespace-pre-line">{contact.notes}</p>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      defaultValue={contact.email}
+                      placeholder="contact@example.com"
+                    />
                   </div>
+
+                  <div>
+                    <Label htmlFor="phone">Phone</Label>
+                    <Input
+                      id="phone"
+                      name="phone"
+                      type="tel"
+                      value={phoneValue}
+                      onChange={handlePhoneChange}
+                      placeholder="(555) 123-4567"
+                      maxLength={14}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">Must include area code</p>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="address">Address</Label>
+                    <Textarea
+                      id="address"
+                      name="address"
+                      defaultValue={contact.address}
+                      placeholder="Street address, city, state, zip"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="default_category_id">Default Category</Label>
+                    <ClickThroughSelect
+                      name="default_category_id"
+                      defaultValue={contact.default_category_id}
+                      placeholder="Select category (optional)"
+                    >
+                      {categories.map(cat => (
+                        <ClickThroughSelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </ClickThroughSelectItem>
+                      ))}
+                    </ClickThroughSelect>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="notes">Notes</Label>
+                    <Textarea
+                      id="notes"
+                      name="notes"
+                      defaultValue={contact.notes}
+                      placeholder="e.g., Recurring $15.99/month"
+                      rows={3}
+                    />
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-3">
+                  {contact.email && (
+                    <div className="flex items-start gap-3">
+                      <Mail className="w-4 h-4 mt-0.5 text-slate-500" />
+                      <div>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Email</p>
+                        <p className="text-sm">{contact.email}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {contact.phone && (
+                    <div className="flex items-start gap-3">
+                      <Phone className="w-4 h-4 mt-0.5 text-slate-500" />
+                      <div>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Phone</p>
+                        <p className="text-sm">{contact.phone}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {contact.address && (
+                    <div className="flex items-start gap-3">
+                      <MapPin className="w-4 h-4 mt-0.5 text-slate-500" />
+                      <div>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Address</p>
+                        <p className="text-sm whitespace-pre-line">{contact.address}</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {category && (
+                    <div className="flex items-start gap-3">
+                      <Tag className="w-4 h-4 mt-0.5 text-slate-500" />
+                      <div>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Default Category</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          {category.icon && (
+                            <span className="text-sm">{category.icon}</span>
+                          )}
+                          <span className="text-sm">{category.name}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {contact.notes && (
+                    <div className="flex items-start gap-3">
+                      <FileText className="w-4 h-4 mt-0.5 text-slate-500" />
+                      <div>
+                        <p className="text-xs text-slate-500 uppercase tracking-wide">Notes</p>
+                        <p className="text-sm whitespace-pre-line">{contact.notes}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </CardContent>

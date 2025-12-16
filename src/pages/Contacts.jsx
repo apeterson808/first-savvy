@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Plus, Search, Pencil, Trash2, Eye } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import ContactDetailSheet from '@/components/contacts/ContactDetailSheet';
 
 function formatPhoneNumber(value) {
@@ -182,35 +182,33 @@ export default function Contacts() {
                   <TableHead className="h-9">Email</TableHead>
                   <TableHead className="h-9">Phone</TableHead>
                   <TableHead className="h-9">Status</TableHead>
-                  <TableHead className="text-right h-9">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow className="h-12">
-                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
+                    <TableCell colSpan={5} className="text-center text-slate-500 h-12">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredContacts.length === 0 ? (
                   <TableRow className="h-12">
-                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
+                    <TableCell colSpan={5} className="text-center text-slate-500 h-12">
                       No contacts found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredContacts.map((contact) => (
-                    <TableRow key={contact.id} className="h-11">
+                    <TableRow
+                      key={contact.id}
+                      className="h-11 cursor-pointer hover:bg-slate-50"
+                      onClick={() => {
+                        setViewingContact(contact);
+                        setDetailOpen(true);
+                      }}
+                    >
                       <TableCell className="font-medium py-2">
-                        <button
-                          onClick={() => {
-                            setViewingContact(contact);
-                            setDetailOpen(true);
-                          }}
-                          className="text-blue-600 hover:text-blue-700 hover:underline text-left"
-                        >
-                          {contact.name}
-                        </button>
+                        {contact.name}
                       </TableCell>
                       <TableCell className="py-2 capitalize">{contact.type || '-'}</TableCell>
                       <TableCell className="py-2">{contact.email || '-'}</TableCell>
@@ -227,46 +225,6 @@ export default function Contacts() {
                         ) : (
                           <span className="text-slate-400">-</span>
                         )}
-                      </TableCell>
-                      <TableCell className="text-right py-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            setViewingContact(contact);
-                            setDetailOpen(true);
-                          }}
-                          title="View details"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          onClick={() => {
-                            setEditingContact(contact);
-                            setPhoneValue(contact.phone || '');
-                            setDialogOpen(true);
-                          }}
-                          title="Edit contact"
-                        >
-                          <Pencil className="w-3.5 h-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-red-600 hover:text-red-700"
-                          onClick={() => {
-                            if (confirm('Are you sure you want to delete this contact?')) {
-                              deleteMutation.mutate(contact.id);
-                            }
-                          }}
-                          title="Delete contact"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
