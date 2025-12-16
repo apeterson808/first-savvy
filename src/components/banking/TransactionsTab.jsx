@@ -1410,6 +1410,16 @@ For each transaction, return the category_id that best matches. Consider:
                                 );
                               }
 
+                              if (!transaction.category_id) {
+                                console.log('Transaction needing category:', {
+                                  id: transaction.id,
+                                  description: transaction.description,
+                                  type: transaction.type,
+                                  ai_suggested_category_id: transaction.ai_suggested_category_id,
+                                  category_id: transaction.category_id
+                                });
+                              }
+
                               return (
                                 <CategoryDropdown
                                   value={transaction.category_id}

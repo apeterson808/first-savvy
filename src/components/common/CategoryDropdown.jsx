@@ -46,6 +46,14 @@ export default function CategoryDropdown({
 
   const suggestedCategory = aiSuggestionId ? categories.find(c => c.id === aiSuggestionId) : null;
 
+  console.log('CategoryDropdown Debug:', {
+    aiSuggestionId,
+    suggestedCategory,
+    transactionType,
+    availableCategoriesCount: availableCategories.length,
+    totalCategoriesCount: categories.length
+  });
+
   if (suggestedCategory && !availableCategories.find(c => c.id === aiSuggestionId)) {
     availableCategories = [suggestedCategory, ...availableCategories];
   }
