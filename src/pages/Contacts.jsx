@@ -24,10 +24,22 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
 
+function formatPhoneNumber(value) {
+  if (!value) return value;
+  const phoneNumber = value.replace(/[^\d]/g, '');
+  const phoneNumberLength = phoneNumber.length;
+  if (phoneNumberLength < 4) return phoneNumber;
+  if (phoneNumberLength < 7) {
+    return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3)}`;
+  }
+  return `(${phoneNumber.slice(0, 3)}) ${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+}
+
 export default function Contacts() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [phoneValue, setPhoneValue] = useState('');
   const queryClient = useQueryClient();
 
   const { data: contacts = [], isLoading } = useQuery({
@@ -68,12 +80,20 @@ export default function Contacts() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    
+
+    const phone = formData.get('phone');
+    const phoneDigits = phone ? phone.replace(/[^\d]/g, '') : '';
+
+    if (phone && phoneDigits.length > 0 && phoneDigits.length < 10) {
+      alert('Phone number must include area code (10 digits)');
+      return;
+    }
+
     const data = {
       name: formData.get('name'),
       type: formData.get('type'),
       email: formData.get('email') || undefined,
-      phone: formData.get('phone') || undefined,
+      phone: phone || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
       default_category_id: formData.get('default_category_id') || undefined,
@@ -85,6 +105,11 @@ export default function Contacts() {
     } else {
       createMutation.mutate(data);
     }
+  };
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    setPhoneValue(formatted);
   };
 
   const filteredContacts = contacts.filter(c =>
@@ -101,6 +126,7 @@ export default function Contacts() {
               size="sm"
               onClick={() => {
                 setEditingContact(null);
+                setPhoneValue('');
                 setDialogOpen(true);
               }}
               className="bg-blue-600 hover:bg-blue-700 h-9"
@@ -175,6 +201,7 @@ export default function Contacts() {
                           className="h-7 w-7"
                           onClick={() => {
                             setEditingContact(contact);
+                            setPhoneValue(contact.phone || '');
                             setDialogOpen(true);
                           }}
                         >
@@ -253,9 +280,13 @@ export default function Contacts() {
               <Input
                 id="phone"
                 name="phone"
-                defaultValue={editingContact?.phone}
+                type="tel"
+                value={phoneValue}
+                onChange={handlePhoneChange}
                 placeholder="(555) 123-4567"
+                maxLength={14}
               />
+              <p className="text-xs text-slate-500 mt-1">Must include area code</p>
             </div>
 
             <div>
