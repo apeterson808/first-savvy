@@ -35,7 +35,6 @@ export const DETAIL_TYPE_LABELS = {
   gas_fuel: 'Gas & Fuel',
   transportation: 'Transportation',
   rent: 'Rent',
-  mortgage: 'Mortgage',
   utilities: 'Utilities',
   insurance: 'Insurance',
   healthcare: 'Healthcare',
