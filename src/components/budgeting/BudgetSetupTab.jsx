@@ -54,12 +54,11 @@ const getNextColor = (usedColors) => {
   return `#${Math.floor(Math.random()*16777215).toString(16).padStart(6, '0')}`;
 };
 
-export default function BudgetSetupTab() {
-  const [expandedGroups, setExpandedGroups] = useState({});
+export default function BudgetSetupTab({ autoCreateAction, onActionComplete }) {
+  const queryClient = useQueryClient();
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [isAutoCreating, setIsAutoCreating] = useState(false);
-  const queryClient = useQueryClient();
 
   const { data: groups = [] } = useQuery({
     queryKey: ['budgetGroups'],
@@ -80,6 +79,39 @@ export default function BudgetSetupTab() {
     queryKey: ['transactions'],
     queryFn: () => base44.entities.Transaction.list('-date', 1000)
   });
+
+  const [expandedGroups, setExpandedGroups] = useState(() => {
+    const initial = {};
+    groups.forEach(group => {
+      initial[group.id] = true;
+    });
+    return initial;
+  });
+
+  React.useEffect(() => {
+    setExpandedGroups(prev => {
+      const updated = { ...prev };
+      groups.forEach(group => {
+        if (!(group.id in updated)) {
+          updated[group.id] = true;
+        }
+      });
+      return updated;
+    });
+  }, [groups]);
+
+  React.useEffect(() => {
+    if (autoCreateAction === 'auto-create' && groups.length === 0 && transactions.length > 0 && !isAutoCreating) {
+      handleAutoCreate();
+      if (onActionComplete) {
+        const urlParams = new URLSearchParams(window.location.search);
+        urlParams.delete('action');
+        const newUrl = `${window.location.pathname}?${urlParams.toString()}`;
+        window.history.replaceState({}, '', newUrl);
+        onActionComplete();
+      }
+    }
+  }, [autoCreateAction, groups.length, transactions.length, isAutoCreating]);
 
   const deleteBudgetMutation = useMutation({
     mutationFn: (id) => base44.entities.Budget.delete(id),

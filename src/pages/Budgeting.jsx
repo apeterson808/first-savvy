@@ -23,6 +23,11 @@ export default function Budgeting() {
     return urlTab || null;
   });
 
+  const [autoCreateAction, setAutoCreateAction] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('action');
+  });
+
   useEffect(() => {
     if (!groupsLoading && activeTab === null) {
       const tab = hasSetupStarted ? 'overview' : 'setup';
@@ -36,12 +41,15 @@ export default function Budgeting() {
     const handlePopState = () => {
       const urlParams = new URLSearchParams(window.location.search);
       setActiveTab(urlParams.get('tab') || 'overview');
+      setAutoCreateAction(urlParams.get('action'));
     };
     window.addEventListener('popstate', handlePopState);
     const interval = setInterval(() => {
       const urlParams = new URLSearchParams(window.location.search);
       const currentTab = urlParams.get('tab') || 'overview';
+      const currentAction = urlParams.get('action');
       setActiveTab(prev => prev !== currentTab ? currentTab : prev);
+      setAutoCreateAction(prev => prev !== currentAction ? currentAction : prev);
     }, 100);
     return () => {
       window.removeEventListener('popstate', handlePopState);
@@ -212,7 +220,10 @@ export default function Budgeting() {
 
       {activeTab === 'setup' && (
         <div className="-m-3">
-          <BudgetSetupTab />
+          <BudgetSetupTab
+            autoCreateAction={autoCreateAction}
+            onActionComplete={() => setAutoCreateAction(null)}
+          />
         </div>
       )}
     </div>
