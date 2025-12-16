@@ -526,21 +526,12 @@ export default function Dashboard() {
             </p>
             <div className="flex flex-col gap-2 w-full">
               <Button
-                onClick={() => navigate(`${createPageUrl('Budgeting')}?tab=setup&action=auto-create`)}
+                onClick={() => navigate(createPageUrl('Budgeting'))}
                 className="w-full h-8 text-xs bg-blue-600 hover:bg-blue-700"
                 size="sm"
               >
                 <Sparkles className="w-3 h-3 mr-1.5" />
-                Auto-Create
-              </Button>
-              <Button
-                onClick={() => navigate(`${createPageUrl('Budgeting')}?tab=setup`)}
-                variant="outline"
-                className="w-full h-8 text-xs"
-                size="sm"
-              >
-                <Plus className="w-3 h-3 mr-1.5" />
-                Create Manually
+                Set Up Budget
               </Button>
             </div>
           </div>
