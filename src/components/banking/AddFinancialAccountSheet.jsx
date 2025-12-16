@@ -385,7 +385,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
           account_number: accountNumber,
           account_type: detailType,
           current_balance: validatedBalance,
-          bank_name: bankName,
+          institution: bankName,
           logo_url: institutionLogoUrl || null,
           is_active: isActive,
         };
@@ -456,7 +456,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
           account_type: detailType,
           current_balance: validatedBalance,
           is_active: true,
-          bank_name: bankName,
+          institution: bankName,
           logo_url: institutionLogoUrl || null,
         };
         if (startDate) bankData.start_date = startDate;

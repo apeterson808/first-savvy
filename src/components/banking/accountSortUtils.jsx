@@ -8,7 +8,7 @@ export function sortAccountsForDisplay(allAccounts) {
   const groupedByInstitution = topLevelAccounts.reduce((groups, account) => {
     let groupKey;
     if (account.entityType === 'BankAccount') {
-      groupKey = account.bank_name && account.bank_name.trim() !== '' ? account.bank_name : 'Other Banks';
+      groupKey = account.institution && account.institution.trim() !== '' ? account.institution : 'Other Banks';
     } else if (account.entityType === 'Income') {
       groupKey = '__Income';
     } else if (account.entityType === 'Expense') {
@@ -67,7 +67,7 @@ export function getGroupedAccountsForTable(allAccounts) {
   const groupedByInstitution = topLevelAccounts.reduce((groups, account) => {
     let groupKey;
     if (account.entityType === 'BankAccount') {
-      groupKey = account.bank_name && account.bank_name.trim() !== '' ? account.bank_name : 'Other Banks';
+      groupKey = account.institution && account.institution.trim() !== '' ? account.institution : 'Other Banks';
     } else if (account.entityType === 'Income') {
       groupKey = '__Income';
     } else if (account.entityType === 'Expense') {

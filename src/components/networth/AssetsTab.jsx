@@ -44,7 +44,7 @@ export default function AssetsTab() {
     const groups = {};
     
     cashAccounts.forEach(account => {
-      const institution = account.bank_name || null;
+      const institution = account.institution || null;
       const instKey = institution || `standalone_${account.id}`;
       if (!groups[instKey]) {
         groups[instKey] = { accounts: [], logo_url: account.logo_url, total: 0, institutionName: institution };

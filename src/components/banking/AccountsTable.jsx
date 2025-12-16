@@ -353,8 +353,8 @@ export default function AccountsTable({ accounts, isLoading }) {
           bVal = (b.entityType === 'BankAccount' ? 'Bank Account' : b.entityType === 'CreditCard' ? 'Credit Card' : b.entityType || '').toLowerCase();
           break;
         case 'institution':
-          aVal = (a.bank_name || '').toLowerCase();
-          bVal = (b.bank_name || '').toLowerCase();
+          aVal = (a.institution || '').toLowerCase();
+          bVal = (b.institution || '').toLowerCase();
           break;
         case 'type':
           aVal = getDetailTypeDisplayName(a.entityType === 'BankAccount' ? a.account_type : a.entityType === 'Asset' || a.entityType === 'Liability' ? a.type : a.detail_type).toLowerCase();
@@ -397,7 +397,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     
     // Get institution name
     const institution = account.entityType === 'BankAccount'
-      ? (account.bank_name && account.bank_name.trim() !== '' ? account.bank_name : 'Other')
+      ? (account.institution && account.institution.trim() !== '' ? account.institution : 'Other')
       : null;
     
     if (!types[accountType]) {

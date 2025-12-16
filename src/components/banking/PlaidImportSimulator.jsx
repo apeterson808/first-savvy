@@ -269,7 +269,7 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
                       account_type: types.detailType,
                       current_balance: Math.abs(plaidAccount.balance),
                       start_date: goLiveDates[plaidAccount.id],
-                      bank_name: plaidAccount.institution,
+                      institution: plaidAccount.institution,
                       account_number: plaidAccount.mask,
                       is_active: true
                     };
