@@ -117,7 +117,7 @@ export default function NetWorthOverviewTab() {
     {
       id: 'other',
       name: 'Other Assets',
-      color: '#8b5cf6',
+      color: '#14b8a6',
       total: totalOtherAssets,
       percentage: totalAssets > 0 ? Math.round((totalOtherAssets / totalAssets) * 100) : 0,
       items: otherAssets.map(a => ({ name: a.name, value: a.current_value }))

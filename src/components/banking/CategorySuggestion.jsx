@@ -101,7 +101,7 @@ export default function CategorySuggestion({ suggestion, onApply }) {
 
   return (
     <div className={`flex items-center gap-2 text-xs px-2 py-1.5 rounded-md ${
-      isAI ? 'bg-purple-50 text-purple-700' : 'bg-blue-50 text-blue-700'
+      isAI ? 'bg-emerald-50 text-emerald-700' : 'bg-blue-50 text-blue-700'
     }`}>
       {isAI ? <Zap className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
       <span>
@@ -113,10 +113,10 @@ export default function CategorySuggestion({ suggestion, onApply }) {
           <span className="text-blue-500 ml-1">({suggestion.matchCount} similar)</span>
         )}
         {suggestion.confidence === 'ai' && (
-          <span className="text-purple-500 ml-1">(AI)</span>
+          <span className="text-emerald-600 ml-1">(AI)</span>
         )}
         {suggestion.confidence === 'pattern' && (
-          <span className="text-purple-500 ml-1">(Smart Match)</span>
+          <span className="text-emerald-600 ml-1">(Smart Match)</span>
         )}
       </span>
       <Button
@@ -124,7 +124,7 @@ export default function CategorySuggestion({ suggestion, onApply }) {
         size="sm"
         variant="ghost"
         className={`h-5 px-2 text-xs ${
-          isAI ? 'text-purple-700 hover:bg-purple-100' : 'text-blue-700 hover:bg-blue-100'
+          isAI ? 'text-emerald-700 hover:bg-emerald-100' : 'text-blue-700 hover:bg-blue-100'
         }`}
         onClick={() => onApply(suggestion)}
       >

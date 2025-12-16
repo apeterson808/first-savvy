@@ -8,13 +8,13 @@ export default function BudgetSankeyChart({ budgets, spendingByCategory, totalIn
       food: '#fb923c',
       transportation: '#60a5fa',
       entertainment: '#f472b6',
-      shopping: '#a78bfa',
+      shopping: '#ec4899',
       utilities: '#fbbf24',
       healthcare: '#f87171',
       education: '#4ade80',
       insurance: '#2dd4bf',
       advertising: '#e879f9',
-      office_supplies: '#c084fc',
+      office_supplies: '#f472b6',
       services: '#fb7185',
       savings: '#34d399',
       other: '#94a3b8',
@@ -25,7 +25,7 @@ export default function BudgetSankeyChart({ budgets, spendingByCategory, totalIn
   const getIncomeColor = (category) => {
     const colors = {
       salary: '#6ee7b7',
-      business_income: '#a78bfa',
+      business_income: '#10b981',
       investment: '#60a5fa',
       other: '#fbbf24',
     };

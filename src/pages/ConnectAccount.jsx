@@ -52,8 +52,8 @@ export default function ConnectAccount() {
     {
       title: 'Import from CSV, PDF, or OFX',
       icon: Upload,
-      color: 'bg-purple-100',
-      iconColor: 'text-purple-600'
+      color: 'bg-teal-100',
+      iconColor: 'text-teal-600'
     }
   ];
 

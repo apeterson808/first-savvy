@@ -358,7 +358,7 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
       case 'savings':
         return <Building2 className="w-5 h-5 text-blue-600" />;
       case 'credit_card':
-        return <CreditCard className="w-5 h-5 text-purple-600" />;
+        return <CreditCard className="w-5 h-5 text-blue-700" />;
       default:
         return <PiggyBank className="w-5 h-5 text-green-600" />;
     }
@@ -581,7 +581,7 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
         />
         <div>
           <Label htmlFor="autoCategorizeBefore" className="text-sm font-medium cursor-pointer flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-purple-500" />
+            <Sparkles className="w-4 h-4 text-emerald-600" />
             Auto-categorize historical transactions with AI
           </Label>
           <p className="text-xs text-slate-500 mt-1">

@@ -17,7 +17,7 @@ const LIABILITY_TYPE_ICONS = {
 
 const LIABILITY_TYPE_COLORS = {
   mortgage: 'bg-blue-100 text-blue-600',
-  car_loan: 'bg-purple-100 text-purple-600',
+  car_loan: 'bg-teal-100 text-teal-600',
   student_loan: 'bg-amber-100 text-amber-600',
   credit_card: 'bg-red-100 text-red-600',
   personal_loan: 'bg-slate-100 text-slate-600',

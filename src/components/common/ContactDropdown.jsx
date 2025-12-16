@@ -71,7 +71,7 @@ export default function ContactDropdown({
             isRecommended
           >
             <span className="truncate">{suggestedContact.name}</span>
-            <Sparkles className="w-3 h-3 text-purple-500 ml-2 flex-shrink-0" />
+            <Sparkles className="w-3 h-3 text-emerald-600 ml-2 flex-shrink-0" />
           </ClickThroughSelectItem>
           <div className="h-px bg-slate-200 my-1" />
         </>

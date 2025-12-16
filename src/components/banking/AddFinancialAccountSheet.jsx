@@ -43,7 +43,7 @@ import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { DEFAULT_DETAIL_TYPES, getDetailTypeDisplayName } from '../utils/constants';
 
 const COLOR_OPTIONS = [
-  '#ef4444', '#f59e0b', '#22c55e', '#0ea5e9', '#3b82f6', '#8b5cf6', '#ec4899'
+  '#ef4444', '#f59e0b', '#22c55e', '#059669', '#3b82f6', '#2563eb', '#ec4899'
 ];
 
 const ACCOUNT_TYPES = [

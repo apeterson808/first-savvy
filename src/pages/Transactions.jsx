@@ -127,11 +127,11 @@ export default function Transactions() {
 
   const getCategoryColor = (category) => {
     const colors = {
-      rent: 'bg-purple-100 text-purple-700',
+      rent: 'bg-amber-100 text-amber-700',
       food: 'bg-orange-100 text-orange-700',
       transportation: 'bg-blue-100 text-blue-700',
       entertainment: 'bg-pink-100 text-pink-700',
-      shopping: 'bg-indigo-100 text-indigo-700',
+      shopping: 'bg-fuchsia-100 text-fuchsia-700',
       utilities: 'bg-yellow-100 text-yellow-700',
       healthcare: 'bg-red-100 text-red-700',
       education: 'bg-green-100 text-green-700',
@@ -139,9 +139,9 @@ export default function Transactions() {
       salary: 'bg-emerald-100 text-emerald-700',
       investment: 'bg-cyan-100 text-cyan-700',
       business_income: 'bg-lime-100 text-lime-700',
-      advertising: 'bg-fuchsia-100 text-fuchsia-700',
-      office_supplies: 'bg-violet-100 text-violet-700',
-      services: 'bg-rose-100 text-rose-700',
+      advertising: 'bg-rose-100 text-rose-700',
+      office_supplies: 'bg-sky-100 text-sky-700',
+      services: 'bg-stone-100 text-stone-700',
       other: 'bg-slate-100 text-slate-700',
     };
     return colors[category] || 'bg-slate-100 text-slate-700';

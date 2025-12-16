@@ -5,9 +5,9 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
 const DEFAULT_COLORS = [
-  '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', 
-  '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16',
-  '#6366f1', '#10b981', '#f472b6', '#facc15', '#a855f7'
+  '#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#2563eb',
+  '#ec4899', '#14b8a6', '#f97316', '#059669', '#84cc16',
+  '#1d4ed8', '#10b981', '#f472b6', '#facc15', '#0284c7'
 ];
 
 export default function CategoryBreakdownDonut({ transactions, selectedMonth, selectedAccount, accounts = [], onCategoryClick }) {
