@@ -97,15 +97,28 @@ export default function Contacts() {
       return;
     }
 
+    const type = formData.get('type');
+    const status = formData.get('status');
+
+    if (!type) {
+      alert('Type is required');
+      return;
+    }
+
+    if (!status) {
+      alert('Status is required');
+      return;
+    }
+
     const data = {
       name: formData.get('name'),
-      type: formData.get('type'),
+      type,
       email: formData.get('email') || undefined,
       phone: phone || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
       default_category_id: formData.get('default_category_id') || undefined,
-      status: formData.get('status')
+      status
     };
 
     if (editingContact) {
@@ -257,10 +270,10 @@ export default function Contacts() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="type">Type</Label>
+                <Label htmlFor="type">Type *</Label>
                 <ClickThroughSelect
                   name="type"
-                  defaultValue={editingContact ? editingContact.type : 'vendor'}
+                  defaultValue={editingContact?.type || 'vendor'}
                   placeholder="Select type"
                 >
                   <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
@@ -268,10 +281,10 @@ export default function Contacts() {
                 </ClickThroughSelect>
               </div>
               <div>
-                <Label htmlFor="status">Status</Label>
+                <Label htmlFor="status">Status *</Label>
                 <ClickThroughSelect
                   name="status"
-                  defaultValue={editingContact ? editingContact.status : 'active'}
+                  defaultValue={editingContact?.status || 'active'}
                   placeholder="Select status"
                 >
                   <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
