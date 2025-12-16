@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -23,7 +24,6 @@ import {
 } from "@/components/ui/table";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Plus, Search } from 'lucide-react';
-import ContactDetailSheet from '@/components/contacts/ContactDetailSheet';
 import AccountDetectionField from '@/components/contacts/AccountDetectionField';
 import { toast } from 'sonner';
 
@@ -39,10 +39,9 @@ function formatPhoneNumber(value) {
 }
 
 export default function Contacts() {
+  const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [detailOpen, setDetailOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
-  const [viewingContact, setViewingContact] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneValue, setPhoneValue] = useState('');
   const [emailValue, setEmailValue] = useState('');
@@ -279,10 +278,7 @@ export default function Contacts() {
                     <TableRow
                       key={contact.id}
                       className="h-11 cursor-pointer hover:bg-slate-50"
-                      onClick={() => {
-                        setViewingContact(contact);
-                        setDetailOpen(true);
-                      }}
+                      onClick={() => navigate(`/contacts/${contact.id}`)}
                     >
                       <TableCell className="font-medium py-2">
                         {contact.name}
@@ -465,12 +461,6 @@ export default function Contacts() {
           </form>
         </SheetContent>
       </Sheet>
-
-      <ContactDetailSheet
-        contact={viewingContact}
-        open={detailOpen}
-        onOpenChange={setDetailOpen}
-      />
     </div>
   );
 }

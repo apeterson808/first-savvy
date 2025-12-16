@@ -16,6 +16,8 @@ import ConnectAccount from "./ConnectAccount";
 
 import Contacts from "./Contacts";
 
+import ContactDetail from "./ContactDetail";
+
 import Integrations from "./Integrations";
 
 import Collaboration from "./Collaboration";
@@ -86,6 +88,8 @@ function PagesContent() {
                 <Route path="/ConnectAccount" element={<ConnectAccount />} />
                 
                 <Route path="/Contacts" element={<Contacts />} />
+
+                <Route path="/Contacts/:id" element={<ContactDetail />} />
 
                 <Route path="/Integrations" element={<Integrations />} />
 
