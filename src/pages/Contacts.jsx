@@ -250,14 +250,22 @@ export default function Contacts() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="type">Type</Label>
-                <ClickThroughSelect name="type" defaultValue={editingContact?.type || 'vendor'}>
+                <ClickThroughSelect
+                  name="type"
+                  defaultValue={editingContact ? editingContact.type : 'vendor'}
+                  placeholder="Select type"
+                >
                   <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
                   <ClickThroughSelectItem value="customer">Customer</ClickThroughSelectItem>
                 </ClickThroughSelect>
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
-                <ClickThroughSelect name="status" defaultValue={editingContact?.status || 'active'}>
+                <ClickThroughSelect
+                  name="status"
+                  defaultValue={editingContact ? editingContact.status : 'active'}
+                  placeholder="Select status"
+                >
                   <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
                   <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
                 </ClickThroughSelect>
