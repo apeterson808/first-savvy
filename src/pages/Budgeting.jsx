@@ -10,6 +10,7 @@ import { toast } from 'sonner';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetOverviewCards from '../components/budgeting/BudgetOverviewCards';
 import BudgetCategoryList from '../components/budgeting/BudgetCategoryList';
+import BudgetAllocationDonut from '../components/budgeting/BudgetAllocationDonut';
 import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import { suggestIconForName } from '../components/utils/iconMapper';
 
@@ -167,6 +168,11 @@ export default function Budgeting() {
       queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
+      const newUrl = new URL(window.location);
+      newUrl.searchParams.set('tab', 'setup');
+      window.history.pushState({}, '', newUrl);
+      setActiveTab('setup');
+
       toast.success('Budget created successfully!');
     } catch (error) {
       console.error('Error auto-creating budget:', error);
@@ -187,7 +193,7 @@ export default function Budgeting() {
     );
   }
 
-  if (!hasSetupStarted || activeTab === 'setup') {
+  if (!hasSetupStarted) {
     return (
       <div className="p-6">
         <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">
@@ -223,6 +229,94 @@ export default function Budgeting() {
                 Create Manually
               </Button>
             </div>
+          </div>
+        </div>
+
+        <AddBudgetItemSheet
+          open={addSheetOpen}
+          onOpenChange={(open) => {
+            setAddSheetOpen(open);
+            if (!open && hasSetupStarted) {
+              const newUrl = new URL(window.location);
+              newUrl.searchParams.set('tab', 'setup');
+              window.history.pushState({}, '', newUrl);
+              setActiveTab('setup');
+            }
+          }}
+          groups={budgetGroups}
+        />
+      </div>
+    );
+  }
+
+  if (activeTab === 'setup') {
+    const incomeGroups = budgetGroups.filter(g => g.type === 'income');
+    const expenseGroups = budgetGroups.filter(g => g.type === 'expense');
+
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Budget Setup</h1>
+            <p className="text-sm text-slate-500">Configure your monthly budget</p>
+          </div>
+          <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Budget
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            {incomeGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {
+              const groupBudgets = budgets.filter(b => b.group_id === group.id);
+              if (groupBudgets.length === 0) return null;
+
+              return (
+                <Card key={group.id} className="shadow-sm border-slate-200 bg-white">
+                  <CardHeader className="pb-3 pt-4 px-6">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{group.name}</p>
+                  </CardHeader>
+                  <CardContent className="px-6 pb-4">
+                    <BudgetCategoryList
+                      budgets={groupBudgets}
+                      spendingByCategory={incomeByCategory}
+                      isIncome={true}
+                      unbudgetedAmount={0}
+                    />
+                  </CardContent>
+                </Card>
+              );
+            })}
+
+            {expenseGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {
+              const groupBudgets = budgets.filter(b => b.group_id === group.id);
+              if (groupBudgets.length === 0) return null;
+
+              return (
+                <Card key={group.id} className="shadow-sm border-slate-200 bg-white">
+                  <CardHeader className="pb-3 pt-4 px-6">
+                    <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{group.name}</p>
+                  </CardHeader>
+                  <CardContent className="px-6 pb-4">
+                    <BudgetCategoryList
+                      budgets={groupBudgets}
+                      spendingByCategory={spendingByCategory}
+                      isIncome={false}
+                      unbudgetedAmount={0}
+                    />
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="lg:col-span-1">
+            <BudgetAllocationDonut
+              budgets={budgets}
+              groups={budgetGroups}
+              totalIncome={totalActualIncome}
+            />
           </div>
         </div>
 
