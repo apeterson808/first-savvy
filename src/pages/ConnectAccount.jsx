@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Building2, TrendingUp, Bitcoin, Upload, FlaskConical, X } from 'lucide-react';
+import { Search, Building2, TrendingUp, Bitcoin, Upload, FlaskConical, X, Package } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import PlaidLinkButton from '../components/banking/PlaidLinkButton';
 import PlaidImportSimulator from '../components/banking/PlaidImportSimulator';
 import FileImporter from '../components/banking/FileImporter';
+import AmazonOrderImporter from '../components/banking/AmazonOrderImporter';
 import { useQueryClient } from '@tanstack/react-query';
 
 const POPULAR_INSTITUTIONS = [
@@ -29,6 +30,7 @@ export default function ConnectAccount() {
   const [linkSearchTerm, setLinkSearchTerm] = useState('');
   const [plaidSimulatorOpen, setPlaidSimulatorOpen] = useState(false);
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
+  const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
 
   const linkCategories = [
     {
@@ -54,6 +56,13 @@ export default function ConnectAccount() {
       icon: Upload,
       color: 'bg-teal-100',
       iconColor: 'text-teal-600'
+    },
+    {
+      title: 'Import Amazon Orders',
+      icon: Package,
+      color: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      isAmazon: true
     }
   ];
 
@@ -148,6 +157,25 @@ export default function ConnectAccount() {
             {linkCategories.map((category, index) => {
               const Icon = category.icon;
               const isImportCategory = category.title.includes('Import');
+              const isAmazonImport = category.isAmazon;
+
+              if (isAmazonImport) {
+                return (
+                  <button
+                    key={index}
+                    onClick={() => setAmazonImporterOpen(true)}
+                    className="p-4 bg-slate-50 border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center flex-shrink-0`}>
+                        <Icon className={`w-6 h-6 ${category.iconColor}`} />
+                      </div>
+                      <span className="text-sm font-medium text-slate-900">{category.title}</span>
+                    </div>
+                  </button>
+                );
+              }
+
               return isImportCategory ? (
                 <button
                   key={index}
@@ -208,11 +236,20 @@ export default function ConnectAccount() {
           }}
         />
 
-        <FileImporter 
-          open={fileImporterOpen} 
+        <FileImporter
+          open={fileImporterOpen}
           onOpenChange={setFileImporterOpen}
           onImportComplete={(accounts) => {
             queryClient.invalidateQueries({ queryKey: ['accounts'] });
+            queryClient.invalidateQueries({ queryKey: ['transactions'] });
+            navigate(-1);
+          }}
+        />
+
+        <AmazonOrderImporter
+          open={amazonImporterOpen}
+          onOpenChange={setAmazonImporterOpen}
+          onImportComplete={() => {
             queryClient.invalidateQueries({ queryKey: ['transactions'] });
             navigate(-1);
           }}
