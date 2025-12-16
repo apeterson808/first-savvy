@@ -44,13 +44,6 @@ export function ClickThroughSelect({
       }
       // Close for clicks outside
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        // If search term is empty, clear the selection
-        if (searchTerm === '') {
-          setSelectedValue('');
-          if (onValueChange) {
-            onValueChange('');
-          }
-        }
         handleOpenChange(false);
       }
     };
@@ -61,7 +54,7 @@ export function ClickThroughSelect({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, searchTerm]);
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen && containerRef.current) {
@@ -160,9 +153,9 @@ export function ClickThroughSelect({
               onSearchTermChange?.(e.target.value);
             }}
             onKeyDown={(e) => {
-              if ((e.key === 'Enter' || e.key === 'Tab') && searchTerm === '') {
+              if (e.key === 'Escape') {
                 e.preventDefault();
-                handleSelect('', false);
+                handleOpenChange(false);
               }
             }}
             onMouseDown={(e) => e.stopPropagation()}
