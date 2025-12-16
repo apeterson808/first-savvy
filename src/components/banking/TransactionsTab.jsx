@@ -184,7 +184,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   // Filter out BankAccounts with account_type='credit_card' to avoid duplicates with CreditCard entities
   const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-  const accounts = [...filteredBankAccounts, ...creditCards];
+  const accounts = [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
 
   // Fetch all active accounts for Match tab dropdown (bank accounts, credit cards, assets, liabilities)
   const { data: allActiveAccounts = [] } = useQuery({
@@ -202,9 +202,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       
       return [
         ...filteredBankAccounts.map(a => ({ ...a, entityType: 'BankAccount' })),
-        ...creditCards.map(a => ({ ...a, entityType: 'CreditCard' })),
-        ...assets.map(a => ({ ...a, entityType: 'Asset' })),
-        ...liabilities.map(a => ({ ...a, entityType: 'Liability' }))
+        ...creditCards.map(a => ({ ...a, account_name: a.name, entityType: 'CreditCard' })),
+        ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
+        ...liabilities.map(a => ({ ...a, account_name: a.name, entityType: 'Liability' }))
       ];
     }
   });
@@ -1077,11 +1077,12 @@ For each transaction, return the category_id that best matches. Consider:
           {/* Tabs & Top Actions */}
           <div className="border-b border-slate-200 px-4 pt-4">
             <div className="flex items-center justify-between mb-3">
-              <AccountDropdown 
-                value={selectedAccount} 
-                onValueChange={setSelectedAccount} 
+              <AccountDropdown
+                value={selectedAccount}
+                onValueChange={setSelectedAccount}
                 showPendingCounts={true}
                 transactions={fullPendingTransactions}
+                accounts={accounts}
               />
               
               <div className="flex items-center gap-2">

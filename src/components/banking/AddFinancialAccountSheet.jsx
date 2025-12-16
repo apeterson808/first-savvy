@@ -193,6 +193,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeBankAccounts'] });
       onAccountCreated?.({ type: 'bank', account: newAccount });
       onOpenChange(false);
     },
@@ -213,6 +214,8 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeCreditCards'] });
+      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
       onAccountCreated?.({ type: 'credit_card', account: newAccount });
       onOpenChange(false);
     },
@@ -281,6 +284,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeBankAccounts'] });
       onAccountCreated?.({ type: 'bank' });
       onOpenChange(false);
     },
@@ -296,6 +300,8 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeCreditCards'] });
+      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
       onAccountCreated?.({ type: 'credit_card' });
       onOpenChange(false);
     },

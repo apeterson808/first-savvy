@@ -23,14 +23,14 @@ export default function AccountDropdown({
         base44.entities.CreditCard.filter({ is_active: true })
       ]);
       const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-      return [...filteredBankAccounts, ...creditCards];
+      return [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
     },
     enabled: propAccounts === null
   });
 
   const accounts = propAccounts !== null ? propAccounts : fetchedAccounts;
 
-  const filteredAccounts = excludeInvestment 
+  const filteredAccounts = excludeInvestment
     ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
     : accounts.filter(acc => acc.is_active !== false);
 
