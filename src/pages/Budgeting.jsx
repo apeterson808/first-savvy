@@ -64,6 +64,11 @@ export default function Budgeting() {
     queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => base44.entities.Category.list('name')
+  });
+
 
   // Calculate spending per category for current month
   const today = new Date();
