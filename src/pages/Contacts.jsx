@@ -22,7 +22,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Plus, Search, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Eye } from 'lucide-react';
+import ContactDetailSheet from '@/components/contacts/ContactDetailSheet';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -37,7 +38,9 @@ function formatPhoneNumber(value) {
 
 export default function Contacts() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [detailOpen, setDetailOpen] = useState(false);
   const [editingContact, setEditingContact] = useState(null);
+  const [viewingContact, setViewingContact] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [phoneValue, setPhoneValue] = useState('');
   const queryClient = useQueryClient();
@@ -198,7 +201,17 @@ export default function Contacts() {
                 ) : (
                   filteredContacts.map((contact) => (
                     <TableRow key={contact.id} className="h-11">
-                      <TableCell className="font-medium py-2">{contact.name}</TableCell>
+                      <TableCell className="font-medium py-2">
+                        <button
+                          onClick={() => {
+                            setViewingContact(contact);
+                            setDetailOpen(true);
+                          }}
+                          className="text-blue-600 hover:text-blue-700 hover:underline text-left"
+                        >
+                          {contact.name}
+                        </button>
+                      </TableCell>
                       <TableCell className="py-2 capitalize">{contact.type || '-'}</TableCell>
                       <TableCell className="py-2">{contact.email || '-'}</TableCell>
                       <TableCell className="py-2">{contact.phone || '-'}</TableCell>
@@ -221,10 +234,23 @@ export default function Contacts() {
                           size="icon"
                           className="h-7 w-7"
                           onClick={() => {
+                            setViewingContact(contact);
+                            setDetailOpen(true);
+                          }}
+                          title="View details"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => {
                             setEditingContact(contact);
                             setPhoneValue(contact.phone || '');
                             setDialogOpen(true);
                           }}
+                          title="Edit contact"
                         >
                           <Pencil className="w-3.5 h-3.5" />
                         </Button>
@@ -237,6 +263,7 @@ export default function Contacts() {
                               deleteMutation.mutate(contact.id);
                             }
                           }}
+                          title="Delete contact"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </Button>
@@ -366,6 +393,12 @@ export default function Contacts() {
           </form>
         </SheetContent>
       </Sheet>
+
+      <ContactDetailSheet
+        contact={viewingContact}
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+      />
     </div>
   );
 }
