@@ -1,21 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
 import { startOfMonth, endOfMonth, format } from 'date-fns';
 
 import BudgetOverviewCards from '../components/budgeting/BudgetOverviewCards';
 import BudgetCategoryList from '../components/budgeting/BudgetCategoryList';
-import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import BudgetSetupTab from '../components/budgeting/BudgetSetupTab';
 
 export default function Budgeting() {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null);
-  const [excludeTransfers, setExcludeTransfers] = useState(true);
-  const queryClient = useQueryClient();
 
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
     queryKey: ['budgetGroups'],
@@ -71,19 +64,6 @@ export default function Budgeting() {
     queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list()
-  });
-
-
-
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Budget.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-    }
-  });
 
   // Calculate spending per category for current month
   const today = new Date();
@@ -162,15 +142,6 @@ export default function Budgeting() {
   const totalBudgeted = budgets.reduce((sum, b) => sum + b.limit_amount, 0);
   const totalSpent = Object.values(spendingByCategory).reduce((sum, amt) => sum + amt, 0);
 
-  const handleEdit = (budget) => {
-    setEditingBudget(budget);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    deleteMutation.mutate(id);
-  };
-
   if (groupsLoading || activeTab === null) {
     return (
       <div className="p-6 max-w-6xl mx-auto">
@@ -191,10 +162,6 @@ export default function Budgeting() {
               <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
               <p className="text-sm text-slate-500">{format(today, 'MMMM yyyy')}</p>
             </div>
-            <Button onClick={() => setDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700 shadow-sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Budget
-            </Button>
           </div>
 
           <BudgetOverviewCards
@@ -209,17 +176,14 @@ export default function Budgeting() {
             const isIncomeGroup = group.type === 'income';
             const dataByCategory = isIncomeGroup ? incomeByCategory : spendingByCategory;
 
-            // Calculate unbudgeted amount for this group
             const budgetedCategoryIds = new Set(groupBudgets.map(b => b.category_id));
             const unbudgetedAmount = Object.entries(dataByCategory).reduce((sum, [categoryId, amount]) => {
-              // Include uncategorized transactions and categorized transactions without budgets
               if (categoryId === '__uncategorized__' || categoryId === '__uncategorized_income__' || !budgetedCategoryIds.has(categoryId)) {
                 return sum + amount;
               }
               return sum;
             }, 0);
 
-            // Only show group if it has budgets or unbudgeted transactions
             if (groupBudgets.length === 0 && unbudgetedAmount === 0) return null;
 
             return (
@@ -231,29 +195,13 @@ export default function Budgeting() {
                   <BudgetCategoryList
                     budgets={groupBudgets}
                     spendingByCategory={dataByCategory}
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
                     isIncome={isIncomeGroup}
-                    totalIncome={budgetedIncome}
-                    allBudgets={budgets}
-                    groups={budgetGroups}
                     unbudgetedAmount={unbudgetedAmount}
                   />
                 </CardContent>
               </Card>
             );
           })}
-
-          <AddBudgetItemSheet
-            open={dialogOpen}
-            onOpenChange={(open) => {
-              setDialogOpen(open);
-              if (!open) setEditingBudget(null);
-            }}
-            groups={budgetGroups}
-            editingBudget={editingBudget}
-            onDelete={handleDelete}
-          />
         </>
       )}
 
