@@ -191,6 +191,8 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       console.log('✅ BankAccount created successfully:', newAccount);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
       onAccountCreated?.({ type: 'bank', account: newAccount });
       onOpenChange(false);
     },
@@ -210,6 +212,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       console.log('✅ CreditCard created successfully:', newAccount);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
       onAccountCreated?.({ type: 'credit_card', account: newAccount });
       onOpenChange(false);
     },
