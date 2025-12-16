@@ -208,6 +208,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       group_id: selectedGroupId,
       limit_amount: newAmount,
       color: selectedColor || DEFAULT_COLOR,
+      icon: selectedIcon || selectedCategory?.icon,
       is_active: true,
       allow_rollover: allowRollover
     };

@@ -130,6 +130,7 @@ export default function Budgeting() {
             group_id: incomeGroup.id,
             order: order++,
             color,
+            icon: category?.icon || suggestIconForName(category?.name || 'Unknown'),
             is_active: true
           });
         }
@@ -164,6 +165,7 @@ export default function Budgeting() {
             group_id: expenseGroup.id,
             order: order++,
             color,
+            icon: category?.icon || suggestIconForName(category?.name || 'Unknown'),
             is_active: true
           });
         }
