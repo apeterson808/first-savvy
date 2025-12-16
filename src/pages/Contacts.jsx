@@ -235,7 +235,7 @@ export default function Contacts() {
           <SheetHeader>
             <SheetTitle>{editingContact ? 'Edit Contact' : 'Add Contact'}</SheetTitle>
           </SheetHeader>
-          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <form key={editingContact?.id || 'new'} onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
