@@ -3,20 +3,21 @@ import ReactDOM from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export function ClickThroughSelect({ 
-  value, 
+export function ClickThroughSelect({
+  value,
   defaultValue,
   onValueChange,
   onOpenChange,
   onSearchTermChange,
-  children, 
+  children,
   placeholder = "Select...",
   className,
   triggerClassName,
-  renderValue
+  renderValue,
+  name
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  
+
   const handleOpenChange = (open) => {
     setIsOpen(open);
     onOpenChange?.(open);
@@ -137,6 +138,13 @@ export function ClickThroughSelect({
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
+      {name && (
+        <input
+          type="hidden"
+          name={name}
+          value={selectedValue || ''}
+        />
+      )}
       {isOpen ? (
         <div
           className={cn(

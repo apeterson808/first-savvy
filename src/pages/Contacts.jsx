@@ -58,6 +58,10 @@ export default function Contacts() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       setDialogOpen(false);
       setEditingContact(null);
+    },
+    onError: (error) => {
+      console.error('Create failed:', error);
+      alert(`Failed to create contact: ${error.message}`);
     }
   });
 
@@ -67,6 +71,10 @@ export default function Contacts() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       setDialogOpen(false);
       setEditingContact(null);
+    },
+    onError: (error) => {
+      console.error('Update failed:', error);
+      alert(`Failed to update contact: ${error.message}`);
     }
   });
 
