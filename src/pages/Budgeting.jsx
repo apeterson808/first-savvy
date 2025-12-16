@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -30,6 +30,29 @@ export default function Budgeting() {
   const queryClient = useQueryClient();
   const [isAutoCreating, setIsAutoCreating] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab') || 'overview';
+  });
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      setActiveTab(urlParams.get('tab') || 'overview');
+    };
+    window.addEventListener('popstate', handlePopState);
+
+    const interval = setInterval(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentTab = urlParams.get('tab') || 'overview';
+      setActiveTab(prev => prev !== currentTab ? currentTab : prev);
+    }, 100);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      clearInterval(interval);
+    };
+  }, []);
 
   const {
     budgetGroups,
@@ -164,7 +187,7 @@ export default function Budgeting() {
     );
   }
 
-  if (!hasSetupStarted) {
+  if (!hasSetupStarted || activeTab === 'setup') {
     return (
       <div className="p-6">
         <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">
