@@ -266,9 +266,9 @@ export default function BudgetAllocationGauge({ budgets, groups, totalIncome }) 
                     </motion.div>
                     ) : (
                     <div className="flex flex-col items-center">
-                      <span className="text-[10px] text-slate-400">{percentAllocated}%</span>
-                      <span className="text-base font-bold text-slate-900">{formatCurrency(totalAllocated)}</span>
-                      <span className="text-xs text-slate-400">/ {formatCurrency(totalIncome)}</span>
+                      <span className="text-xs text-slate-500 font-medium">{percentAllocated}%</span>
+                      <span className="text-2xl font-bold text-slate-900">{formatCurrency(totalAllocated)}</span>
+                      <span className="text-xs text-slate-500">/ {formatCurrency(totalIncome)}</span>
                     </div>
                     )}
                 </div>

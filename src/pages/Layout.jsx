@@ -130,7 +130,7 @@ export default function Layout({ children, currentPageName }) {
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Sidebar */}
-      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} transition-all duration-300 ease-in-out`} style={{ backgroundColor: '#1e3a5f' }}>
+      <div className={`${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0 fixed lg:static inset-y-0 left-0 z-50 ${sidebarCollapsed ? 'w-16' : 'w-48'} transition-all duration-300 ease-in-out`} style={{ backgroundColor: '#2c4a6b' }}>
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-3">

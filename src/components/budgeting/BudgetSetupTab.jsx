@@ -898,17 +898,17 @@ export default function BudgetSetupTab() {
                           )}
                           <EditableGroupNameCell group={group} onUpdate={updateGroupMutation} />
                           <div className="flex-1" />
-                          <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-center py-1">
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Daily</span>
+                          <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-center py-2">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Daily</span>
                           </div>
-                          <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-center py-1">
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Weekly</span>
+                          <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-center py-2">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Weekly</span>
                           </div>
-                          <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-center py-1 bg-slate-50">
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Monthly</span>
+                          <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-center py-2 bg-slate-50">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Monthly</span>
                           </div>
-                          <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-center py-1">
-                            <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">Yearly</span>
+                          <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-center py-2">
+                            <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Yearly</span>
                           </div>
                           <Button 
                             variant="ghost" 
@@ -949,16 +949,16 @@ export default function BudgetSetupTab() {
 
                                                           <EditableNameCell budget={budget} />
                                         <div className="flex-1" />
-                                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 py-1 px-1">
+                                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 py-2 px-2">
                                           <EditableAmountCell budget={budget} period="daily" value={getDaily(budget.limit_amount)} />
                                         </div>
-                                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 py-1 px-1">
+                                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 py-2 px-2">
                                           <EditableAmountCell budget={budget} period="weekly" value={getWeekly(budget.limit_amount)} />
                                         </div>
-                                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 py-1 px-1 bg-slate-50">
+                                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 py-2 px-2 bg-slate-50">
                                           <EditableAmountCell budget={budget} period="monthly" value={budget.limit_amount} isMonthly />
                                         </div>
-                                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 py-1 px-1">
+                                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 py-2 px-2">
                                           <EditableAmountCell budget={budget} period="yearly" value={getYearly(budget.limit_amount)} />
                                         </div>
                                                                                       <Button 
@@ -985,19 +985,19 @@ export default function BudgetSetupTab() {
                       
                       {/* Show totals row at bottom of each group */}
                       <div className="flex items-center border-t-2 border-slate-200 bg-slate-100/80 px-2">
-                        <div className="w-8 flex-shrink-0 py-1 pl-1"></div>
-                        <span className="text-sm font-semibold text-slate-700 flex-1 py-1">Total</span>
-                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-right px-2 py-1">
-                          <span className="text-xs tabular-nums font-medium text-slate-600">{formatCurrency(getDaily(getGroupTotal(group.id)), 2)}</span>
+                        <div className="w-8 flex-shrink-0 py-2 pl-1"></div>
+                        <span className="text-sm font-semibold text-slate-700 flex-1 py-2">Total</span>
+                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-right px-2 py-2">
+                          <span className="text-xs tabular-nums font-medium text-slate-600">${getDaily(getGroupTotal(group.id)).toFixed(2)}</span>
                         </div>
-                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-right px-2 py-1">
-                          <span className="text-xs tabular-nums font-medium text-slate-600">{formatCurrency(getWeekly(getGroupTotal(group.id)))}</span>
+                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-right px-2 py-2">
+                          <span className="text-xs tabular-nums font-medium text-slate-600">${getWeekly(getGroupTotal(group.id)).toFixed(0)}</span>
                         </div>
-                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-right px-2 py-1 bg-slate-200/50">
-                          <span className="text-sm tabular-nums font-bold text-slate-800">{formatCurrency(getGroupTotal(group.id))}</span>
+                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-right px-2 py-2 bg-slate-200/50">
+                          <span className="text-sm tabular-nums font-bold text-slate-800">${getGroupTotal(group.id).toFixed(0)}</span>
                         </div>
-                        <div className="flex-shrink-0 w-[72px] border-l border-slate-200 text-right px-2 py-1">
-                          <span className="text-xs tabular-nums font-medium text-slate-600">{formatCurrency(getYearly(getGroupTotal(group.id)))}</span>
+                        <div className="flex-shrink-0 w-[80px] border-l border-slate-200 text-right px-2 py-2">
+                          <span className="text-xs tabular-nums font-medium text-slate-600">${getYearly(getGroupTotal(group.id)).toFixed(0)}</span>
                         </div>
                         <div className="w-6 flex-shrink-0"></div>
                       </div>
