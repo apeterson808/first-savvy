@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -14,6 +14,7 @@ import BudgetSetupTab from '../components/budgeting/BudgetSetupTab';
 export default function Budgeting() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
+  const [excludeTransfers, setExcludeTransfers] = useState(true);
   const queryClient = useQueryClient();
 
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
@@ -22,46 +23,40 @@ export default function Budgeting() {
   });
 
   const hasSetupStarted = budgetGroups.length > 0;
-  const defaultTab = hasSetupStarted ? 'overview' : 'setup';
 
   const [activeTab, setActiveTab] = useState(() => {
-    const urlTab = new URLSearchParams(window.location.search).get('tab');
-    return urlTab || defaultTab;
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTab = urlParams.get('tab');
+    return urlTab || null;
   });
 
-  React.useEffect(() => {
-    const urlTab = new URLSearchParams(window.location.search).get('tab');
-    if (!urlTab && !groupsLoading) {
-      const correctTab = hasSetupStarted ? 'overview' : 'setup';
-      if (activeTab !== correctTab) {
-        setActiveTab(correctTab);
-        window.history.replaceState({}, '', `${window.location.pathname}?tab=${correctTab}`);
-      }
+  useEffect(() => {
+    if (!groupsLoading && activeTab === null) {
+      const tab = hasSetupStarted ? 'overview' : 'setup';
+      const newUrl = `${window.location.pathname}?tab=${tab}`;
+      window.history.replaceState({}, '', newUrl);
+      setActiveTab(tab);
     }
-  }, [hasSetupStarted, groupsLoading, activeTab]);
+  }, [groupsLoading, hasSetupStarted, activeTab]);
 
-  React.useEffect(() => {
-    const handleUrlChange = () => {
-      const urlTab = new URLSearchParams(window.location.search).get('tab');
-      const correctTab = urlTab || (hasSetupStarted ? 'overview' : 'setup');
-      setActiveTab(correctTab);
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      setActiveTab(urlParams.get('tab') || 'overview');
     };
-
-    window.addEventListener('popstate', handleUrlChange);
-
+    window.addEventListener('popstate', handlePopState);
     const interval = setInterval(() => {
-      const urlTab = new URLSearchParams(window.location.search).get('tab');
-      const correctTab = urlTab || (hasSetupStarted ? 'overview' : 'setup');
-      setActiveTab(prev => prev !== correctTab ? correctTab : prev);
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentTab = urlParams.get('tab') || 'overview';
+      setActiveTab(prev => prev !== currentTab ? currentTab : prev);
     }, 100);
-
     return () => {
-      window.removeEventListener('popstate', handleUrlChange);
+      window.removeEventListener('popstate', handlePopState);
       clearInterval(interval);
     };
-  }, [hasSetupStarted]);
+  }, []);
 
-  const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
+  const { data: budgets = [] } = useQuery({
     queryKey: ['budgets'],
     queryFn: () => base44.entities.Budget.filter({ is_active: true })
   });
@@ -72,15 +67,8 @@ export default function Budgeting() {
   });
 
   const { data: accounts = [] } = useQuery({
-    queryKey: ['activeAccounts'],
-    queryFn: async () => {
-      const [bankAccounts, creditCards] = await Promise.all([
-        base44.entities.BankAccount.filter({ is_active: true }),
-        base44.entities.CreditCard.filter({ is_active: true })
-      ]);
-      const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-      return [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
-    }
+    queryKey: ['accounts'],
+    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
   const { data: categories = [] } = useQuery({
@@ -183,7 +171,7 @@ export default function Budgeting() {
     deleteMutation.mutate(id);
   };
 
-  if (groupsLoading || budgetsLoading) {
+  if (groupsLoading || activeTab === null) {
     return (
       <div className="p-6 max-w-6xl mx-auto">
         <div className="animate-pulse space-y-4">
@@ -195,9 +183,9 @@ export default function Budgeting() {
   }
 
   return (
-    <div className="p-0">
+    <div className="p-3">
       {activeTab === 'overview' && (
-        <div className="p-6">
+        <>
           <div className="flex items-center justify-between mb-3">
             <div>
               <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
@@ -209,7 +197,7 @@ export default function Budgeting() {
             </Button>
           </div>
 
-          <BudgetOverviewCards 
+          <BudgetOverviewCards
             totalIncome={totalActualIncome}
             totalBudgeted={totalBudgeted}
             totalSpent={totalSpent}
@@ -217,10 +205,10 @@ export default function Budgeting() {
 
           {budgetGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {
             const groupBudgets = budgets.filter(b => b.group_id === group.id);
-            
+
             const isIncomeGroup = group.type === 'income';
             const dataByCategory = isIncomeGroup ? incomeByCategory : spendingByCategory;
-            
+
             // Calculate unbudgeted amount for this group
             const budgetedCategoryIds = new Set(groupBudgets.map(b => b.category_id));
             const unbudgetedAmount = Object.entries(dataByCategory).reduce((sum, [categoryId, amount]) => {
@@ -230,10 +218,10 @@ export default function Budgeting() {
               }
               return sum;
             }, 0);
-            
+
             // Only show group if it has budgets or unbudgeted transactions
             if (groupBudgets.length === 0 && unbudgetedAmount === 0) return null;
-            
+
             return (
               <Card key={group.id} className="mt-3 shadow-sm border-slate-200">
                 <CardHeader className="pb-2 pt-4 px-4">
@@ -266,11 +254,13 @@ export default function Budgeting() {
             editingBudget={editingBudget}
             onDelete={handleDelete}
           />
-        </div>
+        </>
       )}
 
       {activeTab === 'setup' && (
-        <BudgetSetupTab />
+        <div className="-m-3">
+          <BudgetSetupTab />
+        </div>
       )}
     </div>
   );
