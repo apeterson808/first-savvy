@@ -126,67 +126,71 @@ export default function Contacts() {
           <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="h-9">
+                  <TableHead className="h-9">Name</TableHead>
+                  <TableHead className="h-9">Type</TableHead>
+                  <TableHead className="h-9">Email</TableHead>
+                  <TableHead className="h-9">Phone</TableHead>
+                  <TableHead className="h-9">Status</TableHead>
+                  <TableHead className="text-right h-9">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                  <TableRow className="h-12">
+                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredContacts.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-slate-500">
+                  <TableRow className="h-12">
+                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
                       No contacts found
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredContacts.map((contact) => (
-                    <TableRow key={contact.id}>
-                      <TableCell className="font-medium">{contact.name}</TableCell>
-                      <TableCell>{contact.type}</TableCell>
-                      <TableCell>{contact.email || '-'}</TableCell>
-                      <TableCell>{contact.phone || '-'}</TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                          contact.status === 'Active' 
-                            ? 'bg-green-100 text-green-800' 
-                            : 'bg-gray-100 text-gray-800'
-                        }`}>
-                          {contact.status}
-                        </span>
+                    <TableRow key={contact.id} className="h-11">
+                      <TableCell className="font-medium py-2">{contact.name}</TableCell>
+                      <TableCell className="py-2 capitalize">{contact.type || '-'}</TableCell>
+                      <TableCell className="py-2">{contact.email || '-'}</TableCell>
+                      <TableCell className="py-2">{contact.phone || '-'}</TableCell>
+                      <TableCell className="py-2">
+                        {contact.status ? (
+                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                            contact.status.toLowerCase() === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-gray-100 text-gray-800'
+                          }`}>
+                            {contact.status}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400">-</span>
+                        )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-right py-2">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-7 w-7"
                           onClick={() => {
                             setEditingContact(contact);
                             setDialogOpen(true);
                           }}
                         >
-                          <Pencil className="w-4 h-4" />
+                          <Pencil className="w-3.5 h-3.5" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700"
+                          className="h-7 w-7 text-red-600 hover:text-red-700"
                           onClick={() => {
                             if (confirm('Are you sure you want to delete this contact?')) {
                               deleteMutation.mutate(contact.id);
                             }
                           }}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3.5 h-3.5" />
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -219,16 +223,16 @@ export default function Contacts() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="type">Type</Label>
-                <ClickThroughSelect name="type" defaultValue={editingContact?.type || 'Vendor'}>
-                  <ClickThroughSelectItem value="Vendor">Vendor</ClickThroughSelectItem>
-                  <ClickThroughSelectItem value="Customer">Customer</ClickThroughSelectItem>
+                <ClickThroughSelect name="type" defaultValue={editingContact?.type || 'person'}>
+                  <ClickThroughSelectItem value="person">Person</ClickThroughSelectItem>
+                  <ClickThroughSelectItem value="business">Business</ClickThroughSelectItem>
                 </ClickThroughSelect>
               </div>
               <div>
                 <Label htmlFor="status">Status</Label>
-                <ClickThroughSelect name="status" defaultValue={editingContact?.status || 'Active'}>
-                  <ClickThroughSelectItem value="Active">Active</ClickThroughSelectItem>
-                  <ClickThroughSelectItem value="Inactive">Inactive</ClickThroughSelectItem>
+                <ClickThroughSelect name="status" defaultValue={editingContact?.status || 'active'}>
+                  <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
+                  <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
                 </ClickThroughSelect>
               </div>
             </div>
