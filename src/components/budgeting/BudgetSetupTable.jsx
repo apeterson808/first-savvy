@@ -77,7 +77,6 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
 
     const isExpanded = expandedGroups[group.id];
     const isIncome = group.type === 'income';
-    const indicatorColor = isIncome ? 'bg-green-500' : 'bg-orange-500';
 
     const totals = groupBudgets.reduce((acc, budget) => {
       const monthlyAmount = budget.limit_amount || 0;
@@ -90,100 +89,115 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
     }, { daily: 0, weekly: 0, monthly: 0, yearly: 0 });
 
     return (
-      <div key={group.id} className="border-l-4 mb-4" style={{ borderLeftColor: isIncome ? '#10b981' : '#f97316' }}>
-        <div className="bg-white">
-          <div className="flex items-center gap-2 py-3 px-4 border-b border-slate-200">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-6 w-6 p-0 hover:bg-slate-100"
-              onClick={() => toggleGroup(group.id)}
-            >
-              {isExpanded ? (
-                <ChevronDown className="h-4 w-4 text-slate-600" />
-              ) : (
-                <ChevronRight className="h-4 w-4 text-slate-600" />
-              )}
-            </Button>
-            <span className="font-semibold text-slate-900 flex-1">{group.name}</span>
-            <div className="flex items-center gap-6 text-xs font-medium text-slate-500 uppercase tracking-wide">
-              <span className="w-16 text-center">Daily</span>
-              <span className="w-16 text-center">Weekly</span>
-              <span className="w-20 text-center">Monthly</span>
-              <span className="w-20 text-center">Yearly</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 w-8 p-0 hover:bg-slate-100"
-              onClick={() => onEditGroup?.(group)}
-            >
-              <Pencil className="h-4 w-4 text-slate-500" />
-            </Button>
+      <div key={group.id} className={cn("mb-6 border rounded-lg overflow-hidden bg-white", isIncome ? "border-l-4 border-l-green-500" : "border-l-4 border-l-orange-500")}>
+        {/* Header Row */}
+        <div className="flex items-center gap-3 py-3 px-4 bg-white border-b border-slate-200">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-5 w-5 p-0 hover:bg-slate-100"
+            onClick={() => toggleGroup(group.id)}
+          >
+            {isExpanded ? (
+              <ChevronDown className="h-4 w-4 text-slate-600" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-slate-600" />
+            )}
+          </Button>
+
+          <span className="font-semibold text-base text-slate-900 min-w-[200px]">{group.name}</span>
+
+          {/* Column Headers */}
+          <div className="flex-1 flex items-center justify-end gap-2">
+            <span className="w-24 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Daily</span>
+            <span className="w-24 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Weekly</span>
+            <span className="w-28 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Monthly</span>
+            <span className="w-28 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Yearly</span>
           </div>
 
-          {isExpanded && (
-            <>
-              {groupBudgets.map((budget) => {
-                const Icon = ICON_MAP[budget.icon] || Circle;
-                const monthlyAmount = budget.limit_amount || 0;
-
-                return (
-                  <div
-                    key={budget.id}
-                    className="flex items-center gap-2 py-3 px-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors"
-                    onClick={() => onEditBudget?.(budget)}
-                  >
-                    <div className="w-6"></div>
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                      style={{ backgroundColor: budget.color || '#94a3b8' }}
-                    >
-                      <Icon className="w-4 h-4 text-white" />
-                    </div>
-                    <span className="text-sm text-slate-900 flex-1">{budget.name}</span>
-
-                    <div className="flex items-center gap-6 text-sm text-slate-700">
-                      <span className="w-16 text-center">
-                        $ {formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'))}
-                      </span>
-                      <span className="w-16 text-center">
-                        $ {formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'))}
-                      </span>
-                      <span className="w-20 text-center font-semibold">
-                        $ {formatAmount(monthlyAmount)}
-                      </span>
-                      <span className="w-20 text-center">
-                        $ {formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'))}
-                      </span>
-                    </div>
-                    <div className="w-8"></div>
-                  </div>
-                );
-              })}
-
-              <div className="flex items-center gap-2 py-3 px-4 bg-slate-50 font-semibold">
-                <div className="w-6"></div>
-                <span className="text-sm text-slate-900 flex-1 pl-10">Total</span>
-                <div className="flex items-center gap-6 text-sm text-slate-900">
-                  <span className="w-16 text-center">
-                    ${formatAmount(totals.daily)}
-                  </span>
-                  <span className="w-16 text-center">
-                    ${formatAmount(totals.weekly)}
-                  </span>
-                  <span className="w-20 text-center font-bold">
-                    ${formatAmount(totals.monthly)}
-                  </span>
-                  <span className="w-20 text-center">
-                    ${formatAmount(totals.yearly)}
-                  </span>
-                </div>
-                <div className="w-8"></div>
-              </div>
-            </>
-          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 hover:bg-slate-100 ml-2"
+            onClick={(e) => {
+              e.stopPropagation();
+              onEditGroup?.(group);
+            }}
+          >
+            <Pencil className="h-4 w-4 text-slate-500" />
+          </Button>
         </div>
+
+        {isExpanded && (
+          <>
+            {/* Budget Items */}
+            {groupBudgets.map((budget) => {
+              const Icon = ICON_MAP[budget.icon] || Circle;
+              const monthlyAmount = budget.limit_amount || 0;
+
+              return (
+                <div
+                  key={budget.id}
+                  className="flex items-center gap-3 py-2.5 px-4 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
+                  onClick={() => onEditBudget?.(budget)}
+                >
+                  <div className="w-5"></div>
+
+                  <div
+                    className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: budget.color || '#94a3b8' }}
+                  >
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+
+                  <span className="text-sm text-slate-900 min-w-[200px]">{budget.name}</span>
+
+                  {/* Amount Columns */}
+                  <div className="flex-1 flex items-center justify-end gap-2 text-sm">
+                    <div className="w-24 text-center tabular-nums">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'))}</span>
+                    </div>
+                    <div className="w-24 text-center tabular-nums">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'))}</span>
+                    </div>
+                    <div className="w-28 text-center tabular-nums font-semibold">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-900">{formatAmount(monthlyAmount)}</span>
+                    </div>
+                    <div className="w-28 text-center tabular-nums">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'))}</span>
+                    </div>
+                  </div>
+
+                  <div className="w-8"></div>
+                </div>
+              );
+            })}
+
+            {/* Total Row */}
+            <div className="flex items-center gap-3 py-3 px-4 bg-slate-50">
+              <div className="w-5"></div>
+              <div className="w-9"></div>
+              <span className="text-sm font-semibold text-slate-900 min-w-[200px]">Total</span>
+
+              <div className="flex-1 flex items-center justify-end gap-2 text-sm font-semibold tabular-nums">
+                <div className="w-24 text-center text-slate-900">
+                  ${formatAmount(totals.daily)}
+                </div>
+                <div className="w-24 text-center text-slate-900">
+                  ${formatAmount(totals.weekly)}
+                </div>
+                <div className="w-28 text-center font-bold text-slate-900">
+                  ${formatAmount(totals.monthly)}
+                </div>
+                <div className="w-28 text-center text-slate-900">
+                  ${formatAmount(totals.yearly)}
+                </div>
+              </div>
+
+              <div className="w-8"></div>
+            </div>
+          </>
+        )}
       </div>
     );
   };
