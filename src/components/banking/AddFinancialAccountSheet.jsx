@@ -597,13 +597,9 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
             pointer-events: none !important;
           }
         ` : ''}
-        [data-radix-portal] {
-          z-index: 99999999 !important;
-          pointer-events: auto !important;
-        }
         [data-radix-popper-content-wrapper] {
           pointer-events: auto !important;
-          z-index: 999999999 !important;
+          z-index: 999 !important;
         }
         [data-radix-dialog-content] {
           pointer-events: auto !important;
@@ -612,7 +608,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       <Sheet open={open} onOpenChange={(newOpen) => {
         if (!newOpen && plaidActive) return;
         onOpenChange(newOpen);
-      }} modal={!plaidActive}>
+      }}>
         <SheetContent className="overflow-y-auto sm:max-w-[600px]" ref={(el) => {
           if (el && open) {
             el.scrollTop = 0;
