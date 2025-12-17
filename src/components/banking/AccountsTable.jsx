@@ -584,28 +584,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                     {sortedFilteredAccounts.map((account) => (
                           <tr
                             key={account.id}
-                            className="hover:bg-slate-50 border-t border-slate-100 leading-none cursor-pointer"
-                            onClick={(e) => {
-                              // Don't navigate if clicking on buttons, inputs, or SVG elements (icons inside buttons)
-                              const target = e.target;
-                              if (target.closest('button') || target.closest('input') || target.tagName === 'svg' || target.closest('svg')) {
-                                e.stopPropagation();
-                                e.preventDefault();
-                                return;
-                              }
-
-                              // Navigate to transactions filtered by this account
-                              let newUrl;
-                              if (account.entityType === 'BankAccount') {
-                                newUrl = `${window.location.pathname}?tab=transactions&account=${account.id}`;
-                              } else if (account.entityType === 'Income' || account.entityType === 'Expense') {
-                                newUrl = `${window.location.pathname}?tab=transactions&category=${account.id}`;
-                              }
-                              if (newUrl) {
-                                window.history.pushState({}, '', newUrl);
-                                window.dispatchEvent(new PopStateEvent('popstate'));
-                              }
-                            }}
+                            className="hover:bg-slate-50 border-t border-slate-100 leading-none"
                           >
                             {visibleColumns.name && (
                               <td className={`px-4 py-px ${account.isSubAccount ? 'pl-8' : 'pl-4'}`}>
@@ -651,10 +630,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    e.nativeEvent.stopImmediatePropagation();
+                                  onClick={() => {
                                     setEditingAccount(account);
                                     setEditSheetOpen(true);
                                   }}
@@ -666,10 +642,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    e.nativeEvent.stopImmediatePropagation();
+                                  onClick={() => {
                                     if (account.is_active !== false && account.entityType === 'BankAccount' && account.current_balance && account.current_balance !== 0) {
                                       setDeactivatingAccount(account);
                                     } else {
@@ -685,12 +658,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                                   variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    e.preventDefault();
-                                    e.nativeEvent.stopImmediatePropagation();
-                                    setDeletingAccount(account);
-                                  }}
+                                  onClick={() => setDeletingAccount(account)}
                                 >
                                   <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-600" />
                                 </Button>
