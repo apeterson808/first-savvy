@@ -109,19 +109,11 @@ export function ClickThroughSelect({
         width: rect.width
       });
 
-      const options = extractOptions(children);
-      const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
-
-      const currentDisplayText = currentOption
-        ? (currentOption.props['data-display'] || getDisplayText(currentOption.props.children))
-        : '';
-
-      setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
+      setSearchTerm('');
 
       setTimeout(() => {
         if (searchInputRef.current) {
           searchInputRef.current.focus();
-          searchInputRef.current.select();
         }
       }, 0);
     } else {
