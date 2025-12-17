@@ -1344,7 +1344,7 @@ For each transaction, return the category_id that best matches. Consider:
                             if (statusFilter === 'posted') {
                               // In Posted tab, show contact with AI sparkle indicator if applicable
                               const contact = contacts.find(c => c.id === transaction.contact_id);
-                              const hasAiSuggestion = transaction.ai_suggested_contact_id === transaction.contact_id;
+                              const hasAiSuggestion = transaction.contact_id && transaction.ai_suggested_contact_id === transaction.contact_id;
                               return (
                                 <div className="flex items-center gap-1 px-1">
                                   <span className="text-xs">{contact?.name || '—'}</span>
@@ -1422,7 +1422,7 @@ For each transaction, return the category_id that best matches. Consider:
                             if (statusFilter === 'posted') {
                               // In Posted tab, show category with AI sparkle indicator if applicable
                               const category = categories.find(c => c.id === transaction.category_id);
-                              const hasAiSuggestion = transaction.ai_suggested_category_id === transaction.category_id;
+                              const hasAiSuggestion = transaction.category_id && transaction.ai_suggested_category_id === transaction.category_id;
                               const displayName = category ? getAccountDisplayName({
                                 account_type: category.type,
                                 detail_type: category.detail_type,
