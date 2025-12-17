@@ -63,6 +63,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [addAccountSheetOpen, setAddAccountSheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
+  const [triggeringTransactionId, setTriggeringTransactionId] = useState(null);
+  const [triggeringTransactionType, setTriggeringTransactionType] = useState(null);
   const [addContactSheetOpen, setAddContactSheetOpen] = useState(false);
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
@@ -1442,6 +1444,8 @@ For each transaction, return the category_id that best matches. Consider:
                                 disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                 onAddNew={(searchTerm) => {
                                   setCategorySearchTerm(searchTerm);
+                                  setTriggeringTransactionId(transaction.id);
+                                  setTriggeringTransactionType(transaction.type);
                                   setAddAccountSheetOpen(true);
                                 }}
                                 triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
@@ -2233,11 +2237,14 @@ For each transaction, return the category_id that best matches. Consider:
                                             onOpenChange={setAddAccountSheetOpen}
                                             mode="category"
                                             initialCategoryName={categorySearchTerm}
+                                            initialAccountType={triggeringTransactionType}
                                             onAccountCreated={async ({ account: newCategory }) => {
                                               setCategorySearchTerm('');
+                                              setTriggeringTransactionId(null);
+                                              setTriggeringTransactionType(null);
                                               await queryClient.invalidateQueries({ queryKey: ['categories'] });
-                                              if (expandedTransactionId && newCategory) {
-                                                const transaction = transactions.find(t => t.id === expandedTransactionId);
+                                              if (triggeringTransactionId && newCategory) {
+                                                const transaction = transactions.find(t => t.id === triggeringTransactionId);
                                                 if (transaction) {
                                                   updateMutation.mutate({
                                                     id: transaction.id,

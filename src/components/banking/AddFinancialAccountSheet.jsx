@@ -61,7 +61,7 @@ const PLAID_LINKABLE_DETAIL_TYPES = [
   'mortgage', 'car_loan', 'student_loan', 'personal_loan' // liability
 ];
 
-export default function AddFinancialAccountSheet({ open, onOpenChange, onAccountCreated, editingAccount, mode = 'all', hideLinkAccount = false, sortColumn = 'name', sortDirection = 'asc', initialCategoryName = '', externalPlaidReviewOpen, onPlaidReviewOpenChange, externalPlaidData, onPlaidDataChange }) {
+export default function AddFinancialAccountSheet({ open, onOpenChange, onAccountCreated, editingAccount, mode = 'all', hideLinkAccount = false, sortColumn = 'name', sortDirection = 'asc', initialCategoryName = '', initialAccountType = null, externalPlaidReviewOpen, onPlaidReviewOpenChange, externalPlaidData, onPlaidDataChange }) {
   const [accountType, setAccountType] = useState('');
   const [detailType, setDetailType] = useState('');
   const [name, setName] = useState('');
@@ -161,7 +161,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       setIsActive(editingAccount.is_active !== false);
     } else {
       // Reset form when opening for new account
-      setAccountType('');
+      setAccountType(initialAccountType || '');
       setDetailType('');
       setName(initialCategoryName || '');
       setAccountNumber('');
@@ -175,7 +175,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       setIsActive(true);
       setShowManualForm(mode === 'category');
       }
-      }, [open, editingAccount, initialCategoryName, mode]);
+      }, [open, editingAccount, initialCategoryName, initialAccountType, mode]);
 
       // Detail type reset is now fully handled in the onChange handler
 
@@ -721,19 +721,17 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4 py-4" onKeyDown={(e) => e.stopPropagation()}>
-          {/* Display Name - Hidden for Income/Expense, auto-filled from detail type */}
-          {accountType !== 'income' && accountType !== 'expense' && (
-            <div>
-              <Label htmlFor="name">Account Name*</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g., Chase Checking"
-                required
-              />
-            </div>
-          )}
+          {/* Display Name */}
+          <div>
+            <Label htmlFor="name">{isCategory ? 'Category Name*' : 'Account Name*'}</Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={isCategory ? "e.g., Groceries, Rent, Salary" : "e.g., Chase Checking"}
+              required
+            />
+          </div>
 
           {/* Account Type and Detail Type - Side by Side */}
           <div className="grid grid-cols-2 gap-3">
