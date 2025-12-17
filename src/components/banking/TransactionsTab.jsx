@@ -289,34 +289,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     generateSuggestions();
   }, [fullPendingTransactions.length, categories.length, fullPostedTransactions.length, categorizationRules.length]);
 
-  // Auto-apply AI-suggested contacts
-  React.useEffect(() => {
-    const applyContactSuggestions = async () => {
-      if (!fullPendingTransactions.length || !contacts.length) return;
-
-      const transactionsNeedingContactApplication = fullPendingTransactions.filter(
-        t => t.ai_suggested_contact_id && !t.contact_id
-      );
-
-      if (transactionsNeedingContactApplication.length === 0) return;
-
-      console.log(`Auto-applying ${transactionsNeedingContactApplication.length} AI contact suggestions...`);
-
-      for (const transaction of transactionsNeedingContactApplication) {
-        try {
-          await base44.entities.Transaction.update(transaction.id, {
-            contact_id: transaction.ai_suggested_contact_id
-          });
-        } catch (err) {
-          console.error('Failed to apply contact suggestion for transaction:', transaction.id, err);
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-    };
-
-    applyContactSuggestions();
-  }, [fullPendingTransactions.length, contacts.length]);
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
