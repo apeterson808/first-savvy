@@ -24,14 +24,7 @@ export default function RecentTransactionsCard() {
     queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
-  const { data: creditCards = [] } = useQuery({
-    queryKey: ['activeCreditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
-  });
-
-  // Filter out BankAccounts with account_type='credit_card' to avoid duplicates with CreditCard entities
-  const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-  const accounts = [...filteredBankAccounts, ...creditCards];
+  const accounts = bankAccounts;
 
   const { data: allPendingTransactions = [] } = useQuery({
     queryKey: ['fullPendingTransactions'],

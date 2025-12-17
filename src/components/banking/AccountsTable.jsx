@@ -45,10 +45,8 @@ function EditableAccountName({ account }) {
       ? { account_name: trimmed }
       : { name: trimmed };
 
-    if (entityType === 'BankAccount') {
+    if (entityType === 'BankAccount' || entityType === 'CreditCard') {
       await base44.entities.BankAccount.update(account.id, updateData);
-    } else if (entityType === 'CreditCard') {
-      await base44.entities.CreditCard.update(account.id, updateData);
     } else if (entityType === 'Asset') {
       await base44.entities.Asset.update(account.id, updateData);
     } else if (entityType === 'Liability') {
@@ -160,10 +158,8 @@ export default function AccountsTable({ accounts, isLoading }) {
   const deleteAccountMutation = useMutation({
     mutationFn: async (account) => {
       const entityType = account.entityType || 'BankAccount';
-      if (entityType === 'BankAccount') {
+      if (entityType === 'BankAccount' || entityType === 'CreditCard') {
         return base44.entities.BankAccount.delete(account.id);
-      } else if (entityType === 'CreditCard') {
-        return base44.entities.CreditCard.delete(account.id);
       } else if (entityType === 'Asset') {
         return base44.entities.Asset.delete(account.id);
       } else if (entityType === 'Liability') {
@@ -266,10 +262,8 @@ export default function AccountsTable({ accounts, isLoading }) {
         return base44.entities.BankAccount.update(account.id, { is_active: newActiveState });
       }
       
-      if (entityType === 'BankAccount') {
+      if (entityType === 'BankAccount' || entityType === 'CreditCard') {
         return base44.entities.BankAccount.update(account.id, { is_active: newActiveState });
-      } else if (entityType === 'CreditCard') {
-        return base44.entities.CreditCard.update(account.id, { is_active: newActiveState });
       } else if (entityType === 'Asset') {
         return base44.entities.Asset.update(account.id, { is_active: newActiveState });
       } else if (entityType === 'Liability') {

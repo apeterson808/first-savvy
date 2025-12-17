@@ -49,12 +49,8 @@ export default function Transactions() {
   const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const [bankAccounts, creditCards] = await Promise.all([
-        base44.entities.BankAccount.filter({ is_active: true }),
-        base44.entities.CreditCard.filter({ is_active: true })
-      ]);
-      const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-      return [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
+      const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
+      return bankAccounts;
     }
   });
 

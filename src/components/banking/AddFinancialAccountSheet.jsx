@@ -203,21 +203,20 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
 
   const createCreditCardMutation = useMutation({
     mutationFn: (data) => {
-      console.log('💳 Creating CreditCard with data:', data);
-      return withRetry(() => base44.entities.CreditCard.create(data), { maxRetries: 2 });
+      console.log('💳 Creating Credit Card in BankAccount with data:', data);
+      return withRetry(() => base44.entities.BankAccount.create(data), { maxRetries: 2 });
     },
     onSuccess: (newAccount) => {
-      console.log('✅ CreditCard created successfully:', newAccount);
+      console.log('✅ Credit Card created successfully:', newAccount);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['activeCreditCards'] });
-      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
       onAccountCreated?.({ type: 'credit_card', account: newAccount });
       onOpenChange(false);
     },
     onError: (error) => {
-      console.error('❌ Error creating CreditCard:', error);
+      console.error('❌ Error creating Credit Card:', error);
       logError(error, { action: 'createCreditCard' });
       showErrorToast(error);
     }
@@ -292,13 +291,12 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
   });
 
   const updateCreditCardMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.CreditCard.update(id, data), { maxRetries: 2 }),
+    mutationFn: ({ id, data }) => withRetry(() => base44.entities.BankAccount.update(id, data), { maxRetries: 2 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['activeCreditCards'] });
-      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
+      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
       onAccountCreated?.({ type: 'credit_card' });
       onOpenChange(false);
     },

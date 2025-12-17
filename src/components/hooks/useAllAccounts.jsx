@@ -8,12 +8,6 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const { data: creditCards = [], isLoading: loadingCreditCards } = useQuery({
-    queryKey: ['creditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true }),
-    staleTime: 30000,
-  });
-
   const { data: assets = [], isLoading: loadingAssets } = useQuery({
     queryKey: ['assets'],
     queryFn: () => base44.entities.Asset.list('name'),
@@ -32,23 +26,27 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
+  const transactionalAccounts = bankAccounts.filter(a =>
+    ['checking', 'savings', 'credit', 'credit_card'].includes(a.account_type)
+  );
 
-  // Combine all accounts with entityType marker
+  const creditCards = bankAccounts.filter(a =>
+    a.account_type === 'credit' || a.account_type === 'credit_card'
+  );
+
   const allAccounts = [
-    ...filteredBankAccounts.map(a => ({ ...a, entityType: 'BankAccount' })),
-    ...creditCards.map(a => ({ ...a, account_name: a.name, entityType: 'CreditCard' })),
+    ...transactionalAccounts.map(a => ({ ...a, entityType: 'BankAccount' })),
     ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
     ...liabilities.map(l => ({ ...l, account_name: l.name, entityType: 'Liability' })),
     ...categories.filter(c => c.type === 'income').map(c => ({ ...c, account_name: c.name, entityType: 'Income' })),
     ...categories.filter(c => c.type === 'expense').map(c => ({ ...c, account_name: c.name, entityType: 'Expense' })),
   ];
 
-  const isLoading = loadingBanks || loadingCreditCards || loadingAssets || loadingLiabilities || loadingCategories;
+  const isLoading = loadingBanks || loadingAssets || loadingLiabilities || loadingCategories;
 
   return {
     allAccounts,
-    bankAccounts: filteredBankAccounts,
+    bankAccounts: transactionalAccounts,
     creditCards,
     assets,
     liabilities,

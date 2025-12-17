@@ -179,32 +179,20 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
-  const { data: creditCards = [] } = useQuery({
-    queryKey: ['activeCreditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
-  });
+  const accounts = bankAccounts;
 
-  // Filter out BankAccounts with account_type='credit_card' to avoid duplicates with CreditCard entities
-  const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-  const accounts = [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
-
-  // Fetch all active accounts for Match tab dropdown (bank accounts, credit cards, assets, liabilities)
+  // Fetch all active accounts for Match tab dropdown (bank accounts, assets, liabilities)
   const { data: allActiveAccounts = [] } = useQuery({
     queryKey: ['allActiveAccountsForMatch'],
     queryFn: async () => {
-      const [bankAccounts, creditCards, assets, liabilities] = await Promise.all([
+      const [bankAccounts, assets, liabilities] = await Promise.all([
         base44.entities.BankAccount.filter({ is_active: true }),
-        base44.entities.CreditCard.filter({ is_active: true }),
         base44.entities.Asset.filter({ is_active: true }),
         base44.entities.Liability.filter({ is_active: true })
       ]);
-      
-      // Filter out BankAccounts with account_type='credit_card' to avoid duplicates with CreditCard entities
-      const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-      
+
       return [
-        ...filteredBankAccounts.map(a => ({ ...a, entityType: 'BankAccount' })),
-        ...creditCards.map(a => ({ ...a, account_name: a.name, entityType: 'CreditCard' })),
+        ...bankAccounts.map(a => ({ ...a, entityType: 'BankAccount' })),
         ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
         ...liabilities.map(a => ({ ...a, account_name: a.name, entityType: 'Liability' }))
       ];
