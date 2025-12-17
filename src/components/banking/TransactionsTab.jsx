@@ -1358,7 +1358,7 @@ For each transaction, return the category_id that best matches. Consider:
                                   setContactSearchTerm(searchTerm);
                                   setAddContactSheetOpen(true);
                                 }}
-                                triggerClassName="h-7 border-slate-300"
+                                triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                 placeholder="Select contact"
                               />
                             );
@@ -1429,7 +1429,7 @@ For each transaction, return the category_id that best matches. Consider:
                                   setCategorySearchTerm(searchTerm);
                                   setAddAccountSheetOpen(true);
                                 }}
-                                triggerClassName="h-7 border-slate-300"
+                                triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                 placeholder="Select category"
                                 isTransactionTransfer={transaction.type === 'transfer'}
                                 transactionAmount={transaction.amount}
