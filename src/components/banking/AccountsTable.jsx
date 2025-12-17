@@ -582,13 +582,18 @@ export default function AccountsTable({ accounts, isLoading }) {
                 return (
                   <tbody>
                     {sortedFilteredAccounts.map((account) => (
-                          <tr 
+                          <tr
                             key={account.id}
                             className="hover:bg-slate-50 border-t border-slate-100 leading-none cursor-pointer"
                             onClick={(e) => {
-                              // Don't navigate if clicking on buttons or inputs
-                              if (e.target.closest('button') || e.target.closest('input')) return;
-                              
+                              // Don't navigate if clicking on buttons, inputs, or SVG elements (icons inside buttons)
+                              const target = e.target;
+                              if (target.closest('button') || target.closest('input') || target.tagName === 'svg' || target.closest('svg')) {
+                                e.stopPropagation();
+                                e.preventDefault();
+                                return;
+                              }
+
                               // Navigate to transactions filtered by this account
                               let newUrl;
                               if (account.entityType === 'BankAccount') {
@@ -648,6 +653,8 @@ export default function AccountsTable({ accounts, isLoading }) {
                                   className="h-6 w-6"
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    e.preventDefault();
+                                    e.nativeEvent.stopImmediatePropagation();
                                     setEditingAccount(account);
                                     setEditSheetOpen(true);
                                   }}
@@ -655,11 +662,14 @@ export default function AccountsTable({ accounts, isLoading }) {
                                   <Edit className="w-4 h-4 text-slate-400 hover:text-slate-600" />
                                 </Button>
 
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   className="h-6 w-6"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    e.nativeEvent.stopImmediatePropagation();
                                     if (account.is_active !== false && account.entityType === 'BankAccount' && account.current_balance && account.current_balance !== 0) {
                                       setDeactivatingAccount(account);
                                     } else {
@@ -671,11 +681,16 @@ export default function AccountsTable({ accounts, isLoading }) {
                                   <EyeOff className={`w-4 h-4 ${account.is_active === false ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`} />
                                 </Button>
 
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
                                   className="h-6 w-6"
-                                  onClick={() => setDeletingAccount(account)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    e.preventDefault();
+                                    e.nativeEvent.stopImmediatePropagation();
+                                    setDeletingAccount(account);
+                                  }}
                                 >
                                   <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-600" />
                                 </Button>
