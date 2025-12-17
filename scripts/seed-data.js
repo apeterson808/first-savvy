@@ -1,9 +1,39 @@
 import { createClient } from '@supabase/supabase-js';
 import { format, subMonths, addDays, startOfMonth, endOfMonth, parseISO } from 'date-fns';
 import * as readline from 'readline';
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+function loadEnv() {
+  try {
+    const envPath = join(__dirname, '..', '.env');
+    const envContent = readFileSync(envPath, 'utf-8');
+    const envVars = {};
+
+    envContent.split('\n').forEach(line => {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#')) {
+        const [key, ...valueParts] = trimmed.split('=');
+        if (key && valueParts.length > 0) {
+          envVars[key.trim()] = valueParts.join('=').trim();
+        }
+      }
+    });
+
+    return envVars;
+  } catch (error) {
+    console.error('❌ Error reading .env file:', error.message);
+    return {};
+  }
+}
+
+const env = loadEnv();
+const supabaseUrl = env.VITE_SUPABASE_URL;
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   console.error('❌ Missing Supabase environment variables!');
@@ -169,7 +199,7 @@ async function createBankAccounts() {
       account_name: 'Chase Checking',
       account_type: 'checking',
       institution: 'Chase Bank',
-      last_four: '4523',
+      account_number: '****4523',
       current_balance: 8500.00,
       is_active: true,
       start_date: '2025-01-15'
@@ -178,7 +208,7 @@ async function createBankAccounts() {
       account_name: 'Wells Fargo Savings',
       account_type: 'savings',
       institution: 'Wells Fargo',
-      last_four: '8901',
+      account_number: '****8901',
       current_balance: 25000.00,
       is_active: true,
       start_date: '2025-01-10'
@@ -187,7 +217,7 @@ async function createBankAccounts() {
       account_name: 'Ally High-Yield Savings',
       account_type: 'savings',
       institution: 'Ally Bank',
-      last_four: '3344',
+      account_number: '****3344',
       current_balance: 15000.00,
       is_active: true,
       start_date: '2025-02-01'
@@ -196,11 +226,8 @@ async function createBankAccounts() {
       account_name: 'Chase Sapphire Reserve',
       account_type: 'credit',
       institution: 'Chase Bank',
-      last_four: '5678',
+      account_number: '****5678',
       current_balance: -3200.00,
-      credit_limit: 20000.00,
-      apr: 18.99,
-      due_date: 15,
       is_active: true,
       start_date: '2024-06-01'
     },
@@ -208,11 +235,8 @@ async function createBankAccounts() {
       account_name: 'Citi Double Cash',
       account_type: 'credit',
       institution: 'Citibank',
-      last_four: '9012',
+      account_number: '****9012',
       current_balance: -1450.00,
-      credit_limit: 10000.00,
-      apr: 16.49,
-      due_date: 15,
       is_active: true,
       start_date: '2024-08-15'
     }
@@ -239,7 +263,7 @@ async function createAssets() {
 
   const assets = [
     {
-      account_name: 'Vanguard 401(k)',
+      name: 'Vanguard 401(k)',
       type: 'retirement',
       institution: 'Vanguard',
       current_value: 125000.00,
@@ -248,7 +272,7 @@ async function createAssets() {
       is_active: true
     },
     {
-      account_name: 'Fidelity Roth IRA',
+      name: 'Fidelity Roth IRA',
       type: 'retirement',
       institution: 'Fidelity',
       current_value: 45000.00,
@@ -257,7 +281,7 @@ async function createAssets() {
       is_active: true
     },
     {
-      account_name: 'Robinhood Stocks',
+      name: 'Robinhood Stocks',
       type: 'brokerage',
       institution: 'Robinhood',
       current_value: 12500.00,
@@ -276,7 +300,7 @@ async function createAssets() {
 
   const assetMap = {};
   data.forEach(asset => {
-    assetMap[asset.account_name] = asset.id;
+    assetMap[asset.name] = asset.id;
   });
 
   console.log(`✓ Created ${data.length} assets`);
@@ -288,23 +312,23 @@ async function createLiabilities() {
 
   const liabilities = [
     {
-      account_name: 'Home Mortgage',
+      name: 'Home Mortgage',
       type: 'mortgage',
       institution: 'Wells Fargo Home Mortgage',
       current_balance: 285000.00,
       interest_rate: 3.75,
       minimum_payment: 1650.00,
-      due_date: 1,
+      due_date: '2026-01-01',
       is_active: true
     },
     {
-      account_name: 'Honda CR-V Loan',
+      name: 'Honda CR-V Loan',
       type: 'auto_loan',
       institution: 'Honda Financial',
       current_balance: 18500.00,
       interest_rate: 4.25,
       minimum_payment: 425.00,
-      due_date: 22,
+      due_date: '2026-01-22',
       is_active: true
     }
   ];
@@ -318,7 +342,7 @@ async function createLiabilities() {
 
   const liabilityMap = {};
   data.forEach(liability => {
-    liabilityMap[liability.account_name] = liability.id;
+    liabilityMap[liability.name] = liability.id;
   });
 
   console.log(`✓ Created ${data.length} liabilities`);
@@ -552,17 +576,14 @@ async function generatePendingTransactions(accountMap, categoryMap) {
   return data;
 }
 
-async function generateInvestmentTransactions(assetMap, categoryMap) {
-  console.log('📊 Generating investment transactions (all posted)...');
+async function generateInvestmentTransactions(assetMap, categoryMap, accountMap) {
+  console.log('📊 Generating investment-related transactions (all posted)...');
 
   const transactions = [];
-  const vanguard401k = assetMap['Vanguard 401(k)'];
-  const fidelityIRA = assetMap['Fidelity Roth IRA'];
-  const robinhoodStocks = assetMap['Robinhood Stocks'];
+  const checkingId = accountMap['Chase Checking'];
 
   for (let month = 0; month < 7; month++) {
     const currentMonth = new Date(2025, 5 + month, 1);
-    const endOfCurrentMonth = endOfMonth(currentMonth);
 
     transactions.push({
       date: formatDate(new Date(2025, 5 + month, 5)),
@@ -571,47 +592,35 @@ async function generateInvestmentTransactions(assetMap, categoryMap) {
       type: 'income',
       status: 'posted',
       category_id: categoryMap['Investment Income'],
-      bank_account_id: vanguard401k,
+      bank_account_id: checkingId,
       payment_method: 'bank_transfer'
     });
 
-    const contribution401k = 1000.00;
+    const contribution401k = -1000.00;
     transactions.push({
       date: formatDate(new Date(2025, 5 + month, 15)),
-      description: '401(k) Contribution',
+      description: '401(k) Contribution (Payroll Deduction)',
       amount: contribution401k,
-      type: 'transfer',
+      type: 'expense',
       status: 'posted',
-      category_id: getTransferCategoryId(contribution401k, categoryMap),
-      bank_account_id: vanguard401k,
-      payment_method: 'bank_transfer'
+      category_id: categoryMap['Other Expense'],
+      bank_account_id: checkingId,
+      payment_method: 'bank_transfer',
+      notes: 'Automatic payroll deduction for retirement'
     });
 
-    const contributionIRA = 500.00;
+    const contributionIRA = -500.00;
     transactions.push({
       date: formatDate(new Date(2025, 5 + month, 10)),
       description: 'IRA Contribution',
       amount: contributionIRA,
-      type: 'transfer',
+      type: 'expense',
       status: 'posted',
-      category_id: getTransferCategoryId(contributionIRA, categoryMap),
-      bank_account_id: fidelityIRA,
-      payment_method: 'bank_transfer'
+      category_id: categoryMap['Other Expense'],
+      bank_account_id: checkingId,
+      payment_method: 'bank_transfer',
+      notes: 'Roth IRA contribution'
     });
-
-    if (Math.random() > 0.5) {
-      const stockPurchase = randomAmount(200, 500);
-      transactions.push({
-        date: formatDate(randomDate(currentMonth, endOfCurrentMonth)),
-        description: 'Stock Purchase - AAPL',
-        amount: stockPurchase,
-        type: 'transfer',
-        status: 'posted',
-        category_id: getTransferCategoryId(stockPurchase, categoryMap),
-        bank_account_id: robinhoodStocks,
-        payment_method: 'bank_transfer'
-      });
-    }
   }
 
   const { data, error } = await supabase
@@ -621,7 +630,7 @@ async function generateInvestmentTransactions(assetMap, categoryMap) {
 
   if (error) throw error;
 
-  console.log(`✓ Created ${data.length} investment transactions`);
+  console.log(`✓ Created ${data.length} investment-related transactions`);
   return data;
 }
 
@@ -794,7 +803,7 @@ async function createCreditScores() {
     scores.push({
       score: score,
       bureau: bureaus[month % 3],
-      date: formatDate(endOfMonth(new Date(2025, 5 + month, 1)))
+      last_checked: formatDate(endOfMonth(new Date(2025, 5 + month, 1)))
     });
   }
 
@@ -944,12 +953,10 @@ async function main() {
 
     await generatePostedTransactions(accountMap, categoryMap, contactMap);
     await generatePendingTransactions(accountMap, categoryMap);
-    await generateInvestmentTransactions(assetMap, categoryMap);
+    await generateInvestmentTransactions(assetMap, categoryMap, accountMap);
     await generateTransferTransactions(accountMap, categoryMap);
 
-    await createCreditScores();
     await createBudgets(categoryMap);
-    await createCategorizationRules(categoryMap);
 
     await printSummary();
 
