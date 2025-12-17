@@ -182,6 +182,70 @@ export function ClickThroughSelect({
               if (e.key === 'Escape') {
                 e.preventDefault();
                 handleOpenChange(false);
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+
+                // Get all visible items after filtering
+                const getTextContent = (node) => {
+                  if (typeof node === 'string') return node;
+                  if (typeof node === 'number') return String(node);
+                  if (Array.isArray(node)) return node.map(getTextContent).join('');
+                  if (node?.props?.children) return getTextContent(node.props.children);
+                  return '';
+                };
+
+                const flattenChildren = (nodes) => {
+                  const result = [];
+                  React.Children.forEach(nodes, (child) => {
+                    if (!child) return;
+                    if (child.type === React.Fragment) {
+                      result.push(...flattenChildren(child.props.children));
+                    } else if (Array.isArray(child)) {
+                      result.push(...flattenChildren(child));
+                    } else {
+                      result.push(child);
+                    }
+                  });
+                  return result;
+                };
+
+                const flatChildren = flattenChildren(children);
+
+                // Find all visible items (not action items first)
+                const visibleItems = flatChildren.filter(child => {
+                  if (!isSelectItem(child)) return false;
+                  if (child.props.isAction) return false; // Skip action items in first pass
+
+                  const displayText = child.props['data-display'] || getTextContent(child.props.children);
+                  return !searchTerm || displayText.toLowerCase().includes(searchTerm.toLowerCase()) || child.props.isRecommended;
+                });
+
+                // Check for exact match (case-insensitive)
+                const exactMatch = visibleItems.find(child => {
+                  const displayText = child.props['data-display'] || getTextContent(child.props.children);
+                  return displayText.toLowerCase() === searchTerm.toLowerCase();
+                });
+
+                if (exactMatch) {
+                  // Select the exact match
+                  handleSelect(exactMatch.props.value, false);
+                } else if (visibleItems.length === 1) {
+                  // If only one item visible, select it
+                  handleSelect(visibleItems[0].props.value, false);
+                } else {
+                  // Look for action items (like "Add new category")
+                  const actionItems = flatChildren.filter(child =>
+                    isSelectItem(child) && child.props.isAction
+                  );
+
+                  if (actionItems.length > 0 && searchTerm) {
+                    // Select the first action item (Add new)
+                    handleSelect(actionItems[0].props.value, true);
+                  } else if (visibleItems.length > 0) {
+                    // If there are multiple matches but no exact match, select the first one
+                    handleSelect(visibleItems[0].props.value, false);
+                  }
+                }
               }
             }}
             onMouseDown={(e) => e.stopPropagation()}
