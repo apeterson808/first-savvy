@@ -29,6 +29,49 @@ export function ClickThroughSelect({
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
+  // Helper to check if child is a SelectItem
+  const isSelectItem = (child) => {
+    return child?.type?.displayName === 'ClickThroughSelectItem' ||
+           child?.type === ClickThroughSelectItem ||
+           child?.props?.['data-click-through-select-item'];
+  };
+
+  const isSeparator = (child) => {
+    return child?.type?.displayName === 'ClickThroughSelectSeparator' ||
+           child?.type === ClickThroughSelectSeparator ||
+           child?.props?.['data-click-through-select-separator'];
+  };
+
+  // Get text content for display - use data-display if available, otherwise extract text
+  const getDisplayText = (node) => {
+    if (typeof node === 'string') return node;
+    if (typeof node === 'number') return String(node);
+    if (Array.isArray(node)) return node.map(getDisplayText).join('');
+    if (node?.props?.children) return getDisplayText(node.props.children);
+    return '';
+  };
+
+  // Extract options from children (including nested in fragments)
+  const extractOptions = (nodes) => {
+    const result = [];
+    React.Children.forEach(nodes, (child) => {
+      if (!child) return;
+      if (child.type === React.Fragment) {
+        result.push(...extractOptions(child.props.children));
+      } else if (Array.isArray(child)) {
+        result.push(...extractOptions(child));
+      } else if (isSelectItem(child)) {
+        result.push(child);
+      } else if (isSeparator(child)) {
+        result.push(child);
+      } else if (child.props?.children) {
+        // Check inside wrapper divs etc
+        result.push(...extractOptions(child.props.children));
+      }
+    });
+    return result;
+  };
+
   useEffect(() => {
     if (value !== undefined) {
       setSelectedValue(value);
@@ -66,8 +109,11 @@ export function ClickThroughSelect({
         width: rect.width
       });
 
-      const currentDisplayText = selectedOption
-        ? (selectedOption.props['data-display'] || getDisplayText(selectedOption.props.children))
+      const options = extractOptions(children);
+      const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
+
+      const currentDisplayText = currentOption
+        ? (currentOption.props['data-display'] || getDisplayText(currentOption.props.children))
         : '';
 
       setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
@@ -81,7 +127,7 @@ export function ClickThroughSelect({
     } else {
       setSearchTerm('');
     }
-  }, [isOpen, selectedOption, placeholder]);
+  }, [isOpen, selectedValue, children, placeholder]);
 
   const handleSelect = (val, isAction) => {
     if (!isAction) {
@@ -93,54 +139,11 @@ export function ClickThroughSelect({
     handleOpenChange(false);
   };
 
-  // Helper to check if child is a SelectItem
-  const isSelectItem = (child) => {
-    return child?.type?.displayName === 'ClickThroughSelectItem' || 
-           child?.type === ClickThroughSelectItem ||
-           child?.props?.['data-click-through-select-item'];
-  };
-
-  const isSeparator = (child) => {
-    return child?.type?.displayName === 'ClickThroughSelectSeparator' || 
-           child?.type === ClickThroughSelectSeparator ||
-           child?.props?.['data-click-through-select-separator'];
-  };
-
-  // Extract options from children (including nested in fragments)
-  const extractOptions = (nodes) => {
-    const result = [];
-    React.Children.forEach(nodes, (child) => {
-      if (!child) return;
-      if (child.type === React.Fragment) {
-        result.push(...extractOptions(child.props.children));
-      } else if (Array.isArray(child)) {
-        result.push(...extractOptions(child));
-      } else if (isSelectItem(child)) {
-        result.push(child);
-      } else if (isSeparator(child)) {
-        result.push(child);
-      } else if (child.props?.children) {
-        // Check inside wrapper divs etc
-        result.push(...extractOptions(child.props.children));
-      }
-    });
-    return result;
-  };
-
   const options = extractOptions(children);
   const selectedOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
-  
-  // Get text content for display - use data-display if available, otherwise extract text
-  const getDisplayText = (node) => {
-    if (typeof node === 'string') return node;
-    if (typeof node === 'number') return String(node);
-    if (Array.isArray(node)) return node.map(getDisplayText).join('');
-    if (node?.props?.children) return getDisplayText(node.props.children);
-    return '';
-  };
-  
+
   // Prefer data-display attribute for clean display text (without icons/badges)
-  const displayText = selectedOption 
+  const displayText = selectedOption
     ? (selectedOption.props['data-display'] || getDisplayText(selectedOption.props.children))
     : placeholder;
 
