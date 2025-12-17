@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { startOfMonth, endOfMonth } from 'date-fns';
@@ -93,6 +94,7 @@ function EditableAccountName({ account }) {
 }
 
 export default function AccountsTable({ accounts, isLoading }) {
+  const navigate = useNavigate();
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
@@ -575,7 +577,6 @@ export default function AccountsTable({ accounts, isLoading }) {
                   {visibleColumns.status && (
                     <th className="font-semibold text-slate-700 text-center px-4 py-3">Status</th>
                   )}
-                  <th className="font-semibold text-slate-700 text-right px-4 py-3">Actions</th>
                 </tr>
               </thead>
               {(() => {
@@ -584,7 +585,8 @@ export default function AccountsTable({ accounts, isLoading }) {
                     {sortedFilteredAccounts.map((account) => (
                           <tr
                             key={account.id}
-                            className="hover:bg-slate-50 border-t border-slate-100 leading-none"
+                            className="hover:bg-slate-50 border-t border-slate-100 leading-none cursor-pointer"
+                            onClick={() => navigate(`/banking/account/${account.id}`)}
                           >
                             {visibleColumns.name && (
                               <td className={`px-4 py-px ${account.isSubAccount ? 'pl-8' : 'pl-4'}`}>
@@ -624,46 +626,6 @@ export default function AccountsTable({ accounts, isLoading }) {
                                 </span>
                               </td>
                             )}
-                            <td className="text-right px-4 py-px">
-                              <div className="flex items-center justify-end gap-0">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => {
-                                    setEditingAccount(account);
-                                    setEditSheetOpen(true);
-                                  }}
-                                >
-                                  <Edit className="w-4 h-4 text-slate-400 hover:text-slate-600" />
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => {
-                                    if (account.is_active !== false && account.entityType === 'BankAccount' && account.current_balance && account.current_balance !== 0) {
-                                      setDeactivatingAccount(account);
-                                    } else {
-                                      toggleActiveMutation.mutate({ account });
-                                    }
-                                  }}
-                                  title={account.is_active === false ? 'Make active' : 'Make inactive'}
-                                >
-                                  <EyeOff className={`w-4 h-4 ${account.is_active === false ? 'text-blue-500' : 'text-slate-400 hover:text-slate-600'}`} />
-                                </Button>
-
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() => setDeletingAccount(account)}
-                                >
-                                  <Trash2 className="w-4 h-4 text-slate-400 hover:text-red-600" />
-                                </Button>
-                              </div>
-                            </td>
                           </tr>
                         ))}
                   </tbody>

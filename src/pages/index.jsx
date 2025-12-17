@@ -18,6 +18,8 @@ import Contacts from "./Contacts";
 
 import ContactDetail from "./ContactDetail";
 
+import AccountDetail from "./AccountDetail";
+
 import Integrations from "./Integrations";
 
 import Collaboration from "./Collaboration";
@@ -78,7 +80,9 @@ function PagesContent() {
                 <Route path="/Transactions" element={<Transactions />} />
                 
                 <Route path="/Banking" element={<Banking />} />
-                
+
+                <Route path="/Banking/account/:id" element={<AccountDetail />} />
+
                 <Route path="/Budgeting" element={<Budgeting />} />
                 
                 <Route path="/NetWorth" element={<NetWorth />} />
