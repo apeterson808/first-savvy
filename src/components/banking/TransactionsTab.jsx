@@ -35,7 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, ArrowRightLeft, Info, Sparkles } from 'lucide-react';
+import { Plus, Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, ArrowRightLeft, Info } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
@@ -1342,15 +1342,8 @@ For each transaction, return the category_id that best matches. Consider:
 
                             // For regular transactions, show editable contact dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
-                              // In Posted tab, show contact with AI sparkle indicator if applicable
                               const contact = contacts.find(c => c.id === transaction.contact_id);
-                              const hasAiSuggestion = transaction.contact_id && transaction.ai_suggested_contact_id === transaction.contact_id;
-                              return (
-                                <div className="flex items-center gap-1 px-1">
-                                  <span className="text-xs">{contact?.name || '—'}</span>
-                                  {hasAiSuggestion && <Sparkles className="w-3 h-3 text-blue-500 flex-shrink-0" />}
-                                </div>
-                              );
+                              return <span className="text-xs px-1">{contact?.name || '—'}</span>;
                             }
 
                             return (
@@ -1420,20 +1413,13 @@ For each transaction, return the category_id that best matches. Consider:
 
                             // For regular transactions, show editable category dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
-                              // In Posted tab, show category with AI sparkle indicator if applicable
                               const category = categories.find(c => c.id === transaction.category_id);
-                              const hasAiSuggestion = transaction.category_id && transaction.ai_suggested_category_id === transaction.category_id;
                               const displayName = category ? getAccountDisplayName({
                                 account_type: category.type,
                                 detail_type: category.detail_type,
                                 name: category.name
                               }) : '—';
-                              return (
-                                <div className="flex items-center gap-1 px-1">
-                                  <span className="text-xs">{displayName}</span>
-                                  {hasAiSuggestion && <Sparkles className="w-3 h-3 text-blue-500 flex-shrink-0" />}
-                                </div>
-                              );
+                              return <span className="text-xs px-1">{displayName}</span>;
                             }
 
                             return (
