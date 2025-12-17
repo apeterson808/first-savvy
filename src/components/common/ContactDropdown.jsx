@@ -62,19 +62,16 @@ export default function ContactDropdown({
         </ClickThroughSelectItem>
       )}
       {suggestedContact && (
-        <>
-          <ClickThroughSelectItem 
-            key={suggestedContact.id} 
-            value={suggestedContact.id} 
-            data-display={suggestedContact.name} 
-            className="flex items-center justify-between whitespace-nowrap"
-            isRecommended
-          >
-            <span className="truncate">{suggestedContact.name}</span>
-            <Sparkles className="w-3 h-3 text-emerald-600 ml-2 flex-shrink-0" />
-          </ClickThroughSelectItem>
-          <div className="h-px bg-slate-200 my-1" />
-        </>
+        <ClickThroughSelectItem
+          key={`suggested-${suggestedContact.id}`}
+          value={suggestedContact.id}
+          data-display={suggestedContact.name}
+          className="flex items-center justify-between whitespace-nowrap"
+          isRecommended={true}
+        >
+          <span className="truncate">{suggestedContact.name}</span>
+          <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
+        </ClickThroughSelectItem>
       )}
       {otherContacts.map((contact) => (
         <ClickThroughSelectItem key={contact.id} value={contact.id} data-display={contact.name} className="flex items-center justify-between whitespace-nowrap">
