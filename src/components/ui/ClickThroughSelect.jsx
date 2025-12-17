@@ -99,9 +99,13 @@ export function ClickThroughSelect({
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use requestAnimationFrame to add listener after current event completes
+    let rafId = requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    });
 
     return () => {
+      cancelAnimationFrame(rafId);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
