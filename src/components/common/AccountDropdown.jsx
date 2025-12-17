@@ -15,22 +15,30 @@ export default function AccountDropdown({
   placeholder = "Select account",
   accounts: propAccounts = null
 }) {
-  const { data: fetchedAccounts = [] } = useQuery({
+  const { data: fetchedAccounts = [], isLoading } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
       const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
       return bankAccounts;
     },
-    enabled: !propAccounts || propAccounts.length === 0
+    enabled: propAccounts === null || propAccounts === undefined
   });
 
-  const accounts = (propAccounts && propAccounts.length > 0) ? propAccounts : fetchedAccounts;
+  const accounts = propAccounts !== null && propAccounts !== undefined ? propAccounts : fetchedAccounts;
 
   const filteredAccounts = excludeInvestment
     ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
     : accounts.filter(acc => acc.is_active !== false);
 
   const activeAccountIds = accounts.map(a => a.id);
+
+  if (isLoading && !propAccounts) {
+    return (
+      <div className={triggerClassName}>
+        <span className="text-slate-400 text-xs">Loading accounts...</span>
+      </div>
+    );
+  }
 
   const getPendingCount = (accountId) => {
     if (!showPendingCounts) return 0;
