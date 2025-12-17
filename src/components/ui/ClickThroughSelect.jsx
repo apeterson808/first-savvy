@@ -65,15 +65,23 @@ export function ClickThroughSelect({
         left: rect.left,
         width: rect.width
       });
-      setSearchTerm('');
-      // Focus search input when dropdown opens
+
+      const currentDisplayText = selectedOption
+        ? (selectedOption.props['data-display'] || getDisplayText(selectedOption.props.children))
+        : '';
+
+      setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
+
       setTimeout(() => {
-        searchInputRef.current?.focus();
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
       }, 0);
     } else {
       setSearchTerm('');
     }
-  }, [isOpen]);
+  }, [isOpen, selectedOption, placeholder]);
 
   const handleSelect = (val, isAction) => {
     if (!isAction) {
