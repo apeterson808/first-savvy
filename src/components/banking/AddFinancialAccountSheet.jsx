@@ -581,30 +581,14 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
 
   return (
     <>
-      <style>{`
-        ${hideLinkAccount ? `
-          [data-radix-dialog-overlay]:last-of-type {
-            background-color: transparent !important;
-          }
-        ` : ''}
-        ${plaidActive ? `
+      {plaidActive && (
+        <style>{`
           #plaid-link-iframe-1,
           [id^="plaid-link-iframe"] {
-            z-index: 99999 !important;
-            pointer-events: auto !important;
+            z-index: 9999 !important;
           }
-          [data-radix-dialog-overlay] {
-            pointer-events: none !important;
-          }
-        ` : ''}
-        [data-radix-popper-content-wrapper] {
-          pointer-events: auto !important;
-          z-index: 999 !important;
-        }
-        [data-radix-dialog-content] {
-          pointer-events: auto !important;
-        }
-      `}</style>
+        `}</style>
+      )}
       <Sheet open={open} onOpenChange={(newOpen) => {
         if (!newOpen && plaidActive) return;
         onOpenChange(newOpen);
