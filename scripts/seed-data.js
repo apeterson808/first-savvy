@@ -393,18 +393,18 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
   const monthEnd = new Date('2025-11-30');
 
   const merchants = [
-    { name: 'WHOLE FOODS MKT #123', category: 'Groceries', amount: [80, 150], paymentMethod: 'debit_card' },
-    { name: 'SAFEWAY STORE #456', category: 'Groceries', amount: [60, 120], paymentMethod: 'debit_card' },
-    { name: 'TRADER JOES #789', category: 'Groceries', amount: [45, 90], paymentMethod: 'debit_card' },
-    { name: 'SHELL OIL', category: 'Gas', amount: [45, 65], paymentMethod: 'debit_card' },
-    { name: 'CHEVRON STATION', category: 'Gas', amount: [50, 70], paymentMethod: 'debit_card' },
-    { name: 'STARBUCKS #1234', category: 'Dining', amount: [5, 15], paymentMethod: 'credit_card' },
-    { name: 'CHIPOTLE MEXICAN', category: 'Dining', amount: [12, 25], paymentMethod: 'credit_card' },
-    { name: 'OLIVE GARDEN', category: 'Dining', amount: [40, 80], paymentMethod: 'credit_card' },
-    { name: 'TARGET STORE #123', category: 'Shopping', amount: [30, 150], paymentMethod: 'credit_card' },
-    { name: 'AMAZON.COM*AB12CD', category: 'Shopping', amount: [25, 200], paymentMethod: 'credit_card' },
-    { name: 'AMC THEATERS', category: 'Entertainment', amount: [30, 60], paymentMethod: 'credit_card' },
-    { name: 'SPOTIFY', category: 'Subscriptions', amount: [9.99, 9.99], paymentMethod: 'credit_card' },
+    { name: 'WHOLE FOODS MKT #123', category: 'Groceries', amount: [80, 150], paymentMethod: 'debit_card', contactName: 'Whole Foods Market' },
+    { name: 'SAFEWAY STORE #456', category: 'Groceries', amount: [60, 120], paymentMethod: 'debit_card', contactName: null },
+    { name: 'TRADER JOES #789', category: 'Groceries', amount: [45, 90], paymentMethod: 'debit_card', contactName: null },
+    { name: 'SHELL OIL', category: 'Gas', amount: [45, 65], paymentMethod: 'debit_card', contactName: 'Shell Gas Station' },
+    { name: 'CHEVRON STATION', category: 'Gas', amount: [50, 70], paymentMethod: 'debit_card', contactName: null },
+    { name: 'STARBUCKS #1234', category: 'Dining', amount: [5, 15], paymentMethod: 'credit_card', contactName: 'Starbucks' },
+    { name: 'CHIPOTLE MEXICAN', category: 'Dining', amount: [12, 25], paymentMethod: 'credit_card', contactName: null },
+    { name: 'OLIVE GARDEN', category: 'Dining', amount: [40, 80], paymentMethod: 'credit_card', contactName: null },
+    { name: 'TARGET STORE #123', category: 'Shopping', amount: [30, 150], paymentMethod: 'credit_card', contactName: null },
+    { name: 'AMAZON.COM*AB12CD', category: 'Shopping', amount: [25, 200], paymentMethod: 'credit_card', contactName: 'Amazon' },
+    { name: 'AMC THEATERS', category: 'Entertainment', amount: [30, 60], paymentMethod: 'credit_card', contactName: null },
+    { name: 'SPOTIFY', category: 'Subscriptions', amount: [9.99, 9.99], paymentMethod: 'credit_card', contactName: 'Netflix' },
   ];
 
   for (let month = 0; month < 6; month++) {
@@ -441,7 +441,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Utilities'],
       bank_account_id: checkingId,
-      payment_method: 'bank_transfer'
+      payment_method: 'bank_transfer',
+      contact_id: contactMap['AT&T']
     });
 
     transactions.push({
@@ -484,7 +485,7 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
         ? (Math.random() > 0.5 ? sapphireId : citiId)
         : checkingId;
 
-      transactions.push({
+      const transaction = {
         date: formatDate(txDate),
         description: merchant.name,
         amount: -randomAmount(merchant.amount[0], merchant.amount[1]),
@@ -493,7 +494,13 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
         category_id: categoryMap[merchant.category],
         bank_account_id: accountId,
         payment_method: merchant.paymentMethod
-      });
+      };
+
+      if (merchant.contactName && contactMap[merchant.contactName]) {
+        transaction.contact_id = contactMap[merchant.contactName];
+      }
+
+      transactions.push(transaction);
     }
 
     transactions.push({
@@ -519,7 +526,7 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
   return data;
 }
 
-async function generatePendingTransactions(accountMap, categoryMap) {
+async function generatePendingTransactions(accountMap, categoryMap, contactMap) {
   console.log('⏳ Generating pending December transactions with AI suggestions...');
 
   const transactions = [];
@@ -531,16 +538,16 @@ async function generatePendingTransactions(accountMap, categoryMap) {
   const decemberEnd = new Date('2025-12-16');
 
   const pendingMerchants = [
-    { name: 'WHOLE FOODS MKT #123', suggestedCategory: 'Groceries', amount: [80, 150] },
-    { name: 'SHELL OIL 12345', suggestedCategory: 'Gas', amount: [55, 65] },
-    { name: 'STARBUCKS COFFEE', suggestedCategory: 'Dining', amount: [6, 14] },
-    { name: 'AMAZON.COM*XY98ZW', suggestedCategory: 'Shopping', amount: [45, 180] },
-    { name: 'CHIPOTLE #456', suggestedCategory: 'Dining', amount: [15, 28] },
-    { name: 'TARGET T-1234', suggestedCategory: 'Shopping', amount: [50, 120] },
-    { name: 'NETFLIX.COM', suggestedCategory: 'Subscriptions', amount: [15.49, 15.49] },
-    { name: 'CVS PHARMACY', suggestedCategory: 'Healthcare', amount: [20, 60] },
-    { name: 'UBER *TRIP', suggestedCategory: 'Transportation', amount: [12, 35] },
-    { name: 'SPOTIFY USA', suggestedCategory: 'Subscriptions', amount: [9.99, 9.99] },
+    { name: 'WHOLE FOODS MKT #123', suggestedCategory: 'Groceries', amount: [80, 150], contactName: 'Whole Foods Market' },
+    { name: 'SHELL OIL 12345', suggestedCategory: 'Gas', amount: [55, 65], contactName: 'Shell Gas Station' },
+    { name: 'STARBUCKS COFFEE', suggestedCategory: 'Dining', amount: [6, 14], contactName: 'Starbucks' },
+    { name: 'AMAZON.COM*XY98ZW', suggestedCategory: 'Shopping', amount: [45, 180], contactName: 'Amazon' },
+    { name: 'CHIPOTLE #456', suggestedCategory: 'Dining', amount: [15, 28], contactName: null },
+    { name: 'TARGET T-1234', suggestedCategory: 'Shopping', amount: [50, 120], contactName: null },
+    { name: 'NETFLIX.COM', suggestedCategory: 'Subscriptions', amount: [15.49, 15.49], contactName: 'Netflix' },
+    { name: 'CVS PHARMACY', suggestedCategory: 'Healthcare', amount: [20, 60], contactName: null },
+    { name: 'UBER *TRIP', suggestedCategory: 'Transportation', amount: [12, 35], contactName: null },
+    { name: 'SPOTIFY USA', suggestedCategory: 'Subscriptions', amount: [9.99, 9.99], contactName: null },
   ];
 
   for (let i = 0; i < 25; i++) {
@@ -552,7 +559,7 @@ async function generatePendingTransactions(accountMap, categoryMap) {
 
     const useAISuggestion = Math.random() > 0.25;
 
-    transactions.push({
+    const transaction = {
       date: formatDate(txDate),
       description: merchant.name,
       amount: -randomAmount(merchant.amount[0], merchant.amount[1]),
@@ -562,7 +569,13 @@ async function generatePendingTransactions(accountMap, categoryMap) {
       ai_suggested_category_id: useAISuggestion ? categoryMap[merchant.suggestedCategory] : null,
       bank_account_id: accountId,
       payment_method: accountId === checkingId ? 'debit_card' : 'credit_card'
-    });
+    };
+
+    if (merchant.contactName && contactMap[merchant.contactName]) {
+      transaction.contact_id = contactMap[merchant.contactName];
+    }
+
+    transactions.push(transaction);
   }
 
   const { data, error } = await supabase
@@ -952,7 +965,7 @@ async function main() {
     const contactMap = await createContacts();
 
     await generatePostedTransactions(accountMap, categoryMap, contactMap);
-    await generatePendingTransactions(accountMap, categoryMap);
+    await generatePendingTransactions(accountMap, categoryMap, contactMap);
     await generateInvestmentTransactions(assetMap, categoryMap, accountMap);
     await generateTransferTransactions(accountMap, categoryMap);
 
