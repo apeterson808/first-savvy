@@ -15,7 +15,7 @@ export default function AccountDropdown({
   placeholder = "Select account",
   accounts: propAccounts = null
 }) {
-  const shouldFetchOwnAccounts = propAccounts === null || propAccounts === undefined;
+  const shouldFetchOwnAccounts = !propAccounts || propAccounts.length === 0;
 
   const { data: fetchedAccounts = [], isLoading } = useQuery({
     queryKey: ['activeAccounts'],
@@ -26,7 +26,7 @@ export default function AccountDropdown({
     enabled: shouldFetchOwnAccounts
   });
 
-  const accounts = shouldFetchOwnAccounts ? fetchedAccounts : (propAccounts || []);
+  const accounts = (propAccounts && propAccounts.length > 0) ? propAccounts : fetchedAccounts;
 
   const filteredAccounts = excludeInvestment
     ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
