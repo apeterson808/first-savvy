@@ -25,10 +25,10 @@ export default function AccountDropdown({
       const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
       return [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
     },
-    enabled: propAccounts === null
+    enabled: !propAccounts || propAccounts.length === 0
   });
 
-  const accounts = propAccounts !== null ? propAccounts : fetchedAccounts;
+  const accounts = (propAccounts && propAccounts.length > 0) ? propAccounts : fetchedAccounts;
 
   const filteredAccounts = excludeInvestment
     ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
