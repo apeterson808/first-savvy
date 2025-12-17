@@ -28,6 +28,8 @@ export function ClickThroughSelect({
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
+  const userHasEditedRef = useRef(false);
+  const justOpenedRef = useRef(false);
 
   // Helper to check if child is a SelectItem
   const isSelectItem = (child) => {
@@ -109,14 +111,17 @@ export function ClickThroughSelect({
         width: rect.width
       });
 
-      const options = extractOptions(children);
-      const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
+      // Only auto-populate the search term if this is a fresh open (not a re-render from children changing)
+      if (!userHasEditedRef.current) {
+        const options = extractOptions(children);
+        const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
 
-      const currentDisplayText = currentOption
-        ? (currentOption.props['data-display'] || getDisplayText(currentOption.props.children))
-        : '';
+        const currentDisplayText = currentOption
+          ? (currentOption.props['data-display'] || getDisplayText(currentOption.props.children))
+          : '';
 
-      setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
+        setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
+      }
 
       setTimeout(() => {
         if (searchInputRef.current) {
@@ -126,8 +131,9 @@ export function ClickThroughSelect({
       }, 0);
     } else {
       setSearchTerm('');
+      userHasEditedRef.current = false;
     }
-  }, [isOpen, selectedValue, children, placeholder]);
+  }, [isOpen, selectedValue, placeholder]);
 
   const handleSelect = (val, isAction) => {
     if (!isAction) {
@@ -168,6 +174,7 @@ export function ClickThroughSelect({
             type="text"
             value={searchTerm}
             onChange={(e) => {
+              userHasEditedRef.current = true;
               setSearchTerm(e.target.value);
               onSearchTermChange?.(e.target.value);
             }}
