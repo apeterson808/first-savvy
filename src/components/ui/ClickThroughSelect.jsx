@@ -30,6 +30,7 @@ export function ClickThroughSelect({
   const searchInputRef = useRef(null);
   const userHasEditedRef = useRef(false);
   const justOpenedRef = useRef(false);
+  const isSelectingRef = useRef(false);
 
   // Helper to check if child is a SelectItem
   const isSelectItem = (child) => {
@@ -84,6 +85,10 @@ export function ClickThroughSelect({
     if (!isOpen) return;
 
     const handleClickOutside = (e) => {
+      // Don't interfere if we're in the middle of selecting an item
+      if (isSelectingRef.current) {
+        return;
+      }
       // Allow clicks on dropdown items to propagate
       if (dropdownRef.current && dropdownRef.current.contains(e.target)) {
         return;
@@ -136,6 +141,7 @@ export function ClickThroughSelect({
   }, [isOpen, selectedValue, placeholder]);
 
   const handleSelect = (val, isAction) => {
+    isSelectingRef.current = true;
     if (!isAction) {
       setSelectedValue(val);
     }
@@ -143,6 +149,9 @@ export function ClickThroughSelect({
       onValueChange(val);
     }
     handleOpenChange(false);
+    setTimeout(() => {
+      isSelectingRef.current = false;
+    }, 50);
   };
 
   const options = extractOptions(children);
@@ -358,6 +367,9 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
   const handleClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (e.nativeEvent) {
+      e.nativeEvent.stopImmediatePropagation();
+    }
     if (onSelect) {
       onSelect(value, isAction);
     }
@@ -369,6 +381,7 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
       data-is-action={isAction ? "true" : undefined}
       data-value={value}
       onMouseDown={handleClick}
+      onClick={handleClick}
       style={{ pointerEvents: 'auto', userSelect: 'none', cursor: 'pointer' }}
       className={cn(
         "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs outline-none",
