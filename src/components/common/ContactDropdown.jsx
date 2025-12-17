@@ -22,7 +22,7 @@ export default function ContactDropdown({
     queryFn: () => base44.entities.Contact.list('name', 1000)
   });
 
-  const activeContacts = contacts.filter(c => c.status === 'Active');
+  const activeContacts = contacts.filter(c => c.status === 'active');
   
   const suggestedContact = aiSuggestionId ? activeContacts.find(c => c.id === aiSuggestionId) : null;
   const otherContacts = activeContacts.filter(c => c.id !== aiSuggestionId);

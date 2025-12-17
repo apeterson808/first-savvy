@@ -698,7 +698,7 @@ For each transaction, return the category_id that best matches. Consider:
     // Process batch with single LLM call
     const processBatch = async () => {
       try {
-        const activeContacts = contacts.filter(c => c.status === 'Active');
+        const activeContacts = contacts.filter(c => c.status === 'active');
         if (activeContacts.length === 0) return;
 
         const contactList = activeContacts.map(c => ({
