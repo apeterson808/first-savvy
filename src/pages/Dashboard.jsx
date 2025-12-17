@@ -35,28 +35,17 @@ export default function Dashboard() {
     }
   };
 
-  const { data: accounts = [], isLoading: accountsLoading, error: accountsError } = useQuery({
+  const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      console.log('Dashboard: Fetching accounts...');
       const [bankAccounts, creditCards] = await Promise.all([
         base44.entities.BankAccount.filter({ is_active: true }),
         base44.entities.CreditCard.filter({ is_active: true })
       ]);
-      console.log('Dashboard: Fetched bankAccounts:', bankAccounts.length, bankAccounts);
-      console.log('Dashboard: Fetched creditCards:', creditCards.length, creditCards);
       const filteredBankAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-      const result = [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
-      console.log('Dashboard: Final accounts:', result.length, result);
-      return result;
+      return [...filteredBankAccounts, ...creditCards.map(cc => ({ ...cc, account_name: cc.name }))];
     }
   });
-
-  useEffect(() => {
-    if (accountsError) {
-      console.error('Dashboard accounts error:', accountsError);
-    }
-  }, [accountsError]);
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
@@ -343,12 +332,6 @@ export default function Dashboard() {
 
   return (
     <div className="p-2">
-      {/* DEBUG INFO */}
-      <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded mb-2">
-        <strong>DEBUG:</strong> Loading: {accountsLoading ? 'YES' : 'NO'} | Accounts: {accounts.length} |
-        Error: {accountsError ? accountsError.message : 'NONE'} |
-        Selected: {selectedAccount}
-      </div>
       <div className="flex flex-col lg:flex-row gap-2">
         {/* Left Column - Chart & Transactions */}
         <div className="flex-[2] space-y-2">

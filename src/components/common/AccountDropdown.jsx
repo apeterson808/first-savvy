@@ -30,18 +30,9 @@ export default function AccountDropdown({
 
   const accounts = propAccounts !== null ? propAccounts : fetchedAccounts;
 
-  console.log('AccountDropdown Debug:', {
-    propAccounts,
-    fetchedAccounts,
-    accounts,
-    accountsLength: accounts.length
-  });
-
   const filteredAccounts = excludeInvestment
     ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
     : accounts.filter(acc => acc.is_active !== false);
-
-  console.log('Filtered accounts:', filteredAccounts.length, filteredAccounts);
 
   const activeAccountIds = accounts.map(a => a.id);
 
@@ -74,18 +65,13 @@ export default function AccountDropdown({
   };
 
   return (
-    <>
-      {/* Temporary Debug Info */}
-      <div className="text-xs text-red-600 mb-1">
-        DEBUG: {accounts.length} total, {filteredAccounts.length} filtered
-      </div>
-      <ClickThroughSelect
-        value={value}
-        onValueChange={onValueChange}
-        triggerClassName={triggerClassName}
-        placeholder={placeholder}
-        renderValue={showPendingCounts ? renderValue : undefined}
-      >
+    <ClickThroughSelect
+      value={value}
+      onValueChange={onValueChange}
+      triggerClassName={triggerClassName}
+      placeholder={placeholder}
+      renderValue={showPendingCounts ? renderValue : undefined}
+    >
       {showAllOption && (
         <ClickThroughSelectItem value="all" data-display="All Accounts">
           <div className="flex items-center justify-between w-full">
@@ -119,6 +105,5 @@ export default function AccountDropdown({
         );
       })}
     </ClickThroughSelect>
-    </>
   );
 }
