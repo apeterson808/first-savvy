@@ -50,11 +50,6 @@ export default function CategoryDropdown({
     availableCategories = [suggestedCategory, ...availableCategories];
   }
 
-  const otherCategories = availableCategories.filter(c => c.id !== aiSuggestionId);
-  const sortedCategories = suggestedCategory
-    ? [suggestedCategory, ...otherCategories]
-    : availableCategories;
-
   const handleOpenChange = (open) => {
     setIsOpen(open);
     if (!open) {
@@ -62,11 +57,9 @@ export default function CategoryDropdown({
     }
   };
 
-  const displayValue = currentDisplayValue || aiSuggestionId || '';
-
   return (
-    <ClickThroughSelect 
-      value={displayValue}
+    <ClickThroughSelect
+      value={currentDisplayValue}
       onValueChange={(val) => {
         if (val === '__add_new__' && onAddNew) {
           onAddNew(searchTerm);
@@ -87,7 +80,7 @@ export default function CategoryDropdown({
       {suggestedCategory && suggestedCategory.id !== value && (
         <>
           <ClickThroughSelectItem
-            key={suggestedCategory.id}
+            key={`suggested-${suggestedCategory.id}`}
             value={suggestedCategory.id}
             isRecommended={true}
             data-display={getAccountDisplayName({
@@ -108,7 +101,7 @@ export default function CategoryDropdown({
           </ClickThroughSelectItem>
         </>
       )}
-      {otherCategories.map((cat) => {
+      {availableCategories.map((cat) => {
         const displayName = getAccountDisplayName({
           account_type: cat.type,
           detail_type: cat.detail_type,
