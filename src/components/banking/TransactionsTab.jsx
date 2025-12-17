@@ -289,6 +289,34 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     generateSuggestions();
   }, [fullPendingTransactions.length, categories.length, fullPostedTransactions.length, categorizationRules.length]);
 
+  // Auto-apply AI-suggested contacts (one-time only, unless manually changed)
+  React.useEffect(() => {
+    const applyContactSuggestions = async () => {
+      if (!fullPendingTransactions.length || !contacts.length) return;
+
+      const transactionsNeedingContactApplication = fullPendingTransactions.filter(
+        t => t.ai_suggested_contact_id && !t.contact_id && !t.contact_manually_set
+      );
+
+      if (transactionsNeedingContactApplication.length === 0) return;
+
+      console.log(`Auto-applying ${transactionsNeedingContactApplication.length} AI contact suggestions...`);
+
+      for (const transaction of transactionsNeedingContactApplication) {
+        try {
+          await base44.entities.Transaction.update(transaction.id, {
+            contact_id: transaction.ai_suggested_contact_id
+          });
+        } catch (err) {
+          console.error('Failed to apply contact suggestion for transaction:', transaction.id, err);
+        }
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+    };
+
+    applyContactSuggestions();
+  }, [fullPendingTransactions.length, contacts.length]);
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
@@ -1310,7 +1338,7 @@ For each transaction, return the category_id that best matches. Consider:
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { ...transaction, contact_id: value }
+                                      data: { ...transaction, contact_id: value, contact_manually_set: true }
                                     });
                                   }}
                                   transactionDescription={transaction.description}
@@ -2241,7 +2269,7 @@ For each transaction, return the category_id that best matches. Consider:
                                   if (transaction) {
                                     await updateMutation.mutateAsync({
                                       id: transaction.id,
-                                      data: { ...transaction, contact_id: newContact.id }
+                                      data: { ...transaction, contact_id: newContact.id, contact_manually_set: true }
                                     });
                                   }
                                 }
