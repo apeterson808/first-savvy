@@ -642,11 +642,12 @@ export default function AccountsTable({ accounts, isLoading }) {
                             )}
                             <td className="text-right px-4 py-px">
                               <div className="flex items-center justify-end gap-0">
-                                <Button 
-                                  variant="ghost" 
+                                <Button
+                                  variant="ghost"
                                   size="icon"
                                   className="h-6 w-6"
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     setEditingAccount(account);
                                     setEditSheetOpen(true);
                                   }}
