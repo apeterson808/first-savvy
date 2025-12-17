@@ -89,7 +89,7 @@ export function ClickThroughSelect({
       if (isSelectingRef.current) {
         return;
       }
-      // Allow clicks on dropdown items to propagate
+      // Allow clicks on dropdown items
       if (dropdownRef.current && dropdownRef.current.contains(e.target)) {
         return;
       }
@@ -99,13 +99,9 @@ export function ClickThroughSelect({
       }
     };
 
-    // Delay adding the listener to avoid capturing the opening click
-    const timeoutId = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
+    document.addEventListener('mousedown', handleClickOutside);
 
     return () => {
-      clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
@@ -276,7 +272,11 @@ export function ClickThroughSelect({
       ) : (
         <button
           type="button"
-          onClick={() => handleOpenChange(!isOpen)}
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenChange(!isOpen);
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
           className={cn(
             "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs",
             "focus:outline-none",
@@ -292,8 +292,10 @@ export function ClickThroughSelect({
       )}
 
       {isOpen && ReactDOM.createPortal(
-        <div 
+        <div
           ref={dropdownRef}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
           style={{
                           position: 'fixed',
                           top: dropdownPosition.top,
@@ -304,7 +306,7 @@ export function ClickThroughSelect({
                         }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md"
         >
-          <div 
+          <div
             className="max-h-48 overflow-auto p-1"
             onWheel={(e) => e.stopPropagation()}
           >
