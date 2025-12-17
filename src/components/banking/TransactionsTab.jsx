@@ -695,7 +695,6 @@ For each transaction, return the category_id that best matches. Consider:
       processBatch();
     }, 2000);
 
-    // Process batch with single LLM call
     const processBatch = async () => {
       try {
         const activeContacts = contacts.filter(c => c.status === 'active');
@@ -703,61 +702,28 @@ For each transaction, return the category_id that best matches. Consider:
 
         const contactList = activeContacts.map(c => ({
           id: c.id,
-          name: c.name,
-          type: c.type
+          name: c.name
         }));
 
-        const transactionDescriptions = batch.map(t => ({
-          id: t.id,
-          description: sanitizeForLLM(t.description),
-          amount: t.amount,
-          type: t.type
-        }));
+        for (const transaction of batch) {
+          try {
+            if (!transaction.description || transaction.type === 'transfer') continue;
 
-        const result = await base44.integrations.Core.InvokeLLM({
-          prompt: `You are a transaction contact matcher. Given these transactions and available contacts, assign the most appropriate contact to each transaction based on the transaction description.
+            const result = await base44.integrations.Core.aiSuggestContact({
+              description: transaction.description,
+              contacts: contactList
+            });
 
-    Available Contacts:
-    ${contactList.map(c => `- "${c.name}" (${c.type}) [ID: ${c.id}]`).join('\n')}
-
-    Transactions to match:
-    ${transactionDescriptions.map(t => `- ID: ${t.id}, Description: "${t.description}", Amount: $${t.amount}, Type: ${t.type.toUpperCase()}`).join('\n')}
-
-    For each transaction, find the best matching contact from the list. If no good match exists, return null for that transaction.
-    Match based on merchant names, company names, or payee information in the description.`,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              matches: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    transaction_id: { type: "string" },
-                    contact_id: { type: ["string", "null"] }
-                  },
-                  required: ["transaction_id", "contact_id"]
+            if (result.contactId) {
+              updateMutation.mutate({
+                id: transaction.id,
+                data: {
+                  ai_suggested_contact_id: result.contactId
                 }
-              }
-            },
-            required: ["matches"]
-          }
-        });
-
-        if (result.matches) {
-          // Save AI suggestions to the transaction entity
-          for (const match of result.matches) {
-            if (match.contact_id) {
-              const transaction = batch.find(t => t.id === match.transaction_id);
-              if (transaction) {
-                updateMutation.mutate({
-                  id: match.transaction_id,
-                  data: {
-                    ai_suggested_contact_id: match.contact_id
-                  }
-                });
-              }
+              });
             }
+          } catch (err) {
+            console.error(`Failed to suggest contact for transaction ${transaction.id}:`, err);
           }
         }
       } catch (err) {
