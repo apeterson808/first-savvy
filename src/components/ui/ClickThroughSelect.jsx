@@ -99,10 +99,13 @@ export function ClickThroughSelect({
       }
     };
 
-    // Use mousedown without capture to let item mousedowns fire first
-    document.addEventListener('mousedown', handleClickOutside);
+    // Delay adding the listener to avoid capturing the opening click
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
 
     return () => {
+      clearTimeout(timeoutId);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen]);
