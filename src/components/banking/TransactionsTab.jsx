@@ -1293,161 +1293,149 @@ For each transaction, return the category_id that best matches. Consider:
 
                                                     </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
-                          {statusFilter === 'pending' ? (
-                            (() => {
-                              const manualAction = manualActionOverrides[transaction.id];
-                              const isInMatchMode = manualAction === 'match' || (
-                                !manualAction && 
-                                (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && 
+                          {(() => {
+                            const isInMatchMode = statusFilter === 'pending' && (
+                              manualActionOverrides[transaction.id] === 'match' || (
+                                !manualActionOverrides[transaction.id] &&
+                                (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') &&
                                 findPairedTransfer(transaction)
-                              );
+                              )
+                            );
 
-                              if (isInMatchMode) {
-                                const paired = findPairedTransfer(transaction);
-                                const pairedAccountId = paired ? paired.bank_account_id : '';
-                                return (
-                                  <ClickThroughSelect
-                                    value={pairedAccountId}
-                                    onValueChange={(accountId) => {
-                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                      // Find or create matching transaction with selected account
-                                      if (paired) {
-                                        updateMutation.mutate({
-                                          id: paired.id,
-                                          data: { ...paired, bank_account_id: accountId }
-                                        });
-                                      }
-                                    }}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    triggerClassName="h-7 border-slate-300 text-xs"
-                                    placeholder="Select account"
-                                  >
-                                    {allActiveAccounts.map(acc => (
-                                      <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                                        {getAccountDisplayName(acc)}
-                                      </ClickThroughSelectItem>
-                                    ))}
-                                  </ClickThroughSelect>
-                                );
-                              }
-
+                            if (isInMatchMode) {
+                              const paired = findPairedTransfer(transaction);
+                              const pairedAccountId = paired ? paired.bank_account_id : '';
                               return (
-                                <ContactDropdown
-                                  value={transaction.contact_id}
-                                  onValueChange={(value) => {
+                                <ClickThroughSelect
+                                  value={pairedAccountId}
+                                  onValueChange={(accountId) => {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                    updateMutation.mutate({
-                                      id: transaction.id,
-                                      data: { ...transaction, contact_id: value, contact_manually_set: true }
-                                    });
+                                    // Find or create matching transaction with selected account
+                                    if (paired) {
+                                      updateMutation.mutate({
+                                        id: paired.id,
+                                        data: { ...paired, bank_account_id: accountId }
+                                      });
+                                    }
                                   }}
-                                  transactionDescription={transaction.description}
-                                  aiSuggestionId={transaction.ai_suggested_contact_id}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                  onAddNew={(searchTerm) => {
-                                    setContactSearchTerm(searchTerm);
-                                    setAddContactSheetOpen(true);
-                                  }}
-                                  triggerClassName="h-7 border-slate-300"
-                                  placeholder="Select contact"
-                                />
+                                  triggerClassName="h-7 border-slate-300 text-xs"
+                                  placeholder="Select account"
+                                >
+                                  {allActiveAccounts.map(acc => (
+                                    <ClickThroughSelectItem key={acc.id} value={acc.id}>
+                                      {getAccountDisplayName(acc)}
+                                    </ClickThroughSelectItem>
+                                  ))}
+                                </ClickThroughSelect>
                               );
-                            })()
-                          ) : (
-                            <span className="text-xs px-1">
-                              {(() => {
-                                // For posted transactions, show paired account if it's a transfer/credit_card_payment
-                                if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && transaction.transfer_pair_id) {
-                                  const paired = findPairedTransfer(transaction);
-                                  if (paired) {
-                                    const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
-                                    return pairedAccount ? getAccountDisplayName(pairedAccount) : '—';
-                                  }
-                                }
-                                // Otherwise show contact
-                                return contacts.find(c => c.id === transaction.contact_id)?.name || '—';
-                              })()}
-                            </span>
-                          )}
+                            }
+
+                            // For transfers/credit card payments, show the paired account name (not editable)
+                            if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && transaction.transfer_pair_id) {
+                              const paired = findPairedTransfer(transaction);
+                              if (paired) {
+                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
+                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
+                              }
+                            }
+
+                            // For regular transactions, show editable contact dropdown
+                            return (
+                              <ContactDropdown
+                                value={transaction.contact_id}
+                                onValueChange={(value) => {
+                                  if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+                                  updateMutation.mutate({
+                                    id: transaction.id,
+                                    data: { ...transaction, contact_id: value, contact_manually_set: true }
+                                  });
+                                }}
+                                transactionDescription={transaction.description}
+                                aiSuggestionId={transaction.ai_suggested_contact_id}
+                                disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                onAddNew={(searchTerm) => {
+                                  setContactSearchTerm(searchTerm);
+                                  setAddContactSheetOpen(true);
+                                }}
+                                triggerClassName="h-7 border-slate-300"
+                                placeholder="Select contact"
+                              />
+                            );
+                          })()}
                         </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
-                          {statusFilter === 'pending' ? (
-                            (() => {
-                              const manualAction = manualActionOverrides[transaction.id];
-                              const isInMatchMode = manualAction === 'match' || (
-                                !manualAction && 
-                                (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && 
+                          {(() => {
+                            const isInMatchMode = statusFilter === 'pending' && (
+                              manualActionOverrides[transaction.id] === 'match' || (
+                                !manualActionOverrides[transaction.id] &&
+                                (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') &&
                                 findPairedTransfer(transaction)
-                              );
+                              )
+                            );
 
-                              if (isInMatchMode) {
-                                return (
-                                  <ClickThroughSelect
-                                    value={transaction.type}
-                                    onValueChange={(newType) => {
-                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                      updateMutation.mutate({
-                                        id: transaction.id,
-                                        data: { ...transaction, type: newType }
-                                      });
-                                    }}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    triggerClassName="h-7 border-slate-300 text-xs"
-                                    placeholder="Select type"
-                                  >
-                                    <ClickThroughSelectItem value="transfer">
-                                      Transfer
-                                    </ClickThroughSelectItem>
-                                    <ClickThroughSelectItem value="credit_card_payment">
-                                      Credit Card Payment
-                                    </ClickThroughSelectItem>
-                                  </ClickThroughSelect>
-                                );
-                              }
-
+                            if (isInMatchMode) {
                               return (
-                                <CategoryDropdown
-                                  value={transaction.category_id}
-                                  onValueChange={(value) => {
+                                <ClickThroughSelect
+                                  value={transaction.type}
+                                  onValueChange={(newType) => {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                    const selectedCategory = categories.find(c => c.id === value);
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: {
-                                        ...transaction,
-                                        category_id: value,
-                                        type: selectedCategory ? selectedCategory.type : transaction.type
-                                      }
+                                      data: { ...transaction, type: newType }
                                     });
                                   }}
-                                  transactionType={transaction.type}
-                                  aiSuggestionId={transaction.ai_suggested_category_id}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                  onAddNew={(searchTerm) => {
-                                    setCategorySearchTerm(searchTerm);
-                                    setAddAccountSheetOpen(true);
-                                  }}
-                                  triggerClassName="h-7 border-slate-300"
-                                  placeholder="Select category"
-                                  isTransactionTransfer={transaction.type === 'transfer'}
-                                  transactionAmount={transaction.amount}
-                                />
+                                  triggerClassName="h-7 border-slate-300 text-xs"
+                                  placeholder="Select type"
+                                >
+                                  <ClickThroughSelectItem value="transfer">
+                                    Transfer
+                                  </ClickThroughSelectItem>
+                                  <ClickThroughSelectItem value="credit_card_payment">
+                                    Credit Card Payment
+                                  </ClickThroughSelectItem>
+                                </ClickThroughSelect>
                               );
-                            })()
-                          ) : (
-                            <span className="text-xs px-1">
-                              {(() => {
-                                // For posted transactions, show transaction type label for transfers/credit card payments
-                                if (transaction.type === 'transfer') {
-                                  return 'Transfer';
-                                } else if (transaction.type === 'credit_card_payment') {
-                                  return 'Credit Card Payment';
-                                }
-                                // Otherwise show category
-                                return categories.find(c => c.id === transaction.category_id)?.name || '—';
-                              })()}
-                            </span>
-                          )}
+                            }
+
+                            // For transfers/credit card payments, show type label (not editable)
+                            if (transaction.type === 'transfer') {
+                              return <span className="text-xs px-1">Transfer</span>;
+                            } else if (transaction.type === 'credit_card_payment') {
+                              return <span className="text-xs px-1">Credit Card Payment</span>;
+                            }
+
+                            // For regular transactions, show editable category dropdown
+                            return (
+                              <CategoryDropdown
+                                value={transaction.category_id}
+                                onValueChange={(value) => {
+                                  if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+                                  const selectedCategory = categories.find(c => c.id === value);
+                                  updateMutation.mutate({
+                                    id: transaction.id,
+                                    data: {
+                                      ...transaction,
+                                      category_id: value,
+                                      type: selectedCategory ? selectedCategory.type : transaction.type
+                                    }
+                                  });
+                                }}
+                                transactionType={transaction.type}
+                                aiSuggestionId={transaction.ai_suggested_category_id}
+                                disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                onAddNew={(searchTerm) => {
+                                  setCategorySearchTerm(searchTerm);
+                                  setAddAccountSheetOpen(true);
+                                }}
+                                triggerClassName="h-7 border-slate-300"
+                                placeholder="Select category"
+                                isTransactionTransfer={transaction.type === 'transfer'}
+                                transactionAmount={transaction.amount}
+                              />
+                            );
+                          })()}
                         </td>
                         <td className="py-1 pl-2 pr-1 whitespace-nowrap text-left">
                         {(() => {
