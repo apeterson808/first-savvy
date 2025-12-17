@@ -358,10 +358,9 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <AccountDropdown 
-                    value={selectedAccount} 
-                    onValueChange={setSelectedAccount} 
-                    accounts={accounts}
+                  <AccountDropdown
+                    value={selectedAccount}
+                    onValueChange={setSelectedAccount}
                     triggerClassName="w-44 h-8 text-xs hover:bg-slate-50"
                   />
                   <TimeRangeDropdown value={timeRange} onValueChange={setTimeRange} />

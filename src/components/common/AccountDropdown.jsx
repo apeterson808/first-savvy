@@ -15,16 +15,18 @@ export default function AccountDropdown({
   placeholder = "Select account",
   accounts: propAccounts = null
 }) {
+  const shouldFetchOwnAccounts = propAccounts === null || propAccounts === undefined;
+
   const { data: fetchedAccounts = [], isLoading } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
       const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
       return bankAccounts;
     },
-    enabled: propAccounts === null || propAccounts === undefined
+    enabled: shouldFetchOwnAccounts
   });
 
-  const accounts = propAccounts !== null && propAccounts !== undefined ? propAccounts : fetchedAccounts;
+  const accounts = shouldFetchOwnAccounts ? fetchedAccounts : (propAccounts || []);
 
   const filteredAccounts = excludeInvestment
     ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
