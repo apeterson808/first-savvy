@@ -77,7 +77,7 @@ export default function CategoryDropdown({
           + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
         </ClickThroughSelectItem>
       )}
-      {suggestedCategory && suggestedCategory.id !== value && (
+      {suggestedCategory && (
         <>
           <ClickThroughSelectItem
             key={`suggested-${suggestedCategory.id}`}
@@ -101,7 +101,7 @@ export default function CategoryDropdown({
           </ClickThroughSelectItem>
         </>
       )}
-      {availableCategories.map((cat) => {
+      {availableCategories.filter(cat => cat.id !== aiSuggestionId).map((cat) => {
         const displayName = getAccountDisplayName({
           account_type: cat.type,
           detail_type: cat.detail_type,
