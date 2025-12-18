@@ -207,12 +207,14 @@ export default function Layout({ children, currentPageName }) {
                   <Menu className="w-5 h-5" />
                 </button>
 
-                <button
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                  className="hidden lg:block p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
+                {sidebarCollapsed && (
+                  <button
+                    onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                    className="hidden lg:block p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </button>
+                )}
 
                 {user && (
                   <span className="text-sm text-slate-600 hidden md:block">
