@@ -191,7 +191,7 @@ export function ClickThroughSelect({
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             minWidth: Math.max(dropdownPosition.width, 160),
-            zIndex: 999999999
+            zIndex: 9999
           }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md"
           onClick={(e) => e.stopPropagation()}
@@ -321,7 +321,7 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
       data-click-through-select-item="true"
       data-is-action={isAction ? "true" : undefined}
       data-value={value}
-      onClick={(e) => {
+      onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
         onSelect?.(value, isAction);
