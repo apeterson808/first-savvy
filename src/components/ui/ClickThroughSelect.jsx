@@ -1,7 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import ReactDOM from 'react-dom';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useDropdownContext } from '@/contexts/DropdownContext';
 
 export function ClickThroughSelect({
   value,
@@ -17,6 +18,8 @@ export function ClickThroughSelect({
   enableSearch = true,
   onSearchTermChange
 }) {
+  const dropdownId = useId();
+  const { registerDropdown, openDropdownId } = useDropdownContext();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(value || defaultValue || '');
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
@@ -27,8 +30,16 @@ export function ClickThroughSelect({
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
+    registerDropdown(dropdownId, open);
     onOpenChange?.(open);
   };
+
+  useEffect(() => {
+    if (openDropdownId && openDropdownId !== dropdownId && isOpen) {
+      setIsOpen(false);
+      onOpenChange?.(false);
+    }
+  }, [openDropdownId, dropdownId, isOpen, onOpenChange]);
 
   const isSelectItem = (child) => {
     return child?.type?.displayName === 'ClickThroughSelectItem' ||
