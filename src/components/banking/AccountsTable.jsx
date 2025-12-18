@@ -444,7 +444,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                             onClick={() => navigate(`/banking/account/${account.id}`)}
                           >
                             {visibleColumns.name && (
-                              <td className={`px-4 py-2.5 ${account.isSubAccount ? 'pl-10' : 'pl-4'}`}>
+                              <td className={`px-4 py-1 ${account.isSubAccount ? 'pl-10' : 'pl-4'}`}>
                                 {account.isSubAccount && (
                                   <span className="inline-block w-4 h-4 mr-1 text-slate-400">└</span>
                                 )}
@@ -454,28 +454,28 @@ export default function AccountsTable({ accounts, isLoading }) {
                               </td>
                             )}
                             {visibleColumns.institution && (
-                              <td className="px-4 py-2.5">
+                              <td className="px-4 py-1">
                                 <span className="text-xs text-slate-600">
                                   {account.bank_name || account.institution || '-'}
                                 </span>
                               </td>
                             )}
                             {visibleColumns.type && (
-                             <td className="px-4 py-2.5">
+                             <td className="px-4 py-1">
                                <span className="text-xs text-slate-600">
                                  {account.entityType === 'BankAccount' ? 'Bank Account' : account.entityType === 'CreditCard' ? 'Credit Card' : account.entityType}
                                </span>
                              </td>
                             )}
                             {visibleColumns.detail && (
-                             <td className="px-4 py-2.5">
+                             <td className="px-4 py-1">
                                <span className="text-xs text-slate-600">
                                  {getDetailTypeDisplayName(account.entityType === 'BankAccount' ? account.account_type : account.entityType === 'Asset' || account.entityType === 'Liability' ? account.type : account.detail_type)}
                                </span>
                              </td>
                             )}
                             {visibleColumns.balance && (
-                              <td className="px-4 py-2.5 text-right">
+                              <td className="px-4 py-1 text-right">
                                 <span className="font-semibold text-slate-900 text-xs">
                                   {(() => {
                                     const balance = getAccountBalance(account);
@@ -485,7 +485,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                               </td>
                             )}
                             {visibleColumns.status && (
-                              <td className="px-4 py-2.5 text-center">
+                              <td className="px-4 py-1 text-center">
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${account.is_active === false ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700'}`}>
                                   {account.is_active === false ? 'Inactive' : 'Active'}
                                 </span>
