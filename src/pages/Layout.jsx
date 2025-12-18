@@ -10,7 +10,6 @@ import {
 import { base44 } from '@/api/base44Client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import NetworkStatus from '@/components/common/NetworkStatus';
-import { useDefaultAccounts } from '@/components/hooks/useDefaultAccounts';
 import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
 import { getUserProfile } from '@/api/userSettings';
 
@@ -95,9 +94,6 @@ export default function Layout({ children, currentPageName }) {
   const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Initialize default accounts
-  useDefaultAccounts();
 
   // Save current page to localStorage
   React.useEffect(() => {
