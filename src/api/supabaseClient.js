@@ -7,6 +7,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined') {
   window.supabase = supabase;
+  console.log('✅ Supabase client loaded:', window.supabase);
 }
 
 const createEntityAPI = (tableName) => {
