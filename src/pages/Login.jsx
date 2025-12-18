@@ -58,22 +58,22 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-black flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-900 border-amber-500/20 shadow-2xl shadow-amber-500/10">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-cyan-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-2">
         <CardHeader className="space-y-1">
           <div className="flex flex-col items-center mb-4">
             <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-full blur-2xl opacity-30"></div>
-              <div className="relative flex flex-col leading-none text-center bg-gradient-to-br from-amber-400 via-yellow-500 to-amber-600 bg-clip-text text-transparent">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full blur-xl opacity-20"></div>
+              <div className="relative flex flex-col leading-none text-center bg-gradient-to-br from-orange-500 to-amber-600 bg-clip-text text-transparent">
                 <span className="text-[10px] font-light tracking-wider opacity-70">FIRST</span>
                 <h1 className="text-[32px] font-bold tracking-tight">SAVVY</h1>
               </div>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center bg-gradient-to-r from-amber-400 to-yellow-600 bg-clip-text text-transparent">
+          <CardTitle className="text-2xl text-center bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
             {isLogin ? 'Welcome back' : 'Create an account'}
           </CardTitle>
-          <CardDescription className="text-center text-slate-400">
+          <CardDescription className="text-center">
             {isLogin
               ? 'Sign in to your account to continue'
               : 'Sign up to start managing your finances'}
@@ -89,7 +89,7 @@ export default function Login() {
 
           <Button
             variant="outline"
-            className="w-full bg-slate-800 border-amber-500/30 hover:bg-slate-800/80 hover:border-amber-500/50 text-slate-200"
+            className="w-full"
             onClick={handleGoogleSignIn}
             disabled={loading}
           >
@@ -120,17 +120,17 @@ export default function Login() {
 
           <div className="relative">
             <div className="absolute inset-0 flex items-center">
-              <Separator className="bg-slate-700" />
+              <Separator />
             </div>
             <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-slate-900 px-2 text-slate-500">Or continue with</span>
+              <span className="bg-white px-2 text-slate-500">Or continue with</span>
             </div>
           </div>
 
           <form onSubmit={handleEmailAuth} className="space-y-4">
             {!isLogin && (
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-slate-300">Full Name</Label>
+                <Label htmlFor="fullName">Full Name</Label>
                 <Input
                   id="fullName"
                   type="text"
@@ -139,13 +139,12 @@ export default function Login() {
                   onChange={(e) => setFullName(e.target.value)}
                   required={!isLogin}
                   disabled={loading}
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500/20"
                 />
               </div>
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-slate-300">Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -154,12 +153,11 @@ export default function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500/20"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-slate-300">Password</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
@@ -168,11 +166,10 @@ export default function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
-                className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-amber-500 focus:ring-amber-500/20"
               />
             </div>
 
-            <Button type="submit" className="w-full bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-600 hover:to-yellow-700 text-black font-semibold shadow-lg shadow-amber-500/20 hover:shadow-amber-500/40 transition-all" disabled={loading}>
+            <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -191,7 +188,7 @@ export default function Login() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-slate-400 hover:text-amber-400 underline underline-offset-4 transition-colors"
+              className="text-slate-600 hover:text-orange-600 underline underline-offset-4 transition-colors"
               disabled={loading}
             >
               {isLogin
