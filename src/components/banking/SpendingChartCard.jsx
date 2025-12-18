@@ -145,8 +145,8 @@ export default function SpendingChartCard({
           >
             <defs>
               <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                <stop offset="5%" stopColor="#52A5CE" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#52A5CE" stopOpacity={0}/>
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -210,7 +210,7 @@ export default function SpendingChartCard({
             <Area
               type="monotone"
               dataKey="spending"
-              stroke="#3b82f6"
+              stroke="#52A5CE"
               fillOpacity={1}
               fill="url(#colorValue)"
               activeDot={(props) => {
@@ -221,7 +221,7 @@ export default function SpendingChartCard({
                     cx={cx}
                     cy={cy}
                     r={6}
-                    fill="#3b82f6"
+                    fill="#52A5CE"
                     stroke="#fff"
                     strokeWidth={2}
                     style={{ cursor: onPointClick ? 'pointer' : 'default' }}

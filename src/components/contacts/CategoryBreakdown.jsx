@@ -3,16 +3,18 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from 'recha
 import { formatCurrency } from '@/components/utils/formatters';
 
 const CHART_COLORS = [
-  '#3b82f6',
-  '#10b981',
-  '#f59e0b',
-  '#ef4444',
-  '#8b5cf6',
-  '#ec4899',
-  '#06b6d4',
-  '#84cc16',
-  '#f97316',
-  '#6366f1'
+  '#52A5CE',
+  '#AACC96',
+  '#EF6F3C',
+  '#FF7BAC',
+  '#EFCE7B',
+  '#D3B6D3',
+  '#25533F',
+  '#F4BEAE',
+  '#876029',
+  '#B8CEE8',
+  '#6D1F42',
+  '#AFAB23'
 ];
 
 export default function CategoryBreakdown({ transactions, categories }) {
