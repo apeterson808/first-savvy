@@ -67,6 +67,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [triggeringTransactionType, setTriggeringTransactionType] = useState(null);
   const [addContactSheetOpen, setAddContactSheetOpen] = useState(false);
   const [contactSearchTerm, setContactSearchTerm] = useState('');
+  const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
   const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
   const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
@@ -1351,6 +1352,7 @@ For each transaction, return the category_id that best matches. Consider:
                                 disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                 onAddNew={(searchTerm) => {
                                   setContactSearchTerm(searchTerm);
+                                  setTriggeringContactTransactionId(transaction.id);
                                   setAddContactSheetOpen(true);
                                 }}
                                 triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
@@ -2243,7 +2245,13 @@ For each transaction, return the category_id that best matches. Consider:
                                             }}
                                           />
 
-                          <Sheet open={addContactSheetOpen} onOpenChange={setAddContactSheetOpen}>
+                          <Sheet open={addContactSheetOpen} onOpenChange={(open) => {
+                            setAddContactSheetOpen(open);
+                            if (!open) {
+                              setTriggeringContactTransactionId(null);
+                              setContactSearchTerm('');
+                            }
+                          }}>
                             <SheetContent className="overflow-y-auto">
                               <SheetHeader>
                                 <SheetTitle>Add Contact</SheetTitle>
@@ -2257,13 +2265,14 @@ For each transaction, return the category_id that best matches. Consider:
                                   email: formData.get('email') || undefined,
                                   phone: formData.get('phone') || undefined,
                                   notes: formData.get('notes') || undefined,
-                                  status: 'Active'
+                                  status: 'active'
                                 };
                                 const newContact = await base44.entities.Contact.create(data);
 
-                                // Auto-populate the expanded transaction's contact field with newly created contact
-                                if (expandedTransactionId) {
-                                  const transaction = transactions.find(t => t.id === expandedTransactionId);
+                                // Auto-populate the transaction's contact field with newly created contact
+                                const transactionId = triggeringContactTransactionId || expandedTransactionId;
+                                if (transactionId) {
+                                  const transaction = transactions.find(t => t.id === transactionId);
                                   if (transaction) {
                                     await updateMutation.mutateAsync({
                                       id: transaction.id,
@@ -2275,6 +2284,7 @@ For each transaction, return the category_id that best matches. Consider:
                                 await queryClient.invalidateQueries({ queryKey: ['contacts'] });
                                 setAddContactSheetOpen(false);
                                 setContactSearchTerm('');
+                                setTriggeringContactTransactionId(null);
                               }} className="space-y-4 mt-4">
                                 <div>
                                   <Label htmlFor="contact-name">Name *</Label>
