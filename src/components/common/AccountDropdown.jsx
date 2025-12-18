@@ -77,6 +77,7 @@ export default function AccountDropdown({
       triggerClassName={triggerClassName}
       placeholder={placeholder}
       renderValue={showPendingCounts ? renderValue : undefined}
+      enableSearch={false}
     >
       {showAllOption && (
         <ClickThroughSelectItem value="all" data-display="All Accounts">

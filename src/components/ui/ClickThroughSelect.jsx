@@ -14,7 +14,7 @@ export function ClickThroughSelect({
   triggerClassName,
   renderValue,
   name,
-  enableSearch = false,
+  enableSearch = true,
   onSearchTermChange
 }) {
   const [isOpen, setIsOpen] = useState(false);
