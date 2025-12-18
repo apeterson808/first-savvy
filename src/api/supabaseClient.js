@@ -7,7 +7,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined') {
   window.supabase = supabase;
-  console.log('✅ Supabase client loaded:', window.supabase);
+  console.log('✅ Supabase client loaded');
+  console.log('  - Has auth?', !!supabase.auth);
+  console.log('  - Has getSession?', !!supabase.auth?.getSession);
+  console.log('  - Client:', supabase);
 }
 
 const createEntityAPI = (tableName) => {
