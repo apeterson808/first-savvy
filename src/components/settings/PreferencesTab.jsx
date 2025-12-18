@@ -74,6 +74,13 @@ export default function PreferencesTab({ profile, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (profile?.id === 'demo') {
+      toast.info('Demo mode: Changes are not saved');
+      onUpdate({ ...profile, ...preferences });
+      return;
+    }
+
     setLoading(true);
 
     try {

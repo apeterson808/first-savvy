@@ -31,6 +31,12 @@ export default function SecurityTab({ user }) {
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
 
+    if (user?.id === 'demo') {
+      toast.info('Demo mode: Changes are not saved');
+      setPasswordData({ newPassword: '', confirmPassword: '' });
+      return;
+    }
+
     if (passwordData.newPassword.length < 6) {
       toast.error('Password must be at least 6 characters');
       return;
@@ -56,6 +62,12 @@ export default function SecurityTab({ user }) {
 
   const handleEmailSubmit = async (e) => {
     e.preventDefault();
+
+    if (user?.id === 'demo') {
+      toast.info('Demo mode: Changes are not saved');
+      setEmailData({ newEmail: '' });
+      return;
+    }
 
     if (!emailData.newEmail || !emailData.newEmail.includes('@')) {
       toast.error('Please enter a valid email address');

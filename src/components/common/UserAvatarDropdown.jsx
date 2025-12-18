@@ -44,8 +44,12 @@ export function UserAvatarDropdown() {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    navigate('/login');
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
   };
 
   const getInitials = (name) => {
@@ -58,16 +62,16 @@ export function UserAvatarDropdown() {
       .slice(0, 2);
   };
 
-  if (loading || !user) {
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Demo User';
+  const userEmail = user?.email || 'demo@example.com';
+
+  if (loading) {
     return (
       <Avatar className="h-8 w-8">
         <AvatarFallback>...</AvatarFallback>
       </Avatar>
     );
   }
-
-  const displayName = profile?.full_name || user.email?.split('@')[0] || 'User';
-  const userEmail = user.email;
 
   return (
     <DropdownMenu>

@@ -90,6 +90,13 @@ export default function ProfileTab({ user, profile, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (user.id === 'demo') {
+      toast.info('Demo mode: Changes are not saved');
+      onUpdate({ ...profile, ...formData });
+      return;
+    }
+
     setLoading(true);
 
     try {

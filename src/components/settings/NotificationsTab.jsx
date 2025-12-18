@@ -25,6 +25,13 @@ export default function NotificationsTab({ profile, onUpdate }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (profile?.id === 'demo') {
+      toast.info('Demo mode: Changes are not saved');
+      onUpdate({ ...profile, ...notifications });
+      return;
+    }
+
     setLoading(true);
 
     try {

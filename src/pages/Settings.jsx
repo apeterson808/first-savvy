@@ -25,9 +25,48 @@ export default function Settings() {
         setUser(authUser);
         const userProfile = await getUserProfile(authUser.id);
         setProfile(userProfile);
+      } else {
+        setUser({ id: 'demo', email: 'demo@example.com' });
+        setProfile({
+          id: 'demo',
+          full_name: 'Demo User',
+          email: 'demo@example.com',
+          phone: '',
+          bio: '',
+          timezone: 'UTC',
+          language: 'en',
+          currency: 'USD',
+          date_format: 'MM/DD/YYYY',
+          theme: 'system',
+          email_notifications: true,
+          push_notifications: true,
+          budget_alerts: true,
+          transaction_alerts: true,
+          weekly_summary: true,
+          monthly_report: true
+        });
       }
     } catch (error) {
       console.error('Error loading user data:', error);
+      setUser({ id: 'demo', email: 'demo@example.com' });
+      setProfile({
+        id: 'demo',
+        full_name: 'Demo User',
+        email: 'demo@example.com',
+        phone: '',
+        bio: '',
+        timezone: 'UTC',
+        language: 'en',
+        currency: 'USD',
+        date_format: 'MM/DD/YYYY',
+        theme: 'system',
+        email_notifications: true,
+        push_notifications: true,
+        budget_alerts: true,
+        transaction_alerts: true,
+        weekly_summary: true,
+        monthly_report: true
+      });
     } finally {
       setLoading(false);
     }
