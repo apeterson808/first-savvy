@@ -5,6 +5,10 @@ const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+if (typeof window !== 'undefined') {
+  window.supabase = supabase;
+}
+
 const createEntityAPI = (tableName) => {
   return {
     async list(orderBy = 'created_at', limit = null) {
