@@ -191,7 +191,7 @@ async function createCategories() {
   return categoryMap;
 }
 
-async function createBankAccounts() {
+async function createBankAccounts(userId) {
   console.log('🏦 Creating bank accounts...');
 
   const accounts = [
@@ -202,7 +202,8 @@ async function createBankAccounts() {
       account_number: '****4523',
       current_balance: 8500.00,
       is_active: true,
-      start_date: '2025-01-15'
+      start_date: '2025-01-15',
+      user_id: userId
     },
     {
       account_name: 'Wells Fargo Savings',
@@ -211,7 +212,8 @@ async function createBankAccounts() {
       account_number: '****8901',
       current_balance: 25000.00,
       is_active: true,
-      start_date: '2025-01-10'
+      start_date: '2025-01-10',
+      user_id: userId
     },
     {
       account_name: 'Ally High-Yield Savings',
@@ -220,7 +222,8 @@ async function createBankAccounts() {
       account_number: '****3344',
       current_balance: 15000.00,
       is_active: true,
-      start_date: '2025-02-01'
+      start_date: '2025-02-01',
+      user_id: userId
     },
     {
       account_name: 'Chase Sapphire Reserve',
@@ -229,7 +232,8 @@ async function createBankAccounts() {
       account_number: '****5678',
       current_balance: -3200.00,
       is_active: true,
-      start_date: '2024-06-01'
+      start_date: '2024-06-01',
+      user_id: userId
     },
     {
       account_name: 'Citi Double Cash',
@@ -238,7 +242,8 @@ async function createBankAccounts() {
       account_number: '****9012',
       current_balance: -1450.00,
       is_active: true,
-      start_date: '2024-08-15'
+      start_date: '2024-08-15',
+      user_id: userId
     }
   ];
 
@@ -258,7 +263,7 @@ async function createBankAccounts() {
   return accountMap;
 }
 
-async function createAssets() {
+async function createAssets(userId) {
   console.log('📈 Creating investment assets...');
 
   const assets = [
@@ -269,7 +274,8 @@ async function createAssets() {
       current_value: 125000.00,
       purchase_date: '2020-01-01',
       description: '401(k) Retirement Account',
-      is_active: true
+      is_active: true,
+      user_id: userId
     },
     {
       name: 'Fidelity Roth IRA',
@@ -278,7 +284,8 @@ async function createAssets() {
       current_value: 45000.00,
       purchase_date: '2021-03-15',
       description: 'Roth IRA',
-      is_active: true
+      is_active: true,
+      user_id: userId
     },
     {
       name: 'Robinhood Stocks',
@@ -287,7 +294,8 @@ async function createAssets() {
       current_value: 12500.00,
       purchase_date: '2023-01-10',
       description: 'Individual Brokerage Account',
-      is_active: true
+      is_active: true,
+      user_id: userId
     }
   ];
 
@@ -307,7 +315,7 @@ async function createAssets() {
   return assetMap;
 }
 
-async function createLiabilities() {
+async function createLiabilities(userId) {
   console.log('🏠 Creating liabilities...');
 
   const liabilities = [
@@ -319,7 +327,8 @@ async function createLiabilities() {
       interest_rate: 3.75,
       minimum_payment: 1650.00,
       due_date: '2026-01-01',
-      is_active: true
+      is_active: true,
+      user_id: userId
     },
     {
       name: 'Honda CR-V Loan',
@@ -329,7 +338,8 @@ async function createLiabilities() {
       interest_rate: 4.25,
       minimum_payment: 425.00,
       due_date: '2026-01-22',
-      is_active: true
+      is_active: true,
+      user_id: userId
     }
   ];
 
@@ -349,18 +359,18 @@ async function createLiabilities() {
   return liabilityMap;
 }
 
-async function createContacts() {
+async function createContacts(userId) {
   console.log('👥 Creating contacts...');
 
   const contacts = [
-    { name: 'Whole Foods Market', type: 'business', email: 'customer@wholefoods.com', notes: 'Primary grocery store' },
-    { name: 'Shell Gas Station', type: 'business', email: 'support@shell.com', notes: 'Regular gas station' },
-    { name: 'Amazon', type: 'business', email: 'customer-service@amazon.com', notes: 'Online shopping' },
-    { name: 'Netflix', type: 'business', email: 'support@netflix.com', notes: 'Streaming subscription' },
-    { name: 'AT&T', type: 'business', phone: '800-288-2020', notes: 'Internet and phone provider' },
-    { name: 'Starbucks', type: 'business', email: 'support@starbucks.com', notes: 'Coffee shop' },
-    { name: 'John Smith', type: 'person', email: 'john.smith@email.com', phone: '555-0101', notes: 'Friend' },
-    { name: 'Sarah Johnson', type: 'person', email: 'sarah.j@email.com', phone: '555-0102', notes: 'Colleague' },
+    { name: 'Whole Foods Market', type: 'business', email: 'customer@wholefoods.com', notes: 'Primary grocery store', user_id: userId },
+    { name: 'Shell Gas Station', type: 'business', email: 'support@shell.com', notes: 'Regular gas station', user_id: userId },
+    { name: 'Amazon', type: 'business', email: 'customer-service@amazon.com', notes: 'Online shopping', user_id: userId },
+    { name: 'Netflix', type: 'business', email: 'support@netflix.com', notes: 'Streaming subscription', user_id: userId },
+    { name: 'AT&T', type: 'business', phone: '800-288-2020', notes: 'Internet and phone provider', user_id: userId },
+    { name: 'Starbucks', type: 'business', email: 'support@starbucks.com', notes: 'Coffee shop', user_id: userId },
+    { name: 'John Smith', type: 'person', email: 'john.smith@email.com', phone: '555-0101', notes: 'Friend', user_id: userId },
+    { name: 'Sarah Johnson', type: 'person', email: 'sarah.j@email.com', phone: '555-0102', notes: 'Colleague', user_id: userId },
   ];
 
   const { data, error } = await supabase
@@ -379,7 +389,7 @@ async function createContacts() {
   return contactMap;
 }
 
-async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
+async function generatePostedTransactions(accountMap, categoryMap, contactMap, userId) {
   console.log('💰 Generating posted transactions (June-November 2025)...');
 
   const transactions = [];
@@ -419,7 +429,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Rent'],
       bank_account_id: checkingId,
-      payment_method: 'check'
+      payment_method: 'check',
+      user_id: userId
     });
 
     transactions.push({
@@ -430,7 +441,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Utilities'],
       bank_account_id: checkingId,
-      payment_method: 'bank_transfer'
+      payment_method: 'bank_transfer',
+      user_id: userId
     });
 
     transactions.push({
@@ -442,7 +454,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       category_id: categoryMap['Utilities'],
       bank_account_id: checkingId,
       payment_method: 'bank_transfer',
-      contact_id: contactMap['AT&T']
+      contact_id: contactMap['AT&T'],
+      user_id: userId
     });
 
     transactions.push({
@@ -453,7 +466,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Utilities'],
       bank_account_id: checkingId,
-      payment_method: 'bank_transfer'
+      payment_method: 'bank_transfer',
+      user_id: userId
     });
 
     transactions.push({
@@ -464,7 +478,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Salary'],
       bank_account_id: checkingId,
-      payment_method: 'direct_deposit'
+      payment_method: 'direct_deposit',
+      user_id: userId
     });
 
     transactions.push({
@@ -475,7 +490,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Salary'],
       bank_account_id: checkingId,
-      payment_method: 'direct_deposit'
+      payment_method: 'direct_deposit',
+      user_id: userId
     });
 
     for (let i = 0; i < 15; i++) {
@@ -493,7 +509,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
         status: 'posted',
         category_id: categoryMap[merchant.category],
         bank_account_id: accountId,
-        payment_method: merchant.paymentMethod
+        payment_method: merchant.paymentMethod,
+        user_id: userId
       };
 
       if (merchant.contactName && contactMap[merchant.contactName]) {
@@ -511,7 +528,8 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
       status: 'posted',
       category_id: categoryMap['Investment Income'],
       bank_account_id: savingsId,
-      payment_method: 'bank_transfer'
+      payment_method: 'bank_transfer',
+      user_id: userId
     });
   }
 
@@ -526,7 +544,7 @@ async function generatePostedTransactions(accountMap, categoryMap, contactMap) {
   return data;
 }
 
-async function generatePendingTransactions(accountMap, categoryMap, contactMap) {
+async function generatePendingTransactions(accountMap, categoryMap, contactMap, userId) {
   console.log('⏳ Generating pending December transactions with AI suggestions...');
 
   const transactions = [];
@@ -568,7 +586,8 @@ async function generatePendingTransactions(accountMap, categoryMap, contactMap) 
       category_id: null,
       ai_suggested_category_id: useAISuggestion ? categoryMap[merchant.suggestedCategory] : null,
       bank_account_id: accountId,
-      payment_method: accountId === checkingId ? 'debit_card' : 'credit_card'
+      payment_method: accountId === checkingId ? 'debit_card' : 'credit_card',
+      user_id: userId
     };
 
     if (merchant.contactName && contactMap[merchant.contactName]) {
@@ -589,7 +608,7 @@ async function generatePendingTransactions(accountMap, categoryMap, contactMap) 
   return data;
 }
 
-async function generateInvestmentTransactions(assetMap, categoryMap, accountMap) {
+async function generateInvestmentTransactions(assetMap, categoryMap, accountMap, userId) {
   console.log('📊 Generating investment-related transactions (all posted)...');
 
   const transactions = [];
@@ -606,7 +625,8 @@ async function generateInvestmentTransactions(assetMap, categoryMap, accountMap)
       status: 'posted',
       category_id: categoryMap['Investment Income'],
       bank_account_id: checkingId,
-      payment_method: 'bank_transfer'
+      payment_method: 'bank_transfer',
+      user_id: userId
     });
 
     const contribution401k = -1000.00;
@@ -619,7 +639,8 @@ async function generateInvestmentTransactions(assetMap, categoryMap, accountMap)
       category_id: categoryMap['Other Expense'],
       bank_account_id: checkingId,
       payment_method: 'bank_transfer',
-      notes: 'Automatic payroll deduction for retirement'
+      notes: 'Automatic payroll deduction for retirement',
+      user_id: userId
     });
 
     const contributionIRA = -500.00;
@@ -632,7 +653,8 @@ async function generateInvestmentTransactions(assetMap, categoryMap, accountMap)
       category_id: categoryMap['Other Expense'],
       bank_account_id: checkingId,
       payment_method: 'bank_transfer',
-      notes: 'Roth IRA contribution'
+      notes: 'Roth IRA contribution',
+      user_id: userId
     });
   }
 
@@ -647,7 +669,7 @@ async function generateInvestmentTransactions(assetMap, categoryMap, accountMap)
   return data;
 }
 
-async function generateTransferTransactions(accountMap, categoryMap) {
+async function generateTransferTransactions(accountMap, categoryMap, userId) {
   console.log('🔄 Generating matched and unmatched transfer transactions...');
 
   const transactions = [];
@@ -670,7 +692,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
       category_id: getTransferCategoryId(-500.00, categoryMap),
       bank_account_id: checkingId,
       payment_method: 'bank_transfer',
-      transfer_pair_id: transferPairId1
+      transfer_pair_id: transferPairId1,
+      user_id: userId
     });
     transactions.push({
       date: formatDate(new Date(2025, 5 + month, 10)),
@@ -681,7 +704,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
       category_id: getTransferCategoryId(500.00, categoryMap),
       bank_account_id: savingsId,
       payment_method: 'bank_transfer',
-      transfer_pair_id: transferPairId1
+      transfer_pair_id: transferPairId1,
+      user_id: userId
     });
 
     const transferPairId2 = generateUUID();
@@ -694,7 +718,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
       category_id: getTransferCategoryId(-1000.00, categoryMap),
       bank_account_id: checkingId,
       payment_method: 'bank_transfer',
-      transfer_pair_id: transferPairId2
+      transfer_pair_id: transferPairId2,
+      user_id: userId
     });
     transactions.push({
       date: formatDate(new Date(2025, 5 + month, 20)),
@@ -705,7 +730,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
       category_id: getTransferCategoryId(1000.00, categoryMap),
       bank_account_id: allySavingsId,
       payment_method: 'bank_transfer',
-      transfer_pair_id: transferPairId2
+      transfer_pair_id: transferPairId2,
+      user_id: userId
     });
 
     const ccPaymentPairId = generateUUID();
@@ -719,7 +745,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
       category_id: getTransferCategoryId(-paymentAmount, categoryMap),
       bank_account_id: checkingId,
       payment_method: 'bank_transfer',
-      transfer_pair_id: ccPaymentPairId
+      transfer_pair_id: ccPaymentPairId,
+      user_id: userId
     });
     transactions.push({
       date: formatDate(new Date(2025, 5 + month, 14)),
@@ -730,7 +757,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
       category_id: getTransferCategoryId(paymentAmount, categoryMap),
       bank_account_id: sapphireId,
       payment_method: 'bank_transfer',
-      transfer_pair_id: ccPaymentPairId
+      transfer_pair_id: ccPaymentPairId,
+      user_id: userId
     });
   }
 
@@ -743,7 +771,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
     category_id: getTransferCategoryId(-750.00, categoryMap),
     bank_account_id: checkingId,
     payment_method: 'bank_transfer',
-    transfer_pair_id: null
+    transfer_pair_id: null,
+    user_id: userId
   });
   transactions.push({
     date: '2025-08-15',
@@ -754,7 +783,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
     category_id: getTransferCategoryId(750.00, categoryMap),
     bank_account_id: savingsId,
     payment_method: 'bank_transfer',
-    transfer_pair_id: null
+    transfer_pair_id: null,
+    user_id: userId
   });
 
   transactions.push({
@@ -766,7 +796,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
     category_id: getTransferCategoryId(-800.00, categoryMap),
     bank_account_id: checkingId,
     payment_method: 'bank_transfer',
-    transfer_pair_id: null
+    transfer_pair_id: null,
+    user_id: userId
   });
 
   transactions.push({
@@ -778,7 +809,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
     category_id: getTransferCategoryId(-300.00, categoryMap),
     bank_account_id: checkingId,
     payment_method: 'bank_transfer',
-    transfer_pair_id: null
+    transfer_pair_id: null,
+    user_id: userId
   });
   transactions.push({
     date: '2025-10-05',
@@ -789,7 +821,8 @@ async function generateTransferTransactions(accountMap, categoryMap) {
     category_id: getTransferCategoryId(300.00, categoryMap),
     bank_account_id: allySavingsId,
     payment_method: 'bank_transfer',
-    transfer_pair_id: null
+    transfer_pair_id: null,
+    user_id: userId
   });
 
   const { data, error } = await supabase
@@ -805,7 +838,7 @@ async function generateTransferTransactions(accountMap, categoryMap) {
   return data;
 }
 
-async function createCreditScores() {
+async function createCreditScores(userId) {
   console.log('📊 Creating credit scores...');
 
   const scores = [];
@@ -816,7 +849,8 @@ async function createCreditScores() {
     scores.push({
       score: score,
       bureau: bureaus[month % 3],
-      last_checked: formatDate(endOfMonth(new Date(2025, 5 + month, 1)))
+      last_checked: formatDate(endOfMonth(new Date(2025, 5 + month, 1))),
+      user_id: userId
     });
   }
 
@@ -831,18 +865,18 @@ async function createCreditScores() {
   return data;
 }
 
-async function createBudgets(categoryMap) {
+async function createBudgets(categoryMap, userId) {
   console.log('💵 Creating budgets...');
 
   const expenseGroup = await supabase
     .from('budget_groups')
-    .insert({ name: 'Monthly Budget', type: 'expense' })
+    .insert({ name: 'Monthly Budget', type: 'expense', user_id: userId })
     .select()
     .single();
 
   const incomeGroup = await supabase
     .from('budget_groups')
-    .insert({ name: 'Income', type: 'income' })
+    .insert({ name: 'Income', type: 'income', user_id: userId })
     .select()
     .single();
 
@@ -850,12 +884,12 @@ async function createBudgets(categoryMap) {
   if (incomeGroup.error) throw incomeGroup.error;
 
   const budgets = [
-    { name: 'Groceries', limit_amount: 800, category_id: categoryMap['Groceries'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true },
-    { name: 'Dining Out', limit_amount: 400, category_id: categoryMap['Dining'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true },
-    { name: 'Gas & Fuel', limit_amount: 200, category_id: categoryMap['Gas'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true },
-    { name: 'Entertainment', limit_amount: 300, category_id: categoryMap['Entertainment'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true },
-    { name: 'Shopping', limit_amount: 500, category_id: categoryMap['Shopping'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true },
-    { name: 'Monthly Salary', limit_amount: 13000, category_id: categoryMap['Salary'], group_id: incomeGroup.data.id, period: 'monthly', is_active: true },
+    { name: 'Groceries', limit_amount: 800, category_id: categoryMap['Groceries'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true, user_id: userId },
+    { name: 'Dining Out', limit_amount: 400, category_id: categoryMap['Dining'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true, user_id: userId },
+    { name: 'Gas & Fuel', limit_amount: 200, category_id: categoryMap['Gas'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true, user_id: userId },
+    { name: 'Entertainment', limit_amount: 300, category_id: categoryMap['Entertainment'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true, user_id: userId },
+    { name: 'Shopping', limit_amount: 500, category_id: categoryMap['Shopping'], group_id: expenseGroup.data.id, period: 'monthly', is_active: true, user_id: userId },
+    { name: 'Monthly Salary', limit_amount: 13000, category_id: categoryMap['Salary'], group_id: incomeGroup.data.id, period: 'monthly', is_active: true, user_id: userId },
   ];
 
   const { data, error } = await supabase
@@ -869,17 +903,17 @@ async function createBudgets(categoryMap) {
   return data;
 }
 
-async function createCategorizationRules(categoryMap) {
+async function createCategorizationRules(categoryMap, userId) {
   console.log('🔧 Creating categorization rules...');
 
   const rules = [
-    { pattern: 'WHOLE FOODS|SAFEWAY|TRADER JOE', category_id: categoryMap['Groceries'], priority: 10, is_active: true },
-    { pattern: 'SHELL|CHEVRON|76|ARCO', category_id: categoryMap['Gas'], priority: 10, is_active: true },
-    { pattern: 'AMAZON', category_id: categoryMap['Shopping'], priority: 5, is_active: true },
-    { pattern: 'NETFLIX|SPOTIFY|HULU|DISNEY', category_id: categoryMap['Subscriptions'], priority: 10, is_active: true },
-    { pattern: 'STARBUCKS|COFFEE BEAN|PEET', category_id: categoryMap['Dining'], priority: 8, is_active: true },
-    { pattern: 'TARGET|WALMART|COSTCO', category_id: categoryMap['Shopping'], priority: 7, is_active: true },
-    { pattern: 'UBER|LYFT', category_id: categoryMap['Transportation'], priority: 9, is_active: true },
+    { pattern: 'WHOLE FOODS|SAFEWAY|TRADER JOE', category_id: categoryMap['Groceries'], priority: 10, is_active: true, user_id: userId },
+    { pattern: 'SHELL|CHEVRON|76|ARCO', category_id: categoryMap['Gas'], priority: 10, is_active: true, user_id: userId },
+    { pattern: 'AMAZON', category_id: categoryMap['Shopping'], priority: 5, is_active: true, user_id: userId },
+    { pattern: 'NETFLIX|SPOTIFY|HULU|DISNEY', category_id: categoryMap['Subscriptions'], priority: 10, is_active: true, user_id: userId },
+    { pattern: 'STARBUCKS|COFFEE BEAN|PEET', category_id: categoryMap['Dining'], priority: 8, is_active: true, user_id: userId },
+    { pattern: 'TARGET|WALMART|COSTCO', category_id: categoryMap['Shopping'], priority: 7, is_active: true, user_id: userId },
+    { pattern: 'UBER|LYFT', category_id: categoryMap['Transportation'], priority: 9, is_active: true, user_id: userId },
   ];
 
   const { data, error } = await supabase
@@ -947,6 +981,15 @@ async function main() {
   console.log(`📅 Seed date range: June 15, 2025 - December 16, 2025`);
   console.log(`📍 Reference date: ${formatDate(TODAY)}`);
   console.log('='.repeat(60));
+
+  const { data: session } = await supabase.auth.getSession();
+  if (!session?.session) {
+    console.error('\n❌ Not authenticated! Please log in to the app first, then run this seed script.\n');
+    process.exit(1);
+  }
+
+  const userId = session.session.user.id;
+  console.log(`👤 Seeding data for: ${session.session.user.email} (${userId})`);
 
   const confirmed = await promptConfirmation();
 
