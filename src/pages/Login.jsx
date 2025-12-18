@@ -58,16 +58,19 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-cyan-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-2">
         <CardHeader className="space-y-1">
           <div className="flex flex-col items-center mb-4">
-            <div className="flex flex-col leading-none text-center">
-              <span className="text-[10px] font-light text-slate-400 tracking-wider">FIRST</span>
-              <h1 className="text-[32px] font-bold text-slate-900 tracking-tight">SAVVY</h1>
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-orange-400 to-amber-500 rounded-full blur-xl opacity-20"></div>
+              <div className="relative flex flex-col leading-none text-center bg-gradient-to-br from-orange-500 to-amber-600 bg-clip-text text-transparent">
+                <span className="text-[10px] font-light tracking-wider opacity-70">FIRST</span>
+                <h1 className="text-[32px] font-bold tracking-tight">SAVVY</h1>
+              </div>
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">
+          <CardTitle className="text-2xl text-center bg-gradient-to-r from-slate-900 to-slate-700 bg-clip-text text-transparent">
             {isLogin ? 'Welcome back' : 'Create an account'}
           </CardTitle>
           <CardDescription className="text-center">
@@ -166,7 +169,7 @@ export default function Login() {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
+            <Button type="submit" className="w-full bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 text-white shadow-md hover:shadow-lg transition-all" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -185,7 +188,7 @@ export default function Login() {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-slate-600 hover:text-slate-900 underline underline-offset-4"
+              className="text-slate-600 hover:text-orange-600 underline underline-offset-4 transition-colors"
               disabled={loading}
             >
               {isLogin
