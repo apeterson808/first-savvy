@@ -139,6 +139,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         setDetailType('credit_card');
         setBankName(editingAccount.institution || '');
         setInstitutionLogoUrl(editingAccount.institution_logo_url || '');
+        setAccountNumber(editingAccount.account_number_masked || editingAccount.last_four || '');
       } else if (entityType === 'Asset') {
         setAccountType('asset');
         setDetailType(editingAccount.type || editingAccount.account_type || '');
@@ -157,7 +158,9 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         setDetailType(editingAccount.detail_type || 'other_expenses');
       }
       setName(editingAccount.account_name || editingAccount.name || '');
-      setAccountNumber(editingAccount.account_number || '');
+      if (entityType !== 'CreditCard') {
+        setAccountNumber(editingAccount.account_number || '');
+      }
       setDescription(editingAccount.description || '');
       setBalance(String(Math.abs(editingAccount.current_balance || editingAccount.current_value || 0)));
       setStartDate(editingAccount.start_date || '');
@@ -666,6 +669,11 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                     {acc.account_name} {acc.account_number ? `(${acc.account_number})` : ''}
                   </ClickThroughSelectItem>
                 ))}
+                {existingCreditCards.map(cc => (
+                  <ClickThroughSelectItem key={cc.id} value={cc.id}>
+                    {cc.name} {cc.last_four ? `(${cc.last_four})` : ''} (Credit Card)
+                  </ClickThroughSelectItem>
+                ))}
                 {assets.map(asset => (
                   <ClickThroughSelectItem key={asset.id} value={asset.id}>
                     {asset.name} (Asset)
@@ -815,12 +823,22 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                                       placeholder="Select parent account"
                                       triggerClassName="hover:bg-slate-50"
                                     >
-                  {(accountType === 'bank' || accountType === 'credit_card') && existingAccounts.filter(acc => !acc.parent_account_id).length > 0 && (
+                  {accountType === 'bank' && existingAccounts.filter(acc => !acc.parent_account_id).length > 0 && (
                     <>
                       <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Bank Accounts</div>
                       {existingAccounts.filter(acc => !acc.parent_account_id).map(acc => (
                         <ClickThroughSelectItem key={acc.id} value={acc.id}>
                           {acc.account_name}{acc.account_number ? ` (${acc.account_number})` : ''}
+                        </ClickThroughSelectItem>
+                      ))}
+                    </>
+                  )}
+                  {accountType === 'credit_card' && existingCreditCards.filter(cc => cc.id !== editingAccount?.id).length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Credit Cards</div>
+                      {existingCreditCards.filter(cc => cc.id !== editingAccount?.id).map(cc => (
+                        <ClickThroughSelectItem key={cc.id} value={cc.id}>
+                          {cc.name}{cc.last_four ? ` (${cc.last_four})` : ''}
                         </ClickThroughSelectItem>
                       ))}
                     </>
