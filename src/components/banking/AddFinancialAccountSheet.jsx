@@ -1032,19 +1032,20 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                                 }}>
                                   {(() => {
                                     // Create new/edited account object
-                                    const newAccount = { 
-                                     id: editingAccount?.id || '__new__', 
-                                     account_name: name, 
+                                    const newAccount = {
+                                     id: editingAccount?.id || '__new__',
+                                     account_name: name,
                                      account_number: accountNumber,
-                                     bank_name: bankName,
+                                     bank_name: accountType === 'bank' ? bankName : undefined,
+                                     institution: accountType !== 'bank' ? bankName : undefined,
                                      account_type: detailType,
                                      current_balance: parseFloat(balance) || 0,
                                      parent_account_id: isSubaccount ? parentAccountId : null,
                                      isNew: true,
-                                     entityType: accountType === 'bank' ? 'BankAccount' : 
+                                     entityType: accountType === 'bank' ? 'BankAccount' :
                                                  accountType === 'credit_card' ? 'CreditCard' :
-                                                 accountType === 'asset' ? 'Asset' : 
-                                                 accountType === 'liability' ? 'Liability' : 
+                                                 accountType === 'asset' ? 'Asset' :
+                                                 accountType === 'liability' ? 'Liability' :
                                                  accountType === 'income' ? 'Income' : 'Expense'
                                     };
 
@@ -1052,6 +1053,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                                     const editingId = editingAccount?.id;
                                     let allAccounts = [
                                       ...existingAccounts.filter(a => a.id !== editingId).map(a => ({ ...a, entityType: 'BankAccount', isNew: false })),
+                                      ...existingCreditCards.filter(cc => cc.id !== editingId).map(cc => ({ ...cc, account_name: cc.name, account_number: cc.last_four || cc.account_number_masked, entityType: 'CreditCard', isNew: false })),
                                       ...assets.filter(a => a.id !== editingId).map(a => ({ ...a, account_name: a.name, entityType: 'Asset', isNew: false })),
                                       ...liabilities.filter(l => l.id !== editingId).map(l => ({ ...l, account_name: l.name, entityType: 'Liability', isNew: false })),
                                       ...categories.filter(c => c.type === 'income' && c.id !== editingId).map(c => ({ ...c, account_name: c.name, entityType: 'Income', isNew: false })),
@@ -1074,12 +1076,12 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                                           bVal = (b.account_name || '').toLowerCase();
                                           break;
                                         case 'institution':
-                                          aVal = (a.bank_name || '').toLowerCase();
-                                          bVal = (b.bank_name || '').toLowerCase();
+                                          aVal = (a.bank_name || a.institution || '').toLowerCase();
+                                          bVal = (b.bank_name || b.institution || '').toLowerCase();
                                           break;
                                         case 'type':
-                                          aVal = getDetailTypeDisplayName(a.entityType === 'BankAccount' ? a.account_type : a.entityType === 'Asset' || a.entityType === 'Liability' ? a.type : a.detail_type).toLowerCase();
-                                          bVal = getDetailTypeDisplayName(b.entityType === 'BankAccount' ? b.account_type : b.entityType === 'Asset' || b.entityType === 'Liability' ? b.type : b.detail_type).toLowerCase();
+                                          aVal = getDetailTypeDisplayName(a.entityType === 'BankAccount' ? a.account_type : a.entityType === 'CreditCard' ? 'credit_card' : a.entityType === 'Asset' || a.entityType === 'Liability' ? a.type : a.detail_type).toLowerCase();
+                                          bVal = getDetailTypeDisplayName(b.entityType === 'BankAccount' ? b.account_type : b.entityType === 'CreditCard' ? 'credit_card' : b.entityType === 'Asset' || b.entityType === 'Liability' ? b.type : b.detail_type).toLowerCase();
                                           break;
                                         case 'balance':
                                           aVal = a.current_balance || a.current_value || 0;
