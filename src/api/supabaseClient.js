@@ -128,13 +128,31 @@ export const createSupabaseClient = () => {
       Invitation: createEntityAPI('invitations')
     },
     auth: {
-      async signUp(email, password) {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+      async signUp(email, password, fullName) {
+        const options = fullName ? {
+          data: { full_name: fullName }
+        } : undefined;
+
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options
+        });
         if (error) throw error;
         return data;
       },
       async signIn(email, password) {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        return data;
+      },
+      async signInWithGoogle() {
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback`
+          }
+        });
         if (error) throw error;
         return data;
       },
@@ -151,6 +169,18 @@ export const createSupabaseClient = () => {
         const { data, error } = await supabase.auth.getUser();
         if (error) throw error;
         return data.user;
+      },
+      async getSession() {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        return data.session;
+      },
+      onAuthStateChange(callback) {
+        return supabase.auth.onAuthStateChange((event, session) => {
+          (() => {
+            callback(event, session);
+          })();
+        });
       }
     },
     functions: {

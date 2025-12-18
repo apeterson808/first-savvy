@@ -1,32 +1,21 @@
 import Layout from "./Layout.jsx";
-
+import Login from "./Login";
+import AuthCallback from "./AuthCallback";
 import Dashboard from "./Dashboard";
-
 import Transactions from "./Transactions";
-
 import Banking from "./Banking";
-
 import Budgeting from "./Budgeting";
-
 import NetWorth from "./NetWorth";
-
 import CreditScore from "./CreditScore";
-
 import ConnectAccount from "./ConnectAccount";
-
 import Contacts from "./Contacts";
-
 import ContactDetail from "./ContactDetail";
-
 import AccountDetail from "./AccountDetail";
-
 import Integrations from "./Integrations";
-
 import Collaboration from "./Collaboration";
-
 import Settings from "./Settings";
-
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const PAGES = {
 
@@ -71,42 +60,39 @@ function _getCurrentPage(url) {
 function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
-    
-    return (
-        <Layout currentPageName={currentPage}>
-            <Routes>            
-                
-                    <Route path="/" element={<Dashboard />} />
-                
-                
-                <Route path="/Dashboard" element={<Dashboard />} />
-                
-                <Route path="/Transactions" element={<Transactions />} />
-                
-                <Route path="/Banking" element={<Banking />} />
 
-                <Route path="/Banking/account/:id" element={<AccountDetail />} />
+    const isAuthRoute = location.pathname === '/login' || location.pathname === '/auth/callback';
 
-                <Route path="/Budgeting" element={<Budgeting />} />
-                
-                <Route path="/NetWorth" element={<NetWorth />} />
-                
-                <Route path="/CreditScore" element={<CreditScore />} />
-                
-                <Route path="/ConnectAccount" element={<ConnectAccount />} />
-                
-                <Route path="/Contacts" element={<Contacts />} />
-
-                <Route path="/Contacts/:id" element={<ContactDetail />} />
-
-                <Route path="/Integrations" element={<Integrations />} />
-
-                <Route path="/Collaboration" element={<Collaboration />} />
-
-                <Route path="/Settings" element={<Settings />} />
-
+    if (isAuthRoute) {
+        return (
+            <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
             </Routes>
-        </Layout>
+        );
+    }
+
+    return (
+        <ProtectedRoute>
+            <Layout currentPageName={currentPage}>
+                <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    <Route path="/Dashboard" element={<Dashboard />} />
+                    <Route path="/Transactions" element={<Transactions />} />
+                    <Route path="/Banking" element={<Banking />} />
+                    <Route path="/Banking/account/:id" element={<AccountDetail />} />
+                    <Route path="/Budgeting" element={<Budgeting />} />
+                    <Route path="/NetWorth" element={<NetWorth />} />
+                    <Route path="/CreditScore" element={<CreditScore />} />
+                    <Route path="/ConnectAccount" element={<ConnectAccount />} />
+                    <Route path="/Contacts" element={<Contacts />} />
+                    <Route path="/Contacts/:id" element={<ContactDetail />} />
+                    <Route path="/Integrations" element={<Integrations />} />
+                    <Route path="/Collaboration" element={<Collaboration />} />
+                    <Route path="/Settings" element={<Settings />} />
+                </Routes>
+            </Layout>
+        </ProtectedRoute>
     );
 }
 

@@ -104,13 +104,6 @@ export default function Layout({ children, currentPageName }) {
     }
   }, [currentPageName, location]);
 
-  // Always start on dashboard on initial load
-  React.useEffect(() => {
-    if (window.location.pathname === '/') {
-      navigate(createPageUrl('Dashboard'), { replace: true });
-    }
-  }, []);
-
   React.useEffect(() => {
     base44.auth.me().then(setUser).catch(() => {});
   }, []);
