@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -20,6 +20,7 @@ export default function RecentTransactionsCard() {
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingValue, setEditingValue] = useState('');
+  const inputRef = useRef(null);
 
   const { data: bankAccounts = [] } = useQuery({
     queryKey: ['activeBankAccounts'],
@@ -117,6 +118,34 @@ export default function RecentTransactionsCard() {
 
   const recentTransactions = pendingTransactions;
 
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.select();
+    }
+  }, [editingId]);
+
+  const handleSaveEdit = (transaction) => {
+    if (editingValue.trim() && editingValue !== transaction.description) {
+      updateMutation.mutate({
+        id: transaction.id,
+        data: { ...transaction, description: editingValue.trim() }
+      });
+    }
+    setEditingId(null);
+    setEditingValue('');
+  };
+
+  const handleStartEdit = (transaction) => {
+    if (editingId && editingId !== transaction.id) {
+      const currentTransaction = recentTransactions.find(t => t.id === editingId);
+      if (currentTransaction) {
+        handleSaveEdit(currentTransaction);
+      }
+    }
+    setEditingId(transaction.id);
+    setEditingValue(transaction.description);
+  };
+
   return (
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
@@ -142,19 +171,11 @@ export default function RecentTransactionsCard() {
                 <div className="min-w-0 flex-1">
                   {editingId === transaction.id ? (
                     <input
+                      ref={inputRef}
                       type="text"
                       value={editingValue}
                       onChange={(e) => setEditingValue(e.target.value)}
-                      onBlur={() => {
-                        if (editingValue.trim() && editingValue !== transaction.description) {
-                          updateMutation.mutate({
-                            id: transaction.id,
-                            data: { ...transaction, description: editingValue.trim() }
-                          });
-                        }
-                        setEditingId(null);
-                        setEditingValue('');
-                      }}
+                      onBlur={() => handleSaveEdit(transaction)}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter') {
                           e.target.blur();
@@ -164,15 +185,13 @@ export default function RecentTransactionsCard() {
                         }
                       }}
                       autoFocus
-                      className="text-xs font-medium text-slate-800 bg-white border border-blue-300 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="text-xs font-medium text-slate-800 bg-white border border-blue-300 rounded px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-blue-500 min-w-0 max-w-full"
+                      style={{ width: `${Math.max(editingValue.length * 7, 100)}px` }}
                     />
                   ) : (
                     <p
-                      className="text-xs font-medium text-slate-800 truncate cursor-pointer hover:text-blue-600"
-                      onClick={() => {
-                        setEditingId(transaction.id);
-                        setEditingValue(transaction.description);
-                      }}
+                      className="text-xs font-medium text-slate-800 truncate cursor-text"
+                      onClick={() => handleStartEdit(transaction)}
                     >
                       {formatTransactionDescription(transaction.description)}
                     </p>
