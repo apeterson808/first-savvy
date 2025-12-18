@@ -346,11 +346,11 @@ export default function Dashboard() {
                   {chartView === 'income' && (
                     <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded bg-emerald-500"></div>
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: '#AACC96' }}></div>
                         <span className="text-slate-600">In</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded bg-red-500"></div>
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: '#EF6F3C' }}></div>
                         <span className="text-slate-600">Out</span>
                       </div>
                     </div>
@@ -379,8 +379,8 @@ export default function Dashboard() {
                       formatter={(value) => `$${value.toFixed(2)}`}
                       itemSorter={(item) => item.dataKey === 'income' ? -1 : 1}
                     />
-                    <Bar dataKey="spending" fill="#ef4444" name="Money Out" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="income" fill="#10b981" name="Money In" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="spending" fill="#EF6F3C" name="Money Out" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="income" fill="#AACC96" name="Money In" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 ) : (
                   <AreaChart 
