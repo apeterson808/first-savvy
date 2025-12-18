@@ -199,7 +199,7 @@ export default function AccountDetail() {
           <div className="text-center text-slate-500">Account not found</div>
           <div className="text-center mt-4">
             <Button onClick={() => navigate('/banking?tab=accounts')} variant="outline">
-              Back to Banking
+              Back to Accounts
             </Button>
           </div>
         </div>
@@ -222,7 +222,7 @@ export default function AccountDetail() {
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Banking
+              Back to Accounts
             </Button>
           </div>
           <div className="flex items-center gap-2">
