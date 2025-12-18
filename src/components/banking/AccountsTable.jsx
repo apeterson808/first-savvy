@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check } from 'lucide-react';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
+import PlaidEmbeddedSearch from './PlaidEmbeddedSearch';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getDetailTypeDisplayName, getAccountDisplayName } from '../utils/constants';
 
@@ -379,10 +380,38 @@ export default function AccountsTable({ accounts, isLoading }) {
               <p className="text-slate-500">Loading accounts...</p>
             </div>
           ) : accounts.length === 0 ? (
-            <div className="text-center py-12">
-              <Wallet className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold text-slate-900 mb-1">No accounts yet</h3>
-              <p className="text-slate-600 mb-4">Add your first bank account to get started</p>
+            <div className="py-8 px-6 max-w-2xl mx-auto">
+              <div className="text-center mb-6">
+                <Wallet className="w-12 h-12 text-slate-400 mx-auto mb-3" />
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">Connect Your First Account</h3>
+                <p className="text-slate-600 text-sm">Search over 10,000+ banks and financial institutions</p>
+              </div>
+
+              <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 mb-4">
+                <PlaidEmbeddedSearch
+                  onSuccess={(result) => {
+                    if (result.discovered_accounts && window.__openPlaidReview) {
+                      window.__openPlaidReview(result);
+                    } else {
+                      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+                      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+                    }
+                  }}
+                  onPlaidStateChange={(active) => {
+                    console.log('Plaid state:', active);
+                  }}
+                />
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={() => setAddSheetOpen(true)}
+                  className="text-sm text-slate-600 hover:text-slate-900 underline"
+                >
+                  Or add an account manually
+                </button>
+              </div>
             </div>
           ) : (
             <div>
