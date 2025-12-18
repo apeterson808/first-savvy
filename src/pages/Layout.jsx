@@ -11,6 +11,7 @@ import { base44 } from '@/api/base44Client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import NetworkStatus from '@/components/common/NetworkStatus';
 import { useDefaultAccounts } from '@/components/hooks/useDefaultAccounts';
+import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
 
 
 function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
@@ -231,11 +232,7 @@ export default function Layout({ children, currentPageName }) {
                   <Bell className="w-4 h-4" />
                   <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
                 </button>
-                {user && (
-                  <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center">
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                )}
+                <UserAvatarDropdown />
               </div>
             </div>
 
