@@ -10,18 +10,18 @@ import AmazonOrderImporter from '../components/banking/AmazonOrderImporter';
 import { useQueryClient } from '@tanstack/react-query';
 
 const POPULAR_INSTITUTIONS = [
-  { name: 'Chase', color: 'bg-blue-600' },
-  { name: 'Bank of America', color: 'bg-red-600' },
-  { name: 'Wells Fargo', color: 'bg-red-500' },
-  { name: 'Capital One', color: 'bg-blue-700' },
-  { name: 'Citi', color: 'bg-blue-500' },
-  { name: 'American Express', color: 'bg-blue-600' },
-  { name: 'US Bank', color: 'bg-red-600' },
-  { name: 'Charles Schwab', color: 'bg-blue-500' },
-  { name: 'Fidelity', color: 'bg-green-600' },
-  { name: 'Vanguard', color: 'bg-red-700' },
-  { name: 'Discover', color: 'bg-orange-600' },
-  { name: 'Navy Federal', color: 'bg-blue-900' },
+  { name: 'Chase', color: 'bg-sky-blue' },
+  { name: 'Bank of America', color: 'bg-burgundy' },
+  { name: 'Wells Fargo', color: 'bg-burgundy' },
+  { name: 'Capital One', color: 'bg-sky-blue' },
+  { name: 'Citi', color: 'bg-light-blue' },
+  { name: 'American Express', color: 'bg-sky-blue' },
+  { name: 'US Bank', color: 'bg-burgundy' },
+  { name: 'Charles Schwab', color: 'bg-sky-blue' },
+  { name: 'Fidelity', color: 'bg-soft-green' },
+  { name: 'Vanguard', color: 'bg-burgundy' },
+  { name: 'Discover', color: 'bg-orange' },
+  { name: 'Navy Federal', color: 'bg-forest-green' },
 ];
 
 export default function ConnectAccount() {
@@ -36,14 +36,14 @@ export default function ConnectAccount() {
     {
       title: 'Connect bank accounts and credit cards',
       icon: Building2,
-      color: 'bg-blue-100',
-      iconColor: 'text-blue-600'
+      color: 'bg-light-blue/20',
+      iconColor: 'text-sky-blue'
     },
     {
       title: 'Connect investments and loans',
       icon: TrendingUp,
-      color: 'bg-green-100',
-      iconColor: 'text-green-600'
+      color: 'bg-soft-green/20',
+      iconColor: 'text-forest-green'
     },
     {
       title: 'Add your Crypto',
@@ -212,11 +212,11 @@ export default function ConnectAccount() {
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">DEVELOPMENT</h3>
           <button
             onClick={() => setPlaidSimulatorOpen(true)}
-            className="w-full p-4 bg-amber-50 border border-amber-200 rounded-lg hover:border-amber-300 hover:shadow-sm transition-all text-left"
+            className="w-full p-4 bg-yellow/20 border border-yellow/30 rounded-lg hover:border-yellow/50 hover:shadow-sm transition-all text-left"
           >
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
-                <FlaskConical className="w-6 h-6 text-amber-600" />
+              <div className="w-12 h-12 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
+                <FlaskConical className="w-6 h-6 text-olive" />
               </div>
               <div>
                 <span className="text-sm font-medium text-slate-900 block">Simulate Plaid Import</span>

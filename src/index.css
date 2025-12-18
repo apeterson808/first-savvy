@@ -76,12 +76,29 @@ button:focus-visible {
 
 @layer base {
   :root {
+    /* Custom Color Palette - Hex Values */
+    --clr-soft-green: #AACC96;
+    --clr-forest-green: #25533F;
+    --clr-olive: #AFAB23;
+    --clr-brown: #876029;
+    --clr-peach: #F4BEAE;
+    --clr-pink: #FF7BAC;
+    --clr-burgundy: #6D1F42;
+    --clr-yellow: #EFCE7B;
+    --clr-orange: #EF6F3C;
+    --clr-sky-blue: #52A5CE;
+    --clr-light-blue: #B8CEE8;
+    --clr-lavender: #D3B6D3;
+
+    /* Base Theme Colors */
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
+
+    /* Semantic Colors - Mapped to Custom Palette */
     --primary: 201 52% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 101 39% 70%;
@@ -90,11 +107,27 @@ button:focus-visible {
     --muted-foreground: 0 0% 45.1%;
     --accent: 101 39% 70%;
     --accent-foreground: 152 37% 23%;
-    --destructive: 332 100% 74%;
+    --destructive: 330 55% 27%;
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
     --ring: 201 52% 56%;
+
+    /* Custom Color Variables - HSL Format */
+    --soft-green: 101 39% 70%;
+    --forest-green: 152 37% 23%;
+    --olive: 58 65% 41%;
+    --brown: 38 53% 34%;
+    --peach: 17 73% 82%;
+    --pink: 332 100% 74%;
+    --burgundy: 330 55% 27%;
+    --yellow: 44 78% 71%;
+    --orange: 19 84% 58%;
+    --sky-blue: 201 52% 56%;
+    --light-blue: 211 56% 82%;
+    --lavender: 300 27% 77%;
+
+    /* Chart Colors - Custom Palette */
     --chart-1: 201 52% 56%;
     --chart-2: 101 39% 70%;
     --chart-3: 19 84% 58%;
@@ -107,6 +140,8 @@ button:focus-visible {
     --chart-10: 38 53% 34%;
     --chart-11: 58 65% 41%;
     --chart-12: 152 37% 23%;
+
+    /* Sidebar Colors */
     --radius: 0.5rem;
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 152 37% 23%;
@@ -118,12 +153,15 @@ button:focus-visible {
     --sidebar-ring: 201 52% 56%;
   }
   .dark {
+    /* Base Theme Colors - Dark Mode */
     --background: 152 37% 10%;
     --foreground: 0 0% 98%;
     --card: 152 37% 15%;
     --card-foreground: 0 0% 98%;
     --popover: 152 37% 15%;
     --popover-foreground: 0 0% 98%;
+
+    /* Semantic Colors - Dark Mode */
     --primary: 201 52% 56%;
     --primary-foreground: 0 0% 100%;
     --secondary: 152 37% 23%;
@@ -137,6 +175,22 @@ button:focus-visible {
     --border: 152 20% 25%;
     --input: 152 20% 25%;
     --ring: 201 52% 56%;
+
+    /* Custom Colors - Dark Mode Adjusted */
+    --soft-green: 101 39% 60%;
+    --forest-green: 152 37% 33%;
+    --olive: 58 65% 51%;
+    --brown: 38 53% 44%;
+    --peach: 17 73% 72%;
+    --pink: 332 100% 74%;
+    --burgundy: 330 55% 37%;
+    --yellow: 44 78% 71%;
+    --orange: 19 84% 58%;
+    --sky-blue: 201 52% 56%;
+    --light-blue: 211 56% 72%;
+    --lavender: 300 27% 67%;
+
+    /* Chart Colors - Dark Mode */
     --chart-1: 201 52% 56%;
     --chart-2: 101 39% 60%;
     --chart-3: 19 84% 58%;
@@ -149,6 +203,8 @@ button:focus-visible {
     --chart-10: 38 53% 44%;
     --chart-11: 58 65% 51%;
     --chart-12: 152 37% 33%;
+
+    /* Sidebar Colors - Dark Mode */
     --sidebar-background: 152 37% 15%;
     --sidebar-foreground: 0 0% 98%;
     --sidebar-primary: 201 52% 56%;
@@ -170,3 +226,43 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom Color Utility Classes */
+.bg-soft-green { background-color: var(--clr-soft-green); }
+.bg-forest-green { background-color: var(--clr-forest-green); }
+.bg-olive { background-color: var(--clr-olive); }
+.bg-brown { background-color: var(--clr-brown); }
+.bg-peach { background-color: var(--clr-peach); }
+.bg-pink { background-color: var(--clr-pink); }
+.bg-burgundy { background-color: var(--clr-burgundy); }
+.bg-yellow { background-color: var(--clr-yellow); }
+.bg-orange { background-color: var(--clr-orange); }
+.bg-sky-blue { background-color: var(--clr-sky-blue); }
+.bg-light-blue { background-color: var(--clr-light-blue); }
+.bg-lavender { background-color: var(--clr-lavender); }
+
+.text-soft-green { color: var(--clr-soft-green); }
+.text-forest-green { color: var(--clr-forest-green); }
+.text-olive { color: var(--clr-olive); }
+.text-brown { color: var(--clr-brown); }
+.text-peach { color: var(--clr-peach); }
+.text-pink { color: var(--clr-pink); }
+.text-burgundy { color: var(--clr-burgundy); }
+.text-yellow { color: var(--clr-yellow); }
+.text-orange { color: var(--clr-orange); }
+.text-sky-blue { color: var(--clr-sky-blue); }
+.text-light-blue { color: var(--clr-light-blue); }
+.text-lavender { color: var(--clr-lavender); }
+
+.border-soft-green { border-color: var(--clr-soft-green); }
+.border-forest-green { border-color: var(--clr-forest-green); }
+.border-olive { border-color: var(--clr-olive); }
+.border-brown { border-color: var(--clr-brown); }
+.border-peach { border-color: var(--clr-peach); }
+.border-pink { border-color: var(--clr-pink); }
+.border-burgundy { border-color: var(--clr-burgundy); }
+.border-yellow { border-color: var(--clr-yellow); }
+.border-orange { border-color: var(--clr-orange); }
+.border-sky-blue { border-color: var(--clr-sky-blue); }
+.border-light-blue { border-color: var(--clr-light-blue); }
+.border-lavender { border-color: var(--clr-lavender); }

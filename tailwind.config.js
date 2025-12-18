@@ -48,7 +48,14 @@ module.exports = {
   				'2': 'hsl(var(--chart-2))',
   				'3': 'hsl(var(--chart-3))',
   				'4': 'hsl(var(--chart-4))',
-  				'5': 'hsl(var(--chart-5))'
+  				'5': 'hsl(var(--chart-5))',
+  				'6': 'hsl(var(--chart-6))',
+  				'7': 'hsl(var(--chart-7))',
+  				'8': 'hsl(var(--chart-8))',
+  				'9': 'hsl(var(--chart-9))',
+  				'10': 'hsl(var(--chart-10))',
+  				'11': 'hsl(var(--chart-11))',
+  				'12': 'hsl(var(--chart-12))'
   			},
   			sidebar: {
   				DEFAULT: 'hsl(var(--sidebar-background))',
@@ -59,7 +66,19 @@ module.exports = {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+  			'soft-green': 'hsl(var(--soft-green))',
+  			'forest-green': 'hsl(var(--forest-green))',
+  			'olive': 'hsl(var(--olive))',
+  			'brown': 'hsl(var(--brown))',
+  			'peach': 'hsl(var(--peach))',
+  			'pink': 'hsl(var(--pink))',
+  			'burgundy': 'hsl(var(--burgundy))',
+  			'yellow': 'hsl(var(--yellow))',
+  			'orange': 'hsl(var(--orange))',
+  			'sky-blue': 'hsl(var(--sky-blue))',
+  			'light-blue': 'hsl(var(--light-blue))',
+  			'lavender': 'hsl(var(--lavender))'
   		},
   		keyframes: {
   			'accordion-down': {

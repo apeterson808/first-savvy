@@ -123,21 +123,21 @@ export default function Transactions() {
 
   const getCategoryColor = (category) => {
     const colors = {
-      rent: 'bg-amber-100 text-amber-700',
-      food: 'bg-orange-100 text-orange-700',
-      transportation: 'bg-blue-100 text-blue-700',
-      entertainment: 'bg-pink-100 text-pink-700',
-      shopping: 'bg-fuchsia-100 text-fuchsia-700',
-      utilities: 'bg-yellow-100 text-yellow-700',
-      healthcare: 'bg-red-100 text-red-700',
-      education: 'bg-green-100 text-green-700',
-      insurance: 'bg-teal-100 text-teal-700',
-      salary: 'bg-emerald-100 text-emerald-700',
-      investment: 'bg-cyan-100 text-cyan-700',
-      business_income: 'bg-lime-100 text-lime-700',
-      advertising: 'bg-rose-100 text-rose-700',
-      office_supplies: 'bg-sky-100 text-sky-700',
-      services: 'bg-stone-100 text-stone-700',
+      rent: 'bg-brown/10 text-brown',
+      food: 'bg-peach/20 text-orange',
+      transportation: 'bg-light-blue/20 text-sky-blue',
+      entertainment: 'bg-pink/20 text-pink',
+      shopping: 'bg-lavender/20 text-burgundy',
+      utilities: 'bg-yellow/20 text-olive',
+      healthcare: 'bg-burgundy/10 text-burgundy',
+      education: 'bg-forest-green/10 text-forest-green',
+      insurance: 'bg-olive/10 text-olive',
+      salary: 'bg-soft-green/30 text-forest-green',
+      investment: 'bg-sky-blue/20 text-sky-blue',
+      business_income: 'bg-soft-green/30 text-forest-green',
+      advertising: 'bg-pink/20 text-burgundy',
+      office_supplies: 'bg-light-blue/20 text-sky-blue',
+      services: 'bg-peach/20 text-brown',
       other: 'bg-slate-100 text-slate-700',
     };
     return colors[category] || 'bg-slate-100 text-slate-700';
@@ -212,7 +212,7 @@ export default function Transactions() {
                     setEditingTransaction(null);
                     setDialogOpen(true);
                   }}
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-primary hover:bg-primary/90"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   New
@@ -284,7 +284,7 @@ export default function Transactions() {
                         </TableCell>
                         <TableCell className="text-right">
                           <span className={`font-semibold ${
-                            transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                            transaction.type === 'income' ? 'text-soft-green' : 'text-burgundy'
                           }`}>
                             {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
                           </span>
@@ -310,7 +310,7 @@ export default function Transactions() {
                                     deleteMutation.mutate(transaction.id);
                                   }
                                 }}
-                                className="text-red-600"
+                                className="text-burgundy"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
                                 Delete
@@ -461,7 +461,7 @@ export default function Transactions() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" className="bg-primary hover:bg-primary/90">
                 {editingTransaction ? 'Update' : 'Create'}
               </Button>
             </div>

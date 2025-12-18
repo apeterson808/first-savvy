@@ -362,7 +362,7 @@ export default function ContactDetail() {
                     <Badge
                       className={
                         contact.status.toLowerCase() === 'active'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-soft-green/30 text-forest-green'
                           : 'bg-gray-100 text-gray-800'
                       }
                     >
@@ -370,7 +370,7 @@ export default function ContactDetail() {
                     </Badge>
                   )}
                   {contact.connection_status === 'connected' && (
-                    <Badge className="bg-blue-100 text-blue-800">
+                    <Badge className="bg-light-blue/20 text-sky-blue">
                       Connected
                     </Badge>
                   )}
@@ -512,7 +512,7 @@ export default function ContactDetail() {
                 </div>
 
                 <div className="flex gap-2 justify-end pt-4 border-t">
-                  <Button type="submit" className="gap-2 bg-blue-600 hover:bg-blue-700">
+                  <Button type="submit" className="gap-2 bg-primary hover:bg-primary/90">
                     <Save className="w-4 h-4" />
                     Save Changes
                   </Button>
@@ -594,28 +594,28 @@ export default function ContactDetail() {
                 <p className="text-2xl font-bold">{analytics.transactionCount}</p>
               </div>
 
-              <div className="p-4 bg-red-50 rounded-lg">
-                <div className="flex items-center gap-2 text-red-600 mb-1">
+              <div className="p-4 bg-burgundy/10 rounded-lg">
+                <div className="flex items-center gap-2 text-burgundy mb-1">
                   <DollarSign className="w-4 h-4" />
                   <p className="text-sm font-medium">Total Spent</p>
                 </div>
-                <p className="text-2xl font-bold text-red-700">{formatCurrency(analytics.totalSpent)}</p>
+                <p className="text-2xl font-bold text-burgundy">{formatCurrency(analytics.totalSpent)}</p>
               </div>
 
-              <div className="p-4 bg-green-50 rounded-lg">
-                <div className="flex items-center gap-2 text-green-600 mb-1">
+              <div className="p-4 bg-soft-green/20 rounded-lg">
+                <div className="flex items-center gap-2 text-forest-green mb-1">
                   <TrendingUp className="w-4 h-4" />
                   <p className="text-sm font-medium">Total Income</p>
                 </div>
-                <p className="text-2xl font-bold text-green-700">{formatCurrency(analytics.totalIncome)}</p>
+                <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.totalIncome)}</p>
               </div>
 
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-2 text-blue-600 mb-1">
+              <div className="p-4 bg-light-blue/20 rounded-lg">
+                <div className="flex items-center gap-2 text-sky-blue mb-1">
                   <Calendar className="w-4 h-4" />
                   <p className="text-sm font-medium">Avg Transaction</p>
                 </div>
-                <p className="text-2xl font-bold text-blue-700">{formatCurrency(analytics.avgTransaction)}</p>
+                <p className="text-2xl font-bold text-sky-blue">{formatCurrency(analytics.avgTransaction)}</p>
               </div>
             </div>
 

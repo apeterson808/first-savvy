@@ -346,11 +346,11 @@ export default function Dashboard() {
                   {chartView === 'income' && (
                     <div className="flex items-center gap-3 text-xs">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded" style={{ backgroundColor: '#AACC96' }}></div>
+                        <div className="w-3 h-3 rounded bg-soft-green"></div>
                         <span className="text-slate-600">In</span>
                       </div>
                       <div className="flex items-center gap-1.5">
-                        <div className="w-3 h-3 rounded" style={{ backgroundColor: '#EF6F3C' }}></div>
+                        <div className="w-3 h-3 rounded bg-orange"></div>
                         <span className="text-slate-600">Out</span>
                       </div>
                     </div>
@@ -379,8 +379,8 @@ export default function Dashboard() {
                       formatter={(value) => `$${value.toFixed(2)}`}
                       itemSorter={(item) => item.dataKey === 'income' ? -1 : 1}
                     />
-                    <Bar dataKey="spending" fill="#EF6F3C" name="Money Out" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="income" fill="#AACC96" name="Money In" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="spending" fill="hsl(var(--orange))" name="Money Out" radius={[4, 4, 0, 0]} />
+                    <Bar dataKey="income" fill="hsl(var(--soft-green))" name="Money In" radius={[4, 4, 0, 0]} />
                   </BarChart>
                 ) : (
                   <AreaChart 
@@ -389,8 +389,8 @@ export default function Dashboard() {
                   >
                     <defs>
                       <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+                        <stop offset="5%" stopColor="hsl(var(--sky-blue))" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="hsl(var(--sky-blue))" stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -420,8 +420,8 @@ export default function Dashboard() {
                                 <div className="text-[10px] text-slate-400 uppercase tracking-wide">Cumulative</div>
                               </div>
                               <div className="grid grid-cols-2 gap-4 mt-1">
-                                <span className="font-medium text-blue-600 text-center">${data.dailySpending?.toFixed(2) || '0.00'}</span>
-                                <span className="font-medium text-blue-600 text-center">${data.spending?.toFixed(2) || '0.00'}</span>
+                                <span className="font-medium text-sky-blue text-center">${data.dailySpending?.toFixed(2) || '0.00'}</span>
+                                <span className="font-medium text-sky-blue text-center">${data.spending?.toFixed(2) || '0.00'}</span>
                               </div>
                             </div>
                           );
@@ -432,7 +432,7 @@ export default function Dashboard() {
                           <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
                             <div className="flex justify-between gap-4">
                               <span className="text-slate-600">{data.date}</span>
-                              <span className="font-medium text-blue-600">${data.balance?.toFixed(2) || '0.00'}</span>
+                              <span className="font-medium text-sky-blue">${data.balance?.toFixed(2) || '0.00'}</span>
                             </div>
                           </div>
                         );
@@ -441,7 +441,7 @@ export default function Dashboard() {
                     <Area
                       type="monotone"
                       dataKey={chartView === 'spending' ? 'spending' : 'balance'}
-                      stroke="#3b82f6"
+                      stroke="hsl(var(--sky-blue))"
                       fillOpacity={1}
                       fill="url(#colorValue)"
                       activeDot={(props) => {
@@ -452,7 +452,7 @@ export default function Dashboard() {
                             cx={cx}
                             cy={cy}
                             r={6}
-                            fill="#3b82f6"
+                            fill="hsl(var(--sky-blue))"
                             stroke="#fff"
                             strokeWidth={2}
                             style={{ cursor: chartView === 'spending' ? 'pointer' : 'default' }}
@@ -476,10 +476,9 @@ export default function Dashboard() {
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3 px-3">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Top Utilized Budgets</p>
-        <Button 
-          variant="link" 
-          className="text-xs p-0 h-auto"
-          style={{ color: '#52A5CE' }}
+        <Button
+          variant="link"
+          className="text-xs p-0 h-auto text-sky-blue"
           onClick={() => navigate(createPageUrl('Budgeting'))}
         >
           View all
@@ -509,8 +508,8 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 px-4">
-            <div className="w-12 h-12 bg-blue-50 rounded-full flex items-center justify-center mb-3">
-              <Sparkles className="w-6 h-6 text-blue-600" />
+            <div className="w-12 h-12 bg-light-blue/20 rounded-full flex items-center justify-center mb-3">
+              <Sparkles className="w-6 h-6 text-sky-blue" />
             </div>
             <h3 className="text-sm font-semibold text-slate-900 mb-1">No Budget Yet</h3>
             <p className="text-xs text-slate-600 text-center mb-4 max-w-[200px]">
@@ -522,7 +521,7 @@ export default function Dashboard() {
             <div className="flex flex-col gap-2 w-full">
               <Button
                 onClick={() => navigate(createPageUrl('Budgeting'))}
-                className="w-full h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                className="w-full h-8 text-xs bg-primary hover:bg-primary/90"
                 size="sm"
               >
                 <Sparkles className="w-3 h-3 mr-1.5" />
@@ -540,7 +539,7 @@ export default function Dashboard() {
         <div className="flex flex-col gap-2 flex-1 max-w-[350px]">
           {/* Net Worth Card */}
           <Link to={createPageUrl('NetWorth')}>
-            <Card className="shadow-sm border-slate-200 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer group">
+            <Card className="shadow-sm border-slate-200 hover:shadow-md hover:border-sky-blue transition-all cursor-pointer group">
               <CardHeader className="pb-2 pt-3 px-3">
                 <div className="flex items-center justify-between">
                   <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Net Worth</p>
@@ -548,7 +547,7 @@ export default function Dashboard() {
                 </div>
                 <CardTitle className="text-3xl font-bold">${netWorth.toLocaleString()}</CardTitle>
                 {netWorthChange.hasData && (
-                  <div className={`flex items-center text-sm mt-2 ${netWorthChange.change >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className={`flex items-center text-sm mt-2 ${netWorthChange.change >= 0 ? 'text-soft-green' : 'text-burgundy'}`}>
                     {netWorthChange.change >= 0 ? (
                       <ArrowUp className="w-4 h-4 mr-1" />
                     ) : (
@@ -579,8 +578,7 @@ export default function Dashboard() {
                   queryClient.invalidateQueries({ queryKey: ['transactions'] });
                 }
               }}
-              className="w-full h-10 hover:opacity-90" 
-              style={{ backgroundColor: '#52A5CE' }}
+              className="w-full h-10 hover:opacity-90 bg-sky-blue"
             >
               <Plus className="w-4 h-4 mr-2" />
               Link Account
@@ -608,7 +606,7 @@ export default function Dashboard() {
                 return (
                   <div key={bill.id} className="flex items-start justify-between">
                     <div className="flex items-start space-x-3">
-                      <div className={`w-1 h-12 rounded-full ${bill.status === 'overdue' ? 'bg-red-500' : 'bg-green-500'}`} />
+                      <div className={`w-1 h-12 rounded-full ${bill.status === 'overdue' ? 'bg-burgundy' : 'bg-soft-green'}`} />
                       <div>
                         <p className="font-medium text-sm">{bill.title}</p>
                         <p className="text-xs text-slate-500 mt-1">
@@ -619,7 +617,7 @@ export default function Dashboard() {
                     <div className="text-right">
                       <p className="font-semibold text-sm">${bill.amount.toFixed(2)}</p>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        bill.status === 'overdue' ? 'bg-red-100 text-red-600' : 'bg-green-100 text-green-600'
+                        bill.status === 'overdue' ? 'bg-burgundy/10 text-burgundy' : 'bg-soft-green/30 text-forest-green'
                       }`}>
                         {bill.status === 'overdue' ? 'Overdue' : 'Coming'}
                       </span>

@@ -204,8 +204,8 @@ export default function Budgeting() {
       <div className="p-6">
         <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">
           <div className="text-center max-w-xl px-6">
-            <div className="w-14 h-14 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-7 h-7 text-blue-600" />
+            <div className="w-14 h-14 bg-light-blue/20 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Sparkles className="w-7 h-7 text-sky-blue" />
             </div>
             <h2 className="text-2xl font-semibold text-slate-900 mb-3">Set Up Your Budget</h2>
             <p className="text-slate-600 mb-8 leading-relaxed">
@@ -219,7 +219,7 @@ export default function Budgeting() {
                 <Button
                   onClick={handleAutoCreate}
                   disabled={isAutoCreating}
-                  className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                  className="bg-primary hover:bg-primary/90 text-white shadow-sm"
                   size="lg"
                 >
                   {isAutoCreating ? (
@@ -343,7 +343,7 @@ export default function Budgeting() {
           <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
           <p className="text-sm text-slate-500">{format(today, 'MMMM yyyy')}</p>
         </div>
-        <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-primary hover:bg-primary/90">
           <Plus className="w-4 h-4 mr-2" />
           Add Budget
         </Button>

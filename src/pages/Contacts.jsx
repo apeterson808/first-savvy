@@ -228,7 +228,7 @@ export default function Contacts() {
                 setDetectedUser(null);
                 setDialogOpen(true);
               }}
-              className="bg-blue-600 hover:bg-blue-700 h-9"
+              className="bg-primary hover:bg-primary/90 h-9"
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Contact
@@ -290,7 +290,7 @@ export default function Contacts() {
                         {contact.status ? (
                           <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
                             contact.status.toLowerCase() === 'active'
-                              ? 'bg-green-100 text-green-800'
+                              ? 'bg-soft-green/30 text-forest-green'
                               : 'bg-gray-100 text-gray-800'
                           }`}>
                             {contact.status}
@@ -301,7 +301,7 @@ export default function Contacts() {
                       </TableCell>
                       <TableCell className="py-2">
                         {contact.connection_status === 'connected' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-light-blue/20 text-sky-blue">
                             Connected
                           </span>
                         ) : contact.connection_status === 'invited' ? (
@@ -309,7 +309,7 @@ export default function Contacts() {
                             Invited
                           </span>
                         ) : contact.connection_status === 'platform_user' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-lavender/20 text-burgundy">
                             On Platform
                           </span>
                         ) : (
@@ -454,7 +454,7 @@ export default function Contacts() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+              <Button type="submit" className="bg-primary hover:bg-primary/90">
                 {editingContact ? 'Update' : 'Create'}
               </Button>
             </SheetFooter>

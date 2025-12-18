@@ -241,7 +241,7 @@ export default function Layout({ children, currentPageName }) {
                 </button>
                 <button className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors relative">
                   <Bell className="w-4 h-4" />
-                  <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                  <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-burgundy rounded-full"></span>
                 </button>
                 <UserAvatarDropdown />
               </div>

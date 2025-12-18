@@ -34,7 +34,7 @@ export default function AuthCallback() {
       <div className="text-center space-y-4">
         {error ? (
           <>
-            <div className="text-red-600 text-lg">Authentication failed</div>
+            <div className="text-burgundy text-lg">Authentication failed</div>
             <div className="text-slate-600">{error}</div>
             <div className="text-sm text-slate-500">Redirecting to login...</div>
           </>
