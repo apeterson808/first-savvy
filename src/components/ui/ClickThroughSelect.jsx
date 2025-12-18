@@ -8,13 +8,14 @@ export function ClickThroughSelect({
   defaultValue,
   onValueChange,
   onOpenChange,
-  onSearchTermChange,
   children,
   placeholder = "Select...",
   className,
   triggerClassName,
   renderValue,
-  name
+  name,
+  enableSearch = false,
+  onSearchTermChange
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState(value || defaultValue || '');
@@ -93,20 +94,22 @@ export function ClickThroughSelect({
 
     updatePosition();
 
-    const options = extractOptions(children);
-    const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
-    const currentDisplayText = currentOption
-      ? (currentOption.props['data-display'] || getDisplayText(currentOption.props.children))
-      : '';
+    if (enableSearch) {
+      const options = extractOptions(children);
+      const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
+      const currentDisplayText = currentOption
+        ? (currentOption.props['data-display'] || getDisplayText(currentOption.props.children))
+        : '';
 
-    setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
+      setSearchTerm(currentDisplayText !== placeholder ? currentDisplayText : '');
 
-    setTimeout(() => {
-      if (searchInputRef.current) {
-        searchInputRef.current.focus();
-        searchInputRef.current.select();
-      }
-    }, 0);
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+          searchInputRef.current.select();
+        }
+      }, 0);
+    }
 
     const handleClickOutside = (e) => {
       if (
@@ -126,7 +129,7 @@ export function ClickThroughSelect({
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, enableSearch]);
 
   const handleSelect = (val, isAction) => {
     if (!isAction) {
@@ -146,106 +149,27 @@ export function ClickThroughSelect({
     <div ref={containerRef} className={cn("relative", className)}>
       {name && <input type="hidden" name={name} value={selectedValue || ''} />}
 
-      {isOpen ? (
-        <div
-          className={cn(
-            "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs",
-            triggerClassName
+      <button
+        type="button"
+        onMouseDown={(e) => {
+          e.stopPropagation();
+          handleOpenChange(!isOpen);
+        }}
+        className={cn(
+          "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs",
+          "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
+          triggerClassName
+        )}
+      >
+        <span className="flex-1 min-w-0 flex items-center">
+          {renderValue ? renderValue(selectedValue, displayText) : (
+            <span className={cn("truncate", displayText === placeholder && "text-slate-400")}>
+              {displayText}
+            </span>
           )}
-        >
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              onSearchTermChange?.(e.target.value);
-            }}
-            onKeyDown={(e) => {
-              if (e.key === 'Escape') {
-                e.preventDefault();
-                handleOpenChange(false);
-              } else if (e.key === 'Enter') {
-                e.preventDefault();
-
-                const flattenChildren = (nodes) => {
-                  const result = [];
-                  React.Children.forEach(nodes, (child) => {
-                    if (!child) return;
-                    if (child.type === React.Fragment) {
-                      result.push(...flattenChildren(child.props.children));
-                    } else if (Array.isArray(child)) {
-                      result.push(...flattenChildren(child));
-                    } else {
-                      result.push(child);
-                    }
-                  });
-                  return result;
-                };
-
-                const flatChildren = flattenChildren(children);
-                const visibleItems = flatChildren.filter(child => {
-                  if (!isSelectItem(child) || child.props.isAction) return false;
-                  const displayText = child.props['data-display'] || getDisplayText(child.props.children);
-                  return !searchTerm || displayText.toLowerCase().includes(searchTerm.toLowerCase()) || child.props.isRecommended;
-                });
-
-                const exactMatch = visibleItems.find(child => {
-                  const displayText = child.props['data-display'] || getDisplayText(child.props.children);
-                  return displayText.toLowerCase() === searchTerm.toLowerCase();
-                });
-
-                if (exactMatch) {
-                  handleSelect(exactMatch.props.value, false);
-                } else if (visibleItems.length === 1) {
-                  handleSelect(visibleItems[0].props.value, false);
-                } else {
-                  const actionItems = flatChildren.filter(child =>
-                    isSelectItem(child) && child.props.isAction
-                  );
-                  if (actionItems.length > 0 && searchTerm) {
-                    handleSelect(actionItems[0].props.value, true);
-                  } else if (visibleItems.length > 0) {
-                    handleSelect(visibleItems[0].props.value, false);
-                  }
-                }
-              }
-            }}
-            placeholder={placeholder}
-            className="flex-1 min-w-0 outline-none bg-transparent text-xs"
-            autoFocus
-          />
-          <ChevronDown
-            className={cn("h-3 w-3 opacity-50 ml-2 flex-shrink-0 transition-transform cursor-pointer hover:opacity-100 rotate-180")}
-            onMouseDown={(e) => {
-              e.stopPropagation();
-              handleOpenChange(false);
-            }}
-          />
-        </div>
-      ) : (
-        <button
-          type="button"
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            handleOpenChange(true);
-          }}
-          className={cn(
-            "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs",
-            "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
-            triggerClassName
-          )}
-        >
-          <span className="flex-1 min-w-0 flex items-center">
-            {renderValue ? renderValue(selectedValue, displayText) : (
-              <span className={cn("truncate", displayText === placeholder && "text-slate-400")}>
-                {displayText}
-              </span>
-            )}
-          </span>
-          <ChevronDown className={cn("h-3 w-3 opacity-50 ml-1 flex-shrink-0 transition-transform")} />
-        </button>
-      )}
+        </span>
+        <ChevronDown className={cn("h-3 w-3 opacity-50 ml-1 flex-shrink-0 transition-transform", isOpen && "rotate-180")} />
+      </button>
 
       {isOpen && ReactDOM.createPortal(
         <div
@@ -259,6 +183,72 @@ export function ClickThroughSelect({
           }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md"
         >
+          {enableSearch && (
+            <div className="p-2 border-b">
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  onSearchTermChange?.(e.target.value);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault();
+                    handleOpenChange(false);
+                  } else if (e.key === 'Enter') {
+                    e.preventDefault();
+
+                    const flattenChildren = (nodes) => {
+                      const result = [];
+                      React.Children.forEach(nodes, (child) => {
+                        if (!child) return;
+                        if (child.type === React.Fragment) {
+                          result.push(...flattenChildren(child.props.children));
+                        } else if (Array.isArray(child)) {
+                          result.push(...flattenChildren(child));
+                        } else {
+                          result.push(child);
+                        }
+                      });
+                      return result;
+                    };
+
+                    const flatChildren = flattenChildren(children);
+                    const visibleItems = flatChildren.filter(child => {
+                      if (!isSelectItem(child) || child.props.isAction) return false;
+                      const displayText = child.props['data-display'] || getDisplayText(child.props.children);
+                      return !searchTerm || displayText.toLowerCase().includes(searchTerm.toLowerCase()) || child.props.isRecommended;
+                    });
+
+                    const exactMatch = visibleItems.find(child => {
+                      const displayText = child.props['data-display'] || getDisplayText(child.props.children);
+                      return displayText.toLowerCase() === searchTerm.toLowerCase();
+                    });
+
+                    if (exactMatch) {
+                      handleSelect(exactMatch.props.value, false);
+                    } else if (visibleItems.length === 1) {
+                      handleSelect(visibleItems[0].props.value, false);
+                    } else {
+                      const actionItems = flatChildren.filter(child =>
+                        isSelectItem(child) && child.props.isAction
+                      );
+                      if (actionItems.length > 0 && searchTerm) {
+                        handleSelect(actionItems[0].props.value, true);
+                      } else if (visibleItems.length > 0) {
+                        handleSelect(visibleItems[0].props.value, false);
+                      }
+                    }
+                  }
+                }}
+                placeholder="Search..."
+                className="w-full px-2 py-1 text-xs border rounded outline-none"
+                autoFocus
+              />
+            </div>
+          )}
           <div className="max-h-48 overflow-auto p-1">
             {(() => {
               const flattenChildren = (nodes) => {
@@ -283,7 +273,7 @@ export function ClickThroughSelect({
 
                 if (isSelectItem(child)) {
                   const childText = getDisplayText(child.props.children);
-                  const matchesSearch = !searchTerm ||
+                  const matchesSearch = !enableSearch || !searchTerm ||
                     childText.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     child.props.isAction ||
                     child.props.isRecommended;
