@@ -167,6 +167,10 @@ export function ClickThroughSelect({
           e.stopPropagation();
           handleOpenChange(!isOpen);
         }}
+        onMouseDown={(e) => {
+          e.stopPropagation();
+        }}
+        style={{ pointerEvents: 'auto' }}
         className={cn(
           "flex h-8 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-xs",
           "focus:outline-none disabled:cursor-not-allowed disabled:opacity-50",
@@ -191,10 +195,12 @@ export function ClickThroughSelect({
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             minWidth: Math.max(dropdownPosition.width, 160),
-            zIndex: 9999
+            zIndex: 99999,
+            pointerEvents: 'auto'
           }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md"
           onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
         >
           {enableSearch && (
             <div className="p-2 border-b">
@@ -321,6 +327,12 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
       data-click-through-select-item="true"
       data-is-action={isAction ? "true" : undefined}
       data-value={value}
+      style={{ pointerEvents: 'auto' }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        onSelect?.(value, isAction);
+      }}
       onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();

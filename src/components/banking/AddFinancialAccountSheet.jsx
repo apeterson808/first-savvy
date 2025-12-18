@@ -736,7 +736,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
             </Button>
           </div>
         ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 py-4" onKeyDown={(e) => e.stopPropagation()}>
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           {/* Display Name */}
           <div>
             <Label htmlFor="name">{isCategory ? 'Category Name*' : 'Account Name*'}</Label>
