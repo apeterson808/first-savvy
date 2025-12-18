@@ -29,11 +29,15 @@ export default function NetWorthOverviewTab() {
     queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
+  const { data: creditCards = [] } = useQuery({
+    queryKey: ['creditCards'],
+    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
+  });
+
   // Calculate totals
   const investmentAssets = assets.filter(a => a.type === 'investment' && a.type !== 'beginning_balance');
   const otherAssets = assets.filter(a => a.type !== 'investment' && a.type !== 'beginning_balance');
-  const cashAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');
-  const creditCards = bankAccounts.filter(a => a.account_type === 'credit_card');
+  const cashAccounts = bankAccounts;
 
   const totalInvestments = investmentAssets.reduce((sum, a) => sum + (a.current_value || 0), 0);
   const totalCash = cashAccounts.reduce((sum, a) => sum + (a.current_balance || 0), 0);

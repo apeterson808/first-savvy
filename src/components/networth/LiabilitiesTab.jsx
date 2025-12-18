@@ -30,12 +30,10 @@ export default function LiabilitiesTab() {
     queryFn: () => base44.entities.Liability.list()
   });
 
-  const { data: bankAccounts = [] } = useQuery({
-    queryKey: ['bankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+  const { data: creditCards = [] } = useQuery({
+    queryKey: ['creditCards'],
+    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
   });
-
-  const creditCards = bankAccounts.filter(a => a.account_type === 'credit_card');
 
   const totalLoans = liabilities.reduce((sum, l) => sum + (l.current_balance || 0), 0);
   const totalCreditCards = creditCards.reduce((sum, c) => sum + Math.abs(c.current_balance || 0), 0);

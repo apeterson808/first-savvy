@@ -93,6 +93,11 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
     queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
   });
 
+  const { data: existingCreditCards = [] } = useQuery({
+    queryKey: ['creditCards'],
+    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
+  });
+
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: () => base44.entities.Category.list('name')
@@ -132,8 +137,8 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
       } else if (entityType === 'CreditCard') {
         setAccountType('credit_card');
         setDetailType('credit_card');
-        setBankName(editingAccount.bank_name || editingAccount.institution || '');
-        setInstitutionLogoUrl(editingAccount.logo_url || '');
+        setBankName(editingAccount.institution || '');
+        setInstitutionLogoUrl(editingAccount.institution_logo_url || '');
       } else if (entityType === 'Asset') {
         setAccountType('asset');
         setDetailType(editingAccount.type || editingAccount.account_type || '');
@@ -203,15 +208,15 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
 
   const createCreditCardMutation = useMutation({
     mutationFn: (data) => {
-      console.log('💳 Creating Credit Card in BankAccount with data:', data);
-      return withRetry(() => base44.entities.BankAccount.create(data), { maxRetries: 2 });
+      console.log('💳 Creating Credit Card with data:', data);
+      return withRetry(() => base44.entities.CreditCard.create(data), { maxRetries: 2 });
     },
     onSuccess: (newAccount) => {
       console.log('✅ Credit Card created successfully:', newAccount);
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
       onAccountCreated?.({ type: 'credit_card', account: newAccount });
       onOpenChange(false);
     },
@@ -291,12 +296,12 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
   });
 
   const updateCreditCardMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.BankAccount.update(id, data), { maxRetries: 2 }),
+    mutationFn: ({ id, data }) => withRetry(() => base44.entities.CreditCard.update(id, data), { maxRetries: 2 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
       onAccountCreated?.({ type: 'credit_card' });
       onOpenChange(false);
     },
@@ -395,13 +400,13 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         const creditCardData = {
           name: name,
           current_balance: validatedBalance,
+          institution: bankName || null,
+          institution_logo_url: institutionLogoUrl || null,
           is_active: isActive,
         };
-        if (accountNumber) creditCardData.last_four = accountNumber.slice(-4);
-        if (isSubaccount && parentAccountId) {
-          creditCardData.parent_account_id = parentAccountId;
-        } else {
-          creditCardData.parent_account_id = null;
+        if (accountNumber) {
+          creditCardData.last_four = accountNumber.slice(-4);
+          creditCardData.account_number_masked = accountNumber;
         }
         updateCreditCardMutation.mutate({ id: editingAccount.id, data: creditCardData });
       } else if (accountType === 'asset') {
@@ -464,9 +469,14 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         const creditCardData = {
           name: name.charAt(0).toUpperCase() + name.slice(1),
           current_balance: validatedBalance,
+          institution: bankName || null,
+          institution_logo_url: institutionLogoUrl || null,
           is_active: true,
         };
-        if (accountNumber) creditCardData.last_four = accountNumber.slice(-4);
+        if (accountNumber) {
+          creditCardData.last_four = accountNumber.slice(-4);
+          creditCardData.account_number_masked = accountNumber;
+        }
         console.log('💳 Calling createCreditCardMutation.mutate with:', creditCardData);
         createCreditCardMutation.mutate(creditCardData);
       } else if (accountType === 'asset') {

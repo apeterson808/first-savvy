@@ -21,7 +21,11 @@ export default function AccountDropdown({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
       const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
-      return bankAccounts;
+      const creditCards = await base44.entities.CreditCard.filter({ is_active: true });
+      return [
+        ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
+        ...creditCards.map(cc => ({ ...cc, account_name: cc.name, account_type: 'credit_card', entityType: 'CreditCard' }))
+      ];
     },
     enabled: shouldFetchOwnAccounts
   });
@@ -45,12 +49,14 @@ export default function AccountDropdown({
   const getPendingCount = (accountId) => {
     if (!showPendingCounts) return 0;
     if (accountId === 'all') {
-      return transactions.filter(t => 
-        (t.status === 'pending' || !t.status) && activeAccountIds.includes(t.bank_account_id)
+      return transactions.filter(t =>
+        (t.status === 'pending' || !t.status) &&
+        (activeAccountIds.includes(t.bank_account_id) || activeAccountIds.includes(t.credit_card_id))
       ).length;
     }
-    return transactions.filter(t => 
-      t.bank_account_id === accountId && (t.status === 'pending' || !t.status)
+    return transactions.filter(t =>
+      (t.bank_account_id === accountId || t.credit_card_id === accountId) &&
+      (t.status === 'pending' || !t.status)
     ).length;
   };
 

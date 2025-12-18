@@ -198,6 +198,11 @@ export const createSupabaseClient = () => {
         const { data, error } = await supabase.functions.invoke('send-invitation-notification', { body });
         if (error) throw error;
         return data;
+      },
+      async sendPaymentReminders(body) {
+        const { data, error } = await supabase.functions.invoke('send-payment-reminders', { body });
+        if (error) throw error;
+        return data;
       }
     }
   };
