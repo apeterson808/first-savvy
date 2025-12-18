@@ -38,7 +38,12 @@ export default function useAllAccounts() {
 
   const allAccounts = [
     ...transactionalAccounts.map(a => ({ ...a, account_name: a.account_name, entityType: 'BankAccount' })),
-    ...creditCards.map(c => ({ ...c, account_name: c.name, entityType: 'CreditCard' })),
+    ...creditCards.map(c => ({
+      ...c,
+      account_name: c.name,
+      account_number: c.last_four || c.account_number_masked,
+      entityType: 'CreditCard'
+    })),
     ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
     ...liabilities.map(l => ({ ...l, account_name: l.name, entityType: 'Liability' })),
     ...categories.filter(c => c.type === 'income').map(c => ({ ...c, account_name: c.name, entityType: 'Income' })),
@@ -50,7 +55,12 @@ export default function useAllAccounts() {
   return {
     allAccounts,
     bankAccounts: transactionalAccounts,
-    creditCards: creditCards.map(c => ({ ...c, account_name: c.name, entityType: 'CreditCard' })),
+    creditCards: creditCards.map(c => ({
+      ...c,
+      account_name: c.name,
+      account_number: c.last_four || c.account_number_masked,
+      entityType: 'CreditCard'
+    })),
     assets,
     liabilities,
     categories,

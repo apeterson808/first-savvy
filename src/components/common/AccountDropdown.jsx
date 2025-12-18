@@ -24,7 +24,13 @@ export default function AccountDropdown({
       const creditCards = await base44.entities.CreditCard.filter({ is_active: true });
       return [
         ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
-        ...creditCards.map(cc => ({ ...cc, account_name: cc.name, account_type: 'credit_card', entityType: 'CreditCard' }))
+        ...creditCards.map(cc => ({
+          ...cc,
+          account_name: cc.name,
+          account_number: cc.last_four || cc.account_number_masked,
+          account_type: 'credit_card',
+          entityType: 'CreditCard'
+        }))
       ];
     },
     enabled: shouldFetchOwnAccounts
