@@ -22,7 +22,9 @@ const DEFAULT_COLORS = [
 export default function CategoryBreakdownDonut({ transactions, selectedMonth, selectedAccount, accounts = [], onCategoryClick }) {
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => base44.entities.Category.list('name'),
+    staleTime: 0,
+    refetchOnMount: 'always'
   });
 
   const { data: budgets = [] } = useQuery({

@@ -111,7 +111,9 @@ export default function Banking() {
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date', 1000)
+    queryFn: () => base44.entities.Transaction.list('-date', 1000),
+    staleTime: 0,
+    refetchOnMount: 'always'
   });
 
   const totalBalance = accounts
