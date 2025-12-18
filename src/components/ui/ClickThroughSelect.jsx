@@ -15,7 +15,7 @@ export function ClickThroughSelect({
   triggerClassName,
   renderValue,
   name,
-  enableSearch = true,
+  enableSearch = false,
   onSearchTermChange
 }) {
   const dropdownId = useId();
@@ -162,7 +162,8 @@ export function ClickThroughSelect({
 
       <button
         type="button"
-        onMouseDown={(e) => {
+        onClick={(e) => {
+          e.preventDefault();
           e.stopPropagation();
           handleOpenChange(!isOpen);
         }}
@@ -193,6 +194,7 @@ export function ClickThroughSelect({
             zIndex: 999999999
           }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md"
+          onClick={(e) => e.stopPropagation()}
         >
           {enableSearch && (
             <div className="p-2 border-b">
@@ -319,7 +321,7 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
       data-click-through-select-item="true"
       data-is-action={isAction ? "true" : undefined}
       data-value={value}
-      onMouseDown={(e) => {
+      onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
         onSelect?.(value, isAction);
