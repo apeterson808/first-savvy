@@ -5,7 +5,7 @@ import { createPageUrl } from './utils';
 import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
   Calendar, CreditCard, Banknote, Lock, Users, Cable, UserCog,
-  Menu, X, Bell, Search, LogOut, User
+  Menu, X, Bell, Search, LogOut, User, ChevronLeft
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -141,10 +141,18 @@ export default function Layout({ children, currentPageName }) {
                 <span className="text-xl font-bold text-white">$</span>
               </div>
             ) : (
-              <div className="flex flex-col leading-none">
-                <span className="text-[10px] font-light text-slate-400 tracking-wider">FIRST</span>
-                <h1 className="text-[26px] font-bold text-white tracking-tight">SAVVY</h1>
-              </div>
+              <>
+                <div className="flex flex-col leading-none">
+                  <span className="text-[10px] font-light text-slate-400 tracking-wider">FIRST</span>
+                  <h1 className="text-[26px] font-bold text-white tracking-tight">SAVVY</h1>
+                </div>
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="hidden lg:block text-slate-400 hover:text-white ml-auto"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              </>
             )}
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
