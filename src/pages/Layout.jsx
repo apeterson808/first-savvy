@@ -12,6 +12,7 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import NetworkStatus from '@/components/common/NetworkStatus';
 import { useDefaultAccounts } from '@/components/hooks/useDefaultAccounts';
 import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
+import { getUserProfile } from '@/api/userSettings';
 
 
 function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
@@ -91,6 +92,7 @@ export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -105,7 +107,21 @@ export default function Layout({ children, currentPageName }) {
   }, [currentPageName, location]);
 
   React.useEffect(() => {
-    base44.auth.me().then(setUser).catch(() => {});
+    const loadUserData = async () => {
+      try {
+        const authUser = await base44.auth.me();
+        setUser(authUser);
+
+        if (authUser?.id) {
+          const profile = await getUserProfile(authUser.id);
+          setUserProfile(profile);
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
   }, []);
 
   const navigation = [
@@ -212,7 +228,9 @@ export default function Layout({ children, currentPageName }) {
 
                 {user && (
                   <span className="text-sm text-slate-600 hidden md:block">
-                    Welcome, <span className="font-medium text-slate-900">{user.full_name}</span>
+                    Welcome, <span className="font-medium text-slate-900">
+                      {userProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                    </span>
                   </span>
                 )}
               </div>

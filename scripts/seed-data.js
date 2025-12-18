@@ -169,7 +169,7 @@ async function createCategories() {
 
   const { data, error } = await supabase
     .from('categories')
-    .insert(categories.map(cat => ({ ...cat, is_system: true })))
+    .insert(categories.map(cat => ({ ...cat, is_system: true, user_id: null })))
     .select();
 
   if (error) throw error;
