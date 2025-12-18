@@ -55,7 +55,7 @@ export default function PlaidAccountReviewDialog({
   }, [discoveredAccounts, open]);
 
   const importMutation = useMutation({
-    mutationFn: (data) => base44.functions.invoke('plaidCompleteImport', data),
+    mutationFn: (data) => base44.functions.plaidCompleteImport(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });

@@ -116,7 +116,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
       let extractResponse;
 
       if (fileExt === 'ofx') {
-        extractResponse = await base44.functions.invoke('parseOfx', { file_url: fileUrl });
+        extractResponse = await base44.functions.parseOfx({ file_url: fileUrl });
       } else {
         extractResponse = await base44.integrations.Core.ExtractDataFromUploadedFile({
           file_url: fileUrl,

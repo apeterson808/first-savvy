@@ -10,14 +10,12 @@ export default function PlaidLinkButton({ onSuccess, onExit, onLinkStart, classN
   const onPlaidSuccess = useCallback(async (public_token, metadata) => {
     setLoading(true);
     try {
-      // Pass selected account IDs from Plaid metadata
       const selectedAccountIds = metadata.accounts?.map(acc => acc.id) || [];
-      const response = await base44.functions.invoke('plaidExchangeToken', { 
+      const response = await base44.functions.plaidExchangeToken({
         public_token,
-        selected_account_ids: selectedAccountIds 
+        selected_account_ids: selectedAccountIds
       });
-      // Pass discovered accounts to parent for review
-      onSuccess?.(response.data);
+      onSuccess?.(response);
     } catch (error) {
       console.error('Exchange error:', error);
       alert(`Failed to connect: ${error.message}`);
@@ -48,13 +46,13 @@ export default function PlaidLinkButton({ onSuccess, onExit, onLinkStart, classN
 
   const handleClick = async () => {
     if (loading) return;
-    
+
     setLoading(true);
-    
+
     try {
-      const response = await base44.functions.invoke('plaidCreateLinkToken');
-      if (response.data?.link_token) {
-        setLinkToken(response.data.link_token);
+      const response = await base44.functions.plaidCreateLinkToken();
+      if (response?.link_token) {
+        setLinkToken(response.link_token);
         onLinkStart?.();
       } else {
         throw new Error('No link token received');
