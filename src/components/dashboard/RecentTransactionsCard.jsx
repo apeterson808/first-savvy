@@ -18,6 +18,8 @@ export default function RecentTransactionsCard() {
   const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editingValue, setEditingValue] = useState('');
 
   const { data: bankAccounts = [] } = useQuery({
     queryKey: ['activeBankAccounts'],
@@ -138,7 +140,43 @@ export default function RecentTransactionsCard() {
             {recentTransactions.map((transaction) => (
               <div key={transaction.id} className="flex items-center gap-2 p-2 bg-slate-50 rounded-lg">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-medium text-slate-800 truncate">{formatTransactionDescription(transaction.description)}</p>
+                  {editingId === transaction.id ? (
+                    <input
+                      type="text"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      onBlur={() => {
+                        if (editingValue.trim() && editingValue !== transaction.description) {
+                          updateMutation.mutate({
+                            id: transaction.id,
+                            data: { ...transaction, description: editingValue.trim() }
+                          });
+                        }
+                        setEditingId(null);
+                        setEditingValue('');
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.target.blur();
+                        } else if (e.key === 'Escape') {
+                          setEditingId(null);
+                          setEditingValue('');
+                        }
+                      }}
+                      autoFocus
+                      className="text-xs font-medium text-slate-800 bg-white border border-blue-300 rounded px-2 py-1 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  ) : (
+                    <p
+                      className="text-xs font-medium text-slate-800 truncate cursor-pointer hover:text-blue-600"
+                      onClick={() => {
+                        setEditingId(transaction.id);
+                        setEditingValue(transaction.description);
+                      }}
+                    >
+                      {formatTransactionDescription(transaction.description)}
+                    </p>
+                  )}
                   <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM d')} · {accounts.find(a => a.id === transaction.bank_account_id)?.account_name || 'N/A'}</p>
                 </div>
                 <span className={`text-xs font-semibold whitespace-nowrap ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
