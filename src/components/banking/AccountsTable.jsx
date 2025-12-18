@@ -9,14 +9,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Wallet, Edit, RefreshCw, Plus, Trash2, ArrowUpDown, ArrowUp, ArrowDown, EyeOff, Settings, Check, AlertTriangle } from 'lucide-react';
+import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check } from 'lucide-react';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getDetailTypeDisplayName, getAccountDisplayName } from '../utils/constants';
@@ -105,32 +104,12 @@ export default function AccountsTable({ accounts, isLoading }) {
     name: true,
     institution: true,
     type: true,
-    detail: true,
+    detail: false,
     balance: true,
     status: true
   });
 
-  const [deletingAccount, setDeletingAccount] = useState(null);
-  const [deactivatingAccount, setDeactivatingAccount] = useState(null);
   const queryClient = useQueryClient();
-
-  // Helper to get or create the Beginning Balance asset account
-  const getOrCreateBeginningBalanceAccount = async () => {
-    const allAssets = await base44.entities.Asset.list();
-    let beginningBalanceAccount = allAssets.find(a => a.name === 'Beginning Balance');
-    
-    if (!beginningBalanceAccount) {
-      beginningBalanceAccount = await base44.entities.Asset.create({
-        name: 'Beginning Balance',
-        type: 'beginning_balance',
-        current_value: 0,
-        description: 'System account for balance adjustments when accounts are deactivated/reactivated',
-        is_active: true
-      });
-    }
-    
-    return { ...beginningBalanceAccount, entityType: 'Asset' };
-  };
 
   // Fetch transactions to calculate category totals
   const { data: transactions = [] } = useQuery({
@@ -155,132 +134,6 @@ export default function AccountsTable({ accounts, isLoading }) {
       return acc;
     }, {});
 
-  const deleteAccountMutation = useMutation({
-    mutationFn: async (account) => {
-      const entityType = account.entityType || 'BankAccount';
-      if (entityType === 'BankAccount' || entityType === 'CreditCard') {
-        return base44.entities.BankAccount.delete(account.id);
-      } else if (entityType === 'Asset') {
-        return base44.entities.Asset.delete(account.id);
-      } else if (entityType === 'Liability') {
-        return base44.entities.Liability.delete(account.id);
-      } else if (entityType === 'Income' || entityType === 'Expense') {
-        return base44.entities.Category.delete(account.id);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setDeletingAccount(null);
-    }
-  });
-
-  const toggleActiveMutation = useMutation({
-    mutationFn: async ({ account }) => {
-      const newActiveState = account.is_active === false ? true : false;
-      const entityType = account.entityType || 'BankAccount';
-      
-      // If deactivating and account has balance, transfer to Beginning Balance Equity
-      if (!newActiveState && entityType === 'BankAccount' && account.current_balance && account.current_balance !== 0) {
-        const beginningBalanceAccount = await getOrCreateBeginningBalanceAccount();
-        const transferAmount = Math.abs(account.current_balance);
-        const isPositiveBalance = account.current_balance > 0;
-        
-        // Create outgoing transaction from this account
-        await base44.entities.Transaction.create({
-          date: new Date().toISOString().split('T')[0],
-          description: `Balance transfer - Account deactivated`,
-          type: isPositiveBalance ? 'expense' : 'income',
-          amount: transferAmount,
-          bank_account_id: account.id,
-          status: 'posted',
-          payment_method: 'bank_transfer',
-          notes: `Automatic balance transfer to Beginning Balance Equity when account "${account.account_name}" was made inactive`
-        });
-        
-        // Create incoming transaction to Beginning Balance Equity
-        await base44.entities.Transaction.create({
-          date: new Date().toISOString().split('T')[0],
-          description: `Balance transfer from ${account.account_name}`,
-          type: isPositiveBalance ? 'income' : 'expense',
-          amount: transferAmount,
-          bank_account_id: beginningBalanceAccount.id,
-          status: 'posted',
-          payment_method: 'bank_transfer',
-          notes: `Automatic balance transfer when account "${account.account_name}" (ID: ${account.id}) was made inactive`
-        });
-        
-        // Zero out the balance on deactivated account
-        await base44.entities.BankAccount.update(account.id, { 
-          is_active: newActiveState,
-          current_balance: 0
-        });
-        return;
-      }
-      
-      // If reactivating a bank account, reverse the transfer from Beginning Balance Equity
-      if (newActiveState && entityType === 'BankAccount') {
-        const beginningBalanceAccount = await getOrCreateBeginningBalanceAccount();
-        const allTransactions = await base44.entities.Transaction.list('-created_at', 1000);
-        
-        // Find the original deactivation transfer transaction
-        const deactivationTx = allTransactions.find(t => 
-          t.bank_account_id === account.id && 
-          t.description === 'Balance transfer - Account deactivated'
-        );
-        
-        if (deactivationTx) {
-          const transferAmount = deactivationTx.amount;
-          const wasExpense = deactivationTx.type === 'expense';
-          
-          // Create reversal on this account (restore the balance)
-          await base44.entities.Transaction.create({
-            date: new Date().toISOString().split('T')[0],
-            description: `Balance restored - Account reactivated`,
-            type: wasExpense ? 'income' : 'expense',
-            amount: transferAmount,
-            bank_account_id: account.id,
-            status: 'posted',
-            payment_method: 'bank_transfer',
-            notes: `Automatic balance restoration when account "${account.account_name}" was reactivated`
-          });
-          
-          // Create reversal on Beginning Balance Equity
-          await base44.entities.Transaction.create({
-            date: new Date().toISOString().split('T')[0],
-            description: `Balance transfer reversed - ${account.account_name} reactivated`,
-            type: wasExpense ? 'expense' : 'income',
-            amount: transferAmount,
-            bank_account_id: beginningBalanceAccount.id,
-            status: 'posted',
-            payment_method: 'bank_transfer',
-            notes: `Automatic balance reversal when account "${account.account_name}" was reactivated`
-          });
-        }
-        
-        return base44.entities.BankAccount.update(account.id, { is_active: newActiveState });
-      }
-      
-      if (entityType === 'BankAccount' || entityType === 'CreditCard') {
-        return base44.entities.BankAccount.update(account.id, { is_active: newActiveState });
-      } else if (entityType === 'Asset') {
-        return base44.entities.Asset.update(account.id, { is_active: newActiveState });
-      } else if (entityType === 'Liability') {
-        return base44.entities.Liability.update(account.id, { is_active: newActiveState });
-      } else if (entityType === 'Income' || entityType === 'Expense') {
-        return base44.entities.Category.update(account.id, { is_active: newActiveState });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setDeactivatingAccount(null);
-    }
-  });
 
 
 
@@ -535,9 +388,9 @@ export default function AccountsTable({ accounts, isLoading }) {
             <div>
               <table className="w-full">
               <thead className="bg-slate-50">
-                <tr className="bg-slate-50">
+                <tr className="bg-slate-50 text-xs">
                   {visibleColumns.name && (
-                    <th 
+                    <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('name')}
                     >
@@ -545,7 +398,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                     </th>
                     )}
                     {visibleColumns.institution && (
-                    <th 
+                    <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('institution')}
                     >
@@ -553,15 +406,23 @@ export default function AccountsTable({ accounts, isLoading }) {
                     </th>
                     )}
                     {visibleColumns.type && (
-                    <th 
+                    <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('accountType')}
                     >
                       <div className="flex items-center">Account Type{getSortIcon('accountType')}</div>
                     </th>
                     )}
+                    {visibleColumns.detail && (
+                    <th
+                      className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
+                      onClick={() => handleSort('type')}
+                    >
+                      <div className="flex items-center">Detail Type{getSortIcon('type')}</div>
+                    </th>
+                    )}
                   {visibleColumns.balance && (
-                    <th 
+                    <th
                       className="font-semibold text-slate-700 text-right px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('balance')}
                     >
@@ -579,32 +440,42 @@ export default function AccountsTable({ accounts, isLoading }) {
                     {sortedFilteredAccounts.map((account) => (
                           <tr
                             key={account.id}
-                            className="hover:bg-slate-50 border-t border-slate-100 leading-none cursor-pointer"
+                            className="group hover:bg-blue-50/50 border-t border-slate-100 cursor-pointer transition-colors"
                             onClick={() => navigate(`/banking/account/${account.id}`)}
                           >
                             {visibleColumns.name && (
-                              <td className={`px-4 py-px ${account.isSubAccount ? 'pl-8' : 'pl-4'}`}>
-                                <span className="text-xs text-slate-900 font-medium">
+                              <td className={`px-4 py-2.5 ${account.isSubAccount ? 'pl-10' : 'pl-4'}`}>
+                                {account.isSubAccount && (
+                                  <span className="inline-block w-4 h-4 mr-1 text-slate-400">└</span>
+                                )}
+                                <span className="text-xs text-slate-900 font-medium group-hover:text-blue-700">
                                   {getAccountDisplayName(account)}
                                 </span>
                               </td>
                             )}
                             {visibleColumns.institution && (
-                              <td className="px-4 py-px">
+                              <td className="px-4 py-2.5">
                                 <span className="text-xs text-slate-600">
                                   {account.bank_name || account.institution || '-'}
                                 </span>
                               </td>
                             )}
                             {visibleColumns.type && (
-                             <td className="px-4 py-px">
+                             <td className="px-4 py-2.5">
                                <span className="text-xs text-slate-600">
                                  {account.entityType === 'BankAccount' ? 'Bank Account' : account.entityType === 'CreditCard' ? 'Credit Card' : account.entityType}
                                </span>
                              </td>
                             )}
+                            {visibleColumns.detail && (
+                             <td className="px-4 py-2.5">
+                               <span className="text-xs text-slate-600">
+                                 {getDetailTypeDisplayName(account.entityType === 'BankAccount' ? account.account_type : account.entityType === 'Asset' || account.entityType === 'Liability' ? account.type : account.detail_type)}
+                               </span>
+                             </td>
+                            )}
                             {visibleColumns.balance && (
-                              <td className="px-4 py-px text-right">
+                              <td className="px-4 py-2.5 text-right">
                                 <span className="font-semibold text-slate-900 text-xs">
                                   {(() => {
                                     const balance = getAccountBalance(account);
@@ -614,7 +485,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                               </td>
                             )}
                             {visibleColumns.status && (
-                              <td className="px-4 py-px text-center">
+                              <td className="px-4 py-2.5 text-center">
                                 <span className={`text-xs px-2 py-0.5 rounded-full ${account.is_active === false ? 'bg-slate-100 text-slate-500' : 'bg-green-100 text-green-700'}`}>
                                   {account.is_active === false ? 'Inactive' : 'Active'}
                                 </span>
@@ -653,70 +524,6 @@ export default function AccountsTable({ accounts, isLoading }) {
         sortDirection={sortDirection}
       />
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={!!deletingAccount} onOpenChange={(open) => !open && setDeletingAccount(null)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Account</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-slate-600">
-            Are you sure you want to delete "{deletingAccount?.account_name || deletingAccount?.name}"? This action cannot be undone.
-          </p>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setDeletingAccount(null)}>
-              Cancel
-            </Button>
-            <Button 
-              variant="destructive" 
-              onClick={() => deleteAccountMutation.mutate(deletingAccount)}
-              disabled={deleteAccountMutation.isPending}
-            >
-              {deleteAccountMutation.isPending ? 'Deleting...' : 'Delete'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Deactivate Account Confirmation Dialog */}
-      <Dialog open={!!deactivatingAccount} onOpenChange={(open) => {
-        if (!open) {
-          setDeactivatingAccount(null);
-        }
-      }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-amber-500" />
-              Make Account Inactive
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <p className="text-sm text-slate-600">
-              "{deactivatingAccount?.account_name}" has a balance of{' '}
-              <span className="font-semibold">
-                ${Math.abs(deactivatingAccount?.current_balance || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-              </span>.
-            </p>
-            <p className="text-sm text-slate-600">
-              This balance will be automatically transferred to <span className="font-medium">Beginning Balance Equity</span> to keep your books balanced.
-            </p>
-            <p className="text-xs text-slate-500">
-              If you reactivate this account later, the balance will be automatically restored.
-            </p>
-          </div>
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setDeactivatingAccount(null)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={() => toggleActiveMutation.mutate({ account: deactivatingAccount })}
-              disabled={toggleActiveMutation.isPending}
-            >
-              {toggleActiveMutation.isPending ? 'Processing...' : 'Deactivate'}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </>
   );
 }
