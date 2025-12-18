@@ -5,7 +5,7 @@ import { createPageUrl } from './utils';
 import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
   Calendar, CreditCard, Banknote, Lock, Users, Cable, UserCog,
-  Menu, X, Bell, Search, LogOut, User, ChevronRight, ChevronLeft
+  Menu, X, Bell, Search, LogOut, User
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -137,28 +137,14 @@ export default function Layout({ children, currentPageName }) {
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-3">
             {sidebarCollapsed ? (
-              <div className="flex items-center gap-1 w-full">
+              <div className="flex items-center justify-center w-full">
                 <span className="text-xl font-bold text-white">$</span>
-                <button 
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
-                  className="hidden lg:block text-slate-400 hover:text-white ml-1"
-                >
-                  <ChevronRight className="w-5 h-5" />
-                </button>
               </div>
             ) : (
-              <>
-                <div className="flex flex-col leading-none">
-                  <span className="text-[10px] font-light text-slate-400 tracking-wider">FIRST</span>
-                  <h1 className="text-[26px] font-bold text-white tracking-tight">SAVVY</h1>
-                </div>
-                <button 
-                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)} 
-                  className="hidden lg:block text-slate-400 hover:text-white ml-auto"
-                >
-                  <ChevronLeft className="w-5 h-5" />
-                </button>
-              </>
+              <div className="flex flex-col leading-none">
+                <span className="text-[10px] font-light text-slate-400 tracking-wider">FIRST</span>
+                <h1 className="text-[26px] font-bold text-white tracking-tight">SAVVY</h1>
+              </div>
             )}
             <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white">
               <X className="w-5 h-5" />
@@ -209,6 +195,13 @@ export default function Layout({ children, currentPageName }) {
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className="lg:hidden text-slate-600 hover:text-slate-900"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="hidden lg:block p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
                 >
                   <Menu className="w-5 h-5" />
                 </button>
