@@ -211,6 +211,21 @@ export default function AccountsTable({ accounts, isLoading }) {
     return matchesType && matchesActive;
   });
 
+  // Get unique entity types that exist in accounts
+  const availableEntityTypes = React.useMemo(() => {
+    const types = new Set(accounts.map(acc => acc.entityType).filter(Boolean));
+    return Array.from(types).sort();
+  }, [accounts]);
+
+  const entityTypeLabels = {
+    'Asset': 'Assets',
+    'BankAccount': 'Bank Accounts',
+    'CreditCard': 'Credit Cards',
+    'Expense': 'Expenses',
+    'Income': 'Income',
+    'Liability': 'Liabilities'
+  };
+
   // Sort helper
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -361,14 +376,13 @@ export default function AccountsTable({ accounts, isLoading }) {
             </div>
             <div className="flex items-center">
               <ClickThroughSelect value={accountTypeFilter} onValueChange={setAccountTypeFilter} triggerClassName="w-40 h-8 text-xs hover:bg-slate-50">
-                                      <ClickThroughSelectItem value="all">All Accounts</ClickThroughSelectItem>
-                                      <ClickThroughSelectItem value="Asset">Assets</ClickThroughSelectItem>
-                                      <ClickThroughSelectItem value="BankAccount">Bank Accounts</ClickThroughSelectItem>
-                                      <ClickThroughSelectItem value="CreditCard">Credit Cards</ClickThroughSelectItem>
-                                      <ClickThroughSelectItem value="Expense">Expenses</ClickThroughSelectItem>
-                                      <ClickThroughSelectItem value="Income">Income</ClickThroughSelectItem>
-                                      <ClickThroughSelectItem value="Liability">Liabilities</ClickThroughSelectItem>
-                                  </ClickThroughSelect>
+                <ClickThroughSelectItem value="all">All Accounts</ClickThroughSelectItem>
+                {availableEntityTypes.map(entityType => (
+                  <ClickThroughSelectItem key={entityType} value={entityType}>
+                    {entityTypeLabels[entityType] || entityType}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
               <Button 
                 variant="ghost" 
                 size="icon" 
