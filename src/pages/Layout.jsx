@@ -12,6 +12,8 @@ import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import NetworkStatus from '@/components/common/NetworkStatus';
 import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
 import { getUserProfile } from '@/api/userSettings';
+import ProtectedChangeWarningDialog from '@/components/common/ProtectedChangeWarningDialog';
+import { useProtectedChangeDialog } from '@/hooks/useProtectedConfiguration';
 
 
 function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
@@ -94,6 +96,8 @@ export default function Layout({ children, currentPageName }) {
   const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
   // Save current page to localStorage
   React.useEffect(() => {
@@ -266,7 +270,17 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Global Components */}
       <NetworkStatus />
-      
+
+      <ProtectedChangeWarningDialog
+        open={isOpen}
+        onOpenChange={setIsOpen}
+        configurationName={dialogData?.configuration?.name || dialogData?.configurationName}
+        affectedFiles={dialogData?.configuration?.file_paths || []}
+        changeDescription={dialogData?.configuration?.description}
+        onConfirm={handleConfirm}
+        onCancel={handleCancel}
+      />
+
       {/* CSS to fix toaster blocking clicks */}
       <style>{`
         [data-sonner-toaster], .toaster, [class*="Toaster"] {

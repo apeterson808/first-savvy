@@ -1,3 +1,22 @@
+/*
+ * ⚠️ PROTECTED CONFIGURATION ⚠️
+ *
+ * This file is part of a protected configuration system and changes require explicit confirmation.
+ * Any modifications to this component's filtering logic must be reviewed and approved.
+ *
+ * Protected aspects:
+ * - Category filtering logic (transfer handling, income/expense separation)
+ * - Display name function integration
+ * - AI suggestion handling
+ *
+ * To make changes:
+ * 1. Navigate to Settings > Protected tab to unlock the configuration
+ * 2. Make your changes
+ * 3. Confirm the change when prompted
+ *
+ * For more information, see the Protected Configurations documentation.
+ */
+
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';

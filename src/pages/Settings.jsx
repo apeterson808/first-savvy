@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, Lock, Settings as SettingsIcon, Bell } from 'lucide-react';
+import { User, Lock, Settings as SettingsIcon, Bell, Shield } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { supabase } from '../api/supabaseClient';
@@ -8,6 +8,7 @@ import ProfileTab from '../components/settings/ProfileTab';
 import SecurityTab from '../components/settings/SecurityTab';
 import PreferencesTab from '../components/settings/PreferencesTab';
 import NotificationsTab from '../components/settings/NotificationsTab';
+import ProtectedConfigurationsTab from '../components/settings/ProtectedConfigurationsTab';
 
 export default function Settings() {
   const [user, setUser] = useState(null);
@@ -94,7 +95,7 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-5 lg:w-auto lg:inline-grid">
           <TabsTrigger value="profile" className="flex items-center gap-2">
             <User className="h-4 w-4" />
             <span className="hidden sm:inline">Profile</span>
@@ -110,6 +111,10 @@ export default function Settings() {
           <TabsTrigger value="notifications" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             <span className="hidden sm:inline">Notifications</span>
+          </TabsTrigger>
+          <TabsTrigger value="protected" className="flex items-center gap-2">
+            <Shield className="h-4 w-4" />
+            <span className="hidden sm:inline">Protected</span>
           </TabsTrigger>
         </TabsList>
 
@@ -127,6 +132,10 @@ export default function Settings() {
 
         <TabsContent value="notifications">
           <NotificationsTab profile={profile} onUpdate={handleProfileUpdate} />
+        </TabsContent>
+
+        <TabsContent value="protected">
+          <ProtectedConfigurationsTab />
         </TabsContent>
       </Tabs>
     </div>
