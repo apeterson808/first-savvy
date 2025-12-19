@@ -300,12 +300,9 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
     for (const txn of sampleTransactions) {
       const bankAccountId = accountIdMap[txn.account_id];
       if (!bankAccountId) continue; // Skip if account was skipped
-      
+
       const accountGoLiveDate = goLiveDates[txn.account_id] || format(subDays(new Date(), 7), 'yyyy-MM-dd');
-      
-      // Skip transactions before the start date
-      if (txn.date < accountGoLiveDate) continue;
-      
+
       const isHistorical = txn.date < accountGoLiveDate;
       
       // Find matching category
