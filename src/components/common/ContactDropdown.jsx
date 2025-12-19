@@ -73,6 +73,11 @@ export default function ContactDropdown({
       triggerClassName={`${triggerClassName} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
       enableSearch={true}
     >
+      {onAddNew && (
+        <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
+          + Add new contact{searchTerm ? `: "${searchTerm}"` : ''}
+        </ClickThroughSelectItem>
+      )}
       {suggestedContact && (
         <>
           <ClickThroughSelectItem
@@ -86,11 +91,6 @@ export default function ContactDropdown({
             <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
           </ClickThroughSelectItem>
         </>
-      )}
-      {onAddNew && (
-        <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-          + Add new contact{searchTerm ? `: "${searchTerm}"` : ''}
-        </ClickThroughSelectItem>
       )}
       {availableContacts.filter(contact => contact.id !== aiSuggestionId).map((contact) => (
         <ClickThroughSelectItem key={contact.id} value={contact.id} data-display={contact.name} className="flex items-center justify-between whitespace-nowrap">
