@@ -39,7 +39,7 @@ import { Plus, Search, ChevronDown, SlidersHorizontal, Printer, Download, Settin
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
-import ContactSuggestion, { suggestContact } from './ContactSuggestion';
+import { suggestContact } from './ContactSuggestion';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
@@ -82,7 +82,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchSearch, setManualMatchSearch] = useState({});
   const [manualMatchFilters, setManualMatchFilters] = useState({});
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
-  const [contactSuggestions, setContactSuggestions] = useState({});
   const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
 
   const getAccountDetails = (accountId) => {
@@ -543,8 +542,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       const newSuggestionIds = new Set(suggestingContactIds);
       transactionsNeedingSuggestions.forEach(t => newSuggestionIds.add(t.id));
       setSuggestingContactIds(newSuggestionIds);
-
-      const newSuggestions = { ...contactSuggestions };
 
       for (const transaction of transactionsNeedingSuggestions) {
         try {
@@ -1399,7 +1396,7 @@ For each transaction, return the category_id that best matches. Consider:
                             }
 
                             return (
-                              <div className="space-y-1">
+                              <div>
                                 <ContactDropdown
                                   value={transaction.contact_id}
                                   onValueChange={(value) => {
@@ -1420,25 +1417,6 @@ For each transaction, return the category_id that best matches. Consider:
                                   triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                   placeholder="Select contact"
                                 />
-                                {contactSuggestions[transaction.id] && !transaction.contact_id && (
-                                  <ContactSuggestion
-                                    suggestion={contactSuggestions[transaction.id]}
-                                    onApply={(suggestion) => {
-                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                      updateMutation.mutate({
-                                        id: transaction.id,
-                                        data: {
-                                          ...transaction,
-                                          contact_id: suggestion.contactId,
-                                          contact_manually_set: true
-                                        }
-                                      });
-                                      const newSuggestions = { ...contactSuggestions };
-                                      delete newSuggestions[transaction.id];
-                                      setContactSuggestions(newSuggestions);
-                                    }}
-                                  />
-                                )}
                               </div>
                             );
                           })()}
