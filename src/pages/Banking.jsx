@@ -77,14 +77,8 @@ export default function Banking() {
         base44.entities.Transaction.list('-date', 1000),
       ]);
 
-      const usedCategoryIds = new Set(
-        allTransactions
-          .filter(tx => tx.category_id)
-          .map(tx => tx.category_id)
-      );
-
       const incomeCategories = categories
-        .filter(c => c.type === 'income' && usedCategoryIds.has(c.id))
+        .filter(c => c.type === 'income')
         .map(cat => ({
           ...cat,
           entityType: 'Income',
@@ -93,7 +87,7 @@ export default function Banking() {
         }));
 
       const expenseCategories = categories
-        .filter(c => c.type === 'expense' && usedCategoryIds.has(c.id))
+        .filter(c => c.type === 'expense')
         .map(cat => ({
           ...cat,
           entityType: 'Expense',
