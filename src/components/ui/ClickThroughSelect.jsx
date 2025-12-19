@@ -160,6 +160,7 @@ export function ClickThroughSelect({
         setSelectedValue('');
         onValueChange?.('');
         handleOpenChange(false);
+        triggerInputRef.current?.blur();
         return;
       }
 
@@ -254,7 +255,7 @@ export function ClickThroughSelect({
             }}
             onBlur={() => {
               setTimeout(() => {
-                if (!isSelectingRef.current && isEditing && searchTerm === '' && selectedValue !== '') {
+                if (!isSelectingRef.current && isEditing && searchTerm === '') {
                   setSelectedValue('');
                   onValueChange?.('');
                 }
