@@ -37,7 +37,7 @@ export default function ContactDropdown({
   const displayValue = value || '';
 
   return (
-    <ClickThroughSelect 
+    <ClickThroughSelect
       value={displayValue}
       onValueChange={(val) => {
         if (val === '__add_new__' && onAddNew) {
@@ -55,6 +55,7 @@ export default function ContactDropdown({
       onSearchTermChange={setSearchTerm}
       placeholder={placeholder}
       triggerClassName={`${triggerClassName} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
+      enableSearch={true}
     >
       {onAddNew && (
         <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>

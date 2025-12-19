@@ -71,6 +71,7 @@ export default function CategoryDropdown({
       onSearchTermChange={setSearchTerm}
       placeholder={placeholder}
       triggerClassName={`${triggerClassName} ${disabled || isTransactionTransfer ? 'opacity-50 pointer-events-none' : ''}`}
+      enableSearch={true}
     >
       {onAddNew && (
         <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
