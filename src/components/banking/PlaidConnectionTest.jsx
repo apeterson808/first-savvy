@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { CheckCircle2, XCircle, Loader2, Info } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CheckCircle2, XCircle, Loader2, Info, FlaskConical } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { supabase } from '@/api/supabaseClient';
 
 export default function PlaidConnectionTest() {
+  const [open, setOpen] = useState(false);
   const [testing, setTesting] = useState(false);
   const [result, setResult] = useState(null);
 
@@ -110,77 +111,100 @@ export default function PlaidConnectionTest() {
   };
 
   return (
-    <Card className="w-full">
-      <CardHeader>
-        <CardTitle>Plaid Connection Test</CardTitle>
-        <CardDescription>
-          Test your Plaid integration to diagnose connection issues
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <Button onClick={runTest} disabled={testing}>
-          {testing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Testing...
-            </>
-          ) : (
-            'Run Connection Test'
-          )}
-        </Button>
+    <>
+      <button
+        onClick={() => {
+          setOpen(true);
+          setResult(null);
+        }}
+        className="w-full p-4 bg-blue-50 border border-blue-200 rounded-lg hover:border-blue-300 hover:shadow-sm transition-all text-left"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+            <FlaskConical className="w-6 h-6 text-blue-600" />
+          </div>
+          <div>
+            <span className="text-sm font-medium text-slate-900 block">Test Plaid Connection</span>
+            <span className="text-xs text-slate-500">Verify your Plaid API credentials are working</span>
+          </div>
+        </div>
+      </button>
 
-        {result && (
-          <div className="space-y-3">
-            {result.steps.map((step, index) => (
-              <Alert key={index} variant={step.status === 'failed' ? 'destructive' : 'default'}>
-                <div className="flex items-start gap-3">
-                  {getStatusIcon(step.status)}
-                  <div className="flex-1">
-                    <AlertTitle className="mb-1">{step.name}</AlertTitle>
-                    {step.details && (
-                      <AlertDescription className="text-sm text-muted-foreground">
-                        {step.details}
-                      </AlertDescription>
-                    )}
-                    {step.error && (
-                      <AlertDescription className="text-sm font-medium mt-1">
-                        Error: {step.error}
-                      </AlertDescription>
-                    )}
-                    {step.solution && (
-                      <AlertDescription className="text-sm mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded">
-                        <strong>Solution:</strong> {step.solution}
-                      </AlertDescription>
-                    )}
-                  </div>
-                </div>
-              </Alert>
-            ))}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Plaid Connection Test</DialogTitle>
+            <DialogDescription>
+              Test your Plaid integration to diagnose connection issues
+            </DialogDescription>
+          </DialogHeader>
 
-            {result.overall === 'passed' && (
-              <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <AlertTitle className="text-green-900 dark:text-green-100">
-                  All Tests Passed!
-                </AlertTitle>
-                <AlertDescription className="text-green-800 dark:text-green-200">
-                  Your Plaid connection is working correctly. You can now link bank accounts.
-                </AlertDescription>
-              </Alert>
-            )}
+          <div className="space-y-4">
+            <Button onClick={runTest} disabled={testing}>
+              {testing ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Testing...
+                </>
+              ) : (
+                'Run Connection Test'
+              )}
+            </Button>
 
-            {result.overall === 'failed' && (
-              <Alert variant="destructive">
-                <XCircle className="h-5 w-5" />
-                <AlertTitle>Test Failed</AlertTitle>
-                <AlertDescription>
-                  Please review the errors above and follow the suggested solutions.
-                </AlertDescription>
-              </Alert>
+            {result && (
+              <div className="space-y-3">
+                {result.steps.map((step, index) => (
+                  <Alert key={index} variant={step.status === 'failed' ? 'destructive' : 'default'}>
+                    <div className="flex items-start gap-3">
+                      {getStatusIcon(step.status)}
+                      <div className="flex-1">
+                        <AlertTitle className="mb-1">{step.name}</AlertTitle>
+                        {step.details && (
+                          <AlertDescription className="text-sm text-muted-foreground">
+                            {step.details}
+                          </AlertDescription>
+                        )}
+                        {step.error && (
+                          <AlertDescription className="text-sm font-medium mt-1">
+                            Error: {step.error}
+                          </AlertDescription>
+                        )}
+                        {step.solution && (
+                          <AlertDescription className="text-sm mt-2 p-2 bg-blue-50 dark:bg-blue-950 rounded">
+                            <strong>Solution:</strong> {step.solution}
+                          </AlertDescription>
+                        )}
+                      </div>
+                    </div>
+                  </Alert>
+                ))}
+
+                {result.overall === 'passed' && (
+                  <Alert className="bg-green-50 dark:bg-green-950 border-green-200 dark:border-green-800">
+                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                    <AlertTitle className="text-green-900 dark:text-green-100">
+                      All Tests Passed!
+                    </AlertTitle>
+                    <AlertDescription className="text-green-800 dark:text-green-200">
+                      Your Plaid connection is working correctly. You can now link bank accounts.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                {result.overall === 'failed' && (
+                  <Alert variant="destructive">
+                    <XCircle className="h-5 w-5" />
+                    <AlertTitle>Test Failed</AlertTitle>
+                    <AlertDescription>
+                      Please review the errors above and follow the suggested solutions.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </div>
             )}
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
