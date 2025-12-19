@@ -24,12 +24,13 @@ Your Plaid integration is fully implemented and ready to use! This guide will he
 
 ### Step 1: Get Plaid API Keys
 
-1. Sign up at [Plaid Dashboard](https://dashboard.plaid.com/signup)
-2. Create a new application
-3. Navigate to **Team Settings** → **Keys**
-4. Copy your:
+1. Log in to [Plaid Dashboard](https://dashboard.plaid.com/)
+2. Navigate to **Team Settings** → **Keys**
+3. Copy your:
    - **Client ID** (starts with a hex string like `5f4b3c2d...`)
-   - **Sandbox Secret** (starts with a hex string like `abc123...`)
+   - **Production Secret** (starts with a hex string like `abc123...`)
+
+Note: You must have completed Plaid's production access approval process to get production keys.
 
 ### Step 2: Add Credentials to Supabase
 
@@ -41,15 +42,15 @@ You need to add the credentials as Edge Function secrets:
 3. Add the following secrets:
    ```
    PLAID_CLIENT_ID=your_client_id_here
-   PLAID_SECRET=your_sandbox_secret_here
-   PLAID_ENV=sandbox
+   PLAID_SECRET=your_production_secret_here
+   PLAID_ENV=production
    ```
 
 **Option B: Using Supabase CLI** (if you have it installed locally)
 ```bash
 supabase secrets set PLAID_CLIENT_ID=your_client_id_here
-supabase secrets set PLAID_SECRET=your_sandbox_secret_here
-supabase secrets set PLAID_ENV=sandbox
+supabase secrets set PLAID_SECRET=your_production_secret_here
+supabase secrets set PLAID_ENV=production
 ```
 
 ### Step 3: Restart Edge Functions (if needed)
@@ -58,28 +59,22 @@ After adding secrets, the edge functions may need a moment to pick up the new va
 1. Redeploying the functions (they'll automatically get the new secrets)
 2. Or wait 1-2 minutes for the changes to propagate
 
-## 🧪 Testing the Integration
+## 🧪 Using the Integration
 
-### Test in Sandbox Mode
+### Connecting Real Bank Accounts
 
-Plaid's sandbox environment lets you test without connecting real banks.
+Your integration is configured for production mode and will connect to real financial institutions.
 
-**Test Credentials for Sandbox:**
-- **Username:** `user_good`
-- **Password:** `pass_good`
-- **MFA Code (if prompted):** `1234`
-
-### Testing Steps:
+### Connection Steps:
 
 1. **Open the app** and navigate to Banking page
 2. **Click "Add Account"** or "Connect Account"
 3. **Click "Link Bank Account"** - This will call `plaid-create-link-token`
-4. **Search for a bank** - Try "Chase" or "Bank of America"
-5. **Enter test credentials:**
-   - Username: `user_good`
-   - Password: `pass_good`
-6. **Select accounts** to import
-7. **Review and import** - This calls `plaid-exchange-token` and `plaid-complete-import`
+4. **Search for your bank** - Search for your actual financial institution
+5. **Enter your real banking credentials** - Use your actual online banking login
+6. **Complete any MFA** - Enter verification codes if prompted by your bank
+7. **Select accounts** to import
+8. **Review and import** - This calls `plaid-exchange-token` and `plaid-complete-import`
 
 ### What Should Happen:
 
@@ -105,9 +100,10 @@ Plaid's sandbox environment lets you test without connecting real banks.
 **Cause:** Using wrong Plaid API keys or wrong environment
 
 **Solution:**
-1. Verify you're using the **sandbox** secret (not development or production)
-2. Confirm `PLAID_ENV=sandbox` is set
+1. Verify you're using the **production** secret (not sandbox or development)
+2. Confirm `PLAID_ENV=production` is set
 3. Make sure you copied the full secret without extra spaces
+4. Ensure your Plaid account has production access approved
 
 ### Error: "Failed to create link token"
 
@@ -162,30 +158,18 @@ This can be implemented as a scheduled job or webhook handler.
 
 **Best Practices:**
 - Never share your Plaid secret key
-- Use sandbox for testing, production for real users
 - Monitor Edge Function logs for suspicious activity
-- Consider encrypting sensitive data at rest
-
-## 🚀 Moving to Production
-
-When ready to connect real banks:
-
-1. Complete [Plaid's production access request](https://dashboard.plaid.com/overview/production)
-2. Get your **production** secret key
-3. Update Edge Function secrets:
-   ```
-   PLAID_ENV=production
-   PLAID_SECRET=your_production_secret_here
-   ```
-4. Test thoroughly before rolling out to users
+- Regularly review connected institutions and access tokens
+- Consider implementing token rotation for enhanced security
+- Monitor Plaid webhook notifications for account changes
 
 ## 📚 Additional Resources
 
 - [Plaid Quickstart Guide](https://plaid.com/docs/quickstart/)
 - [Plaid API Reference](https://plaid.com/docs/api/)
-- [Sandbox Test Credentials](https://plaid.com/docs/sandbox/test-credentials/)
+- [Plaid Production Checklist](https://plaid.com/docs/production-readiness/)
 - [Supabase Edge Functions Docs](https://supabase.com/docs/guides/functions)
 
 ## 🎉 Your Integration is Ready!
 
-Everything is set up and working. Just add your Plaid credentials and you're good to go!
+Everything is set up and configured for production. Add your Plaid production credentials to the Supabase Edge Function secrets and you're ready to connect real bank accounts!
