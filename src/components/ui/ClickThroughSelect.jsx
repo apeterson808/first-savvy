@@ -28,6 +28,7 @@ export function ClickThroughSelect({
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
   const triggerInputRef = useRef(null);
+  const isSelectingRef = useRef(false);
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
@@ -130,11 +131,15 @@ export function ClickThroughSelect({
   }, [isOpen]);
 
   const handleSelect = (val, isAction) => {
+    isSelectingRef.current = true;
     if (!isAction) {
       setSelectedValue(val);
     }
     onValueChange?.(val);
     handleOpenChange(false);
+    setTimeout(() => {
+      isSelectingRef.current = false;
+    }, 100);
   };
 
   const options = extractOptions(children);
@@ -150,6 +155,13 @@ export function ClickThroughSelect({
       triggerInputRef.current?.blur();
     } else if (e.key === 'Enter') {
       e.preventDefault();
+
+      if (searchTerm === '') {
+        setSelectedValue('');
+        onValueChange?.('');
+        handleOpenChange(false);
+        return;
+      }
 
       const flattenChildren = (nodes) => {
         const result = [];
@@ -191,6 +203,11 @@ export function ClickThroughSelect({
         } else if (visibleItems.length > 0) {
           handleSelect(visibleItems[0].props.value, false);
         }
+      }
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (searchTerm === '') {
+        setSelectedValue('');
+        onValueChange?.('');
       }
     }
   };
@@ -234,6 +251,15 @@ export function ClickThroughSelect({
               setTimeout(() => {
                 triggerInputRef.current?.select();
               }, 0);
+            }}
+            onBlur={() => {
+              setTimeout(() => {
+                if (!isSelectingRef.current && isEditing && searchTerm === '' && selectedValue !== '') {
+                  setSelectedValue('');
+                  onValueChange?.('');
+                }
+                setIsEditing(false);
+              }, 150);
             }}
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
