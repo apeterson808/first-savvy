@@ -1,12 +1,31 @@
+/*
+ * ⚠️ PROTECTED CONFIGURATION ⚠️
+ *
+ * This file is part of a protected configuration system and changes require explicit confirmation.
+ * Any modifications to this component's filtering logic must be reviewed and approved.
+ *
+ * Protected aspects:
+ * - Contact filtering logic (active status handling)
+ * - Display name integration
+ * - AI suggestion handling
+ *
+ * To make changes:
+ * 1. Navigate to Settings > Protected tab to unlock the configuration
+ * 2. Make your changes
+ * 3. Confirm the change when prompted
+ *
+ * For more information, see the Protected Configurations documentation.
+ */
+
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
 
-export default function ContactDropdown({ 
-  value, 
-  onValueChange, 
+export default function ContactDropdown({
+  value,
+  onValueChange,
   transactionDescription = '',
   aiSuggestionId,
   disabled = false,
@@ -22,10 +41,14 @@ export default function ContactDropdown({
     queryFn: () => base44.entities.Contact.list('name', 1000)
   });
 
-  const activeContacts = contacts.filter(c => c.status === 'active');
-  
-  const suggestedContact = aiSuggestionId ? activeContacts.find(c => c.id === aiSuggestionId) : null;
-  const otherContacts = activeContacts.filter(c => c.id !== aiSuggestionId);
+  let availableContacts = contacts.filter(c => c.status === 'active');
+  let currentDisplayValue = value || (aiSuggestionId ? aiSuggestionId : value);
+
+  const suggestedContact = aiSuggestionId ? contacts.find(c => c.id === aiSuggestionId) : null;
+
+  if (suggestedContact && !availableContacts.find(c => c.id === aiSuggestionId)) {
+    availableContacts = [suggestedContact, ...availableContacts];
+  }
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
@@ -34,19 +57,12 @@ export default function ContactDropdown({
     }
   };
 
-  const displayValue = value || '';
-
   return (
     <ClickThroughSelect
-      value={displayValue}
+      value={currentDisplayValue}
       onValueChange={(val) => {
         if (val === '__add_new__' && onAddNew) {
           onAddNew(searchTerm);
-          return;
-        }
-        // Handle empty string from cleared search
-        if (val === '') {
-          onValueChange?.(null);
           return;
         }
         onValueChange?.(val);
@@ -63,18 +79,20 @@ export default function ContactDropdown({
         </ClickThroughSelectItem>
       )}
       {suggestedContact && (
-        <ClickThroughSelectItem
-          key={`suggested-${suggestedContact.id}`}
-          value={suggestedContact.id}
-          data-display={suggestedContact.name}
-          className="flex items-center justify-between whitespace-nowrap"
-          isRecommended={true}
-        >
-          <span className="truncate">{suggestedContact.name}</span>
-          <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
-        </ClickThroughSelectItem>
+        <>
+          <ClickThroughSelectItem
+            key={`suggested-${suggestedContact.id}`}
+            value={suggestedContact.id}
+            isRecommended={true}
+            data-display={suggestedContact.name}
+            className="flex items-center justify-between whitespace-nowrap"
+          >
+            <span className="truncate">{suggestedContact.name}</span>
+            <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
+          </ClickThroughSelectItem>
+        </>
       )}
-      {otherContacts.map((contact) => (
+      {availableContacts.filter(contact => contact.id !== aiSuggestionId).map((contact) => (
         <ClickThroughSelectItem key={contact.id} value={contact.id} data-display={contact.name} className="flex items-center justify-between whitespace-nowrap">
           <span className="truncate">{contact.name}</span>
         </ClickThroughSelectItem>
