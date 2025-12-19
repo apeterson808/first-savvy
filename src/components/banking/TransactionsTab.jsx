@@ -45,7 +45,7 @@ import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validatio
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatTransactionDescription } from '../utils/formatters';
 import CategoryDropdown from '../common/CategoryDropdown';
-import AccountDropdown from '../common/AccountDropdown';
+import AccountCardsBar from './AccountCardsBar';
 import ContactDropdown from '../common/ContactDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
 import { getAccountDisplayName } from '../utils/constants';
@@ -1043,15 +1043,12 @@ For each transaction, return the category_id that best matches. Consider:
         <CardContent className="p-0">
           {/* Tabs & Top Actions */}
           <div className="border-b border-slate-200 px-4 pt-4">
-            <div className="flex items-center justify-between mb-3">
-              <AccountDropdown
-                value={selectedAccount}
-                onValueChange={setSelectedAccount}
-                showPendingCounts={true}
-                transactions={fullPendingTransactions}
-                accounts={accounts}
-              />
-            </div>
+            <AccountCardsBar
+              value={selectedAccount}
+              onValueChange={setSelectedAccount}
+              transactions={fullPendingTransactions}
+              accounts={accounts}
+            />
 
             {/* Search & Filters */}
             <div className="flex items-center gap-2 pb-4">
