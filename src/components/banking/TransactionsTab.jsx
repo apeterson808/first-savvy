@@ -557,6 +557,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
           if (suggestion) {
             newSuggestions[transaction.id] = suggestion;
+
+            try {
+              await base44.entities.Transaction.update(transaction.id, {
+                ai_suggested_contact_id: suggestion.contactId
+              });
+              queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+            } catch (updateErr) {
+              console.error('Failed to update transaction with contact suggestion:', transaction.id, updateErr);
+            }
           }
         } catch (err) {
           console.error('Failed to suggest contact for transaction:', transaction.id, err);
