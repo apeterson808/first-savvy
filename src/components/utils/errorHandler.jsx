@@ -42,7 +42,7 @@ const errorMessages = {
   [ErrorTypes.NETWORK]: 'Unable to connect. Please check your internet connection and try again.',
   [ErrorTypes.AUTH]: 'Your session has expired. Please log in again.',
   [ErrorTypes.TIMEOUT]: 'The request took too long. Please try again.',
-  [ErrorTypes.VALIDATION]: 'Please check your input and try again.',
+  [ErrorTypes.VALIDATION]: 'Invalid input.',
   [ErrorTypes.SERVER]: 'Something went wrong on our end. Please try again later.',
   [ErrorTypes.UNKNOWN]: 'An unexpected error occurred. Please try again.'
 };
