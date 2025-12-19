@@ -7,6 +7,7 @@ import PlaidLinkButton from '../components/banking/PlaidLinkButton';
 import PlaidImportSimulator from '../components/banking/PlaidImportSimulator';
 import FileImporter from '../components/banking/FileImporter';
 import AmazonOrderImporter from '../components/banking/AmazonOrderImporter';
+import PlaidConnectionTest from '../components/banking/PlaidConnectionTest';
 import { useQueryClient } from '@tanstack/react-query';
 
 const POPULAR_INSTITUTIONS = [
@@ -210,20 +211,24 @@ export default function ConnectAccount() {
         {/* Development Tools */}
         <div className="bg-white rounded-lg border border-slate-200 p-6 mt-6">
           <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">DEVELOPMENT</h3>
-          <button
-            onClick={() => setPlaidSimulatorOpen(true)}
-            className="w-full p-4 bg-yellow/20 border border-yellow/30 rounded-lg hover:border-yellow/50 hover:shadow-sm transition-all text-left"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
-                <FlaskConical className="w-6 h-6 text-olive" />
+          <div className="space-y-3">
+            <button
+              onClick={() => setPlaidSimulatorOpen(true)}
+              className="w-full p-4 bg-yellow/20 border border-yellow/30 rounded-lg hover:border-yellow/50 hover:shadow-sm transition-all text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
+                  <FlaskConical className="w-6 h-6 text-olive" />
+                </div>
+                <div>
+                  <span className="text-sm font-medium text-slate-900 block">Simulate Plaid Import</span>
+                  <span className="text-xs text-slate-500">Test the account linking flow with sample data</span>
+                </div>
               </div>
-              <div>
-                <span className="text-sm font-medium text-slate-900 block">Simulate Plaid Import</span>
-                <span className="text-xs text-slate-500">Test the account linking flow with sample data</span>
-              </div>
-            </div>
-          </button>
+            </button>
+
+            <PlaidConnectionTest />
+          </div>
         </div>
 
         <PlaidImportSimulator 
