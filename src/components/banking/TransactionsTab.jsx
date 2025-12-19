@@ -530,7 +530,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!filteredTransactions.length || !contacts.length || !contactMatchingRules) return;
 
       const transactionsNeedingSuggestions = filteredTransactions.filter(
-        t => !t.contact_id &&
+        t => !t.ai_suggested_contact_id &&
              t.description &&
              t.description.length >= 2 &&
              !suggestingContactIds.has(t.id) &&
