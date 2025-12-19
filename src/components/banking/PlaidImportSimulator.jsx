@@ -253,100 +253,96 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
   const processImport = async () => {
     setIsProcessing(true);
     setStep(3);
-    
-    const accountIdMap = {}; // Maps Plaid account IDs to created/linked account IDs
-    
-    // Step 1: Create or link accounts
-    setProcessingStatus('Creating accounts...');
-    for (const plaidAccount of SAMPLE_DISCOVERED_ACCOUNTS) {
-      const mapping = accountMappings[plaidAccount.id];
-      
-      if (!mapping || mapping.action === 'create') {
-                    // Create new account
-                    const types = accountTypes[plaidAccount.id] || { accountType: plaidAccount.accountType, detailType: plaidAccount.detailType };
-                    const accountData = {
-                      account_name: accountNames[plaidAccount.id] || plaidAccount.name,
-                      account_type: types.detailType,
-                      current_balance: Math.abs(plaidAccount.balance),
-                      start_date: goLiveDates[plaidAccount.id],
-                      institution: plaidAccount.institution,
-                      account_number: plaidAccount.mask,
-                      is_active: true
-                    };
 
-                    const newAccount = await createBankAccountMutation.mutateAsync(accountData);
-                    accountIdMap[plaidAccount.id] = newAccount.id;
-      } else if (mapping.action === 'link' && mapping.existingAccountId) {
-        // Link to existing account
-        accountIdMap[plaidAccount.id] = mapping.existingAccountId;
-      } else if (mapping.action === 'skip') {
-        // Skip this account
-        continue;
+    try {
+      const accountIdMap = {};
+
+      setProcessingStatus('Creating accounts...');
+      for (const plaidAccount of SAMPLE_DISCOVERED_ACCOUNTS) {
+        const mapping = accountMappings[plaidAccount.id];
+
+        if (!mapping || mapping.action === 'create') {
+          const types = accountTypes[plaidAccount.id] || { accountType: plaidAccount.accountType, detailType: plaidAccount.detailType };
+          const accountData = {
+            account_name: accountNames[plaidAccount.id] || plaidAccount.name,
+            account_type: types.detailType,
+            current_balance: Math.abs(plaidAccount.balance),
+            start_date: goLiveDates[plaidAccount.id],
+            institution: plaidAccount.institution,
+            account_number: plaidAccount.mask,
+            is_active: true
+          };
+
+          const newAccount = await createBankAccountMutation.mutateAsync(accountData);
+          accountIdMap[plaidAccount.id] = newAccount.id;
+        } else if (mapping.action === 'link' && mapping.existingAccountId) {
+          accountIdMap[plaidAccount.id] = mapping.existingAccountId;
+        } else if (mapping.action === 'skip') {
+          continue;
+        }
       }
-    }
-    
-    // Step 2: Import transactions
-    setProcessingStatus('Importing transactions...');
-    
-    // Get or create categories for auto-categorization
-    const categoryMap = {};
-    for (const cat of categories) {
-      categoryMap[cat.name.toLowerCase()] = cat.id;
-    }
-    
-    let processedCount = 0;
-    const totalTransactions = sampleTransactions.filter(t => accountIdMap[t.account_id]).length;
-    
-    for (const txn of sampleTransactions) {
-      const bankAccountId = accountIdMap[txn.account_id];
-      if (!bankAccountId) continue; // Skip if account was skipped
 
-      const accountGoLiveDate = goLiveDates[txn.account_id] || format(subDays(new Date(), 7), 'yyyy-MM-dd');
+      setProcessingStatus('Importing transactions...');
 
-      const isHistorical = txn.date < accountGoLiveDate;
-      
-      // Find matching category
-      let categoryId = null;
-      if (autoCategorizeBefore || !isHistorical) {
-        const suggestionLower = txn.category_suggestion.toLowerCase();
-        categoryId = categoryMap[suggestionLower] || null;
+      const categoryMap = {};
+      for (const cat of categories) {
+        categoryMap[cat.name.toLowerCase()] = cat.id;
       }
-      
-      const transactionData = {
-        date: txn.date,
-        description: txn.description,
-        original_description: txn.description,
-        amount: txn.amount,
-        type: txn.type,
-        bank_account_id: bankAccountId,
-        category_id: categoryId,
-        status: isHistorical && autoCategorizeBefore ? 'posted' : 'pending',
-        payment_method: 'card'
-      };
-      
-      await createTransactionMutation.mutateAsync(transactionData);
-      processedCount++;
-      setProcessingStatus(`Importing transactions... (${processedCount}/${totalTransactions})`);
-    }
-    
-    setProcessingStatus('Import complete!');
-    setIsProcessing(false);
-    
-    // Wait a moment then close
-    setTimeout(() => {
-      onImportComplete?.();
-      onOpenChange(false);
-      // Reset state
-      setStep(1);
-      setAccountMappings({});
-      setGoLiveDates(() => {
+
+      let processedCount = 0;
+      const totalTransactions = sampleTransactions.filter(t => accountIdMap[t.account_id]).length;
+
+      for (const txn of sampleTransactions) {
+        const bankAccountId = accountIdMap[txn.account_id];
+        if (!bankAccountId) continue;
+
+        const accountGoLiveDate = goLiveDates[txn.account_id] || format(subDays(new Date(), 7), 'yyyy-MM-dd');
+        const isHistorical = txn.date < accountGoLiveDate;
+
+        let categoryId = null;
+        if (autoCategorizeBefore || !isHistorical) {
+          const suggestionLower = txn.category_suggestion.toLowerCase();
+          categoryId = categoryMap[suggestionLower] || null;
+        }
+
+        const transactionData = {
+          date: txn.date,
+          description: txn.description,
+          original_description: txn.description,
+          amount: txn.amount,
+          type: txn.type,
+          bank_account_id: bankAccountId,
+          category_id: categoryId,
+          status: isHistorical && autoCategorizeBefore ? 'posted' : 'pending',
+          payment_method: 'card'
+        };
+
+        await createTransactionMutation.mutateAsync(transactionData);
+        processedCount++;
+        setProcessingStatus(`Importing transactions... (${processedCount}/${totalTransactions})`);
+      }
+
+      setProcessingStatus('Import complete!');
+      setIsProcessing(false);
+
+      setTimeout(() => {
+        onImportComplete?.();
+        onOpenChange(false);
+        setStep(1);
+        setAccountMappings({});
+        setGoLiveDates(() => {
           const initialDates = {};
           SAMPLE_DISCOVERED_ACCOUNTS.forEach(acc => {
             initialDates[acc.id] = format(subDays(new Date(), 7), 'yyyy-MM-dd');
           });
           return initialDates;
         });
-    }, 1500);
+      }, 1500);
+    } catch (error) {
+      console.error('Import error:', error);
+      setProcessingStatus(`Error: ${error.message}`);
+      setIsProcessing(false);
+    }
   };
 
   const getAccountIcon = (type) => {
