@@ -317,50 +317,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     applyContactSuggestions();
   }, [fullPendingTransactions.length, contacts.length]);
 
-  React.useEffect(() => {
-    const calculateContactSuggestions = async () => {
-      if (!filteredTransactions.length || !contacts.length || !contactMatchingRules) return;
-
-      const transactionsNeedingSuggestions = filteredTransactions.filter(
-        t => !t.contact_id &&
-             t.description &&
-             t.description.length >= 2 &&
-             !suggestingContactIds.has(t.id) &&
-             statusFilter === 'pending' &&
-             activeAccountIds.includes(t.bank_account_id)
-      ).slice(0, 5);
-
-      if (transactionsNeedingSuggestions.length === 0) return;
-
-      const newSuggestionIds = new Set(suggestingContactIds);
-      transactionsNeedingSuggestions.forEach(t => newSuggestionIds.add(t.id));
-      setSuggestingContactIds(newSuggestionIds);
-
-      const newSuggestions = { ...contactSuggestions };
-
-      for (const transaction of transactionsNeedingSuggestions) {
-        try {
-          const suggestion = await suggestContact(
-            transaction.description,
-            fullPostedTransactions,
-            contactMatchingRules,
-            contacts
-          );
-
-          if (suggestion) {
-            newSuggestions[transaction.id] = suggestion;
-          }
-        } catch (err) {
-          console.error('Failed to suggest contact for transaction:', transaction.id, err);
-        }
-      }
-
-      setContactSuggestions(newSuggestions);
-    };
-
-    calculateContactSuggestions();
-  }, [filteredTransactions.length, contacts.length, contactMatchingRules.length, fullPostedTransactions.length, statusFilter]);
-
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: () => {
@@ -568,6 +524,50 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     
     return matchesSearch && matchesAccount && matchesDate && matchesCategory && matchesType && matchesAmount && matchesPaymentMethod;
   });
+
+  React.useEffect(() => {
+    const calculateContactSuggestions = async () => {
+      if (!filteredTransactions.length || !contacts.length || !contactMatchingRules) return;
+
+      const transactionsNeedingSuggestions = filteredTransactions.filter(
+        t => !t.contact_id &&
+             t.description &&
+             t.description.length >= 2 &&
+             !suggestingContactIds.has(t.id) &&
+             statusFilter === 'pending' &&
+             activeAccountIds.includes(t.bank_account_id)
+      ).slice(0, 5);
+
+      if (transactionsNeedingSuggestions.length === 0) return;
+
+      const newSuggestionIds = new Set(suggestingContactIds);
+      transactionsNeedingSuggestions.forEach(t => newSuggestionIds.add(t.id));
+      setSuggestingContactIds(newSuggestionIds);
+
+      const newSuggestions = { ...contactSuggestions };
+
+      for (const transaction of transactionsNeedingSuggestions) {
+        try {
+          const suggestion = await suggestContact(
+            transaction.description,
+            fullPostedTransactions,
+            contactMatchingRules,
+            contacts
+          );
+
+          if (suggestion) {
+            newSuggestions[transaction.id] = suggestion;
+          }
+        } catch (err) {
+          console.error('Failed to suggest contact for transaction:', transaction.id, err);
+        }
+      }
+
+      setContactSuggestions(newSuggestions);
+    };
+
+    calculateContactSuggestions();
+  }, [filteredTransactions.length, contacts.length, contactMatchingRules.length, fullPostedTransactions.length, statusFilter]);
 
   const toggleSelectAll = () => {
     if (selectedTransactions.length === filteredTransactions.length) {
