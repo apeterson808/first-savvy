@@ -254,8 +254,9 @@ export function ClickThroughSelect({
               }, 0);
             }}
             onBlur={() => {
+              const currentSearchTerm = searchTerm;
               setTimeout(() => {
-                if (!isSelectingRef.current && isEditing && searchTerm === '') {
+                if (!isSelectingRef.current && currentSearchTerm === '') {
                   setSelectedValue('');
                   onValueChange?.('');
                 }
