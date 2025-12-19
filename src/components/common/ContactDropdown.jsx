@@ -41,12 +41,53 @@ export default function ContactDropdown({
     queryFn: () => base44.entities.Contact.list('name', 1000)
   });
 
+  const { data: matchingRules = [] } = useQuery({
+    queryKey: ['contactMatchingRules'],
+    queryFn: () => base44.entities.ContactMatchingRule.list('priority', 1000),
+    staleTime: 5 * 60 * 1000
+  });
+
   let availableContacts = contacts.filter(c => c.status === 'active');
   let currentDisplayValue = value || (aiSuggestionId ? aiSuggestionId : value);
 
-  const suggestedContact = aiSuggestionId ? contacts.find(c => c.id === aiSuggestionId) : null;
+  let suggestedContactId = aiSuggestionId;
 
-  if (suggestedContact && !availableContacts.find(c => c.id === aiSuggestionId)) {
+  if (!suggestedContactId && value && transactionDescription && matchingRules.length > 0) {
+    const descLower = transactionDescription.toLowerCase().trim();
+    const activeRules = matchingRules
+      .filter(r => r.is_active)
+      .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+
+    for (const rule of activeRules) {
+      const matchVal = rule.match_value.toLowerCase();
+      let matches = false;
+
+      switch (rule.match_type) {
+        case 'exact':
+          matches = descLower === matchVal;
+          break;
+        case 'starts_with':
+          matches = descLower.startsWith(matchVal);
+          break;
+        case 'ends_with':
+          matches = descLower.endsWith(matchVal);
+          break;
+        case 'contains':
+        default:
+          matches = descLower.includes(matchVal);
+          break;
+      }
+
+      if (matches && rule.contact_id === value) {
+        suggestedContactId = value;
+        break;
+      }
+    }
+  }
+
+  const suggestedContact = suggestedContactId ? contacts.find(c => c.id === suggestedContactId) : null;
+
+  if (suggestedContact && !availableContacts.find(c => c.id === suggestedContactId)) {
     availableContacts = [suggestedContact, ...availableContacts];
   }
 
@@ -92,7 +133,7 @@ export default function ContactDropdown({
           + Add new contact{searchTerm ? `: "${searchTerm}"` : ''}
         </ClickThroughSelectItem>
       )}
-      {availableContacts.filter(contact => contact.id !== aiSuggestionId).map((contact) => (
+      {availableContacts.filter(contact => contact.id !== suggestedContactId).map((contact) => (
         <ClickThroughSelectItem key={contact.id} value={contact.id} data-display={contact.name} className="flex items-center justify-between whitespace-nowrap">
           <span className="truncate">{contact.name}</span>
         </ClickThroughSelectItem>

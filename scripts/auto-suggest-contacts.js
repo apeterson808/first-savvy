@@ -47,7 +47,7 @@ async function suggestContacts() {
 
   const { data: transactions, error: txError } = await supabase
     .from('transactions')
-    .select('id, description, type')
+    .select('id, description, type, contact_id')
     .is('ai_suggested_contact_id', null)
     .neq('type', 'transfer')
     .not('description', 'is', null)
@@ -72,6 +72,19 @@ async function suggestContacts() {
 
   console.log(`Found ${contacts.length} active contacts`);
 
+  const { data: rules, error: rulesError } = await supabase
+    .from('contact_matching_rules')
+    .select('id, name, contact_id, match_type, match_value, priority, is_active')
+    .eq('is_active', true)
+    .order('priority', { ascending: false });
+
+  if (rulesError) {
+    console.error('Error fetching contact matching rules:', rulesError);
+    return;
+  }
+
+  console.log(`Found ${rules.length} active matching rules`);
+
   if (contacts.length === 0) {
     console.log('No contacts available for matching');
     return;
@@ -79,36 +92,127 @@ async function suggestContacts() {
 
   let processed = 0;
   let matched = 0;
+  let backfilled = 0;
 
   for (const tx of transactions) {
     console.log(`\nProcessing: ${tx.description}`);
 
     try {
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/ai-suggest-contact`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${supabaseKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            description: tx.description,
-            contacts: contacts,
-          }),
-        }
-      );
+      let suggestedContactId = null;
+      let source = null;
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`  ✗ API error:`, errorText);
-        continue;
+      if (tx.contact_id) {
+        const descLower = tx.description.toLowerCase().trim();
+
+        for (const rule of rules) {
+          const matchVal = rule.match_value.toLowerCase();
+          let matches = false;
+
+          switch (rule.match_type) {
+            case 'exact':
+              matches = descLower === matchVal;
+              break;
+            case 'starts_with':
+              matches = descLower.startsWith(matchVal);
+              break;
+            case 'ends_with':
+              matches = descLower.endsWith(matchVal);
+              break;
+            case 'contains':
+            default:
+              matches = descLower.includes(matchVal);
+              break;
+          }
+
+          if (matches && rule.contact_id === tx.contact_id) {
+            suggestedContactId = tx.contact_id;
+            source = `backfill (rule: ${rule.name})`;
+            break;
+          }
+        }
+
+        if (suggestedContactId) {
+          const { error: updateError } = await supabase
+            .from('transactions')
+            .update({
+              ai_suggested_contact_id: suggestedContactId
+            })
+            .eq('id', tx.id);
+
+          if (updateError) {
+            console.error(`  ✗ Update failed:`, updateError);
+          } else {
+            const contact = contacts.find(c => c.id === suggestedContactId);
+            console.log(`  ✓ Backfilled contact: ${contact?.name || suggestedContactId} (${source})`);
+            backfilled++;
+            matched++;
+          }
+          processed++;
+          continue;
+        }
       }
 
-      const result = await response.json();
+      const descLower = tx.description.toLowerCase().trim();
 
-      if (result.contactId) {
-        const contact = contacts.find(c => c.id === result.contactId);
+      for (const rule of rules) {
+        const matchVal = rule.match_value.toLowerCase();
+        let matches = false;
+
+        switch (rule.match_type) {
+          case 'exact':
+            matches = descLower === matchVal;
+            break;
+          case 'starts_with':
+            matches = descLower.startsWith(matchVal);
+            break;
+          case 'ends_with':
+            matches = descLower.endsWith(matchVal);
+            break;
+          case 'contains':
+          default:
+            matches = descLower.includes(matchVal);
+            break;
+        }
+
+        if (matches) {
+          suggestedContactId = rule.contact_id;
+          source = `rule: ${rule.name}`;
+          break;
+        }
+      }
+
+      if (!suggestedContactId) {
+        const response = await fetch(
+          `${supabaseUrl}/functions/v1/ai-suggest-contact`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${supabaseKey}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              description: tx.description,
+              contacts: contacts,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error(`  ✗ API error:`, errorText);
+          continue;
+        }
+
+        const result = await response.json();
+
+        if (result.contactId) {
+          suggestedContactId = result.contactId;
+          source = 'AI';
+        }
+      }
+
+      if (suggestedContactId) {
+        const contact = contacts.find(c => c.id === suggestedContactId);
 
         if (contact) {
           const { error: updateError } = await supabase
@@ -121,7 +225,7 @@ async function suggestContacts() {
           if (updateError) {
             console.error(`  ✗ Update failed:`, updateError);
           } else {
-            console.log(`  ✓ Suggested contact: ${contact.name}`);
+            console.log(`  ✓ Suggested contact: ${contact.name} (${source})`);
             matched++;
           }
         }
@@ -141,6 +245,7 @@ async function suggestContacts() {
   console.log(`\n✅ Processing complete!`);
   console.log(`   Processed: ${processed}/${transactions.length}`);
   console.log(`   Matched: ${matched}/${transactions.length}`);
+  console.log(`   Backfilled: ${backfilled}/${transactions.length}`);
 }
 
 suggestContacts().catch(console.error);
