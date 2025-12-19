@@ -1419,12 +1419,13 @@ For each transaction, return the category_id that best matches. Consider:
                                 value={transaction.category_id}
                                 onValueChange={(value) => {
                                   if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                  const selectedCategory = categories.find(c => c.id === value);
+                                  const categoryValue = value === '' ? null : value;
+                                  const selectedCategory = categoryValue ? categories.find(c => c.id === categoryValue) : null;
                                   updateMutation.mutate({
                                     id: transaction.id,
                                     data: {
                                       ...transaction,
-                                      category_id: value,
+                                      category_id: categoryValue,
                                       type: selectedCategory ? selectedCategory.type : transaction.type
                                     }
                                   });
