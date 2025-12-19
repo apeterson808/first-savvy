@@ -29,11 +29,15 @@ export function ClickThroughSelect({
   const dropdownRef = useRef(null);
   const triggerInputRef = useRef(null);
   const isSelectingRef = useRef(false);
+  const originalValueRef = useRef(selectedValue);
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
     registerDropdown(dropdownId, open);
     onOpenChange?.(open);
+    if (open) {
+      originalValueRef.current = selectedValue;
+    }
     if (!open) {
       setIsEditing(false);
       setSearchTerm('');
@@ -89,6 +93,7 @@ export function ClickThroughSelect({
   useEffect(() => {
     if (value !== undefined) {
       setSelectedValue(value);
+      originalValueRef.current = value;
     }
   }, [value]);
 
@@ -134,6 +139,7 @@ export function ClickThroughSelect({
     isSelectingRef.current = true;
     if (!isAction) {
       setSelectedValue(val);
+      originalValueRef.current = val;
     }
     onValueChange?.(val);
     handleOpenChange(false);
@@ -151,6 +157,11 @@ export function ClickThroughSelect({
   const handleKeyDown = (e) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      setSelectedValue(originalValueRef.current);
+      if (originalValueRef.current !== selectedValue) {
+        onValueChange?.(originalValueRef.current);
+      }
+      setSearchTerm('');
       handleOpenChange(false);
       triggerInputRef.current?.blur();
     } else if (e.key === 'Enter') {
