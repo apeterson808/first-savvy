@@ -15,12 +15,30 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, FlaskConical } from 'lucide-react';
+import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, FlaskConical, Search, Building2, TrendingUp, Bitcoin, Upload, Package } from 'lucide-react';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import PlaidEmbeddedSearch from './PlaidEmbeddedSearch';
 import PlaidImportSimulator from './PlaidImportSimulator';
+import PlaidLinkButton from './PlaidLinkButton';
+import FileImporter from './FileImporter';
+import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getDetailTypeDisplayName, getAccountDisplayName } from '../utils/constants';
+
+const POPULAR_INSTITUTIONS = [
+  { name: 'Chase', color: 'bg-sky-blue' },
+  { name: 'Bank of America', color: 'bg-burgundy' },
+  { name: 'Wells Fargo', color: 'bg-burgundy' },
+  { name: 'Capital One', color: 'bg-sky-blue' },
+  { name: 'Citi', color: 'bg-light-blue' },
+  { name: 'American Express', color: 'bg-sky-blue' },
+  { name: 'US Bank', color: 'bg-burgundy' },
+  { name: 'Charles Schwab', color: 'bg-sky-blue' },
+  { name: 'Fidelity', color: 'bg-soft-green' },
+  { name: 'Vanguard', color: 'bg-burgundy' },
+  { name: 'Discover', color: 'bg-orange' },
+  { name: 'Navy Federal', color: 'bg-forest-green' },
+];
 
 // Editable inline name component
 function EditableAccountName({ account }) {
@@ -98,6 +116,9 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [plaidSimulatorOpen, setPlaidSimulatorOpen] = useState(false);
+  const [linkSearchTerm, setLinkSearchTerm] = useState('');
+  const [fileImporterOpen, setFileImporterOpen] = useState(false);
+  const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
 
   const [accountTypeFilter, setAccountTypeFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false);
@@ -137,8 +158,49 @@ export default function AccountsTable({ accounts, isLoading }) {
       return acc;
     }, {});
 
+  const filteredInstitutions = POPULAR_INSTITUTIONS.filter(inst =>
+    inst.name.toLowerCase().includes(linkSearchTerm.toLowerCase())
+  );
 
+  const linkCategories = [
+    {
+      title: 'Connect bank accounts and credit cards',
+      icon: Building2,
+      color: 'bg-light-blue/20',
+      iconColor: 'text-sky-blue'
+    },
+    {
+      title: 'Connect investments and loans',
+      icon: TrendingUp,
+      color: 'bg-soft-green/20',
+      iconColor: 'text-forest-green'
+    },
+    {
+      title: 'Add your Crypto',
+      icon: Bitcoin,
+      color: 'bg-orange-100',
+      iconColor: 'text-orange-600'
+    },
+    {
+      title: 'Import from CSV, PDF, or OFX',
+      icon: Upload,
+      color: 'bg-teal-100',
+      iconColor: 'text-teal-600'
+    },
+    {
+      title: 'Import Amazon Orders',
+      icon: Package,
+      color: 'bg-orange-100',
+      iconColor: 'text-orange-600',
+      isAmazon: true
+    }
+  ];
 
+  const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+  };
 
 
 
@@ -382,35 +444,144 @@ export default function AccountsTable({ accounts, isLoading }) {
               <p className="text-slate-500">Loading accounts...</p>
             </div>
           ) : accounts.length === 0 ? (
-            <div className="py-12 px-6 max-w-xl mx-auto">
-              <div className="text-center mb-8">
-                <Wallet className="w-16 h-16 text-slate-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-slate-900 mb-2">Get Started</h3>
-                <p className="text-slate-600 text-sm">Import sample data to explore the app</p>
-              </div>
+            <div className="py-8 px-6">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-semibold text-slate-900 mb-2">Connect an account</h3>
+                  <p className="text-sm text-slate-600">Connect your bank or credit card to bring in your transactions</p>
+                </div>
 
-              <button
-                onClick={() => setPlaidSimulatorOpen(true)}
-                className="w-full p-6 bg-yellow/20 border-2 border-yellow/30 rounded-lg hover:border-yellow/50 hover:shadow-md transition-all"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
-                    <FlaskConical className="w-7 h-7 text-olive" />
+                <div className="relative mb-6">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <Input
+                    placeholder="Search 13,000+ institutions"
+                    value={linkSearchTerm}
+                    onChange={(e) => setLinkSearchTerm(e.target.value)}
+                    className="pl-10 h-12 text-base"
+                  />
+                </div>
+
+                {!linkSearchTerm ? (
+                  <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-4">
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">POPULAR INSTITUTIONS</h3>
+                    <div className="grid grid-cols-6 gap-3">
+                      {POPULAR_INSTITUTIONS.map((inst) => (
+                        <PlaidLinkButton
+                          key={inst.name}
+                          onSuccess={handleSuccess}
+                          className="p-0 h-auto bg-transparent hover:bg-transparent border-0"
+                        >
+                          <div className="flex flex-col items-center gap-2 group cursor-pointer">
+                            <div className={`w-16 h-16 rounded-full ${inst.color} flex items-center justify-center text-white text-xl font-bold group-hover:scale-105 transition-transform`}>
+                              {inst.name.charAt(0)}
+                            </div>
+                            <span className="text-xs text-slate-600 text-center">{inst.name}</span>
+                          </div>
+                        </PlaidLinkButton>
+                      ))}
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <span className="text-base font-semibold text-slate-900 block mb-1">Simulate Plaid Import</span>
-                    <span className="text-sm text-slate-600">Generate realistic banking data with accounts and transactions</span>
+                ) : (
+                  <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-4">
+                    <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
+                      {filteredInstitutions.length} RESULTS
+                    </h3>
+                    {filteredInstitutions.length > 0 ? (
+                      <div className="space-y-2">
+                        {filteredInstitutions.map((inst) => (
+                          <PlaidLinkButton
+                            key={inst.name}
+                            onSuccess={handleSuccess}
+                            className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all h-auto justify-start font-normal"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full ${inst.color} flex items-center justify-center text-white font-bold flex-shrink-0`}>
+                                {inst.name.charAt(0)}
+                              </div>
+                              <span className="text-sm font-medium text-slate-900">{inst.name}</span>
+                            </div>
+                          </PlaidLinkButton>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-500 text-center py-8">No institutions found</p>
+                    )}
+                  </div>
+                )}
+
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-6 mb-4">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">CATEGORIES</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {linkCategories.map((category, index) => {
+                      const Icon = category.icon;
+                      const isImportCategory = category.title.includes('Import');
+                      const isAmazonImport = category.isAmazon;
+
+                      if (isAmazonImport) {
+                        return (
+                          <button
+                            key={index}
+                            onClick={() => setAmazonImporterOpen(true)}
+                            className="p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center flex-shrink-0`}>
+                                <Icon className={`w-6 h-6 ${category.iconColor}`} />
+                              </div>
+                              <span className="text-sm font-medium text-slate-900">{category.title}</span>
+                            </div>
+                          </button>
+                        );
+                      }
+
+                      return isImportCategory ? (
+                        <button
+                          key={index}
+                          onClick={() => setFileImporterOpen(true)}
+                          className="p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center flex-shrink-0`}>
+                              <Icon className={`w-6 h-6 ${category.iconColor}`} />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">{category.title}</span>
+                          </div>
+                        </button>
+                      ) : (
+                        <PlaidLinkButton
+                          key={index}
+                          onSuccess={handleSuccess}
+                          className="p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all h-auto justify-start font-normal"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center flex-shrink-0`}>
+                              <Icon className={`w-6 h-6 ${category.iconColor}`} />
+                            </div>
+                            <span className="text-sm font-medium text-slate-900">{category.title}</span>
+                          </div>
+                        </PlaidLinkButton>
+                      );
+                    })}
                   </div>
                 </div>
-              </button>
 
-              <div className="text-center mt-6">
-                <button
-                  onClick={() => navigate('/ConnectAccount')}
-                  className="text-sm text-slate-600 hover:text-slate-900 underline"
-                >
-                  View all import options
-                </button>
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-6">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">DEVELOPMENT</h3>
+                  <button
+                    onClick={() => setPlaidSimulatorOpen(true)}
+                    className="w-full p-4 bg-yellow/20 border border-yellow/30 rounded-lg hover:border-yellow/50 hover:shadow-sm transition-all text-left"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
+                        <FlaskConical className="w-6 h-6 text-olive" />
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-slate-900 block">Simulate Plaid Import</span>
+                        <span className="text-xs text-slate-500">Test the account linking flow with sample data</span>
+                      </div>
+                    </div>
+                  </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -559,6 +730,27 @@ export default function AccountsTable({ accounts, isLoading }) {
         onOpenChange={setPlaidSimulatorOpen}
         onImportComplete={(accounts) => {
           queryClient.invalidateQueries({ queryKey: ['accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+        }}
+      />
+
+      {/* File Importer */}
+      <FileImporter
+        open={fileImporterOpen}
+        onOpenChange={setFileImporterOpen}
+        onImportComplete={(accounts) => {
+          queryClient.invalidateQueries({ queryKey: ['accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+        }}
+      />
+
+      {/* Amazon Order Importer */}
+      <AmazonOrderImporter
+        open={amazonImporterOpen}
+        onOpenChange={setAmazonImporterOpen}
+        onImportComplete={() => {
           queryClient.invalidateQueries({ queryKey: ['transactions'] });
           queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
         }}

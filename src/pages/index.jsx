@@ -7,7 +7,6 @@ import Banking from "./Banking";
 import Budgeting from "./Budgeting";
 import NetWorth from "./NetWorth";
 import CreditScore from "./CreditScore";
-import ConnectAccount from "./ConnectAccount";
 import Contacts from "./Contacts";
 import ContactDetail from "./ContactDetail";
 import AccountDetail from "./AccountDetail";
@@ -30,8 +29,6 @@ const PAGES = {
     NetWorth: NetWorth,
 
     CreditScore: CreditScore,
-
-    ConnectAccount: ConnectAccount,
 
     Contacts: Contacts,
 
@@ -84,7 +81,6 @@ function PagesContent() {
                     <Route path="/Budgeting" element={<Budgeting />} />
                     <Route path="/NetWorth" element={<NetWorth />} />
                     <Route path="/CreditScore" element={<CreditScore />} />
-                    <Route path="/ConnectAccount" element={<ConnectAccount />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
                     <Route path="/Integrations" element={<Integrations />} />
