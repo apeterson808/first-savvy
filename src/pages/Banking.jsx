@@ -68,11 +68,38 @@ export default function Banking() {
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['allAccounts'],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.list('-updated_at');
-      const creditCards = await base44.entities.CreditCard.list('-updated_at');
-      const assets = await base44.entities.Asset.list('-updated_at');
-      const liabilities = await base44.entities.Liability.list('-updated_at');
-      const categories = await base44.entities.Category.list('name');
+      const [bankAccounts, creditCards, assets, liabilities, categories, allTransactions] = await Promise.all([
+        base44.entities.BankAccount.list('-updated_at'),
+        base44.entities.CreditCard.list('-updated_at'),
+        base44.entities.Asset.list('-updated_at'),
+        base44.entities.Liability.list('-updated_at'),
+        base44.entities.Category.list('name'),
+        base44.entities.Transaction.list('-date', 1000),
+      ]);
+
+      const usedCategoryIds = new Set(
+        allTransactions
+          .filter(tx => tx.category_id)
+          .map(tx => tx.category_id)
+      );
+
+      const incomeCategories = categories
+        .filter(c => c.type === 'income' && usedCategoryIds.has(c.id))
+        .map(cat => ({
+          ...cat,
+          entityType: 'Income',
+          account_name: cat.name,
+          account_type: 'income',
+        }));
+
+      const expenseCategories = categories
+        .filter(c => c.type === 'expense' && usedCategoryIds.has(c.id))
+        .map(cat => ({
+          ...cat,
+          entityType: 'Expense',
+          account_name: cat.name,
+          account_type: 'expense',
+        }));
 
       const allAccounts = [
         ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
@@ -96,18 +123,8 @@ export default function Banking() {
           account_type: acc.type,
           current_balance: -(acc.current_balance || 0),
         })),
-        ...categories.filter(c => c.type === 'income').map(cat => ({
-          ...cat,
-          entityType: 'Income',
-          account_name: cat.name,
-          account_type: 'income',
-        })),
-        ...categories.filter(c => c.type === 'expense').map(cat => ({
-          ...cat,
-          entityType: 'Expense',
-          account_name: cat.name,
-          account_type: 'expense',
-        })),
+        ...incomeCategories,
+        ...expenseCategories,
       ];
 
       return allAccounts.sort((a, b) => (a.order || 999) - (b.order || 999));

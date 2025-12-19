@@ -121,11 +121,10 @@ async function cleanupDatabase() {
   await supabase.from('liabilities').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   console.log('✓ Deleted liabilities');
 
-  await supabase.from('categories').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-  console.log('✓ Deleted categories');
-
   await supabase.from('contacts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   console.log('✓ Deleted contacts');
+
+  console.log('✓ Preserved user categories (auto-provisioned on signup)');
 
   console.log('\n✅ Database cleanup complete!\n');
 }
@@ -134,45 +133,19 @@ function getTransferCategoryId(amount, categoryMap) {
   return amount < 0 ? categoryMap['Transfer Expense'] : categoryMap['Transfer Income'];
 }
 
-async function createCategories() {
-  console.log('📁 Creating categories...');
-
-  const categories = [
-    { name: 'Salary', type: 'income', detail_type: 'income', icon: 'Briefcase', color: '#10b981' },
-    { name: 'Wages', type: 'income', detail_type: 'income', icon: 'DollarSign', color: '#10b981' },
-    { name: 'Bonus', type: 'income', detail_type: 'income', icon: 'Gift', color: '#10b981' },
-    { name: 'Investment Income', type: 'income', detail_type: 'income', icon: 'TrendingUp', color: '#10b981' },
-    { name: 'Refund', type: 'income', detail_type: 'income', icon: 'RotateCcw', color: '#10b981' },
-    { name: 'Gift', type: 'income', detail_type: 'income', icon: 'Heart', color: '#10b981' },
-    { name: 'Other Income', type: 'income', detail_type: 'income', icon: 'Plus', color: '#10b981' },
-
-    { name: 'Groceries', type: 'expense', detail_type: 'expense', icon: 'ShoppingCart', color: '#ef4444' },
-    { name: 'Dining', type: 'expense', detail_type: 'expense', icon: 'Utensils', color: '#f97316' },
-    { name: 'Gas', type: 'expense', detail_type: 'expense', icon: 'Fuel', color: '#f59e0b' },
-    { name: 'Transportation', type: 'expense', detail_type: 'expense', icon: 'Car', color: '#eab308' },
-    { name: 'Utilities', type: 'expense', detail_type: 'expense', icon: 'Lightbulb', color: '#84cc16' },
-    { name: 'Rent', type: 'expense', detail_type: 'expense', icon: 'Home', color: '#22c55e' },
-    { name: 'Mortgage Payment', type: 'expense', detail_type: 'expense', icon: 'Home', color: '#22c55e' },
-    { name: 'Shopping', type: 'expense', detail_type: 'expense', icon: 'ShoppingBag', color: '#06b6d4' },
-    { name: 'Entertainment', type: 'expense', detail_type: 'expense', icon: 'Film', color: '#0ea5e9' },
-    { name: 'Healthcare', type: 'expense', detail_type: 'expense', icon: 'Heart', color: '#3b82f6' },
-    { name: 'Insurance', type: 'expense', detail_type: 'expense', icon: 'Shield', color: '#6366f1' },
-    { name: 'Education', type: 'expense', detail_type: 'expense', icon: 'BookOpen', color: '#8b5cf6' },
-    { name: 'Travel', type: 'expense', detail_type: 'expense', icon: 'Plane', color: '#a855f7' },
-    { name: 'Personal Care', type: 'expense', detail_type: 'expense', icon: 'Sparkles', color: '#d946ef' },
-    { name: 'Subscriptions', type: 'expense', detail_type: 'expense', icon: 'CreditCard', color: '#ec4899' },
-    { name: 'Other Expense', type: 'expense', detail_type: 'expense', icon: 'Minus', color: '#f43f5e' },
-
-    { name: 'Transfer', type: 'income', detail_type: 'transfer', icon: 'ArrowLeftRight', color: '#64748b' },
-    { name: 'Transfer', type: 'expense', detail_type: 'transfer', icon: 'ArrowLeftRight', color: '#64748b' },
-  ];
+async function fetchUserCategories(userId) {
+  console.log('📁 Fetching user categories (auto-provisioned on signup)...');
 
   const { data, error } = await supabase
     .from('categories')
-    .insert(categories.map(cat => ({ ...cat, is_system: true, user_id: null })))
-    .select();
+    .select('*')
+    .eq('user_id', userId);
 
   if (error) throw error;
+
+  if (!data || data.length === 0) {
+    throw new Error('No categories found for user. Categories should be automatically provisioned on signup.');
+  }
 
   const categoryMap = {};
   data.forEach(cat => {
@@ -187,7 +160,7 @@ async function createCategories() {
     }
   });
 
-  console.log(`✓ Created ${data.length} categories`);
+  console.log(`✓ Found ${data.length} categories`);
   return categoryMap;
 }
 
@@ -1018,7 +991,7 @@ async function main() {
   try {
     await cleanupDatabase();
 
-    const categoryMap = await createCategories();
+    const categoryMap = await fetchUserCategories(userId);
     const accountMap = await createBankAccounts(userId);
     const assetMap = await createAssets(userId);
     const liabilityMap = await createLiabilities(userId);
