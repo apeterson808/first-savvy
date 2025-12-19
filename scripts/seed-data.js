@@ -982,14 +982,31 @@ async function main() {
   console.log(`📍 Reference date: ${formatDate(TODAY)}`);
   console.log('='.repeat(60));
 
-  const { data: session } = await supabase.auth.getSession();
-  if (!session?.session) {
-    console.error('\n❌ Not authenticated! Please log in to the app first, then run this seed script.\n');
+  const userId = '0056b95c-7bbc-49dc-920b-b0e6e628986d';
+  const userEmail = 'petersonandrew@hotmail.com';
+
+  console.log(`👤 Seeding data for: ${userEmail} (${userId})`);
+  console.log('🔐 Authenticating user for seed operation...\n');
+
+  const password = env.SEED_USER_PASSWORD || process.env.SEED_USER_PASSWORD;
+
+  if (!password) {
+    console.error('❌ SEED_USER_PASSWORD environment variable is required.');
+    console.error('Please set it in your .env file or run: SEED_USER_PASSWORD=yourpassword npm run seed');
     process.exit(1);
   }
 
-  const userId = session.session.user.id;
-  console.log(`👤 Seeding data for: ${session.session.user.email} (${userId})`);
+  const { data: authData, error: signInError } = await supabase.auth.signInWithPassword({
+    email: userEmail,
+    password: password
+  });
+
+  if (signInError || !authData?.session) {
+    console.error('❌ Authentication failed:', signInError?.message || 'Invalid credentials');
+    process.exit(1);
+  }
+
+  console.log('✓ Authenticated successfully!\n');
 
   const confirmed = await promptConfirmation();
 
@@ -1002,17 +1019,19 @@ async function main() {
     await cleanupDatabase();
 
     const categoryMap = await createCategories();
-    const accountMap = await createBankAccounts();
-    const assetMap = await createAssets();
-    const liabilityMap = await createLiabilities();
-    const contactMap = await createContacts();
+    const accountMap = await createBankAccounts(userId);
+    const assetMap = await createAssets(userId);
+    const liabilityMap = await createLiabilities(userId);
+    const contactMap = await createContacts(userId);
 
-    await generatePostedTransactions(accountMap, categoryMap, contactMap);
-    await generatePendingTransactions(accountMap, categoryMap, contactMap);
-    await generateInvestmentTransactions(assetMap, categoryMap, accountMap);
-    await generateTransferTransactions(accountMap, categoryMap);
+    await generatePostedTransactions(accountMap, categoryMap, contactMap, userId);
+    await generatePendingTransactions(accountMap, categoryMap, contactMap, userId);
+    await generateInvestmentTransactions(assetMap, categoryMap, accountMap, userId);
+    await generateTransferTransactions(accountMap, categoryMap, userId);
 
-    await createBudgets(categoryMap);
+    await createBudgets(categoryMap, userId);
+    await createCreditScores(userId);
+    await createCategorizationRules(categoryMap, userId);
 
     await printSummary();
 
