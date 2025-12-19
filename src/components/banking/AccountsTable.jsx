@@ -15,9 +15,10 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check } from 'lucide-react';
+import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, FlaskConical } from 'lucide-react';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import PlaidEmbeddedSearch from './PlaidEmbeddedSearch';
+import PlaidImportSimulator from './PlaidImportSimulator';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getDetailTypeDisplayName, getAccountDisplayName } from '../utils/constants';
 
@@ -96,6 +97,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
+  const [plaidSimulatorOpen, setPlaidSimulatorOpen] = useState(false);
 
   const [accountTypeFilter, setAccountTypeFilter] = useState('all');
   const [showInactive, setShowInactive] = useState(false);
@@ -380,36 +382,34 @@ export default function AccountsTable({ accounts, isLoading }) {
               <p className="text-slate-500">Loading accounts...</p>
             </div>
           ) : accounts.length === 0 ? (
-            <div className="py-8 px-6 max-w-2xl mx-auto">
-              <div className="text-center mb-6">
-                <Wallet className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">Connect Your First Account</h3>
-                <p className="text-slate-600 text-sm">Search over 10,000+ banks and financial institutions</p>
+            <div className="py-12 px-6 max-w-xl mx-auto">
+              <div className="text-center mb-8">
+                <Wallet className="w-16 h-16 text-slate-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-slate-900 mb-2">Get Started</h3>
+                <p className="text-slate-600 text-sm">Import sample data to explore the app</p>
               </div>
 
-              <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 mb-4">
-                <PlaidEmbeddedSearch
-                  onSuccess={(result) => {
-                    if (result.discovered_accounts && window.__openPlaidReview) {
-                      window.__openPlaidReview(result);
-                    } else {
-                      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-                      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-                    }
-                  }}
-                  onPlaidStateChange={(active) => {
-                    console.log('Plaid state:', active);
-                  }}
-                />
-              </div>
+              <button
+                onClick={() => setPlaidSimulatorOpen(true)}
+                className="w-full p-6 bg-yellow/20 border-2 border-yellow/30 rounded-lg hover:border-yellow/50 hover:shadow-md transition-all"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
+                    <FlaskConical className="w-7 h-7 text-olive" />
+                  </div>
+                  <div className="text-left">
+                    <span className="text-base font-semibold text-slate-900 block mb-1">Simulate Plaid Import</span>
+                    <span className="text-sm text-slate-600">Generate realistic banking data with accounts and transactions</span>
+                  </div>
+                </div>
+              </button>
 
-              <div className="text-center">
+              <div className="text-center mt-6">
                 <button
-                  onClick={() => setAddSheetOpen(true)}
+                  onClick={() => navigate('/ConnectAccount')}
                   className="text-sm text-slate-600 hover:text-slate-900 underline"
                 >
-                  Or add an account manually
+                  View all import options
                 </button>
               </div>
             </div>
@@ -551,6 +551,17 @@ export default function AccountsTable({ accounts, isLoading }) {
         onOpenChange={setAddSheetOpen}
         sortColumn={sortColumn}
         sortDirection={sortDirection}
+      />
+
+      {/* Plaid Import Simulator */}
+      <PlaidImportSimulator
+        open={plaidSimulatorOpen}
+        onOpenChange={setPlaidSimulatorOpen}
+        onImportComplete={(accounts) => {
+          queryClient.invalidateQueries({ queryKey: ['accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+        }}
       />
 
     </>
