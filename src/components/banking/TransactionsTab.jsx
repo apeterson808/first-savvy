@@ -39,6 +39,7 @@ import { Plus, Search, ChevronDown, SlidersHorizontal, Printer, Download, Settin
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
+import ContactSuggestion, { suggestContact } from './ContactSuggestion';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
@@ -81,6 +82,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchSearch, setManualMatchSearch] = useState({});
   const [manualMatchFilters, setManualMatchFilters] = useState({});
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
+  const [contactSuggestions, setContactSuggestions] = useState({});
+  const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
 
   const getAccountDetails = (accountId) => {
     return accounts.find(acc => acc.id === accountId);
@@ -212,6 +215,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryFn: () => base44.entities.CategorizationRule.list('-priority')
   });
 
+  const { data: contactMatchingRules = [] } = useQuery({
+    queryKey: ['contactMatchingRules'],
+    queryFn: () => base44.entities.ContactMatchingRule.list('-priority')
+  });
+
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts'],
     queryFn: () => base44.entities.Contact.list('name', 1000)
@@ -308,6 +316,50 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
     applyContactSuggestions();
   }, [fullPendingTransactions.length, contacts.length]);
+
+  React.useEffect(() => {
+    const calculateContactSuggestions = async () => {
+      if (!filteredTransactions.length || !contacts.length || !contactMatchingRules) return;
+
+      const transactionsNeedingSuggestions = filteredTransactions.filter(
+        t => !t.contact_id &&
+             t.description &&
+             t.description.length >= 2 &&
+             !suggestingContactIds.has(t.id) &&
+             statusFilter === 'pending' &&
+             activeAccountIds.includes(t.bank_account_id)
+      ).slice(0, 5);
+
+      if (transactionsNeedingSuggestions.length === 0) return;
+
+      const newSuggestionIds = new Set(suggestingContactIds);
+      transactionsNeedingSuggestions.forEach(t => newSuggestionIds.add(t.id));
+      setSuggestingContactIds(newSuggestionIds);
+
+      const newSuggestions = { ...contactSuggestions };
+
+      for (const transaction of transactionsNeedingSuggestions) {
+        try {
+          const suggestion = await suggestContact(
+            transaction.description,
+            fullPostedTransactions,
+            contactMatchingRules,
+            contacts
+          );
+
+          if (suggestion) {
+            newSuggestions[transaction.id] = suggestion;
+          }
+        } catch (err) {
+          console.error('Failed to suggest contact for transaction:', transaction.id, err);
+        }
+      }
+
+      setContactSuggestions(newSuggestions);
+    };
+
+    calculateContactSuggestions();
+  }, [filteredTransactions.length, contacts.length, contactMatchingRules.length, fullPostedTransactions.length, statusFilter]);
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
@@ -1338,26 +1390,47 @@ For each transaction, return the category_id that best matches. Consider:
                             }
 
                             return (
-                              <ContactDropdown
-                                value={transaction.contact_id}
-                                onValueChange={(value) => {
-                                  if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                  updateMutation.mutate({
-                                    id: transaction.id,
-                                    data: { ...transaction, contact_id: value, contact_manually_set: true }
-                                  });
-                                }}
-                                transactionDescription={transaction.description}
-                                aiSuggestionId={transaction.ai_suggested_contact_id}
-                                disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                onAddNew={(searchTerm) => {
-                                  setContactSearchTerm(searchTerm);
-                                  setTriggeringContactTransactionId(transaction.id);
-                                  setAddContactSheetOpen(true);
-                                }}
-                                triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                placeholder="Select contact"
-                              />
+                              <div className="space-y-1">
+                                <ContactDropdown
+                                  value={transaction.contact_id}
+                                  onValueChange={(value) => {
+                                    if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+                                    updateMutation.mutate({
+                                      id: transaction.id,
+                                      data: { ...transaction, contact_id: value, contact_manually_set: true }
+                                    });
+                                  }}
+                                  transactionDescription={transaction.description}
+                                  aiSuggestionId={transaction.ai_suggested_contact_id}
+                                  disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                  onAddNew={(searchTerm) => {
+                                    setContactSearchTerm(searchTerm);
+                                    setTriggeringContactTransactionId(transaction.id);
+                                    setAddContactSheetOpen(true);
+                                  }}
+                                  triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                  placeholder="Select contact"
+                                />
+                                {contactSuggestions[transaction.id] && !transaction.contact_id && (
+                                  <ContactSuggestion
+                                    suggestion={contactSuggestions[transaction.id]}
+                                    onApply={(suggestion) => {
+                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+                                      updateMutation.mutate({
+                                        id: transaction.id,
+                                        data: {
+                                          ...transaction,
+                                          contact_id: suggestion.contactId,
+                                          contact_manually_set: true
+                                        }
+                                      });
+                                      const newSuggestions = { ...contactSuggestions };
+                                      delete newSuggestions[transaction.id];
+                                      setContactSuggestions(newSuggestions);
+                                    }}
+                                  />
+                                )}
+                              </div>
                             );
                           })()}
                         </td>
