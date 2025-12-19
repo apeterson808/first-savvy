@@ -29,7 +29,7 @@ export default function CategoryDropdown({
   const transferExpenseCategory = categories.find(c => c.type === 'expense' && c.detail_type === 'transfer');
 
   let availableCategories = [];
-  let currentDisplayValue = value;
+  let currentDisplayValue = value || (aiSuggestionId && !isTransactionTransfer ? aiSuggestionId : value);
 
   if (isTransactionTransfer) {
     const targetTransferCategory = transactionAmount > 0 ? transferIncomeCategory : transferExpenseCategory;
