@@ -734,6 +734,17 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
             >
               Add Manually
             </Button>
+            <div className="text-center pt-2">
+              <button
+                onClick={() => {
+                  onOpenChange(false);
+                  navigate('/ConnectAccount');
+                }}
+                className="text-xs text-slate-500 hover:text-slate-900 underline"
+              >
+                View all options & import tools
+              </button>
+            </div>
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
