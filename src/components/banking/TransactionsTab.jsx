@@ -35,10 +35,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, ArrowRightLeft, Info } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
-import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
+import { suggestCategory } from './CategorySuggestion';
 import { suggestContact } from './ContactSuggestion';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
@@ -51,9 +51,6 @@ import TransferMatchDialog from './TransferMatchDialog';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingTransaction, setEditingTransaction] = useState(null);
-  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(() => {
     return (initialFilters?.date || initialFilters?.category) ? 'posted' : 'pending';
@@ -78,7 +75,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [manualActionOverrides, setManualActionOverrides] = useState({});
   const [selectedMatches, setSelectedMatches] = useState({});
-  const [formSelectedAccountType, setFormSelectedAccountType] = useState(null);
   const [manualMatchSearch, setManualMatchSearch] = useState({});
   const [manualMatchFilters, setManualMatchFilters] = useState({});
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
@@ -224,21 +220,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryFn: () => base44.entities.Contact.list('name', 1000)
   });
 
-  const [newDescription, setNewDescription] = useState('');
-  const [categorySuggestion, setCategorySuggestion] = useState(null);
-  const [selectedCategory, setSelectedCategory] = useState('other');
-  const [selectedType, setSelectedType] = useState('expense');
-
-  React.useEffect(() => {
-    if (newDescription.length >= 2) {
-      suggestCategory(newDescription, transactions, categorizationRules, null, categories).then(suggestion => {
-        setCategorySuggestion(suggestion);
-      });
-    } else {
-      setCategorySuggestion(null);
-    }
-  }, [newDescription, transactions, categorizationRules, categories]);
-
   React.useEffect(() => {
     const generateSuggestions = async () => {
       if (!fullPendingTransactions.length || !categories.length) return;
@@ -323,12 +304,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      setDialogOpen(false);
-      setEditingTransaction(null);
-      setNewDescription('');
-      setCategorySuggestion(null);
-      setSelectedCategory('other');
-      setSelectedType('expense');
     },
     onError: (error) => {
       logError(error, { action: 'createTransaction' });
@@ -343,8 +318,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      setDialogOpen(false);
-      setEditingTransaction(null);
     },
     onError: (error) => {
       logError(error, { action: 'updateTransaction' });
@@ -365,56 +338,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       showErrorToast(error);
     }
   });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.target);
-    
-    // Validate amount
-    const amountValidation = validateAmount(formData.get('amount'));
-    if (!amountValidation.valid) {
-      alert(amountValidation.error);
-      return;
-    }
-
-    // Validate date
-    const dateValidation = validateDate(formData.get('date'));
-    if (!dateValidation.valid) {
-      alert(dateValidation.error);
-      return;
-    }
-
-    const bankAccountId = formData.get('bank_account_id');
-    const accountDetails = getAccountDetails(bankAccountId);
-    let paymentMethod = formData.get('payment_method');
-
-    if (accountDetails?.account_type === 'credit_card') {
-      paymentMethod = 'credit_card';
-    }
-
-    const data = {
-              date: formData.get('date'),
-              description: formData.get('description'),
-              category_id: formData.get('category_id'),
-              type: formData.get('type'),
-              amount: amountValidation.value,
-              bank_account_id: bankAccountId,
-              payment_method: paymentMethod,
-              status: 'posted',
-              notes: formData.get('notes'),
-            };
-
-            // Store original description when first editing
-            if (editingTransaction && !editingTransaction.original_description) {
-              data.original_description = editingTransaction.description;
-            }
-
-    if (editingTransaction) {
-      updateMutation.mutate({ id: editingTransaction.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
 
   const getDateRange = () => {
     const today = new Date();
@@ -1128,27 +1051,6 @@ For each transaction, return the category_id that best matches. Consider:
                 transactions={fullPendingTransactions}
                 accounts={accounts}
               />
-              
-              <div className="flex items-center gap-2">
-                <Button
-                  size="sm"
-                  onClick={() => setDialogOpen(true)}
-                  className="bg-blue-600 hover:bg-blue-700 h-9"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Transaction
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setTransferDialogOpen(true)}
-                  className="h-9"
-                  title="Move money between your accounts (e.g., Checking to Savings). No impact on income/expenses."
-                >
-                  <ArrowRightLeft className="w-4 h-4 mr-2" />
-                  Transfer
-                </Button>
-              </div>
             </div>
 
             {/* Search & Filters */}
@@ -2396,341 +2298,6 @@ For each transaction, return the category_id that best matches. Consider:
                             accounts={accounts}
                             onConfirm={handleConfirmTransferMatch}
                           />
-
-
-
-                          {/* Add/Edit Sheet */}
-                  <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
-        <SheetContent className="overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{editingTransaction ? 'Edit Transaction' : 'New Transaction'}</SheetTitle>
-          </SheetHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="date">Date</Label>
-                <Input
-                  id="date"
-                  name="date"
-                  type="date"
-                  defaultValue={editingTransaction?.date || format(new Date(), 'yyyy-MM-dd')}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="type">Type</Label>
-                {editingTransaction ? (
-                  <ClickThroughSelect 
-                    name="type" 
-                    defaultValue={editingTransaction.type}
-                    triggerClassName="hover:bg-slate-50"
-                  >
-                    <ClickThroughSelectItem 
-                      value="income" 
-                      className={editingTransaction.type === 'expense' ? 'text-slate-400 pointer-events-none' : ''}
-                    >
-                      Income
-                    </ClickThroughSelectItem>
-                    <ClickThroughSelectItem 
-                      value="expense" 
-                      className={editingTransaction.type === 'income' ? 'text-slate-400 pointer-events-none' : ''}
-                    >
-                      Expense
-                    </ClickThroughSelectItem>
-                  </ClickThroughSelect>
-                ) : (
-                  <ClickThroughSelect 
-                    name="type" 
-                    value={selectedType}
-                    onValueChange={setSelectedType}
-                    triggerClassName="hover:bg-slate-50"
-                  >
-                    <ClickThroughSelectItem value="income">Income</ClickThroughSelectItem>
-                    <ClickThroughSelectItem value="expense">Expense</ClickThroughSelectItem>
-                  </ClickThroughSelect>
-                )}
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Input
-                id="description"
-                name="description"
-                defaultValue={editingTransaction?.description}
-                value={editingTransaction ? undefined : newDescription}
-                onChange={editingTransaction ? undefined : (e) => setNewDescription(e.target.value)}
-                placeholder="e.g., Grocery shopping"
-                required
-              />
-              {!editingTransaction && categorySuggestion && (
-                <div className="mt-2">
-                  <CategorySuggestion 
-                    suggestion={categorySuggestion} 
-                    onApply={(s) => {
-                      setSelectedCategory(s.category);
-                      setSelectedType(s.type);
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                                    <Label htmlFor="amount">Amount</Label>
-                                    <div className="relative">
-                                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                                      <Input
-                                        id="amount"
-                                        name="amount"
-                                        type="text"
-                                        defaultValue={editingTransaction?.amount?.toFixed(2)}
-                                        placeholder="0.00"
-                                        className="pl-7"
-                                        required
-                                      />
-                                    </div>
-                                  </div>
-              <div>
-                <Label htmlFor="bank_account_id">Account</Label>
-                <ClickThroughSelect 
-                  name="bank_account_id" 
-                  defaultValue={editingTransaction?.bank_account_id} 
-                  placeholder="Select account" 
-                  triggerClassName="hover:bg-slate-50"
-                  onValueChange={(val) => {
-                    const account = getAccountDetails(val);
-                    setFormSelectedAccountType(account?.account_type || null);
-                  }}
-                >
-                    {accounts.map(acc => (
-                      <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                        {getAccountDisplayName(acc)}
-                      </ClickThroughSelectItem>
-                    ))}
-                </ClickThroughSelect>
-              </div>
-            </div>
-
-            {(!editingTransaction || editingTransaction.type !== 'transfer') && (
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category_id">Category</Label>
-                  <ClickThroughSelect 
-                    name="category_id" 
-                    value={editingTransaction ? undefined : selectedCategory}
-                    defaultValue={editingTransaction?.category_id} 
-                    onValueChange={editingTransaction ? undefined : (val) => {
-                      setSelectedCategory(val);
-                      const cat = categories.find(c => c.id === val);
-                      if (cat) setSelectedType(cat.type);
-                    }}
-                    placeholder="Select category"
-                    triggerClassName="hover:bg-slate-50"
-                  >
-                      {expenseCategories.length > 0 && (
-                        <>
-                          <div className="px-2 py-1 text-xs font-semibold text-slate-500">Expenses</div>
-                          {expenseCategories.map(cat => (
-                            <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </ClickThroughSelectItem>
-                          ))}
-                        </>
-                      )}
-                      {incomeCategories.length > 0 && (
-                        <>
-                          <div className="px-2 py-1 text-xs font-semibold text-slate-500 mt-2">Income</div>
-                          {incomeCategories.map(cat => (
-                            <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                              {cat.name}
-                            </ClickThroughSelectItem>
-                          ))}
-                        </>
-                      )}
-                  </ClickThroughSelect>
-                </div>
-                <div>
-                  <Label htmlFor="payment_method">Payment Method</Label>
-                  {formSelectedAccountType === 'credit_card' || (editingTransaction && getAccountDetails(editingTransaction.bank_account_id)?.account_type === 'credit_card') ? (
-                    <Input value="Credit Card" readOnly className="hover:bg-slate-50 bg-slate-50" name="payment_method" />
-                  ) : (
-                    <ClickThroughSelect name="payment_method" defaultValue={editingTransaction?.payment_method || 'debit_card'} triggerClassName="hover:bg-slate-50">
-                        <ClickThroughSelectItem value="cash">Cash</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="debit_card">Debit Card</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="bank_transfer">ACH / Bank Transfer</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="check">Check</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="online_bank_payment">Online Bank Payment</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="other">Other</ClickThroughSelectItem>
-                    </ClickThroughSelect>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div>
-              <Label htmlFor="notes">Notes (optional)</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                defaultValue={editingTransaction?.notes}
-                placeholder="Add any additional details..."
-                rows={3}
-              />
-            </div>
-
-            {editingTransaction && (
-              <div className="text-xs text-slate-500 bg-slate-50 rounded-md p-3 space-y-1">
-                <p className="font-medium text-slate-600">Bank Data</p>
-                <p>Original description: {editingTransaction.original_description || editingTransaction.description}</p>
-                <p>Date imported: {editingTransaction.created_at && !isNaN(new Date(editingTransaction.created_at).getTime()) ? new Date(editingTransaction.created_at).toLocaleDateString() : 'N/A'}</p>
-              </div>
-            )}
-
-            <SheetFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                Post
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
-
-      {/* Transfer Dialog */}
-      <Sheet open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
-        <SheetContent className="overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>Transfer Money</SheetTitle>
-            <p className="text-sm text-slate-600">Move money between your accounts. No impact on income/expenses.</p>
-          </SheetHeader>
-          <form onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData(e.target);
-            
-            const fromAccountId = formData.get('from_account');
-            const toAccountId = formData.get('to_account');
-            const amount = parseFloat(formData.get('amount'));
-            const date = formData.get('date');
-            const memo = formData.get('memo') || 'Transfer';
-
-            if (!fromAccountId || !toAccountId || !amount || !date) {
-              alert('Please fill in all required fields');
-              return;
-            }
-
-            if (fromAccountId === toAccountId) {
-              alert('From and To accounts must be different');
-              return;
-            }
-
-            const transferPairId = `transfer_${Date.now()}`;
-            
-            // Find account names for description
-            const fromAccount = accounts.find(a => a.id === fromAccountId);
-            const toAccount = accounts.find(a => a.id === toAccountId);
-
-            // Create outgoing transaction (negative amount from source)
-            await createMutation.mutateAsync({
-              date,
-              description: `Transfer: ${memo} to ${getAccountDisplayName(toAccount)}`,
-              type: 'transfer',
-              amount: -amount,
-              bank_account_id: fromAccountId,
-              status: 'posted',
-              payment_method: 'bank_transfer',
-              notes: memo,
-              transfer_pair_id: transferPairId
-            });
-
-            // Create incoming transaction (positive amount to destination)
-            await createMutation.mutateAsync({
-              date,
-              description: `Transfer: ${memo} from ${getAccountDisplayName(fromAccount)}`,
-              type: 'transfer',
-              amount: amount,
-              bank_account_id: toAccountId,
-              status: 'posted',
-              payment_method: 'bank_transfer',
-              notes: memo,
-              transfer_pair_id: transferPairId
-            });
-
-            setTransferDialogOpen(false);
-          }} className="space-y-4 mt-4">
-            <div>
-              <Label htmlFor="from_account">From Account</Label>
-              <ClickThroughSelect name="from_account" placeholder="Select source account" triggerClassName="hover:bg-slate-50" required>
-                {accounts.map(acc => (
-                  <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                    {getAccountDisplayName(acc)} (${acc.current_balance?.toFixed(2) || '0.00'})
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            <div>
-              <Label htmlFor="to_account">To Account</Label>
-              <ClickThroughSelect name="to_account" placeholder="Select destination account" triggerClassName="hover:bg-slate-50" required>
-                {accounts.map(acc => (
-                  <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                    {getAccountDisplayName(acc)} (${acc.current_balance?.toFixed(2) || '0.00'})
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            <div>
-              <Label htmlFor="amount">Amount</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                <Input
-                  id="amount"
-                  name="amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  placeholder="0.00"
-                  className="pl-7"
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="date">Date</Label>
-              <Input
-                id="date"
-                name="date"
-                type="date"
-                defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="memo">Memo (optional)</Label>
-              <Input
-                id="memo"
-                name="memo"
-                placeholder="e.g., Emergency Fund"
-              />
-            </div>
-
-            <SheetFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => setTransferDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                Create Transfer
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
     </>
   );
 }
