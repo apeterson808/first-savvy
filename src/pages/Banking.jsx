@@ -8,6 +8,7 @@ import AccountsTable from '../components/banking/AccountsTable';
 import CategorizationRulesManager from '../components/banking/CategorizationRulesManager';
 import ContactMatchingRulesManager from '../components/banking/ContactMatchingRulesManager';
 import PlaidAccountReviewDialog from '../components/banking/PlaidAccountReviewDialog';
+import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 
@@ -66,18 +67,11 @@ export default function Banking() {
     };
   }, []);
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['allAccounts'],
-    queryFn: async () => {
-      const allAccounts = await base44.entities.Account.list('-updated_at');
-      return allAccounts.map(acc => ({
-        ...acc,
-        current_balance: acc.balance,
-      })).sort((a, b) => (a.account_number || 999) - (b.account_number || 999));
-    },
-    staleTime: 0,
-    refetchOnMount: 'always'
-  });
+  const { allAccounts, isLoading: accountsLoading } = useAllAccounts();
+
+  const accounts = allAccounts.filter(acc =>
+    ['checking', 'savings', 'credit_card'].includes(acc.account_type)
+  );
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
@@ -214,7 +208,7 @@ export default function Banking() {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-3">
-          <AccountsTable accounts={accounts} isLoading={accountsLoading} />
+          <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
         </TabsContent>
       </Tabs>
     </div>

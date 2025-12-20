@@ -223,6 +223,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     'Asset': 'Assets',
     'BankAccount': 'Bank Accounts',
     'CreditCard': 'Credit Cards',
+    'Equity': 'Equity',
     'Expense': 'Expenses',
     'Income': 'Income',
     'Liability': 'Liabilities'
@@ -345,7 +346,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   }, {});
 
   // Define type order priority
-  const typeOrder = ['checking', 'savings', 'CreditCard', 'investment', 'business', 'Asset', 'Liability', 'Income', 'Expense'];
+  const typeOrder = ['checking', 'savings', 'CreditCard', 'investment', 'business', 'Asset', 'Liability', 'Equity', 'Income', 'Expense'];
   
   const sortedTypes = Object.entries(groupedByType).sort(([typeA], [typeB]) => {
     const orderA = typeOrder.indexOf(typeA);
