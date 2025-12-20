@@ -1704,7 +1704,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                     <TabsTrigger
                                                       value="post"
                                                       className="h-7 text-xs"
-                                                      disabled={isMatched(transaction)}
                                                     >
                                                       Categorize
                                                     </TabsTrigger>
@@ -1712,7 +1711,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 </TooltipTrigger>
                                                 {isMatched(transaction) && (
                                                   <TooltipContent>
-                                                    <p>Click Match tab to unmatch</p>
+                                                    <p>Click to unmatch</p>
                                                   </TooltipContent>
                                                 )}
                                               </Tooltip>
@@ -1824,7 +1823,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                   </span>
                                                   <span className="text-xs text-green-600 font-medium ml-auto">100% match</span>
                                                 </div>
-                                                <p className="text-xs text-slate-600 mt-2 italic">Switch to Categorize tab to unmatch</p>
                                               </div>
                                             )}
 
