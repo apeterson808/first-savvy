@@ -245,7 +245,8 @@ export default function AccountsTable({ accounts, isLoading }) {
   const filteredAccounts = accounts.filter(acc => {
     const matchesType = accountTypeFilter === 'all' || acc.entityType === accountTypeFilter;
     const matchesActive = showInactive || acc.is_active !== false;
-    return matchesType && matchesActive;
+    const isNotTransferCategory = !(acc.entityType === 'Expense' && (acc.name === 'Transfer' || acc.account_name === 'Transfer'));
+    return matchesType && matchesActive && isNotTransferCategory;
   });
 
   // Get unique entity types that exist in accounts
