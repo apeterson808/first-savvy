@@ -4,7 +4,6 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Sheet,
   SheetContent,
@@ -40,9 +39,6 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
-  const [isSubAccount, setIsSubAccount] = useState(false);
-  const [parentBudgetId, setParentBudgetId] = useState('');
-  const [allowRollover, setAllowRollover] = useState(false);
   
   // New group form state
   const [showNewGroupForm, setShowNewGroupForm] = useState(false);
@@ -66,9 +62,6 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       setLimitAmount(editingBudget.limit_amount?.toString() || '');
       setSelectedColor(editingBudget.color || '');
       setSelectedIcon(editingBudget.icon || '');
-      setIsSubAccount(!!editingBudget.parent_budget_id);
-      setParentBudgetId(editingBudget.parent_budget_id || '');
-      setAllowRollover(editingBudget.allow_rollover || false);
     }
   }, [editingBudget, open]);
 
@@ -82,22 +75,6 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   const { data: existingBudgets = [] } = useQuery({
     queryKey: ['budgets'],
     queryFn: () => base44.entities.Budget.list()
-  });
-
-  // Fetch all account types for parent selection
-  const { data: bankAccounts = [] } = useQuery({
-    queryKey: ['bankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
-  });
-
-  const { data: assets = [] } = useQuery({
-    queryKey: ['assets'],
-    queryFn: () => base44.entities.Asset.list()
-  });
-
-  const { data: liabilities = [] } = useQuery({
-    queryKey: ['liabilities'],
-    queryFn: () => base44.entities.Liability.list()
   });
 
   // Get categories not already in a budget (exclude current budget's category when editing)
@@ -151,9 +128,6 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
     setLimitAmount('');
     setSelectedColor('');
     setSelectedIcon('');
-    setIsSubAccount(false);
-    setParentBudgetId('');
-    setAllowRollover(false);
     setShowNewGroupForm(false);
     setNewGroupName('');
   };
@@ -164,9 +138,6 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       setSelectedColor(DEFAULT_COLOR);
     }
   }, [selectedCategoryId]);
-
-  // Get all top-level budgets for parent selection (across all groups)
-  const allParentBudgets = existingBudgets.filter(b => !b.parent_budget_id);
 
   // Calculate total income from income groups
   const incomeGroups = groups.filter(g => g.type === 'income');
@@ -202,15 +173,8 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       limit_amount: newAmount,
       color: selectedColor || DEFAULT_COLOR,
       icon: selectedIcon || selectedCategory?.icon,
-      is_active: true,
-      allow_rollover: allowRollover
+      is_active: true
     };
-
-    if (isSubAccount && parentBudgetId) {
-      budgetData.parent_budget_id = parentBudgetId;
-    } else {
-      budgetData.parent_budget_id = null;
-    }
 
     // Check if this is an expense group and would exceed income
     const targetGroup = groups.find(g => g.id === selectedGroupId);
@@ -453,112 +417,15 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
               </div>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="allowRollover"
-                  checked={allowRollover}
-                  onCheckedChange={setAllowRollover}
-                />
-                <Label htmlFor="allowRollover" className="text-sm font-normal cursor-pointer">
-                  Allow rollover
-                </Label>
-              </div>
-              {allowRollover && (
-                <p className="text-xs text-slate-500 ml-6">
-                  Unused budget or overspending will roll over to the next period.
-                </p>
-              )}
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="isSubAccount"
-                  checked={isSubAccount}
-                  onCheckedChange={(checked) => {
-                    setIsSubAccount(checked);
-                    if (!checked) setParentBudgetId('');
-                  }}
-                />
-                <Label htmlFor="isSubAccount" className="text-sm font-normal cursor-pointer">
-                  Add as sub-account
-                </Label>
-              </div>
-              {isSubAccount && (
-                <div>
-                  <Label htmlFor="parentBudget">Parent Budget Item*</Label>
-                  <ClickThroughSelect
-                    value={parentBudgetId}
-                    onValueChange={setParentBudgetId}
-                    placeholder="Select parent"
-                    triggerClassName="hover:bg-slate-50"
-                  >
-                    {bankAccounts.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Bank Accounts</div>
-                        {bankAccounts.map(account => (
-                          <ClickThroughSelectItem key={`bank-${account.id}`} value={account.id}>
-                            {account.account_name}
-                          </ClickThroughSelectItem>
-                        ))}
-                      </>
-                    )}
-                    {assets.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Assets</div>
-                        {assets.map(account => (
-                          <ClickThroughSelectItem key={`asset-${account.id}`} value={account.id}>
-                            {account.name}
-                          </ClickThroughSelectItem>
-                        ))}
-                      </>
-                    )}
-                    {liabilities.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Liabilities</div>
-                        {liabilities.map(account => (
-                          <ClickThroughSelectItem key={`liability-${account.id}`} value={account.id}>
-                            {account.name}
-                          </ClickThroughSelectItem>
-                        ))}
-                      </>
-                    )}
-                    {categories.filter(c => c.type === 'income').length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Income Accounts</div>
-                        {categories.filter(c => c.type === 'income').map(cat => (
-                          <ClickThroughSelectItem key={`income-${cat.id}`} value={cat.id}>
-                            {cat.name}
-                          </ClickThroughSelectItem>
-                        ))}
-                      </>
-                    )}
-                    {categories.filter(c => c.type === 'expense').length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Expense Accounts</div>
-                        {categories.filter(c => c.type === 'expense').map(cat => (
-                          <ClickThroughSelectItem key={`expense-${cat.id}`} value={cat.id}>
-                            {cat.name}
-                          </ClickThroughSelectItem>
-                        ))}
-                      </>
-                    )}
-                    {bankAccounts.length === 0 && assets.length === 0 && liabilities.length === 0 && categories.length === 0 && (
-                      <div className="px-2 py-2 text-xs text-slate-400 text-center">
-                        No accounts available
-                      </div>
-                    )}
-                  </ClickThroughSelect>
-                </div>
-              )}
-            </div>
 
             <SheetFooter className="pt-4">
                   <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="bg-blue-600 hover:bg-blue-700"
-                    disabled={!selectedCategoryId || !selectedGroupId || !limitAmount || (isSubAccount && !parentBudgetId) || createBudgetMutation.isPending || updateBudgetMutation.isPending}
+                    disabled={!selectedCategoryId || !selectedGroupId || !limitAmount || createBudgetMutation.isPending || updateBudgetMutation.isPending}
                   >
                     {isEditMode ? 'Save' : 'Add'}
                   </Button>
