@@ -88,6 +88,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return accounts.find(acc => acc.id === accountId);
   };
 
+  const isMatched = (transaction) => {
+    return transaction && transaction.transfer_pair_id != null;
+  };
+
   // Initialize filters from props (chart click) or URL params
   const [filters, setFilters] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -770,13 +774,78 @@ For each transaction, return the category_id that best matches. Consider:
 
   // Find paired transfer transaction by transfer_pair_id
   const findPairedTransfer = (transaction) => {
-    if (!transaction || transaction.type !== 'transfer' || !transaction.transfer_pair_id) return null;
+    if (!transaction || !transaction.transfer_pair_id) return null;
 
-    return transactions.find(t => 
-      t.id !== transaction.id && 
+    return transactions.find(t =>
+      t.id !== transaction.id &&
       t.transfer_pair_id === transaction.transfer_pair_id &&
       activeAccountIds.includes(t.account_id)
     );
+  };
+
+  const handleUnmatch = async (transaction) => {
+    if (!isMatched(transaction)) {
+      toast.error('Transaction is not matched');
+      return;
+    }
+
+    if (statusFilter === 'posted') {
+      toast.error('Move transaction to Pending to unmatch');
+      return;
+    }
+
+    const pairedTransaction = findPairedTransfer(transaction);
+
+    if (!pairedTransaction) {
+      toast.error('Cannot find paired transaction');
+      return;
+    }
+
+    try {
+      toast.info('Unmatching transaction...');
+
+      const originalType1 = transaction.original_type || 'expense';
+      const originalType2 = pairedTransaction.original_type || 'expense';
+
+      updateMutation.mutate({
+        id: transaction.id,
+        data: {
+          ...transaction,
+          transfer_pair_id: null,
+          type: originalType1,
+          original_type: null
+        }
+      });
+
+      updateMutation.mutate({
+        id: pairedTransaction.id,
+        data: {
+          ...pairedTransaction,
+          transfer_pair_id: null,
+          type: originalType2,
+          original_type: null
+        }
+      });
+
+      setSelectedMatches(prev => {
+        const next = { ...prev };
+        delete next[transaction.id];
+        delete next[pairedTransaction.id];
+        return next;
+      });
+
+      setManualActionOverrides(prev => {
+        const next = { ...prev };
+        delete next[transaction.id];
+        delete next[pairedTransaction.id];
+        return next;
+      });
+
+      toast.success('Transactions unmatched');
+    } catch (err) {
+      console.error('Error unmatching transactions:', err);
+      toast.error('Failed to unmatch transactions');
+    }
   };
 
   // Find potential matches for a transaction (checks both pending and posted)
@@ -1016,16 +1085,12 @@ For each transaction, return the category_id that best matches. Consider:
       if (transaction) {
         // Only set defaults if user hasn't manually overridden for this transaction
         const hasManualOverride = manualActionOverrides[expandedTransactionId];
-        
+
         if (!hasManualOverride) {
-          // Check for existing database relationship first
-          if (transaction.transfer_pair_id) {
-            const paired = transactions.find(t => 
-              t.id !== transaction.id && 
-              t.transfer_pair_id === transaction.transfer_pair_id &&
-              activeAccountIds.includes(t.account_id)
-            );
-            
+          // Check for existing database relationship first (using isMatched)
+          if (isMatched(transaction)) {
+            const paired = findPairedTransfer(transaction);
+
             if (paired) {
               setManualActionOverrides(prev => ({
                 ...prev,
@@ -1197,10 +1262,11 @@ For each transaction, return the category_id that best matches. Consider:
                     const transactionAccountId = getTransactionAccountId(transaction);
                     const account = accounts.find(a => a.id === transactionAccountId);
                     const isSelected = selectedTransactions.includes(transaction.id);
+                    const matchedHighlight = isMatched(transaction) ? 'border-l-4 border-l-blue-400 bg-blue-50' : '';
                     return (
                       <React.Fragment key={transaction.id}>
                         <tr
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100' : ''}`}
+                          className={`${index % 2 === 0 && !isMatched(transaction) ? 'bg-white' : ''} ${index % 2 !== 0 && !isMatched(transaction) ? 'bg-slate-50' : ''} ${matchedHighlight} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100' : ''}`}
                           onClick={(e) => {
                             if (statusFilter !== 'pending') return;
                             const targetNode = e.target;
@@ -1341,6 +1407,10 @@ For each transaction, return the category_id that best matches. Consider:
                         </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
                           {(() => {
+                            if (isMatched(transaction)) {
+                              return <span className="text-xs px-1 text-slate-500 opacity-50">Transfer</span>;
+                            }
+
                             const isInMatchMode = statusFilter === 'pending' && (
                               manualActionOverrides[transaction.id] === 'match' || (
                                 !manualActionOverrides[transaction.id] &&
@@ -1436,6 +1506,14 @@ For each transaction, return the category_id that best matches. Consider:
                             return (
                               <div className="flex items-center justify-start gap-1 pl-1">
                                 {(() => {
+                                  if (isMatched(transaction)) {
+                                    return (
+                                      <span className="text-xs text-green-600 font-medium">
+                                        Matched ✓
+                                      </span>
+                                    );
+                                  }
+
                                   const manualAction = manualActionOverrides[transaction.id];
 
                                   let actionText, actionHandler;
@@ -1509,14 +1587,30 @@ For each transaction, return the category_id that best matches. Consider:
                                       >
                                         Split
                                       </ClickThroughDropdownMenuItem>
-                                      <ClickThroughDropdownMenuItem
-                                        onClick={(e) => {
-                                          e?.stopPropagation();
-                                          // TODO: Implement create rule functionality
-                                        }}
-                                      >
-                                        Create Rule
-                                      </ClickThroughDropdownMenuItem>
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div>
+                                              <ClickThroughDropdownMenuItem
+                                                onClick={(e) => {
+                                                  e?.stopPropagation();
+                                                  if (!isMatched(transaction)) {
+                                                    // TODO: Implement create rule functionality
+                                                  }
+                                                }}
+                                                disabled={isMatched(transaction)}
+                                              >
+                                                Create Rule
+                                              </ClickThroughDropdownMenuItem>
+                                            </div>
+                                          </TooltipTrigger>
+                                          {isMatched(transaction) && (
+                                            <TooltipContent>
+                                              <p>Matched transactions cannot have rules</p>
+                                            </TooltipContent>
+                                          )}
+                                        </Tooltip>
+                                      </TooltipProvider>
                                       <ClickThroughDropdownMenuItem
                                         onClick={(e) => {
                                           e?.stopPropagation();
@@ -1581,7 +1675,9 @@ For each transaction, return the category_id that best matches. Consider:
                                     {statusFilter === 'pending' && (
                                       <div className="flex items-center gap-2 mb-3">
                                         <Tabs
-                                          value={manualActionOverrides[transaction.id] || (() => {
+                                          value={(() => {
+                                            if (isMatched(transaction)) return 'match';
+                                            if (manualActionOverrides[transaction.id]) return manualActionOverrides[transaction.id];
                                             if (transaction.type === 'transfer') {
                                               return findPairedTransfer(transaction) ? 'match' : 'post';
                                             }
@@ -1589,6 +1685,10 @@ For each transaction, return the category_id that best matches. Consider:
                                             return matches.length > 0 ? 'match' : 'post';
                                           })()}
                                           onValueChange={(val) => {
+                                            if (isMatched(transaction) && val === 'post') {
+                                              handleUnmatch(transaction);
+                                              return;
+                                            }
                                             setManualActionOverrides(prev => ({
                                               ...prev,
                                               [transaction.id]: val
@@ -1597,7 +1697,26 @@ For each transaction, return the category_id that best matches. Consider:
                                           className="h-8"
                                         >
                                           <TabsList className="h-8">
-                                            <TabsTrigger value="post" className="h-7 text-xs">Categorize</TabsTrigger>
+                                            <TooltipProvider>
+                                              <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                  <div>
+                                                    <TabsTrigger
+                                                      value="post"
+                                                      className="h-7 text-xs"
+                                                      disabled={isMatched(transaction)}
+                                                    >
+                                                      Categorize
+                                                    </TabsTrigger>
+                                                  </div>
+                                                </TooltipTrigger>
+                                                {isMatched(transaction) && (
+                                                  <TooltipContent>
+                                                    <p>Click Match tab to unmatch</p>
+                                                  </TooltipContent>
+                                                )}
+                                              </Tooltip>
+                                            </TooltipProvider>
                                             <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
                                           </TabsList>
                                         </Tabs>
@@ -1687,11 +1806,30 @@ For each transaction, return the category_id that best matches. Consider:
 
                                         const matches = hasFilters ? manualMatches : autoMatches;
 
+                                        const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
+
                                         return (
                                           <div className="text-xs">
+                                            {currentlyPaired && (
+                                              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
+                                                <p className="text-xs font-semibold text-green-800 mb-2">Currently Matched With:</p>
+                                                <div className="flex items-center gap-2 text-xs">
+                                                  <span className="text-slate-600 whitespace-nowrap">{format(parseISO(currentlyPaired.date), 'MM/dd/yy')}</span>
+                                                  <span className="font-medium text-slate-900 truncate">{formatTransactionDescription(currentlyPaired.description)}</span>
+                                                  <span className="font-semibold text-slate-900 whitespace-nowrap">
+                                                    {currentlyPaired.amount < 0 ? '-' : ''}${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                  </span>
+                                                  <span className="text-slate-600 truncate">
+                                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.account_id))}
+                                                  </span>
+                                                  <span className="text-xs text-green-600 font-medium ml-auto">100% match</span>
+                                                </div>
+                                                <p className="text-xs text-slate-600 mt-2 italic">Switch to Categorize tab to unmatch</p>
+                                              </div>
+                                            )}
 
                                             <div className="mb-3">
-                                              <p className="text-xs text-slate-600 mb-2">Filter transactions to find a match:</p>
+                                              <p className="text-xs text-slate-600 mb-2">{currentlyPaired ? 'Find a different match:' : 'Filter transactions to find a match:'}</p>
                                               <div className="flex gap-2">
                                                 <div className="flex-1">
                                                   <Label className="text-xs mb-1 block">Account</Label>
@@ -1868,11 +2006,11 @@ For each transaction, return the category_id that best matches. Consider:
                                                             if (willBeSelected) {
                                                               // Establish relationship - set transfer_pair_id on both transactions
                                                               const pairId = `transfer_${Date.now()}`;
-                                                              
+
                                                               // Ensure correct types for credit card payments
                                                               let transactionType = transaction.type;
                                                               let matchType = match.type;
-                                                              
+
                                                               if (transaction.type === 'credit_card_payment' || match.type === 'income') {
                                                                 // Transaction is paying credit card, match is receiving on credit card
                                                                 transactionType = 'credit_card_payment';
@@ -1886,28 +2024,53 @@ For each transaction, return the category_id that best matches. Consider:
                                                                 transactionType = 'transfer';
                                                                 matchType = 'transfer';
                                                               }
-                                                              
+
                                                               updateMutation.mutate({
                                                                 id: transaction.id,
-                                                                data: { ...transaction, transfer_pair_id: pairId, type: transactionType }
+                                                                data: {
+                                                                  ...transaction,
+                                                                  transfer_pair_id: pairId,
+                                                                  type: transactionType,
+                                                                  original_type: transaction.original_type || transaction.type,
+                                                                  category_id: null
+                                                                }
                                                               });
                                                               updateMutation.mutate({
                                                                 id: match.id,
-                                                                data: { ...match, transfer_pair_id: pairId, type: matchType }
+                                                                data: {
+                                                                  ...match,
+                                                                  transfer_pair_id: pairId,
+                                                                  type: matchType,
+                                                                  original_type: match.original_type || match.type,
+                                                                  category_id: null
+                                                                }
                                                               });
                                                               setSelectedMatches(prev => ({
                                                                 ...prev,
                                                                 [transaction.id]: match.id
                                                               }));
                                                             } else {
-                                                              // Remove relationship - clear transfer_pair_id on both transactions
+                                                              // Remove relationship - restore original types
+                                                              const originalType1 = transaction.original_type || 'expense';
+                                                              const originalType2 = match.original_type || 'expense';
+
                                                               updateMutation.mutate({
                                                                 id: transaction.id,
-                                                                data: { ...transaction, transfer_pair_id: null }
+                                                                data: {
+                                                                  ...transaction,
+                                                                  transfer_pair_id: null,
+                                                                  type: originalType1,
+                                                                  original_type: null
+                                                                }
                                                               });
                                                               updateMutation.mutate({
                                                                 id: match.id,
-                                                                data: { ...match, transfer_pair_id: null }
+                                                                data: {
+                                                                  ...match,
+                                                                  transfer_pair_id: null,
+                                                                  type: originalType2,
+                                                                  original_type: null
+                                                                }
                                                               });
                                                               setSelectedMatches(prev => ({
                                                                 ...prev,
