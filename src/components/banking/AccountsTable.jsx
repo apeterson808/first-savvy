@@ -160,6 +160,22 @@ export default function AccountsTable({ accounts, isLoading }) {
       return acc;
     }, {});
 
+  // Build transaction count mapping for all transactions (not filtered by date)
+  const transactionCountMap = React.useMemo(() => {
+    const countMap = new Map();
+
+    transactions.forEach(t => {
+      if (t.account_id) {
+        countMap.set(t.account_id, (countMap.get(t.account_id) || 0) + 1);
+      }
+      if (t.category_id) {
+        countMap.set(t.category_id, (countMap.get(t.category_id) || 0) + 1);
+      }
+    });
+
+    return countMap;
+  }, [transactions]);
+
   const filteredInstitutions = POPULAR_INSTITUTIONS.filter(inst =>
     inst.name.toLowerCase().includes(linkSearchTerm.toLowerCase())
   );
@@ -204,13 +220,33 @@ export default function AccountsTable({ accounts, isLoading }) {
     queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
   };
 
+  // Helper function to check if an account is "used" (has transactions or non-zero balance)
+  const isAccountUsed = React.useCallback((account) => {
+    // Check if account has non-zero balance
+    if (account.current_balance && Math.abs(account.current_balance) > 0.01) {
+      return true;
+    }
 
+    // Check if account has any transactions (using account_id or category_id)
+    if (transactionCountMap.get(account.id) > 0) {
+      return true;
+    }
+
+    // For parent accounts, recursively check if any child account is used
+    const childAccounts = accounts.filter(a => a.parent_account_id === account.id);
+    if (childAccounts.length > 0) {
+      return childAccounts.some(child => isAccountUsed(child));
+    }
+
+    return false;
+  }, [accounts, transactionCountMap]);
 
   // Filter accounts based on selected type and active status
   const filteredAccounts = accounts.filter(acc => {
     const matchesType = accountTypeFilter === 'all' || acc.entityType === accountTypeFilter;
     const matchesActive = showInactive || acc.is_active !== false;
-    return matchesType && matchesActive;
+    const isUsed = isAccountUsed(acc);
+    return matchesType && matchesActive && isUsed;
   });
 
   // Get unique entity types that exist in accounts
