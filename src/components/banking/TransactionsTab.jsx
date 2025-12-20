@@ -804,8 +804,8 @@ For each transaction, return the category_id that best matches. Consider:
     try {
       toast.info('Unmatching transaction...');
 
-      const originalType1 = transaction.original_type || 'expense';
-      const originalType2 = pairedTransaction.original_type || 'expense';
+      const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+      const originalType2 = pairedTransaction.original_type || (pairedTransaction.amount > 0 ? 'income' : 'expense');
 
       updateMutation.mutate({
         id: transaction.id,
@@ -2067,8 +2067,8 @@ For each transaction, return the category_id that best matches. Consider:
                                                               }));
                                                             } else {
                                                               // Remove relationship - restore original types
-                                                              const originalType1 = transaction.original_type || 'expense';
-                                                              const originalType2 = match.original_type || 'expense';
+                                                              const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                              const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
 
                                                               updateMutation.mutate({
                                                                 id: transaction.id,
