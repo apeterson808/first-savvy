@@ -879,7 +879,7 @@ For each transaction, return the category_id that best matches. Consider:
 
     // For transfers, look for opposite amount transfers
     if (transaction.type === 'transfer') {
-      const matches = transactions.filter(t => {
+      return transactions.filter(t => {
         if (t.id === transaction.id) return false;
         if (t.type !== 'transfer') return false;
         if (t.status === 'excluded') return false;
@@ -898,53 +898,38 @@ For each transaction, return the category_id that best matches. Consider:
 
         return amountMatch && dateMatch;
       });
-
-      if (matches.length === 0) {
-        console.log('No matches found for transfer:', {
-          transactionId: transaction.id,
-          description: transaction.description,
-          type: transaction.type,
-          amount: transaction.amount,
-          date: transaction.date,
-          account_id: transaction.account_id,
-          totalTransactions: transactions.length,
-          otherTransfers: transactions.filter(t => t.type === 'transfer' && t.id !== transaction.id).map(t => ({
-            id: t.id,
-            description: t.description,
-            amount: t.amount,
-            date: t.date,
-            account_id: t.account_id,
-            status: t.status,
-            inActiveAccounts: activeAccountIds.includes(t.account_id)
-          }))
-        });
-      }
-
-      return matches;
     }
 
-    // For income/expense, look for opposite type transaction
-    const oppositeType = transaction.type === 'income' ? 'expense' : 'income';
+    // For income/expense, look for transfer-like patterns (opposite amounts, different accounts)
+    // in addition to regular income/expense matches
+    if (transaction.type === 'income' || transaction.type === 'expense') {
+      // Check for transfer-like patterns (opposite amounts, different accounts)
+      const transferLikeMatches = transactions.filter(t => {
+        if (t.id === transaction.id) return false;
+        if (t.status === 'excluded') return false;
+        if (!activeAccountIds.includes(t.account_id)) return false;
+        if (t.account_id === transaction.account_id) return false; // Must be different account
 
-    const potentialMatches = transactions.filter(t => {
-      if (t.id === transaction.id) return false;
-      if (t.type !== oppositeType) return false;
-      if (t.status === 'excluded') return false;
-      if (!activeAccountIds.includes(t.account_id)) return false;
+        // Must be income, expense, or transfer
+        if (!['transfer', 'income', 'expense'].includes(t.type)) return false;
 
-      // Check if amounts are similar (within $0.01)
-      const amountMatch = Math.abs(t.amount - transaction.amount) < 0.01;
+        // Check if amounts are opposite (one positive, one negative, same magnitude)
+        const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
+                           (t.amount > 0) !== (transaction.amount > 0);
 
-      // Check if dates are close (within 7 days)
-      const tDate = new Date(t.date);
-      const txDate = new Date(transaction.date);
-      const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
-      const dateMatch = daysDiff <= 7;
+        // Check if dates are close (within 7 days)
+        const tDate = new Date(t.date);
+        const txDate = new Date(transaction.date);
+        const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
+        const dateMatch = daysDiff <= 7;
 
-      return amountMatch && dateMatch;
-    });
+        return amountMatch && dateMatch;
+      });
 
-    return potentialMatches;
+      return transferLikeMatches;
+    }
+
+    return [];
   };
 
   // Calculate match confidence percentage
@@ -1879,11 +1864,8 @@ For each transaction, return the category_id that best matches. Consider:
                                       const override = manualActionOverrides[transaction.id];
                                       if (override === 'post') return false;
                                       if (override === 'match') return true;
-                                      // Check default
-                                      if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
-                                        return !!findPairedTransfer(transaction);
-                                      }
-                                      return findPotentialMatches(transaction).length > 0;
+                                      // Check default - show Match tab if already paired OR if potential matches exist
+                                      return !!findPairedTransfer(transaction) || findPotentialMatches(transaction).length > 0;
                                     })() && (
                                       <>
                                         <div className="mb-4 space-y-3">
