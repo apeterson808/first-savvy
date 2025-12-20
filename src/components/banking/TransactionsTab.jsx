@@ -836,8 +836,8 @@ For each transaction, return the category_id that best matches. Consider:
 
       setManualActionOverrides(prev => {
         const next = { ...prev };
-        delete next[transaction.id];
-        delete next[pairedTransaction.id];
+        next[transaction.id] = 'match';
+        next[pairedTransaction.id] = 'match';
         return next;
       });
 
