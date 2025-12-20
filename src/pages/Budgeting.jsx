@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { format, subMonths } from 'date-fns';
 import { Sparkles, Loader2, Plus, Settings, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -226,12 +226,6 @@ export default function Budgeting() {
       )}
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="setup">Setup</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="overview" className="mt-0">
           {!hasSetupStarted ? (
             <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">

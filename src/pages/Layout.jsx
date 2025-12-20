@@ -234,6 +234,9 @@ export default function Layout({ children, currentPageName }) {
             {currentPageName === 'Banking' && (
               <HeaderTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
             )}
+            {currentPageName === 'Budgeting' && (
+              <HeaderTabs tabs={['overview', 'setup', 'categories']} />
+            )}
             {currentPageName === 'NetWorth' && (
               <HeaderTabs tabs={['overview', 'assets', 'liabilities']} />
             )}
