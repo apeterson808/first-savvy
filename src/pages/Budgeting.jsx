@@ -201,62 +201,6 @@ export default function Budgeting() {
     );
   }
 
-  if (!hasSetupStarted) {
-    return (
-      <div className="p-6">
-        <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">
-          <div className="text-center max-w-xl px-6">
-            <div className="w-14 h-14 bg-light-blue/20 rounded-full flex items-center justify-center mx-auto mb-6">
-              <Sparkles className="w-7 h-7 text-sky-blue" />
-            </div>
-            <h2 className="text-2xl font-semibold text-slate-900 mb-3">Set Up Your Budget</h2>
-            <p className="text-slate-600 mb-8 leading-relaxed">
-              {transactions.length > 0
-                ? "We can automatically create budget categories based on your spending and income history from the last 12 months."
-                : "Start by creating budget groups to organize your spending categories."
-              }
-            </p>
-            <div className="flex gap-3 justify-center">
-              {transactions.length > 0 && (
-                <Button
-                  onClick={handleAutoCreate}
-                  disabled={isAutoCreating}
-                  className="bg-primary hover:bg-primary/90 text-white shadow-sm"
-                  size="lg"
-                >
-                  {isAutoCreating ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Sparkles className="w-4 h-4 mr-2" />
-                  )}
-                  Auto-Create from History
-                </Button>
-              )}
-              <Button onClick={() => setAddSheetOpen(true)} variant="outline" size="lg" className="border-slate-300">
-                <Plus className="w-4 h-4 mr-2" />
-                Create Manually
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        <AddBudgetItemSheet
-          open={addSheetOpen}
-          onOpenChange={(open) => {
-            setAddSheetOpen(open);
-            if (!open && hasSetupStarted) {
-              const newUrl = new URL(window.location);
-              newUrl.searchParams.set('tab', 'setup');
-              window.history.pushState({}, '', newUrl);
-              setActiveTab('setup');
-            }
-          }}
-          groups={budgetGroups}
-        />
-      </div>
-    );
-  }
-
   const today = new Date();
 
   const handleTabChange = (newTab) => {
@@ -289,96 +233,174 @@ export default function Budgeting() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-0">
-          <BudgetOverviewCards
-            totalIncome={totalActualIncome}
-            totalBudgeted={totalBudgeted}
-            totalSpent={totalSpent}
-          />
+          {!hasSetupStarted ? (
+            <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">
+              <div className="text-center max-w-xl px-6">
+                <div className="w-14 h-14 bg-light-blue/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-7 h-7 text-sky-blue" />
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-900 mb-3">Set Up Your Budget</h2>
+                <p className="text-slate-600 mb-8 leading-relaxed">
+                  {transactions.length > 0
+                    ? "We can automatically create budget categories based on your spending and income history from the last 12 months."
+                    : "Start by creating budget groups to organize your spending categories."
+                  }
+                </p>
+                <div className="flex gap-3 justify-center">
+                  {transactions.length > 0 && (
+                    <Button
+                      onClick={handleAutoCreate}
+                      disabled={isAutoCreating}
+                      className="bg-primary hover:bg-primary/90 text-white shadow-sm"
+                      size="lg"
+                    >
+                      {isAutoCreating ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-2" />
+                      )}
+                      Auto-Create from History
+                    </Button>
+                  )}
+                  <Button onClick={() => setAddSheetOpen(true)} variant="outline" size="lg" className="border-slate-300">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Manually
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <>
+              <BudgetOverviewCards
+                totalIncome={totalActualIncome}
+                totalBudgeted={totalBudgeted}
+                totalSpent={totalSpent}
+              />
 
-          {budgetGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {
-            const groupBudgets = budgets.filter(b => b.group_id === group.id);
+              {budgetGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {
+                const groupBudgets = budgets.filter(b => b.group_id === group.id);
 
-            const isIncomeGroup = group.type === 'income';
-            const dataByCategory = isIncomeGroup ? incomeByCategory : spendingByCategory;
+                const isIncomeGroup = group.type === 'income';
+                const dataByCategory = isIncomeGroup ? incomeByCategory : spendingByCategory;
 
-            const budgetedCategoryIds = new Set(groupBudgets.map(b => b.category_id));
-            const unbudgetedAmount = Object.entries(dataByCategory).reduce((sum, [categoryId, amount]) => {
-              if (categoryId === '__uncategorized__' || categoryId === '__uncategorized_income__' || !budgetedCategoryIds.has(categoryId)) {
-                return sum + amount;
-              }
-              return sum;
-            }, 0);
+                const budgetedCategoryIds = new Set(groupBudgets.map(b => b.category_id));
+                const unbudgetedAmount = Object.entries(dataByCategory).reduce((sum, [categoryId, amount]) => {
+                  if (categoryId === '__uncategorized__' || categoryId === '__uncategorized_income__' || !budgetedCategoryIds.has(categoryId)) {
+                    return sum + amount;
+                  }
+                  return sum;
+                }, 0);
 
-            if (groupBudgets.length === 0 && unbudgetedAmount === 0) return null;
+                if (groupBudgets.length === 0 && unbudgetedAmount === 0) return null;
 
-            return (
-              <Card key={group.id} className="mt-4 shadow-sm border-slate-200 bg-white">
-                <CardHeader className="pb-3 pt-4 px-6">
-                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{group.name}</p>
-                </CardHeader>
-                <CardContent className="px-6 pb-4">
-                  <BudgetCategoryList
-                    budgets={groupBudgets}
-                    spendingByCategory={dataByCategory}
-                    isIncome={isIncomeGroup}
-                    unbudgetedAmount={unbudgetedAmount}
-                  />
-                </CardContent>
-              </Card>
-            );
-          })}
+                return (
+                  <Card key={group.id} className="mt-4 shadow-sm border-slate-200 bg-white">
+                    <CardHeader className="pb-3 pt-4 px-6">
+                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{group.name}</p>
+                    </CardHeader>
+                    <CardContent className="px-6 pb-4">
+                      <BudgetCategoryList
+                        budgets={groupBudgets}
+                        spendingByCategory={dataByCategory}
+                        isIncome={isIncomeGroup}
+                        unbudgetedAmount={unbudgetedAmount}
+                      />
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="setup" className="mt-0">
-          <div className="mb-6">
-            <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
-              Organize Your Budget Categories Into Groups
-            </h2>
-
-            <div className="flex items-start justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-4">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0 border-slate-300"
-                  >
-                    <Undo2 className="h-4 w-4 text-slate-600" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0 border-slate-300"
-                    onClick={() => setAddSheetOpen(true)}
-                  >
-                    <Plus className="h-4 w-4 text-slate-600" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-9 w-9 p-0 border-slate-300"
-                  >
-                    <Settings className="h-4 w-4 text-slate-600" />
+          {!hasSetupStarted ? (
+            <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">
+              <div className="text-center max-w-xl px-6">
+                <div className="w-14 h-14 bg-light-blue/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Sparkles className="w-7 h-7 text-sky-blue" />
+                </div>
+                <h2 className="text-2xl font-semibold text-slate-900 mb-3">Set Up Your Budget</h2>
+                <p className="text-slate-600 mb-8 leading-relaxed">
+                  {transactions.length > 0
+                    ? "We can automatically create budget categories based on your spending and income history from the last 12 months."
+                    : "Start by creating budget groups to organize your spending categories."
+                  }
+                </p>
+                <div className="flex gap-3 justify-center">
+                  {transactions.length > 0 && (
+                    <Button
+                      onClick={handleAutoCreate}
+                      disabled={isAutoCreating}
+                      className="bg-primary hover:bg-primary/90 text-white shadow-sm"
+                      size="lg"
+                    >
+                      {isAutoCreating ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Sparkles className="w-4 h-4 mr-2" />
+                      )}
+                      Auto-Create from History
+                    </Button>
+                  )}
+                  <Button onClick={() => setAddSheetOpen(true)} variant="outline" size="lg" className="border-slate-300">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Manually
                   </Button>
                 </div>
-
-                <BudgetSetupTable
-                  budgets={budgets}
-                  groups={budgetGroups}
-                  onEditBudget={setEditingBudget}
-                  onEditGroup={setEditingGroup}
-                />
-              </div>
-
-              <div className="w-80 flex-shrink-0">
-                <BudgetAllocationDonut
-                  budgets={budgets}
-                  groups={budgetGroups}
-                  totalIncome={totalActualIncome}
-                />
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="mb-6">
+              <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">
+                Organize Your Budget Categories Into Groups
+              </h2>
+
+              <div className="flex items-start justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-9 p-0 border-slate-300"
+                    >
+                      <Undo2 className="h-4 w-4 text-slate-600" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-9 p-0 border-slate-300"
+                      onClick={() => setAddSheetOpen(true)}
+                    >
+                      <Plus className="h-4 w-4 text-slate-600" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 w-9 p-0 border-slate-300"
+                    >
+                      <Settings className="h-4 w-4 text-slate-600" />
+                    </Button>
+                  </div>
+
+                  <BudgetSetupTable
+                    budgets={budgets}
+                    groups={budgetGroups}
+                    onEditBudget={setEditingBudget}
+                    onEditGroup={setEditingGroup}
+                  />
+                </div>
+
+                <div className="w-80 flex-shrink-0">
+                  <BudgetAllocationDonut
+                    budgets={budgets}
+                    groups={budgetGroups}
+                    totalIncome={totalActualIncome}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="categories" className="mt-0">
