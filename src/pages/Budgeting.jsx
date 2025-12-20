@@ -226,12 +226,6 @@ export default function Budgeting() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-3 mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="setup">Setup</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-        </TabsList>
-
         <TabsContent value="overview" className="mt-0">
           {!hasSetupStarted ? (
             <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg">

@@ -73,20 +73,7 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
 }
 
 function BudgetingTabs() {
-  const [budgetGroups, setBudgetGroups] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    base44.entities.BudgetGroup.list().then(groups => {
-      setBudgetGroups(groups);
-      setLoading(false);
-    });
-  }, []);
-
-  const hasSetupStarted = budgetGroups.length > 0;
-  const disabledTabs = loading || !hasSetupStarted ? ['overview'] : [];
-
-  return <HeaderTabs tabs={['overview', 'setup']} defaultTab={hasSetupStarted ? 'overview' : 'setup'} disabledTabs={disabledTabs} />;
+  return <HeaderTabs tabs={['overview', 'setup', 'categories']} />;
 }
 
 export default function Layout({ children, currentPageName }) {
