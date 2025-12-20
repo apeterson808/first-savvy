@@ -1,7 +1,7 @@
 import Layout from "./Layout.jsx";
 import Login from "./Login";
 import AuthCallback from "./AuthCallback";
-import Dashboard from "./Dashboard";
+import Dashboard from "./DashboardSimple";
 import Transactions from "./Transactions";
 import Banking from "./Banking";
 import Budgeting from "./Budgeting";
@@ -10,6 +10,7 @@ import CreditScore from "./CreditScore";
 import Contacts from "./Contacts";
 import ContactDetail from "./ContactDetail";
 import AccountDetail from "./AccountDetail";
+import Categories from "./Categories";
 import Integrations from "./Integrations";
 import Collaboration from "./Collaboration";
 import Settings from "./Settings";
@@ -23,6 +24,8 @@ const PAGES = {
     Transactions: Transactions,
 
     Banking: Banking,
+
+    Categories: Categories,
 
     Budgeting: Budgeting,
 
@@ -78,6 +81,7 @@ function PagesContent() {
                     <Route path="/Transactions" element={<Transactions />} />
                     <Route path="/Banking" element={<Banking />} />
                     <Route path="/Banking/account/:id" element={<AccountDetail />} />
+                    <Route path="/Categories" element={<Categories />} />
                     <Route path="/Budgeting" element={<Budgeting />} />
                     <Route path="/NetWorth" element={<NetWorth />} />
                     <Route path="/CreditScore" element={<CreditScore />} />
