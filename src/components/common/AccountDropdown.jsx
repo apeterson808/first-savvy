@@ -20,18 +20,14 @@ export default function AccountDropdown({
   const { data: fetchedAccounts = [], isLoading } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
-      const creditCards = await base44.entities.CreditCard.filter({ is_active: true });
-      return [
-        ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
-        ...creditCards.map(cc => ({
-          ...cc,
-          account_name: cc.name,
-          account_number: cc.last_four || cc.account_number_masked,
-          account_type: 'credit_card',
-          entityType: 'CreditCard'
-        }))
-      ];
+      const allAccounts = await base44.entities.Account.filter({ is_active: true });
+      return allAccounts.map(acc => ({
+        ...acc,
+        account_number: acc.account_number_last4,
+        entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount',
+        name: acc.account_name,
+        institution: acc.institution_name
+      }));
     },
     enabled: shouldFetchOwnAccounts
   });
@@ -57,11 +53,11 @@ export default function AccountDropdown({
     if (accountId === 'all') {
       return transactions.filter(t =>
         (t.status === 'pending' || !t.status) &&
-        (activeAccountIds.includes(t.bank_account_id) || activeAccountIds.includes(t.credit_card_id))
+        (activeAccountIds.includes(t.account_id) || activeAccountIds.includes(t.bank_account_id) || activeAccountIds.includes(t.credit_card_id))
       ).length;
     }
     return transactions.filter(t =>
-      (t.bank_account_id === accountId || t.credit_card_id === accountId) &&
+      (t.account_id === accountId || t.bank_account_id === accountId || t.credit_card_id === accountId) &&
       (t.status === 'pending' || !t.status)
     ).length;
   };

@@ -1,5 +1,6 @@
 import { base44 } from './base44Client';
 
+export const Account = base44.entities.Account;
 
 export const BankAccount = base44.entities.BankAccount;
 

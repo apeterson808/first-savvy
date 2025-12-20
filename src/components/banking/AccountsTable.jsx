@@ -65,7 +65,7 @@ function EditableAccountName({ account }) {
       : { name: trimmed };
 
     if (entityType === 'BankAccount' || entityType === 'CreditCard') {
-      await base44.entities.BankAccount.update(account.id, updateData);
+      await base44.entities.Account.update(account.id, updateData);
     } else if (entityType === 'Asset') {
       await base44.entities.Asset.update(account.id, updateData);
     } else if (entityType === 'Liability') {

@@ -109,7 +109,9 @@ const createEntityAPI = (tableName) => {
 export const createSupabaseClient = () => {
   return {
     entities: {
-      BankAccount: createEntityAPI('bank_accounts'),
+      Account: createEntityAPI('accounts'),
+      BankAccount: createEntityAPI('accounts'),
+      CreditCard: createEntityAPI('accounts'),
       Transaction: createEntityAPI('transactions'),
       Budget: createEntityAPI('budgets'),
       BudgetGroup: createEntityAPI('budget_groups'),
@@ -120,7 +122,6 @@ export const createSupabaseClient = () => {
       Asset: createEntityAPI('assets'),
       Liability: createEntityAPI('liabilities'),
       CreditScore: createEntityAPI('credit_scores'),
-      CreditCard: createEntityAPI('credit_cards'),
       Contact: createEntityAPI('contacts'),
       ContactMatchingRule: createEntityAPI('contact_matching_rules'),
       DetailType: createEntityAPI('detail_types'),

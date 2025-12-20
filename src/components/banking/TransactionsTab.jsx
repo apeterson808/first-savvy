@@ -80,10 +80,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
 
+  const getTransactionAccountId = (transaction) => {
+    return transaction.account_id || transaction.bank_account_id || transaction.credit_card_id;
+  };
+
   const getAccountDetails = (accountId) => {
     return accounts.find(acc => acc.id === accountId);
   };
-  
+
   // Initialize filters from props (chart click) or URL params
   const [filters, setFilters] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -173,25 +177,35 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
 
-  const { data: bankAccounts = [] } = useQuery({
-    queryKey: ['activeBankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+  const { data: fetchedAccounts = [] } = useQuery({
+    queryKey: ['activeAccounts'],
+    queryFn: () => base44.entities.Account.filter({ is_active: true })
   });
 
-  const accounts = bankAccounts;
+  const accounts = fetchedAccounts.map(acc => ({
+    ...acc,
+    account_name: acc.account_name,
+    institution: acc.institution_name,
+    entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
+  }));
 
-  // Fetch all active accounts for Match tab dropdown (bank accounts, assets, liabilities)
+  // Fetch all active accounts for Match tab dropdown (accounts, assets, liabilities)
   const { data: allActiveAccounts = [] } = useQuery({
     queryKey: ['allActiveAccountsForMatch'],
     queryFn: async () => {
-      const [bankAccounts, assets, liabilities] = await Promise.all([
-        base44.entities.BankAccount.filter({ is_active: true }),
+      const [accounts, assets, liabilities] = await Promise.all([
+        base44.entities.Account.filter({ is_active: true }),
         base44.entities.Asset.filter({ is_active: true }),
         base44.entities.Liability.filter({ is_active: true })
       ]);
 
       return [
-        ...bankAccounts.map(a => ({ ...a, entityType: 'BankAccount' })),
+        ...accounts.map(a => ({
+          ...a,
+          account_name: a.account_name,
+          institution: a.institution_name,
+          entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
+        })),
         ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
         ...liabilities.map(a => ({ ...a, account_name: a.name, entityType: 'Liability' }))
       ];
@@ -389,17 +403,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   fullExcludedTransactions)
   .filter(t => {
     // Only show transactions from active accounts
-    const isFromActiveAccount = activeAccountIds.includes(t.bank_account_id);
+    const transactionAccountId = getTransactionAccountId(t);
+    const isFromActiveAccount = activeAccountIds.includes(transactionAccountId);
     if (!isFromActiveAccount) return false;
 
     const category = categories.find(c => c.id === t.category_id);
     const categoryName = category?.name || '';
-    const matchesSearch = searchTerm === '' || 
+    const matchesSearch = searchTerm === '' ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
       categoryName.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesAccount = (selectedAccount === 'all' && filters.account === 'all') || 
-      t.bank_account_id === selectedAccount || 
-      t.bank_account_id === filters.account;
+    const matchesAccount = (selectedAccount === 'all' && filters.account === 'all') ||
+      transactionAccountId === selectedAccount ||
+      transactionAccountId === filters.account;
     
     // Date filter
     const dateRange = getDateRange();
@@ -1179,7 +1194,8 @@ For each transaction, return the category_id that best matches. Consider:
                   </tr>
                   ) : (
                   filteredTransactions.map((transaction, index) => {
-                    const account = accounts.find(a => a.id === transaction.bank_account_id);
+                    const transactionAccountId = getTransactionAccountId(transaction);
+                    const account = accounts.find(a => a.id === transactionAccountId);
                     const isSelected = selectedTransactions.includes(transaction.id);
                     return (
                       <React.Fragment key={transaction.id}>

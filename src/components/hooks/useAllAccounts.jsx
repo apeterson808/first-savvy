@@ -2,15 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 
 export default function useAllAccounts() {
-  const { data: bankAccounts = [], isLoading: loadingBanks } = useQuery({
-    queryKey: ['bankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true }),
-    staleTime: 30000,
-  });
-
-  const { data: creditCards = [], isLoading: loadingCreditCards } = useQuery({
-    queryKey: ['creditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true }),
+  const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => base44.entities.Account.list('-created_at'),
     staleTime: 30000,
   });
 
@@ -32,17 +26,38 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const transactionalAccounts = bankAccounts.filter(a =>
-    ['checking', 'savings'].includes(a.account_type)
+  const mapAccountTypeToEntityType = (accountType) => {
+    if (accountType === 'credit_card') return 'CreditCard';
+    if (['checking', 'savings'].includes(accountType)) return 'BankAccount';
+    return 'BankAccount';
+  };
+
+  const transactionalAccounts = accounts.filter(a =>
+    ['checking', 'savings', 'credit_card'].includes(a.account_type) && a.is_active !== false
+  );
+
+  const bankAccounts = accounts.filter(a =>
+    ['checking', 'savings'].includes(a.account_type) && a.is_active !== false
+  );
+
+  const creditCards = accounts.filter(a =>
+    a.account_type === 'credit_card' && a.is_active !== false
   );
 
   const allAccounts = [
-    ...transactionalAccounts.map(a => ({ ...a, account_name: a.account_name, entityType: 'BankAccount' })),
+    ...bankAccounts.map(a => ({
+      ...a,
+      entityType: 'BankAccount',
+      current_balance: a.balance,
+      institution: a.institution_name
+    })),
     ...creditCards.map(c => ({
       ...c,
-      account_name: c.name,
-      account_number: c.last_four || c.account_number_masked,
-      entityType: 'CreditCard'
+      entityType: 'CreditCard',
+      name: c.account_name,
+      last_four: c.account_number_last4,
+      current_balance: c.balance,
+      institution: c.institution_name
     })),
     ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
     ...liabilities.map(l => ({ ...l, account_name: l.name, entityType: 'Liability' })),
@@ -50,16 +65,23 @@ export default function useAllAccounts() {
     ...categories.filter(c => c.type === 'expense').map(c => ({ ...c, account_name: c.name, entityType: 'Expense' })),
   ];
 
-  const isLoading = loadingBanks || loadingCreditCards || loadingAssets || loadingLiabilities || loadingCategories;
+  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingCategories;
 
   return {
     allAccounts,
-    bankAccounts: transactionalAccounts,
+    bankAccounts: bankAccounts.map(a => ({
+      ...a,
+      entityType: 'BankAccount',
+      current_balance: a.balance,
+      institution: a.institution_name
+    })),
     creditCards: creditCards.map(c => ({
       ...c,
-      account_name: c.name,
-      account_number: c.last_four || c.account_number_masked,
-      entityType: 'CreditCard'
+      entityType: 'CreditCard',
+      name: c.account_name,
+      last_four: c.account_number_last4,
+      current_balance: c.balance,
+      institution: c.institution_name
     })),
     assets,
     liabilities,
