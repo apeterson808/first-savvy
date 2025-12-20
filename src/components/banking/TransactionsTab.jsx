@@ -2151,7 +2151,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                     matches.map(match => {
                                                       const matchAccount = allActiveAccounts.find(a => a.id === match.account_id) || accounts.find(a => a.id === match.account_id);
                                                       const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
-                                                      const isSelected = selectedMatches[transaction.id] === match.id;
+                                                      const isSelected = selectedMatches[transaction.id] === match.id || (currentlyPaired && currentlyPaired.id === match.id);
 
                                                       return (
                                                         <div
