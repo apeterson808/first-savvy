@@ -53,11 +53,11 @@ export default function AccountDropdown({
     if (accountId === 'all') {
       return transactions.filter(t =>
         (t.status === 'pending' || !t.status) &&
-        (activeAccountIds.includes(t.account_id) || activeAccountIds.includes(t.bank_account_id) || activeAccountIds.includes(t.credit_card_id))
+        activeAccountIds.includes(t.account_id)
       ).length;
     }
     return transactions.filter(t =>
-      (t.account_id === accountId || t.bank_account_id === accountId || t.credit_card_id === accountId) &&
+      t.account_id === accountId &&
       (t.status === 'pending' || !t.status)
     ).length;
   };

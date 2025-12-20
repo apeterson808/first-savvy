@@ -49,8 +49,11 @@ export default function Transactions() {
   const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
-      return bankAccounts;
+      const accounts = await base44.entities.Account.filter({
+        is_active: true,
+        account_type: ['checking', 'savings', 'credit_card']
+      });
+      return accounts;
     }
   });
 
@@ -91,7 +94,7 @@ export default function Transactions() {
       category: formData.get('category'),
       type: formData.get('type'),
       amount: parseFloat(formData.get('amount')),
-      bank_account_id: formData.get('bank_account_id'),
+      account_id: formData.get('account_id'),
       payment_method: formData.get('payment_method'),
       notes: formData.get('notes'),
     };

@@ -59,8 +59,8 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
       const tDate = new Date(t.date);
       if (isNaN(tDate.getTime())) return false;
       const matchesAccount = selectedAccount === 'all' 
-        ? activeAccountIds.includes(t.bank_account_id)
-        : t.bank_account_id === selectedAccount;
+        ? activeAccountIds.includes(t.account_id)
+        : t.account_id === selectedAccount;
       const matchesMonth = tDate.getMonth() === targetDate.getMonth() && 
                           tDate.getFullYear() === targetDate.getFullYear();
       // For current month, only include transactions up to today

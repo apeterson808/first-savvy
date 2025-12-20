@@ -32,9 +32,9 @@ export default function AccountDetail() {
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ['account', id],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.list();
+      const accounts = await base44.entities.Account.list();
       const categories = await base44.entities.Category.list();
-      const allAccounts = [...bankAccounts, ...categories];
+      const allAccounts = [...accounts, ...categories];
       return allAccounts.find(acc => acc.id === id);
     },
     enabled: !!id
@@ -57,15 +57,15 @@ export default function AccountDetail() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, entityType }) => {
-      if (entityType === 'BankAccount') {
-        return base44.entities.BankAccount.update(id, data);
+      if (entityType === 'BankAccount' || entityType === 'Account') {
+        return base44.entities.Account.update(id, data);
       } else {
         return base44.entities.Category.update(id, data);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsEditMode(false);
       toast.success('Account updated successfully');
@@ -78,14 +78,14 @@ export default function AccountDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ id, entityType }) => {
-      if (entityType === 'BankAccount') {
-        return base44.entities.BankAccount.delete(id);
+      if (entityType === 'BankAccount' || entityType === 'Account') {
+        return base44.entities.Account.delete(id);
       } else {
         return base44.entities.Category.delete(id);
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Account deleted');
       navigate('/banking?tab=accounts');
@@ -98,15 +98,15 @@ export default function AccountDetail() {
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, entityType, isActive }) => {
-      if (entityType === 'BankAccount') {
-        return base44.entities.BankAccount.update(id, { is_active: !isActive });
+      if (entityType === 'BankAccount' || entityType === 'Account') {
+        return base44.entities.Account.update(id, { is_active: !isActive });
       } else {
         return base44.entities.Category.update(id, { is_active: !isActive });
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Account status updated');
     }

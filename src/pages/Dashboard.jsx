@@ -38,8 +38,14 @@ export default function Dashboard() {
   const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
-      return bankAccounts;
+      const accounts = await base44.entities.Account.filter({
+        is_active: true,
+        account_type: ['checking', 'savings', 'credit_card']
+      });
+      return accounts.map(acc => ({
+        ...acc,
+        current_balance: acc.balance,
+      }));
     }
   });
 
@@ -195,9 +201,9 @@ export default function Dashboard() {
           if (!t.date || isNaN(new Date(t.date).getTime())) return false;
           const transactionDateStr = t.date.substring(0, 10);
           const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
-          const matchesAccount = selectedAccount === 'all' 
-            ? activeAccountIds.includes(t.bank_account_id)
-            : t.bank_account_id === selectedAccount;
+          const matchesAccount = selectedAccount === 'all'
+            ? activeAccountIds.includes(t.account_id)
+            : t.account_id === selectedAccount;
           const category = getCategoryById(t.category_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
@@ -238,9 +244,9 @@ export default function Dashboard() {
         const monthTransactions = transactions.filter(t => {
           if (!t.date || isNaN(new Date(t.date).getTime())) return false;
           const tDateStr = t.date.substring(0, 10);
-          const matchesAccount = selectedAccount === 'all' 
-            ? activeAccountIds.includes(t.bank_account_id)
-            : t.bank_account_id === selectedAccount;
+          const matchesAccount = selectedAccount === 'all'
+            ? activeAccountIds.includes(t.account_id)
+            : t.account_id === selectedAccount;
           const category = getCategoryById(t.category_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return tDateStr >= monthStartStr && tDateStr <= monthEndStr && t.status === 'posted' && matchesAccount && !isTransfer;
@@ -286,7 +292,7 @@ export default function Dashboard() {
         try {
           const tDate = new Date(t.date);
           if (isNaN(tDate.getTime())) return false;
-          const matchesAccount = activeAccountIds.includes(t.bank_account_id);
+          const matchesAccount = activeAccountIds.includes(t.account_id);
           const category = getCategoryById(t.category_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return tDate >= monthStart && tDate <= monthEnd && t.type === 'expense' && t.status === 'posted' && matchesAccount && !isTransfer;

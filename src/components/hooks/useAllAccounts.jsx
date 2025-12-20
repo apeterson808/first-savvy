@@ -26,12 +26,6 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const mapAccountTypeToEntityType = (accountType) => {
-    if (accountType === 'credit_card') return 'CreditCard';
-    if (['checking', 'savings'].includes(accountType)) return 'BankAccount';
-    return 'BankAccount';
-  };
-
   const transactionalAccounts = accounts.filter(a =>
     ['checking', 'savings', 'credit_card'].includes(a.account_type) && a.is_active !== false
   );
@@ -45,19 +39,11 @@ export default function useAllAccounts() {
   );
 
   const allAccounts = [
-    ...bankAccounts.map(a => ({
+    ...accounts.map(a => ({
       ...a,
-      entityType: 'BankAccount',
+      account_name: a.account_name || a.name,
       current_balance: a.balance,
       institution: a.institution_name
-    })),
-    ...creditCards.map(c => ({
-      ...c,
-      entityType: 'CreditCard',
-      name: c.account_name,
-      last_four: c.account_number_last4,
-      current_balance: c.balance,
-      institution: c.institution_name
     })),
     ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
     ...liabilities.map(l => ({ ...l, account_name: l.name, entityType: 'Liability' })),
@@ -71,14 +57,13 @@ export default function useAllAccounts() {
     allAccounts,
     bankAccounts: bankAccounts.map(a => ({
       ...a,
-      entityType: 'BankAccount',
+      account_name: a.account_name || a.name,
       current_balance: a.balance,
       institution: a.institution_name
     })),
     creditCards: creditCards.map(c => ({
       ...c,
-      entityType: 'CreditCard',
-      name: c.account_name,
+      account_name: c.account_name || c.name,
       last_four: c.account_number_last4,
       current_balance: c.balance,
       institution: c.institution_name

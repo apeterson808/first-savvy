@@ -69,38 +69,11 @@ export default function Banking() {
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['allAccounts'],
     queryFn: async () => {
-      const [bankAccounts, creditCards, assets, liabilities] = await Promise.all([
-        base44.entities.BankAccount.list('-updated_at'),
-        base44.entities.CreditCard.list('-updated_at'),
-        base44.entities.Asset.list('-updated_at'),
-        base44.entities.Liability.list('-updated_at'),
-      ]);
-
-      const allAccounts = [
-        ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
-        ...creditCards.map(cc => ({
-          ...cc,
-          entityType: 'CreditCard',
-          account_name: cc.name,
-          account_type: 'credit_card',
-        })),
-        ...assets.map(acc => ({
-          ...acc,
-          entityType: 'Asset',
-          account_name: acc.name,
-          account_type: acc.type,
-          current_balance: acc.current_value,
-        })),
-        ...liabilities.map(acc => ({
-          ...acc,
-          entityType: 'Liability',
-          account_name: acc.name,
-          account_type: acc.type,
-          current_balance: -(acc.current_balance || 0),
-        })),
-      ];
-
-      return allAccounts.sort((a, b) => (a.order || 999) - (b.order || 999));
+      const allAccounts = await base44.entities.Account.list('-updated_at');
+      return allAccounts.map(acc => ({
+        ...acc,
+        current_balance: acc.balance,
+      })).sort((a, b) => (a.account_number || 999) - (b.account_number || 999));
     },
     staleTime: 0,
     refetchOnMount: 'always'
@@ -150,7 +123,7 @@ export default function Banking() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <SpendingChartCard
               transactions={transactions}
-              accounts={accounts.filter(a => a.entityType === 'BankAccount' || a.entityType === 'CreditCard')}
+              accounts={accounts.filter(a => ['checking', 'savings', 'credit_card'].includes(a.account_type))}
               selectedMonth={selectedMonth}
               setSelectedMonth={setSelectedMonth}
               selectedAccount={selectedAccount}

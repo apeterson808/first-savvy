@@ -292,7 +292,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
             original_description: txn.description,
             amount,
             type,
-            bank_account_id: accountId,
+            account_id: accountId,
             category_id: categoryId,
             status: 'pending',
             payment_method: 'card'

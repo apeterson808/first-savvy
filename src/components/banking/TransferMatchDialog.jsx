@@ -23,12 +23,12 @@ export default function TransferMatchDialog({
   onConfirm 
 }) {
   const [selectedToAccount, setSelectedToAccount] = React.useState(
-    pairedTransaction?.bank_account_id || ''
+    pairedTransaction?.account_id || ''
   );
 
   if (!transaction) return null;
 
-  const fromAccount = accounts.find(a => a.id === transaction.bank_account_id);
+  const fromAccount = accounts.find(a => a.id === transaction.account_id);
   const amount = Math.abs(transaction.amount);
   const memo = transaction.notes || transaction.description || '';
 
@@ -80,7 +80,7 @@ export default function TransferMatchDialog({
                 triggerClassName="h-9 hover:bg-white"
               >
                 {accounts
-                  .filter(a => a.id !== transaction.bank_account_id)
+                  .filter(a => a.id !== transaction.account_id)
                   .map(acc => (
                     <ClickThroughSelectItem key={acc.id} value={acc.id}>
                       {getAccountDisplayName(acc)}
