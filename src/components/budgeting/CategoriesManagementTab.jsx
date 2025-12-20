@@ -90,7 +90,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
           </div>
         </TableCell>
-        <TableCell className="font-medium py-2">
+        <TableCell className="font-medium py-2 flex-1">
           <div className="flex items-center gap-2">
             {category.name}
             {isSystemCategory && (
@@ -100,10 +100,10 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             )}
           </div>
         </TableCell>
-        <TableCell className="text-slate-600 py-2">
+        <TableCell className="text-slate-600 py-2 w-48">
           {usageCount} {usageCount === 1 ? 'transaction' : 'transactions'}
         </TableCell>
-        <TableCell className="text-right py-2">
+        <TableCell className="text-right py-2 w-32">
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
@@ -159,9 +159,9 @@ export default function CategoriesManagementTab({ categories, transactions }) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="flex-1">Name</TableHead>
+                  <TableHead className="w-48">Usage</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -190,9 +190,9 @@ export default function CategoriesManagementTab({ categories, transactions }) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Usage</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="flex-1">Name</TableHead>
+                  <TableHead className="w-48">Usage</TableHead>
+                  <TableHead className="w-32 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
