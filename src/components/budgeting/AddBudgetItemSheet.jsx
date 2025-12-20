@@ -65,6 +65,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       setSelectedGroupId(editingBudget.group_id || '');
       setLimitAmount(editingBudget.limit_amount?.toString() || '');
       setSelectedColor(editingBudget.color || '');
+      setSelectedIcon(editingBudget.icon || '');
       setIsSubAccount(!!editingBudget.parent_budget_id);
       setParentBudgetId(editingBudget.parent_budget_id || '');
       setAllowRollover(editingBudget.allow_rollover || false);
@@ -77,14 +78,6 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       setSelectedCategoryId(editingBudget.category_id || '');
     }
   }, [editingBudget, open, selectedGroupId]);
-
-  // Load icon from associated category when editing
-  React.useEffect(() => {
-    if (editingBudget && open && categories.length > 0) {
-      const category = categories.find(c => c.id === editingBudget.category_id);
-      setSelectedIcon(category?.icon || '');
-    }
-  }, [editingBudget, open, categories]);
 
   const { data: existingBudgets = [] } = useQuery({
     queryKey: ['budgets'],
