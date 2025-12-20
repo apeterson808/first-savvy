@@ -879,7 +879,7 @@ For each transaction, return the category_id that best matches. Consider:
 
     // For transfers, look for opposite amount transfers
     if (transaction.type === 'transfer') {
-      return transactions.filter(t => {
+      const matches = transactions.filter(t => {
         if (t.id === transaction.id) return false;
         if (t.type !== 'transfer') return false;
         if (t.status === 'excluded') return false;
@@ -898,6 +898,29 @@ For each transaction, return the category_id that best matches. Consider:
 
         return amountMatch && dateMatch;
       });
+
+      if (matches.length === 0) {
+        console.log('No matches found for transfer:', {
+          transactionId: transaction.id,
+          description: transaction.description,
+          type: transaction.type,
+          amount: transaction.amount,
+          date: transaction.date,
+          account_id: transaction.account_id,
+          totalTransactions: transactions.length,
+          otherTransfers: transactions.filter(t => t.type === 'transfer' && t.id !== transaction.id).map(t => ({
+            id: t.id,
+            description: t.description,
+            amount: t.amount,
+            date: t.date,
+            account_id: t.account_id,
+            status: t.status,
+            inActiveAccounts: activeAccountIds.includes(t.account_id)
+          }))
+        });
+      }
+
+      return matches;
     }
 
     // For income/expense, look for opposite type transaction
@@ -2112,13 +2135,17 @@ For each transaction, return the category_id that best matches. Consider:
                                               </div>
                                             </div>
 
-                                            {(autoMatches.length > 0 || hasFilters) && (
-                                              <div className="mb-2">
-                                                <p className="text-xs font-semibold text-slate-700 mb-2">
-                                                  {hasFilters ? 'Filtered Results:' : 'Suggested Matches:'}
+                                            {/* Always show heading and results section in Match mode */}
+                                            <div className="mb-2">
+                                              <p className="text-xs font-semibold text-slate-700 mb-2">
+                                                {hasFilters ? 'Filtered Results:' : autoMatches.length > 0 ? 'Suggested Matches:' : 'No Matches Found'}
+                                              </p>
+                                              {autoMatches.length === 0 && !hasFilters && (
+                                                <p className="text-xs text-slate-500">
+                                                  Use the filters above to search for matching transactions, or check browser console for debugging info.
                                                 </p>
-                                              </div>
-                                            )}
+                                              )}
+                                            </div>
 
                                             {(autoMatches.length > 0 || hasFilters) && (
                                               <>
@@ -2127,7 +2154,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                     <p className="text-slate-500 text-center py-2">No transactions found matching filters</p>
                                                   ) : (
                                                     matches.map(match => {
-                                                      const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
+                                                      const matchAccount = allActiveAccounts.find(a => a.id === match.account_id) || accounts.find(a => a.id === match.account_id);
                                                       const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
                                                       const isSelected = selectedMatches[transaction.id] === match.id;
 
