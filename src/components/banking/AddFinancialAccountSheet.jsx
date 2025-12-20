@@ -958,6 +958,16 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
                       ))}
                     </>
                   )}
+                  {accountType === 'equity' && equityAccounts.filter(e => !e.parent_account_id).length > 0 && (
+                    <>
+                      <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Equity Accounts</div>
+                      {equityAccounts.filter(e => !e.parent_account_id).map(equity => (
+                        <ClickThroughSelectItem key={equity.id} value={equity.id}>
+                          {equity.name}
+                        </ClickThroughSelectItem>
+                      ))}
+                    </>
+                  )}
                 </ClickThroughSelect>
               </div>
             )}
@@ -966,7 +976,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
           
 
           {/* Balance field */}
-          {(accountType === 'bank' || accountType === 'credit_card' || accountType === 'asset' || accountType === 'liability') && (
+          {(accountType === 'bank' || accountType === 'credit_card' || accountType === 'asset' || accountType === 'liability' || accountType === 'equity') && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="balance">{getBalanceLabel()}</Label>
@@ -1004,8 +1014,8 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
             </div>
           )}
 
-          {/* Institution fields - show for bank, credit_card, asset, liability */}
-          {(accountType === 'bank' || accountType === 'credit_card' || accountType === 'asset' || accountType === 'liability') && (
+          {/* Institution fields - show for bank, credit_card, asset, liability, equity */}
+          {(accountType === 'bank' || accountType === 'credit_card' || accountType === 'asset' || accountType === 'liability' || accountType === 'equity') && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label htmlFor="bankName">Institution Name</Label>
