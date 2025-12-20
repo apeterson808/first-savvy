@@ -609,7 +609,6 @@ For each transaction, return the category_id that best matches. Consider:
           const transaction = batch.find(t => t.id === cat.transaction_id);
           if (transaction && cat.category_id) {
             await base44.entities.Transaction.update(cat.transaction_id, {
-              ...transaction,
               category_id: cat.category_id,
               type: cat.type
             });
@@ -810,7 +809,6 @@ For each transaction, return the category_id that best matches. Consider:
       updateMutation.mutate({
         id: transaction.id,
         data: {
-          ...transaction,
           transfer_pair_id: null,
           type: originalType1,
           original_type: null
@@ -974,7 +972,7 @@ For each transaction, return the category_id that best matches. Consider:
       // No pair found, just post this transaction
       updateMutation.mutate({
         id: transaction.id,
-        data: { ...transaction, status: 'posted' }
+        data: { status: 'posted' }
       });
       return;
     }
@@ -983,7 +981,7 @@ For each transaction, return the category_id that best matches. Consider:
     if (paired.status === 'posted') {
       updateMutation.mutate({
         id: transaction.id,
-        data: { ...transaction, status: 'posted' }
+        data: { status: 'posted' }
       });
       toast.success(transaction.type === 'transfer' ? 'Transfer matched and confirmed' : 'Credit card payment matched and confirmed');
       return;
@@ -999,12 +997,12 @@ For each transaction, return the category_id that best matches. Consider:
     // Post both sides of the transfer
     updateMutation.mutate({
       id: matchingTransfer.id,
-      data: { ...matchingTransfer, status: 'posted' }
+      data: { status: 'posted' }
     });
     if (pairedTransfer) {
       updateMutation.mutate({
         id: pairedTransfer.id,
-        data: { ...pairedTransfer, status: 'posted' }
+        data: { status: 'posted' }
       });
     }
     toast.success('Transfer matched and confirmed');
@@ -1023,14 +1021,20 @@ For each transaction, return the category_id that best matches. Consider:
       // Always post the current transaction with transfer_pair_id
       updateMutation.mutate({
         id: transaction.id,
-        data: { ...transaction, status: 'posted', transfer_pair_id: pairId }
+        data: {
+          status: 'posted',
+          transfer_pair_id: pairId
+        }
       });
 
       // Only post matched transaction if it's not already posted, with transfer_pair_id
       if (matchedTransaction && matchedTransaction.status !== 'posted') {
         updateMutation.mutate({
           id: selectedMatch,
-          data: { ...matchedTransaction, status: 'posted', transfer_pair_id: pairId }
+          data: {
+            status: 'posted',
+            transfer_pair_id: pairId
+          }
         });
       }
 
@@ -1047,7 +1051,7 @@ For each transaction, return the category_id that best matches. Consider:
       if (matches.length === 0) {
         updateMutation.mutate({
           id: transaction.id,
-          data: { ...transaction, status: 'posted' }
+          data: { status: 'posted' }
         });
       }
     }
@@ -1312,7 +1316,7 @@ For each transaction, return the category_id that best matches. Consider:
                                 if (e.target.value !== formatTransactionDescription(transaction.description)) {
                                   updateMutation.mutate({
                                     id: transaction.id,
-                                    data: { ...transaction, description: e.target.value }
+                                    data: { description: e.target.value }
                                   });
                                 }
                               }}
@@ -1395,7 +1399,7 @@ For each transaction, return the category_id that best matches. Consider:
                                     if (!activeAccountIds.includes(transaction.account_id)) return;
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { ...transaction, contact_id: value, contact_manually_set: true }
+                                      data: { contact_id: value, contact_manually_set: true }
                                     });
                                   }}
                                   transactionDescription={transaction.description}
@@ -1435,7 +1439,7 @@ For each transaction, return the category_id that best matches. Consider:
                                     if (!activeAccountIds.includes(transaction.account_id)) return;
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { ...transaction, type: newType }
+                                      data: { type: newType }
                                     });
                                   }}
                                   disabled={!activeAccountIds.includes(transaction.account_id)}
@@ -1480,7 +1484,6 @@ For each transaction, return the category_id that best matches. Consider:
                                   updateMutation.mutate({
                                     id: transaction.id,
                                     data: {
-                                      ...transaction,
                                       category_id: categoryValue,
                                       type: selectedCategory ? selectedCategory.type : transaction.type
                                     }
@@ -1531,7 +1534,7 @@ For each transaction, return the category_id that best matches. Consider:
                                     actionHandler = () => {
                                       updateMutation.mutate({
                                         id: transaction.id,
-                                        data: { ...transaction, status: 'posted' }
+                                        data: { status: 'posted' }
                                       });
                                     };
                                   } else if (manualAction === 'match') {
@@ -1624,7 +1627,7 @@ For each transaction, return the category_id that best matches. Consider:
                                           e?.stopPropagation();
                                           updateMutation.mutate({
                                             id: transaction.id,
-                                            data: { ...transaction, status: 'excluded' }
+                                            data: { status: 'excluded' }
                                           });
                                         }}
                                       >
@@ -1644,14 +1647,14 @@ For each transaction, return the category_id that best matches. Consider:
                                     e?.stopPropagation();
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { ...transaction, status: 'pending' }
+                                      data: { status: 'pending' }
                                     });
                                     if (isMatched(transaction)) {
                                       const pairedTransaction = findPairedTransfer(transaction);
                                       if (pairedTransaction) {
                                         updateMutation.mutate({
                                           id: pairedTransaction.id,
-                                          data: { ...pairedTransaction, status: 'pending' }
+                                          data: { status: 'pending' }
                                         });
                                       }
                                     }
@@ -1670,14 +1673,14 @@ For each transaction, return the category_id that best matches. Consider:
                                     e?.stopPropagation();
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { ...transaction, status: 'pending' }
+                                      data: { status: 'pending' }
                                     });
                                     if (isMatched(transaction)) {
                                       const pairedTransaction = findPairedTransfer(transaction);
                                       if (pairedTransaction) {
                                         updateMutation.mutate({
                                           id: pairedTransaction.id,
-                                          data: { ...pairedTransaction, status: 'pending' }
+                                          data: { status: 'pending' }
                                         });
                                       }
                                     }
@@ -1785,7 +1788,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                   onValueChange={(val) => {
                                                     updateMutation.mutate({
                                                       id: transaction.id,
-                                                      data: { ...transaction, payment_method: val }
+                                                      data: { payment_method: val }
                                                     });
                                                   }}
                                                   triggerClassName="h-8 text-xs"
@@ -1812,7 +1815,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                   updateMutation.mutate({
                                                     id: transaction.id,
                                                     data: {
-                                                      ...transaction,
                                                       category_id: categoryValue,
                                                       type: selectedCategory?.type || transaction.type,
                                                       ai_suggested_category_id: null
@@ -1853,7 +1855,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                       updateMutation.mutate({
                                                         id: transaction.id,
                                                         data: {
-                                                          ...transaction,
                                                           transfer_to_account_id: val
                                                         }
                                                       });
@@ -2187,7 +2188,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                               updateMutation.mutate({
                                                                 id: transaction.id,
                                                                 data: {
-                                                                  ...transaction,
                                                                   transfer_pair_id: pairId,
                                                                   type: transactionType,
                                                                   original_type: transaction.original_type || transaction.type,
@@ -2197,7 +2197,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                               updateMutation.mutate({
                                                                 id: match.id,
                                                                 data: {
-                                                                  ...match,
                                                                   transfer_pair_id: pairId,
                                                                   type: matchType,
                                                                   original_type: match.original_type || match.type,
@@ -2216,7 +2215,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                               updateMutation.mutate({
                                                                 id: transaction.id,
                                                                 data: {
-                                                                  ...transaction,
                                                                   transfer_pair_id: null,
                                                                   type: originalType1,
                                                                   original_type: null
@@ -2225,7 +2223,6 @@ For each transaction, return the category_id that best matches. Consider:
                                                               updateMutation.mutate({
                                                                 id: match.id,
                                                                 data: {
-                                                                  ...match,
                                                                   transfer_pair_id: null,
                                                                   type: originalType2,
                                                                   original_type: null
@@ -2281,7 +2278,7 @@ For each transaction, return the category_id that best matches. Consider:
                                             if (e.target.value !== (transaction.notes || '')) {
                                               updateMutation.mutate({
                                                 id: transaction.id,
-                                                data: { ...transaction, notes: e.target.value }
+                                                data: { notes: e.target.value }
                                               });
                                             }
                                           }}
@@ -2311,7 +2308,7 @@ For each transaction, return the category_id that best matches. Consider:
                                               const { file_url } = await base44.integrations.Core.UploadFile({ file });
                                               updateMutation.mutate({
                                                 id: transaction.id,
-                                                data: { ...transaction, receipt_url: file_url }
+                                                data: { receipt_url: file_url }
                                               });
                                             }
                                           }}
@@ -2326,7 +2323,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 const { file_url } = await base44.integrations.Core.UploadFile({ file });
                                                 updateMutation.mutate({
                                                   id: transaction.id,
-                                                  data: { ...transaction, receipt_url: file_url }
+                                                  data: { receipt_url: file_url }
                                                 });
                                               }
                                             }}
@@ -2356,7 +2353,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 actionHandler = () => {
                                                   updateMutation.mutate({
                                                     id: transaction.id,
-                                                    data: { ...transaction, status: 'posted' }
+                                                    data: { status: 'posted' }
                                                   });
                                                   setExpandedTransactionId(null);
                                                 };
@@ -2444,7 +2441,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 e?.stopPropagation();
                                                 updateMutation.mutate({
                                                   id: transaction.id,
-                                                  data: { ...transaction, status: 'excluded' }
+                                                  data: { status: 'excluded' }
                                                 });
                                                 setExpandedTransactionId(null);
                                               }}
@@ -2539,7 +2536,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 if (transaction) {
                                                   updateMutation.mutate({
                                                     id: transaction.id,
-                                                    data: { ...transaction, category_id: newCategory.id, type: newCategory.type }
+                                                    data: { category_id: newCategory.id, type: newCategory.type }
                                                   });
                                                 }
                                               }
@@ -2577,7 +2574,7 @@ For each transaction, return the category_id that best matches. Consider:
                                   if (transaction) {
                                     await updateMutation.mutateAsync({
                                       id: transaction.id,
-                                      data: { ...transaction, contact_id: newContact.id, contact_manually_set: true }
+                                      data: { contact_id: newContact.id, contact_manually_set: true }
                                     });
                                   }
                                 }
