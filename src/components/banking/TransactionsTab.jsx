@@ -1638,6 +1638,15 @@ For each transaction, return the category_id that best matches. Consider:
                                       id: transaction.id,
                                       data: { ...transaction, status: 'pending' }
                                     });
+                                    if (isMatched(transaction)) {
+                                      const pairedTransaction = findPairedTransfer(transaction);
+                                      if (pairedTransaction) {
+                                        updateMutation.mutate({
+                                          id: pairedTransaction.id,
+                                          data: { ...pairedTransaction, status: 'pending' }
+                                        });
+                                      }
+                                    }
                                   }}
                                 >
                                   Undo
@@ -1655,6 +1664,15 @@ For each transaction, return the category_id that best matches. Consider:
                                       id: transaction.id,
                                       data: { ...transaction, status: 'pending' }
                                     });
+                                    if (isMatched(transaction)) {
+                                      const pairedTransaction = findPairedTransfer(transaction);
+                                      if (pairedTransaction) {
+                                        updateMutation.mutate({
+                                          id: pairedTransaction.id,
+                                          data: { ...pairedTransaction, status: 'pending' }
+                                        });
+                                      }
+                                    }
                                   }}
                                 >
                                   Undo
