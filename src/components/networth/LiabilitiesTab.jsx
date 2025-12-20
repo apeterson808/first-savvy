@@ -10,18 +10,18 @@ const LIABILITY_TYPE_ICONS = {
   mortgage: Home,
   car_loan: Car,
   student_loan: GraduationCap,
-  credit_card: CreditCard,
   personal_loan: Wallet,
-  other: Building
+  medical_debt: Building,
+  other_liability: Building
 };
 
 const LIABILITY_TYPE_COLORS = {
   mortgage: 'bg-blue-100 text-blue-600',
   car_loan: 'bg-teal-100 text-teal-600',
   student_loan: 'bg-amber-100 text-amber-600',
-  credit_card: 'bg-red-100 text-red-600',
   personal_loan: 'bg-slate-100 text-slate-600',
-  other: 'bg-slate-100 text-slate-600'
+  medical_debt: 'bg-purple-100 text-purple-600',
+  other_liability: 'bg-slate-100 text-slate-600'
 };
 
 export default function LiabilitiesTab() {
@@ -41,7 +41,7 @@ export default function LiabilitiesTab() {
 
   // Group liabilities by type
   const liabilitiesByType = liabilities.reduce((acc, l) => {
-    const type = l.type || 'other';
+    const type = l.type || 'other_liability';
     if (!acc[type]) acc[type] = [];
     acc[type].push(l);
     return acc;
@@ -115,7 +115,7 @@ export default function LiabilitiesTab() {
       {/* Loans by Type */}
       {Object.entries(liabilitiesByType).map(([type, items]) => {
         const Icon = LIABILITY_TYPE_ICONS[type] || Building;
-        const colorClass = LIABILITY_TYPE_COLORS[type] || LIABILITY_TYPE_COLORS.other;
+        const colorClass = LIABILITY_TYPE_COLORS[type] || LIABILITY_TYPE_COLORS.other_liability;
         const typeTotal = items.reduce((sum, l) => sum + (l.current_balance || 0), 0);
 
         return (

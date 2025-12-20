@@ -121,8 +121,10 @@ export const DEFAULT_DETAIL_TYPES = {
     { value: 'property', label: 'Property' },
     { value: 'vehicle', label: 'Vehicle' },
     { value: 'investment', label: 'Investment' },
+    { value: 'stocks', label: 'Stocks' },
     { value: 'retirement', label: 'Retirement' },
     { value: 'crypto', label: 'Crypto' },
+    { value: 'personal_loan', label: 'Loan to Others' },
     { value: 'other_asset', label: 'Other Asset' },
   ],
   liability: [
@@ -140,21 +142,9 @@ export const DEFAULT_DETAIL_TYPES = {
     { value: 'expense', label: 'Expense' },
   ],
   equity: [
-    { value: 'owners_equity', label: "Owner's Equity" },
-    { value: 'partner_capital', label: 'Partner Capital' },
-    { value: 'common_stock', label: 'Common Stock' },
-    { value: 'preferred_stock', label: 'Preferred Stock' },
-    { value: 'paid_in_capital', label: 'Paid-in Capital' },
-    { value: 'retained_earnings', label: 'Retained Earnings' },
-    { value: 'current_year_earnings', label: 'Current Year Earnings' },
-    { value: 'owners_draw', label: "Owner's Draw" },
-    { value: 'partner_distributions', label: 'Partner Distributions' },
-    { value: 'dividends_paid', label: 'Dividends Paid' },
-    { value: 'treasury_stock', label: 'Treasury Stock' },
-    { value: 'opening_balance_equity', label: 'Opening Balance Equity' },
-    { value: 'accumulated_adjustment', label: 'Accumulated Adjustments' },
     { value: 'personal_equity', label: 'Personal Net Worth' },
     { value: 'home_equity', label: 'Home Equity' },
+    { value: 'opening_balance_equity', label: 'Opening Balance Equity' },
   ],
 };
 
@@ -163,9 +153,9 @@ export const LIABILITY_TYPE_LABELS = {
   mortgage: 'Mortgages',
   car_loan: 'Auto Loans',
   student_loan: 'Student Loans',
-  credit_card: 'Credit Cards',
   personal_loan: 'Personal Loans',
-  other: 'Other Liabilities',
+  medical_debt: 'Medical Debt',
+  other_liability: 'Other Liabilities',
 };
 
 // Helper function to get detail type display name
