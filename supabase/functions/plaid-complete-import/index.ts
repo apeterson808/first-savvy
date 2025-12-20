@@ -68,27 +68,56 @@ Deno.serve(async (req: Request) => {
       } = mapping;
 
       if (action === 'create_new') {
-        const isCreditCard = account_type === 'credit_card';
-        const tableName = isCreditCard ? 'credit_cards' : 'bank_accounts';
-        
-        const accountData: any = {
-          user_id: user.id,
-          account_name: name || official_name,
-          current_balance: balance,
-          institution: institution,
-          account_number: mask,
-          plaid_account_id,
-          is_active: true,
-        };
+        let tableName: string;
+        let accountData: any;
 
-        if (isCreditCard) {
-          accountData.credit_limit = 0;
-          accountData.apr = 0;
-          accountData.last_synced_at = new Date().toISOString();
+        if (account_type === 'asset') {
+          tableName = 'assets';
+          accountData = {
+            user_id: user.id,
+            name: name || official_name,
+            type: detail_type || 'investment',
+            current_value: balance,
+            institution: institution,
+            is_active: true,
+          };
+        } else if (account_type === 'liability') {
+          tableName = 'liabilities';
+          accountData = {
+            user_id: user.id,
+            name: name || official_name,
+            type: detail_type || 'personal_loan',
+            current_balance: Math.abs(balance),
+            institution: institution,
+            is_active: true,
+          };
+        } else if (account_type === 'credit_card') {
+          tableName = 'credit_cards';
+          accountData = {
+            user_id: user.id,
+            name: name || official_name,
+            current_balance: balance,
+            institution: institution,
+            last_four: mask,
+            plaid_account_id,
+            is_active: true,
+            credit_limit: 0,
+            apr: 0,
+            last_synced_at: new Date().toISOString(),
+          };
         } else {
-          accountData.account_type = account_type || 'bank';
-          accountData.detail_type = detail_type || 'checking';
-          accountData.start_date = go_live_date || new Date().toISOString().split('T')[0];
+          tableName = 'bank_accounts';
+          accountData = {
+            user_id: user.id,
+            account_name: name || official_name,
+            account_type: detail_type || 'checking',
+            current_balance: balance,
+            institution: institution,
+            account_number: mask,
+            plaid_account_id,
+            is_active: true,
+            start_date: go_live_date || new Date().toISOString().split('T')[0],
+          };
         }
 
         const { data: newAccount, error: insertError } = await supabaseClient

@@ -45,14 +45,18 @@ export const DETAIL_TYPE_LABELS = {
   cash: 'Cash',
   crypto: 'Crypto',
   stocks: 'Stocks',
+  retirement: 'Retirement',
   beginning_balance: 'Beginning Balance',
   personal_loan: 'Loan to Others',
+  other_asset: 'Other Asset',
   other: 'Other',
   // Liability
   mortgage: 'Mortgage',
   car_loan: 'Car Loan',
   student_loan: 'Student Loan',
+  medical_debt: 'Medical Debt',
   business_loan: 'Business Loan',
+  other_liability: 'Other Liability',
   // Equity
   owners_equity: "Owner's Equity",
   partner_capital: 'Partner Capital',
