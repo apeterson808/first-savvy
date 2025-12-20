@@ -100,14 +100,6 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             )}
           </div>
         </TableCell>
-        <TableCell className="py-2">
-          <Badge
-            variant="outline"
-            className={category.type === 'income' ? 'text-green-700 border-green-200' : 'text-slate-700 border-slate-200'}
-          >
-            {category.type === 'income' ? 'Income' : 'Expense'}
-          </Badge>
-        </TableCell>
         <TableCell className="text-slate-600 py-2">
           {usageCount} {usageCount === 1 ? 'transaction' : 'transactions'}
         </TableCell>
@@ -168,7 +160,6 @@ export default function CategoriesManagementTab({ categories, transactions }) {
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>Usage</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -200,7 +191,6 @@ export default function CategoriesManagementTab({ categories, transactions }) {
                 <TableRow>
                   <TableHead className="w-12"></TableHead>
                   <TableHead>Name</TableHead>
-                  <TableHead>Type</TableHead>
                   <TableHead>Usage</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
