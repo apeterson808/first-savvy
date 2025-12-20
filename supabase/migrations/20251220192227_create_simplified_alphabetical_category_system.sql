@@ -8,8 +8,8 @@
   2. Seeded Data
     - 3 income categories (alphabetically ordered): Gifts Received, Other Income, Salary
     - 16 expense categories (alphabetically ordered): Dining Out through Utilities
-    - 2 transfer categories: Transfer (income and expense)
-    - Total: 21 categories
+    - 1 transfer category: Transfer (expense only)
+    - Total: 20 categories
 
   3. Functions
     - `copy_category_templates_to_user(user_id)` - Copies all template categories to a new user
@@ -76,10 +76,9 @@ INSERT INTO category_templates (name, type, detail_type, icon, color, display_or
   ('Utilities', 'expense', 'expense', 'Zap', '#ec4899', 19)
 ON CONFLICT DO NOTHING;
 
--- Transfer categories (2)
+-- Transfer category (1)
 INSERT INTO category_templates (name, type, detail_type, icon, color, display_order) VALUES
-  ('Transfer', 'income', 'transfer', 'ArrowLeftRight', '#64748b', 20),
-  ('Transfer', 'expense', 'transfer', 'ArrowLeftRight', '#64748b', 21)
+  ('Transfer', 'expense', 'transfer', 'ArrowLeftRight', '#64748b', 20)
 ON CONFLICT DO NOTHING;
 
 -- Function to copy category templates to a new user
