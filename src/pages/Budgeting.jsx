@@ -212,18 +212,18 @@ export default function Budgeting() {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
-          <p className="text-sm text-slate-500">{format(today, 'MMMM yyyy')}</p>
-        </div>
-        {activeTab === 'overview' && (
+      {activeTab === 'overview' && (
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
+            <p className="text-sm text-slate-500">{format(today, 'MMMM yyyy')}</p>
+          </div>
           <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-primary hover:bg-primary/90">
             <Plus className="w-4 h-4 mr-2" />
             Add Budget
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
         <TabsContent value="overview" className="mt-0">
