@@ -82,6 +82,21 @@ const createEntityAPI = (tableName) => {
       return data;
     },
 
+    async bulkCreate(records) {
+      const userId = (await supabase.auth.getUser()).data.user?.id;
+      const recordsWithUser = userId
+        ? records.map(record => ({ ...record, user_id: userId }))
+        : records;
+
+      const { data, error } = await supabase
+        .from(tableName)
+        .insert(recordsWithUser)
+        .select();
+
+      if (error) throw error;
+      return data;
+    },
+
     async update(id, updates) {
       const { data, error } = await supabase
         .from(tableName)

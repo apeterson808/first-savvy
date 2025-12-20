@@ -252,6 +252,86 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
     toast.success(`Mapped ${transactions.length} transactions`);
   };
 
+  const autoMatchTransfers = async (newTransactions) => {
+    try {
+      const allPendingTransactions = await base44.entities.Transaction.filter({ status: 'pending' });
+
+      let matchedCount = 0;
+      const processedIds = new Set();
+      const updates = [];
+
+      for (const txn of newTransactions) {
+        if (processedIds.has(txn.id) || txn.transfer_pair_id) continue;
+
+        for (const candidate of allPendingTransactions) {
+          if (processedIds.has(candidate.id) || candidate.transfer_pair_id) continue;
+          if (candidate.id === txn.id) continue;
+
+          const amountMatch = Math.abs(Math.abs(txn.amount) - Math.abs(candidate.amount)) < 0.01;
+          const oppositeSigns = (txn.amount > 0 && candidate.amount < 0) || (txn.amount < 0 && candidate.amount > 0);
+
+          const txnDate = new Date(txn.date);
+          const candidateDate = new Date(candidate.date);
+          const daysDiff = Math.abs((txnDate - candidateDate) / (1000 * 60 * 60 * 24));
+          const dateMatch = daysDiff <= 7;
+
+          if (!amountMatch || !oppositeSigns || !dateMatch) continue;
+
+          const normalizeDesc = (str) => str?.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+          const txnDesc = normalizeDesc(txn.description);
+          const candidateDesc = normalizeDesc(candidate.description);
+
+          const commonWords = txnDesc.split(' ').filter(word =>
+            word.length > 3 && candidateDesc.includes(word)
+          ).length;
+
+          let confidence = 50;
+          confidence += Math.max(0, 30 - daysDiff * 4);
+          confidence += commonWords * 10;
+
+          if (confidence >= 80) {
+            const pairId = crypto.randomUUID();
+
+            const txnType = txn.amount > 0 ? 'transfer' : 'transfer';
+            const candidateType = candidate.amount > 0 ? 'transfer' : 'transfer';
+
+            updates.push(
+              base44.entities.Transaction.update(txn.id, {
+                transfer_pair_id: pairId,
+                type: txnType,
+                original_type: txn.original_type || txn.type,
+                category_id: null
+              })
+            );
+
+            updates.push(
+              base44.entities.Transaction.update(candidate.id, {
+                transfer_pair_id: pairId,
+                type: candidateType,
+                original_type: candidate.original_type || candidate.type,
+                category_id: null
+              })
+            );
+
+            processedIds.add(txn.id);
+            processedIds.add(candidate.id);
+            matchedCount++;
+            break;
+          }
+        }
+      }
+
+      if (updates.length > 0) {
+        await Promise.all(updates);
+      }
+
+      return matchedCount;
+    } catch (err) {
+      console.error('Error auto-matching transfers:', err);
+      return 0;
+    }
+  };
+
   const handleConfirmImport = async (accountId = selectedAccountId, shouldNavigate = true) => {
     if (!extractedData || !accountId) return;
 
@@ -299,9 +379,15 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
           };
         });
 
-      await createTransactionsMutation.mutateAsync(transactions);
+      const createdTransactions = await createTransactionsMutation.mutateAsync(transactions);
 
-      toast.success(`Successfully imported ${transactions.length} transactions`);
+      const matchedCount = await autoMatchTransfers(createdTransactions);
+
+      if (matchedCount > 0) {
+        toast.success(`Successfully imported ${transactions.length} transactions (auto-matched ${matchedCount} transfers)`);
+      } else {
+        toast.success(`Successfully imported ${transactions.length} transactions`);
+      }
 
       // Reset state
       setFile(null);

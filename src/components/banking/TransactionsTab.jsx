@@ -882,7 +882,6 @@ For each transaction, return the category_id that best matches. Consider:
         if (t.type !== 'transfer') return false;
         if (t.status === 'excluded') return false;
         if (!activeAccountIds.includes(t.account_id)) return false;
-        if (t.account_id === transaction.account_id) return false; // Must be different account
 
         // Check if amounts are opposite (one positive, one negative, same magnitude)
         const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
@@ -1310,7 +1309,7 @@ For each transaction, return the category_id that best matches. Consider:
                           {statusFilter === 'pending' ? (
                             <Input
                               defaultValue={formatTransactionDescription(transaction.description)}
-                              disabled={!activeAccountIds.includes(transaction.account_id)}
+                              disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
                               className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
                               onBlur={(e) => {
                                 if (e.target.value !== formatTransactionDescription(transaction.description)) {
@@ -1491,7 +1490,7 @@ For each transaction, return the category_id that best matches. Consider:
                                 }}
                                 transactionType={transaction.type}
                                 aiSuggestionId={transaction.ai_suggested_category_id}
-                                disabled={!activeAccountIds.includes(transaction.account_id)}
+                                disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
                                 onAddNew={(searchTerm) => {
                                   setCategorySearchTerm(searchTerm);
                                   setTriggeringTransactionId(transaction.id);
@@ -1823,6 +1822,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 }}
                                                 transactionType={transaction.type}
                                                 triggerClassName="h-8 text-xs"
+                                                disabled={isMatched(transaction)}
                                               />
                                             </div>
                                           )}
