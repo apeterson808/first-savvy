@@ -20,6 +20,12 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
+  const { data: equity = [], isLoading: loadingEquity } = useQuery({
+    queryKey: ['equity'],
+    queryFn: () => base44.entities.Equity.list('name'),
+    staleTime: 30000,
+  });
+
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ['categories'],
     queryFn: () => base44.entities.Category.list('name'),
@@ -47,11 +53,12 @@ export default function useAllAccounts() {
     })),
     ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
     ...liabilities.map(l => ({ ...l, account_name: l.name, entityType: 'Liability' })),
+    ...equity.map(e => ({ ...e, account_name: e.name, entityType: 'Equity' })),
     ...categories.filter(c => c.type === 'income').map(c => ({ ...c, account_name: c.name, entityType: 'Income' })),
     ...categories.filter(c => c.type === 'expense').map(c => ({ ...c, account_name: c.name, entityType: 'Expense' })),
   ];
 
-  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingCategories;
+  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingEquity || loadingCategories;
 
   return {
     allAccounts,
@@ -70,6 +77,7 @@ export default function useAllAccounts() {
     })),
     assets,
     liabilities,
+    equity,
     categories,
     incomeCategories: categories.filter(c => c.type === 'income'),
     expenseCategories: categories.filter(c => c.type === 'expense'),

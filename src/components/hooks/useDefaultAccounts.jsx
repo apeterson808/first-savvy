@@ -125,6 +125,40 @@ const DEFAULT_ACCOUNTS = [
     checkField: 'name',
     checkValue: 'Vehicle'
   },
+  // Equity
+  {
+    entity: 'Equity',
+    data: {
+      name: 'Opening Balance Equity',
+      type: 'opening_balance_equity',
+      current_balance: 0,
+      is_active: true
+    },
+    checkField: 'name',
+    checkValue: 'Opening Balance Equity'
+  },
+  {
+    entity: 'Equity',
+    data: {
+      name: "Owner's Equity",
+      type: 'owners_equity',
+      current_balance: 0,
+      is_active: true
+    },
+    checkField: 'name',
+    checkValue: "Owner's Equity"
+  },
+  {
+    entity: 'Equity',
+    data: {
+      name: 'Retained Earnings',
+      type: 'retained_earnings',
+      current_balance: 0,
+      is_active: true
+    },
+    checkField: 'name',
+    checkValue: 'Retained Earnings'
+  },
   // Liabilities
   {
     entity: 'Liability',

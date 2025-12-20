@@ -70,6 +70,8 @@ function EditableAccountName({ account }) {
       await base44.entities.Asset.update(account.id, updateData);
     } else if (entityType === 'Liability') {
       await base44.entities.Liability.update(account.id, updateData);
+    } else if (entityType === 'Equity') {
+      await base44.entities.Equity.update(account.id, updateData);
     } else if (entityType === 'Income' || entityType === 'Expense') {
       await base44.entities.Category.update(account.id, updateData);
     }
@@ -286,8 +288,8 @@ export default function AccountsTable({ accounts, isLoading }) {
           bVal = (b.institution || '').toLowerCase();
           break;
         case 'type':
-          aVal = getDetailTypeDisplayName(a.entityType === 'BankAccount' ? a.account_type : a.entityType === 'Asset' || a.entityType === 'Liability' ? a.type : a.detail_type).toLowerCase();
-          bVal = getDetailTypeDisplayName(b.entityType === 'BankAccount' ? b.account_type : b.entityType === 'Asset' || b.entityType === 'Liability' ? b.type : b.detail_type).toLowerCase();
+          aVal = getDetailTypeDisplayName(a.entityType === 'BankAccount' ? a.account_type : (a.entityType === 'Asset' || a.entityType === 'Liability' || a.entityType === 'Equity') ? a.type : a.detail_type).toLowerCase();
+          bVal = getDetailTypeDisplayName(b.entityType === 'BankAccount' ? b.account_type : (b.entityType === 'Asset' || b.entityType === 'Liability' || b.entityType === 'Equity') ? b.type : b.detail_type).toLowerCase();
           break;
         case 'balance':
           aVal = getAccountBalance(a);
@@ -684,7 +686,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                             {visibleColumns.detail && (
                              <td className="px-4 py-0.5">
                                <span className="text-xs text-slate-600">
-                                 {getDetailTypeDisplayName(account.entityType === 'BankAccount' ? account.account_type : account.entityType === 'Asset' || account.entityType === 'Liability' ? account.type : account.detail_type)}
+                                 {getDetailTypeDisplayName(account.entityType === 'BankAccount' ? account.account_type : (account.entityType === 'Asset' || account.entityType === 'Liability' || account.entityType === 'Equity') ? account.type : account.detail_type)}
                                </span>
                              </td>
                             )}

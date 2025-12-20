@@ -50,6 +50,7 @@ const ACCOUNT_TYPES = [
   { value: 'asset', label: 'Asset', plaidLinkable: false },
   { value: 'bank', label: 'Bank', plaidLinkable: true },
   { value: 'credit_card', label: 'Credit Card', plaidLinkable: true },
+  { value: 'equity', label: 'Equity', plaidLinkable: false },
   { value: 'expense', label: 'Expense', plaidLinkable: false },
   { value: 'income', label: 'Income', plaidLinkable: false },
   { value: 'liability', label: 'Liability', plaidLinkable: true },
@@ -113,6 +114,11 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
     queryFn: () => base44.entities.Liability.list('name')
   });
 
+  const { data: equityAccounts = [] } = useQuery({
+    queryKey: ['equity'],
+    queryFn: () => base44.entities.Equity.list('name')
+  });
+
   const getDetailTypesForAccountType = (accType) => {
     if (!accType) return [];
     return DEFAULT_DETAIL_TYPES[accType] || [];
@@ -147,6 +153,11 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
         setInstitutionLogoUrl(editingAccount.logo_url || '');
       } else if (entityType === 'Liability') {
         setAccountType('liability');
+        setDetailType(editingAccount.type || editingAccount.account_type || '');
+        setBankName(editingAccount.institution || '');
+        setInstitutionLogoUrl(editingAccount.logo_url || '');
+      } else if (entityType === 'Equity') {
+        setAccountType('equity');
         setDetailType(editingAccount.type || editingAccount.account_type || '');
         setBankName(editingAccount.institution || '');
         setInstitutionLogoUrl(editingAccount.logo_url || '');
@@ -266,6 +277,24 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
     }
   });
 
+  const createEquityMutation = useMutation({
+    mutationFn: (data) => {
+      console.log('📊 Creating Equity with data:', data);
+      return withRetry(() => base44.entities.Equity.create(data), { maxRetries: 2 });
+    },
+    onSuccess: (newEquity) => {
+      console.log('✅ Equity created successfully:', newEquity);
+      queryClient.invalidateQueries({ queryKey: ['equity'] });
+      onAccountCreated?.({ type: 'equity', account: newEquity });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('❌ Error creating Equity:', error);
+      logError(error, { action: 'createEquity' });
+      showErrorToast(error);
+    }
+  });
+
   const createCategoryMutation = useMutation({
     mutationFn: (data) => withRetry(() => base44.entities.Category.create(data), { maxRetries: 2 }),
     onSuccess: (newCategory) => {
@@ -340,6 +369,21 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
     },
     onError: (error) => {
       logError(error, { action: 'updateLiability' });
+      showErrorToast(error);
+    }
+  });
+
+  const updateEquityMutation = useMutation({
+    mutationFn: ({ id, data }) => withRetry(() => base44.entities.Equity.update(id, data), { maxRetries: 2 }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['equity'] });
+      onAccountCreated?.({ type: 'equity' });
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      logError(error, { action: 'updateEquity' });
       showErrorToast(error);
     }
   });
@@ -443,6 +487,21 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
           id: editingAccount.id,
           data: liabilityData
         });
+      } else if (accountType === 'equity') {
+        const equityData = {
+          name,
+          type: detailType,
+          current_balance: validatedBalance,
+          description,
+          is_active: isActive
+        };
+        if (startDate) equityData.start_date = startDate;
+        if (bankName) equityData.institution = bankName;
+        if (institutionLogoUrl) equityData.logo_url = institutionLogoUrl;
+        updateEquityMutation.mutate({
+          id: editingAccount.id,
+          data: equityData
+        });
       } else if (accountType === 'income' || accountType === 'expense') {
         updateCategoryMutation.mutate({
           id: editingAccount.id,
@@ -509,6 +568,19 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
           liabilityData.parent_account_id = parentAccountId;
         }
         createLiabilityMutation.mutate(liabilityData);
+      } else if (accountType === 'equity') {
+        const equityData = {
+          name: name.charAt(0).toUpperCase() + name.slice(1),
+          type: detailType,
+          current_balance: validatedBalance,
+          institution: bankName,
+          logo_url: institutionLogoUrl || null,
+        };
+        if (startDate) equityData.start_date = startDate;
+        if (isSubaccount && parentAccountId) {
+          equityData.parent_account_id = parentAccountId;
+        }
+        createEquityMutation.mutate(equityData);
       } else if (accountType === 'income' || accountType === 'expense') {
         const categoryData = {
           name: name.charAt(0).toUpperCase() + name.slice(1),
@@ -523,18 +595,20 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
     }
   };
 
-  const isLoading = createBankAccountMutation.isPending || 
+  const isLoading = createBankAccountMutation.isPending ||
                     createCreditCardMutation.isPending ||
-                    createAssetMutation.isPending || 
+                    createAssetMutation.isPending ||
                     createLiabilityMutation.isPending ||
+                    createEquityMutation.isPending ||
                     createCategoryMutation.isPending ||
                     updateBankAccountMutation.isPending ||
                     updateCreditCardMutation.isPending ||
                     updateAssetMutation.isPending ||
                     updateLiabilityMutation.isPending ||
+                    updateEquityMutation.isPending ||
                     updateCategoryMutation.isPending;
 
-  const showBalanceField = accountType === 'bank' || accountType === 'credit_card' || accountType === 'asset' || accountType === 'liability';
+  const showBalanceField = accountType === 'bank' || accountType === 'credit_card' || accountType === 'asset' || accountType === 'liability' || accountType === 'equity';
   
   const isCategory = mode === 'category';
   const entityLabel = isCategory ? 'Category' : 'Account';
@@ -542,6 +616,7 @@ export default function AddFinancialAccountSheet({ open, onOpenChange, onAccount
   const getBalanceLabel = () => {
     if (accountType === 'asset') return 'Beginning Value';
     if (accountType === 'liability' || accountType === 'credit_card') return 'Beginning Balance';
+    if (accountType === 'equity') return 'Beginning Balance';
     return 'Beginning Balance';
   };
 
