@@ -91,40 +91,40 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
     return (
       <div key={group.id} className={cn("mb-6 border rounded-lg overflow-hidden bg-white", isIncome ? "border-l-4 border-l-green-500" : "border-l-4 border-l-orange-500")}>
         {/* Header Row */}
-        <div className="flex items-center gap-2 py-1 px-3 bg-white border-b border-slate-200">
+        <div className="flex items-center gap-2 py-2 px-3 bg-white border-b border-slate-200">
           <Button
             variant="ghost"
             size="sm"
-            className="h-4 w-4 p-0 hover:bg-slate-100"
+            className="h-5 w-5 p-0 hover:bg-slate-100"
             onClick={() => toggleGroup(group.id)}
           >
             {isExpanded ? (
-              <ChevronDown className="h-3 w-3 text-slate-600" />
+              <ChevronDown className="h-4 w-4 text-slate-600" />
             ) : (
-              <ChevronRight className="h-3 w-3 text-slate-600" />
+              <ChevronRight className="h-4 w-4 text-slate-600" />
             )}
           </Button>
 
-          <span className="font-semibold text-xs text-slate-900 min-w-[200px] leading-none">{group.name}</span>
+          <span className="font-semibold text-sm text-slate-900 min-w-[200px]">{group.name}</span>
 
           {/* Column Headers */}
           <div className="flex-1 flex items-center justify-end gap-2">
-            <span className="w-24 text-xs font-medium text-slate-500 uppercase tracking-wider text-center leading-none">Daily</span>
-            <span className="w-24 text-xs font-medium text-slate-500 uppercase tracking-wider text-center leading-none">Weekly</span>
-            <span className="w-28 text-xs font-medium text-slate-500 uppercase tracking-wider text-center leading-none">Monthly</span>
-            <span className="w-28 text-xs font-medium text-slate-500 uppercase tracking-wider text-center leading-none">Yearly</span>
+            <span className="w-24 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Daily</span>
+            <span className="w-24 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Weekly</span>
+            <span className="w-28 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Monthly</span>
+            <span className="w-28 text-xs font-medium text-slate-500 uppercase tracking-wider text-center">Yearly</span>
           </div>
 
           <Button
             variant="ghost"
             size="sm"
-            className="h-5 w-5 p-0 hover:bg-slate-100 ml-2"
+            className="h-6 w-6 p-0 hover:bg-slate-100 ml-2"
             onClick={(e) => {
               e.stopPropagation();
               onEditGroup?.(group);
             }}
           >
-            <Pencil className="h-3 w-3 text-slate-500" />
+            <Pencil className="h-3.5 w-3.5 text-slate-500" />
           </Button>
         </div>
 
@@ -138,22 +138,22 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
               return (
                 <div
                   key={budget.id}
-                  className="flex items-center gap-2 py-0.5 px-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
+                  className="flex items-center gap-2 py-1.5 px-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
                   onClick={() => onEditBudget?.(budget)}
                 >
-                  <div className="w-4"></div>
+                  <div className="w-5"></div>
 
                   <div
-                    className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
                     style={{ backgroundColor: budget.color || '#94a3b8' }}
                   >
-                    <Icon className="w-3 h-3 text-white" />
+                    <Icon className="w-4 h-4 text-white" />
                   </div>
 
-                  <span className="text-xs text-slate-900 min-w-[200px] leading-none">{budget.name}</span>
+                  <span className="text-sm text-slate-900 min-w-[200px]">{budget.name}</span>
 
                   {/* Amount Columns */}
-                  <div className="flex-1 flex items-center justify-end gap-2 text-xs leading-none">
+                  <div className="flex-1 flex items-center justify-end gap-2 text-sm">
                     <div className="w-24 text-center tabular-nums">
                       <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'))}</span>
                     </div>
@@ -168,18 +168,18 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
                     </div>
                   </div>
 
-                  <div className="w-5"></div>
+                  <div className="w-6"></div>
                 </div>
               );
             })}
 
             {/* Total Row */}
-            <div className="flex items-center gap-2 py-1 px-3 bg-slate-50">
-              <div className="w-4"></div>
+            <div className="flex items-center gap-2 py-2 px-3 bg-slate-50">
               <div className="w-5"></div>
-              <span className="text-xs font-semibold text-slate-900 min-w-[200px] leading-none">Total</span>
+              <div className="w-7"></div>
+              <span className="text-sm font-semibold text-slate-900 min-w-[200px]">Total</span>
 
-              <div className="flex-1 flex items-center justify-end gap-2 text-xs font-semibold tabular-nums leading-none">
+              <div className="flex-1 flex items-center justify-end gap-2 text-sm font-semibold tabular-nums">
                 <div className="w-24 text-center text-slate-900">
                   ${formatAmount(totals.daily)}
                 </div>
@@ -194,7 +194,7 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
                 </div>
               </div>
 
-              <div className="w-5"></div>
+              <div className="w-6"></div>
             </div>
           </>
         )}
