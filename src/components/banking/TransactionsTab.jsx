@@ -1712,6 +1712,19 @@ For each transaction, return the category_id that best matches. Consider:
                                           })()}
                                           onValueChange={(val) => {
                                             if (isMatched(transaction) && val === 'post') {
+                                              const pairedTransaction = findPairedTransfer(transaction);
+                                              if (pairedTransaction) {
+                                                setManualActionOverrides(prev => ({
+                                                  ...prev,
+                                                  [transaction.id]: 'post',
+                                                  [pairedTransaction.id]: 'post'
+                                                }));
+                                              } else {
+                                                setManualActionOverrides(prev => ({
+                                                  ...prev,
+                                                  [transaction.id]: 'post'
+                                                }));
+                                              }
                                               handleUnmatch(transaction);
                                               return;
                                             }
