@@ -1751,31 +1751,101 @@ For each transaction, return the category_id that best matches. Consider:
                                       }
                                       return findPotentialMatches(transaction).length === 0;
                                     })() && (
-                                      <div className="grid grid-cols-2 gap-3">
-                                        {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
-                                          <div>
-                                            <Label className="text-xs mb-1 block">Payment Method</Label>
-                                            {getAccountDetails(transaction.bank_account_id)?.account_type === 'credit_card' ? (
-                                              <Input value="Credit Card" readOnly className="h-8 text-xs bg-slate-50" />
-                                            ) : (
-                                              <ClickThroughSelect
-                                                value={transaction.payment_method || 'debit_card'}
-                                                onValueChange={(val) => {
+                                      <div className="space-y-3">
+                                        <div className="grid grid-cols-2 gap-3">
+                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
+                                            <div>
+                                              <Label className="text-xs mb-1 block">Payment Method</Label>
+                                              {getAccountDetails(transaction.bank_account_id)?.account_type === 'credit_card' ? (
+                                                <Input value="Credit Card" readOnly className="h-8 text-xs bg-slate-50" />
+                                              ) : (
+                                                <ClickThroughSelect
+                                                  value={transaction.payment_method || 'debit_card'}
+                                                  onValueChange={(val) => {
+                                                    updateMutation.mutate({
+                                                      id: transaction.id,
+                                                      data: { ...transaction, payment_method: val }
+                                                    });
+                                                  }}
+                                                  triggerClassName="h-8 text-xs"
+                                                >
+                                                  <ClickThroughSelectItem value="cash">Cash</ClickThroughSelectItem>
+                                                  <ClickThroughSelectItem value="debit_card">Debit Card</ClickThroughSelectItem>
+                                                  <ClickThroughSelectItem value="bank_transfer">ACH / Bank Transfer</ClickThroughSelectItem>
+                                                  <ClickThroughSelectItem value="check">Check</ClickThroughSelectItem>
+                                                  <ClickThroughSelectItem value="online_bank_payment">Online Bank Payment</ClickThroughSelectItem>
+                                                  <ClickThroughSelectItem value="other">Other</ClickThroughSelectItem>
+                                                </ClickThroughSelect>
+                                              )}
+                                            </div>
+                                          )}
+
+                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
+                                            <div>
+                                              <Label className="text-xs mb-1 block">Category</Label>
+                                              <CategoryDropdown
+                                                value={transaction.category_id || ''}
+                                                onValueChange={(value) => {
+                                                  const categoryValue = value === '' ? null : value;
+                                                  const selectedCategory = categoryValue ? categories.find(c => c.id === categoryValue) : null;
                                                   updateMutation.mutate({
                                                     id: transaction.id,
-                                                    data: { ...transaction, payment_method: val }
+                                                    data: {
+                                                      ...transaction,
+                                                      category_id: categoryValue,
+                                                      type: selectedCategory?.type || transaction.type,
+                                                      ai_suggested_category_id: null
+                                                    }
                                                   });
                                                 }}
+                                                transactionType={transaction.type}
                                                 triggerClassName="h-8 text-xs"
-                                              >
-                                                <ClickThroughSelectItem value="cash">Cash</ClickThroughSelectItem>
-                                                <ClickThroughSelectItem value="debit_card">Debit Card</ClickThroughSelectItem>
-                                                <ClickThroughSelectItem value="bank_transfer">ACH / Bank Transfer</ClickThroughSelectItem>
-                                                <ClickThroughSelectItem value="check">Check</ClickThroughSelectItem>
-                                                <ClickThroughSelectItem value="online_bank_payment">Online Bank Payment</ClickThroughSelectItem>
-                                                <ClickThroughSelectItem value="other">Other</ClickThroughSelectItem>
-                                              </ClickThroughSelect>
-                                            )}
+                                              />
+                                            </div>
+                                          )}
+                                        </div>
+
+                                        {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                                          <div className="grid grid-cols-2 gap-3">
+                                            <div>
+                                              <Label className="text-xs mb-1 block">From Account</Label>
+                                              <Input
+                                                value={(() => {
+                                                  const fromAccount = accounts.find(a => a.id === transaction.account_id);
+                                                  return fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown';
+                                                })()}
+                                                readOnly
+                                                className="h-8 text-xs bg-slate-50"
+                                              />
+                                            </div>
+                                            <div>
+                                              <Label className="text-xs mb-1 block">To Account</Label>
+                                              <AccountDropdown
+                                                value={(() => {
+                                                  const paired = findPairedTransfer(transaction);
+                                                  return paired?.account_id || '';
+                                                })()}
+                                                onValueChange={(val) => {
+                                                  if (val) {
+                                                    const toAccount = accounts.find(a => a.id === val);
+                                                    if (toAccount) {
+                                                      updateMutation.mutate({
+                                                        id: transaction.id,
+                                                        data: {
+                                                          ...transaction,
+                                                          transfer_to_account_id: val
+                                                        }
+                                                      });
+                                                    }
+                                                  }
+                                                }}
+                                                showAllOption={false}
+                                                showPendingCounts={false}
+                                                triggerClassName="h-8 text-xs"
+                                                placeholder="Select account..."
+                                                filterAccounts={(acc) => acc.id !== transaction.account_id}
+                                              />
+                                            </div>
                                           </div>
                                         )}
                                       </div>
@@ -1793,6 +1863,57 @@ For each transaction, return the category_id that best matches. Consider:
                                       return findPotentialMatches(transaction).length > 0;
                                     })() && (
                                       <>
+                                        <div className="mb-4 space-y-3">
+                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && transaction.category_id && (
+                                            <div>
+                                              <Label className="text-xs mb-1 block">Category</Label>
+                                              <Input
+                                                value={(() => {
+                                                  const category = categories.find(c => c.id === transaction.category_id);
+                                                  return category ? getAccountDisplayName({
+                                                    account_type: category.type,
+                                                    detail_type: category.detail_type,
+                                                    name: category.name
+                                                  }) : '';
+                                                })()}
+                                                readOnly
+                                                className="h-8 text-xs bg-slate-50"
+                                              />
+                                            </div>
+                                          )}
+                                          {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div>
+                                                <Label className="text-xs mb-1 block">From Account</Label>
+                                                <Input
+                                                  value={(() => {
+                                                    const fromAccount = accounts.find(a => a.id === transaction.account_id);
+                                                    return fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown';
+                                                  })()}
+                                                  readOnly
+                                                  className="h-8 text-xs bg-slate-50"
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label className="text-xs mb-1 block">To Account</Label>
+                                                <Input
+                                                  value={(() => {
+                                                    const paired = findPairedTransfer(transaction);
+                                                    if (paired) {
+                                                      const toAccount = accounts.find(a => a.id === paired.account_id);
+                                                      return toAccount ? getAccountDisplayName(toAccount) : 'Unknown';
+                                                    }
+                                                    return '';
+                                                  })()}
+                                                  readOnly
+                                                  className="h-8 text-xs bg-slate-50"
+                                                  placeholder="No match selected"
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+
                                         {/* Potential Matches */}
                                         {(() => {
                                         // Always show potential matches in expanded view, regardless of whether currently paired
