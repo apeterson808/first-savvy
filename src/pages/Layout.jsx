@@ -72,10 +72,6 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
   );
 }
 
-function BudgetingTabs() {
-  return <HeaderTabs tabs={['overview', 'setup', 'categories']} />;
-}
-
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -238,9 +234,6 @@ export default function Layout({ children, currentPageName }) {
             {currentPageName === 'Banking' && (
               <HeaderTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
             )}
-            {currentPageName === 'Budgeting' && (
-                          <BudgetingTabs />
-                        )}
             {currentPageName === 'NetWorth' && (
               <HeaderTabs tabs={['overview', 'assets', 'liabilities']} />
             )}
