@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { createSupabaseClient } from '@/api/supabaseClient';
-import { initializeDefaultCategories } from '@/api/categories';
-
-const supabase = createSupabaseClient();
+import { base44 } from '@/api/base44Client';
 
 const AuthContext = createContext(null);
 
@@ -19,12 +16,9 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser()
-      .then(({ data, error }) => {
-        if (data?.user) {
-          setUser(data.user);
-          initializeDefaultCategories().catch(console.error);
-        }
+    base44.auth.getUser()
+      .then(user => {
+        setUser(user);
         setLoading(false);
       })
       .catch(() => {
@@ -32,19 +26,18 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const subscription = base44.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
-        if (event === 'SIGNED_IN') {
-          await initializeDefaultCategories().catch(console.error);
-        }
       } else {
         setUser(null);
       }
     });
 
     return () => {
-      subscription?.unsubscribe();
+      if (subscription?.data?.subscription) {
+        subscription.data.subscription.unsubscribe();
+      }
     };
   }, []);
 
@@ -52,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     signOut: async () => {
-      await supabase.auth.signOut();
+      await base44.auth.signOut();
       setUser(null);
     }
   };

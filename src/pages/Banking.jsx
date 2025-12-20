@@ -1,58 +1,64 @@
 import React, { useState } from 'react';
-import { getAccounts } from '@/api/accounts';
-import { getTransactions } from '@/api/transactions';
+import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import TransactionsTab from '../components/banking/TransactionsTabSimple';
-import AccountsTable from '../components/banking/AccountsTableSimple';
+import TransactionsTab from '../components/banking/TransactionsTab';
+import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
+import SpendingChartCard from '../components/banking/SpendingChartCard';
+import AccountsTable from '../components/banking/AccountsTable';
+import CategorizationRulesManager from '../components/banking/CategorizationRulesManager';
+import ContactMatchingRulesManager from '../components/banking/ContactMatchingRulesManager';
+import PlaidAccountReviewDialog from '../components/banking/PlaidAccountReviewDialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 
 export default function Banking() {
   const urlParams = new URLSearchParams(window.location.search);
   const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'overview');
-  const [transactionFilters, setTransactionFilters] = useState(null);
-  const [filterKey, setFilterKey] = React.useState(0);
+  const [selectedAccount, setSelectedAccount] = useState('all');
+  const [selectedMonth, setSelectedMonth] = useState('0');
+  const [selectedPastMonth, setSelectedPastMonth] = useState('avg3');
+  const [plaidReviewOpen, setPlaidReviewOpen] = useState(false);
+  const [plaidData, setPlaidData] = useState(null);
   const queryClient = useQueryClient();
+  
+  // Check for date param from Dashboard chart click - use a ref to track initial URL params
+  const initialUrlDate = React.useRef(urlParams.get('date'));
+  const initialUrlAccount = React.useRef(urlParams.get('account'));
+  const [transactionFilters, setTransactionFilters] = useState(
+    initialUrlDate.current ? { date: initialUrlDate.current, account: initialUrlAccount.current || 'all' } : null
+  );
 
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: getAccounts,
-    staleTime: 0,
-    refetchOnMount: 'always'
-  });
+  // Use a counter to force remount of TransactionsTab
+  const [filterKey, setFilterKey] = React.useState(0);
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: getTransactions,
-    staleTime: 0,
-    refetchOnMount: 'always'
-  });
+  const handleChartPointClick = ({ date, account }) => {
+    // Set filters and increment key to force remount
+    const newFilters = { date, account };
+    setTransactionFilters(newFilters);
+    setFilterKey(prev => prev + 1);
+    
+    // Navigate to transactions tab
+    const newUrl = `${window.location.pathname}?tab=transactions&date=${date}&account=${account}`;
+    window.history.pushState({}, '', newUrl);
+    setActiveTab('transactions');
+  };
 
-  const totalBalance = accounts
-    .filter((acc) => acc.is_active)
-    .reduce((sum, acc) => {
-      const balance = parseFloat(acc.balance || 0);
-      if (acc.account_type === 'credit') {
-        return sum - balance;
-      }
-      return sum + balance;
-    }, 0);
-
-  const totalIncome = transactions
-    .filter(tx => tx.transaction_type === 'income')
-    .reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
-
-  const totalExpenses = transactions
-    .filter(tx => tx.transaction_type === 'expense')
-    .reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0);
-
+  // Sync activeTab with URL on popstate only (back/forward buttons)
   React.useEffect(() => {
     const syncTabWithUrl = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const newTab = urlParams.get('tab') || 'overview';
       setActiveTab(newTab);
+      
+      // Check for date param (from Dashboard click)
+      const dateParam = urlParams.get('date');
+      const accountParam = urlParams.get('account');
+      if (dateParam) {
+        setTransactionFilters({ date: dateParam, account: accountParam || 'all' });
+      }
     };
 
+    // Listen for popstate (back/forward buttons)
     window.addEventListener('popstate', syncTabWithUrl);
 
     return () => {
@@ -60,27 +66,145 @@ export default function Banking() {
     };
   }, []);
 
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+    queryKey: ['allAccounts'],
+    queryFn: async () => {
+      const [bankAccounts, creditCards, assets, liabilities, categories, allTransactions] = await Promise.all([
+        base44.entities.BankAccount.list('-updated_at'),
+        base44.entities.CreditCard.list('-updated_at'),
+        base44.entities.Asset.list('-updated_at'),
+        base44.entities.Liability.list('-updated_at'),
+        base44.entities.Category.list('name'),
+        base44.entities.Transaction.list('-date', 1000),
+      ]);
+
+      const incomeCategories = categories
+        .filter(c => c.type === 'income')
+        .map(cat => ({
+          ...cat,
+          entityType: 'Income',
+          account_name: cat.name,
+          account_type: 'income',
+        }));
+
+      const expenseCategories = categories
+        .filter(c => c.type === 'expense')
+        .map(cat => ({
+          ...cat,
+          entityType: 'Expense',
+          account_name: cat.name,
+          account_type: 'expense',
+        }));
+
+      const allAccounts = [
+        ...bankAccounts.map(acc => ({ ...acc, entityType: 'BankAccount' })),
+        ...creditCards.map(cc => ({
+          ...cc,
+          entityType: 'CreditCard',
+          account_name: cc.name,
+          account_type: 'credit_card',
+        })),
+        ...assets.map(acc => ({
+          ...acc,
+          entityType: 'Asset',
+          account_name: acc.name,
+          account_type: acc.type,
+          current_balance: acc.current_value,
+        })),
+        ...liabilities.map(acc => ({
+          ...acc,
+          entityType: 'Liability',
+          account_name: acc.name,
+          account_type: acc.type,
+          current_balance: -(acc.current_balance || 0),
+        })),
+        ...incomeCategories,
+        ...expenseCategories,
+      ];
+
+      return allAccounts.sort((a, b) => (a.order || 999) - (b.order || 999));
+    },
+    staleTime: 0,
+    refetchOnMount: 'always'
+  });
+
+  const { data: transactions = [] } = useQuery({
+    queryKey: ['transactions'],
+    queryFn: () => base44.entities.Transaction.list('-date', 1000),
+    staleTime: 0,
+    refetchOnMount: 'always'
+  });
+
+  const totalBalance = accounts
+    .filter((acc) => acc.is_active !== false)
+    .reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
+
+  // Expose setPlaidReviewOpen and setPlaidData globally for AccountsTable
+  React.useEffect(() => {
+    window.__openPlaidReview = (data) => {
+      setPlaidData(data);
+      setPlaidReviewOpen(true);
+    };
+    return () => {
+      delete window.__openPlaidReview;
+    };
+  }, []);
+
   return (
     <div className="p-3 rounded-sm">
+      <PlaidAccountReviewDialog
+        open={plaidReviewOpen}
+        onOpenChange={setPlaidReviewOpen}
+        discoveredAccounts={plaidData?.discovered_accounts}
+        transactionsByAccount={plaidData?.transactions_by_account}
+        onComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ['accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['transactions'] });
+          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+          setPlaidData(null);
+        }}
+      />
+      
       <Tabs value={activeTab} className="w-full">
+
         <TabsContent value="overview" className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          {/* Chart and Categories Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <SpendingChartCard
+              transactions={transactions}
+              accounts={accounts.filter(a => a.entityType === 'BankAccount' || a.entityType === 'CreditCard')}
+              selectedMonth={selectedMonth}
+              setSelectedMonth={setSelectedMonth}
+              selectedAccount={selectedAccount}
+              setSelectedAccount={setSelectedAccount}
+              selectedPastMonth={selectedPastMonth}
+              setSelectedPastMonth={setSelectedPastMonth}
+              onPointClick={handleChartPointClick}
+            />
+
+            <CategoryBreakdownDonut 
+              transactions={transactions} 
+              selectedMonth={selectedMonth}
+              selectedAccount={selectedAccount}
+              accounts={accounts}
+              onCategoryClick={(categoryId) => {
+                if (categoryId) {
+                  setTransactionFilters({ category: categoryId, account: selectedAccount, month: selectedMonth });
+                  setFilterKey(prev => prev + 1);
+                  const newUrl = `${window.location.pathname}?tab=transactions&category=${categoryId}&account=${selectedAccount}&month=${selectedMonth}`;
+                  window.history.pushState({}, '', newUrl);
+                  setActiveTab('transactions');
+                }
+              }}
+            />
+          </div>
+
+          {/* Summary Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="pb-2 pt-4 px-4">
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Balance</p>
-                <CardTitle className="text-2xl font-bold">${totalBalance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Income</p>
-                <CardTitle className="text-2xl font-bold text-green-600">${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Expenses</p>
-                <CardTitle className="text-2xl font-bold text-red-600">${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</CardTitle>
+                <CardTitle className="text-2xl font-bold">${totalBalance.toLocaleString()}</CardTitle>
               </CardHeader>
             </Card>
             <Card className="shadow-sm border-slate-200">
@@ -91,28 +215,51 @@ export default function Banking() {
                 </CardTitle>
               </CardHeader>
             </Card>
+            <Card className="shadow-sm border-slate-200">
+              <CardHeader className="pb-2 pt-4 px-4">
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Accounts</p>
+                <CardTitle className="text-2xl font-bold">{accounts.length}</CardTitle>
+              </CardHeader>
+            </Card>
           </div>
 
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Accounts</p>
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Account Overview</p>
             </CardHeader>
             <CardContent>
-              <AccountsTable accounts={accounts} isLoading={accountsLoading} />
+              <p className="text-slate-600">Overview content coming soon</p>
             </CardContent>
           </Card>
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-3">
-          <TransactionsTab
+          <TransactionsTab 
             key={`txn-${filterKey}`}
             initialFilters={transactionFilters}
             onFiltersApplied={() => {
+              // Clear URL params after filters are applied
               const newUrl = `${window.location.pathname}?tab=transactions`;
               window.history.replaceState({}, '', newUrl);
               setTransactionFilters(null);
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="recurring" className="space-y-3">
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Recurring Payments</p>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600">Recurring payments content coming soon</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rules" className="space-y-3">
+          <CategorizationRulesManager />
+          <ContactMatchingRulesManager />
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-3">
