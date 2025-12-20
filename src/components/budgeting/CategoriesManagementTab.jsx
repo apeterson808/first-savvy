@@ -82,15 +82,15 @@ export default function CategoriesManagementTab({ categories, transactions }) {
 
     return (
       <TableRow>
-        <TableCell className="w-12">
+        <TableCell className="w-12 py-2">
           <div
-            className="w-8 h-8 rounded-full flex items-center justify-center"
+            className="w-7 h-7 rounded-full flex items-center justify-center"
             style={{ backgroundColor: `${category.color}20` }}
           >
-            <IconComponent className="w-4 h-4" style={{ color: category.color }} />
+            <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
           </div>
         </TableCell>
-        <TableCell className="font-medium">
+        <TableCell className="font-medium py-2">
           <div className="flex items-center gap-2">
             {category.name}
             {isSystemCategory && (
@@ -100,7 +100,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             )}
           </div>
         </TableCell>
-        <TableCell>
+        <TableCell className="py-2">
           <Badge
             variant="outline"
             className={category.type === 'income' ? 'text-green-700 border-green-200' : 'text-slate-700 border-slate-200'}
@@ -108,27 +108,27 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             {category.type === 'income' ? 'Income' : 'Expense'}
           </Badge>
         </TableCell>
-        <TableCell className="text-slate-600">
+        <TableCell className="text-slate-600 py-2">
           {usageCount} {usageCount === 1 ? 'transaction' : 'transactions'}
         </TableCell>
-        <TableCell className="text-right">
+        <TableCell className="text-right py-2">
           <div className="flex items-center justify-end gap-2">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-8 p-0"
+              className="h-7 w-7 p-0"
               onClick={() => setEditingCategory(category)}
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 className="h-3.5 w-3.5" />
             </Button>
             {!isSystemCategory && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                 onClick={() => setDeletingCategory(category)}
               >
-                <Trash2 className="h-4 w-4" />
+                <Trash2 className="h-3.5 w-3.5" />
               </Button>
             )}
           </div>
