@@ -98,12 +98,28 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!ANTHROPIC_API_KEY) {
+      const fallbackCategory = suggestCategoryFallback(description, amount, categories);
+      if (fallbackCategory) {
+        return new Response(
+          JSON.stringify({
+            category: fallbackCategory.name,
+            type: fallbackCategory.type,
+            confidence: 'pattern',
+          }),
+          {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
       return new Response(
         JSON.stringify({
-          error: 'AI service not configured'
+          category: null,
+          type: null,
+          confidence: 'none',
         }),
         {
-          status: 503,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
@@ -224,3 +240,42 @@ Be intelligent about merchant names that include codes, abbreviations, or locati
     );
   }
 });
+
+function suggestCategoryFallback(description: string, amount: number | undefined, categories: Category[]): Category | null {
+  const descLower = description.toLowerCase();
+
+  const patterns = [
+    { keywords: ['grocery', 'food', 'market', 'safeway', 'whole foods', 'trader', 'costco', 'kroger'], categoryName: 'groceries' },
+    { keywords: ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'chipotle', 'dining', 'pizza', 'burger'], categoryName: 'dining' },
+    { keywords: ['gas', 'fuel', 'shell', 'chevron', 'uber', 'lyft', 'taxi', 'transit', 'parking'], categoryName: 'transportation' },
+    { keywords: ['amazon', 'target', 'walmart', 'best buy', 'shopping', 'store', 'retail'], categoryName: 'shopping' },
+    { keywords: ['netflix', 'spotify', 'hulu', 'apple', 'subscription', 'membership', 'monthly'], categoryName: 'subscriptions' },
+    { keywords: ['doctor', 'hospital', 'pharmacy', 'cvs', 'walgreens', 'medical', 'health', 'dental'], categoryName: 'health' },
+    { keywords: ['electric', 'water', 'gas bill', 'internet', 'phone', 'verizon', 'att', 'comcast', 'utility'], categoryName: 'utilities' },
+    { keywords: ['rent', 'mortgage', 'lease', 'housing', 'property'], categoryName: 'housing' },
+    { keywords: ['insurance', 'premium'], categoryName: 'insurance' },
+    { keywords: ['paycheck', 'salary', 'direct deposit', 'payroll', 'wages'], categoryName: 'salary' },
+  ];
+
+  for (const pattern of patterns) {
+    if (pattern.keywords.some(keyword => descLower.includes(keyword))) {
+      const matchedCategory = categories.find(c =>
+        c.name.toLowerCase().includes(pattern.categoryName) ||
+        pattern.categoryName.includes(c.name.toLowerCase())
+      );
+      if (matchedCategory) {
+        return matchedCategory;
+      }
+    }
+  }
+
+  if (amount !== undefined && amount > 0) {
+    const expenseCategory = categories.find(c => c.type === 'expense');
+    if (expenseCategory) return expenseCategory;
+  } else if (amount !== undefined && amount < 0) {
+    const incomeCategory = categories.find(c => c.type === 'income');
+    if (incomeCategory) return incomeCategory;
+  }
+
+  return null;
+}
