@@ -56,9 +56,9 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
               window.history.pushState({}, '', newUrl);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className={`px-3 py-1.5 text-sm font-medium transition-colors capitalize ${
+            className={`px-3 py-1.5 text-sm font-medium transition-all capitalize ${
               isActive
-                ? 'bg-slate-100 text-slate-900 rounded-t-md tab-folder-active'
+                ? 'bg-white text-slate-900 rounded-t-md shadow'
                 : isDisabled
                 ? 'text-slate-300 cursor-not-allowed rounded-md'
                 : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-md'
