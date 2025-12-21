@@ -924,20 +924,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           </div>
         )}
 
-        {(currentStep === 'select-type' || currentStep === 'select-subtype') && (
+        {currentStep === 'select-subtype' && (
           <div className="flex justify-center pt-4">
             <Button
               type="button"
               variant="ghost"
-              onClick={() => currentStep === 'select-type' ? onOpenChange(false) : handleBack()}
+              onClick={handleBack}
               className="rounded-full px-6 text-gray-600 hover:bg-gray-100"
             >
-              {currentStep === 'select-type' ? 'Cancel' : (
-                <>
-                  <ChevronLeft className="w-4 h-4 mr-1" />
-                  Back
-                </>
-              )}
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Back
             </Button>
           </div>
         )}
