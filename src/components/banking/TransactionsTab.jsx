@@ -73,6 +73,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchFilters, setManualMatchFilters] = useState({});
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
+  const [contactSuggestions, setContactSuggestions] = useState({});
 
   const getTransactionAccountId = (transaction) => {
     return transaction.account_id;
@@ -464,6 +465,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const calculateContactSuggestions = async () => {
       if (!filteredTransactions.length || !contacts.length || !contactMatchingRules) return;
 
+      const newSuggestions = {};
+
       const transactionsNeedingSuggestions = filteredTransactions.filter(
         t => !t.ai_suggested_contact_id &&
              t.description &&
@@ -713,21 +716,18 @@ For each transaction, return the category_id that best matches. Consider:
         const activeContacts = contacts.filter(c => c.status === 'active');
         if (activeContacts.length === 0) return;
 
-        const contactList = activeContacts.map(c => ({
-          id: c.id,
-          name: c.name
-        }));
-
         for (const transaction of batch) {
           try {
             if (!transaction.description || transaction.type === 'transfer') continue;
 
-            const result = await base44.integrations.Core.aiSuggestContact({
-              description: transaction.description,
-              contacts: contactList
-            });
+            const result = await suggestContact(
+              transaction.description,
+              fullPostedTransactions,
+              contactMatchingRules,
+              activeContacts
+            );
 
-            if (result.contactId) {
+            if (result?.contactId) {
               updateMutation.mutate({
                 id: transaction.id,
                 data: {
