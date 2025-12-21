@@ -142,7 +142,6 @@ export default function AddFinancialAccountSheet({
       parentAccountId: '',
       isActive: true,
     });
-    setShowManualForm(false);
   };
 
   const populateEditForm = (account) => {
