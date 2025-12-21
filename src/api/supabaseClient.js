@@ -137,7 +137,6 @@ export const createSupabaseClient = () => {
       Budget: createEntityAPI('budgets'),
       BudgetGroup: createEntityAPI('budget_groups'),
       Category: createEntityAPI('categories'),
-      CategorizationRule: createEntityAPI('categorization_rules'),
       Goal: createEntityAPI('goals'),
       Bill: createEntityAPI('bills'),
       Asset: createEntityAPI('assets'),

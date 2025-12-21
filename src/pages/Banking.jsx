@@ -5,7 +5,6 @@ import TransactionsTab from '../components/banking/TransactionsTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
-import CategorizationRulesManager from '../components/banking/CategorizationRulesManager';
 import ContactMatchingRulesManager from '../components/banking/ContactMatchingRulesManager';
 import PlaidAccountReviewDialog from '../components/banking/PlaidAccountReviewDialog';
 import useAllAccounts from '../components/hooks/useAllAccounts';
@@ -203,7 +202,6 @@ export default function Banking() {
         </TabsContent>
 
         <TabsContent value="rules" className="space-y-3">
-          <CategorizationRulesManager />
           <ContactMatchingRulesManager />
         </TabsContent>
 

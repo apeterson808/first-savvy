@@ -22,8 +22,6 @@ export const BudgetGroup = base44.entities.BudgetGroup;
 
 export const Category = base44.entities.Category;
 
-export const CategorizationRule = base44.entities.CategorizationRule;
-
 export const DetailType = base44.entities.DetailType;
 
 export const AuditLog = base44.entities.AuditLog;
