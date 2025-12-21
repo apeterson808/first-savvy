@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -439,48 +440,18 @@ export default function AccountsTable({ accounts, isLoading }) {
           </div>
 
           {/* Filter Buttons */}
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setAccountTypeFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                accountTypeFilter === 'all'
-                  ? 'bg-blue-500 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              All
-              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                accountTypeFilter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-slate-200 text-slate-600'
-              }`}>
-                {accountTypeCounts.all || 0}
-              </span>
-            </button>
-
-            {availableEntityTypes.map(entityType => (
-              accountTypeCounts[entityType] > 0 && (
-                <button
-                  key={entityType}
-                  onClick={() => setAccountTypeFilter(entityType)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-                    accountTypeFilter === entityType
-                      ? 'bg-blue-500 text-white shadow-sm'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  }`}
-                >
-                  {entityTypeLabels[entityType] || entityType}
-                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-                    accountTypeFilter === entityType
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-slate-200 text-slate-600'
-                  }`}>
-                    {accountTypeCounts[entityType] || 0}
-                  </span>
-                </button>
-              )
-            ))}
-          </div>
+          <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
+            <TabsList className="h-8">
+              <TabsTrigger value="all" className="text-xs px-3">All Accounts</TabsTrigger>
+              {availableEntityTypes.map(entityType => (
+                accountTypeCounts[entityType] > 0 && (
+                  <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
+                    {entityTypeLabels[entityType] || entityType}
+                  </TabsTrigger>
+                )
+              ))}
+            </TabsList>
+          </Tabs>
         </CardHeader>
         <CardContent className="p-0 border-t border-slate-200">
           {isLoading ? (
