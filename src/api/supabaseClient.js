@@ -131,8 +131,8 @@ export const createSupabaseClient = () => {
   return {
     entities: {
       Account: createEntityAPI('accounts'),
-      BankAccount: createEntityAPI('accounts'),
-      CreditCard: createEntityAPI('accounts'),
+      BankAccount: createEntityAPI('bank_accounts'),
+      CreditCard: createEntityAPI('credit_cards'),
       Transaction: createEntityAPI('transactions'),
       Budget: createEntityAPI('budgets'),
       BudgetGroup: createEntityAPI('budget_groups'),
