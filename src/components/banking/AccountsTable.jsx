@@ -376,7 +376,7 @@ export default function AccountsTable({ accounts, isLoading }) {
           </div>
 
           {/* Filter Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-0">
             <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
               <TabsList className="h-8">
                 {availableEntityTypes.map(entityType => (
