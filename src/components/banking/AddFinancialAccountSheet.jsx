@@ -421,7 +421,7 @@ export default function AddFinancialAccountSheet({
           account_name: capitalizedName,
           account_number: accountNumber,
           account_type: formData.detailType,
-          balance: validatedBalance,
+          current_balance: validatedBalance,
           institution_name: formData.bankName,
           account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
         });
@@ -433,7 +433,7 @@ export default function AddFinancialAccountSheet({
           account_name: capitalizedName,
           account_number: accountNumber,
           account_type: 'credit_card',
-          balance: validatedBalance,
+          current_balance: validatedBalance,
           institution_name: formData.bankName || null,
           account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
         });
@@ -502,7 +502,7 @@ export default function AddFinancialAccountSheet({
             account_name: formData.name,
             account_number: formData.accountNumber,
             account_type: formData.detailType,
-            balance: validatedBalance,
+            current_balance: validatedBalance,
             institution_name: formData.bankName,
           }
         });
@@ -516,7 +516,7 @@ export default function AddFinancialAccountSheet({
             account_name: formData.name,
             account_number: formData.accountNumber,
             account_type: 'credit_card',
-            balance: validatedBalance,
+            current_balance: validatedBalance,
             institution_name: formData.bankName || null,
             account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
           }
