@@ -207,6 +207,20 @@ export default function AccountsTable({ accounts, isLoading }) {
     'Liability': 'Liabilities'
   };
 
+  // Calculate account counts by type (only count active accounts unless showing inactive)
+  const accountTypeCounts = React.useMemo(() => {
+    const counts = { all: 0 };
+    accounts.forEach(acc => {
+      const matchesActive = showInactive || acc.is_active !== false;
+      if (matchesActive) {
+        counts.all++;
+        const type = acc.entityType;
+        counts[type] = (counts[type] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [accounts, showInactive]);
+
   // Sort helper
   const handleSort = (column) => {
     if (sortColumn === column) {
@@ -343,11 +357,11 @@ export default function AccountsTable({ accounts, isLoading }) {
     <>
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Accounts</p>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="icon"
                 onClick={() => queryClient.invalidateQueries({ queryKey: ['allAccounts'] })}
                 className="h-6 w-6"
@@ -356,17 +370,9 @@ export default function AccountsTable({ accounts, isLoading }) {
               </Button>
             </div>
             <div className="flex items-center">
-              <ClickThroughSelect value={accountTypeFilter} onValueChange={setAccountTypeFilter} triggerClassName="w-40 h-8 text-xs hover:bg-slate-50">
-                <ClickThroughSelectItem value="all">All Accounts</ClickThroughSelectItem>
-                {availableEntityTypes.map(entityType => (
-                  <ClickThroughSelectItem key={entityType} value={entityType}>
-                    {entityTypeLabels[entityType] || entityType}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-              <Button 
-                variant="ghost" 
-                size="icon" 
+              <Button
+                variant="ghost"
+                size="icon"
                 className="h-8 w-8"
                 onClick={() => setAddSheetOpen(true)}
               >
@@ -374,9 +380,9 @@ export default function AccountsTable({ accounts, isLoading }) {
               </Button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     className="h-8 w-8"
                   >
                     <Settings className="w-4 h-4" />
@@ -430,6 +436,50 @@ export default function AccountsTable({ accounts, isLoading }) {
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setAccountTypeFilter('all')}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                accountTypeFilter === 'all'
+                  ? 'bg-blue-500 text-white shadow-sm'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              All
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                accountTypeFilter === 'all'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-200 text-slate-600'
+              }`}>
+                {accountTypeCounts.all || 0}
+              </span>
+            </button>
+
+            {availableEntityTypes.map(entityType => (
+              accountTypeCounts[entityType] > 0 && (
+                <button
+                  key={entityType}
+                  onClick={() => setAccountTypeFilter(entityType)}
+                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                    accountTypeFilter === entityType
+                      ? 'bg-blue-500 text-white shadow-sm'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {entityTypeLabels[entityType] || entityType}
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+                    accountTypeFilter === entityType
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {accountTypeCounts[entityType] || 0}
+                  </span>
+                </button>
+              )
+            ))}
           </div>
         </CardHeader>
         <CardContent className="p-0 border-t border-slate-200">
