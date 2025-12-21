@@ -64,10 +64,12 @@ export default function Contacts() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       setDialogOpen(false);
       setEditingContact(null);
+      toast.success('Contact created successfully');
     },
     onError: (error) => {
       console.error('Create failed:', error);
-      alert(`Failed to create contact: ${error.message}`);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      toast.error(`Failed to create contact: ${error.message}`);
     }
   });
 
@@ -77,10 +79,12 @@ export default function Contacts() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       setDialogOpen(false);
       setEditingContact(null);
+      toast.success('Contact updated successfully');
     },
     onError: (error) => {
       console.error('Update failed:', error);
-      alert(`Failed to update contact: ${error.message}`);
+      console.error('Error details:', JSON.stringify(error, null, 2));
+      toast.error(`Failed to update contact: ${error.message}`);
     }
   });
 
@@ -167,20 +171,22 @@ export default function Contacts() {
     const phoneDigits = phoneValue ? phoneValue.replace(/[^\d]/g, '') : '';
 
     if (phoneValue && phoneDigits.length > 0 && phoneDigits.length < 10) {
-      alert('Phone number must include area code (10 digits)');
+      toast.error('Phone number must include area code (10 digits)');
       return;
     }
 
-    const type = formData.get('type');
-    const status = formData.get('status');
+    const type = formData.get('type') || 'vendor';
+    const status = formData.get('status') || 'active';
 
-    if (!type) {
-      alert('Type is required');
+    console.log('Form submission data:', { type, status, name: formData.get('name') });
+
+    if (!type || (type !== 'vendor' && type !== 'customer')) {
+      toast.error('Type must be either vendor or customer');
       return;
     }
 
     if (!status) {
-      alert('Status is required');
+      toast.error('Status is required');
       return;
     }
 
@@ -196,6 +202,8 @@ export default function Contacts() {
       linked_user_id: detectedUser?.id || undefined,
       connection_status: detectedUser ? 'platform_user' : 'not_checked'
     };
+
+    console.log('Submitting contact data:', data);
 
     if (editingContact) {
       updateMutation.mutate({ id: editingContact.id, data });
