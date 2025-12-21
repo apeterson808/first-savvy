@@ -266,3 +266,32 @@ button:focus-visible {
 .border-sky-blue { border-color: var(--clr-sky-blue); }
 .border-light-blue { border-color: var(--clr-light-blue); }
 .border-lavender { border-color: var(--clr-lavender); }
+
+/* File Folder Tab Styling */
+.tab-folder-active {
+  position: relative;
+  z-index: 2;
+  margin-bottom: -1px;
+}
+
+.tab-folder-active::before,
+.tab-folder-active::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+
+.tab-folder-active::before {
+  left: -10px;
+  border-bottom-right-radius: 10px;
+  box-shadow: 5px 0 0 0 rgb(241 245 249);
+}
+
+.tab-folder-active::after {
+  right: -10px;
+  border-bottom-left-radius: 10px;
+  box-shadow: -5px 0 0 0 rgb(241 245 249);
+}
