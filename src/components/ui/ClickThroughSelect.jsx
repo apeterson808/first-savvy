@@ -361,7 +361,7 @@ export function ClickThroughSelect({
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="max-h-48 overflow-auto p-1">
+          <div className="max-h-[216px] overflow-auto p-1">
             {(() => {
               const flattenChildren = (nodes) => {
                 const result = [];
