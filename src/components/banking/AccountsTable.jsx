@@ -376,7 +376,7 @@ export default function AccountsTable({ accounts, isLoading }) {
           </div>
 
           {/* Filter Buttons */}
-          <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
             <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
               <TabsList className="h-8">
                 {availableEntityTypes.map(entityType => (
@@ -388,8 +388,6 @@ export default function AccountsTable({ accounts, isLoading }) {
                 ))}
               </TabsList>
             </Tabs>
-
-            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -455,7 +453,6 @@ export default function AccountsTable({ accounts, isLoading }) {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0 border-t border-slate-200">
