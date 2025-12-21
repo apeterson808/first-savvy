@@ -41,10 +41,17 @@ function formatPhoneNumber(value) {
 export default function Contacts() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingContact, setEditingContact] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [phoneValue, setPhoneValue] = useState('');
-  const [emailValue, setEmailValue] = useState('');
+  const [formData, setFormData] = useState({
+    name: '',
+    type: 'vendor',
+    status: 'active',
+    email: '',
+    phone: '',
+    address: '',
+    notes: '',
+    default_category_id: '',
+  });
   const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
 
@@ -62,38 +69,38 @@ export default function Contacts() {
     mutationFn: (data) => base44.entities.Contact.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      resetForm();
       setDialogOpen(false);
-      setEditingContact(null);
       toast.success('Contact created successfully');
     },
     onError: (error) => {
       console.error('Create failed:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       toast.error(`Failed to create contact: ${error.message}`);
     }
   });
 
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Contact.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-      setDialogOpen(false);
-      setEditingContact(null);
-      toast.success('Contact updated successfully');
-    },
-    onError: (error) => {
-      console.error('Update failed:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      toast.error(`Failed to update contact: ${error.message}`);
-    }
-  });
+  const resetForm = () => {
+    setFormData({
+      name: '',
+      type: 'vendor',
+      status: 'active',
+      email: '',
+      phone: '',
+      address: '',
+      notes: '',
+      default_category_id: '',
+    });
+    setDetectedUser(null);
+  };
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Contact.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] });
-    }
-  });
+  const updateFormField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePhoneChange = (e) => {
+    const formatted = formatPhoneNumber(e.target.value);
+    updateFormField('phone', formatted);
+  };
 
   const handleConnectionRequest = async (user) => {
     try {
@@ -166,75 +173,32 @@ export default function Contacts() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
 
-    console.log('=== FORM SUBMISSION DEBUG ===');
-    console.log('All form data entries:');
-    for (let [key, value] of formData.entries()) {
-      console.log(`  ${key}: "${value}" (type: ${typeof value})`);
+    if (!formData.name.trim()) {
+      toast.error('Name is required');
+      return;
     }
 
-    const phoneDigits = phoneValue ? phoneValue.replace(/[^\d]/g, '') : '';
-
-    if (phoneValue && phoneDigits.length > 0 && phoneDigits.length < 10) {
+    const phoneDigits = formData.phone ? formData.phone.replace(/[^\d]/g, '') : '';
+    if (formData.phone && phoneDigits.length > 0 && phoneDigits.length < 10) {
       toast.error('Phone number must include area code (10 digits)');
       return;
     }
 
-    let type = formData.get('type');
-    console.log('Raw type from form:', type, 'Type of:', typeof type);
-
-    const typeInput = e.target.querySelector('input[name="type"]');
-    console.log('Type input element:', typeInput);
-    console.log('Type input value:', typeInput?.value);
-
-    if (!type || type === '' || type === 'null' || type === 'undefined') {
-      console.log('Type is empty, using default: vendor');
-      type = 'vendor';
-    }
-
-    type = String(type).toLowerCase().trim();
-    console.log('Normalized type:', type);
-
-    if (type !== 'vendor' && type !== 'customer') {
-      console.error('Invalid type value:', type);
-      toast.error(`Invalid type value: "${type}". Must be vendor or customer.`);
-      return;
-    }
-
-    let status = formData.get('status');
-    console.log('Raw status from form:', status);
-
-    if (!status || status === '' || status === 'null' || status === 'undefined') {
-      console.log('Status is empty, using default: active');
-      status = 'active';
-    }
-
-    const data = {
-      name: formData.get('name'),
-      type,
-      email: emailValue || undefined,
-      phone: phoneValue || undefined,
-      address: formData.get('address') || undefined,
-      notes: formData.get('notes') || undefined,
-      default_category_id: formData.get('default_category_id') || undefined,
-      status,
+    const contactData = {
+      name: formData.name.trim(),
+      type: formData.type,
+      status: formData.status,
+      email: formData.email.trim() || undefined,
+      phone: formData.phone || undefined,
+      address: formData.address.trim() || undefined,
+      notes: formData.notes.trim() || undefined,
+      default_category_id: formData.default_category_id || undefined,
       linked_user_id: detectedUser?.id || undefined,
       connection_status: detectedUser ? 'platform_user' : 'not_checked'
     };
 
-    console.log('Final contact data to submit:', JSON.stringify(data, null, 2));
-
-    if (editingContact) {
-      updateMutation.mutate({ id: editingContact.id, data });
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
-  const handlePhoneChange = (e) => {
-    const formatted = formatPhoneNumber(e.target.value);
-    setPhoneValue(formatted);
+    createMutation.mutate(contactData);
   };
 
   const filteredContacts = contacts.filter(c =>
@@ -250,10 +214,7 @@ export default function Contacts() {
             <Button
               size="sm"
               onClick={() => {
-                setEditingContact(null);
-                setPhoneValue('');
-                setEmailValue('');
-                setDetectedUser(null);
+                resetForm();
                 setDialogOpen(true);
               }}
               className="bg-primary hover:bg-primary/90 h-9"
@@ -353,19 +314,18 @@ export default function Contacts() {
         </CardContent>
       </Card>
 
-      {/* Add/Edit Sheet */}
       <Sheet open={dialogOpen} onOpenChange={setDialogOpen}>
         <SheetContent className="overflow-y-auto">
           <SheetHeader>
-            <SheetTitle>{editingContact ? 'Edit Contact' : 'Add Contact'}</SheetTitle>
+            <SheetTitle>Add Contact</SheetTitle>
           </SheetHeader>
-          <form key={editingContact?.id || 'new'} onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
               <Label htmlFor="name">Name *</Label>
               <Input
                 id="name"
-                name="name"
-                defaultValue={editingContact?.name}
+                value={formData.name}
+                onChange={(e) => updateFormField('name', e.target.value)}
                 placeholder="e.g., Starbucks, Employer XYZ"
                 required
               />
@@ -375,8 +335,8 @@ export default function Contacts() {
               <div>
                 <Label htmlFor="type">Type *</Label>
                 <ClickThroughSelect
-                  name="type"
-                  defaultValue={(editingContact?.type || 'vendor').toLowerCase()}
+                  value={formData.type}
+                  onValueChange={(value) => updateFormField('type', value)}
                   placeholder="Select type"
                 >
                   <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
@@ -386,8 +346,8 @@ export default function Contacts() {
               <div>
                 <Label htmlFor="status">Status *</Label>
                 <ClickThroughSelect
-                  name="status"
-                  defaultValue={(editingContact?.status || 'active').toLowerCase()}
+                  value={formData.status}
+                  onValueChange={(value) => updateFormField('status', value)}
                   placeholder="Select status"
                 >
                   <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
@@ -400,10 +360,9 @@ export default function Contacts() {
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
-                name="email"
                 type="email"
-                value={emailValue}
-                onChange={(e) => setEmailValue(e.target.value)}
+                value={formData.email}
+                onChange={(e) => updateFormField('email', e.target.value)}
                 placeholder="contact@example.com"
               />
               <p className="text-xs text-slate-500 mt-1">
@@ -411,10 +370,9 @@ export default function Contacts() {
               </p>
               <AccountDetectionField
                 type="email"
-                value={emailValue}
+                value={formData.email}
                 onConnectionRequest={handleConnectionRequest}
                 onInviteSend={handleSendInvitation}
-                disabled={!!editingContact}
               />
             </div>
 
@@ -422,9 +380,8 @@ export default function Contacts() {
               <Label htmlFor="phone">Phone</Label>
               <Input
                 id="phone"
-                name="phone"
                 type="tel"
-                value={phoneValue}
+                value={formData.phone}
                 onChange={handlePhoneChange}
                 placeholder="(555) 123-4567"
                 maxLength={14}
@@ -434,10 +391,9 @@ export default function Contacts() {
               </p>
               <AccountDetectionField
                 type="phone"
-                value={phoneValue}
+                value={formData.phone}
                 onConnectionRequest={handleConnectionRequest}
                 onInviteSend={handleSendInvitation}
-                disabled={!!editingContact}
               />
             </div>
 
@@ -445,8 +401,8 @@ export default function Contacts() {
               <Label htmlFor="address">Address</Label>
               <Textarea
                 id="address"
-                name="address"
-                defaultValue={editingContact?.address}
+                value={formData.address}
+                onChange={(e) => updateFormField('address', e.target.value)}
                 placeholder="Street address, city, state, zip"
                 rows={2}
               />
@@ -454,9 +410,9 @@ export default function Contacts() {
 
             <div>
               <Label htmlFor="default_category_id">Default Category</Label>
-              <ClickThroughSelect 
-                name="default_category_id" 
-                defaultValue={editingContact?.default_category_id}
+              <ClickThroughSelect
+                value={formData.default_category_id}
+                onValueChange={(value) => updateFormField('default_category_id', value)}
                 placeholder="Select category (optional)"
               >
                 {categories.map(cat => (
@@ -471,8 +427,8 @@ export default function Contacts() {
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
-                name="notes"
-                defaultValue={editingContact?.notes}
+                value={formData.notes}
+                onChange={(e) => updateFormField('notes', e.target.value)}
                 placeholder="e.g., Recurring $15.99/month"
                 rows={3}
               />
@@ -482,8 +438,12 @@ export default function Contacts() {
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit" className="bg-primary hover:bg-primary/90">
-                {editingContact ? 'Update' : 'Create'}
+              <Button
+                type="submit"
+                className="bg-primary hover:bg-primary/90"
+                disabled={createMutation.isPending}
+              >
+                {createMutation.isPending ? 'Creating...' : 'Create'}
               </Button>
             </SheetFooter>
           </form>
