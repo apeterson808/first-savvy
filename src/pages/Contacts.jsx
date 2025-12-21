@@ -94,7 +94,11 @@ export default function Contacts() {
   };
 
   const updateFormField = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    let normalizedValue = value;
+    if (field === 'type' || field === 'status') {
+      normalizedValue = value ? value.toLowerCase() : value;
+    }
+    setFormData(prev => ({ ...prev, [field]: normalizedValue }));
   };
 
   const handlePhoneChange = (e) => {
@@ -187,8 +191,8 @@ export default function Contacts() {
 
     const contactData = {
       name: formData.name.trim(),
-      type: formData.type,
-      status: formData.status,
+      type: (formData.type || 'vendor').toLowerCase(),
+      status: (formData.status || 'active').toLowerCase(),
       email: formData.email.trim() || undefined,
       phone: formData.phone || undefined,
       address: formData.address.trim() || undefined,
