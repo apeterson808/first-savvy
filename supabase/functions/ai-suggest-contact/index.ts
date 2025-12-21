@@ -45,125 +45,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!ANTHROPIC_API_KEY) {
-      const suggestedContact = suggestContactFallback(description, contacts);
-      return new Response(
-        JSON.stringify({
-          contactId: suggestedContact?.id || null,
-          contactName: suggestedContact?.name || null,
-          confidence: suggestedContact ? 'pattern' : 'none',
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const contactList = contacts.map((c, idx) => `${idx + 1}. ${c.name}${c.type ? ` (${c.type})` : ''}`).join('\n');
-
-    const prompt = `Analyze this transaction description and suggest which contact from the list is most likely involved.
-
-Transaction description: "${description}"
-
-Available contacts:
-${contactList}
-
-Instructions:
-- Look for exact name matches or partial name matches in the description
-- Consider common merchant name patterns and abbreviations
-- For businesses, match company names even if abbreviated or with location codes
-- For people, match first names, last names, or full names
-- Return ONLY the exact contact name as it appears in the list above
-- If no contact seems to match, respond with "NONE"
-
-Examples:
-- "WHOLEFDS MARKET #123" → "Whole Foods" (if that's a contact)
-- "STARBUCKS STORE 456" → "Starbucks" (if that's a contact)
-- "VENMO - JOHN SMITH" → "John Smith" (if that's a contact)
-- "ACH TRANSFER JANE DOE" → "Jane Doe" (if that's a contact)
-
-Respond with just the contact name or "NONE".`;
-
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-7-sonnet-20250219',
-        max_tokens: 100,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Anthropic API error:', await response.text());
-      const suggestedContact = suggestContactFallback(description, contacts);
-      return new Response(
-        JSON.stringify({
-          contactId: suggestedContact?.id || null,
-          contactName: suggestedContact?.name || null,
-          confidence: suggestedContact ? 'pattern' : 'none',
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const data = await response.json();
-    const suggestedName = data.content[0].text.trim();
-
-    if (suggestedName === 'NONE') {
-      const fallbackContact = suggestContactFallback(description, contacts);
-      return new Response(
-        JSON.stringify({
-          contactId: fallbackContact?.id || null,
-          contactName: fallbackContact?.name || null,
-          confidence: fallbackContact ? 'pattern' : 'none',
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const matchedContact = contacts.find(
-      c => c.name.toLowerCase() === suggestedName.toLowerCase()
-    );
-
-    if (!matchedContact) {
-      const fallbackContact = suggestContactFallback(description, contacts);
-      return new Response(
-        JSON.stringify({
-          contactId: fallbackContact?.id || null,
-          contactName: fallbackContact?.name || null,
-          confidence: fallbackContact ? 'pattern' : 'none',
-        }),
-        {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
+    const suggestedContact = suggestContactFallback(description, contacts);
     return new Response(
       JSON.stringify({
-        contactId: matchedContact.id,
-        contactName: matchedContact.name,
-        confidence: 'ai',
+        contactId: suggestedContact?.id || null,
+        contactName: suggestedContact?.name || null,
+        confidence: suggestedContact ? 'pattern' : 'none',
       }),
       {
+        status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
