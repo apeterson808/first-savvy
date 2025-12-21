@@ -39,7 +39,7 @@ export function validateAmount(value, options = {}) {
     return { valid: false, value: 0, error: 'Amount cannot be zero' };
   }
 
-  if (numValue < minValue && numValue !== 0) {
+  if (numValue < minValue && numValue !== 0 && !(allowNegative && numValue < 0)) {
     return { valid: false, value: 0, error: `Amount must be at least $${minValue}` };
   }
 
