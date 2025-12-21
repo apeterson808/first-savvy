@@ -372,7 +372,7 @@ export default function Contacts() {
                 <Label htmlFor="type">Type *</Label>
                 <ClickThroughSelect
                   name="type"
-                  defaultValue={editingContact?.type || 'vendor'}
+                  defaultValue={(editingContact?.type || 'vendor').toLowerCase()}
                   placeholder="Select type"
                 >
                   <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
@@ -383,7 +383,7 @@ export default function Contacts() {
                 <Label htmlFor="status">Status *</Label>
                 <ClickThroughSelect
                   name="status"
-                  defaultValue={editingContact?.status || 'active'}
+                  defaultValue={(editingContact?.status || 'active').toLowerCase()}
                   placeholder="Select status"
                 >
                   <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
