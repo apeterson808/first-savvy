@@ -192,20 +192,10 @@ export default function AccountsTable({ accounts, isLoading }) {
     return matchesType && matchesActive;
   });
 
-  // Get unique entity types that exist in accounts
+  // Show all entity types regardless of whether accounts exist
   const availableEntityTypes = React.useMemo(() => {
-    const types = new Set(accounts.map(acc => acc.entityType).filter(Boolean));
-    const sortedTypes = Array.from(types).sort();
-
-    // Ensure BankAccount is always first if it exists
-    const bankAccountIndex = sortedTypes.indexOf('BankAccount');
-    if (bankAccountIndex > 0) {
-      sortedTypes.splice(bankAccountIndex, 1);
-      sortedTypes.unshift('BankAccount');
-    }
-
-    return sortedTypes;
-  }, [accounts]);
+    return ['BankAccount', 'Asset', 'CreditCard', 'Expense', 'Income'];
+  }, []);
 
   React.useEffect(() => {
     if (!accountTypeFilter && availableEntityTypes.length > 0) {
@@ -389,11 +379,9 @@ export default function AccountsTable({ accounts, isLoading }) {
             <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
               <TabsList className="h-8">
                 {availableEntityTypes.map(entityType => (
-                  accountTypeCounts[entityType] > 0 && (
-                    <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
-                      {entityTypeLabels[entityType] || entityType}
-                    </TabsTrigger>
-                  )
+                  <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
+                    {entityTypeLabels[entityType] || entityType}
+                  </TabsTrigger>
                 ))}
               </TabsList>
             </Tabs>
