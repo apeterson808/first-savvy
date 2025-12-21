@@ -195,7 +195,16 @@ export default function AccountsTable({ accounts, isLoading }) {
   // Get unique entity types that exist in accounts
   const availableEntityTypes = React.useMemo(() => {
     const types = new Set(accounts.map(acc => acc.entityType).filter(Boolean));
-    return Array.from(types).sort();
+    const sortedTypes = Array.from(types).sort();
+
+    // Ensure BankAccount is always first if it exists
+    const bankAccountIndex = sortedTypes.indexOf('BankAccount');
+    if (bankAccountIndex > 0) {
+      sortedTypes.splice(bankAccountIndex, 1);
+      sortedTypes.unshift('BankAccount');
+    }
+
+    return sortedTypes;
   }, [accounts]);
 
   React.useEffect(() => {
