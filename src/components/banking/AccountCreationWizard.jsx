@@ -482,7 +482,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="flex justify-center p-5">
+    <div className="flex justify-center">
       <div className="grid grid-cols-3 gap-[20px] max-w-md">
         {ACCOUNT_TYPE_CARDS.map(card => {
           const IconComponent = card.icon;
@@ -509,7 +509,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderSelectSubtype = () => {
     const IconComponent = selectedCard.icon;
     return (
-      <div className="grid grid-cols-2 gap-[20px] p-5">
+      <div className="grid grid-cols-2 gap-[20px]">
         {selectedCard.subtypes.map(subtype => (
           <div
             key={subtype.value}
@@ -877,8 +877,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-        <DialogHeader>
+      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+        <DialogHeader className="pt-5 px-5">
           <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
         </DialogHeader>
 
@@ -888,7 +888,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         </div>
 
         {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
-          <div className="flex justify-between gap-4 pt-4 border-t">
+          <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t">
             <Button
               type="button"
               variant="outline"
