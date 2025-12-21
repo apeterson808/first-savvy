@@ -184,7 +184,7 @@ export default function AddFinancialAccountSheet({
       name: account.account_name || account.name || '',
       accountType,
       detailType,
-      balance: String(Math.abs(account.current_balance || account.current_balance || 0)),
+      balance: String(account.current_balance || 0),
       startDate: account.start_date || '',
       bankName,
       institutionLogoUrl: logoUrl,
@@ -340,7 +340,8 @@ export default function AddFinancialAccountSheet({
 
     let validatedBalance = 0;
     if (formData.balance && formData.balance.trim() !== '') {
-      const balanceValidation = validateAmount(formData.balance, { allowZero: true });
+      const allowNegative = ['credit_card', 'liability'].includes(formData.accountType);
+      const balanceValidation = validateAmount(formData.balance, { allowZero: true, allowNegative });
       if (!balanceValidation.valid) {
         alert(balanceValidation.error);
         return;
@@ -694,15 +695,18 @@ export default function AddFinancialAccountSheet({
                         id="balance"
                         type="text"
                         value={formData.balance}
-                        onChange={(e) => updateFormField('balance', e.target.value.replace(/[^0-9.]/g, ''))}
+                        onChange={(e) => updateFormField('balance', e.target.value.replace(/[^0-9.-]/g, ''))}
                         onBlur={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, '');
+                          const val = e.target.value.replace(/[^0-9.-]/g, '');
                           if (val) {
-                            updateFormField('balance', parseFloat(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                            const numVal = parseFloat(val);
+                            if (!isNaN(numVal)) {
+                              updateFormField('balance', numVal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                            }
                           }
                         }}
                         onFocus={(e) => {
-                          const val = e.target.value.replace(/[^0-9.]/g, '');
+                          const val = e.target.value.replace(/[^0-9.-]/g, '');
                           updateFormField('balance', val);
                         }}
                         placeholder="0.00"
