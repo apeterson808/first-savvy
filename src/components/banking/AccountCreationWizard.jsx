@@ -886,7 +886,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         </div>
 
         {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
-          <div className="flex justify-between gap-3 pt-4 border-t">
+          <div className="flex justify-between gap-4 pt-3 border-t">
             <Button
               type="button"
               variant="outline"
