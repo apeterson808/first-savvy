@@ -509,7 +509,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderSelectSubtype = () => {
     const IconComponent = selectedCard.icon;
     return (
-      <div className="grid grid-cols-2 gap-3 p-4">
+      <div className="grid grid-cols-2 gap-[20px] p-4">
         {selectedCard.subtypes.map(subtype => (
           <div
             key={subtype.value}
