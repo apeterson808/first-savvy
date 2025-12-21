@@ -836,20 +836,6 @@ export default function AddFinancialAccountSheet({
                   Save
                 </Button>
               </SheetFooter>
-
-              {formData.name && formData.accountType && (
-                <div className="mt-4">
-                  <div className="flex items-center justify-end mb-2">
-                    <span className="text-[10px] px-2 py-1 bg-blue-100 text-blue-700 rounded font-medium">PREVIEW</span>
-                  </div>
-                  <div className="bg-white border rounded-md text-xs">
-                    <div className="p-3 bg-blue-100 border-l-2 border-l-blue-500 font-medium text-slate-900">
-                      {formData.name}
-                      {formData.accountNumber && ` (${formData.accountNumber})`}
-                    </div>
-                  </div>
-                </div>
-              )}
             </form>
         </SheetContent>
       </Sheet>
