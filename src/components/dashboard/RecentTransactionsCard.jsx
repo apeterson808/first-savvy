@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
-import AddFinancialAccountSheet from '../banking/AddFinancialAccountSheet';
+import AccountCreationWizard from '../banking/AccountCreationWizard';
 import FileImporter from '../banking/FileImporter';
 import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
@@ -264,11 +264,9 @@ export default function RecentTransactionsCard() {
         )}
       </CardContent>
 
-      <AddFinancialAccountSheet
+      <AccountCreationWizard
         open={addCategorySheetOpen}
         onOpenChange={setAddCategorySheetOpen}
-        mode="category"
-        initialCategoryName={categorySearchTerm}
         onAccountCreated={() => {
           setCategorySearchTerm('');
           queryClient.invalidateQueries({ queryKey: ['categories'] });

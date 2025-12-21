@@ -33,7 +33,7 @@ import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuar
 import TransactionFilterPanel from './TransactionFilterPanel';
 import { suggestCategory } from './CategorySuggestion';
 import { suggestContact } from './ContactSuggestion';
-import AddFinancialAccountSheet from './AddFinancialAccountSheet';
+import AccountCreationWizard from './AccountCreationWizard';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatTransactionDescription } from '../utils/formatters';
@@ -2516,13 +2516,10 @@ For each transaction, return the category_id that best matches. Consider:
                             incomeCategories={incomeCategories}
                           />
 
-                          <AddFinancialAccountSheet
+                          <AccountCreationWizard
                                             open={addAccountSheetOpen}
                                             onOpenChange={setAddAccountSheetOpen}
-                                            mode="category"
-                                            initialCategoryName={categorySearchTerm}
-                                            initialAccountType={triggeringTransactionType}
-                                            onAccountCreated={async ({ account: newCategory }) => {
+                                            onAccountCreated={async (newCategory) => {
                                               setCategorySearchTerm('');
                                               setTriggeringTransactionId(null);
                                               setTriggeringTransactionType(null);

@@ -1,4 +1,4 @@
-// Shared sorting logic for accounts - used by AccountsTable and AddFinancialAccountSheet preview
+// Shared sorting logic for accounts - used by AccountsTable
 
 export function sortAccountsForDisplay(allAccounts) {
   // Group by institution or entity type (only top-level accounts, no parent)

@@ -12,7 +12,7 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import AddFinancialAccountSheet from '../banking/AddFinancialAccountSheet';
+import AccountCreationWizard from '../banking/AccountCreationWizard';
 import BudgetConflictDialog from './BudgetConflictDialog';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 import AppearancePicker from '@/components/common/AppearancePicker';
@@ -450,16 +450,13 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
         </SheetContent>
       </Sheet>
 
-      <AddFinancialAccountSheet
+      <AccountCreationWizard
         open={addCategorySheetOpen}
         onOpenChange={setAddCategorySheetOpen}
-        mode="category"
-        hideLinkAccount={true}
         onAccountCreated={(newCategory) => {
           queryClient.invalidateQueries({ queryKey: ['categories'] });
-          // Auto-select the newly created category
-          if (newCategory?.account?.id) {
-            setSelectedCategoryId(newCategory.account.id);
+          if (newCategory?.id) {
+            setSelectedCategoryId(newCategory.id);
           }
         }}
       />

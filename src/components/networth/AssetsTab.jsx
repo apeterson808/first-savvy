@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Building2, Pencil } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 import { DETAIL_TYPE_LABELS } from '../utils/constants';
-import AddFinancialAccountSheet from '../banking/AddFinancialAccountSheet';
+import EditAccountDialog from '../banking/EditAccountDialog';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subMonths, subYears, startOfYear, eachMonthOfInterval } from 'date-fns';
 import TimeRangeDropdown from '../common/TimeRangeDropdown';
@@ -267,22 +267,19 @@ export default function AssetsTab() {
         </Card>
         </div>
 
-      <AddFinancialAccountSheet
+      <EditAccountDialog
         open={sheetOpen}
         onOpenChange={(open) => {
           setSheetOpen(open);
           if (!open) {
-            queryClient.invalidateQueries({ queryKey: ['assets'] });
-            queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
             setEditingAccount(null);
           }
         }}
-        editingAccount={editingAccount}
-        onAccountCreated={() => {
+        account={editingAccount}
+        onSuccess={() => {
           queryClient.invalidateQueries({ queryKey: ['assets'] });
           queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
         }}
-        hideLinkAccount
       />
     </div>
   );

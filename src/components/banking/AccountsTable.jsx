@@ -17,8 +17,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package } from 'lucide-react';
-import AddFinancialAccountSheet from './AddFinancialAccountSheet';
 import AccountCreationWizard from './AccountCreationWizard';
+import EditAccountDialog from './EditAccountDialog';
 import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
@@ -99,7 +99,6 @@ function EditableAccountName({ account }) {
 export default function AccountsTable({ accounts, isLoading }) {
   const navigate = useNavigate();
   const [editSheetOpen, setEditSheetOpen] = useState(false);
-  const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
@@ -631,24 +630,15 @@ export default function AccountsTable({ accounts, isLoading }) {
 
 
 
-      {/* Edit Account Sheet */}
-      <AddFinancialAccountSheet
+      {/* Edit Account Dialog */}
+      <EditAccountDialog
         open={editSheetOpen}
         onOpenChange={(open) => {
           setEditSheetOpen(open);
           if (!open) setEditingAccount(null);
         }}
-        editingAccount={editingAccount}
-        sortColumn={sortColumn}
-        sortDirection={sortDirection}
-      />
-
-      {/* Add Account Sheet */}
-      <AddFinancialAccountSheet
-        open={addSheetOpen}
-        onOpenChange={setAddSheetOpen}
-        sortColumn={sortColumn}
-        sortDirection={sortDirection}
+        account={editingAccount}
+        onSuccess={handleSuccess}
       />
 
       {/* Account Creation Wizard */}

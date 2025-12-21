@@ -18,7 +18,7 @@ import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import CsvColumnMapper from './CsvColumnMapper';
-import AddFinancialAccountSheet from './AddFinancialAccountSheet';
+import AccountCreationWizard from './AccountCreationWizard';
 
 export default function FileImporter({ open, onOpenChange, onImportComplete }) {
   const navigate = useNavigate();
@@ -689,27 +689,20 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
         </SheetFooter>
       </SheetContent>
 
-      {showAddAccountSheet && (
-        <AddFinancialAccountSheet 
-          open={showAddAccountSheet}
-          onOpenChange={(open) => {
-            setShowAddAccountSheet(open);
-            // Don't let it close the parent FileImporter
-          }}
-          onAccountCreated={async (result) => {
-            if (result?.account?.id) {
-              setShowAddAccountSheet(false);
-              await queryClient.refetchQueries({ queryKey: ['accounts'] });
-              // Small delay to ensure UI updates
-              setTimeout(() => {
-                setSelectedAccountId(result.account.id);
-                toast.success('Account created. Ready to import transactions.');
-              }, 100);
-            }
-          }}
-          hideLinkAccount={true}
-        />
-      )}
+      <AccountCreationWizard
+        open={showAddAccountSheet}
+        onOpenChange={setShowAddAccountSheet}
+        onAccountCreated={async (result) => {
+          if (result?.id) {
+            setShowAddAccountSheet(false);
+            await queryClient.refetchQueries({ queryKey: ['accounts'] });
+            setTimeout(() => {
+              setSelectedAccountId(result.id);
+              toast.success('Account created. Ready to import transactions.');
+            }, 100);
+          }
+        }}
+      />
           </Sheet>
           );
           }
