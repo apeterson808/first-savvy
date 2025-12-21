@@ -5,7 +5,6 @@ import TransactionsTab from '../components/banking/TransactionsTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
-import ContactMatchingRulesManager from '../components/banking/ContactMatchingRulesManager';
 import PlaidAccountReviewDialog from '../components/banking/PlaidAccountReviewDialog';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -202,7 +201,14 @@ export default function Banking() {
         </TabsContent>
 
         <TabsContent value="rules" className="space-y-3">
-          <ContactMatchingRulesManager />
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Rules</p>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600">Rules content coming soon</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-3">
