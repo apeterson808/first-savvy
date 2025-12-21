@@ -391,14 +391,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const getCurrentStepNumber = () => {
     const stepMap = {
-      'select-type': 1,
-      'select-subtype': 2,
-      'details': 3,
-      'balance': 4,
-      'loan-details': 4,
-      'review': getTotalSteps()
+      'select-type': 0,
+      'select-subtype': 1,
+      'details': 2,
+      'balance': 3,
+      'loan-details': 3,
+      'review': getTotalSteps() - 1
     };
-    return stepMap[currentStep] || 1;
+    return stepMap[currentStep] || 0;
   };
 
   const canProceed = () => {
