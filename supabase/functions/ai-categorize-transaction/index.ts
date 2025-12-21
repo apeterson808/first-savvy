@@ -14,36 +14,25 @@ interface Category {
 }
 
 const CATEGORIES: Category[] = [
-  { name: "Groceries", type: "expense" },
   { name: "Dining Out", type: "expense" },
-  { name: "Gas & Fuel", type: "expense" },
-  { name: "Transportation", type: "expense" },
-  { name: "Shopping", type: "expense" },
-  { name: "Entertainment", type: "expense" },
-  { name: "Healthcare", type: "expense" },
-  { name: "Utilities", type: "expense" },
-  { name: "Rent", type: "expense" },
-  { name: "Mortgage", type: "expense" },
-  { name: "Insurance", type: "expense" },
-  { name: "Subscriptions", type: "expense" },
-  { name: "Personal Care", type: "expense" },
-  { name: "Clothing", type: "expense" },
   { name: "Education", type: "expense" },
-  { name: "Gifts & Donations", type: "expense" },
-  { name: "Home Improvement", type: "expense" },
-  { name: "Travel", type: "expense" },
-  { name: "Pets", type: "expense" },
-  { name: "Kids", type: "expense" },
-  { name: "Fees & Charges", type: "expense" },
-  { name: "Debt Payments", type: "expense" },
+  { name: "Family & Kids", type: "expense" },
+  { name: "Financial", type: "expense" },
+  { name: "Giving", type: "expense" },
+  { name: "Groceries", type: "expense" },
+  { name: "Health & Wellness", type: "expense" },
+  { name: "Housing", type: "expense" },
+  { name: "Insurance", type: "expense" },
+  { name: "Miscellaneous", type: "expense" },
+  { name: "Personal & Lifestyle", type: "expense" },
+  { name: "Subscriptions", type: "expense" },
   { name: "Taxes", type: "expense" },
-  { name: "Other Expenses", type: "expense" },
-  { name: "Salary", type: "income" },
-  { name: "Business Income", type: "income" },
-  { name: "Investment Income", type: "income" },
-  { name: "Interest Earned", type: "income" },
-  { name: "Rental Income", type: "income" },
+  { name: "Transportation", type: "expense" },
+  { name: "Travel", type: "expense" },
+  { name: "Utilities", type: "expense" },
+  { name: "Gifts Received", type: "income" },
   { name: "Other Income", type: "income" },
+  { name: "Salary", type: "income" },
 ];
 
 Deno.serve(async (req: Request) => {
@@ -92,20 +81,27 @@ ${categoryList}
 
 Respond with ONLY the category name exactly as it appears in the list above. Do not include the type in parentheses. For example, respond with "Groceries" not "Groceries (expense)".
 
-If the transaction appears to be from:
-- Grocery stores (Whole Foods, Trader Joe's, Safeway, Kroger, etc.) → Groceries
-- Restaurants, cafes, food delivery (Starbucks, McDonald's, DoorDash, etc.) → Dining Out
-- Gas stations (Shell, Chevron, BP, etc.) → Gas & Fuel
-- Public transit, rideshare (Uber, Lyft, metro, bus, etc.) → Transportation
-- Retail stores (Amazon, Target, Walmart, etc.) → Shopping
-- Streaming, movies, games, events → Entertainment
-- Doctor, pharmacy, hospital → Healthcare
-- Electric, water, gas, internet, phone bills → Utilities
-- Rent payments → Rent
-- Mortgage payments → Mortgage
-- Insurance companies → Insurance
-- Netflix, Spotify, gym memberships → Subscriptions
-- Paycheck, direct deposit from employer → Salary
+Category mapping guidelines:
+- Grocery stores (Whole Foods, Trader Joe's, Safeway, Kroger, Costco, etc.) → Groceries
+- Restaurants, cafes, food delivery (Starbucks, McDonald's, Chipotle, DoorDash, Uber Eats, etc.) → Dining Out
+- Gas stations, car maintenance, public transit, rideshare (Shell, Chevron, Uber, Lyft, etc.) → Transportation
+- Retail stores, online shopping, general merchandise (Amazon, Target, Walmart, Best Buy, etc.) → Personal & Lifestyle
+- Streaming services, gym memberships, recurring software (Netflix, Spotify, Hulu, Apple, etc.) → Subscriptions
+- Doctor, pharmacy, hospital, fitness, wellness (CVS, Walgreens, medical centers, etc.) → Health & Wellness
+- Electric, water, gas, internet, phone bills (PG&E, AT&T, Verizon, Comcast, etc.) → Utilities
+- Rent, mortgage, home repairs, property expenses → Housing
+- Insurance premiums (auto, health, home, life) → Insurance
+- Schools, courses, books, educational materials → Education
+- Childcare, toys, kids activities, family expenses → Family & Kids
+- Donations, charitable giving, gifts to others → Giving
+- Movies, concerts, events, entertainment venues (AMC, theaters, etc.) → Personal & Lifestyle
+- Flights, hotels, vacation expenses → Travel
+- Bank fees, investment fees, debt payments, loan payments → Financial
+- Tax payments, tax preparation → Taxes
+- Paycheck, salary, direct deposit from employer → Salary
+- Gift money received, bonuses, refunds → Gifts Received
+- Any other income sources → Other Income
+- Anything that doesn't fit well → Miscellaneous
 
 Be intelligent about merchant names that include codes, abbreviations, or location info.`;
 
@@ -189,20 +185,26 @@ Be intelligent about merchant names that include codes, abbreviations, or locati
 
 function suggestCategoryFallback(description: string): { category: string; type: string; confidence: string } {
   const descLower = description.toLowerCase();
-  
+
   const patterns = [
     { keywords: ['wholefds', 'whole foods', 'trader joe', 'safeway', 'kroger', 'albertsons', 'grocery', 'market'], category: 'Groceries', type: 'expense' },
-    { keywords: ['starbucks', 'coffee', 'restaurant', 'cafe', 'doordash', 'uber eats', 'grubhub', 'mcdonald', 'chipotle'], category: 'Dining Out', type: 'expense' },
-    { keywords: ['shell', 'chevron', 'exxon', 'bp', 'gas', 'fuel', 'gasoline'], category: 'Gas & Fuel', type: 'expense' },
-    { keywords: ['uber', 'lyft', 'metro', 'transit', 'bus', 'train', 'parking'], category: 'Transportation', type: 'expense' },
-    { keywords: ['amazon', 'target', 'walmart', 'costco', 'shopping'], category: 'Shopping', type: 'expense' },
-    { keywords: ['netflix', 'spotify', 'hulu', 'disney', 'prime', 'subscription'], category: 'Subscriptions', type: 'expense' },
-    { keywords: ['electric', 'water', 'gas company', 'internet', 'phone', 'utility', 'comcast', 'att', 'verizon'], category: 'Utilities', type: 'expense' },
-    { keywords: ['rent payment', 'apartment', 'landlord'], category: 'Rent', type: 'expense' },
-    { keywords: ['mortgage', 'loan payment'], category: 'Mortgage', type: 'expense' },
-    { keywords: ['doctor', 'pharmacy', 'cvs', 'walgreens', 'hospital', 'medical', 'health'], category: 'Healthcare', type: 'expense' },
+    { keywords: ['starbucks', 'coffee', 'restaurant', 'cafe', 'doordash', 'uber eats', 'grubhub', 'mcdonald', 'chipotle', 'panera', 'olive garden', 'panda', 'cheesecake'], category: 'Dining Out', type: 'expense' },
+    { keywords: ['shell', 'chevron', 'exxon', 'bp', 'gas', 'fuel', 'gasoline', 'uber', 'lyft', 'metro', 'transit', 'bus', 'train', 'parking'], category: 'Transportation', type: 'expense' },
+    { keywords: ['amazon', 'target', 'walmart', 'costco', 'best buy', 'nordstrom', 'lululemon', 'shopping'], category: 'Personal & Lifestyle', type: 'expense' },
+    { keywords: ['netflix', 'spotify', 'hulu', 'disney', 'prime', 'subscription', 'apple.com/bill'], category: 'Subscriptions', type: 'expense' },
+    { keywords: ['pg&e', 'electric', 'water', 'gas company', 'internet', 'phone', 'utility', 'comcast', 'at&t', 'att', 'verizon'], category: 'Utilities', type: 'expense' },
+    { keywords: ['rent payment', 'apartment', 'landlord', 'mortgage'], category: 'Housing', type: 'expense' },
+    { keywords: ['doctor', 'pharmacy', 'cvs', 'walgreens', 'hospital', 'medical', 'health'], category: 'Health & Wellness', type: 'expense' },
     { keywords: ['insurance', 'geico', 'state farm', 'allstate'], category: 'Insurance', type: 'expense' },
+    { keywords: ['school', 'tuition', 'education', 'course'], category: 'Education', type: 'expense' },
+    { keywords: ['kid', 'child', 'daycare', 'toy'], category: 'Family & Kids', type: 'expense' },
+    { keywords: ['donation', 'charity', 'gift'], category: 'Giving', type: 'expense' },
+    { keywords: ['amc', 'theater', 'movie', 'concert'], category: 'Personal & Lifestyle', type: 'expense' },
+    { keywords: ['flight', 'hotel', 'airbnb', 'travel', 'vacation'], category: 'Travel', type: 'expense' },
+    { keywords: ['bank fee', 'atm', 'wire transfer', 'payment', 'credit card payment'], category: 'Financial', type: 'expense' },
+    { keywords: ['tax', 'irs'], category: 'Taxes', type: 'expense' },
     { keywords: ['payroll', 'salary', 'direct deposit', 'paycheck'], category: 'Salary', type: 'income' },
+    { keywords: ['interest', 'dividend', 'cashback', 'reward', 'deposit'], category: 'Other Income', type: 'income' },
   ];
 
   for (const pattern of patterns) {
@@ -216,7 +218,7 @@ function suggestCategoryFallback(description: string): { category: string; type:
   }
 
   return {
-    category: 'Other Expenses',
+    category: 'Miscellaneous',
     type: 'expense',
     confidence: 'fallback',
   };
