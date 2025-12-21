@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package } from 'lucide-react';
 import AddFinancialAccountSheet from './AddFinancialAccountSheet';
+import AccountCreationWizard from './AccountCreationWizard';
 import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
@@ -99,6 +100,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   const navigate = useNavigate();
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
@@ -389,7 +391,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                onClick={() => setAddSheetOpen(true)}
+                onClick={() => setWizardOpen(true)}
               >
                 <Plus className="w-4 h-4" />
               </Button>
@@ -494,7 +496,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                   </div>
                   <div className="mt-4 text-center">
                     <button
-                      onClick={() => setAddSheetOpen(true)}
+                      onClick={() => setWizardOpen(true)}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
                       Or add an account manually
@@ -641,6 +643,13 @@ export default function AccountsTable({ accounts, isLoading }) {
         onOpenChange={setAddSheetOpen}
         sortColumn={sortColumn}
         sortDirection={sortDirection}
+      />
+
+      {/* Account Creation Wizard */}
+      <AccountCreationWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
+        onAccountCreated={handleSuccess}
       />
 
       {/* File Importer */}
