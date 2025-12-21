@@ -28,7 +28,7 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'banking',
     title: 'Banking',
     icon: Building2,
-    gradient: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    bgColor: '#52A5CE',
     iconColor: 'text-white',
     subtypes: [
       { value: 'checking', label: 'Checking' },
@@ -40,7 +40,7 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'vehicle',
     title: 'Vehicle',
     icon: Car,
-    gradient: 'bg-gradient-to-br from-green-500 to-green-600',
+    bgColor: '#AACC96',
     iconColor: 'text-white',
     subtypes: [
       { value: 'vehicle_with_loan', label: 'With Loan' },
@@ -51,7 +51,7 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'property',
     title: 'Property',
     icon: Home,
-    gradient: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    bgColor: '#EF6F3C',
     iconColor: 'text-white',
     subtypes: [
       { value: 'property_with_loan', label: 'With Loan' },
@@ -62,7 +62,7 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'investments',
     title: 'Investments',
     icon: TrendingUp,
-    gradient: 'bg-gradient-to-br from-pink-500 to-rose-600',
+    bgColor: '#FF7BAC',
     iconColor: 'text-white',
     subtypes: [
       { value: 'retirement', label: 'Retirement Account (401k, IRA, Roth)' },
@@ -75,7 +75,7 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'loans',
     title: 'Loans & Debts',
     icon: FileText,
-    gradient: 'bg-gradient-to-br from-red-500 to-red-600',
+    bgColor: '#6D1F42',
     iconColor: 'text-white',
     subtypes: [
       { value: 'personal_loan', label: 'Personal' },
@@ -87,8 +87,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'budget',
     title: 'Budget Category',
     icon: DollarSign,
-    gradient: 'bg-gradient-to-br from-teal-500 to-cyan-600',
-    iconColor: 'text-white',
+    bgColor: '#EFCE7B',
+    iconColor: 'text-gray-800',
     subtypes: [
       { value: 'income', label: 'Income' },
       { value: 'expense', label: 'Expense' }
@@ -482,7 +482,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="grid grid-cols-3 gap-8 p-6">
+    <div className="grid grid-cols-3 gap-5 p-4">
       {ACCOUNT_TYPE_CARDS.map(card => {
         const IconComponent = card.icon;
         return (
@@ -491,10 +491,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
             onClick={() => handleCardSelect(card)}
           >
-            <div className={`${card.gradient} rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2`}>
-              <IconComponent className={`w-11 h-11 ${card.iconColor}`} strokeWidth={1.5} />
+            <div
+              className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+              style={{ backgroundColor: card.bgColor }}
+            >
+              <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
             </div>
-            <span className="text-xs font-medium text-gray-700 text-center leading-tight">{card.title}</span>
+            <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
           </div>
         );
       })}
@@ -504,17 +507,20 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderSelectSubtype = () => {
     const IconComponent = selectedCard.icon;
     return (
-      <div className="grid grid-cols-2 gap-6 p-6">
+      <div className="grid grid-cols-2 gap-5 p-4">
         {selectedCard.subtypes.map(subtype => (
           <div
             key={subtype.value}
             className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
             onClick={() => handleSubtypeSelect(subtype)}
           >
-            <div className={`${selectedCard.gradient} rounded-[22%] w-24 h-24 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-3`}>
-              <IconComponent className={`w-14 h-14 ${selectedCard.iconColor}`} strokeWidth={1.5} />
+            <div
+              className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+              style={{ backgroundColor: selectedCard.bgColor }}
+            >
+              <IconComponent className={`w-10 h-10 ${selectedCard.iconColor}`} strokeWidth={2} />
             </div>
-            <span className="text-sm font-medium text-gray-700 text-center leading-tight">{subtype.label}</span>
+            <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[100px]">{subtype.label}</span>
           </div>
         ))}
       </div>
