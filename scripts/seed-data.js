@@ -85,41 +85,6 @@ async function cleanupDatabase() {
   console.log('\n✅ Database cleanup complete!\n');
 }
 
-function getTransferCategoryId(amount, categoryMap) {
-  return amount < 0 ? categoryMap['Transfer Expense'] : categoryMap['Transfer Income'];
-}
-
-async function fetchUserCategories(userId) {
-  console.log('📁 Fetching user categories...');
-
-  const { data, error } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('user_id', userId);
-
-  if (error) throw error;
-
-  if (!data || data.length === 0) {
-    throw new Error('No categories found for user. Categories should be automatically provisioned on signup.');
-  }
-
-  const categoryMap = {};
-  data.forEach(cat => {
-    if (cat.detail_type === 'transfer') {
-      if (cat.type === 'income') {
-        categoryMap['Transfer Income'] = cat.id;
-      } else if (cat.type === 'expense') {
-        categoryMap['Transfer Expense'] = cat.id;
-      }
-    } else {
-      categoryMap[cat.name] = cat.id;
-    }
-  });
-
-  console.log(`✓ Found ${data.length} categories`);
-  return categoryMap;
-}
-
 async function createBankAccounts(userId) {
   console.log('🏦 Creating 3 bank accounts...');
 
@@ -172,8 +137,8 @@ async function createBankAccounts(userId) {
   return accountMap;
 }
 
-async function generatePostedTransactions(accountMap, categoryMap, userId) {
-  console.log('💰 Generating 60 posted transactions (20 per account)...');
+async function generatePostedTransactions(accountMap, userId) {
+  console.log('💰 Generating 60 posted transactions (20 per account, uncategorized from Plaid)...');
 
   const transactions = [];
   const checkingId = accountMap['Chase Checking'];
@@ -181,127 +146,118 @@ async function generatePostedTransactions(accountMap, categoryMap, userId) {
   const creditCardId = accountMap['Chase Sapphire Reserve'];
 
   const checkingTransactions = [
-    { date: '2025-12-01', description: 'Paycheck Deposit', amount: 3500.00, type: 'income', category: 'Salary', payment_method: 'direct_deposit' },
-    { date: '2025-12-02', description: 'Rent Payment', amount: -1800.00, type: 'expense', category: 'Rent', payment_method: 'check' },
-    { date: '2025-12-03', description: 'PG&E - Electric Bill', amount: -145.67, type: 'expense', category: 'Utilities', payment_method: 'bank_transfer' },
-    { date: '2025-12-03', description: 'AT&T Internet', amount: -79.99, type: 'expense', category: 'Utilities', payment_method: 'bank_transfer' },
-    { date: '2025-12-04', description: 'WHOLE FOODS MKT #123', amount: -127.45, type: 'expense', category: 'Groceries', payment_method: 'debit_card' },
-    { date: '2025-12-05', description: 'SHELL GAS STATION', amount: -52.30, type: 'expense', category: 'Gas', payment_method: 'debit_card' },
-    { date: '2025-12-06', description: 'STARBUCKS', amount: -8.45, type: 'expense', category: 'Dining', payment_method: 'debit_card' },
-    { date: '2025-12-07', description: 'SAFEWAY STORE', amount: -89.23, type: 'expense', category: 'Groceries', payment_method: 'debit_card' },
-    { date: '2025-12-08', description: 'CVS PHARMACY', amount: -34.56, type: 'expense', category: 'Healthcare', payment_method: 'debit_card' },
-    { date: '2025-12-08', description: 'Transfer to Savings', amount: -500.00, type: 'transfer', category: 'Transfer Expense', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-09', description: 'CHEVRON GAS', amount: -48.90, type: 'expense', category: 'Gas', payment_method: 'debit_card' },
-    { date: '2025-12-10', description: 'CHIPOTLE MEXICAN GRILL', amount: -23.45, type: 'expense', category: 'Dining', payment_method: 'debit_card' },
-    { date: '2025-12-11', description: 'TARGET STORE', amount: -78.34, type: 'expense', category: 'Shopping', payment_method: 'debit_card' },
-    { date: '2025-12-11', description: 'Verizon Mobile', amount: -119.99, type: 'expense', category: 'Utilities', payment_method: 'bank_transfer' },
-    { date: '2025-12-12', description: 'UBER TRIP', amount: -28.50, type: 'expense', category: 'Transportation', payment_method: 'debit_card' },
-    { date: '2025-12-13', description: 'TRADER JOES', amount: -65.78, type: 'expense', category: 'Groceries', payment_method: 'debit_card' },
-    { date: '2025-12-14', description: 'Credit Card Payment', amount: -850.00, type: 'transfer', category: 'Transfer Expense', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-15', description: 'Paycheck Deposit', amount: 3500.00, type: 'income', category: 'Salary', payment_method: 'direct_deposit' },
-    { date: '2025-12-15', description: 'COSTCO WHOLESALE', amount: -156.89, type: 'expense', category: 'Shopping', payment_method: 'debit_card' },
-    { date: '2025-12-16', description: 'OLIVE GARDEN', amount: -67.23, type: 'expense', category: 'Dining', payment_method: 'debit_card' }
+    { date: '2025-12-01', description: 'Paycheck Deposit', amount: 3500.00 },
+    { date: '2025-12-02', description: 'Rent Payment', amount: -1800.00 },
+    { date: '2025-12-03', description: 'PG&E - Electric Bill', amount: -145.67 },
+    { date: '2025-12-03', description: 'AT&T Internet', amount: -79.99 },
+    { date: '2025-12-04', description: 'WHOLE FOODS MKT #123', amount: -127.45 },
+    { date: '2025-12-05', description: 'SHELL GAS STATION', amount: -52.30 },
+    { date: '2025-12-06', description: 'STARBUCKS', amount: -8.45 },
+    { date: '2025-12-07', description: 'SAFEWAY STORE', amount: -89.23 },
+    { date: '2025-12-08', description: 'CVS PHARMACY', amount: -34.56 },
+    { date: '2025-12-08', description: 'Transfer to Savings', amount: -500.00 },
+    { date: '2025-12-09', description: 'CHEVRON GAS', amount: -48.90 },
+    { date: '2025-12-10', description: 'CHIPOTLE MEXICAN GRILL', amount: -23.45 },
+    { date: '2025-12-11', description: 'TARGET STORE', amount: -78.34 },
+    { date: '2025-12-11', description: 'Verizon Mobile', amount: -119.99 },
+    { date: '2025-12-12', description: 'UBER TRIP', amount: -28.50 },
+    { date: '2025-12-13', description: 'TRADER JOES', amount: -65.78 },
+    { date: '2025-12-14', description: 'Credit Card Payment', amount: -850.00 },
+    { date: '2025-12-15', description: 'Paycheck Deposit', amount: 3500.00 },
+    { date: '2025-12-15', description: 'COSTCO WHOLESALE', amount: -156.89 },
+    { date: '2025-12-16', description: 'OLIVE GARDEN', amount: -67.23 }
   ];
 
   const savingsTransactions = [
-    { date: '2025-11-30', description: 'Interest Payment', amount: 12.45, type: 'income', category: 'Investment Income', payment_method: 'bank_transfer' },
-    { date: '2025-12-01', description: 'Transfer from Checking', amount: 1000.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-03', description: 'Transfer from Checking', amount: 500.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-05', description: 'ATM Withdrawal', amount: -200.00, type: 'expense', category: 'Other Expense', payment_method: 'cash' },
-    { date: '2025-12-07', description: 'Transfer from Checking', amount: 750.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-08', description: 'Transfer from Checking', amount: 500.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: checkingTransactions[9].transfer_pair_id },
-    { date: '2025-12-10', description: 'Mobile Deposit', amount: 250.00, type: 'income', category: 'Other Income', payment_method: 'mobile_deposit' },
-    { date: '2025-12-11', description: 'Transfer to Checking', amount: -300.00, type: 'transfer', category: 'Transfer Expense', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-12', description: 'Dividend Payment', amount: 45.67, type: 'income', category: 'Investment Income', payment_method: 'bank_transfer' },
-    { date: '2025-12-13', description: 'Wire Transfer Fee', amount: -15.00, type: 'expense', category: 'Other Expense', payment_method: 'bank_transfer' },
-    { date: '2025-12-14', description: 'Transfer from Checking', amount: 600.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-15', description: 'ATM Withdrawal', amount: -100.00, type: 'expense', category: 'Other Expense', payment_method: 'cash' },
-    { date: '2025-12-15', description: 'Interest Payment', amount: 11.23, type: 'income', category: 'Investment Income', payment_method: 'bank_transfer' },
-    { date: '2025-12-16', description: 'Transfer from Checking', amount: 400.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-16', description: 'Check Deposit', amount: 500.00, type: 'income', category: 'Other Income', payment_method: 'check' },
-    { date: '2025-12-17', description: 'Transfer from Checking', amount: 350.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-17', description: 'Monthly Service Fee', amount: -5.00, type: 'expense', category: 'Other Expense', payment_method: 'bank_transfer' },
-    { date: '2025-12-18', description: 'Transfer from Checking', amount: 800.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() },
-    { date: '2025-12-18', description: 'Cashback Reward', amount: 25.00, type: 'income', category: 'Other Income', payment_method: 'bank_transfer' },
-    { date: '2025-12-19', description: 'Transfer from Checking', amount: 300.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: generateUUID() }
+    { date: '2025-11-30', description: 'Interest Payment', amount: 12.45 },
+    { date: '2025-12-01', description: 'Transfer from Checking', amount: 1000.00 },
+    { date: '2025-12-03', description: 'Transfer from Checking', amount: 500.00 },
+    { date: '2025-12-05', description: 'ATM Withdrawal', amount: -200.00 },
+    { date: '2025-12-07', description: 'Transfer from Checking', amount: 750.00 },
+    { date: '2025-12-08', description: 'Transfer from Checking', amount: 500.00 },
+    { date: '2025-12-10', description: 'Mobile Deposit', amount: 250.00 },
+    { date: '2025-12-11', description: 'Transfer to Checking', amount: -300.00 },
+    { date: '2025-12-12', description: 'Dividend Payment', amount: 45.67 },
+    { date: '2025-12-13', description: 'Wire Transfer Fee', amount: -15.00 },
+    { date: '2025-12-14', description: 'Transfer from Checking', amount: 600.00 },
+    { date: '2025-12-15', description: 'ATM Withdrawal', amount: -100.00 },
+    { date: '2025-12-15', description: 'Interest Payment', amount: 11.23 },
+    { date: '2025-12-16', description: 'Transfer from Checking', amount: 400.00 },
+    { date: '2025-12-16', description: 'Check Deposit', amount: 500.00 },
+    { date: '2025-12-17', description: 'Transfer from Checking', amount: 350.00 },
+    { date: '2025-12-17', description: 'Monthly Service Fee', amount: -5.00 },
+    { date: '2025-12-18', description: 'Transfer from Checking', amount: 800.00 },
+    { date: '2025-12-18', description: 'Cashback Reward', amount: 25.00 },
+    { date: '2025-12-19', description: 'Transfer from Checking', amount: 300.00 }
   ];
 
   const creditCardTransactions = [
-    { date: '2025-12-01', description: 'AMAZON.COM*XY98ZW', amount: -89.45, type: 'expense', category: 'Shopping', payment_method: 'credit_card' },
-    { date: '2025-12-02', description: 'NETFLIX.COM', amount: -15.49, type: 'expense', category: 'Subscriptions', payment_method: 'credit_card' },
-    { date: '2025-12-02', description: 'SPOTIFY', amount: -9.99, type: 'expense', category: 'Subscriptions', payment_method: 'credit_card' },
-    { date: '2025-12-03', description: 'STARBUCKS COFFEE', amount: -12.34, type: 'expense', category: 'Dining', payment_method: 'credit_card' },
-    { date: '2025-12-04', description: 'APPLE.COM/BILL', amount: -24.99, type: 'expense', category: 'Subscriptions', payment_method: 'credit_card' },
-    { date: '2025-12-05', description: 'UBER EATS', amount: -34.56, type: 'expense', category: 'Dining', payment_method: 'credit_card' },
-    { date: '2025-12-06', description: 'AMC THEATERS', amount: -45.00, type: 'expense', category: 'Entertainment', payment_method: 'credit_card' },
-    { date: '2025-12-07', description: 'BEST BUY', amount: -234.99, type: 'expense', category: 'Shopping', payment_method: 'credit_card' },
-    { date: '2025-12-08', description: 'PANERA BREAD', amount: -18.67, type: 'expense', category: 'Dining', payment_method: 'credit_card' },
-    { date: '2025-12-09', description: 'LYFT RIDE', amount: -22.50, type: 'expense', category: 'Transportation', payment_method: 'credit_card' },
-    { date: '2025-12-10', description: 'NORDSTROM', amount: -156.78, type: 'expense', category: 'Shopping', payment_method: 'credit_card' },
-    { date: '2025-12-11', description: 'DOORDASH', amount: -42.34, type: 'expense', category: 'Dining', payment_method: 'credit_card' },
-    { date: '2025-12-12', description: 'HULU', amount: -14.99, type: 'expense', category: 'Subscriptions', payment_method: 'credit_card' },
-    { date: '2025-12-13', description: 'LULULEMON', amount: -128.00, type: 'expense', category: 'Shopping', payment_method: 'credit_card' },
-    { date: '2025-12-14', description: 'Payment Received - Thank You', amount: 850.00, type: 'transfer', category: 'Transfer Income', payment_method: 'bank_transfer', transfer_pair_id: checkingTransactions[16].transfer_pair_id },
-    { date: '2025-12-14', description: 'CHEESECAKE FACTORY', amount: -67.89, type: 'expense', category: 'Dining', payment_method: 'credit_card' },
-    { date: '2025-12-15', description: 'AMAZON PRIME', amount: -14.99, type: 'expense', category: 'Subscriptions', payment_method: 'credit_card' },
-    { date: '2025-12-16', description: 'WALGREENS', amount: -28.45, type: 'expense', category: 'Healthcare', payment_method: 'credit_card' },
-    { date: '2025-12-16', description: 'PANDA EXPRESS', amount: -19.50, type: 'expense', category: 'Dining', payment_method: 'credit_card' },
-    { date: '2025-12-17', description: 'GAS STATION', amount: -55.00, type: 'expense', category: 'Gas', payment_method: 'credit_card' }
+    { date: '2025-12-01', description: 'AMAZON.COM*XY98ZW', amount: -89.45 },
+    { date: '2025-12-02', description: 'NETFLIX.COM', amount: -15.49 },
+    { date: '2025-12-02', description: 'SPOTIFY', amount: -9.99 },
+    { date: '2025-12-03', description: 'STARBUCKS COFFEE', amount: -12.34 },
+    { date: '2025-12-04', description: 'APPLE.COM/BILL', amount: -24.99 },
+    { date: '2025-12-05', description: 'UBER EATS', amount: -34.56 },
+    { date: '2025-12-06', description: 'AMC THEATERS', amount: -45.00 },
+    { date: '2025-12-07', description: 'BEST BUY', amount: -234.99 },
+    { date: '2025-12-08', description: 'PANERA BREAD', amount: -18.67 },
+    { date: '2025-12-09', description: 'LYFT RIDE', amount: -22.50 },
+    { date: '2025-12-10', description: 'NORDSTROM', amount: -156.78 },
+    { date: '2025-12-11', description: 'DOORDASH', amount: -42.34 },
+    { date: '2025-12-12', description: 'HULU', amount: -14.99 },
+    { date: '2025-12-13', description: 'LULULEMON', amount: -128.00 },
+    { date: '2025-12-14', description: 'Payment Received - Thank You', amount: 850.00 },
+    { date: '2025-12-14', description: 'CHEESECAKE FACTORY', amount: -67.89 },
+    { date: '2025-12-15', description: 'AMAZON PRIME', amount: -14.99 },
+    { date: '2025-12-16', description: 'WALGREENS', amount: -28.45 },
+    { date: '2025-12-16', description: 'PANDA EXPRESS', amount: -19.50 },
+    { date: '2025-12-17', description: 'GAS STATION', amount: -55.00 }
   ];
 
-  checkingTransactions.forEach(tx => {
-    const categoryId = tx.type === 'transfer'
-      ? getTransferCategoryId(tx.amount, categoryMap)
-      : categoryMap[tx.category];
-
+  checkingTransactions.forEach((tx, index) => {
     transactions.push({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
-      type: tx.type,
+      type: tx.amount < 0 ? 'expense' : 'income',
       status: 'posted',
-      category_id: categoryId,
+      category_id: null,
       bank_account_id: checkingId,
-      payment_method: tx.payment_method,
-      transfer_pair_id: tx.transfer_pair_id || null,
+      payment_method: null,
+      transfer_pair_id: null,
+      plaid_transaction_id: `plaid_chk_${Date.now()}_${index}`,
       user_id: userId
     });
   });
 
-  savingsTransactions.forEach(tx => {
-    const categoryId = tx.type === 'transfer'
-      ? getTransferCategoryId(tx.amount, categoryMap)
-      : categoryMap[tx.category];
-
+  savingsTransactions.forEach((tx, index) => {
     transactions.push({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
-      type: tx.type,
+      type: tx.amount < 0 ? 'expense' : 'income',
       status: 'posted',
-      category_id: categoryId,
+      category_id: null,
       bank_account_id: savingsId,
-      payment_method: tx.payment_method,
-      transfer_pair_id: tx.transfer_pair_id || null,
+      payment_method: null,
+      transfer_pair_id: null,
+      plaid_transaction_id: `plaid_sav_${Date.now()}_${index}`,
       user_id: userId
     });
   });
 
-  creditCardTransactions.forEach(tx => {
-    const categoryId = tx.type === 'transfer'
-      ? getTransferCategoryId(tx.amount, categoryMap)
-      : categoryMap[tx.category];
-
+  creditCardTransactions.forEach((tx, index) => {
     transactions.push({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
-      type: tx.type,
+      type: tx.amount < 0 ? 'expense' : 'income',
       status: 'posted',
-      category_id: categoryId,
+      category_id: null,
       bank_account_id: creditCardId,
-      payment_method: tx.payment_method,
-      transfer_pair_id: tx.transfer_pair_id || null,
+      payment_method: null,
+      transfer_pair_id: null,
+      plaid_transaction_id: `plaid_cc_${Date.now()}_${index}`,
       user_id: userId
     });
   });
@@ -317,105 +273,97 @@ async function generatePostedTransactions(accountMap, categoryMap, userId) {
   return data;
 }
 
-async function generatePendingTransactions(accountMap, categoryMap, userId) {
-  console.log('⏳ Generating 30 pending transactions (10 per account with matchable transfers)...');
+async function generatePendingTransactions(accountMap, userId) {
+  console.log('⏳ Generating 30 pending transactions (10 per account, uncategorized from Plaid)...');
 
   const transactions = [];
   const checkingId = accountMap['Chase Checking'];
   const savingsId = accountMap['Wells Fargo Savings'];
   const creditCardId = accountMap['Chase Sapphire Reserve'];
 
-  const transferPairId1 = generateUUID();
-  const transferPairId2 = generateUUID();
-  const ccPaymentPairId1 = generateUUID();
-  const ccPaymentPairId2 = generateUUID();
-
   const checkingPendingTransactions = [
-    { date: '2025-12-18', description: 'WHOLE FOODS PENDING', amount: -95.67, type: 'expense', payment_method: 'debit_card' },
-    { date: '2025-12-18', description: 'SHELL GAS', amount: -58.34, type: 'expense', payment_method: 'debit_card' },
-    { date: '2025-12-19', description: 'Transfer to Savings', amount: -400.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: transferPairId1 },
-    { date: '2025-12-19', description: 'STARBUCKS', amount: -9.25, type: 'expense', payment_method: 'debit_card' },
-    { date: '2025-12-19', description: 'SAFEWAY', amount: -112.45, type: 'expense', payment_method: 'debit_card' },
-    { date: '2025-12-20', description: 'Credit Card Payment', amount: -650.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: ccPaymentPairId1 },
-    { date: '2025-12-20', description: 'Transfer to Savings', amount: -300.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: transferPairId2 },
-    { date: '2025-12-20', description: 'CVS PHARMACY', amount: -42.89, type: 'expense', payment_method: 'debit_card' },
-    { date: '2025-12-20', description: 'Credit Card Payment', amount: -500.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: ccPaymentPairId2 },
-    { date: '2025-12-20', description: 'CHIPOTLE', amount: -26.78, type: 'expense', payment_method: 'debit_card' }
+    { date: '2025-12-18', description: 'WHOLE FOODS PENDING', amount: -95.67 },
+    { date: '2025-12-18', description: 'SHELL GAS', amount: -58.34 },
+    { date: '2025-12-19', description: 'Transfer to Savings', amount: -400.00 },
+    { date: '2025-12-19', description: 'STARBUCKS', amount: -9.25 },
+    { date: '2025-12-19', description: 'SAFEWAY', amount: -112.45 },
+    { date: '2025-12-20', description: 'Credit Card Payment', amount: -650.00 },
+    { date: '2025-12-20', description: 'Transfer to Savings', amount: -300.00 },
+    { date: '2025-12-20', description: 'CVS PHARMACY', amount: -42.89 },
+    { date: '2025-12-20', description: 'Credit Card Payment', amount: -500.00 },
+    { date: '2025-12-20', description: 'CHIPOTLE', amount: -26.78 }
   ];
 
   const savingsPendingTransactions = [
-    { date: '2025-12-18', description: 'Interest Accrual', amount: 8.34, type: 'income', payment_method: 'bank_transfer' },
-    { date: '2025-12-19', description: 'Transfer from Checking', amount: 400.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: transferPairId1 },
-    { date: '2025-12-19', description: 'Dividend Payment', amount: 32.50, type: 'income', payment_method: 'bank_transfer' },
-    { date: '2025-12-19', description: 'ATM Withdrawal', amount: -80.00, type: 'expense', payment_method: 'cash' },
-    { date: '2025-12-20', description: 'Transfer from Checking', amount: 300.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: transferPairId2 },
-    { date: '2025-12-20', description: 'Mobile Deposit', amount: 175.00, type: 'income', payment_method: 'mobile_deposit' },
-    { date: '2025-12-20', description: 'Check Deposit', amount: 425.00, type: 'income', payment_method: 'check' },
-    { date: '2025-12-20', description: 'Cashback Bonus', amount: 15.00, type: 'income', payment_method: 'bank_transfer' },
-    { date: '2025-12-20', description: 'Transfer to Checking', amount: -250.00, type: 'expense', payment_method: 'bank_transfer' },
-    { date: '2025-12-20', description: 'Wire Transfer', amount: 500.00, type: 'income', payment_method: 'wire_transfer' }
+    { date: '2025-12-18', description: 'Interest Accrual', amount: 8.34 },
+    { date: '2025-12-19', description: 'Transfer from Checking', amount: 400.00 },
+    { date: '2025-12-19', description: 'Dividend Payment', amount: 32.50 },
+    { date: '2025-12-19', description: 'ATM Withdrawal', amount: -80.00 },
+    { date: '2025-12-20', description: 'Transfer from Checking', amount: 300.00 },
+    { date: '2025-12-20', description: 'Mobile Deposit', amount: 175.00 },
+    { date: '2025-12-20', description: 'Check Deposit', amount: 425.00 },
+    { date: '2025-12-20', description: 'Cashback Bonus', amount: 15.00 },
+    { date: '2025-12-20', description: 'Transfer to Checking', amount: -250.00 },
+    { date: '2025-12-20', description: 'Wire Transfer', amount: 500.00 }
   ];
 
   const creditCardPendingTransactions = [
-    { date: '2025-12-18', description: 'AMAZON.COM*AB12CD', amount: -78.99, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-18', description: 'TARGET', amount: -92.34, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-19', description: 'UBER EATS', amount: -38.67, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-19', description: 'BEST BUY', amount: -189.99, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-19', description: 'STARBUCKS', amount: -11.50, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-20', description: 'Payment Received', amount: 650.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: ccPaymentPairId1 },
-    { date: '2025-12-20', description: 'DOORDASH', amount: -45.78, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-20', description: 'Payment Received', amount: 500.00, type: 'transfer', payment_method: 'bank_transfer', transfer_pair_id: ccPaymentPairId2 },
-    { date: '2025-12-20', description: 'NORDSTROM', amount: -145.00, type: 'expense', payment_method: 'credit_card' },
-    { date: '2025-12-20', description: 'PANERA BREAD', amount: -21.34, type: 'expense', payment_method: 'credit_card' }
+    { date: '2025-12-18', description: 'AMAZON.COM*AB12CD', amount: -78.99 },
+    { date: '2025-12-18', description: 'TARGET', amount: -92.34 },
+    { date: '2025-12-19', description: 'UBER EATS', amount: -38.67 },
+    { date: '2025-12-19', description: 'BEST BUY', amount: -189.99 },
+    { date: '2025-12-19', description: 'STARBUCKS', amount: -11.50 },
+    { date: '2025-12-20', description: 'Payment Received', amount: 650.00 },
+    { date: '2025-12-20', description: 'DOORDASH', amount: -45.78 },
+    { date: '2025-12-20', description: 'Payment Received', amount: 500.00 },
+    { date: '2025-12-20', description: 'NORDSTROM', amount: -145.00 },
+    { date: '2025-12-20', description: 'PANERA BREAD', amount: -21.34 }
   ];
 
-  checkingPendingTransactions.forEach(tx => {
-    const categoryId = tx.type === 'transfer' ? null : null;
-
+  checkingPendingTransactions.forEach((tx, index) => {
     transactions.push({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
-      type: tx.type,
+      type: tx.amount < 0 ? 'expense' : 'income',
       status: 'pending',
-      category_id: categoryId,
+      category_id: null,
       bank_account_id: checkingId,
-      payment_method: tx.payment_method,
-      transfer_pair_id: tx.transfer_pair_id || null,
+      payment_method: null,
+      transfer_pair_id: null,
+      plaid_transaction_id: `plaid_chk_pend_${Date.now()}_${index}`,
       user_id: userId
     });
   });
 
-  savingsPendingTransactions.forEach(tx => {
-    const categoryId = tx.type === 'transfer' ? null : null;
-
+  savingsPendingTransactions.forEach((tx, index) => {
     transactions.push({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
-      type: tx.type,
+      type: tx.amount < 0 ? 'expense' : 'income',
       status: 'pending',
-      category_id: categoryId,
+      category_id: null,
       bank_account_id: savingsId,
-      payment_method: tx.payment_method,
-      transfer_pair_id: tx.transfer_pair_id || null,
+      payment_method: null,
+      transfer_pair_id: null,
+      plaid_transaction_id: `plaid_sav_pend_${Date.now()}_${index}`,
       user_id: userId
     });
   });
 
-  creditCardPendingTransactions.forEach(tx => {
-    const categoryId = tx.type === 'transfer' ? null : null;
-
+  creditCardPendingTransactions.forEach((tx, index) => {
     transactions.push({
       date: tx.date,
       description: tx.description,
       amount: tx.amount,
-      type: tx.type,
+      type: tx.amount < 0 ? 'expense' : 'income',
       status: 'pending',
-      category_id: categoryId,
+      category_id: null,
       bank_account_id: creditCardId,
-      payment_method: tx.payment_method,
-      transfer_pair_id: tx.transfer_pair_id || null,
+      payment_method: null,
+      transfer_pair_id: null,
+      plaid_transaction_id: `plaid_cc_pend_${Date.now()}_${index}`,
       user_id: userId
     });
   });
@@ -440,13 +388,7 @@ async function printSummary() {
   const { count: txCount } = await supabase.from('transactions').select('*', { count: 'exact', head: true });
   const { count: postedCount } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'posted');
   const { count: pendingCount } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).eq('status', 'pending');
-  const { count: matchedCount } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).not('transfer_pair_id', 'is', null);
-  const { count: unmatchedPendingTransfers } = await supabase
-    .from('transactions')
-    .select('*', { count: 'exact', head: true })
-    .eq('status', 'pending')
-    .eq('type', 'transfer')
-    .not('transfer_pair_id', 'is', null);
+  const { count: uncategorizedCount } = await supabase.from('transactions').select('*', { count: 'exact', head: true }).is('category_id', null);
 
   console.log(`🏦 Bank Accounts:           ${accountCount}`);
   console.log(`   ├─ Checking:             1`);
@@ -455,14 +397,14 @@ async function printSummary() {
   console.log(`\n💰 Transactions:            ${txCount}`);
   console.log(`   ├─ Posted:              ${postedCount}`);
   console.log(`   └─ Pending:             ${pendingCount}`);
-  console.log(`\n🔄 Matched Transfers:       ${matchedCount / 2} pairs (${matchedCount} transactions)`);
-  console.log(`\n⚠️  Pending Transfers Ready to Match: ${unmatchedPendingTransfers / 2} pairs (${unmatchedPendingTransfers} transactions)`);
-  console.log(`   └─ These transfers have matching amounts and dates`);
-  console.log(`      and are ready for you to match manually`);
+  console.log(`\n📋 Categorization Status:`);
+  console.log(`   ├─ Uncategorized:       ${uncategorizedCount} (imported from Plaid)`);
+  console.log(`   └─ All transactions need categorization!`);
 
   console.log('\n' + '='.repeat(60));
   console.log('✅ Seed data generation complete!');
-  console.log('🚀 You can now test transfer matching and categorization');
+  console.log('🚀 All transactions are uncategorized - test auto-categorization!');
+  console.log('💡 Look for transfers with matching amounts/dates to test matching');
   console.log('='.repeat(60) + '\n');
 }
 
@@ -490,11 +432,10 @@ async function main() {
   try {
     await cleanupDatabase();
 
-    const categoryMap = await fetchUserCategories(userId);
     const accountMap = await createBankAccounts(userId);
 
-    await generatePostedTransactions(accountMap, categoryMap, userId);
-    await generatePendingTransactions(accountMap, categoryMap, userId);
+    await generatePostedTransactions(accountMap, userId);
+    await generatePendingTransactions(accountMap, userId);
 
     await printSummary();
 
