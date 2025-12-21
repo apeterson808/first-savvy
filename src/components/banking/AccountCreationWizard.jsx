@@ -482,25 +482,27 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="grid grid-cols-3 gap-4 p-4 justify-items-center">
-      {ACCOUNT_TYPE_CARDS.map(card => {
-        const IconComponent = card.icon;
-        return (
-          <div
-            key={card.id}
-            className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
-            onClick={() => handleCardSelect(card)}
-          >
+    <div className="flex justify-center p-4">
+      <div className="grid grid-cols-3 gap-2 max-w-md">
+        {ACCOUNT_TYPE_CARDS.map(card => {
+          const IconComponent = card.icon;
+          return (
             <div
-              className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
-              style={{ backgroundColor: card.bgColor }}
+              key={card.id}
+              className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+              onClick={() => handleCardSelect(card)}
             >
-              <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
+              <div
+                className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                style={{ backgroundColor: card.bgColor }}
+              >
+                <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
+              </div>
+              <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
             </div>
-            <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 
