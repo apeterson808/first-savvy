@@ -184,12 +184,16 @@ export default function Contacts() {
     let type = formData.get('type');
     console.log('Raw type from form:', type, 'Type of:', typeof type);
 
+    const typeInput = e.target.querySelector('input[name="type"]');
+    console.log('Type input element:', typeInput);
+    console.log('Type input value:', typeInput?.value);
+
     if (!type || type === '' || type === 'null' || type === 'undefined') {
       console.log('Type is empty, using default: vendor');
       type = 'vendor';
     }
 
-    type = type.toLowerCase().trim();
+    type = String(type).toLowerCase().trim();
     console.log('Normalized type:', type);
 
     if (type !== 'vendor' && type !== 'customer') {
