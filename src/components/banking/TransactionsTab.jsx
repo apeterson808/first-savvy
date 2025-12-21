@@ -19,6 +19,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
 import {
@@ -2555,6 +2556,9 @@ For each transaction, return the category_id that best matches. Consider:
                             <SheetContent className="overflow-y-auto">
                               <SheetHeader>
                                 <SheetTitle>Add Contact</SheetTitle>
+                                <SheetDescription>
+                                  Add a new vendor or customer to your contacts
+                                </SheetDescription>
                               </SheetHeader>
                               <form onSubmit={async (e) => {
                                 e.preventDefault();

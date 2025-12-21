@@ -12,6 +12,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
 import {
@@ -322,6 +323,9 @@ export default function Contacts() {
         <SheetContent className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Add Contact</SheetTitle>
+            <SheetDescription>
+              Add a new vendor or customer to your contacts
+            </SheetDescription>
           </SheetHeader>
           <form onSubmit={handleSubmit} className="space-y-4 mt-4">
             <div>
