@@ -15,14 +15,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetDescription,
-  SheetFooter,
-} from "@/components/ui/sheet";
-import {
   ClickThroughDropdownMenu,
   ClickThroughDropdownMenuContent,
   ClickThroughDropdownMenuItem,
@@ -49,6 +41,7 @@ import CategoryDropdown from '../common/CategoryDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
+import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -2546,86 +2539,31 @@ For each transaction, return the category_id that best matches. Consider:
                                             }}
                                           />
 
-                          <Sheet open={addContactSheetOpen} onOpenChange={(open) => {
-                            setAddContactSheetOpen(open);
-                            if (!open) {
-                              setTriggeringContactTransactionId(null);
-                              setContactSearchTerm('');
-                            }
-                          }}>
-                            <SheetContent className="overflow-y-auto">
-                              <SheetHeader>
-                                <SheetTitle>Add Contact</SheetTitle>
-                                <SheetDescription>
-                                  Add a new vendor or customer to your contacts
-                                </SheetDescription>
-                              </SheetHeader>
-                              <form onSubmit={async (e) => {
-                                e.preventDefault();
-                                const formData = new FormData(e.target);
-                                const data = {
-                                  name: formData.get('name'),
-                                  type: formData.get('type'),
-                                  email: formData.get('email') || undefined,
-                                  phone: formData.get('phone') || undefined,
-                                  notes: formData.get('notes') || undefined,
-                                  status: 'active'
-                                };
-                                const newContact = await base44.entities.Contact.create(data);
-
-                                // Auto-populate the transaction's contact field with newly created contact
-                                const transactionId = triggeringContactTransactionId || expandedTransactionId;
-                                if (transactionId) {
-                                  const transaction = transactions.find(t => t.id === transactionId);
-                                  if (transaction) {
-                                    await updateMutation.mutateAsync({
-                                      id: transaction.id,
-                                      data: { contact_id: newContact.id, contact_manually_set: true }
-                                    });
-                                  }
-                                }
-
-                                await queryClient.invalidateQueries({ queryKey: ['contacts'] });
-                                setAddContactSheetOpen(false);
-                                setContactSearchTerm('');
+                          <AddContactSheet
+                            open={addContactSheetOpen}
+                            onOpenChange={(open) => {
+                              setAddContactSheetOpen(open);
+                              if (!open) {
                                 setTriggeringContactTransactionId(null);
-                              }} className="space-y-4 mt-4">
-                                <div>
-                                  <Label htmlFor="contact-name">Name *</Label>
-                                  <Input
-                                    id="contact-name"
-                                    name="name"
-                                    defaultValue={contactSearchTerm}
-                                    placeholder="e.g., Starbucks, Netflix"
-                                    required
-                                  />
-                                </div>
-                                <div>
-                                  <Label htmlFor="contact-type">Type</Label>
-                                  <ClickThroughSelect name="type" defaultValue="Vendor">
-                                    <ClickThroughSelectItem value="Vendor">Vendor</ClickThroughSelectItem>
-                                    <ClickThroughSelectItem value="Customer">Customer</ClickThroughSelectItem>
-                                  </ClickThroughSelect>
-                                </div>
-                                <div>
-                                  <Label htmlFor="contact-email">Email</Label>
-                                  <Input id="contact-email" name="email" type="email" placeholder="contact@example.com" />
-                                </div>
-                                <div>
-                                  <Label htmlFor="contact-phone">Phone</Label>
-                                  <Input id="contact-phone" name="phone" placeholder="(555) 123-4567" />
-                                </div>
-                                <div>
-                                  <Label htmlFor="contact-notes">Notes</Label>
-                                  <Textarea id="contact-notes" name="notes" placeholder="e.g., Recurring $15.99/month" rows={3} />
-                                </div>
-                                <SheetFooter className="pt-4">
-                                  <Button type="button" variant="outline" onClick={() => setAddContactSheetOpen(false)}>Cancel</Button>
-                                  <Button type="submit" className="bg-blue-600 hover:bg-blue-700">Create</Button>
-                                </SheetFooter>
-                              </form>
-                            </SheetContent>
-                          </Sheet>
+                                setContactSearchTerm('');
+                              }
+                            }}
+                            initialName={contactSearchTerm}
+                            triggeringTransactionId={triggeringContactTransactionId}
+                            onContactCreated={async (newContact, transactionId) => {
+                              if (transactionId) {
+                                const transaction = transactions.find(t => t.id === transactionId);
+                                if (transaction) {
+                                  await updateMutation.mutateAsync({
+                                    id: transaction.id,
+                                    data: { contact_id: newContact.id, contact_manually_set: true }
+                                  });
+                                }
+                              }
+                              setContactSearchTerm('');
+                              setTriggeringContactTransactionId(null);
+                            }}
+                          />
 
                           <TransferMatchDialog
                             isOpen={transferMatchDialogOpen}
