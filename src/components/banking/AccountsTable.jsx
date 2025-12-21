@@ -194,14 +194,20 @@ export default function AccountsTable({ accounts, isLoading }) {
     return matchesType && matchesActive;
   });
 
-  // Show all entity types regardless of whether accounts exist
+  // Only show entity types that have accounts, but maintain this order
   const availableEntityTypes = React.useMemo(() => {
-    return ['BankAccount', 'CreditCard', 'Expense', 'Income', 'Asset', 'Equity', 'Liability'];
-  }, []);
+    const allTypes = ['BankAccount', 'CreditCard', 'Expense', 'Income', 'Asset', 'Equity', 'Liability'];
+    return allTypes.filter(type => {
+      const matchesActive = showInactive || accounts.some(acc => acc.entityType === type && acc.is_active !== false);
+      return accounts.some(acc => acc.entityType === type) && matchesActive;
+    });
+  }, [accounts, showInactive]);
 
   React.useEffect(() => {
-    if (!accountTypeFilter && availableEntityTypes.length > 0) {
-      setAccountTypeFilter(availableEntityTypes[0]);
+    if (availableEntityTypes.length > 0) {
+      if (!accountTypeFilter || !availableEntityTypes.includes(accountTypeFilter)) {
+        setAccountTypeFilter(availableEntityTypes[0]);
+      }
     }
   }, [availableEntityTypes, accountTypeFilter]);
 
