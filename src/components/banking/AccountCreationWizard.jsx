@@ -482,7 +482,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="grid grid-cols-3 gap-x-3 gap-y-1 p-4">
+    <div className="grid grid-cols-3 gap-x-2.5 gap-y-3 p-4">
       {ACCOUNT_TYPE_CARDS.map(card => {
         const IconComponent = card.icon;
         return (
