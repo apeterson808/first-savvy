@@ -106,8 +106,15 @@ export function ClickThroughSelect({
     const updatePosition = () => {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const spaceBelow = viewportHeight - rect.bottom;
+        const spaceAbove = rect.top;
+        const dropdownHeight = 220;
+
+        const shouldOpenUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+
         setDropdownPosition({
-          top: rect.bottom + 4,
+          top: shouldOpenUpward ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
           left: rect.left,
           width: rect.width
         });
