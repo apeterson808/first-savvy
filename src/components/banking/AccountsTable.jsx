@@ -103,7 +103,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
 
-  const [accountTypeFilter, setAccountTypeFilter] = useState('all');
+  const [accountTypeFilter, setAccountTypeFilter] = useState('');
   const [showInactive, setShowInactive] = useState(false);
   const [sortColumn, setSortColumn] = useState('accountType');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -187,7 +187,7 @@ export default function AccountsTable({ accounts, isLoading }) {
 
   // Filter accounts based on selected type and active status
   const filteredAccounts = accounts.filter(acc => {
-    const matchesType = accountTypeFilter === 'all' || acc.entityType === accountTypeFilter;
+    const matchesType = !accountTypeFilter || acc.entityType === accountTypeFilter;
     const matchesActive = showInactive || acc.is_active !== false;
     return matchesType && matchesActive;
   });
@@ -197,6 +197,12 @@ export default function AccountsTable({ accounts, isLoading }) {
     const types = new Set(accounts.map(acc => acc.entityType).filter(Boolean));
     return Array.from(types).sort();
   }, [accounts]);
+
+  React.useEffect(() => {
+    if (!accountTypeFilter && availableEntityTypes.length > 0) {
+      setAccountTypeFilter(availableEntityTypes[0]);
+    }
+  }, [availableEntityTypes, accountTypeFilter]);
 
   const entityTypeLabels = {
     'Asset': 'Assets',
@@ -210,11 +216,10 @@ export default function AccountsTable({ accounts, isLoading }) {
 
   // Calculate account counts by type (only count active accounts unless showing inactive)
   const accountTypeCounts = React.useMemo(() => {
-    const counts = { all: 0 };
+    const counts = {};
     accounts.forEach(acc => {
       const matchesActive = showInactive || acc.is_active !== false;
       if (matchesActive) {
-        counts.all++;
         const type = acc.entityType;
         counts[type] = (counts[type] || 0) + 1;
       }
@@ -358,19 +363,33 @@ export default function AccountsTable({ accounts, isLoading }) {
     <>
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-1">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Accounts</p>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => queryClient.invalidateQueries({ queryKey: ['allAccounts'] })}
-                className="h-6 w-6"
-              >
-                <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
-              </Button>
-            </div>
-            <div className="flex items-center">
+          <div className="flex items-center gap-1 mb-3">
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Accounts</p>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['allAccounts'] })}
+              className="h-6 w-6"
+            >
+              <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+            </Button>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="flex items-center justify-between">
+            <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
+              <TabsList className="h-8">
+                {availableEntityTypes.map(entityType => (
+                  accountTypeCounts[entityType] > 0 && (
+                    <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
+                      {entityTypeLabels[entityType] || entityType}
+                    </TabsTrigger>
+                  )
+                ))}
+              </TabsList>
+            </Tabs>
+
+            <div className="flex items-center gap-2">
               <Button
                 variant="ghost"
                 size="icon"
@@ -438,20 +457,6 @@ export default function AccountsTable({ accounts, isLoading }) {
               </DropdownMenu>
             </div>
           </div>
-
-          {/* Filter Buttons */}
-          <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
-            <TabsList className="h-8">
-              <TabsTrigger value="all" className="text-xs px-3">All Accounts</TabsTrigger>
-              {availableEntityTypes.map(entityType => (
-                accountTypeCounts[entityType] > 0 && (
-                  <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
-                    {entityTypeLabels[entityType] || entityType}
-                  </TabsTrigger>
-                )
-              ))}
-            </TabsList>
-          </Tabs>
         </CardHeader>
         <CardContent className="p-0 border-t border-slate-200">
           {isLoading ? (
