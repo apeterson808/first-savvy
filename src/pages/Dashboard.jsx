@@ -13,7 +13,7 @@ import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
-import AddFinancialAccountSheet from '../components/banking/AddFinancialAccountSheet';
+import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -21,7 +21,7 @@ export default function Dashboard() {
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [chartView, setChartView] = useState('spending');
   const [timeRange, setTimeRange] = useState('ytd');
-  const [addAccountSheetOpen, setAddAccountSheetOpen] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [excludeTransfers, setExcludeTransfers] = useState(true);
 
   const handleChartPointClick = (data) => {
@@ -573,7 +573,7 @@ export default function Dashboard() {
             <Button
               variant="outline"
               className="w-full h-10"
-              onClick={() => setAddAccountSheetOpen(true)}
+              onClick={() => setWizardOpen(true)}
             >
               <Plus className="w-4 h-4 mr-2" />
               Add Account
@@ -625,11 +625,12 @@ export default function Dashboard() {
         </div>
         </div>
 
-        <AddFinancialAccountSheet
-        open={addAccountSheetOpen}
-        onOpenChange={setAddAccountSheetOpen}
+        <AccountCreationWizard
+        open={wizardOpen}
+        onOpenChange={setWizardOpen}
         onAccountCreated={() => {
           queryClient.invalidateQueries({ queryKey: ['accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
         }}
         />
         </div>
