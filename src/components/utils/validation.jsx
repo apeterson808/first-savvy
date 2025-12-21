@@ -7,11 +7,11 @@
  * @returns {object} { valid: boolean, value: number, error: string }
  */
 export function validateAmount(value, options = {}) {
-  const { 
-    minValue = 0.01, 
-    maxValue = 999999999.99, 
+  const {
+    minValue = 0,
+    maxValue = 999999999.99,
     allowZero = false,
-    allowNegative = false 
+    allowNegative = false
   } = options;
 
   // Convert to string and clean
