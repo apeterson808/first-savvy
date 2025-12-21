@@ -80,12 +80,12 @@ export function useBudgetData() {
     const incomeGroupIds = new Set(budgetGroups.filter(g => g.type === 'income').map(g => g.id));
     const budgetedIncome = budgets
       .filter(b => incomeGroupIds.has(b.group_id))
-      .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+      .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
     const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
     const totalBudgeted = budgets
       .filter(b => expenseGroupIds.has(b.group_id))
-      .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+      .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
     return {
       spendingByCategory,

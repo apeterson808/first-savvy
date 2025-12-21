@@ -65,9 +65,9 @@ export default function AssetsTab() {
       }
       groups[instKey].accounts.push({ 
         ...asset, entityType: 'Asset', displayName: asset.name, 
-        value: asset.current_value || 0, detailType: asset.type
+        value: asset.current_balance || 0, detailType: asset.type
       });
-      groups[instKey].total += asset.current_value || 0;
+      groups[instKey].total += asset.current_balance || 0;
       if (asset.logo_url && !groups[instKey].logo_url) groups[instKey].logo_url = asset.logo_url;
     });
     

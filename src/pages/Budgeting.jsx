@@ -128,7 +128,7 @@ export default function Budgeting() {
           await firstsavvy.entities.Budget.create({
             name: category?.name || 'Unknown',
             category_id: categoryId,
-            limit_amount: Math.max(rounded, 10),
+            allocated_amount: Math.max(rounded, 10),
             group_id: incomeGroup.id,
             order: order++,
             color,
@@ -163,7 +163,7 @@ export default function Budgeting() {
           await firstsavvy.entities.Budget.create({
             name: category?.name || 'Unknown',
             category_id: categoryId,
-            limit_amount: Math.max(rounded, 10),
+            allocated_amount: Math.max(rounded, 10),
             group_id: expenseGroup.id,
             order: order++,
             color,

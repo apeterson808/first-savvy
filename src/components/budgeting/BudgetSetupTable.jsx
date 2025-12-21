@@ -79,7 +79,7 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
     const isIncome = group.type === 'income';
 
     const totals = groupBudgets.reduce((acc, budget) => {
-      const monthlyAmount = budget.limit_amount || 0;
+      const monthlyAmount = budget.allocated_amount || 0;
       return {
         daily: acc.daily + calculatePeriodAmount(monthlyAmount, 'daily'),
         weekly: acc.weekly + calculatePeriodAmount(monthlyAmount, 'weekly'),
@@ -133,7 +133,7 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
             {/* Budget Items */}
             {groupBudgets.map((budget) => {
               const Icon = ICON_MAP[budget.icon] || Circle;
-              const monthlyAmount = budget.limit_amount || 0;
+              const monthlyAmount = budget.allocated_amount || 0;
 
               return (
                 <div

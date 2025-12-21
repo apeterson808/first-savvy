@@ -59,7 +59,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   React.useEffect(() => {
     if (editingBudget && open) {
       setSelectedGroupId(editingBudget.group_id || '');
-      setLimitAmount(editingBudget.limit_amount?.toString() || '');
+      setLimitAmount(editingBudget.allocated_amount?.toString() || '');
       setSelectedColor(editingBudget.color || '');
       setSelectedIcon(editingBudget.icon || '');
     }
@@ -144,13 +144,13 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   const incomeGroupIds = new Set(incomeGroups.map(g => g.id));
   const totalIncome = existingBudgets
     .filter(b => incomeGroupIds.has(b.group_id))
-    .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+    .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
   // Calculate current total expenses (excluding budget being edited)
   const expenseGroupIds = new Set(groups.filter(g => g.type === 'expense').map(g => g.id));
   const currentTotalExpenses = existingBudgets
     .filter(b => expenseGroupIds.has(b.group_id) && (!isEditMode || b.id !== editingBudget?.id))
-    .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+    .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -170,7 +170,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
       name: selectedCategory?.name || 'Budget Item',
       category_id: selectedCategoryId,
       group_id: selectedGroupId,
-      limit_amount: newAmount,
+      allocated_amount: newAmount,
       color: selectedColor || DEFAULT_COLOR,
       icon: selectedIcon || selectedCategory?.icon,
       is_active: true
@@ -199,7 +199,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
     // Apply all budget adjustments (only for existing budgets with valid IDs)
     for (const update of updates) {
       if (update.id) {
-        await firstsavvy.entities.Budget.update(update.id, { limit_amount: update.limit_amount });
+        await firstsavvy.entities.Budget.update(update.id, { allocated_amount: update.allocated_amount });
       }
     }
     
@@ -470,8 +470,8 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
           setConflictDialogOpen(open);
           if (!open) setPendingBudgetData(null);
         }}
-        conflictBudget={pendingBudgetData ? { name: pendingBudgetData.name, limit_amount: pendingBudgetData.limit_amount } : null}
-        requestedAmount={pendingBudgetData?.limit_amount || 0}
+        conflictBudget={pendingBudgetData ? { name: pendingBudgetData.name, allocated_amount: pendingBudgetData.allocated_amount } : null}
+        requestedAmount={pendingBudgetData?.allocated_amount || 0}
         totalIncome={totalIncome}
         allBudgets={existingBudgets}
         groups={groups}

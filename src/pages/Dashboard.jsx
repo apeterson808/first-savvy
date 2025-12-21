@@ -91,7 +91,7 @@ export default function Dashboard() {
   const getCategoryById = (id) => categories.find(c => c.id === id);
 
   // Calculate net worth (only active accounts)
-  const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_value || 0), 0);
+  const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_balance || 0), 0);
   const totalLiabilities = liabilities.filter(l => l.is_active !== false).reduce((sum, liability) => sum + (liability.current_balance || 0), 0);
   const netWorth = totalAssets - totalLiabilities + accounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
 
@@ -306,7 +306,7 @@ export default function Dashboard() {
       .map(budget => {
         const category = getCategoryById(budget.category_id);
         const spent = spendingByCategory[budget.category_id] || 0;
-        const limit = budget.limit_amount || 0;
+        const limit = budget.allocated_amount || 0;
         const percentage = limit > 0 ? (spent / limit) * 100 : 0;
         const color = budget.color || category?.color || '#64748b';
         return {

@@ -84,14 +84,14 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
       const newIcon = category?.icon || 'Circle';
       
       setLocalName(budget.name || category?.name || '');
-      setLocalAmount(budget.limit_amount?.toString() || '');
+      setLocalAmount(budget.allocated_amount?.toString() || '');
       
       // Only update color/icon if they're different to avoid overwriting pending changes
       setLocalColor(prev => prev && prev !== '#64748b' ? prev : newColor);
       setLocalIcon(prev => prev && prev !== 'Circle' ? prev : newIcon);
       
       setSelectedGroupId(budget.group_id || '');
-      setLimitAmount(budget.limit_amount?.toString() || '');
+      setLimitAmount(budget.allocated_amount?.toString() || '');
       setIsSubAccount(!!budget.parent_budget_id);
       setParentBudgetId(budget.parent_budget_id || '');
       setAllowRollover(budget.allow_rollover || false);
@@ -139,12 +139,12 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
   const currentTotalExpenses = existingBudgets
     .filter(b => expenseGroupIds.has(b.group_id) && b.id !== budget?.id)
-    .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+    .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
   const incomeGroupIds = new Set(budgetGroups.filter(g => g.type === 'income').map(g => g.id));
   const totalIncome = existingBudgets
     .filter(b => incomeGroupIds.has(b.group_id))
-    .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+    .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
   const allParentBudgets = existingBudgets.filter(b => !b.parent_budget_id);
 
@@ -183,7 +183,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     try {
       // If starts with operator, prepend current value
       if (trimmed.match(/^[+\-*/]/)) {
-        newAmount = eval(`${budget.limit_amount}${trimmed}`);
+        newAmount = eval(`${budget.allocated_amount}${trimmed}`);
       } else {
         // Evaluate the full expression
         newAmount = eval(trimmed);
@@ -200,7 +200,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
 
     const budgetData = {
       group_id: selectedGroupId,
-      limit_amount: newAmount,
+      allocated_amount: newAmount,
       allow_rollover: allowRollover,
       parent_budget_id: isSubAccount ? parentBudgetId || null : null,
     };
@@ -222,7 +222,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const handleConflictSave = async (updates) => {
     for (const update of updates) {
       if (update.id) {
-        await firstsavvy.entities.Budget.update(update.id, { limit_amount: update.limit_amount });
+        await firstsavvy.entities.Budget.update(update.id, { allocated_amount: update.allocated_amount });
       }
     }
 
@@ -237,8 +237,8 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   };
 
   const isIncome = category?.type === 'income';
-  const remaining = budget.limit_amount - currentSpent;
-  const percent = (currentSpent / budget.limit_amount) * 100;
+  const remaining = budget.allocated_amount - currentSpent;
+  const percent = (currentSpent / budget.allocated_amount) * 100;
 
   const handleColorChange = (newColor) => {
     setLocalColor(newColor);
@@ -280,7 +280,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const handleAmountSave = async () => {
     const trimmed = localAmount.trim();
     if (!trimmed) {
-      setLocalAmount(budget.limit_amount?.toString() || '');
+      setLocalAmount(budget.allocated_amount?.toString() || '');
       setIsEditingAmount(false);
       return;
     }
@@ -288,20 +288,20 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     let newAmount;
     try {
       if (trimmed.match(/^[+\-*/]/)) {
-        newAmount = eval(`${budget.limit_amount}${trimmed}`);
+        newAmount = eval(`${budget.allocated_amount}${trimmed}`);
       } else {
         newAmount = eval(trimmed);
       }
     } catch (error) {
       toast.error('Invalid calculation');
-      setLocalAmount(budget.limit_amount?.toString() || '');
+      setLocalAmount(budget.allocated_amount?.toString() || '');
       setIsEditingAmount(false);
       return;
     }
 
     if (isNaN(newAmount) || newAmount <= 0) {
       toast.error('Result must be a positive number');
-      setLocalAmount(budget.limit_amount?.toString() || '');
+      setLocalAmount(budget.allocated_amount?.toString() || '');
       setIsEditingAmount(false);
       return;
     }
@@ -310,7 +310,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     setLocalAmount(newAmount.toString());
 
     const budgetData = {
-      limit_amount: newAmount,
+      allocated_amount: newAmount,
     };
 
     const targetGroup = budgetGroups.find(g => g.id === budget.group_id);
@@ -333,7 +333,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     if (e.key === 'Enter') {
       handleAmountSave();
     } else if (e.key === 'Escape') {
-      setLocalAmount(budget.limit_amount?.toString() || '');
+      setLocalAmount(budget.allocated_amount?.toString() || '');
       setIsEditingAmount(false);
     }
   };
@@ -425,7 +425,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
                           setTimeout(() => amountInputRef.current?.focus(), 0);
                         }}
                       >
-                        ${parseFloat(limitAmount || budget.limit_amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                        ${parseFloat(limitAmount || budget.allocated_amount).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                       </span>
                     )}
                   </div>
@@ -591,8 +591,8 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
           setConflictDialogOpen(open);
           if (!open) setPendingBudgetData(null);
         }}
-        conflictBudget={pendingBudgetData ? { name: budget.name, limit_amount: pendingBudgetData.limit_amount } : null}
-        requestedAmount={pendingBudgetData?.limit_amount || 0}
+        conflictBudget={pendingBudgetData ? { name: budget.name, allocated_amount: pendingBudgetData.allocated_amount } : null}
+        requestedAmount={pendingBudgetData?.allocated_amount || 0}
         totalIncome={totalIncome}
         allBudgets={existingBudgets}
         groups={budgetGroups}

@@ -85,14 +85,14 @@ export default function BudgetAllocationGauge({ budgets, groups, totalIncome }) 
   const expenseBudgets = budgets.filter(b => expenseGroupIds.has(b.group_id));
 
   // Calculate total allocated
-  const totalAllocated = expenseBudgets.reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+  const totalAllocated = expenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
   const remaining = Math.max(0, totalIncome - totalAllocated);
   const isOverBudget = totalAllocated > totalIncome;
 
   // Build chart data for semi-circle gauge
   const chartData = expenseBudgets.map((budget) => ({
     name: budget.name,
-    value: budget.limit_amount || 0,
+    value: budget.allocated_amount || 0,
     color: getBudgetColor(budget)
   }));
 

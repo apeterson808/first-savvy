@@ -64,8 +64,8 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, isInco
         return category?.detail_type !== 'transfer';
       }).map((budget) => {
         const spent = spendingByCategory[budget.category_id] || spendingByCategory[budget.name] || 0;
-        const percent = (spent / budget.limit_amount) * 100;
-        const remaining = budget.limit_amount - spent;
+        const percent = (spent / budget.allocated_amount) * 100;
+        const remaining = budget.allocated_amount - spent;
         const budgetColor = getBudgetColor(budget);
         const category = getCategoryById(budget.category_id);
 
@@ -99,7 +99,7 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, isInco
               </span>
               <span className="text-xs text-slate-400"> / </span>
               <span className="text-xs text-slate-600 font-medium">
-                ${budget.limit_amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                ${budget.allocated_amount.toLocaleString(undefined, { maximumFractionDigits: 0 })}
               </span>
             </div>
 

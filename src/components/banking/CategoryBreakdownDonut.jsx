@@ -127,7 +127,7 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
   const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
   const totalBudget = budgets
     .filter(b => expenseGroupIds.has(b.group_id))
-    .reduce((sum, b) => sum + (b.limit_amount || 0), 0);
+    .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
   
   const overallPercentage = totalBudget > 0 ? ((totalSpending / totalBudget) * 100).toFixed(0) : 0;
 

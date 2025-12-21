@@ -42,7 +42,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Beginning Balance',
       type: 'beginning_balance',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -53,7 +53,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Cash',
       type: 'cash',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -64,7 +64,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Crypto',
       type: 'crypto',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -75,7 +75,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Investment',
       type: 'investment',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -86,7 +86,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Loan to Others',
       type: 'personal_loan',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -97,7 +97,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Property',
       type: 'property',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -108,7 +108,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Stocks',
       type: 'stocks',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',
@@ -119,7 +119,7 @@ const DEFAULT_ACCOUNTS = [
     data: {
       name: 'Vehicle',
       type: 'vehicle',
-      current_value: 0,
+      current_balance: 0,
       is_active: true
     },
     checkField: 'name',

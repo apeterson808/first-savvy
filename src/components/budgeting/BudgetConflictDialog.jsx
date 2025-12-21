@@ -27,8 +27,8 @@ export default function BudgetConflictDialog({
   const incomeBudgets = allBudgets.filter(b => incomeGroupIds.has(b.group_id));
 
   // Calculate the overflow amount
-  const currentOtherExpenses = otherExpenseBudgets.reduce((sum, b) => sum + (b.limit_amount || 0), 0);
-  const originalAmount = conflictBudget?.limit_amount || 0;
+  const currentOtherExpenses = otherExpenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+  const originalAmount = conflictBudget?.allocated_amount || 0;
   const overflowAmount = (currentOtherExpenses + requestedAmount) - totalIncome;
 
   // Calculate adjusted values
@@ -56,7 +56,7 @@ export default function BudgetConflictDialog({
 
   const handleAdjustment = (budgetId, reduction) => {
     const budget = otherExpenseBudgets.find(b => b.id === budgetId);
-    const maxReduction = budget?.limit_amount || 0;
+    const maxReduction = budget?.allocated_amount || 0;
     const clampedReduction = Math.max(0, Math.min(reduction, maxReduction));
     
     setAdjustments(prev => ({
@@ -70,7 +70,7 @@ export default function BudgetConflictDialog({
     
     // Add the original budget update only if it has an ID (existing budget)
     if (conflictBudget.id) {
-      updates.push({ id: conflictBudget.id, limit_amount: requestedAmount });
+      updates.push({ id: conflictBudget.id, allocated_amount: requestedAmount });
     }
     
     // Add expense budget reductions
@@ -78,7 +78,7 @@ export default function BudgetConflictDialog({
       if (reduction > 0) {
         const budget = otherExpenseBudgets.find(b => b.id === budgetId);
         if (budget) {
-          updates.push({ id: budgetId, limit_amount: budget.limit_amount - reduction });
+          updates.push({ id: budgetId, allocated_amount: budget.allocated_amount - reduction });
         }
       }
     });
@@ -88,7 +88,7 @@ export default function BudgetConflictDialog({
       if (increase > 0) {
         const budget = incomeBudgets.find(b => b.id === budgetId);
         if (budget) {
-          updates.push({ id: budgetId, limit_amount: budget.limit_amount + increase });
+          updates.push({ id: budgetId, allocated_amount: budget.allocated_amount + increase });
         }
       }
     });
@@ -148,7 +148,7 @@ export default function BudgetConflictDialog({
             <div className="max-h-40 overflow-y-auto space-y-1">
               {otherExpenseBudgets.map(budget => {
                 const reduction = adjustments[budget.id] || 0;
-                const newAmount = budget.limit_amount - reduction;
+                const newAmount = budget.allocated_amount - reduction;
                 
                 return (
                   <div key={budget.id} className="flex items-center gap-2 py-1">
@@ -179,7 +179,7 @@ export default function BudgetConflictDialog({
               <div className="max-h-40 overflow-y-auto space-y-1">
                 {incomeBudgets.map(budget => {
                   const increase = incomeAdjustments[budget.id] || 0;
-                  const newAmount = budget.limit_amount + increase;
+                  const newAmount = budget.allocated_amount + increase;
                   
                   return (
                     <div key={budget.id} className="flex items-center gap-2 py-1">

@@ -39,9 +39,9 @@ export default function NetWorthOverviewTab() {
   const otherAssets = assets.filter(a => a.type !== 'investment' && a.type !== 'beginning_balance');
   const cashAccounts = bankAccounts;
 
-  const totalInvestments = investmentAssets.reduce((sum, a) => sum + (a.current_value || 0), 0);
+  const totalInvestments = investmentAssets.reduce((sum, a) => sum + (a.current_balance || 0), 0);
   const totalCash = cashAccounts.reduce((sum, a) => sum + (a.current_balance || 0), 0);
-  const totalOtherAssets = otherAssets.reduce((sum, a) => sum + (a.current_value || 0), 0);
+  const totalOtherAssets = otherAssets.reduce((sum, a) => sum + (a.current_balance || 0), 0);
   const totalAssets = totalInvestments + totalCash + totalOtherAssets;
 
   const totalLoans = liabilities.reduce((sum, l) => sum + (l.current_balance || 0), 0);
@@ -108,7 +108,7 @@ export default function NetWorthOverviewTab() {
       color: '#3b82f6',
       total: totalInvestments,
       percentage: totalAssets > 0 ? Math.round((totalInvestments / totalAssets) * 100) : 0,
-      items: investmentAssets.map(a => ({ name: a.name, value: a.current_value }))
+      items: investmentAssets.map(a => ({ name: a.name, value: a.current_balance }))
     },
     {
       id: 'cash',
@@ -124,7 +124,7 @@ export default function NetWorthOverviewTab() {
       color: '#14b8a6',
       total: totalOtherAssets,
       percentage: totalAssets > 0 ? Math.round((totalOtherAssets / totalAssets) * 100) : 0,
-      items: otherAssets.map(a => ({ name: a.name, value: a.current_value }))
+      items: otherAssets.map(a => ({ name: a.name, value: a.current_balance }))
     }
   ];
 
