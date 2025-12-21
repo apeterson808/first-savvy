@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
@@ -863,13 +863,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-[540px]">
-        <SheetHeader>
-          <SheetTitle>{getStepTitle()}</SheetTitle>
-        </SheetHeader>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{getStepTitle()}</DialogTitle>
+        </DialogHeader>
 
-        <div className="py-6">
+        <div className="py-4">
           {renderStepIndicator()}
           {renderCurrentStep()}
         </div>
@@ -922,7 +922,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             </Button>
           )}
         </div>
-      </SheetContent>
-    </Sheet>
+      </DialogContent>
+    </Dialog>
   );
 }
