@@ -482,7 +482,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="grid grid-cols-3 gap-5 p-4">
+    <div className="grid grid-cols-3 gap-3 p-4">
       {ACCOUNT_TYPE_CARDS.map(card => {
         const IconComponent = card.icon;
         return (
@@ -507,7 +507,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderSelectSubtype = () => {
     const IconComponent = selectedCard.icon;
     return (
-      <div className="grid grid-cols-2 gap-5 p-4">
+      <div className="grid grid-cols-2 gap-3 p-4">
         {selectedCard.subtypes.map(subtype => (
           <div
             key={subtype.value}
@@ -875,7 +875,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
         <DialogHeader>
           <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
         </DialogHeader>
