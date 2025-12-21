@@ -877,7 +877,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`max-w-2xl w-full p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+      <DialogContent className={`w-[550px] p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
         <div className="relative flex flex-col h-[400px]">
           <DialogHeader className="pt-5 px-5 flex-shrink-0">
             <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
