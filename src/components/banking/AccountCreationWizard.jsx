@@ -482,7 +482,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="flex justify-center p-4">
+    <div className="flex justify-center p-5">
       <div className="grid grid-cols-3 gap-[20px] max-w-md">
         {ACCOUNT_TYPE_CARDS.map(card => {
           const IconComponent = card.icon;
@@ -509,7 +509,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderSelectSubtype = () => {
     const IconComponent = selectedCard.icon;
     return (
-      <div className="grid grid-cols-2 gap-[20px] p-4">
+      <div className="grid grid-cols-2 gap-[20px] p-5">
         {selectedCard.subtypes.map(subtype => (
           <div
             key={subtype.value}
@@ -532,7 +532,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderDetailsStep = () => {
     if (selectedCard.id === 'banking') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <Label htmlFor="name">Account Nickname*</Label>
             <Input
@@ -566,7 +566,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'vehicle' || selectedCard.id === 'property') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <Label htmlFor="name">{selectedCard.id === 'vehicle' ? 'Vehicle Name*' : 'Property Name*'}</Label>
             <Input
@@ -605,7 +605,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'investments') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <Label htmlFor="name">Account Name*</Label>
             <Input
@@ -645,7 +645,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'loans') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <Label htmlFor="name">Loan Name*</Label>
             <Input
@@ -685,7 +685,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'budget') {
       return (
-        <div className="space-y-4">
+        <div className="space-y-5">
           <div>
             <Label htmlFor="name">Category Name*</Label>
             <Input
@@ -702,7 +702,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderBalanceStep = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
         <Label htmlFor="balance">Starting Balance</Label>
         <div className="relative">
@@ -730,7 +730,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderLoanDetailsStep = () => (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <div>
         <Label htmlFor="loanBalance">Loan Balance*</Label>
         <div className="relative">
@@ -784,8 +784,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderReviewStep = () => (
-    <div className="space-y-4">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div className="space-y-5">
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
         <h3 className="font-semibold text-gray-900 mb-3">Review Your {selectedCard.title}</h3>
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
@@ -882,13 +882,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
         </DialogHeader>
 
-        <div className="py-4">
+        <div className="py-5 px-5">
           {currentStep !== 'select-type' && currentStep !== 'select-subtype' && renderStepIndicator()}
           {renderCurrentStep()}
         </div>
 
         {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
-          <div className="flex justify-between gap-4 pt-3 border-t">
+          <div className="flex justify-between gap-4 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
