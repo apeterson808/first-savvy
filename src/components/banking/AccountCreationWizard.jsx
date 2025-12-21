@@ -482,53 +482,49 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="flex justify-center">
-      <div className="grid grid-cols-3 gap-[20px] max-w-md">
-        {ACCOUNT_TYPE_CARDS.map(card => {
-          const IconComponent = card.icon;
-          return (
+    <div className="grid grid-cols-3 gap-[20px] max-w-md mx-auto">
+      {ACCOUNT_TYPE_CARDS.map(card => {
+        const IconComponent = card.icon;
+        return (
+          <div
+            key={card.id}
+            className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+            onClick={() => handleCardSelect(card)}
+          >
             <div
-              key={card.id}
-              className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
-              onClick={() => handleCardSelect(card)}
+              className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+              style={{ backgroundColor: card.bgColor }}
             >
-              <div
-                className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
-                style={{ backgroundColor: card.bgColor }}
-              >
-                <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
-              </div>
-              <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
+              <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
             </div>
-          );
-        })}
-      </div>
+            <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
+          </div>
+        );
+      })}
     </div>
   );
 
   const renderSelectSubtype = () => {
     return (
-      <div className="flex justify-center">
-        <div className="grid grid-cols-3 gap-[20px] max-w-md">
-          {selectedCard.subtypes.map(subtype => {
-            const IconComponent = subtype.icon || selectedCard.icon;
-            return (
+      <div className="grid grid-cols-3 gap-[20px] max-w-md mx-auto">
+        {selectedCard.subtypes.map(subtype => {
+          const IconComponent = subtype.icon || selectedCard.icon;
+          return (
+            <div
+              key={subtype.value}
+              className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+              onClick={() => handleSubtypeSelect(subtype)}
+            >
               <div
-                key={subtype.value}
-                className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
-                onClick={() => handleSubtypeSelect(subtype)}
+                className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                style={{ backgroundColor: selectedCard.bgColor }}
               >
-                <div
-                  className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
-                  style={{ backgroundColor: selectedCard.bgColor }}
-                >
-                  <IconComponent className={`w-10 h-10 ${selectedCard.iconColor}`} strokeWidth={2} />
-                </div>
-                <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{subtype.label}</span>
+                <IconComponent className={`w-10 h-10 ${selectedCard.iconColor}`} strokeWidth={2} />
               </div>
-            );
-          })}
-        </div>
+              <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{subtype.label}</span>
+            </div>
+          );
+        })}
       </div>
     );
   };
@@ -536,7 +532,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderDetailsStep = () => {
     if (selectedCard.id === 'banking') {
       return (
-        <div className="space-y-5">
+        <div className="space-y-5 max-w-lg mx-auto">
           <div>
             <Label htmlFor="name">Account Nickname*</Label>
             <Input
@@ -570,7 +566,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'vehicle' || selectedCard.id === 'property') {
       return (
-        <div className="space-y-5">
+        <div className="space-y-5 max-w-lg mx-auto">
           <div>
             <Label htmlFor="name">{selectedCard.id === 'vehicle' ? 'Vehicle Name*' : 'Property Name*'}</Label>
             <Input
@@ -609,7 +605,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'investments') {
       return (
-        <div className="space-y-5">
+        <div className="space-y-5 max-w-lg mx-auto">
           <div>
             <Label htmlFor="name">Account Name*</Label>
             <Input
@@ -649,7 +645,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'loans') {
       return (
-        <div className="space-y-5">
+        <div className="space-y-5 max-w-lg mx-auto">
           <div>
             <Label htmlFor="name">Loan Name*</Label>
             <Input
@@ -689,7 +685,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'budget') {
       return (
-        <div className="space-y-5">
+        <div className="space-y-5 max-w-lg mx-auto">
           <div>
             <Label htmlFor="name">Category Name*</Label>
             <Input
@@ -706,7 +702,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderBalanceStep = () => (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-lg mx-auto">
       <div>
         <Label htmlFor="balance">Starting Balance</Label>
         <div className="relative">
@@ -734,7 +730,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderLoanDetailsStep = () => (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-lg mx-auto">
       <div>
         <Label htmlFor="loanBalance">Loan Balance*</Label>
         <div className="relative">
@@ -788,7 +784,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderReviewStep = () => (
-    <div className="space-y-5">
+    <div className="space-y-5 max-w-lg mx-auto">
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
         <h3 className="font-semibold text-gray-900 mb-3">Review Your {selectedCard.title}</h3>
         <div className="space-y-2 text-sm">
@@ -882,17 +878,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-        <div className="relative overflow-y-auto max-h-[85vh]">
-          <DialogHeader className="pt-5 px-5">
+        <div className="relative overflow-y-auto max-h-[85vh] flex flex-col">
+          <DialogHeader className="pt-5 px-5 flex-shrink-0">
             <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
           </DialogHeader>
 
-          <div className="py-5 px-5">
+          <div className="py-5 px-5 flex-grow min-h-[400px] flex flex-col justify-center">
             {renderCurrentStep()}
           </div>
 
           {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
-            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t">
+            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
               <Button
                 type="button"
                 variant="outline"
@@ -931,7 +927,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           )}
 
           {currentStep === 'select-subtype' && (
-            <div className="flex justify-center pt-4 pb-2">
+            <div className="flex justify-center pt-4 pb-2 flex-shrink-0">
               <Button
                 type="button"
                 variant="ghost"
