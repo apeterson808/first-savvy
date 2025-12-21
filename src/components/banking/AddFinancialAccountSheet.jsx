@@ -58,12 +58,7 @@ export default function AddFinancialAccountSheet({
 
   const { data: existingAccounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
-  });
-
-  const { data: existingCreditCards = [] } = useQuery({
-    queryKey: ['creditCards'],
-    queryFn: () => firstsavvy.entities.CreditCard.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.Account.filter({ is_active: true })
   });
 
   const { data: categories = [] } = useQuery({
@@ -205,30 +200,16 @@ export default function AddFinancialAccountSheet({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const createBankAccountMutation = useMutation({
-    mutationFn: (data) => withRetry(() => firstsavvy.entities.BankAccount.create(data)),
+  const createAccountMutation = useMutation({
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.Account.create(data)),
     onSuccess: (newAccount) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
-      onAccountCreated?.({ type: 'bank', account: newAccount });
+      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       onOpenChange(false);
     },
     onError: (error) => {
-      logError(error, { action: 'createBankAccount' });
-      showErrorToast(error);
-    }
-  });
-
-  const createCreditCardMutation = useMutation({
-    mutationFn: (data) => withRetry(() => firstsavvy.entities.CreditCard.create(data)),
-    onSuccess: (newAccount) => {
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
-      onAccountCreated?.({ type: 'credit_card', account: newAccount });
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      logError(error, { action: 'createCreditCard' });
+      logError(error, { action: 'createAccount' });
       showErrorToast(error);
     }
   });
@@ -285,30 +266,16 @@ export default function AddFinancialAccountSheet({
     }
   });
 
-  const updateBankAccountMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.BankAccount.update(id, data)),
+  const updateAccountMutation = useMutation({
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Account.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
-      onAccountCreated?.({ type: 'bank' });
+      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      onAccountCreated?.({ type: 'account' });
       onOpenChange(false);
     },
     onError: (error) => {
-      logError(error, { action: 'updateBankAccount' });
-      showErrorToast(error);
-    }
-  });
-
-  const updateCreditCardMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.CreditCard.update(id, data)),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
-      onAccountCreated?.({ type: 'credit_card' });
-      onOpenChange(false);
-    },
-    onError: (error) => {
-      logError(error, { action: 'updateCreditCard' });
+      logError(error, { action: 'updateAccount' });
       showErrorToast(error);
     }
   });
@@ -416,26 +383,16 @@ export default function AddFinancialAccountSheet({
 
     switch (formData.accountType) {
       case 'bank':
-        createBankAccountMutation.mutate({
-          ...baseData,
-          account_name: capitalizedName,
-          account_number: accountNumber,
-          account_type: formData.detailType,
-          current_balance: validatedBalance,
-          institution_name: formData.bankName,
-          account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
-        });
-        break;
-
       case 'credit_card':
-        createCreditCardMutation.mutate({
-          ...baseData,
+        createAccountMutation.mutate({
           account_name: capitalizedName,
           account_number: accountNumber,
-          account_type: 'credit_card',
+          account_type: formData.accountType === 'bank' ? formData.detailType : 'credit_card',
           current_balance: validatedBalance,
           institution_name: formData.bankName || null,
           account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
+          parent_account_id: formData.isSubaccount && formData.parentAccountId ? formData.parentAccountId : undefined,
+          is_active: true,
         });
         break;
 
@@ -495,30 +452,18 @@ export default function AddFinancialAccountSheet({
 
     switch (formData.accountType) {
       case 'bank':
-        updateBankAccountMutation.mutate({
-          id,
-          data: {
-            ...baseData,
-            account_name: formData.name,
-            account_number: formData.accountNumber,
-            account_type: formData.detailType,
-            current_balance: validatedBalance,
-            institution_name: formData.bankName,
-          }
-        });
-        break;
-
       case 'credit_card':
-        updateCreditCardMutation.mutate({
+        updateAccountMutation.mutate({
           id,
           data: {
-            ...baseData,
             account_name: formData.name,
             account_number: formData.accountNumber,
-            account_type: 'credit_card',
+            account_type: formData.accountType === 'bank' ? formData.detailType : 'credit_card',
             current_balance: validatedBalance,
             institution_name: formData.bankName || null,
             account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
+            parent_account_id: formData.isSubaccount && formData.parentAccountId ? formData.parentAccountId : null,
+            is_active: formData.isActive,
           }
         });
         break;
@@ -582,14 +527,12 @@ export default function AddFinancialAccountSheet({
   };
 
   const isLoading =
-    createBankAccountMutation.isPending ||
-    createCreditCardMutation.isPending ||
+    createAccountMutation.isPending ||
     createAssetMutation.isPending ||
     createLiabilityMutation.isPending ||
     createEquityMutation.isPending ||
     createCategoryMutation.isPending ||
-    updateBankAccountMutation.isPending ||
-    updateCreditCardMutation.isPending ||
+    updateAccountMutation.isPending ||
     updateAssetMutation.isPending ||
     updateLiabilityMutation.isPending ||
     updateEquityMutation.isPending ||
@@ -697,16 +640,20 @@ export default function AddFinancialAccountSheet({
                       placeholder="Select parent account"
                       triggerClassName="hover:bg-slate-50"
                     >
-                      {formData.accountType === 'bank' && existingAccounts.filter(acc => !acc.parent_account_id).map(acc => (
-                        <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                          {acc.account_name}{acc.account_number ? ` (${acc.account_number})` : ''}
-                        </ClickThroughSelectItem>
-                      ))}
-                      {formData.accountType === 'credit_card' && existingCreditCards.filter(cc => cc.id !== editingAccount?.id).map(cc => (
-                        <ClickThroughSelectItem key={cc.id} value={cc.id}>
-                          {cc.name}{cc.last_four ? ` (${cc.last_four})` : ''}
-                        </ClickThroughSelectItem>
-                      ))}
+                      {formData.accountType === 'bank' && existingAccounts
+                        .filter(acc => ['checking', 'savings'].includes(acc.account_type) && !acc.parent_account_id && acc.id !== editingAccount?.id)
+                        .map(acc => (
+                          <ClickThroughSelectItem key={acc.id} value={acc.id}>
+                            {acc.account_name}{acc.account_number ? ` (${acc.account_number})` : ''}
+                          </ClickThroughSelectItem>
+                        ))}
+                      {formData.accountType === 'credit_card' && existingAccounts
+                        .filter(acc => acc.account_type === 'credit_card' && !acc.parent_account_id && acc.id !== editingAccount?.id)
+                        .map(acc => (
+                          <ClickThroughSelectItem key={acc.id} value={acc.id}>
+                            {acc.account_name}{acc.account_number_last4 ? ` (${acc.account_number_last4})` : ''}
+                          </ClickThroughSelectItem>
+                        ))}
                       {formData.accountType === 'asset' && assets.filter(a => !a.parent_account_id).map(asset => (
                         <ClickThroughSelectItem key={asset.id} value={asset.id}>
                           {asset.name}
