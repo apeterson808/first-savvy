@@ -26,6 +26,16 @@ export function UserAvatarDropdown() {
 
   useEffect(() => {
     loadUserData();
+
+    const handleProfileUpdate = () => {
+      loadUserData();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   const loadUserData = async () => {

@@ -58,6 +58,7 @@ export default function ProfileTab({ user, profile, onUpdate }) {
       });
 
       onUpdate(updatedProfile);
+      window.dispatchEvent(new CustomEvent('profileUpdated'));
       toast.success('Avatar updated successfully');
     } catch (error) {
       console.error('Error uploading avatar:', error);
@@ -79,6 +80,7 @@ export default function ProfileTab({ user, profile, onUpdate }) {
       });
 
       onUpdate(updatedProfile);
+      window.dispatchEvent(new CustomEvent('profileUpdated'));
       toast.success('Avatar removed successfully');
     } catch (error) {
       console.error('Error removing avatar:', error);
@@ -102,6 +104,7 @@ export default function ProfileTab({ user, profile, onUpdate }) {
     try {
       const updatedProfile = await upsertUserProfile(user.id, formData);
       onUpdate(updatedProfile);
+      window.dispatchEvent(new CustomEvent('profileUpdated'));
       toast.success('Profile updated successfully');
     } catch (error) {
       console.error('Error updating profile:', error);
