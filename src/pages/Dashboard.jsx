@@ -570,6 +570,14 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 gap-2">
+            <Button
+              variant="outline"
+              className="w-full h-10"
+              onClick={() => setAddAccountSheetOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Account
+            </Button>
             <Button variant="outline" className="w-full h-10">
               <Upload className="w-4 h-4 mr-2" />
               Upload Receipt
