@@ -361,7 +361,7 @@ export function ClickThroughSelect({
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             minWidth: Math.max(dropdownPosition.width, 160),
-            zIndex: 99999,
+            zIndex: 999999,
             pointerEvents: 'auto'
           }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md"
@@ -427,15 +427,15 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
       data-click-through-select-item="true"
       data-is-action={isAction ? "true" : undefined}
       data-value={value}
-      style={{ pointerEvents: 'auto' }}
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onSelect?.(value, isAction);
-      }}
+      style={{ pointerEvents: 'auto', cursor: 'pointer' }}
       onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
+      }}
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log(`[ClickThroughSelectItem] Clicked value: ${value}`);
         onSelect?.(value, isAction);
       }}
       className={cn(
