@@ -1,7 +1,7 @@
 import React from 'react';
 import { Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 
 export async function suggestContact(description, transactions, rules, contacts = []) {
   if (!description || description.length < 2) return null;
@@ -88,7 +88,7 @@ export async function suggestContact(description, transactions, rules, contacts 
   }
 
   try {
-    const aiResult = await base44.functions.aiSuggestContact({
+    const aiResult = await firstsavvy.functions.aiSuggestContact({
       description,
       contacts: contacts.map(c => ({ id: c.id, name: c.name, type: c.type }))
     });

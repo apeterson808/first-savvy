@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 
 const DEFAULT_ACCOUNTS = [
   // Bank Accounts
@@ -579,17 +579,17 @@ export function useDefaultAccounts() {
             filter[defaultAccount.checkField2] = defaultAccount.checkValue2;
           }
 
-          const existing = await base44.entities[defaultAccount.entity].filter(filter);
+          const existing = await firstsavvy.entities[defaultAccount.entity].filter(filter);
 
           // Remove duplicates if multiple exist
           if (existing.length > 1) {
             // Keep the first one, delete the rest
             for (let i = 1; i < existing.length; i++) {
-              await base44.entities[defaultAccount.entity].delete(existing[i].id);
+              await firstsavvy.entities[defaultAccount.entity].delete(existing[i].id);
             }
           } else if (existing.length === 0) {
             // Create if doesn't exist
-            await base44.entities[defaultAccount.entity].create(defaultAccount.data);
+            await firstsavvy.entities[defaultAccount.entity].create(defaultAccount.data);
           }
         }
         setInitialized(true);

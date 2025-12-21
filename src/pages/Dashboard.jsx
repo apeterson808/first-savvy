@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ export default function Dashboard() {
   const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const accounts = await base44.entities.Account.filter({
+      const accounts = await firstsavvy.entities.Account.filter({
         is_active: true,
         account_type: ['checking', 'savings', 'credit_card']
       });
@@ -51,43 +51,43 @@ export default function Dashboard() {
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date', 1000),
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
     staleTime: 30000
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true })
   });
 
   const { data: budgetGroups = [] } = useQuery({
     queryKey: ['budgetGroups'],
-    queryFn: () => base44.entities.BudgetGroup.list()
+    queryFn: () => firstsavvy.entities.BudgetGroup.list()
   });
 
   const { data: bills = [] } = useQuery({
     queryKey: ['bills'],
-    queryFn: () => base44.entities.Bill.list('-due_date', 10)
+    queryFn: () => firstsavvy.entities.Bill.list('-due_date', 10)
   });
 
   const { data: assets = [] } = useQuery({
     queryKey: ['assets'],
-    queryFn: () => base44.entities.Asset.list()
+    queryFn: () => firstsavvy.entities.Asset.list()
   });
 
   const { data: liabilities = [] } = useQuery({
     queryKey: ['liabilities'],
-    queryFn: () => base44.entities.Liability.list()
+    queryFn: () => firstsavvy.entities.Liability.list()
   });
 
   const { data: creditScores = [] } = useQuery({
     queryKey: ['creditScores'],
-    queryFn: () => base44.entities.CreditScore.list('-last_checked', 1)
+    queryFn: () => firstsavvy.entities.CreditScore.list('-last_checked', 1)
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name'),
+    queryFn: () => firstsavvy.entities.Category.list('name'),
     staleTime: 30000
   });
 

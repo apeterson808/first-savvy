@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import {
   Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
   Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
@@ -36,7 +36,7 @@ const ICON_MAP = {
 export default function BudgetCategoryList({ budgets, spendingByCategory, isIncome = false, unbudgetedAmount = 0 }) {
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const getCategoryById = (id) => categories.find(c => c.id === id);

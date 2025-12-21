@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthCallback() {
@@ -10,7 +10,7 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        const session = await base44.auth.getSession();
+        const session = await firstsavvy.auth.getSession();
 
         if (session) {
           const lastVisitedPage = localStorage.getItem('lastVisitedPage');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,7 +50,7 @@ export default function AddContactSheet({
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function AddContactSheet({
   }, [open, initialName]);
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Contact.create(data),
+    mutationFn: (data) => firstsavvy.entities.Contact.create(data),
     onSuccess: (newContact) => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact created successfully');
@@ -107,13 +107,13 @@ export default function AddContactSheet({
 
   const handleConnectionRequest = async (user) => {
     try {
-      const currentUser = await base44.auth.me();
+      const currentUser = await firstsavvy.auth.me();
       if (!currentUser) {
         toast.error('You must be logged in to connect with contacts');
         return;
       }
 
-      await base44.entities.UserRelationship.create({
+      await firstsavvy.entities.UserRelationship.create({
         user_id: currentUser.id,
         related_user_id: user.id,
         relationship_type: 'friend',
@@ -132,7 +132,7 @@ export default function AddContactSheet({
 
   const handleSendInvitation = async (value, type) => {
     try {
-      const currentUser = await base44.auth.me();
+      const currentUser = await firstsavvy.auth.me();
       if (!currentUser) {
         toast.error('You must be logged in to send invitations');
         return;
@@ -151,10 +151,10 @@ export default function AddContactSheet({
         invitationData.invitee_phone = value.replace(/[^\d]/g, '');
       }
 
-      const invitation = await base44.entities.Invitation.create(invitationData);
+      const invitation = await firstsavvy.entities.Invitation.create(invitationData);
 
       try {
-        await base44.functions.sendInvitationNotification({
+        await firstsavvy.functions.sendInvitationNotification({
           invitationId: invitation.id,
           inviterName: currentUser.email || 'A user',
           inviteeEmail: type === 'email' ? value : undefined,

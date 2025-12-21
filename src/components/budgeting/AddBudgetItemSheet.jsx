@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -52,7 +52,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   // Populate form when editing - set group first, then category
@@ -74,7 +74,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
 
   const { data: existingBudgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.list()
+    queryFn: () => firstsavvy.entities.Budget.list()
   });
 
   // Get categories not already in a budget (exclude current budget's category when editing)
@@ -95,7 +95,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   );
 
   const createBudgetMutation = useMutation({
-    mutationFn: (data) => base44.entities.Budget.create(data),
+    mutationFn: (data) => firstsavvy.entities.Budget.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       resetForm();
@@ -104,7 +104,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   });
 
   const updateBudgetMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Budget.update(id, data),
+    mutationFn: ({ id, data }) => firstsavvy.entities.Budget.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       resetForm();
@@ -113,7 +113,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   });
 
   const createGroupMutation = useMutation({
-    mutationFn: (data) => base44.entities.BudgetGroup.create(data),
+    mutationFn: (data) => firstsavvy.entities.BudgetGroup.create(data),
     onSuccess: (newGroup) => {
       queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
       setSelectedGroupId(newGroup.id);
@@ -162,7 +162,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
     
     // Update category icon if changed
     if (selectedIcon && selectedIcon !== selectedCategory?.icon) {
-      await base44.entities.Category.update(selectedCategoryId, { icon: selectedIcon });
+      await firstsavvy.entities.Category.update(selectedCategoryId, { icon: selectedIcon });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     }
     
@@ -199,16 +199,16 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
     // Apply all budget adjustments (only for existing budgets with valid IDs)
     for (const update of updates) {
       if (update.id) {
-        await base44.entities.Budget.update(update.id, { limit_amount: update.limit_amount });
+        await firstsavvy.entities.Budget.update(update.id, { limit_amount: update.limit_amount });
       }
     }
     
     // Now create/update the pending budget
     if (pendingBudgetData) {
       if (isEditMode) {
-        await base44.entities.Budget.update(editingBudget.id, pendingBudgetData);
+        await firstsavvy.entities.Budget.update(editingBudget.id, pendingBudgetData);
       } else {
-        await base44.entities.Budget.create(pendingBudgetData);
+        await firstsavvy.entities.Budget.create(pendingBudgetData);
       }
     }
     

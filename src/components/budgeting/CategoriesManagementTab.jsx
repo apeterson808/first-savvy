@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,12 +56,12 @@ export default function CategoriesManagementTab({ categories, transactions }) {
       const usageCount = getCategoryUsageCount(deletingCategory.id);
 
       if (usageCount > 0) {
-        await base44.from('transactions')
+        await firstsavvy.from('transactions')
           .update({ category_id: null })
           .eq('category_id', deletingCategory.id);
       }
 
-      await base44.entities.Category.delete(deletingCategory.id);
+      await firstsavvy.entities.Category.delete(deletingCategory.id);
 
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });

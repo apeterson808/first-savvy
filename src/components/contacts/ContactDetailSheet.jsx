@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import {
   Sheet,
   SheetContent,
@@ -49,7 +49,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
     queryKey: ['transactions', 'contact', contact?.id],
     queryFn: async () => {
       if (!contact?.id) return [];
-      const allTransactions = await base44.entities.Transaction.list('date', 'desc');
+      const allTransactions = await firstsavvy.entities.Transaction.list('date', 'desc');
       return allTransactions.filter(t =>
         t.merchant?.toLowerCase().includes(contact.name.toLowerCase()) ||
         t.description?.toLowerCase().includes(contact.name.toLowerCase())
@@ -60,17 +60,17 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
 
   const { data: category } = useQuery({
     queryKey: ['category', contact?.default_category_id],
-    queryFn: () => base44.entities.Category.get(contact.default_category_id),
+    queryFn: () => firstsavvy.entities.Category.get(contact.default_category_id),
     enabled: !!contact?.default_category_id,
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Contact.update(id, data),
+    mutationFn: ({ id, data }) => firstsavvy.entities.Contact.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       setIsEditMode(false);
@@ -78,7 +78,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.Contact.delete(id),
+    mutationFn: (id) => firstsavvy.entities.Contact.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       onOpenChange(false);
@@ -87,13 +87,13 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
 
   const handleConnectionRequest = async (user) => {
     try {
-      const currentUser = await base44.auth.me();
+      const currentUser = await firstsavvy.auth.me();
       if (!currentUser) {
         toast.error('You must be logged in to connect with contacts');
         return;
       }
 
-      await base44.entities.UserRelationship.create({
+      await firstsavvy.entities.UserRelationship.create({
         user_id: currentUser.id,
         related_user_id: user.id,
         relationship_type: 'friend',
@@ -104,7 +104,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
 
       setDetectedUser(user);
 
-      await base44.entities.Contact.update(contact.id, {
+      await firstsavvy.entities.Contact.update(contact.id, {
         linked_user_id: user.id,
         connection_status: 'connected'
       });
@@ -119,7 +119,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
 
   const handleSendInvitation = async (value, type) => {
     try {
-      const currentUser = await base44.auth.me();
+      const currentUser = await firstsavvy.auth.me();
       if (!currentUser) {
         toast.error('You must be logged in to send invitations');
         return;
@@ -138,10 +138,10 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
         invitationData.invitee_phone = value.replace(/[^\d]/g, '');
       }
 
-      const invitation = await base44.entities.Invitation.create(invitationData);
+      const invitation = await firstsavvy.entities.Invitation.create(invitationData);
 
       try {
-        await base44.functions.sendInvitationNotification({
+        await firstsavvy.functions.sendInvitationNotification({
           invitationId: invitation.id,
           inviterName: currentUser.email || 'A user',
           inviteeEmail: type === 'email' ? value : undefined,
@@ -153,7 +153,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
         console.error('Failed to send notification:', notifError);
       }
 
-      await base44.entities.Contact.update(contact.id, {
+      await firstsavvy.entities.Contact.update(contact.id, {
         invitation_id: invitation.id,
         connection_status: 'invited'
       });

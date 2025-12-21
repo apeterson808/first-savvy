@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,42 +35,42 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date', 1000)
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000)
   });
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const { data: budgetGroups = [] } = useQuery({
     queryKey: ['budgetGroups'],
-    queryFn: () => base44.entities.BudgetGroup.list()
+    queryFn: () => firstsavvy.entities.BudgetGroup.list()
   });
 
   const { data: existingBudgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.list()
+    queryFn: () => firstsavvy.entities.Budget.list()
   });
 
   const activeAccountIds = accounts.map(a => a.id);
 
   const updateBudgetMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Budget.update(id, data),
+    mutationFn: ({ id, data }) => firstsavvy.entities.Budget.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
     }
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Category.update(id, data),
+    mutationFn: ({ id, data }) => firstsavvy.entities.Category.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
     }
   });
 
   const deleteBudgetMutation = useMutation({
-    mutationFn: (id) => base44.entities.Budget.delete(id),
+    mutationFn: (id) => firstsavvy.entities.Budget.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       onOpenChange(false);
@@ -222,12 +222,12 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const handleConflictSave = async (updates) => {
     for (const update of updates) {
       if (update.id) {
-        await base44.entities.Budget.update(update.id, { limit_amount: update.limit_amount });
+        await firstsavvy.entities.Budget.update(update.id, { limit_amount: update.limit_amount });
       }
     }
 
     if (pendingBudgetData) {
-      await base44.entities.Budget.update(budget.id, pendingBudgetData);
+      await firstsavvy.entities.Budget.update(budget.id, pendingBudgetData);
     }
 
     queryClient.invalidateQueries({ queryKey: ['budgets'] });

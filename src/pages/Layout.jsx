@@ -7,7 +7,7 @@ import {
   Calendar, CreditCard, Banknote, Lock, Users, Cable, UserCog,
   Menu, X, Bell, Search, LogOut, User, ChevronLeft
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import NetworkStatus from '@/components/common/NetworkStatus';
 import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
@@ -92,7 +92,7 @@ export default function Layout({ children, currentPageName }) {
   React.useEffect(() => {
     const loadUserData = async () => {
       try {
-        const authUser = await base44.auth.me();
+        const authUser = await firstsavvy.auth.me();
         setUser(authUser);
 
         if (authUser?.id) {

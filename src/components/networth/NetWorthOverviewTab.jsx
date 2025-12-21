@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -16,22 +16,22 @@ export default function NetWorthOverviewTab() {
 
   const { data: assets = [] } = useQuery({
     queryKey: ['assets'],
-    queryFn: () => base44.entities.Asset.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.Asset.filter({ is_active: true })
   });
 
   const { data: liabilities = [] } = useQuery({
     queryKey: ['liabilities'],
-    queryFn: () => base44.entities.Liability.list()
+    queryFn: () => firstsavvy.entities.Liability.list()
   });
 
   const { data: bankAccounts = [] } = useQuery({
     queryKey: ['bankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const { data: creditCards = [] } = useQuery({
     queryKey: ['creditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.CreditCard.filter({ is_active: true })
   });
 
   // Calculate totals

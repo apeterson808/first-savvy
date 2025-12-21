@@ -1,32 +1,32 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 export function useBudgetData() {
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
     queryKey: ['budgetGroups'],
-    queryFn: () => base44.entities.BudgetGroup.list('order')
+    queryFn: () => firstsavvy.entities.BudgetGroup.list('order')
   });
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true })
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date', 1000)
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000)
   });
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -98,13 +98,13 @@ export default function Budgeting() {
       for (const category of categories) {
         if (!category.icon) {
           const suggestedIcon = suggestIconForName(category.name);
-          await base44.entities.Category.update(category.id, { icon: suggestedIcon });
+          await firstsavvy.entities.Category.update(category.id, { icon: suggestedIcon });
         }
       }
       queryClient.invalidateQueries({ queryKey: ['categories'] });
 
       if (Object.keys(incomeSpending).length > 0) {
-        const incomeGroup = await base44.entities.BudgetGroup.create({
+        const incomeGroup = await firstsavvy.entities.BudgetGroup.create({
           name: 'Income',
           type: 'income',
           order: 0
@@ -125,7 +125,7 @@ export default function Budgeting() {
           const color = category?.color || getNextColor(usedColors);
           usedColors.add(color);
 
-          await base44.entities.Budget.create({
+          await firstsavvy.entities.Budget.create({
             name: category?.name || 'Unknown',
             category_id: categoryId,
             limit_amount: Math.max(rounded, 10),
@@ -139,7 +139,7 @@ export default function Budgeting() {
       }
 
       if (Object.keys(expenseSpending).length > 0) {
-        const expenseGroup = await base44.entities.BudgetGroup.create({
+        const expenseGroup = await firstsavvy.entities.BudgetGroup.create({
           name: 'Expenses',
           type: 'expense',
           order: 1
@@ -160,7 +160,7 @@ export default function Budgeting() {
           const color = category?.color || getNextColor(usedExpenseColors);
           usedExpenseColors.add(color);
 
-          await base44.entities.Budget.create({
+          await firstsavvy.entities.Budget.create({
             name: category?.name || 'Unknown',
             category_id: categoryId,
             limit_amount: Math.max(rounded, 10),

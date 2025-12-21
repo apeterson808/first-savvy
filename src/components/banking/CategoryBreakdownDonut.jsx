@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Sector } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 
 const DEFAULT_COLORS = [
   '#52A5CE',
@@ -22,21 +22,21 @@ const DEFAULT_COLORS = [
 export default function CategoryBreakdownDonut({ transactions, selectedMonth, selectedAccount, accounts = [], onCategoryClick }) {
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name'),
+    queryFn: () => firstsavvy.entities.Category.list('name'),
     staleTime: 0,
     refetchOnMount: 'always'
   });
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => base44.entities.Budget.filter({ is_active: true }),
+    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true }),
     staleTime: 0,
     refetchOnMount: 'always'
   });
 
   const { data: budgetGroups = [] } = useQuery({
     queryKey: ['budgetGroups'],
-    queryFn: () => base44.entities.BudgetGroup.list(),
+    queryFn: () => firstsavvy.entities.BudgetGroup.list(),
     staleTime: 0,
     refetchOnMount: 'always'
   });

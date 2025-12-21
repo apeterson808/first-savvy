@@ -1,6 +1,6 @@
 import React, { useCallback, useState, useEffect } from 'react';
 import { usePlaidLink } from 'react-plaid-link';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 
 export default function PlaidLinkButton({ onSuccess, onExit, onLinkStart, className, children, onPlaidStateChange }) {
@@ -11,7 +11,7 @@ export default function PlaidLinkButton({ onSuccess, onExit, onLinkStart, classN
     setLoading(true);
     try {
       const selectedAccountIds = metadata.accounts?.map(acc => acc.id) || [];
-      const response = await base44.functions.plaidExchangeToken({
+      const response = await firstsavvy.functions.plaidExchangeToken({
         public_token,
         selected_account_ids: selectedAccountIds
       });
@@ -50,7 +50,7 @@ export default function PlaidLinkButton({ onSuccess, onExit, onLinkStart, classN
     setLoading(true);
 
     try {
-      const response = await base44.functions.plaidCreateLinkToken();
+      const response = await firstsavvy.functions.plaidCreateLinkToken();
       if (response?.link_token) {
         setLinkToken(response.link_token);
         onLinkStart?.();

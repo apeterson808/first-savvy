@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { CheckCircle2, XCircle, Loader2, Info, FlaskConical } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { supabase } from '@/api/supabaseClient';
 
 export default function PlaidConnectionTest() {
@@ -65,7 +65,7 @@ export default function PlaidConnectionTest() {
 
       setResult({ ...testResults });
 
-      const response = await base44.functions.plaidCreateLinkToken();
+      const response = await firstsavvy.functions.plaidCreateLinkToken();
 
       if (response?.link_token) {
         testResults.steps[2].status = 'passed';

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 
 const AuthContext = createContext(null);
 
@@ -16,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    base44.auth.getUser()
+    firstsavvy.auth.getUser()
       .then(user => {
         setUser(user);
         setLoading(false);
@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       });
 
-    const subscription = base44.auth.onAuthStateChange((event, session) => {
+    const subscription = firstsavvy.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
       } else {
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     signOut: async () => {
-      await base44.auth.signOut();
+      await firstsavvy.auth.signOut();
       setUser(null);
     }
   };

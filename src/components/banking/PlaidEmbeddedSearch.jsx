@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { PlaidEmbeddedLink } from 'react-plaid-link';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { RefreshCw } from 'lucide-react';
 
 export default function PlaidEmbeddedSearch({ onSuccess, onExit, onPlaidStateChange }) {
@@ -13,7 +13,7 @@ export default function PlaidEmbeddedSearch({ onSuccess, onExit, onPlaidStateCha
       try {
         setLoading(true);
         setError(null);
-        const response = await base44.functions.plaidCreateLinkToken();
+        const response = await firstsavvy.functions.plaidCreateLinkToken();
         if (response?.link_token) {
           setLinkToken(response.link_token);
         } else {
@@ -35,7 +35,7 @@ export default function PlaidEmbeddedSearch({ onSuccess, onExit, onPlaidStateCha
     onPlaidStateChange?.(true);
     try {
       const selectedAccountIds = metadata.accounts?.map(acc => acc.id) || [];
-      const response = await base44.functions.plaidExchangeToken({
+      const response = await firstsavvy.functions.plaidExchangeToken({
         public_token,
         selected_account_ids: selectedAccountIds
       });

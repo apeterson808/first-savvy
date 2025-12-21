@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,33 +41,33 @@ export default function RecentTransactionsCard() {
 
   const { data: bankAccounts = [] } = useQuery({
     queryKey: ['activeBankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const accounts = bankAccounts;
 
   const { data: allPendingTransactions = [] } = useQuery({
     queryKey: ['fullPendingTransactions'],
-    queryFn: () => base44.entities.Transaction.filter({ status: 'pending' }, '-date', 10000)
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000)
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['fullPostedTransactions'],
-    queryFn: () => base44.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
   });
 
   const { data: categorizationRules = [] } = useQuery({
     queryKey: ['categorizationRules'],
-    queryFn: () => base44.entities.CategorizationRule.list('-priority')
+    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Transaction.update(id, data),
+    mutationFn: ({ id, data }) => firstsavvy.entities.Transaction.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });

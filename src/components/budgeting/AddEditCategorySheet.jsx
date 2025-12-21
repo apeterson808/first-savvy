@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import {
   Sheet,
   SheetContent,
@@ -72,13 +72,13 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
 
     try {
       if (editingCategory) {
-        await base44.entities.Category.update(editingCategory.id, {
+        await firstsavvy.entities.Category.update(editingCategory.id, {
           name: formData.name.trim(),
           icon: formData.icon,
           color: formData.color,
         });
 
-        await base44.from('budgets')
+        await firstsavvy.from('budgets')
           .update({
             icon: formData.icon,
             color: formData.color,
@@ -87,7 +87,7 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
 
         toast.success('Category updated successfully');
       } else {
-        await base44.entities.Category.create({
+        await firstsavvy.entities.Category.create({
           name: formData.name.trim(),
           type: formData.type,
           icon: formData.icon,

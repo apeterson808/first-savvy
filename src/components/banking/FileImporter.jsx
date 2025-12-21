@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -36,20 +36,20 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const bankAccounts = await base44.entities.BankAccount.filter({ is_active: true });
+      const bankAccounts = await firstsavvy.entities.BankAccount.filter({ is_active: true });
       return bankAccounts;
     }
   });
 
   const createTransactionsMutation = useMutation({
     mutationFn: async (transactions) => {
-      return await base44.entities.Transaction.bulkCreate(transactions);
+      return await firstsavvy.entities.Transaction.bulkCreate(transactions);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -107,7 +107,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
       setIsUploading(true);
       setError(null);
 
-      const uploadResponse = await base44.integrations.Core.UploadFile({ file });
+      const uploadResponse = await firstsavvy.integrations.Core.UploadFile({ file });
       const fileUrl = uploadResponse.file_url;
 
       setIsUploading(false);
@@ -116,9 +116,9 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
       let extractResponse;
 
       if (fileExt === 'ofx') {
-        extractResponse = await base44.functions.parseOfx({ file_url: fileUrl });
+        extractResponse = await firstsavvy.functions.parseOfx({ file_url: fileUrl });
       } else {
-        extractResponse = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        extractResponse = await firstsavvy.integrations.Core.ExtractDataFromUploadedFile({
           file_url: fileUrl,
           json_schema: {
             type: "object",
@@ -254,7 +254,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
 
   const autoMatchTransfers = async (newTransactions) => {
     try {
-      const allPendingTransactions = await base44.entities.Transaction.filter({ status: 'pending' });
+      const allPendingTransactions = await firstsavvy.entities.Transaction.filter({ status: 'pending' });
 
       let matchedCount = 0;
       const processedIds = new Set();
@@ -296,7 +296,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
             const candidateType = candidate.amount > 0 ? 'transfer' : 'transfer';
 
             updates.push(
-              base44.entities.Transaction.update(txn.id, {
+              firstsavvy.entities.Transaction.update(txn.id, {
                 transfer_pair_id: pairId,
                 type: txnType,
                 original_type: txn.original_type || txn.type,
@@ -305,7 +305,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
             );
 
             updates.push(
-              base44.entities.Transaction.update(candidate.id, {
+              firstsavvy.entities.Transaction.update(candidate.id, {
                 transfer_pair_id: pairId,
                 type: candidateType,
                 original_type: candidate.original_type || candidate.type,

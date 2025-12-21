@@ -1,17 +1,17 @@
-import { base44 } from './base44Client';
+import { firstsavvy } from './firstsavvyClient';
 
 
-export const parseOfx = base44.functions.parseOfx;
+export const parseOfx = firstsavvy.functions.parseOfx;
 
-export const parseCsv = base44.functions.parseCsv;
+export const parseCsv = firstsavvy.functions.parseCsv;
 
-export const fixImportedTransactions = base44.functions.fixImportedTransactions;
+export const fixImportedTransactions = firstsavvy.functions.fixImportedTransactions;
 
-export const plaidCreateLinkToken = base44.functions.plaidCreateLinkToken;
+export const plaidCreateLinkToken = firstsavvy.functions.plaidCreateLinkToken;
 
-export const plaidExchangeToken = base44.functions.plaidExchangeToken;
+export const plaidExchangeToken = firstsavvy.functions.plaidExchangeToken;
 
-export const plaidCompleteImport = base44.functions.plaidCompleteImport;
+export const plaidCompleteImport = firstsavvy.functions.plaidCompleteImport;
 
-export const aiCategorizeTransaction = base44.functions.aiCategorizeTransaction;
+export const aiCategorizeTransaction = firstsavvy.functions.aiCategorizeTransaction;
 

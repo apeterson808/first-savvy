@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,7 +34,7 @@ export default function PlaidAccountReviewDialog({
 
   const { data: existingAccounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   React.useEffect(() => {
@@ -55,7 +55,7 @@ export default function PlaidAccountReviewDialog({
   }, [discoveredAccounts, open]);
 
   const importMutation = useMutation({
-    mutationFn: (data) => base44.functions.plaidCompleteImport(data),
+    mutationFn: (data) => firstsavvy.functions.plaidCompleteImport(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });

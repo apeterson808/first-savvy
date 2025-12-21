@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingDown, Home, Car, GraduationCap, CreditCard, Wallet, Building } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
@@ -27,12 +27,12 @@ const LIABILITY_TYPE_COLORS = {
 export default function LiabilitiesTab() {
   const { data: liabilities = [] } = useQuery({
     queryKey: ['liabilities'],
-    queryFn: () => base44.entities.Liability.list()
+    queryFn: () => firstsavvy.entities.Liability.list()
   });
 
   const { data: creditCards = [] } = useQuery({
     queryKey: ['creditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.CreditCard.filter({ is_active: true })
   });
 
   const totalLoans = liabilities.reduce((sum, l) => sum + (l.current_balance || 0), 0);

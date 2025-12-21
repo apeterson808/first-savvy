@@ -1,34 +1,34 @@
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 
 export default function useAllAccounts() {
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.Account.list('-created_at'),
+    queryFn: () => firstsavvy.entities.Account.list('-created_at'),
     staleTime: 30000,
   });
 
   const { data: assets = [], isLoading: loadingAssets } = useQuery({
     queryKey: ['assets'],
-    queryFn: () => base44.entities.Asset.list('name'),
+    queryFn: () => firstsavvy.entities.Asset.list('name'),
     staleTime: 30000,
   });
 
   const { data: liabilities = [], isLoading: loadingLiabilities } = useQuery({
     queryKey: ['liabilities'],
-    queryFn: () => base44.entities.Liability.list('name'),
+    queryFn: () => firstsavvy.entities.Liability.list('name'),
     staleTime: 30000,
   });
 
   const { data: equity = [], isLoading: loadingEquity } = useQuery({
     queryKey: ['equity'],
-    queryFn: () => base44.entities.Equity.list('name'),
+    queryFn: () => firstsavvy.entities.Equity.list('name'),
     staleTime: 30000,
   });
 
   const { data: categories = [], isLoading: loadingCategories } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name'),
+    queryFn: () => firstsavvy.entities.Category.list('name'),
     staleTime: 30000,
   });
 

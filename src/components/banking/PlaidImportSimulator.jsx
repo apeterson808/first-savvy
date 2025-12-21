@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -192,12 +192,12 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
 
   const { data: existingAccounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const sampleTransactions = React.useMemo(() => generateSampleTransactions(dataRange), [dataRange]);
@@ -237,14 +237,14 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
   };
 
   const createBankAccountMutation = useMutation({
-    mutationFn: (data) => base44.entities.BankAccount.create(data),
+    mutationFn: (data) => firstsavvy.entities.BankAccount.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
     }
   });
 
   const createTransactionMutation = useMutation({
-    mutationFn: (data) => base44.entities.Transaction.create(data),
+    mutationFn: (data) => firstsavvy.entities.Transaction.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
     }

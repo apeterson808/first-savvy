@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -32,8 +32,8 @@ export default function AccountDetail() {
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ['account', id],
     queryFn: async () => {
-      const accounts = await base44.entities.Account.list();
-      const categories = await base44.entities.Category.list();
+      const accounts = await firstsavvy.entities.Account.list();
+      const categories = await firstsavvy.entities.Category.list();
       const allAccounts = [...accounts, ...categories];
       return allAccounts.find(acc => acc.id === id);
     },
@@ -44,7 +44,7 @@ export default function AccountDetail() {
     queryKey: ['transactions', 'account', id],
     queryFn: async () => {
       if (!id || !account) return [];
-      const allTransactions = await base44.entities.Transaction.list('date', 'desc');
+      const allTransactions = await firstsavvy.entities.Transaction.list('date', 'desc');
 
       if (account.entityType === 'BankAccount') {
         return allTransactions.filter(t => t.account_id === id);
@@ -58,9 +58,9 @@ export default function AccountDetail() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, entityType }) => {
       if (entityType === 'BankAccount' || entityType === 'Account') {
-        return base44.entities.Account.update(id, data);
+        return firstsavvy.entities.Account.update(id, data);
       } else {
-        return base44.entities.Category.update(id, data);
+        return firstsavvy.entities.Category.update(id, data);
       }
     },
     onSuccess: () => {
@@ -79,9 +79,9 @@ export default function AccountDetail() {
   const deleteMutation = useMutation({
     mutationFn: async ({ id, entityType }) => {
       if (entityType === 'BankAccount' || entityType === 'Account') {
-        return base44.entities.Account.delete(id);
+        return firstsavvy.entities.Account.delete(id);
       } else {
-        return base44.entities.Category.delete(id);
+        return firstsavvy.entities.Category.delete(id);
       }
     },
     onSuccess: () => {
@@ -99,9 +99,9 @@ export default function AccountDetail() {
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, entityType, isActive }) => {
       if (entityType === 'BankAccount' || entityType === 'Account') {
-        return base44.entities.Account.update(id, { is_active: !isActive });
+        return firstsavvy.entities.Account.update(id, { is_active: !isActive });
       } else {
-        return base44.entities.Category.update(id, { is_active: !isActive });
+        return firstsavvy.entities.Category.update(id, { is_active: !isActive });
       }
     },
     onSuccess: () => {

@@ -3,7 +3,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Sector, PolarAngleAxis } from
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 
 
 
@@ -71,7 +71,7 @@ export default function BudgetAllocationDonut({ budgets, groups, totalIncome }) 
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const getCategory = (id) => categories.find(c => c.id === id);

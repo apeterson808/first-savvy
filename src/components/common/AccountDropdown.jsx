@@ -1,5 +1,5 @@
 import React from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { getAccountDisplayName } from '../utils/constants';
@@ -20,7 +20,7 @@ export default function AccountDropdown({
   const { data: fetchedAccounts = [], isLoading } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const allAccounts = await base44.entities.Account.filter({ is_active: true });
+      const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
       return allAccounts.map(acc => ({
         ...acc,
         account_number: acc.account_number_last4,

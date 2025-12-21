@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
@@ -65,15 +65,15 @@ function EditableAccountName({ account }) {
       : { name: trimmed };
 
     if (entityType === 'BankAccount' || entityType === 'CreditCard') {
-      await base44.entities.Account.update(account.id, updateData);
+      await firstsavvy.entities.Account.update(account.id, updateData);
     } else if (entityType === 'Asset') {
-      await base44.entities.Asset.update(account.id, updateData);
+      await firstsavvy.entities.Asset.update(account.id, updateData);
     } else if (entityType === 'Liability') {
-      await base44.entities.Liability.update(account.id, updateData);
+      await firstsavvy.entities.Liability.update(account.id, updateData);
     } else if (entityType === 'Equity') {
-      await base44.entities.Equity.update(account.id, updateData);
+      await firstsavvy.entities.Equity.update(account.id, updateData);
     } else if (entityType === 'Income' || entityType === 'Expense') {
-      await base44.entities.Category.update(account.id, updateData);
+      await firstsavvy.entities.Category.update(account.id, updateData);
     }
 
     queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
@@ -140,7 +140,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   // Fetch transactions to calculate category totals
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date', 1000)
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000)
   });
 
   // Calculate current month spending/income by category

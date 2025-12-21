@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -62,32 +62,32 @@ export default function AddFinancialAccountSheet({
 
   const { data: existingAccounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const { data: existingCreditCards = [] } = useQuery({
     queryKey: ['creditCards'],
-    queryFn: () => base44.entities.CreditCard.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.CreditCard.filter({ is_active: true })
   });
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const { data: assets = [] } = useQuery({
     queryKey: ['assets'],
-    queryFn: () => base44.entities.Asset.list('name')
+    queryFn: () => firstsavvy.entities.Asset.list('name')
   });
 
   const { data: liabilities = [] } = useQuery({
     queryKey: ['liabilities'],
-    queryFn: () => base44.entities.Liability.list('name')
+    queryFn: () => firstsavvy.entities.Liability.list('name')
   });
 
   const { data: equityAccounts = [] } = useQuery({
     queryKey: ['equity'],
-    queryFn: () => base44.entities.Equity.list('name')
+    queryFn: () => firstsavvy.entities.Equity.list('name')
   });
 
   const getDetailTypesForAccountType = (accType) => {
@@ -212,7 +212,7 @@ export default function AddFinancialAccountSheet({
   };
 
   const createBankAccountMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.BankAccount.create(data)),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.BankAccount.create(data)),
     onSuccess: (newAccount) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
@@ -226,7 +226,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const createCreditCardMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.CreditCard.create(data)),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.CreditCard.create(data)),
     onSuccess: (newAccount) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['creditCards'] });
@@ -240,7 +240,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const createAssetMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.Asset.create(data)),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.Asset.create(data)),
     onSuccess: (newAsset) => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       onAccountCreated?.({ type: 'asset', account: newAsset });
@@ -253,7 +253,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const createLiabilityMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.Liability.create(data)),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.Liability.create(data)),
     onSuccess: (newLiability) => {
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       onAccountCreated?.({ type: 'liability', account: newLiability });
@@ -266,7 +266,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const createEquityMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.Equity.create(data)),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.Equity.create(data)),
     onSuccess: (newEquity) => {
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       onAccountCreated?.({ type: 'equity', account: newEquity });
@@ -279,7 +279,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const createCategoryMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.Category.create(data)),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.Category.create(data)),
     onSuccess: (newCategory) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       onAccountCreated?.({ type: formData.accountType, account: newCategory });
@@ -292,7 +292,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const updateBankAccountMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.BankAccount.update(id, data)),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.BankAccount.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['bankAccounts'] });
@@ -306,7 +306,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const updateCreditCardMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.CreditCard.update(id, data)),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.CreditCard.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['creditCards'] });
@@ -320,7 +320,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const updateAssetMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.Asset.update(id, data)),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Asset.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       onAccountCreated?.({ type: 'asset' });
@@ -333,7 +333,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const updateLiabilityMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.Liability.update(id, data)),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Liability.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       onAccountCreated?.({ type: 'liability' });
@@ -346,7 +346,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const updateEquityMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.Equity.update(id, data)),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Equity.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       onAccountCreated?.({ type: 'equity' });
@@ -359,7 +359,7 @@ export default function AddFinancialAccountSheet({
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.Category.update(id, data)),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Category.update(id, data)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       onOpenChange(false);
@@ -409,7 +409,7 @@ export default function AddFinancialAccountSheet({
     let accountNumber = formData.accountNumber;
     if (formData.accountType === 'bank' || formData.accountType === 'credit_card') {
       if (!accountNumber || accountNumber.trim() === '') {
-        const existingAccounts = await base44.entities.Account.list();
+        const existingAccounts = await firstsavvy.entities.Account.list();
         const existingAccountNumbers = existingAccounts
           .map(acc => parseInt(acc.account_number))
           .filter(num => !isNaN(num));

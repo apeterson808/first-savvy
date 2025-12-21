@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -161,24 +161,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const { data: fullPendingTransactions = [] } = useQuery({
     queryKey: ['fullPendingTransactions'],
-    queryFn: () => base44.entities.Transaction.filter({ status: 'pending' }, '-date', 10000)
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000)
   });
 
   const { data: fullPostedTransactions = [] } = useQuery({
     queryKey: ['fullPostedTransactions'],
-    queryFn: () => base44.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
   });
 
   const { data: fullExcludedTransactions = [] } = useQuery({
     queryKey: ['fullExcludedTransactions'],
-    queryFn: () => base44.entities.Transaction.filter({ status: 'excluded' }, '-date', 10000)
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'excluded' }, '-date', 10000)
   });
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
 
   const { data: fetchedAccounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
-    queryFn: () => base44.entities.Account.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.Account.filter({ is_active: true })
   });
 
   const accounts = fetchedAccounts.map(acc => ({
@@ -193,9 +193,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryKey: ['allActiveAccountsForMatch'],
     queryFn: async () => {
       const [accounts, assets, liabilities] = await Promise.all([
-        base44.entities.Account.filter({ is_active: true }),
-        base44.entities.Asset.filter({ is_active: true }),
-        base44.entities.Liability.filter({ is_active: true })
+        firstsavvy.entities.Account.filter({ is_active: true }),
+        firstsavvy.entities.Asset.filter({ is_active: true }),
+        firstsavvy.entities.Liability.filter({ is_active: true })
       ]);
 
       return [
@@ -215,22 +215,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name')
+    queryFn: () => firstsavvy.entities.Category.list('name')
   });
 
   const { data: categorizationRules = [] } = useQuery({
     queryKey: ['categorizationRules'],
-    queryFn: () => base44.entities.CategorizationRule.list('-priority')
+    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
   });
 
   const { data: contactMatchingRules = [] } = useQuery({
     queryKey: ['contactMatchingRules'],
-    queryFn: () => base44.entities.ContactMatchingRule.list('-priority')
+    queryFn: () => firstsavvy.entities.ContactMatchingRule.list('-priority')
   });
 
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts'],
-    queryFn: () => base44.entities.Contact.list('name', 1000)
+    queryFn: () => firstsavvy.entities.Contact.list('name', 1000)
   });
 
   React.useEffect(() => {
@@ -266,7 +266,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
             if (matchingCategory) {
               console.log(`Suggested ${suggestion.category} for "${transaction.description}"`);
-              await base44.entities.Transaction.update(transaction.id, {
+              await firstsavvy.entities.Transaction.update(transaction.id, {
                 ai_suggested_category_id: matchingCategory.id
               });
               queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
@@ -296,7 +296,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       for (const transaction of transactionsNeedingContactApplication) {
         try {
-          await base44.entities.Transaction.update(transaction.id, {
+          await firstsavvy.entities.Transaction.update(transaction.id, {
             contact_id: transaction.ai_suggested_contact_id
           });
         } catch (err) {
@@ -311,7 +311,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   }, [fullPendingTransactions.length, contacts.length]);
 
   const createMutation = useMutation({
-    mutationFn: (data) => withRetry(() => base44.entities.Transaction.create(data), { maxRetries: 2 }),
+    mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
@@ -325,7 +325,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => base44.entities.Transaction.update(id, data), { maxRetries: 2 }),
+    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Transaction.update(id, data), { maxRetries: 2 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
@@ -339,7 +339,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => withRetry(() => base44.entities.Transaction.delete(id), { maxRetries: 2 }),
+    mutationFn: (id) => withRetry(() => firstsavvy.entities.Transaction.delete(id), { maxRetries: 2 }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
@@ -495,7 +495,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             newSuggestions[transaction.id] = suggestion;
 
             try {
-              await base44.entities.Transaction.update(transaction.id, {
+              await firstsavvy.entities.Transaction.update(transaction.id, {
                 ai_suggested_contact_id: suggestion.contactId
               });
               queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
@@ -568,7 +568,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           amount: t.amount
         }));
 
-        const result = await base44.integrations.Core.InvokeLLM({
+        const result = await firstsavvy.integrations.Core.InvokeLLM({
           prompt: `You are a financial transaction categorizer. Given these transactions and available categories, assign the most appropriate category to each transaction.
 
 Available Categories:
@@ -605,7 +605,7 @@ For each transaction, return the category_id that best matches. Consider:
         for (const cat of result.categorizations) {
           const transaction = batch.find(t => t.id === cat.transaction_id);
           if (transaction && cat.category_id) {
-            await base44.entities.Transaction.update(cat.transaction_id, {
+            await firstsavvy.entities.Transaction.update(cat.transaction_id, {
               category_id: cat.category_id,
               type: cat.type
             });
@@ -2301,7 +2301,7 @@ For each transaction, return the category_id that best matches. Consider:
                                             e.currentTarget.classList.remove('border-blue-400', 'bg-blue-50');
                                             const file = e.dataTransfer.files?.[0];
                                             if (file) {
-                                              const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                                              const { file_url } = await firstsavvy.integrations.Core.UploadFile({ file });
                                               updateMutation.mutate({
                                                 id: transaction.id,
                                                 data: { receipt_url: file_url }
@@ -2316,7 +2316,7 @@ For each transaction, return the category_id that best matches. Consider:
                                             onChange={async (e) => {
                                               const file = e.target.files?.[0];
                                               if (file) {
-                                                const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                                                const { file_url } = await firstsavvy.integrations.Core.UploadFile({ file });
                                                 updateMutation.mutate({
                                                   id: transaction.id,
                                                   data: { receipt_url: file_url }

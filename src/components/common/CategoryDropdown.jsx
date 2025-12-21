@@ -18,7 +18,7 @@
  */
 
 import React, { useState } from 'react';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
@@ -41,7 +41,7 @@ export default function CategoryDropdown({
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
-    queryFn: () => base44.entities.Category.list('name', 1000)
+    queryFn: () => firstsavvy.entities.Category.list('name', 1000)
   });
 
   const transferIncomeCategory = categories.find(c => c.type === 'income' && c.detail_type === 'transfer');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,11 +44,11 @@ export default function CategorizationRulesManager() {
 
   const { data: rules = [] } = useQuery({
     queryKey: ['categorizationRules'],
-    queryFn: () => base44.entities.CategorizationRule.list('-priority')
+    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.CategorizationRule.create(data),
+    mutationFn: (data) => firstsavvy.entities.CategorizationRule.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorizationRules'] });
       setDialogOpen(false);
@@ -57,7 +57,7 @@ export default function CategorizationRulesManager() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.CategorizationRule.update(id, data),
+    mutationFn: ({ id, data }) => firstsavvy.entities.CategorizationRule.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorizationRules'] });
       setDialogOpen(false);
@@ -66,7 +66,7 @@ export default function CategorizationRulesManager() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => base44.entities.CategorizationRule.delete(id),
+    mutationFn: (id) => firstsavvy.entities.CategorizationRule.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categorizationRules'] })
   });
 

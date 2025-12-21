@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingUp, TrendingDown, Building2, Pencil } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
@@ -27,14 +27,14 @@ export default function AssetsTab() {
   const { data: assets = [] } = useQuery({
     queryKey: ['assets'],
     queryFn: async () => {
-      const allAssets = await base44.entities.Asset.list();
+      const allAssets = await firstsavvy.entities.Asset.list();
       return allAssets.filter(a => a.is_active !== false);
     }
   });
 
   const { data: bankAccounts = [] } = useQuery({
     queryKey: ['bankAccounts'],
-    queryFn: () => base44.entities.BankAccount.filter({ is_active: true })
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
   const cashAccounts = bankAccounts.filter(a => a.account_type !== 'credit_card');

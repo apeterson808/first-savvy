@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ export default function AmazonOrderImporter({ open, onOpenChange, onImportComple
 
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => base44.entities.Transaction.list('-date', 1000),
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
     enabled: open
   });
 
@@ -250,7 +250,7 @@ export default function AmazonOrderImporter({ open, onOpenChange, onImportComple
         }));
 
       for (const update of updates) {
-        await base44.entities.Transaction.update(update.id, update);
+        await firstsavvy.entities.Transaction.update(update.id, update);
       }
 
       toast.success(`Successfully enriched ${updates.length} transactions with Amazon order data`);

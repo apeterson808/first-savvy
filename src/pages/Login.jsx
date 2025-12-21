@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { base44 } from '@/api/base44Client';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -19,7 +19,7 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    base44.auth.getUser().then(user => {
+    firstsavvy.auth.getUser().then(user => {
       if (user) {
         navigate('/Dashboard');
       }
@@ -33,9 +33,9 @@ export default function Login() {
 
     try {
       if (isLogin) {
-        await base44.auth.signIn(email, password);
+        await firstsavvy.auth.signIn(email, password);
       } else {
-        await base44.auth.signUp(email, password, fullName);
+        await firstsavvy.auth.signUp(email, password, fullName);
       }
       navigate('/Dashboard');
     } catch (err) {
@@ -50,7 +50,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      await base44.auth.signInWithGoogle();
+      await firstsavvy.auth.signInWithGoogle();
     } catch (err) {
       setError(err.message || 'Failed to sign in with Google');
       setLoading(false);
