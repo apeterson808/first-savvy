@@ -881,69 +881,71 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''} relative pb-1`}>
-        <DialogHeader className="pt-5 px-5">
-          <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
-        </DialogHeader>
+      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+        <div className="relative overflow-y-auto max-h-[85vh]">
+          <DialogHeader className="pt-5 px-5">
+            <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
+          </DialogHeader>
 
-        <div className="py-5 px-5">
-          {renderCurrentStep()}
-        </div>
+          <div className="py-5 px-5">
+            {renderCurrentStep()}
+          </div>
 
-        {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
-          <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handleBack}
-              disabled={isLoading}
-              className="rounded-full px-6"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
-            </Button>
-
-            {currentStep !== 'review' && (
+          {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
+            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t">
               <Button
                 type="button"
-                className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                onClick={handleNext}
-                disabled={!canProceed() || isLoading}
-              >
-                Next
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            )}
-
-            {currentStep === 'review' && (
-              <Button
-                type="button"
-                className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                onClick={handleSubmit}
+                variant="outline"
+                onClick={handleBack}
                 disabled={isLoading}
+                className="rounded-full px-6"
               >
-                <Check className="w-4 h-4 mr-1" />
-                Create
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back
               </Button>
-            )}
-          </div>
-        )}
 
-        {currentStep === 'select-subtype' && (
-          <div className="flex justify-center pt-4 pb-2">
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={handleBack}
-              className="rounded-full px-6 text-gray-600 hover:bg-gray-100"
-            >
-              <ChevronLeft className="w-4 h-4 mr-1" />
-              Back
-            </Button>
-          </div>
-        )}
+              {currentStep !== 'review' && (
+                <Button
+                  type="button"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  onClick={handleNext}
+                  disabled={!canProceed() || isLoading}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
 
-        {renderProgressBar()}
+              {currentStep === 'review' && (
+                <Button
+                  type="button"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                >
+                  <Check className="w-4 h-4 mr-1" />
+                  Create
+                </Button>
+              )}
+            </div>
+          )}
+
+          {currentStep === 'select-subtype' && (
+            <div className="flex justify-center pt-4 pb-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={handleBack}
+                className="rounded-full px-6 text-gray-600 hover:bg-gray-100"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back
+              </Button>
+            </div>
+          )}
+
+          {renderProgressBar()}
+        </div>
       </DialogContent>
     </Dialog>
   );
