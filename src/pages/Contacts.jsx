@@ -168,6 +168,12 @@ export default function Contacts() {
     e.preventDefault();
     const formData = new FormData(e.target);
 
+    console.log('=== FORM SUBMISSION DEBUG ===');
+    console.log('All form data entries:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}: "${value}" (type: ${typeof value})`);
+    }
+
     const phoneDigits = phoneValue ? phoneValue.replace(/[^\d]/g, '') : '';
 
     if (phoneValue && phoneDigits.length > 0 && phoneDigits.length < 10) {
@@ -175,19 +181,29 @@ export default function Contacts() {
       return;
     }
 
-    const type = formData.get('type') || 'vendor';
-    const status = formData.get('status') || 'active';
+    let type = formData.get('type');
+    console.log('Raw type from form:', type, 'Type of:', typeof type);
 
-    console.log('Form submission data:', { type, status, name: formData.get('name') });
+    if (!type || type === '' || type === 'null' || type === 'undefined') {
+      console.log('Type is empty, using default: vendor');
+      type = 'vendor';
+    }
 
-    if (!type || (type !== 'vendor' && type !== 'customer')) {
-      toast.error('Type must be either vendor or customer');
+    type = type.toLowerCase().trim();
+    console.log('Normalized type:', type);
+
+    if (type !== 'vendor' && type !== 'customer') {
+      console.error('Invalid type value:', type);
+      toast.error(`Invalid type value: "${type}". Must be vendor or customer.`);
       return;
     }
 
-    if (!status) {
-      toast.error('Status is required');
-      return;
+    let status = formData.get('status');
+    console.log('Raw status from form:', status);
+
+    if (!status || status === '' || status === 'null' || status === 'undefined') {
+      console.log('Status is empty, using default: active');
+      status = 'active';
     }
 
     const data = {
@@ -203,7 +219,7 @@ export default function Contacts() {
       connection_status: detectedUser ? 'platform_user' : 'not_checked'
     };
 
-    console.log('Submitting contact data:', data);
+    console.log('Final contact data to submit:', JSON.stringify(data, null, 2));
 
     if (editingContact) {
       updateMutation.mutate({ id: editingContact.id, data });

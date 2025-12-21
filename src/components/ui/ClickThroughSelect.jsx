@@ -137,8 +137,10 @@ export function ClickThroughSelect({
   }, [isOpen]);
 
   const handleSelect = (val, isAction) => {
+    console.log(`[ClickThroughSelect:${name}] handleSelect called with val="${val}", isAction=${isAction}`);
     isSelectingRef.current = true;
     if (!isAction) {
+      console.log(`[ClickThroughSelect:${name}] Setting selectedValue to:`, val);
       setSelectedValue(val);
       originalValueRef.current = val;
     }
@@ -231,7 +233,18 @@ export function ClickThroughSelect({
 
   return (
     <div ref={containerRef} className={cn("relative", className)}>
-      {name && <input type="hidden" name={name} value={selectedValue || ''} />}
+      {name && (
+        <input
+          type="hidden"
+          name={name}
+          value={selectedValue || ''}
+          ref={(input) => {
+            if (input && name) {
+              console.log(`[ClickThroughSelect:${name}] Hidden input value set to:`, input.value);
+            }
+          }}
+        />
+      )}
 
       {enableSearch ? (
         <div

@@ -72,13 +72,19 @@ const createEntityAPI = (tableName) => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       const recordWithUser = userId ? { ...record, user_id: userId } : record;
 
+      console.log(`[${tableName}] Creating record:`, JSON.stringify(recordWithUser, null, 2));
+
       const { data, error } = await supabase
         .from(tableName)
         .insert(recordWithUser)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[${tableName}] Create error:`, error);
+        throw error;
+      }
+      console.log(`[${tableName}] Created successfully:`, data);
       return data;
     },
 
