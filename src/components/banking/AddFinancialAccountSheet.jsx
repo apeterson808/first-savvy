@@ -123,7 +123,6 @@ export default function AddFinancialAccountSheet({
         isActive: true,
       };
       setFormData(newFormData);
-      setShowManualForm(mode === 'category');
     }
   }, [open, editingAccount, initialCategoryName, initialAccountType, mode]);
 
