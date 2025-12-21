@@ -194,7 +194,7 @@ export default function AccountsTable({ accounts, isLoading }) {
 
   // Show all entity types regardless of whether accounts exist
   const availableEntityTypes = React.useMemo(() => {
-    return ['BankAccount', 'Asset', 'CreditCard', 'Expense', 'Income'];
+    return ['BankAccount', 'Asset', 'CreditCard', 'Liability', 'Equity', 'Expense', 'Income'];
   }, []);
 
   React.useEffect(() => {
