@@ -509,22 +509,24 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const renderSelectSubtype = () => {
     const IconComponent = selectedCard.icon;
     return (
-      <div className="grid grid-cols-2 gap-[20px]">
-        {selectedCard.subtypes.map(subtype => (
-          <div
-            key={subtype.value}
-            className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
-            onClick={() => handleSubtypeSelect(subtype)}
-          >
+      <div className="flex justify-center">
+        <div className="grid grid-cols-3 gap-[20px] max-w-md">
+          {selectedCard.subtypes.map(subtype => (
             <div
-              className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
-              style={{ backgroundColor: selectedCard.bgColor }}
+              key={subtype.value}
+              className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+              onClick={() => handleSubtypeSelect(subtype)}
             >
-              <IconComponent className={`w-10 h-10 ${selectedCard.iconColor}`} strokeWidth={2} />
+              <div
+                className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                style={{ backgroundColor: selectedCard.bgColor }}
+              >
+                <IconComponent className={`w-10 h-10 ${selectedCard.iconColor}`} strokeWidth={2} />
+              </div>
+              <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{subtype.label}</span>
             </div>
-            <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[100px]">{subtype.label}</span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     );
   };
