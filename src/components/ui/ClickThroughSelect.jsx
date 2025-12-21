@@ -109,7 +109,7 @@ export function ClickThroughSelect({
         const viewportHeight = window.innerHeight;
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const dropdownMaxHeight = 272;
+        const dropdownMaxHeight = 208;
 
         const shouldOpenUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
 
@@ -371,7 +371,7 @@ export function ClickThroughSelect({
           <div
             className="overflow-y-auto overflow-x-hidden p-1"
             style={{
-              maxHeight: '264px',
+              maxHeight: '200px',
               overscrollBehavior: 'contain',
               WebkitOverflowScrolling: 'touch'
             }}
