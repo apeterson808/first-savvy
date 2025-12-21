@@ -11,7 +11,7 @@ export function validateAmount(value, options = {}) {
     minValue = 0,
     maxValue = 999999999.99,
     allowZero = false,
-    allowNegative = false
+    allowNegative = true
   } = options;
 
   // Convert to string and clean
