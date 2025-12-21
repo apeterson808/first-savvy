@@ -609,7 +609,7 @@ export default function AddFinancialAccountSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto sm:max-w-[600px]">
+      <SheetContent className="overflow-y-auto">
         <SheetHeader>
           <SheetTitle>
             {editingAccount ? `Edit ${entityLabel}` : `Add ${entityLabel}`}
