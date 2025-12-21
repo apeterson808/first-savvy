@@ -109,12 +109,12 @@ export function ClickThroughSelect({
         const viewportHeight = window.innerHeight;
         const spaceBelow = viewportHeight - rect.bottom;
         const spaceAbove = rect.top;
-        const dropdownHeight = 220;
+        const dropdownMaxHeight = 250;
 
-        const shouldOpenUpward = spaceBelow < dropdownHeight && spaceAbove > spaceBelow;
+        const shouldOpenUpward = spaceBelow < dropdownMaxHeight && spaceAbove > spaceBelow;
 
         setDropdownPosition({
-          top: shouldOpenUpward ? rect.top - dropdownHeight - 4 : rect.bottom + 4,
+          top: shouldOpenUpward ? rect.top - dropdownMaxHeight - 4 : rect.bottom + 4,
           left: rect.left,
           width: rect.width
         });
@@ -364,11 +364,20 @@ export function ClickThroughSelect({
             zIndex: 999999,
             pointerEvents: 'auto'
           }}
-          className="rounded-md border bg-popover text-popover-foreground shadow-md"
+          className="rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="max-h-[216px] overflow-auto p-1">
+          <div
+            className="max-h-[240px] overflow-y-auto overflow-x-hidden p-1"
+            style={{
+              overscrollBehavior: 'contain',
+              WebkitOverflowScrolling: 'touch'
+            }}
+            onWheel={(e) => {
+              e.stopPropagation();
+            }}
+          >
             {(() => {
               const flattenChildren = (nodes) => {
                 const result = [];
