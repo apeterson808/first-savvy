@@ -258,6 +258,14 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
       const accountIdMap = {};
 
       setProcessingStatus('Creating accounts...');
+
+      const existingAccountNumbers = existingAccounts
+        .map(acc => parseInt(acc.account_number))
+        .filter(num => !isNaN(num));
+      let nextAccountNumber = existingAccountNumbers.length > 0
+        ? Math.max(...existingAccountNumbers) + 1
+        : 1001;
+
       for (const plaidAccount of SAMPLE_DISCOVERED_ACCOUNTS) {
         const mapping = accountMappings[plaidAccount.id];
 
@@ -268,13 +276,15 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
             account_type: types.detailType,
             current_balance: Math.abs(plaidAccount.balance),
             start_date: goLiveDates[plaidAccount.id],
-            institution: plaidAccount.institution,
-            account_number: plaidAccount.mask,
+            institution_name: plaidAccount.institution,
+            account_number: nextAccountNumber.toString(),
+            account_number_last4: plaidAccount.mask,
             is_active: true
           };
 
           const newAccount = await createBankAccountMutation.mutateAsync(accountData);
           accountIdMap[plaidAccount.id] = newAccount.id;
+          nextAccountNumber++;
         } else if (mapping.action === 'link' && mapping.existingAccountId) {
           accountIdMap[plaidAccount.id] = mapping.existingAccountId;
         } else if (mapping.action === 'skip') {

@@ -396,7 +396,7 @@ export default function AddFinancialAccountSheet({
     }
   };
 
-  const handleCreate = (capitalizedName, validatedBalance) => {
+  const handleCreate = async (capitalizedName, validatedBalance) => {
     const baseData = {
       name: capitalizedName,
       is_active: true,
@@ -410,15 +410,30 @@ export default function AddFinancialAccountSheet({
       baseData.start_date = formData.startDate;
     }
 
+    let accountNumber = formData.accountNumber;
+    if (formData.accountType === 'bank' || formData.accountType === 'credit_card') {
+      if (!accountNumber || accountNumber.trim() === '') {
+        const existingAccounts = await base44.entities.Account.list();
+        const existingAccountNumbers = existingAccounts
+          .map(acc => parseInt(acc.account_number))
+          .filter(num => !isNaN(num));
+        const nextAccountNumber = existingAccountNumbers.length > 0
+          ? Math.max(...existingAccountNumbers) + 1
+          : 1001;
+        accountNumber = nextAccountNumber.toString();
+      }
+    }
+
     switch (formData.accountType) {
       case 'bank':
         createBankAccountMutation.mutate({
           ...baseData,
           account_name: capitalizedName,
-          account_number: formData.accountNumber,
+          account_number: accountNumber,
           account_type: formData.detailType,
           current_balance: validatedBalance,
-          institution: formData.bankName,
+          institution_name: formData.bankName,
+          account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
           logo_url: formData.institutionLogoUrl || null,
         });
         break;
@@ -426,11 +441,13 @@ export default function AddFinancialAccountSheet({
       case 'credit_card':
         createCreditCardMutation.mutate({
           ...baseData,
+          account_name: capitalizedName,
+          account_number: accountNumber,
+          account_type: 'credit_card',
           current_balance: validatedBalance,
-          institution: formData.bankName || null,
-          institution_logo_url: formData.institutionLogoUrl || null,
-          last_four: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
-          account_number_masked: formData.accountNumber || undefined,
+          institution_name: formData.bankName || null,
+          account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
+          logo_url: formData.institutionLogoUrl || null,
         });
         break;
 
