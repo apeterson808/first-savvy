@@ -371,30 +371,34 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     createCategoryMutation.isPending;
 
   const getTotalSteps = () => {
-    if (!selectedCard || !selectedSubtype) return 0;
+    if (currentStep === 'select-type') return 5;
+    if (!selectedCard) return 5;
+    if (currentStep === 'select-subtype' || !selectedSubtype) {
+      return selectedCard.id === 'budget' ? 4 : 5;
+    }
 
-    if (selectedCard.id === 'banking') return 3;
-    if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_with_loan') return 4;
-    if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_without_loan') return 3;
-    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 4;
-    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 3;
-    if (selectedCard.id === 'investments') return 3;
-    if (selectedCard.id === 'loans') return 3;
-    if (selectedCard.id === 'budget') return 2;
+    if (selectedCard.id === 'banking') return 5;
+    if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_with_loan') return 6;
+    if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_without_loan') return 5;
+    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 6;
+    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 5;
+    if (selectedCard.id === 'investments') return 5;
+    if (selectedCard.id === 'loans') return 5;
+    if (selectedCard.id === 'budget') return 4;
 
-    return 0;
+    return 5;
   };
 
   const getCurrentStepNumber = () => {
     const stepMap = {
-      'select-type': 0,
-      'select-subtype': 1,
-      'details': 2,
-      'balance': 3,
-      'loan-details': 3,
+      'select-type': 1,
+      'select-subtype': 2,
+      'details': 3,
+      'balance': 4,
+      'loan-details': 4,
       'review': getTotalSteps()
     };
-    return stepMap[currentStep] || 0;
+    return stepMap[currentStep] || 1;
   };
 
   const canProceed = () => {
@@ -462,26 +466,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     }
   };
 
-  const renderStepIndicator = () => {
-    if (currentStep === 'select-type' || currentStep === 'select-subtype') return null;
-
+  const renderProgressBar = () => {
     const total = getTotalSteps();
     const current = getCurrentStepNumber();
+    const progressPercentage = (current / total) * 100;
 
     return (
-      <div className="flex items-center justify-center gap-2 mb-6">
-        {Array.from({ length: total }).map((_, idx) => (
-          <div
-            key={idx}
-            className={`h-2 rounded-full transition-all ${
-              idx < current
-                ? 'w-8 bg-blue-600'
-                : idx === current
-                ? 'w-12 bg-blue-600'
-                : 'w-8 bg-gray-200'
-            }`}
-          />
-        ))}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200">
+        <div
+          className="h-full bg-blue-600 transition-all duration-300 ease-in-out"
+          style={{ width: `${progressPercentage}%` }}
+        />
       </div>
     );
   };
@@ -886,13 +881,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+      <DialogContent className={`${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'max-w-xl' : 'max-w-3xl'} max-h-[90vh] overflow-y-auto p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''} relative pb-1`}>
         <DialogHeader className="pt-5 px-5">
           <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
         </DialogHeader>
 
         <div className="py-5 px-5">
-          {currentStep !== 'select-type' && currentStep !== 'select-subtype' && renderStepIndicator()}
           {renderCurrentStep()}
         </div>
 
@@ -936,7 +930,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         )}
 
         {currentStep === 'select-subtype' && (
-          <div className="flex justify-center pt-4">
+          <div className="flex justify-center pt-4 pb-2">
             <Button
               type="button"
               variant="ghost"
@@ -948,6 +942,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             </Button>
           </div>
         )}
+
+        {renderProgressBar()}
       </DialogContent>
     </Dialog>
   );
