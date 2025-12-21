@@ -1281,7 +1281,7 @@ For each transaction, return the category_id that best matches. Consider:
                           onClick={(e) => {
                             if (statusFilter !== 'pending') return;
                             const targetNode = e.target;
-                            if (targetNode.closest('input') || targetNode.closest('button') || targetNode.closest('[role="combobox"]')) {
+                            if (targetNode.closest('input') || targetNode.closest('button') || targetNode.closest('[role="combobox"]') || targetNode.closest('[data-dropdown-menu]')) {
                               return;
                             }
                             setExpandedTransactionId(expandedTransactionId === transaction.id ? null : transaction.id);
@@ -1571,15 +1571,16 @@ For each transaction, return the category_id that best matches. Consider:
                                   );
                                 })()}
                                   <div className="border-l border-slate-300 h-4" />
-                                  <ClickThroughDropdownMenu>
-                                    <ClickThroughDropdownMenuTrigger asChild>
-                                      <button
-                                        className="text-slate-600 hover:text-slate-900"
-                                        onClick={(e) => e?.stopPropagation()}
-                                      >
-                                        <ChevronDown className="w-4 h-4" />
-                                      </button>
-                                    </ClickThroughDropdownMenuTrigger>
+                                  <div data-dropdown-menu className="px-2">
+                                    <ClickThroughDropdownMenu>
+                                      <ClickThroughDropdownMenuTrigger asChild>
+                                        <button
+                                          className="text-slate-600 hover:text-slate-900 p-1"
+                                          onClick={(e) => e?.stopPropagation()}
+                                        >
+                                          <ChevronDown className="w-4 h-4" />
+                                        </button>
+                                      </ClickThroughDropdownMenuTrigger>
                                     <ClickThroughDropdownMenuContent>
                                       <ClickThroughDropdownMenuItem
                                         onClick={(e) => {
@@ -1634,6 +1635,7 @@ For each transaction, return the category_id that best matches. Consider:
                                       </ClickThroughDropdownMenuItem>
                                     </ClickThroughDropdownMenuContent>
                                   </ClickThroughDropdownMenu>
+                                  </div>
                                 </div>
                               );
                             }
