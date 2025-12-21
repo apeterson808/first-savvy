@@ -28,8 +28,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'banking',
     title: 'Banking',
     icon: Building2,
-    color: 'bg-blue-50 hover:bg-blue-100 border-blue-200',
-    iconColor: 'text-blue-600',
+    gradient: 'bg-gradient-to-br from-blue-500 to-blue-600',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'checking', label: 'Checking' },
       { value: 'savings', label: 'Savings' },
@@ -40,8 +40,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'vehicle',
     title: 'Vehicle',
     icon: Car,
-    color: 'bg-green-50 hover:bg-green-100 border-green-200',
-    iconColor: 'text-green-600',
+    gradient: 'bg-gradient-to-br from-green-500 to-green-600',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'vehicle_with_loan', label: 'With Loan' },
       { value: 'vehicle_without_loan', label: 'Without Loan' }
@@ -51,8 +51,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'property',
     title: 'Property',
     icon: Home,
-    color: 'bg-orange-50 hover:bg-orange-100 border-orange-200',
-    iconColor: 'text-orange-600',
+    gradient: 'bg-gradient-to-br from-orange-500 to-orange-600',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'property_with_loan', label: 'With Loan' },
       { value: 'property_without_loan', label: 'Without Loan' }
@@ -62,8 +62,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'investments',
     title: 'Investments',
     icon: TrendingUp,
-    color: 'bg-purple-50 hover:bg-purple-100 border-purple-200',
-    iconColor: 'text-purple-600',
+    gradient: 'bg-gradient-to-br from-pink-500 to-rose-600',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'retirement', label: 'Retirement Account (401k, IRA, Roth)' },
       { value: 'stocks', label: 'Stock' },
@@ -75,8 +75,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'loans',
     title: 'Loans & Debts',
     icon: FileText,
-    color: 'bg-red-50 hover:bg-red-100 border-red-200',
-    iconColor: 'text-red-600',
+    gradient: 'bg-gradient-to-br from-red-500 to-red-600',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'personal_loan', label: 'Personal' },
       { value: 'student_loan', label: 'Student' },
@@ -87,8 +87,8 @@ const ACCOUNT_TYPE_CARDS = [
     id: 'budget',
     title: 'Budget Category',
     icon: DollarSign,
-    color: 'bg-teal-50 hover:bg-teal-100 border-teal-200',
-    iconColor: 'text-teal-600',
+    gradient: 'bg-gradient-to-br from-teal-500 to-cyan-600',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'income', label: 'Income' },
       { value: 'expense', label: 'Expense' }
@@ -482,39 +482,44 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-3 gap-8 p-6">
       {ACCOUNT_TYPE_CARDS.map(card => {
         const IconComponent = card.icon;
         return (
-          <Card
+          <div
             key={card.id}
-            className={`cursor-pointer transition-all ${card.color} border-2 hover:shadow-md`}
+            className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
             onClick={() => handleCardSelect(card)}
           >
-            <CardContent className="flex flex-col items-center justify-center p-6 min-h-[140px]">
-              <IconComponent className={`w-10 h-10 mb-3 ${card.iconColor}`} />
-              <h3 className="font-semibold text-gray-900 text-center">{card.title}</h3>
-            </CardContent>
-          </Card>
+            <div className={`${card.gradient} rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2`}>
+              <IconComponent className={`w-11 h-11 ${card.iconColor}`} strokeWidth={1.5} />
+            </div>
+            <span className="text-xs font-medium text-gray-700 text-center leading-tight">{card.title}</span>
+          </div>
         );
       })}
     </div>
   );
 
-  const renderSelectSubtype = () => (
-    <div className="space-y-3">
-      {selectedCard.subtypes.map(subtype => (
-        <div
-          key={subtype.value}
-          className="flex items-center justify-between p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all"
-          onClick={() => handleSubtypeSelect(subtype)}
-        >
-          <span className="font-medium text-gray-700">{subtype.label}</span>
-          <ChevronRight className="w-5 h-5 text-gray-400" />
-        </div>
-      ))}
-    </div>
-  );
+  const renderSelectSubtype = () => {
+    const IconComponent = selectedCard.icon;
+    return (
+      <div className="grid grid-cols-2 gap-6 p-6">
+        {selectedCard.subtypes.map(subtype => (
+          <div
+            key={subtype.value}
+            className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+            onClick={() => handleSubtypeSelect(subtype)}
+          >
+            <div className={`${selectedCard.gradient} rounded-[22%] w-24 h-24 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-3`}>
+              <IconComponent className={`w-14 h-14 ${selectedCard.iconColor}`} strokeWidth={1.5} />
+            </div>
+            <span className="text-sm font-medium text-gray-700 text-center leading-tight">{subtype.label}</span>
+          </div>
+        ))}
+      </div>
+    );
+  };
 
   const renderDetailsStep = () => {
     if (selectedCard.id === 'banking') {
@@ -864,64 +869,72 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className={`max-w-3xl max-h-[90vh] overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
         <DialogHeader>
-          <DialogTitle>{getStepTitle()}</DialogTitle>
+          <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
         </DialogHeader>
 
         <div className="py-4">
-          {renderStepIndicator()}
+          {currentStep !== 'select-type' && currentStep !== 'select-subtype' && renderStepIndicator()}
           {renderCurrentStep()}
         </div>
 
-        <div className="flex justify-between gap-3 pt-4 border-t">
-          {currentStep !== 'select-type' && (
+        {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
+          <div className="flex justify-between gap-3 pt-4 border-t">
             <Button
               type="button"
               variant="outline"
               onClick={handleBack}
               disabled={isLoading}
+              className="rounded-full px-6"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Back
             </Button>
-          )}
 
-          {currentStep === 'select-type' && (
+            {currentStep !== 'review' && (
+              <Button
+                type="button"
+                className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                onClick={handleNext}
+                disabled={!canProceed() || isLoading}
+              >
+                Next
+                <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            )}
+
+            {currentStep === 'review' && (
+              <Button
+                type="button"
+                className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                onClick={handleSubmit}
+                disabled={isLoading}
+              >
+                <Check className="w-4 h-4 mr-1" />
+                Create
+              </Button>
+            )}
+          </div>
+        )}
+
+        {(currentStep === 'select-type' || currentStep === 'select-subtype') && (
+          <div className="flex justify-center pt-4">
             <Button
               type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              className="ml-auto"
+              variant="ghost"
+              onClick={() => currentStep === 'select-type' ? onOpenChange(false) : handleBack()}
+              className="rounded-full px-6 text-gray-600 hover:bg-gray-100"
             >
-              Cancel
+              {currentStep === 'select-type' ? 'Cancel' : (
+                <>
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </>
+              )}
             </Button>
-          )}
-
-          {currentStep !== 'select-type' && currentStep !== 'select-subtype' && currentStep !== 'review' && (
-            <Button
-              type="button"
-              className="ml-auto bg-blue-600 hover:bg-blue-700"
-              onClick={handleNext}
-              disabled={!canProceed() || isLoading}
-            >
-              Next
-              <ChevronRight className="w-4 h-4 ml-1" />
-            </Button>
-          )}
-
-          {currentStep === 'review' && (
-            <Button
-              type="button"
-              className="ml-auto bg-blue-600 hover:bg-blue-700"
-              onClick={handleSubmit}
-              disabled={isLoading}
-            >
-              <Check className="w-4 h-4 mr-1" />
-              Create
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
