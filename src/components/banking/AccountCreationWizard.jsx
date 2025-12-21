@@ -88,7 +88,7 @@ const ACCOUNT_TYPE_CARDS = [
     title: 'Budget Category',
     icon: DollarSign,
     bgColor: '#EFCE7B',
-    iconColor: 'text-gray-800',
+    iconColor: 'text-white',
     subtypes: [
       { value: 'income', label: 'Income' },
       { value: 'expense', label: 'Expense' }
