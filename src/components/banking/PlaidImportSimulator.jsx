@@ -274,8 +274,7 @@ export default function PlaidImportSimulator({ open, onOpenChange, onImportCompl
           const accountData = {
             account_name: accountNames[plaidAccount.id] || plaidAccount.name,
             account_type: types.detailType,
-            current_balance: Math.abs(plaidAccount.balance),
-            start_date: goLiveDates[plaidAccount.id],
+            balance: Math.abs(plaidAccount.balance),
             institution_name: plaidAccount.institution,
             account_number: nextAccountNumber.toString(),
             account_number_last4: plaidAccount.mask,

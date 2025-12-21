@@ -406,10 +406,6 @@ export default function AddFinancialAccountSheet({
       baseData.parent_account_id = formData.parentAccountId;
     }
 
-    if (formData.startDate) {
-      baseData.start_date = formData.startDate;
-    }
-
     let accountNumber = formData.accountNumber;
     if (formData.accountType === 'bank' || formData.accountType === 'credit_card') {
       if (!accountNumber || accountNumber.trim() === '') {
@@ -431,10 +427,9 @@ export default function AddFinancialAccountSheet({
           account_name: capitalizedName,
           account_number: accountNumber,
           account_type: formData.detailType,
-          current_balance: validatedBalance,
+          balance: validatedBalance,
           institution_name: formData.bankName,
           account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
-          logo_url: formData.institutionLogoUrl || null,
         });
         break;
 
@@ -444,10 +439,9 @@ export default function AddFinancialAccountSheet({
           account_name: capitalizedName,
           account_number: accountNumber,
           account_type: 'credit_card',
-          current_balance: validatedBalance,
+          balance: validatedBalance,
           institution_name: formData.bankName || null,
           account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
-          logo_url: formData.institutionLogoUrl || null,
         });
         break;
 
@@ -499,10 +493,6 @@ export default function AddFinancialAccountSheet({
       is_active: formData.isActive,
     };
 
-    if (formData.startDate) {
-      baseData.start_date = formData.startDate;
-    }
-
     if (formData.isSubaccount && formData.parentAccountId) {
       baseData.parent_account_id = formData.parentAccountId;
     } else {
@@ -518,9 +508,8 @@ export default function AddFinancialAccountSheet({
             account_name: formData.name,
             account_number: formData.accountNumber,
             account_type: formData.detailType,
-            current_balance: validatedBalance,
-            institution: formData.bankName,
-            logo_url: formData.institutionLogoUrl || null,
+            balance: validatedBalance,
+            institution_name: formData.bankName,
           }
         });
         break;
@@ -530,12 +519,12 @@ export default function AddFinancialAccountSheet({
           id,
           data: {
             ...baseData,
-            name: formData.name,
-            current_balance: validatedBalance,
-            institution: formData.bankName || null,
-            institution_logo_url: formData.institutionLogoUrl || null,
-            last_four: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
-            account_number_masked: formData.accountNumber || undefined,
+            account_name: formData.name,
+            account_number: formData.accountNumber,
+            account_type: 'credit_card',
+            balance: validatedBalance,
+            institution_name: formData.bankName || null,
+            account_number_last4: formData.accountNumber ? formData.accountNumber.slice(-4) : undefined,
           }
         });
         break;

@@ -113,7 +113,7 @@ Deno.serve(async (req: Request) => {
             account_number: accountNumber,
             account_name: name || official_name,
             account_type: accountTypeValue,
-            current_balance: balance,
+            balance: balance,
             institution_name: institution,
             account_number_last4: mask,
             plaid_account_id,
