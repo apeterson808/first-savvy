@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Shield, Mail, Key } from 'lucide-react';
+import { Shield, Mail, Key, AlertTriangle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -7,6 +7,17 @@ import { Label } from '../ui/label';
 import { Separator } from '../ui/separator';
 import { toast } from 'sonner';
 import { updatePassword, updateEmail } from '../../api/userSettings';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../ui/alert-dialog';
+import { supabase } from '../../api/supabaseClient';
 
 export default function SecurityTab({ user }) {
   const [passwordData, setPasswordData] = useState({
@@ -18,6 +29,8 @@ export default function SecurityTab({ user }) {
   });
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [loadingEmail, setLoadingEmail] = useState(false);
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [loadingReset, setLoadingReset] = useState(false);
 
   const handlePasswordChange = (e) => {
     const { name, value } = e.target;
@@ -84,6 +97,46 @@ export default function SecurityTab({ user }) {
       toast.error(error.message || 'Failed to update email');
     } finally {
       setLoadingEmail(false);
+    }
+  };
+
+  const handleResetAccountData = async () => {
+    setLoadingReset(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error('Not authenticated');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-user-data`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reset account data');
+      }
+
+      toast.success('Account data reset successfully. Refreshing page...');
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('Error resetting account data:', error);
+      toast.error(error.message || 'Failed to reset account data');
+    } finally {
+      setLoadingReset(false);
+      setShowResetDialog(false);
     }
   };
 
@@ -212,6 +265,63 @@ export default function SecurityTab({ user }) {
           </div>
         </CardContent>
       </Card>
+
+      <Card className="border-destructive">
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5 text-destructive" />
+            <CardTitle className="text-destructive">Danger Zone</CardTitle>
+          </div>
+          <CardDescription>
+            Irreversible actions that will permanently affect your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h4 className="font-medium mb-2">Reset Account Data</h4>
+              <p className="text-sm text-muted-foreground mb-4">
+                This will permanently delete all your financial data including transactions, accounts, budgets, and contacts. Your account will remain active but all data will be cleared.
+              </p>
+              <Button
+                variant="destructive"
+                onClick={() => setShowResetDialog(true)}
+                disabled={loadingReset}
+              >
+                {loadingReset ? 'Resetting...' : 'Reset All Data'}
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete all your:
+              <ul className="list-disc list-inside mt-2 space-y-1">
+                <li>Transactions</li>
+                <li>Bank accounts and credit cards</li>
+                <li>Budgets and categories</li>
+                <li>Contacts and relationships</li>
+                <li>All other financial data</li>
+              </ul>
+              <p className="mt-4 font-semibold">Your account and login credentials will remain intact.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetAccountData}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Yes, Reset Everything
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
