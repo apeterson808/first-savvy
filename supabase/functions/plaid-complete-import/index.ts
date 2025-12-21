@@ -91,32 +91,33 @@ Deno.serve(async (req: Request) => {
             institution: institution,
             is_active: true,
           };
-        } else if (account_type === 'credit_card') {
-          tableName = 'credit_cards';
-          accountData = {
-            user_id: user.id,
-            name: name || official_name,
-            current_balance: balance,
-            institution: institution,
-            last_four: mask,
-            plaid_account_id,
-            is_active: true,
-            credit_limit: 0,
-            apr: 0,
-            last_synced_at: new Date().toISOString(),
-          };
         } else {
-          tableName = 'bank_accounts';
+          tableName = 'accounts';
+          const accountTypeValue = detail_type || (account_type === 'credit_card' ? 'credit_card' : 'checking');
+
+          const { data: existingAccounts } = await supabaseClient
+            .from('accounts')
+            .select('account_number')
+            .eq('user_id', user.id)
+            .order('account_number', { ascending: false })
+            .limit(1);
+
+          let accountNumber = '1001';
+          if (existingAccounts && existingAccounts.length > 0) {
+            const lastNumber = parseInt(existingAccounts[0].account_number);
+            accountNumber = (lastNumber + 1).toString();
+          }
+
           accountData = {
             user_id: user.id,
+            account_number: accountNumber,
             account_name: name || official_name,
-            account_type: detail_type || 'checking',
+            account_type: accountTypeValue,
             current_balance: balance,
-            institution: institution,
-            account_number: mask,
+            institution_name: institution,
+            account_number_last4: mask,
             plaid_account_id,
             is_active: true,
-            start_date: go_live_date || new Date().toISOString().split('T')[0],
           };
         }
 
@@ -135,9 +136,9 @@ Deno.serve(async (req: Request) => {
         createdAccounts.push(newAccount);
       } else if (action === 'merge_existing' && existing_account_id) {
         accountIdMap[plaid_account_id] = existing_account_id;
-        
+
         const { error: updateError } = await supabaseClient
-          .from('bank_accounts')
+          .from('accounts')
           .update({ plaid_account_id })
           .eq('id', existing_account_id);
 

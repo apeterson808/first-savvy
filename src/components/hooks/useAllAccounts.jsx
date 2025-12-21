@@ -48,7 +48,6 @@ export default function useAllAccounts() {
     ...accounts.map(a => ({
       ...a,
       account_name: a.account_name || a.name,
-      current_balance: a.balance,
       institution: a.institution_name,
       entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
     })),
@@ -66,7 +65,6 @@ export default function useAllAccounts() {
     bankAccounts: bankAccounts.map(a => ({
       ...a,
       account_name: a.account_name || a.name,
-      current_balance: a.balance,
       institution: a.institution_name,
       entityType: 'BankAccount'
     })),
@@ -74,7 +72,6 @@ export default function useAllAccounts() {
       ...c,
       account_name: c.account_name || c.name,
       last_four: c.account_number_last4,
-      current_balance: c.balance,
       institution: c.institution_name,
       entityType: 'CreditCard'
     })),
