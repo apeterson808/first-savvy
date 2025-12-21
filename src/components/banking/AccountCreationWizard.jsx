@@ -483,7 +483,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const renderSelectType = () => (
     <div className="flex justify-center p-4">
-      <div className="grid grid-cols-3 gap-2.5 max-w-md">
+      <div className="grid grid-cols-3 gap-[15px] max-w-md">
         {ACCOUNT_TYPE_CARDS.map(card => {
           const IconComponent = card.icon;
           return (
