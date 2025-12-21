@@ -5,7 +5,6 @@ import TransactionsTab from '../components/banking/TransactionsTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
-import PlaidAccountReviewDialog from '../components/banking/PlaidAccountReviewDialog';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -16,8 +15,6 @@ export default function Banking() {
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('0');
   const [selectedPastMonth, setSelectedPastMonth] = useState('avg3');
-  const [plaidReviewOpen, setPlaidReviewOpen] = useState(false);
-  const [plaidData, setPlaidData] = useState(null);
   const queryClient = useQueryClient();
   
   // Check for date param from Dashboard chart click - use a ref to track initial URL params
@@ -95,19 +92,6 @@ export default function Banking() {
 
   return (
     <div className="p-3 rounded-sm">
-      <PlaidAccountReviewDialog
-        open={plaidReviewOpen}
-        onOpenChange={setPlaidReviewOpen}
-        discoveredAccounts={plaidData?.discovered_accounts}
-        transactionsByAccount={plaidData?.transactions_by_account}
-        onComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ['accounts'] });
-          queryClient.invalidateQueries({ queryKey: ['transactions'] });
-          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-          setPlaidData(null);
-        }}
-      />
-      
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-3">

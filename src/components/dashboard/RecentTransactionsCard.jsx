@@ -9,22 +9,11 @@ import { createPageUrl } from '../../utils';
 import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AddFinancialAccountSheet from '../banking/AddFinancialAccountSheet';
-import PlaidLinkButton from '../banking/PlaidLinkButton';
-import PlaidImportSimulator from '../banking/PlaidImportSimulator';
 import FileImporter from '../banking/FileImporter';
 import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
 import { formatTransactionDescription } from '../utils/formatters';
-import { Search, Building2, Upload, FlaskConical } from 'lucide-react';
-
-const POPULAR_INSTITUTIONS = [
-  { name: 'Chase', color: 'bg-sky-blue' },
-  { name: 'Bank of America', color: 'bg-burgundy' },
-  { name: 'Wells Fargo', color: 'bg-burgundy' },
-  { name: 'Capital One', color: 'bg-sky-blue' },
-  { name: 'American Express', color: 'bg-sky-blue' },
-  { name: 'Discover', color: 'bg-orange' },
-];
+import { Upload } from 'lucide-react';
 
 export default function RecentTransactionsCard() {
   const navigate = useNavigate();
@@ -34,8 +23,6 @@ export default function RecentTransactionsCard() {
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingValue, setEditingValue] = useState('');
-  const [linkSearchTerm, setLinkSearchTerm] = useState('');
-  const [plaidSimulatorOpen, setPlaidSimulatorOpen] = useState(false);
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const inputRef = useRef(null);
 
@@ -135,10 +122,6 @@ export default function RecentTransactionsCard() {
 
   const recentTransactions = pendingTransactions;
 
-  const filteredInstitutions = POPULAR_INSTITUTIONS.filter(inst =>
-    inst.name.toLowerCase().includes(linkSearchTerm.toLowerCase())
-  );
-
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['accounts'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -196,101 +179,15 @@ export default function RecentTransactionsCard() {
               <p className="text-xs text-slate-600 mb-3">Connect an account to start tracking transactions</p>
             </div>
 
-            <div className="relative mb-3">
-              <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-              <Input
-                placeholder="Search institutions"
-                value={linkSearchTerm}
-                onChange={(e) => setLinkSearchTerm(e.target.value)}
-                className="pl-8 h-9 text-xs"
-              />
-            </div>
-
-            {!linkSearchTerm ? (
-              <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-2">
-                <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">POPULAR</h3>
-                <div className="grid grid-cols-3 gap-2">
-                  {POPULAR_INSTITUTIONS.map((inst) => (
-                    <PlaidLinkButton
-                      key={inst.name}
-                      onSuccess={handleSuccess}
-                      className="p-0 h-auto bg-transparent hover:bg-transparent border-0"
-                    >
-                      <div className="flex flex-col items-center gap-1 group cursor-pointer">
-                        <div className={`w-10 h-10 rounded-full ${inst.color} flex items-center justify-center text-white text-sm font-bold group-hover:scale-105 transition-transform`}>
-                          {inst.name.charAt(0)}
-                        </div>
-                        <span className="text-[9px] text-slate-600 text-center leading-tight">{inst.name}</span>
-                      </div>
-                    </PlaidLinkButton>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="bg-slate-50 rounded-lg border border-slate-200 p-3 mb-2">
-                <h3 className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-2">
-                  {filteredInstitutions.length} RESULTS
-                </h3>
-                {filteredInstitutions.length > 0 ? (
-                  <div className="space-y-1">
-                    {filteredInstitutions.map((inst) => (
-                      <PlaidLinkButton
-                        key={inst.name}
-                        onSuccess={handleSuccess}
-                        className="w-full p-2 bg-white border border-slate-200 rounded hover:border-slate-300 hover:shadow-sm transition-all h-auto justify-start font-normal"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className={`w-8 h-8 rounded-full ${inst.color} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
-                            {inst.name.charAt(0)}
-                          </div>
-                          <span className="text-xs font-medium text-slate-900">{inst.name}</span>
-                        </div>
-                      </PlaidLinkButton>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-xs text-slate-500 text-center py-4">No institutions found</p>
-                )}
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2 mb-2">
-              <PlaidLinkButton
-                onSuccess={handleSuccess}
-                className="p-2 bg-slate-50 border border-slate-200 rounded hover:border-slate-300 hover:shadow-sm transition-all h-auto justify-start font-normal"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-light-blue/20 flex items-center justify-center flex-shrink-0">
-                    <Building2 className="w-4 h-4 text-sky-blue" />
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-900">Link Account</span>
-                </div>
-              </PlaidLinkButton>
-              <button
-                onClick={() => setFileImporterOpen(true)}
-                className="p-2 bg-slate-50 border border-slate-200 rounded hover:border-slate-300 hover:shadow-sm transition-all text-left"
-              >
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                    <Upload className="w-4 h-4 text-teal-600" />
-                  </div>
-                  <span className="text-[10px] font-medium text-slate-900">Import File</span>
-                </div>
-              </button>
-            </div>
-
             <button
-              onClick={() => setPlaidSimulatorOpen(true)}
-              className="w-full p-2 bg-yellow/20 border border-yellow/30 rounded hover:border-yellow/50 hover:shadow-sm transition-all text-left"
+              onClick={() => setFileImporterOpen(true)}
+              className="w-full p-3 bg-slate-50 border border-slate-200 rounded hover:border-slate-300 hover:shadow-sm transition-all text-left"
             >
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-yellow/30 flex items-center justify-center flex-shrink-0">
-                  <FlaskConical className="w-4 h-4 text-olive" />
+                <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
+                  <Upload className="w-4 h-4 text-teal-600" />
                 </div>
-                <div>
-                  <span className="text-[10px] font-medium text-slate-900 block">Simulate Import</span>
-                  <span className="text-[9px] text-slate-500">Generate sample data</span>
-                </div>
+                <span className="text-xs font-medium text-slate-900">Import transactions from file</span>
               </div>
             </button>
           </div>
@@ -376,12 +273,6 @@ export default function RecentTransactionsCard() {
           setCategorySearchTerm('');
           queryClient.invalidateQueries({ queryKey: ['categories'] });
         }}
-      />
-
-      <PlaidImportSimulator
-        open={plaidSimulatorOpen}
-        onOpenChange={setPlaidSimulatorOpen}
-        onImportComplete={handleSuccess}
       />
 
       <FileImporter

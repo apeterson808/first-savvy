@@ -13,7 +13,6 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import PlaidLinkButton from './PlaidLinkButton';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { DEFAULT_DETAIL_TYPES, getDetailTypeDisplayName } from '../utils/constants';
@@ -54,9 +53,6 @@ export default function AddFinancialAccountSheet({
     parentAccountId: '',
     isActive: true,
   });
-
-  const [showManualForm, setShowManualForm] = useState(false);
-  const [plaidActive, setPlaidActive] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -614,53 +610,15 @@ export default function AddFinancialAccountSheet({
   const showInstitutionFields = ['bank', 'credit_card', 'asset', 'liability', 'equity'].includes(formData.accountType);
 
   return (
-    <>
-      {plaidActive && (
-        <style>{`
-          #plaid-link-iframe-1,
-          [id^="plaid-link-iframe"] {
-            z-index: 9999 !important;
-          }
-        `}</style>
-      )}
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent className="overflow-y-auto sm:max-w-[600px]">
+        <SheetHeader>
+          <SheetTitle>
+            {editingAccount ? `Edit ${entityLabel}` : `Add ${entityLabel}`}
+          </SheetTitle>
+        </SheetHeader>
 
-      <Sheet open={open} onOpenChange={(newOpen) => {
-        if (!newOpen && plaidActive) return;
-        onOpenChange(newOpen);
-      }}>
-        <SheetContent className="overflow-y-auto sm:max-w-[600px]">
-          <SheetHeader>
-            <SheetTitle>
-              {editingAccount ? `Edit ${entityLabel}` : `Add ${entityLabel}`}
-            </SheetTitle>
-          </SheetHeader>
-
-          {!showManualForm && !editingAccount && !hideLinkAccount ? (
-            <div className="py-6 flex flex-col gap-3">
-              <PlaidLinkButton
-                onLinkStart={() => onOpenChange(false)}
-                onSuccess={() => {
-                  queryClient.invalidateQueries({ queryKey: ['accounts'] });
-                  queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                }}
-                onPlaidStateChange={(active) => {
-                  setPlaidActive(active);
-                  if (active) onOpenChange(false);
-                }}
-                className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
-              >
-                Link Account
-              </PlaidLinkButton>
-              <Button
-                onClick={() => setShowManualForm(true)}
-                variant="outline"
-                className="w-full h-12"
-              >
-                Add Manually
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
               <div>
                 <Label htmlFor="name">{isCategory ? 'Category Name*' : 'Account Name*'}</Label>
                 <Input
@@ -895,9 +853,7 @@ export default function AddFinancialAccountSheet({
                 </div>
               )}
             </form>
-          )}
         </SheetContent>
       </Sheet>
-    </>
   );
 }

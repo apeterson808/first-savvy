@@ -14,8 +14,6 @@ import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOf
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AddFinancialAccountSheet from '../components/banking/AddFinancialAccountSheet';
-import PlaidAccountReviewDialog from '../components/banking/PlaidAccountReviewDialog';
-import PlaidLinkButton from '../components/banking/PlaidLinkButton';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -25,8 +23,6 @@ export default function Dashboard() {
   const [timeRange, setTimeRange] = useState('ytd');
   const [addAccountSheetOpen, setAddAccountSheetOpen] = useState(false);
   const [excludeTransfers, setExcludeTransfers] = useState(true);
-  const [plaidReviewOpen, setPlaidReviewOpen] = useState(false);
-  const [plaidData, setPlaidData] = useState(null);
 
   const handleChartPointClick = (data) => {
     if (chartView === 'spending' && data?.fullDate) {
@@ -574,21 +570,6 @@ export default function Dashboard() {
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 gap-2">
-            <PlaidLinkButton
-              onSuccess={(result) => {
-                if (result.discovered_accounts) {
-                  setPlaidData(result);
-                  setPlaidReviewOpen(true);
-                } else {
-                  queryClient.invalidateQueries({ queryKey: ['accounts'] });
-                  queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                }
-              }}
-              className="w-full h-10 hover:opacity-90 bg-sky-blue"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Link Account
-            </PlaidLinkButton>
             <Button variant="outline" className="w-full h-10">
               <Upload className="w-4 h-4 mr-2" />
               Upload Receipt
@@ -641,18 +622,6 @@ export default function Dashboard() {
         onOpenChange={setAddAccountSheetOpen}
         onAccountCreated={() => {
           queryClient.invalidateQueries({ queryKey: ['accounts'] });
-        }}
-        />
-
-        <PlaidAccountReviewDialog
-        open={plaidReviewOpen}
-        onOpenChange={setPlaidReviewOpen}
-        discoveredAccounts={plaidData?.discovered_accounts}
-        transactionsByAccount={plaidData?.transactions_by_account}
-        onComplete={() => {
-          queryClient.invalidateQueries({ queryKey: ['accounts'] });
-          queryClient.invalidateQueries({ queryKey: ['transactions'] });
-          setPlaidData(null);
         }}
         />
         </div>
