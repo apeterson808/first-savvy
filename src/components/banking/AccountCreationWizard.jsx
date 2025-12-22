@@ -809,16 +809,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             />
           </div>
           <div>
-            <Label htmlFor="name" className="text-sm mb-1">Property Name</Label>
-            <Input
-              id="name"
-              value={formData.name || ''}
-              onChange={(e) => updateFormData('name', e.target.value)}
-              placeholder="e.g., 123 Main St"
-              className="h-9"
-            />
-          </div>
-          <div>
             <Label htmlFor="address" className="text-sm mb-1">Address</Label>
             <Input
               id="address"
