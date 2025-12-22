@@ -427,6 +427,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       }
     } catch (error) {
       console.error('Error creating account:', error);
+      toast.error(error.message || 'Failed to create account. Please try again.');
     }
   };
 

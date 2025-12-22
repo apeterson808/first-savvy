@@ -8,7 +8,7 @@ export async function createVehicleAsset(vehicleData) {
     user_id: user.id,
     name: vehicleData.name,
     type: 'Vehicle',
-    current_value: vehicleData.estimatedValue,
+    current_balance: vehicleData.estimatedValue,
     vehicle_year: vehicleData.year,
     vehicle_make: vehicleData.make,
     vehicle_model: vehicleData.model,
