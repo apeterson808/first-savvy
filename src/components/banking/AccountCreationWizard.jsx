@@ -1111,12 +1111,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
           </DialogHeader>
 
-          <div className="py-5 px-5 flex-1 flex flex-col justify-center">
+          <div className="py-5 px-5 flex-1 overflow-y-auto flex flex-col justify-center">
             {renderCurrentStep()}
           </div>
 
           {currentStep !== 'select-type' && (
-            <div className="flex justify-end gap-2 pt-4 pb-5 px-5 flex-shrink-0">
+            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
               <Button
                 type="button"
                 variant="outline"
@@ -1128,10 +1128,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 Back
               </Button>
 
+              {currentStep === 'select-subtype' && <div />}
+
               {currentStep === 'details' && (
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
@@ -1143,7 +1145,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               {currentStep === 'balance' && (
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
@@ -1155,7 +1157,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               {currentStep === 'loan-details' && (
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
@@ -1167,7 +1169,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               {currentStep === 'review' && (
                 <Button
                   type="button"
-                  className="bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
                   onClick={handleSubmit}
                   disabled={isLoading}
                 >
