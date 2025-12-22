@@ -91,10 +91,10 @@ export default function Banking() {
   }, []);
 
   return (
-    <div className="bg-slate-100 h-full">
-      <Tabs value={activeTab} className="w-full h-full">
+    <div className="p-3 rounded-sm">
+      <Tabs value={activeTab} className="w-full">
 
-        <TabsContent value="overview" className="p-3 space-y-3">
+        <TabsContent value="overview" className="space-y-3">
           {/* Chart and Categories Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <SpendingChartCard
@@ -160,7 +160,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="transactions" className="p-3 space-y-3">
+        <TabsContent value="transactions" className="space-y-3">
           <TransactionsTab 
             key={`txn-${filterKey}`}
             initialFilters={transactionFilters}
@@ -173,7 +173,7 @@ export default function Banking() {
           />
         </TabsContent>
 
-        <TabsContent value="recurring" className="p-3 space-y-3">
+        <TabsContent value="recurring" className="space-y-3">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Recurring Payments</p>
@@ -184,7 +184,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="rules" className="p-3 space-y-3">
+        <TabsContent value="rules" className="space-y-3">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Rules</p>
@@ -195,7 +195,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="accounts" className="p-3 space-y-3">
+        <TabsContent value="accounts" className="space-y-3">
           <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
         </TabsContent>
       </Tabs>

@@ -28,13 +28,13 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
       setActiveTab(urlParams.get('tab') || defaultTab);
     };
     window.addEventListener('popstate', handlePopState);
-
+    
     const interval = setInterval(() => {
       const urlParams = new URLSearchParams(window.location.search);
       const currentTab = urlParams.get('tab') || defaultTab;
       setActiveTab(prev => prev !== currentTab ? currentTab : prev);
     }, 100);
-
+    
     return () => {
       window.removeEventListener('popstate', handlePopState);
       clearInterval(interval);
@@ -42,7 +42,7 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
   }, [defaultTab]);
 
   return (
-    <div className="flex items-end gap-0.5">
+    <div className="flex items-center gap-1">
       {tabs.map((tab) => {
         const isActive = activeTab === tab;
         const isDisabled = disabledTabs.includes(tab);
@@ -56,12 +56,12 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
               window.history.pushState({}, '', newUrl);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className={`relative px-6 py-3 text-sm font-medium transition-all capitalize ${
+            className={`px-3 py-1.5 text-sm font-medium transition-all capitalize ${
               isActive
-                ? 'bg-slate-100 text-slate-900 rounded-t-lg shadow-sm tab-folder-active'
+                ? 'bg-white text-slate-900 rounded-t-md shadow'
                 : isDisabled
-                ? 'text-slate-300 cursor-not-allowed bg-transparent'
-                : 'text-slate-400 bg-transparent hover:text-slate-600'
+                ? 'text-slate-300 cursor-not-allowed rounded-md'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-md'
             }`}
           >
             {tab.replace(/_/g, ' ')}
@@ -189,7 +189,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-20 bg-white px-4 relative shadow-sm">
+        <header className="h-20 bg-white px-4 relative">
           <div className="h-full flex flex-col justify-start pt-2">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-4">
@@ -244,7 +244,7 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto" style={{ backgroundColor: '#f1f5f9' }}>
+        <main className="flex-1 overflow-y-auto bg-slate-100">
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
