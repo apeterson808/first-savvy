@@ -1367,7 +1367,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
           </DialogHeader>
 
-          <div className="py-5 px-5 flex-1 overflow-y-auto flex flex-col justify-center">
+          <div className="py-5 px-5 flex-1 overflow-y-auto">
             {renderCurrentStep()}
           </div>
 
