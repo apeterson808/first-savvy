@@ -79,17 +79,6 @@ export default function Banking() {
     .filter((acc) => acc.is_active !== false)
     .reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
 
-  // Expose setPlaidReviewOpen and setPlaidData globally for AccountsTable
-  React.useEffect(() => {
-    window.__openPlaidReview = (data) => {
-      setPlaidData(data);
-      setPlaidReviewOpen(true);
-    };
-    return () => {
-      delete window.__openPlaidReview;
-    };
-  }, []);
-
   return (
     <div className="p-4 md:p-6">
       <Tabs value={activeTab} className="w-full">
