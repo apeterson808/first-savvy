@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -126,6 +127,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [formData, setFormData] = useState({});
   const [focusedFields, setFocusedFields] = useState({});
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) {
