@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { supabase } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,9 @@ import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
+import { BankInstitutionSearch } from './BankInstitutionSearch';
+import { MockBankConnectionFlow } from './MockBankConnectionFlow';
+import { createMockAccounts, generateMockTransactions } from '@/utils/mockBankDataGenerator';
 import {
   Building2,
   Wallet,
@@ -126,6 +130,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [selectedSubtype, setSelectedSubtype] = useState(null);
   const [formData, setFormData] = useState({});
   const [focusedFields, setFocusedFields] = useState({});
+  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [showConnectionFlow, setShowConnectionFlow] = useState(false);
+  const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -140,6 +147,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     setSelectedCard(null);
     setSelectedSubtype(null);
     setFormData({});
+    setSelectedInstitution(null);
+    setShowConnectionFlow(false);
+    setIsGeneratingMockData(false);
   };
 
   const handleCardSelect = (card) => {
@@ -225,6 +235,69 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       const cleaned = value.replace(/,/g, '');
       const formatted = Number(cleaned).toFixed(2);
       updateFormData(fieldName, formatted);
+    }
+  };
+
+  const handleInstitutionSelect = (institution) => {
+    setSelectedInstitution(institution);
+    setShowConnectionFlow(true);
+  };
+
+  const handleManualAdd = () => {
+    setCurrentStep('select-subtype');
+  };
+
+  const handleBankConnectionSuccess = async (connectedAccounts) => {
+    setIsGeneratingMockData(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const accountsToCreate = connectedAccounts.map(acc => ({
+        type: acc.type,
+        name: acc.name,
+        lastFour: acc.lastFour,
+        balance: acc.balance,
+        limit: acc.limit,
+      }));
+
+      const { accounts, serviceConnection } = await createMockAccounts(
+        connectedAccounts[0].institution,
+        accountsToCreate,
+        user.id
+      );
+
+      const transactions = await generateMockTransactions(
+        accounts,
+        connectedAccounts[0].startDate,
+        connectedAccounts[0].goLiveDate,
+        user.id
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
+      queryClient.invalidateQueries({ queryKey: ['serviceConnections'] });
+
+      toast.success(`Successfully connected ${accounts.length} accounts with ${transactions.length} transactions!`, {
+        duration: 5000,
+      });
+
+      onAccountCreated?.({ type: 'bank_connection', accounts, transactions, serviceConnection });
+      onOpenChange(false);
+
+      setTimeout(() => {
+        if (accounts.length > 0) {
+          navigate('/Banking');
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Error generating mock data:', error);
+      toast.error('Failed to create mock accounts and transactions');
+    } finally {
+      setIsGeneratingMockData(false);
+      setShowConnectionFlow(false);
     }
   };
 
@@ -1303,51 +1376,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderBankSearchStep = () => (
-    <div className="space-y-6 max-w-lg mx-auto">
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">
-          Search for your bank to securely connect your account
-        </p>
-      </div>
-
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="bankSearch">Search for your bank</Label>
-          <div className="relative">
-            <Input
-              id="bankSearch"
-              placeholder="Search for Chase, Wells Fargo, Bank of America..."
-              disabled
-              className="pl-3"
-            />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Institution integration coming soon.
-          </p>
-        </div>
-
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">Or</span>
-          </div>
-        </div>
-
-        <div className="text-center">
-          <Button
-            type="button"
-            variant="link"
-            size="sm"
-            className="text-xs"
-            onClick={handleNext}
-          >
-            Add Manually
-          </Button>
-        </div>
-      </div>
-    </div>
+    <BankInstitutionSearch
+      onSelect={handleInstitutionSelect}
+      onManualAdd={handleManualAdd}
+    />
   );
 
   const renderLoanSearchStep = () => (
@@ -1527,6 +1559,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           {renderProgressBar()}
         </div>
       </DialogContent>
+
+      <MockBankConnectionFlow
+        institution={selectedInstitution}
+        open={showConnectionFlow}
+        onClose={() => setShowConnectionFlow(false)}
+        onSuccess={handleBankConnectionSuccess}
+      />
     </Dialog>
   );
 }
