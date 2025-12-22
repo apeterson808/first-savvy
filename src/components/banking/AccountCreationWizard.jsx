@@ -327,6 +327,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           }
 
           const loanData = {
+            name: `${formData.displayName.trim()} Loan`,
             lenderName: formData.loanInstitution,
             currentBalance: loanBalanceValidation.value,
             originalAmount: formData.originalLoanAmount ? parseFloat(formData.originalLoanAmount) : loanBalanceValidation.value,

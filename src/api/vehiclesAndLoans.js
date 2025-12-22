@@ -32,7 +32,7 @@ export async function createAutoLoan(loanData) {
 
   const liabilityRecord = {
     user_id: user.id,
-    name: loanData.lenderName,
+    name: loanData.name || `${loanData.lenderName} Auto Loan`,
     type: 'Auto Loan',
     current_balance: loanData.currentBalance,
     interest_rate: loanData.interestRate || null,
@@ -41,6 +41,7 @@ export async function createAutoLoan(loanData) {
     monthly_payment: loanData.monthlyPayment || null,
     payment_due_date: loanData.paymentDueDate || null,
     linked_asset_id: loanData.linkedAssetId || null,
+    institution: loanData.lenderName || null,
   };
 
   const { data, error } = await supabase
