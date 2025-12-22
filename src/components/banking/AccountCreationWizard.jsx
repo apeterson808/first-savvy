@@ -12,6 +12,7 @@ import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
+import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import {
   Building2,
   Wallet,
@@ -38,6 +39,16 @@ const VEHICLE_TYPES = [
   'Motorcycle',
   'RV',
   'Boat',
+  'Other',
+];
+
+const PROPERTY_TYPES = [
+  'Single Family',
+  'Condo',
+  'Townhouse',
+  'Multi-Family',
+  'Commercial',
+  'Land',
   'Other',
 ];
 
@@ -359,15 +370,23 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           return;
         }
 
-        const assetData = {
-          name: formData.name,
-          type: 'property',
-          current_balance: balanceValidation.value,
-          description: formData.purchaseDate ? `Purchased: ${formData.purchaseDate}` : null,
-          is_active: true
+        const propertyData = {
+          name: formData.name.trim(),
+          address: formData.address?.trim() || null,
+          city: formData.city?.trim() || null,
+          state: formData.state?.trim() || null,
+          zip: formData.zip?.trim() || null,
+          propertyType: formData.propertyType || null,
+          squareFeet: formData.squareFeet || null,
+          bedrooms: formData.bedrooms || null,
+          bathrooms: formData.bathrooms || null,
+          estimatedValue: balanceValidation.value,
+          purchasePrice: formData.purchasePrice || null,
+          purchaseDate: formData.purchaseDate || null,
         };
 
-        const newAsset = await createAssetMutation.mutateAsync(assetData);
+        const newAsset = await createPropertyAsset(propertyData);
+        queryClient.invalidateQueries({ queryKey: ['assets'] });
 
         if (selectedSubtype.value === 'property_with_loan' && formData.loanBalance) {
           const loanBalanceValidation = validateAmount(formData.loanBalance, {
@@ -379,14 +398,29 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             return;
           }
 
-          await createLiabilityMutation.mutateAsync({
-            name: `${formData.name} Mortgage`,
-            type: 'mortgage',
-            current_balance: loanBalanceValidation.value,
-            institution: formData.loanInstitution || null,
-            is_active: true
-          });
+          const mortgageData = {
+            name: `${formData.name.trim()} Mortgage`,
+            lenderName: formData.loanInstitution,
+            currentBalance: loanBalanceValidation.value,
+            originalAmount: formData.originalLoanAmount ? parseFloat(formData.originalLoanAmount) : loanBalanceValidation.value,
+            interestRate: formData.interestRate ? parseFloat(formData.interestRate) : null,
+            monthlyPayment: formData.monthlyPayment ? parseFloat(formData.monthlyPayment) : null,
+            paymentDueDate: formData.paymentDueDate ? parseInt(formData.paymentDueDate) : null,
+            startDate: formData.loanStartDate || null,
+            linkedAssetId: newAsset.id,
+          };
+
+          const newMortgage = await createMortgage(mortgageData);
+          await createAssetLiabilityLink(newAsset.id, newMortgage.id);
+          queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+          queryClient.invalidateQueries({ queryKey: ['assetLinks'] });
+          queryClient.invalidateQueries({ queryKey: ['liabilityLinks'] });
         }
+
+        toast.success('Property created successfully!');
+        onAccountCreated?.({ type: 'asset', account: newAsset });
+        onOpenChange(false);
+        return;
       } else if (selectedCard.id === 'investments') {
         const balanceValidation = validateAmount(formData.currentValue || '0', {
           allowZero: true,
@@ -750,42 +784,164 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       );
     } else if (selectedCard.id === 'property') {
       return (
-        <div className="space-y-5 max-w-lg mx-auto">
+        <div className="space-y-2.5 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="name">Property Name*</Label>
+            <Label htmlFor="name" className="text-sm mb-1">Property Name*</Label>
             <Input
               id="name"
               value={formData.name || ''}
               onChange={(e) => updateFormData('name', e.target.value)}
               placeholder="e.g., Main Residence, Beach House"
+              className="h-9"
               required
             />
           </div>
           <div>
-            <Label htmlFor="currentValue">Current Value*</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+            <Label htmlFor="address" className="text-sm mb-1">Address</Label>
+            <Input
+              id="address"
+              value={formData.address || ''}
+              onChange={(e) => updateFormData('address', e.target.value)}
+              placeholder="123 Main St"
+              className="h-9"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label htmlFor="city" className="text-sm mb-1">City</Label>
               <Input
-                id="currentValue"
-                type="text"
-                value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
-                onChange={(e) => handleAmountChange('currentValue', e.target.value)}
-                onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
-                onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
-                placeholder="0.00"
-                className="pl-7"
-                required
+                id="city"
+                value={formData.city || ''}
+                onChange={(e) => updateFormData('city', e.target.value)}
+                placeholder="New York"
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label htmlFor="state" className="text-sm mb-1">State</Label>
+              <Input
+                id="state"
+                value={formData.state || ''}
+                onChange={(e) => updateFormData('state', e.target.value)}
+                placeholder="NY"
+                className="h-9"
+                maxLength={2}
+              />
+            </div>
+            <div>
+              <Label htmlFor="zip" className="text-sm mb-1">ZIP Code</Label>
+              <Input
+                id="zip"
+                value={formData.zip || ''}
+                onChange={(e) => updateFormData('zip', e.target.value)}
+                placeholder="10001"
+                className="h-9"
+                maxLength={10}
               />
             </div>
           </div>
-          <div>
-            <Label htmlFor="purchaseDate">Purchase Date</Label>
-            <Input
-              id="purchaseDate"
-              type="date"
-              value={formData.purchaseDate || ''}
-              onChange={(e) => updateFormData('purchaseDate', e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="propertyType" className="text-sm mb-1">Property Type</Label>
+              <Select
+                value={formData.propertyType || ''}
+                onValueChange={(value) => updateFormData('propertyType', value)}
+              >
+                <SelectTrigger id="propertyType" className="h-9">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PROPERTY_TYPES.map(type => (
+                    <SelectItem key={type} value={type}>{type}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="squareFeet" className="text-sm mb-1">Square Feet</Label>
+              <Input
+                id="squareFeet"
+                type="number"
+                value={formData.squareFeet || ''}
+                onChange={(e) => updateFormData('squareFeet', e.target.value)}
+                placeholder="2000"
+                min="0"
+                className="h-9"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <Label htmlFor="bedrooms" className="text-sm mb-1">Bedrooms</Label>
+              <Input
+                id="bedrooms"
+                type="number"
+                step="0.5"
+                value={formData.bedrooms || ''}
+                onChange={(e) => updateFormData('bedrooms', e.target.value)}
+                placeholder="3"
+                min="0"
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label htmlFor="bathrooms" className="text-sm mb-1">Bathrooms</Label>
+              <Input
+                id="bathrooms"
+                type="number"
+                step="0.5"
+                value={formData.bathrooms || ''}
+                onChange={(e) => updateFormData('bathrooms', e.target.value)}
+                placeholder="2"
+                min="0"
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label htmlFor="currentValue" className="text-sm mb-1">Current Value*</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                <Input
+                  id="currentValue"
+                  type="text"
+                  value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
+                  onChange={(e) => handleAmountChange('currentValue', e.target.value)}
+                  onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
+                  onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
+                  placeholder="0.00"
+                  className="pl-7 h-9"
+                  required
+                />
+              </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="purchasePrice" className="text-sm mb-1">Purchase Price</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                <Input
+                  id="purchasePrice"
+                  type="text"
+                  value={formatAmountField('purchasePrice', formData.purchasePrice, focusedFields.purchasePrice)}
+                  onChange={(e) => handleAmountChange('purchasePrice', e.target.value)}
+                  onFocus={() => setFocusedFields(prev => ({ ...prev, purchasePrice: true }))}
+                  onBlur={(e) => handleAmountBlur('purchasePrice', e.target.value)}
+                  placeholder="0.00"
+                  className="pl-7 h-9"
+                />
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="purchaseDate" className="text-sm mb-1">Purchase Date</Label>
+              <Input
+                id="purchaseDate"
+                type="date"
+                value={formData.purchaseDate || ''}
+                onChange={(e) => updateFormData('purchaseDate', e.target.value)}
+                className="h-9"
+              />
+            </div>
           </div>
         </div>
       );
@@ -1163,7 +1319,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     }
     if (currentStep === 'balance') return 'Starting Balance';
     if (currentStep === 'loan-search') return 'Connect Lender';
-    if (currentStep === 'loan-details') return 'Loan Details';
+    if (currentStep === 'loan-details') {
+      if (selectedCard?.id === 'property') return 'Mortgage Details';
+      return 'Loan Details';
+    }
     if (currentStep === 'review') return 'Review & Create';
     return '';
   };
