@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
@@ -59,10 +60,7 @@ const ACCOUNT_TYPE_CARDS = [
     icon: Car,
     bgColor: '#AACC96',
     iconColor: 'text-white',
-    subtypes: [
-      { value: 'vehicle_with_loan', label: 'With Loan', icon: Receipt },
-      { value: 'vehicle_without_loan', label: 'Without Loan', icon: ShieldCheck }
-    ]
+    subtypes: []
   },
   {
     id: 'property',
@@ -135,7 +133,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
-    setCurrentStep('select-subtype');
+    if (card.subtypes && card.subtypes.length > 0) {
+      setCurrentStep('select-subtype');
+    } else {
+      setSelectedSubtype({ value: card.id, label: card.title });
+      setFormData({ subtype: card.id });
+      setCurrentStep('details');
+    }
   };
 
   const handleSubtypeSelect = (subtype) => {
@@ -149,18 +153,27 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       setCurrentStep('select-type');
       setSelectedCard(null);
     } else if (currentStep === 'details') {
-      setCurrentStep('select-subtype');
-      setSelectedSubtype(null);
-      setFormData({});
+      if (selectedCard?.subtypes && selectedCard.subtypes.length > 0) {
+        setCurrentStep('select-subtype');
+        setSelectedSubtype(null);
+        setFormData({});
+      } else {
+        setCurrentStep('select-type');
+        setSelectedCard(null);
+        setSelectedSubtype(null);
+        setFormData({});
+      }
     } else if (currentStep === 'loan-details' || currentStep === 'balance') {
       setCurrentStep('details');
     } else if (currentStep === 'review') {
-      if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_with_loan') {
+      if (selectedCard.id === 'vehicle' && formData.hasLoan) {
         setCurrentStep('loan-details');
       } else if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') {
         setCurrentStep('loan-details');
-      } else {
+      } else if (selectedCard.id === 'banking') {
         setCurrentStep('balance');
+      } else {
+        setCurrentStep('details');
       }
     }
   };
@@ -277,7 +290,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         const newAsset = await createVehicleAsset(vehicleData);
         queryClient.invalidateQueries({ queryKey: ['assets'] });
 
-        if (selectedSubtype.value === 'vehicle_with_loan' && formData.loanBalance) {
+        if (formData.hasLoan && formData.loanBalance) {
           const loanBalanceValidation = validateAmount(formData.loanBalance, {
             allowZero: false,
             allowNegative: false
@@ -407,8 +420,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     }
 
     if (selectedCard.id === 'banking') return 5;
-    if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_with_loan') return 6;
-    if (selectedCard.id === 'vehicle' && selectedSubtype.value === 'vehicle_without_loan') return 5;
+    if (selectedCard.id === 'vehicle') {
+      return formData.hasLoan ? 4 : 3;
+    }
     if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 6;
     if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 5;
     if (selectedCard.id === 'investments') return 5;
@@ -419,6 +433,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const getCurrentStepNumber = () => {
+    if (selectedCard?.id === 'vehicle') {
+      const vehicleStepMap = {
+        'select-type': 0,
+        'details': 1,
+        'loan-details': 2,
+        'review': formData.hasLoan ? 3 : 2
+      };
+      return vehicleStepMap[currentStep] || 0;
+    }
+
     const stepMap = {
       'select-type': 0,
       'select-subtype': 1,
@@ -469,7 +493,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       }
     } else if (selectedCard.id === 'vehicle') {
       if (currentStep === 'details') {
-        if (selectedSubtype.value === 'vehicle_with_loan') {
+        if (formData.hasLoan) {
           setCurrentStep('loan-details');
         } else {
           setCurrentStep('review');
@@ -677,6 +701,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 required
               />
             </div>
+          </div>
+          <div className="flex items-center space-x-2 pt-2">
+            <Checkbox
+              id="hasLoan"
+              checked={formData.hasLoan || false}
+              onCheckedChange={(checked) => updateFormData('hasLoan', checked)}
+            />
+            <Label htmlFor="hasLoan" className="cursor-pointer font-normal">
+              This vehicle has an auto loan
+            </Label>
           </div>
         </div>
       );
