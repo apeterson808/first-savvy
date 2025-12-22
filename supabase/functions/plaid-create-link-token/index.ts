@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
         },
         products: ["transactions"],
         required_if_supported_products: ["auth"],
-        optional_products: ["identity"],
+        optional_products: ["identity", "liabilities"],
         account_filters: {
           depository: {
             account_subtypes: ["checking", "savings"],
@@ -71,6 +71,12 @@ Deno.serve(async (req: Request) => {
           credit: {
             account_subtypes: ["credit card"],
           },
+          loan: {
+            account_subtypes: ["auto", "commercial", "construction", "consumer", "home equity", "loan", "mortgage", "overdraft", "line of credit", "student"],
+          },
+        },
+        transactions: {
+          days_requested: 730,
         },
       }),
     });
