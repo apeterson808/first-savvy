@@ -448,9 +448,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
     if (selectedCard.id === 'banking') return 5;
     if (selectedCard.id === 'vehicle') {
-      return formData.skipLoanDetails ? 2 : 5;
+      return formData.skipLoanDetails ? 2 : 4;
     }
-    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 7;
+    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 6;
     if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 5;
     if (selectedCard.id === 'investments') return 5;
     if (selectedCard.id === 'loans') return 5;
@@ -468,8 +468,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         'select-type': 0,
         'details': 1,
         'loan-search': 2,
-        'loan-details': 3,
-        'review': 4
+        'loan-details': 3
       };
       return vehicleStepMap[currentStep] || 0;
     }
@@ -1225,11 +1224,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 <Button
                   type="button"
                   className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                  onClick={handleNext}
+                  onClick={handleSubmit}
                   disabled={!canProceed() || isLoading}
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <Check className="w-4 h-4 mr-1" />
+                  Finish
                 </Button>
               )}
 
