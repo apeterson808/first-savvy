@@ -972,13 +972,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         </div>
         <div>
           <Label htmlFor="interestRate">Interest Rate (%)</Label>
-          <Input
-            id="interestRate"
-            type="text"
-            value={formData.interestRate || ''}
-            onChange={(e) => updateFormData('interestRate', e.target.value.replace(/[^0-9.]/g, ''))}
-            placeholder="0.00"
-          />
+          <div className="relative">
+            <Input
+              id="interestRate"
+              type="text"
+              value={formData.interestRate || ''}
+              onChange={(e) => updateFormData('interestRate', e.target.value.replace(/[^0-9.]/g, ''))}
+              placeholder="0.00"
+              className="pr-7"
+            />
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500">%</span>
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-4">
