@@ -164,8 +164,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         setSelectedSubtype(null);
         setFormData({});
       }
-    } else if (currentStep === 'loan-details' || currentStep === 'balance') {
+    } else if (currentStep === 'loan-search' || currentStep === 'balance') {
       setCurrentStep('details');
+    } else if (currentStep === 'loan-details') {
+      setCurrentStep('loan-search');
     } else if (currentStep === 'review') {
       if (selectedCard.id === 'vehicle' && !formData.skipLoanDetails) {
         setCurrentStep('loan-details');
@@ -446,9 +448,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
     if (selectedCard.id === 'banking') return 5;
     if (selectedCard.id === 'vehicle') {
-      return formData.skipLoanDetails ? 2 : 4;
+      return formData.skipLoanDetails ? 2 : 5;
     }
-    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 6;
+    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 7;
     if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 5;
     if (selectedCard.id === 'investments') return 5;
     if (selectedCard.id === 'loans') return 5;
@@ -465,8 +467,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       const vehicleStepMap = {
         'select-type': 0,
         'details': 1,
-        'loan-details': 2,
-        'review': 3
+        'loan-search': 2,
+        'loan-details': 3,
+        'review': 4
       };
       return vehicleStepMap[currentStep] || 0;
     }
@@ -476,7 +479,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       'select-subtype': 1,
       'details': 2,
       'balance': 3,
-      'loan-details': 3,
+      'loan-search': 3,
+      'loan-details': 4,
       'review': getTotalSteps() - 1
     };
     return stepMap[currentStep] || 0;
@@ -524,18 +528,22 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         if (formData.skipLoanDetails) {
           await handleSubmit();
         } else {
-          setCurrentStep('loan-details');
+          setCurrentStep('loan-search');
         }
+      } else if (currentStep === 'loan-search') {
+        setCurrentStep('loan-details');
       } else if (currentStep === 'loan-details') {
         setCurrentStep('review');
       }
     } else if (selectedCard.id === 'property') {
       if (currentStep === 'details') {
         if (selectedSubtype.value === 'property_with_loan') {
-          setCurrentStep('loan-details');
+          setCurrentStep('loan-search');
         } else {
           setCurrentStep('review');
         }
+      } else if (currentStep === 'loan-search') {
+        setCurrentStep('loan-details');
       } else if (currentStep === 'loan-details') {
         setCurrentStep('review');
       }
@@ -1071,6 +1079,54 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     </div>
   );
 
+  const renderLoanSearchStep = () => (
+    <div className="space-y-6 max-w-lg mx-auto">
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+          Search for your lender to securely connect your account
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="lenderSearch">Search for your lender</Label>
+          <div className="relative">
+            <Input
+              id="lenderSearch"
+              placeholder="Search for Chase, Wells Fargo, etc..."
+              disabled
+              className="pl-3"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Institution integration coming soon.
+          </p>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or</span>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="text-xs"
+            onClick={handleNext}
+          >
+            Add Manually
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'select-type':
@@ -1081,6 +1137,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         return renderDetailsStep();
       case 'balance':
         return renderBalanceStep();
+      case 'loan-search':
+        return renderLoanSearchStep();
       case 'loan-details':
         return renderLoanDetailsStep();
       case 'review':
@@ -1102,6 +1160,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       if (selectedCard?.id === 'budget') return 'Category Details';
     }
     if (currentStep === 'balance') return 'Starting Balance';
+    if (currentStep === 'loan-search') return 'Connect Lender';
     if (currentStep === 'loan-details') return 'Loan Details';
     if (currentStep === 'review') return 'Review & Create';
     return '';
@@ -1133,6 +1192,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               </Button>
 
               {currentStep === 'select-subtype' && <div />}
+
+              {currentStep === 'loan-search' && <div />}
 
               {currentStep === 'details' && (
                 <Button
