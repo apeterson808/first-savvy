@@ -971,7 +971,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           </div>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <div>
           <Label htmlFor="interestRate">Interest Rate (%)</Label>
           <Input
@@ -996,10 +996,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             />
           </div>
         </div>
-      </div>
-      <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label htmlFor="paymentDueDate">Payment Due Date (Day of Month)</Label>
+          <Label htmlFor="paymentDueDate">Due Date (Day)</Label>
           <Input
             id="paymentDueDate"
             type="number"
