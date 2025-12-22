@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import { suggestCategory } from './CategorySuggestion';
@@ -1129,13 +1129,23 @@ For each transaction, return the category_id that best matches. Consider:
           {/* Tabs & Top Actions */}
           <div className="border-b border-slate-200 px-4 pt-4">
             <div className="flex items-center justify-between mb-3">
-              <AccountDropdown
-                value={selectedAccount}
-                onValueChange={setSelectedAccount}
-                showPendingCounts={true}
-                transactions={fullPendingTransactions}
-                accounts={accounts}
-              />
+              <div className="flex items-center gap-2">
+                <AccountDropdown
+                  value={selectedAccount}
+                  onValueChange={setSelectedAccount}
+                  showPendingCounts={true}
+                  transactions={fullPendingTransactions}
+                  accounts={accounts}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setAddAccountSheetOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Search & Filters */}
