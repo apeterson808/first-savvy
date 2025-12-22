@@ -16,17 +16,22 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log('[AuthContext] Initializing...');
+
     firstsavvy.auth.getUser()
       .then(user => {
+        console.log('[AuthContext] Initial user check:', user ? 'User found' : 'No user');
         setUser(user);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[AuthContext] Error getting user:', error);
         setUser(null);
         setLoading(false);
       });
 
     const subscription = firstsavvy.auth.onAuthStateChange((event, session) => {
+      console.log('[AuthContext] Auth state changed:', event, session?.user ? 'User present' : 'No user');
       if (session?.user) {
         setUser(session.user);
       } else {
