@@ -292,7 +292,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       toast.success('Category created successfully!');
       onOpenChange(false);
       setTimeout(() => {
-        navigate('/Budgeting');
+        navigate(`/Banking/account/${newCategory.id}`);
       }, 100);
     },
     onError: (error) => {
