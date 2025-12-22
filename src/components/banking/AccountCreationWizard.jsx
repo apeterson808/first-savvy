@@ -1494,12 +1494,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const renderBankSearchStep = () => (
     <div className="space-y-6 max-w-lg mx-auto">
-      <div className="text-center">
-        <p className="text-sm text-muted-foreground">
-          Search for your bank to securely connect your account
-        </p>
-      </div>
-
       <div className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="bankSearch">Search for your bank</Label>
