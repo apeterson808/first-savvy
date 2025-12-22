@@ -649,15 +649,32 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               />
             </div>
           </div>
-          <div>
-            <Label htmlFor="model">Model*</Label>
-            <Input
-              id="model"
-              value={formData.model || ''}
-              onChange={(e) => updateFormData('model', e.target.value)}
-              placeholder="Camry"
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="model">Model*</Label>
+              <Input
+                id="model"
+                value={formData.model || ''}
+                onChange={(e) => updateFormData('model', e.target.value)}
+                placeholder="Camry"
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="currentValue">Estimated Value*</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+                <Input
+                  id="currentValue"
+                  type="text"
+                  value={formData.currentValue || ''}
+                  onChange={(e) => updateFormData('currentValue', e.target.value.replace(/[^0-9.]/g, ''))}
+                  placeholder="0.00"
+                  className="pl-7"
+                  required
+                />
+              </div>
+            </div>
           </div>
           <div>
             <Label htmlFor="vin">VIN (Optional)</Label>
@@ -668,21 +685,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               placeholder="1HGBH41JXMN109186"
               maxLength={17}
             />
-          </div>
-          <div>
-            <Label htmlFor="currentValue">Estimated Value*</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <Input
-                id="currentValue"
-                type="text"
-                value={formData.currentValue || ''}
-                onChange={(e) => updateFormData('currentValue', e.target.value.replace(/[^0-9.]/g, ''))}
-                placeholder="0.00"
-                className="pl-7"
-                required
-              />
-            </div>
           </div>
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
