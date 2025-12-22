@@ -92,7 +92,7 @@ const ACCOUNT_TYPE_CARDS = [
       { value: 'retirement', label: 'Retirement', icon: Landmark },
       { value: 'stocks', label: 'Stock', icon: TrendingUp },
       { value: 'crypto', label: 'Crypto', icon: BadgeDollarSign },
-      { value: 'investment', label: 'Other Investments', icon: TrendingUp }
+      { value: 'investment', label: 'Other', icon: TrendingUp }
     ]
   },
   {
