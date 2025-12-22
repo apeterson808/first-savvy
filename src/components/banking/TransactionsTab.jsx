@@ -93,7 +93,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const urlCategory = urlParams.get('category');
     
     if (initialFilters?.date) {
-      console.log('TransactionsTab initialFilters:', initialFilters);
       return {
         datePreset: 'custom',
         dateFrom: initialFilters.date,
@@ -243,8 +242,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (transactionsNeedingSuggestions.length === 0) return;
 
-      console.log(`Generating AI suggestions for ${Math.min(5, transactionsNeedingSuggestions.length)} transactions...`);
-
       const batchSize = 5;
       for (let i = 0; i < Math.min(batchSize, transactionsNeedingSuggestions.length); i++) {
         const transaction = transactionsNeedingSuggestions[i];
@@ -265,7 +262,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             );
 
             if (matchingCategory) {
-              console.log(`Suggested ${suggestion.category} for "${transaction.description}"`);
               await firstsavvy.entities.Transaction.update(transaction.id, {
                 ai_suggested_category_id: matchingCategory.id
               });
@@ -291,8 +287,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       );
 
       if (transactionsNeedingContactApplication.length === 0) return;
-
-      console.log(`Auto-applying ${transactionsNeedingContactApplication.length} AI contact suggestions...`);
 
       for (const transaction of transactionsNeedingContactApplication) {
         try {
@@ -2498,7 +2492,6 @@ For each transaction, return the category_id that best matches. Consider:
                             onClose={() => setFilterPanelOpen(false)}
                             filters={filters}
                             onApply={(newFilters) => {
-                              console.log('Received filters:', newFilters);
                               setFilters({...newFilters});
                               if (newFilters.account !== 'all') {
                                 setSelectedAccount(newFilters.account);

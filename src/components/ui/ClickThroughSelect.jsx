@@ -144,10 +144,8 @@ export function ClickThroughSelect({
   }, [isOpen]);
 
   const handleSelect = (val, isAction) => {
-    console.log(`[ClickThroughSelect:${name}] handleSelect called with val="${val}", isAction=${isAction}`);
     isSelectingRef.current = true;
     if (!isAction) {
-      console.log(`[ClickThroughSelect:${name}] Setting selectedValue to:`, val);
       setSelectedValue(val);
       originalValueRef.current = val;
     }
@@ -245,11 +243,6 @@ export function ClickThroughSelect({
           type="hidden"
           name={name}
           value={selectedValue || ''}
-          ref={(input) => {
-            if (input && name) {
-              console.log(`[ClickThroughSelect:${name}] Hidden input value set to:`, input.value);
-            }
-          }}
         />
       )}
 
@@ -445,7 +438,6 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        console.log(`[ClickThroughSelectItem] Clicked value: ${value}`);
         onSelect?.(value, isAction);
       }}
       className={cn(

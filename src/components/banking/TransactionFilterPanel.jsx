@@ -38,7 +38,6 @@ export default function TransactionFilterPanel({
   }, [isOpen]);
 
   const handleApply = () => {
-    console.log('Applying filters:', localFilters);
     onApply({...localFilters});
     onClose();
   };

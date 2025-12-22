@@ -7,10 +7,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 if (typeof window !== 'undefined') {
   window.supabase = supabase;
-  console.log('✅ Supabase client loaded');
-  console.log('  - Has auth?', !!supabase.auth);
-  console.log('  - Has getSession?', !!supabase.auth?.getSession);
-  console.log('  - Client:', supabase);
 }
 
 const createEntityAPI = (tableName) => {
@@ -72,8 +68,6 @@ const createEntityAPI = (tableName) => {
       const userId = (await supabase.auth.getUser()).data.user?.id;
       const recordWithUser = userId ? { ...record, user_id: userId } : record;
 
-      console.log(`[${tableName}] Creating record:`, JSON.stringify(recordWithUser, null, 2));
-
       const { data, error } = await supabase
         .from(tableName)
         .insert(recordWithUser)
@@ -84,7 +78,6 @@ const createEntityAPI = (tableName) => {
         console.error(`[${tableName}] Create error:`, error);
         throw error;
       }
-      console.log(`[${tableName}] Created successfully:`, data);
       return data;
     },
 
