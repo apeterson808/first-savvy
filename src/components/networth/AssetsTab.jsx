@@ -9,7 +9,7 @@ import EditAccountDialog from '../banking/EditAccountDialog';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subMonths, subYears, startOfYear, eachMonthOfInterval } from 'date-fns';
 import TimeRangeDropdown from '../common/TimeRangeDropdown';
-import { VehicleCreationWizard } from './VehicleCreationWizard';
+import AccountCreationWizard from '../banking/AccountCreationWizard';
 import { getAssetWithLinks } from '@/api/vehiclesAndLoans';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
@@ -19,9 +19,7 @@ export default function AssetsTab() {
   const [editingAccount, setEditingAccount] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
-  const [vehicleWizardOpen, setVehicleWizardOpen] = useState(false);
-  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [accountWizardOpen, setAccountWizardOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const handleEdit = (account, entityType) => {
@@ -168,7 +166,7 @@ export default function AssetsTab() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setVehicleWizardOpen(true)}
+              onClick={() => setAccountWizardOpen(true)}
               className="h-7"
             >
               <Car className="w-3 h-3 mr-1" />
@@ -356,12 +354,14 @@ export default function AssetsTab() {
         }}
       />
 
-      <VehicleCreationWizard
-        open={vehicleWizardOpen}
-        onOpenChange={setVehicleWizardOpen}
-        onSuccess={() => {
+      <AccountCreationWizard
+        open={accountWizardOpen}
+        onOpenChange={setAccountWizardOpen}
+        onAccountCreated={() => {
           queryClient.invalidateQueries({ queryKey: ['assets'] });
           queryClient.invalidateQueries({ queryKey: ['assetLinks'] });
+          queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+          queryClient.invalidateQueries({ queryKey: ['liabilityLinks'] });
         }}
       />
     </div>

@@ -6,9 +6,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
+import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import {
   Building2,
   Wallet,
@@ -27,6 +29,16 @@ import {
   Receipt,
   ShieldCheck
 } from 'lucide-react';
+
+const VEHICLE_TYPES = [
+  'Car',
+  'Truck',
+  'SUV',
+  'Motorcycle',
+  'RV',
+  'Boat',
+  'Other',
+];
 
 const ACCOUNT_TYPE_CARDS = [
   {
@@ -252,15 +264,18 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           return;
         }
 
-        const assetData = {
-          name: formData.name,
-          type: 'vehicle',
-          current_balance: balanceValidation.value,
-          description: formData.purchaseDate ? `Purchased: ${formData.purchaseDate}` : null,
-          is_active: true
+        const vehicleData = {
+          name: `${formData.year} ${formData.make} ${formData.model}`,
+          year: parseInt(formData.year),
+          make: formData.make.trim(),
+          model: formData.model.trim(),
+          vehicleType: formData.vehicleType,
+          vin: formData.vin || null,
+          estimatedValue: balanceValidation.value,
         };
 
-        const newAsset = await createAssetMutation.mutateAsync(assetData);
+        const newAsset = await createVehicleAsset(vehicleData);
+        queryClient.invalidateQueries({ queryKey: ['assets'] });
 
         if (selectedSubtype.value === 'vehicle_with_loan' && formData.loanBalance) {
           const loanBalanceValidation = validateAmount(formData.loanBalance, {
@@ -272,14 +287,28 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             return;
           }
 
-          await createLiabilityMutation.mutateAsync({
-            name: `${formData.name} Loan`,
-            type: 'car_loan',
-            current_balance: loanBalanceValidation.value,
-            institution: formData.loanInstitution || null,
-            is_active: true
-          });
+          const loanData = {
+            lenderName: formData.loanInstitution,
+            currentBalance: loanBalanceValidation.value,
+            originalAmount: formData.originalLoanAmount ? parseFloat(formData.originalLoanAmount) : loanBalanceValidation.value,
+            interestRate: formData.interestRate ? parseFloat(formData.interestRate) : null,
+            monthlyPayment: formData.monthlyPayment ? parseFloat(formData.monthlyPayment) : null,
+            paymentDueDate: formData.paymentDueDate ? parseInt(formData.paymentDueDate) : null,
+            startDate: formData.loanStartDate || null,
+            linkedAssetId: newAsset.id,
+          };
+
+          const newLoan = await createAutoLoan(loanData);
+          await createAssetLiabilityLink(newAsset.id, newLoan.id);
+          queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+          queryClient.invalidateQueries({ queryKey: ['assetLinks'] });
+          queryClient.invalidateQueries({ queryKey: ['liabilityLinks'] });
         }
+
+        toast.success('Vehicle created successfully!');
+        onAccountCreated?.({ type: 'asset', account: newAsset });
+        onOpenChange(false);
+        return;
       } else if (selectedCard.id === 'property') {
         const balanceValidation = validateAmount(formData.currentValue || '0', {
           allowZero: true,
@@ -406,7 +435,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       if (selectedCard.id === 'banking') {
         return formData.name && formData.name.trim();
       }
-      if (selectedCard.id === 'vehicle' || selectedCard.id === 'property') {
+      if (selectedCard.id === 'vehicle') {
+        return formData.year && formData.make && formData.make.trim() && formData.model && formData.model.trim() && formData.vehicleType && formData.currentValue;
+      }
+      if (selectedCard.id === 'property') {
         return formData.name && formData.name.trim() && formData.currentValue;
       }
       if (selectedCard.id === 'investments') {
@@ -564,16 +596,100 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           </div>
         </div>
       );
-    } else if (selectedCard.id === 'vehicle' || selectedCard.id === 'property') {
+    } else if (selectedCard.id === 'vehicle') {
+      const currentYear = new Date().getFullYear();
+      return (
+        <div className="space-y-4 max-w-lg mx-auto">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="year">Year*</Label>
+              <Input
+                id="year"
+                type="number"
+                value={formData.year || ''}
+                onChange={(e) => updateFormData('year', e.target.value)}
+                placeholder="2024"
+                min="1900"
+                max={currentYear + 1}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="make">Make*</Label>
+              <Input
+                id="make"
+                value={formData.make || ''}
+                onChange={(e) => updateFormData('make', e.target.value)}
+                placeholder="Toyota"
+                required
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="model">Model*</Label>
+            <Input
+              id="model"
+              value={formData.model || ''}
+              onChange={(e) => updateFormData('model', e.target.value)}
+              placeholder="Camry"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="vehicleType">Vehicle Type*</Label>
+            <Select
+              value={formData.vehicleType || ''}
+              onValueChange={(value) => updateFormData('vehicleType', value)}
+            >
+              <SelectTrigger id="vehicleType">
+                <SelectValue placeholder="Select vehicle type" />
+              </SelectTrigger>
+              <SelectContent>
+                {VEHICLE_TYPES.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {type}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="vin">VIN (Optional)</Label>
+            <Input
+              id="vin"
+              value={formData.vin || ''}
+              onChange={(e) => updateFormData('vin', e.target.value)}
+              placeholder="1HGBH41JXMN109186"
+              maxLength={17}
+            />
+          </div>
+          <div>
+            <Label htmlFor="currentValue">Estimated Value*</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+              <Input
+                id="currentValue"
+                type="text"
+                value={formData.currentValue || ''}
+                onChange={(e) => updateFormData('currentValue', e.target.value.replace(/[^0-9.]/g, ''))}
+                placeholder="0.00"
+                className="pl-7"
+                required
+              />
+            </div>
+          </div>
+        </div>
+      );
+    } else if (selectedCard.id === 'property') {
       return (
         <div className="space-y-5 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="name">{selectedCard.id === 'vehicle' ? 'Vehicle Name*' : 'Property Name*'}</Label>
+            <Label htmlFor="name">Property Name*</Label>
             <Input
               id="name"
               value={formData.name || ''}
               onChange={(e) => updateFormData('name', e.target.value)}
-              placeholder={selectedCard.id === 'vehicle' ? 'e.g., 2018 Honda Civic' : 'e.g., Main Residence, Beach House'}
+              placeholder="e.g., Main Residence, Beach House"
               required
             />
           </div>
@@ -730,55 +846,96 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderLoanDetailsStep = () => (
-    <div className="space-y-5 max-w-lg mx-auto">
-      <div>
-        <Label htmlFor="loanBalance">Loan Balance*</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-          <Input
-            id="loanBalance"
-            type="text"
-            value={formData.loanBalance || ''}
-            onChange={(e) => updateFormData('loanBalance', e.target.value.replace(/[^0-9.]/g, ''))}
-            placeholder="0.00"
-            className="pl-7"
-            required
-          />
-        </div>
-      </div>
-      <div>
-        <Label htmlFor="interestRate">Interest Rate (%)</Label>
-        <Input
-          id="interestRate"
-          type="text"
-          value={formData.interestRate || ''}
-          onChange={(e) => updateFormData('interestRate', e.target.value.replace(/[^0-9.]/g, ''))}
-          placeholder="0.00"
-        />
-      </div>
-      <div>
-        <Label htmlFor="monthlyPayment">Monthly Payment</Label>
-        <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-          <Input
-            id="monthlyPayment"
-            type="text"
-            value={formData.monthlyPayment || ''}
-            onChange={(e) => updateFormData('monthlyPayment', e.target.value.replace(/[^0-9.]/g, ''))}
-            placeholder="0.00"
-            className="pl-7"
-          />
-        </div>
-      </div>
+    <div className="space-y-4 max-w-lg mx-auto">
       <div>
         <Label htmlFor="loanInstitution">Lender Name*</Label>
         <Input
           id="loanInstitution"
           value={formData.loanInstitution || ''}
           onChange={(e) => updateFormData('loanInstitution', e.target.value)}
-          placeholder="e.g., Wells Fargo, Chase"
+          placeholder="e.g., Wells Fargo, Chase Auto Finance"
           required
         />
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="loanBalance">Current Balance*</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+            <Input
+              id="loanBalance"
+              type="text"
+              value={formData.loanBalance || ''}
+              onChange={(e) => updateFormData('loanBalance', e.target.value.replace(/[^0-9.]/g, ''))}
+              placeholder="0.00"
+              className="pl-7"
+              required
+            />
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="originalLoanAmount">Original Amount</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+            <Input
+              id="originalLoanAmount"
+              type="text"
+              value={formData.originalLoanAmount || ''}
+              onChange={(e) => updateFormData('originalLoanAmount', e.target.value.replace(/[^0-9.]/g, ''))}
+              placeholder="0.00"
+              className="pl-7"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="interestRate">Interest Rate (%)</Label>
+          <Input
+            id="interestRate"
+            type="text"
+            value={formData.interestRate || ''}
+            onChange={(e) => updateFormData('interestRate', e.target.value.replace(/[^0-9.]/g, ''))}
+            placeholder="0.00"
+          />
+        </div>
+        <div>
+          <Label htmlFor="monthlyPayment">Monthly Payment</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+            <Input
+              id="monthlyPayment"
+              type="text"
+              value={formData.monthlyPayment || ''}
+              onChange={(e) => updateFormData('monthlyPayment', e.target.value.replace(/[^0-9.]/g, ''))}
+              placeholder="0.00"
+              className="pl-7"
+            />
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="paymentDueDate">Payment Due Date (Day of Month)</Label>
+          <Input
+            id="paymentDueDate"
+            type="number"
+            value={formData.paymentDueDate || ''}
+            onChange={(e) => updateFormData('paymentDueDate', e.target.value)}
+            placeholder="15"
+            min="1"
+            max="31"
+          />
+        </div>
+        <div>
+          <Label htmlFor="loanStartDate">Loan Start Date</Label>
+          <Input
+            id="loanStartDate"
+            type="date"
+            value={formData.loanStartDate || ''}
+            onChange={(e) => updateFormData('loanStartDate', e.target.value)}
+          />
+        </div>
       </div>
     </div>
   );
