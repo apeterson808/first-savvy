@@ -79,10 +79,7 @@ const ACCOUNT_TYPE_CARDS = [
     icon: Home,
     bgColor: '#EF6F3C',
     iconColor: 'text-white',
-    subtypes: [
-      { value: 'property_with_loan', label: 'With Loan', icon: Receipt },
-      { value: 'property_without_loan', label: 'Without Loan', icon: ShieldCheck }
-    ]
+    subtypes: []
   },
   {
     id: 'investments',
@@ -148,8 +145,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (card.subtypes && card.subtypes.length > 0) {
       setCurrentStep('select-subtype');
     } else {
-      setSelectedSubtype({ value: card.id, label: card.title });
-      setFormData({ subtype: card.id });
+      const subtypeValue = card.id === 'property' ? 'property' : card.id;
+      setSelectedSubtype({ value: subtypeValue, label: card.title });
+      setFormData({ subtype: subtypeValue });
       setCurrentStep('details');
     }
   };
@@ -182,7 +180,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     } else if (currentStep === 'review') {
       if (selectedCard.id === 'vehicle' && !formData.skipLoanDetails) {
         setCurrentStep('loan-details');
-      } else if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') {
+      } else if (selectedCard.id === 'property' && !formData.skipMortgageDetails) {
         setCurrentStep('loan-details');
       } else if (selectedCard.id === 'banking') {
         setCurrentStep('balance');
@@ -388,7 +386,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         const newAsset = await createPropertyAsset(propertyData);
         queryClient.invalidateQueries({ queryKey: ['assets'] });
 
-        if (selectedSubtype.value === 'property_with_loan' && formData.loanBalance) {
+        if (!formData.skipMortgageDetails && formData.loanBalance) {
           const loanBalanceValidation = validateAmount(formData.loanBalance, {
             allowZero: false,
             allowNegative: false
@@ -485,8 +483,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (selectedCard.id === 'vehicle') {
       return formData.skipLoanDetails ? 2 : 4;
     }
-    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 6;
-    if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 5;
+    if (selectedCard.id === 'property') {
+      return formData.skipMortgageDetails ? 2 : 4;
+    }
     if (selectedCard.id === 'investments') return 5;
     if (selectedCard.id === 'loans') return 5;
     if (selectedCard.id === 'budget') return 4;
@@ -506,6 +505,19 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         'loan-details': 3
       };
       return vehicleStepMap[currentStep] || 0;
+    }
+
+    if (selectedCard?.id === 'property') {
+      if (formData.skipMortgageDetails && currentStep === 'details') {
+        return 2;
+      }
+      const propertyStepMap = {
+        'select-type': 0,
+        'details': 1,
+        'loan-search': 2,
+        'loan-details': 3
+      };
+      return propertyStepMap[currentStep] || 0;
     }
 
     const stepMap = {
@@ -571,10 +583,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       }
     } else if (selectedCard.id === 'property') {
       if (currentStep === 'details') {
-        if (selectedSubtype.value === 'property_with_loan') {
-          setCurrentStep('loan-search');
+        if (formData.skipMortgageDetails) {
+          await handleSubmit();
         } else {
-          setCurrentStep('review');
+          setCurrentStep('loan-search');
         }
       } else if (currentStep === 'loan-search') {
         setCurrentStep('loan-details');
@@ -942,6 +954,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 className="h-9"
               />
             </div>
+          </div>
+          <div className="flex items-center space-x-2 pt-1">
+            <Checkbox
+              id="skipMortgageDetails"
+              checked={formData.skipMortgageDetails || false}
+              onCheckedChange={(checked) => updateFormData('skipMortgageDetails', checked)}
+            />
+            <Label htmlFor="skipMortgageDetails" className="cursor-pointer font-normal text-sm">
+              Create without mortgage details
+            </Label>
           </div>
         </div>
       );
@@ -1363,7 +1385,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
-                  {selectedCard?.id === 'vehicle' && formData.skipLoanDetails ? 'Finish' : 'Next'}
+                  {(selectedCard?.id === 'vehicle' && formData.skipLoanDetails) || (selectedCard?.id === 'property' && formData.skipMortgageDetails) ? 'Finish' : 'Next'}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               )}
