@@ -131,14 +131,24 @@ export default function AccountDetail() {
         return firstsavvy.entities.Category.delete(id);
       }
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Account deleted');
-      navigate('/banking?tab=accounts');
+
+      const entityType = variables.entityType;
+      if (entityType === 'Asset') {
+        navigate('/net-worth?tab=assets');
+      } else if (entityType === 'Liability') {
+        navigate('/net-worth?tab=liabilities');
+      } else if (entityType === 'Equity') {
+        navigate('/net-worth?tab=overview');
+      } else {
+        navigate('/banking?tab=accounts');
+      }
     },
     onError: (error) => {
       console.error('Delete failed:', error);
@@ -257,8 +267,8 @@ export default function AccountDetail() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center text-slate-500">Account not found</div>
           <div className="text-center mt-4">
-            <Button onClick={() => navigate('/banking?tab=accounts')} variant="outline">
-              Back to Accounts
+            <Button onClick={() => navigate(-1)} variant="outline">
+              Go Back
             </Button>
           </div>
         </div>
@@ -269,6 +279,23 @@ export default function AccountDetail() {
   const isBankAccount = account.entityType === 'BankAccount';
   const isActive = account.is_active !== false;
 
+  const getBackPath = () => {
+    switch (account.entityType) {
+      case 'Asset':
+        return '/net-worth?tab=assets';
+      case 'Liability':
+        return '/net-worth?tab=liabilities';
+      case 'Equity':
+        return '/net-worth?tab=overview';
+      case 'Income':
+      case 'Expense':
+      case 'BankAccount':
+      case 'CreditCard':
+      default:
+        return '/banking?tab=accounts';
+    }
+  };
+
   return (
     <div className="p-8">
       <div className="max-w-6xl mx-auto space-y-6">
@@ -277,7 +304,7 @@ export default function AccountDetail() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/banking?tab=accounts')}
+              onClick={() => navigate(getBackPath())}
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
