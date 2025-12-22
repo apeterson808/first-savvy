@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -13,8 +13,9 @@ import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
-import AccountCreationWizard from '../components/banking/AccountCreationWizard';
-import PlaidConnectionsTest from '../components/banking/PlaidConnectionsTest';
+
+const AccountCreationWizard = lazy(() => import('../components/banking/AccountCreationWizard'));
+const PlaidConnectionsTest = lazy(() => import('../components/banking/PlaidConnectionsTest'));
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -635,19 +636,27 @@ export default function Dashboard() {
         </div>
         </div>
 
-        <AccountCreationWizard
-        open={wizardOpen}
-        onOpenChange={setWizardOpen}
-        onAccountCreated={() => {
-          queryClient.invalidateQueries({ queryKey: ['accounts'] });
-          queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
-        }}
-        />
+        {wizardOpen && (
+          <Suspense fallback={<div />}>
+            <AccountCreationWizard
+              open={wizardOpen}
+              onOpenChange={setWizardOpen}
+              onAccountCreated={() => {
+                queryClient.invalidateQueries({ queryKey: ['accounts'] });
+                queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
+              }}
+            />
+          </Suspense>
+        )}
 
-        <PlaidConnectionsTest
-        open={plaidTestOpen}
-        onOpenChange={setPlaidTestOpen}
-        />
+        {plaidTestOpen && (
+          <Suspense fallback={<div />}>
+            <PlaidConnectionsTest
+              open={plaidTestOpen}
+              onOpenChange={setPlaidTestOpen}
+            />
+          </Suspense>
+        )}
         </div>
         );
         }

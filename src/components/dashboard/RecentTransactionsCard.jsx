@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -8,8 +8,9 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../utils';
 import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
-import AccountCreationWizard from '../banking/AccountCreationWizard';
-import FileImporter from '../banking/FileImporter';
+
+const AccountCreationWizard = lazy(() => import('../banking/AccountCreationWizard'));
+const FileImporter = lazy(() => import('../banking/FileImporter'));
 import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
 import { formatTransactionDescription } from '../utils/formatters';
@@ -264,20 +265,28 @@ export default function RecentTransactionsCard() {
         )}
       </CardContent>
 
-      <AccountCreationWizard
-        open={addCategorySheetOpen}
-        onOpenChange={setAddCategorySheetOpen}
-        onAccountCreated={() => {
-          setCategorySearchTerm('');
-          queryClient.invalidateQueries({ queryKey: ['categories'] });
-        }}
-      />
+      {addCategorySheetOpen && (
+        <Suspense fallback={<div />}>
+          <AccountCreationWizard
+            open={addCategorySheetOpen}
+            onOpenChange={setAddCategorySheetOpen}
+            onAccountCreated={() => {
+              setCategorySearchTerm('');
+              queryClient.invalidateQueries({ queryKey: ['categories'] });
+            }}
+          />
+        </Suspense>
+      )}
 
-      <FileImporter
-        open={fileImporterOpen}
-        onOpenChange={setFileImporterOpen}
-        onImportComplete={handleSuccess}
-      />
+      {fileImporterOpen && (
+        <Suspense fallback={<div />}>
+          <FileImporter
+            open={fileImporterOpen}
+            onOpenChange={setFileImporterOpen}
+            onImportComplete={handleSuccess}
+          />
+        </Suspense>
+      )}
     </Card>
   );
 }
