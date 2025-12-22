@@ -1,10 +1,14 @@
-import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { TrendingDown, Home, Car, GraduationCap, CreditCard, Wallet, Building } from 'lucide-react';
+import { TrendingDown, Home, Car, GraduationCap, CreditCard, Wallet, Building, Link2 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 import { LIABILITY_TYPE_LABELS } from '../utils/constants';
+import { getLiabilityWithLinks } from '@/api/vehiclesAndLoans';
+import { Button } from '../ui/button';
+import { Badge } from '../ui/badge';
+import { LinkLoanDialog } from './LinkLoanDialog';
 
 const LIABILITY_TYPE_ICONS = {
   mortgage: Home,
@@ -25,6 +29,10 @@ const LIABILITY_TYPE_COLORS = {
 };
 
 export default function LiabilitiesTab() {
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [selectedLoan, setSelectedLoan] = useState(null);
+  const queryClient = useQueryClient();
+
   const { data: liabilities = [] } = useQuery({
     queryKey: ['liabilities'],
     queryFn: () => firstsavvy.entities.Liability.list()
@@ -33,6 +41,25 @@ export default function LiabilitiesTab() {
   const { data: creditCards = [] } = useQuery({
     queryKey: ['creditCards'],
     queryFn: () => firstsavvy.entities.CreditCard.filter({ is_active: true })
+  });
+
+  const { data: liabilityLinks = {} } = useQuery({
+    queryKey: ['liabilityLinks'],
+    queryFn: async () => {
+      const linksMap = {};
+      for (const liability of liabilities) {
+        if (liability.type === 'Auto Loan') {
+          try {
+            const liabilityWithLinks = await getLiabilityWithLinks(liability.id);
+            linksMap[liability.id] = liabilityWithLinks.linkedAssets || [];
+          } catch (error) {
+            console.error(`Error fetching links for liability ${liability.id}:`, error);
+          }
+        }
+      }
+      return linksMap;
+    },
+    enabled: liabilities.length > 0,
   });
 
   const totalLoans = liabilities.reduce((sum, l) => sum + (l.current_balance || 0), 0);
@@ -128,22 +155,54 @@ export default function LiabilitiesTab() {
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {items.map(liability => (
-                  <div key={liability.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${colorClass}`}>
-                        <Icon className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-slate-900">{liability.name}</p>
-                        {liability.description && (
-                          <p className="text-xs text-slate-500">{liability.description}</p>
-                        )}
+                {items.map(liability => {
+                  const linkedAssets = liabilityLinks[liability.id] || [];
+                  const hasLinkedAsset = linkedAssets.length > 0;
+
+                  return (
+                    <div key={liability.id}>
+                      <div className="flex items-center justify-between py-3 border-b border-slate-100">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className={`p-2 rounded-lg ${colorClass}`}>
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <p className="font-medium text-slate-900">{liability.name}</p>
+                              {liability.type === 'Auto Loan' && hasLinkedAsset && (
+                                <Badge variant="secondary" className="text-xs">Linked</Badge>
+                              )}
+                              {liability.type === 'Auto Loan' && !hasLinkedAsset && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 px-2 text-xs"
+                                  onClick={() => {
+                                    setSelectedLoan(liability);
+                                    setLinkDialogOpen(true);
+                                  }}
+                                >
+                                  <Link2 className="w-3 h-3 mr-1" />
+                                  Link Vehicle
+                                </Button>
+                              )}
+                            </div>
+                            {liability.description && (
+                              <p className="text-xs text-slate-500">{liability.description}</p>
+                            )}
+                            {linkedAssets.map(link => (
+                              <div key={link.id} className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                                <Car className="w-3 h-3" />
+                                <span>Financing: {link.asset?.name || 'Vehicle'}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                        <p className="font-semibold text-red-600">{formatCurrency(liability.current_balance, { absoluteValue: true })}</p>
                       </div>
                     </div>
-                    <p className="font-semibold text-red-600">{formatCurrency(liability.current_balance, { absoluteValue: true })}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
@@ -162,6 +221,12 @@ export default function LiabilitiesTab() {
           </CardContent>
         </Card>
       )}
+
+      <LinkLoanDialog
+        open={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        loan={selectedLoan}
+      />
     </div>
   );
 }
