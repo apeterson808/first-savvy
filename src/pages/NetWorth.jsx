@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
-import NetWorthOverviewTab from '../components/networth/NetWorthOverviewTab';
-import AssetsTab from '../components/networth/AssetsTab';
-import LiabilitiesTab from '../components/networth/LiabilitiesTab';
+import React from 'react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { TrendingUp } from 'lucide-react';
 
 export default function NetWorth() {
-  const [activeTab, setActiveTab] = useState('overview');
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      setActiveTab(urlParams.get('tab') || 'overview');
-    };
-    
-    // Set initial tab from URL
-    handlePopState();
-    
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      {activeTab === 'overview' && <NetWorthOverviewTab />}
-      {activeTab === 'assets' && <AssetsTab />}
-      {activeTab === 'liabilities' && <LiabilitiesTab />}
+    <div className="min-h-screen bg-slate-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <Card className="shadow-sm border-slate-200">
+          <CardHeader className="pb-8 pt-12">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mx-auto mb-4">
+                <TrendingUp className="w-8 h-8 text-slate-400" />
+              </div>
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">Net Worth</h1>
+              <p className="text-slate-500">Coming Soon</p>
+            </div>
+          </CardHeader>
+          <CardContent className="pb-12">
+            <div className="text-center max-w-md mx-auto">
+              <p className="text-slate-600">
+                Track your assets, liabilities, and overall net worth in one place. This feature is currently under development.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
