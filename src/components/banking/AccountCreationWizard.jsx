@@ -1106,17 +1106,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className={`w-[550px] p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-        <div className="relative flex flex-col h-[400px]">
+        <div className="relative flex flex-col h-[480px]">
           <DialogHeader className="pt-5 px-5 flex-shrink-0">
             <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
           </DialogHeader>
 
-          <div className="py-5 px-5 flex-1 overflow-y-auto flex flex-col justify-center">
+          <div className="py-5 px-5 flex-1 flex flex-col justify-center">
             {renderCurrentStep()}
           </div>
 
           {currentStep !== 'select-type' && (
-            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
+            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 flex-shrink-0">
               <Button
                 type="button"
                 variant="outline"
