@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useLocation } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TransactionsTab from '../components/banking/TransactionsTab';
@@ -11,8 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 
 export default function Banking() {
-  const location = useLocation();
-  const urlParams = new URLSearchParams(location.search);
+  const urlParams = new URLSearchParams(window.location.search);
   const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'overview');
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('0');
@@ -41,19 +39,28 @@ export default function Banking() {
     setActiveTab('transactions');
   };
 
-  // Sync activeTab with URL changes (including React Router navigation)
+  // Sync activeTab with URL on popstate only (back/forward buttons)
   React.useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const newTab = urlParams.get('tab') || 'overview';
-    setActiveTab(newTab);
+    const syncTabWithUrl = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const newTab = urlParams.get('tab') || 'overview';
+      setActiveTab(newTab);
+      
+      // Check for date param (from Dashboard click)
+      const dateParam = urlParams.get('date');
+      const accountParam = urlParams.get('account');
+      if (dateParam) {
+        setTransactionFilters({ date: dateParam, account: accountParam || 'all' });
+      }
+    };
 
-    // Check for date param (from Dashboard click)
-    const dateParam = urlParams.get('date');
-    const accountParam = urlParams.get('account');
-    if (dateParam) {
-      setTransactionFilters({ date: dateParam, account: accountParam || 'all' });
-    }
-  }, [location.search]);
+    // Listen for popstate (back/forward buttons)
+    window.addEventListener('popstate', syncTabWithUrl);
+
+    return () => {
+      window.removeEventListener('popstate', syncTabWithUrl);
+    };
+  }, []);
 
   const { allAccounts, isLoading: accountsLoading } = useAllAccounts();
 
