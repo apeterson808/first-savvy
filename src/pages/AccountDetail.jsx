@@ -30,6 +30,9 @@ export default function AccountDetail() {
   const [isEditMode, setIsEditMode] = useState(false);
   const queryClient = useQueryClient();
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const returnUrl = urlParams.get('from') || '?tab=accounts';
+
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ['account', id],
     queryFn: async () => {
@@ -138,7 +141,7 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Account deleted');
-      navigate('/banking?tab=accounts');
+      navigate(`/banking${returnUrl}`);
     },
     onError: (error) => {
       console.error('Delete failed:', error);
@@ -257,7 +260,7 @@ export default function AccountDetail() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center text-slate-500">Account not found</div>
           <div className="text-center mt-4">
-            <Button onClick={() => navigate('/banking?tab=accounts')} variant="outline">
+            <Button onClick={() => navigate(`/banking${returnUrl}`)} variant="outline">
               Back to Accounts
             </Button>
           </div>
@@ -277,7 +280,7 @@ export default function AccountDetail() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate('/banking?tab=accounts')}
+              onClick={() => navigate(`/banking${returnUrl}`)}
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />

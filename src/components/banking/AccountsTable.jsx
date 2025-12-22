@@ -104,7 +104,10 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
 
-  const [accountTypeFilter, setAccountTypeFilter] = useState('');
+  const urlParams = new URLSearchParams(window.location.search);
+  const initialFilter = urlParams.get('filter') || '';
+
+  const [accountTypeFilter, setAccountTypeFilter] = useState(initialFilter);
   const [showInactive, setShowInactive] = useState(false);
   const [sortColumn, setSortColumn] = useState('accountType');
   const [sortDirection, setSortDirection] = useState('asc');
@@ -205,10 +208,23 @@ export default function AccountsTable({ accounts, isLoading }) {
   React.useEffect(() => {
     if (availableEntityTypes.length > 0) {
       if (!accountTypeFilter || !availableEntityTypes.includes(accountTypeFilter)) {
-        setAccountTypeFilter(availableEntityTypes[0]);
+        const newFilter = availableEntityTypes[0];
+        setAccountTypeFilter(newFilter);
+        updateUrlFilter(newFilter);
       }
     }
   }, [availableEntityTypes, accountTypeFilter]);
+
+  const updateUrlFilter = (filter) => {
+    const url = new URL(window.location);
+    url.searchParams.set('filter', filter);
+    window.history.replaceState({}, '', url);
+  };
+
+  const handleFilterChange = (newFilter) => {
+    setAccountTypeFilter(newFilter);
+    updateUrlFilter(newFilter);
+  };
 
   React.useEffect(() => {
     if (accountTypeFilter === 'Asset' || accountTypeFilter === 'BankAccount') {
@@ -405,7 +421,7 @@ export default function AccountsTable({ accounts, isLoading }) {
 
           {/* Filter Buttons */}
           <div className="flex items-center gap-0">
-            <Tabs value={accountTypeFilter} onValueChange={setAccountTypeFilter}>
+            <Tabs value={accountTypeFilter} onValueChange={handleFilterChange}>
               <TabsList className="h-8">
                 {availableEntityTypes.map(entityType => (
                   <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
@@ -589,7 +605,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                           <tr
                             key={account.id}
                             className="group hover:bg-blue-50/50 border-t border-slate-100 cursor-pointer transition-colors"
-                            onClick={() => navigate(`/banking/account/${account.id}`)}
+                            onClick={() => navigate(`/banking/account/${account.id}?from=${encodeURIComponent(window.location.search)}`)}
                           >
                             {visibleColumns.name && (
                               <td className={`px-4 py-0.5 ${account.isSubAccount ? 'pl-10' : 'pl-4'}`}>
