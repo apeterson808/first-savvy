@@ -18,19 +18,13 @@ export default function Login() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  console.log('[Login] Component rendering');
-
   useEffect(() => {
-    console.log('[Login] Checking for existing user...');
     firstsavvy.auth.getUser().then(user => {
       if (user) {
-        console.log('[Login] User already logged in, redirecting to Dashboard');
         navigate('/Dashboard');
-      } else {
-        console.log('[Login] No existing user, showing login form');
       }
     }).catch((error) => {
-      console.log('[Login] Error checking user:', error);
+      console.error('[Login] Error checking user:', error);
     });
   }, [navigate]);
 
