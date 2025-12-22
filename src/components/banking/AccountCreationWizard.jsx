@@ -302,12 +302,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         }
 
         const vehicleData = {
-          name: formData.displayName?.trim() || `${formData.year} ${formData.make} ${formData.model}`,
-          year: parseInt(formData.year),
-          make: formData.make.trim(),
-          model: formData.model.trim(),
+          name: formData.displayName.trim(),
+          year: formData.year ? parseInt(formData.year) : null,
+          make: formData.make?.trim() || null,
+          model: formData.model?.trim() || null,
           vehicleType: formData.vehicleType || 'Other',
-          vin: formData.vin || null,
+          vin: formData.vin?.trim() || null,
           estimatedValue: balanceValidation.value,
         };
 
@@ -487,7 +487,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         return formData.name && formData.name.trim();
       }
       if (selectedCard.id === 'vehicle') {
-        return formData.year && formData.make && formData.make.trim() && formData.model && formData.model.trim() && formData.currentValue;
+        return formData.displayName && formData.displayName.trim() && formData.currentValue;
       }
       if (selectedCard.id === 'property') {
         return formData.name && formData.name.trim() && formData.currentValue;
@@ -652,18 +652,19 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       return (
         <div className="space-y-2.5 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="displayName" className="text-sm mb-1">Display Name (Optional)</Label>
+            <Label htmlFor="displayName" className="text-sm mb-1">Display Name*</Label>
             <Input
               id="displayName"
               value={formData.displayName || ''}
               onChange={(e) => updateFormData('displayName', e.target.value)}
               placeholder="My Truck"
               className="h-9"
+              required
             />
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label htmlFor="year" className="text-sm mb-1">Year*</Label>
+              <Label htmlFor="year" className="text-sm mb-1">Year</Label>
               <Input
                 id="year"
                 type="number"
@@ -672,36 +673,33 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 placeholder="2024"
                 min="1900"
                 max={currentYear + 1}
-                required
                 className="h-9"
               />
             </div>
             <div>
-              <Label htmlFor="make" className="text-sm mb-1">Make*</Label>
+              <Label htmlFor="make" className="text-sm mb-1">Make</Label>
               <Input
                 id="make"
                 value={formData.make || ''}
                 onChange={(e) => updateFormData('make', e.target.value)}
                 placeholder="Toyota"
-                required
                 className="h-9"
               />
             </div>
             <div>
-              <Label htmlFor="model" className="text-sm mb-1">Model*</Label>
+              <Label htmlFor="model" className="text-sm mb-1">Model</Label>
               <Input
                 id="model"
                 value={formData.model || ''}
                 onChange={(e) => updateFormData('model', e.target.value)}
                 placeholder="Camry"
-                required
                 className="h-9"
               />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="vin" className="text-sm mb-1">VIN (Optional)</Label>
+              <Label htmlFor="vin" className="text-sm mb-1">VIN</Label>
               <Input
                 id="vin"
                 value={formData.vin || ''}
