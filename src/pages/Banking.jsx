@@ -91,7 +91,7 @@ export default function Banking() {
   }, []);
 
   return (
-    <div className="p-3 rounded-sm">
+    <div className="p-3">
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-3">

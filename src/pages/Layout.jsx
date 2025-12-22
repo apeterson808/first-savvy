@@ -42,7 +42,7 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
   }, [defaultTab]);
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-end gap-0.5 -mb-px">
       {tabs.map((tab) => {
         const isActive = activeTab === tab;
         const isDisabled = disabledTabs.includes(tab);
@@ -56,13 +56,14 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
               window.history.pushState({}, '', newUrl);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className={`px-3 py-1.5 text-sm font-medium transition-all capitalize ${
+            className={`px-3 py-1.5 text-sm font-medium transition-all capitalize relative ${
               isActive
-                ? 'bg-white text-slate-900 rounded-t-md shadow'
+                ? 'bg-slate-100 text-slate-900 border-t border-l border-r border-slate-200 rounded-t-lg z-10'
                 : isDisabled
-                ? 'text-slate-300 cursor-not-allowed rounded-md'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 rounded-md'
+                ? 'text-slate-300 cursor-not-allowed bg-white/50 border border-slate-200 rounded-t-md'
+                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 bg-white border border-slate-200 rounded-t-md'
             }`}
+            style={isActive ? { marginBottom: '-1px', paddingBottom: 'calc(0.375rem + 1px)' } : {}}
           >
             {tab.replace(/_/g, ' ')}
           </button>
@@ -189,7 +190,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-20 bg-white px-4 relative">
+        <header className="h-20 bg-white px-4 relative border-b border-slate-200">
           <div className="h-full flex flex-col justify-start pt-2">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-4">
