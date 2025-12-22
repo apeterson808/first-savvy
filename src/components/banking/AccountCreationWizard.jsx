@@ -302,7 +302,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         }
 
         const vehicleData = {
-          name: `${formData.year} ${formData.make} ${formData.model}`,
+          name: formData.displayName?.trim() || `${formData.year} ${formData.make} ${formData.model}`,
           year: parseInt(formData.year),
           make: formData.make.trim(),
           model: formData.model.trim(),
@@ -458,6 +458,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const getCurrentStepNumber = () => {
     if (selectedCard?.id === 'vehicle') {
+      if (formData.skipLoanDetails && currentStep === 'details') {
+        return 2;
+      }
       const vehicleStepMap = {
         'select-type': 0,
         'details': 1,
@@ -648,6 +651,15 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       const currentYear = new Date().getFullYear();
       return (
         <div className="space-y-4 max-w-lg mx-auto">
+          <div>
+            <Label htmlFor="displayName">Display Name (Optional)</Label>
+            <Input
+              id="displayName"
+              value={formData.displayName || ''}
+              onChange={(e) => updateFormData('displayName', e.target.value)}
+              placeholder="My Truck"
+            />
+          </div>
           <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="year">Year*</Label>
