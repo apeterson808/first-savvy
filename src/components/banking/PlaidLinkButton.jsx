@@ -22,7 +22,11 @@ export function PlaidLinkButton({ userId, onSuccess, onExit, children, disabled 
       setLinkToken(response.link_token);
     } catch (error) {
       console.error('Error creating link token:', error);
-      toast.error('Failed to initialize bank connection');
+      if (error.message.includes('credentials not configured')) {
+        toast.error('Plaid credentials not configured. Please set up PLAID_CLIENT_ID and PLAID_SECRET in your Supabase project settings.');
+      } else {
+        toast.error('Failed to initialize bank connection: ' + error.message);
+      }
     } finally {
       setIsCreatingToken(false);
     }

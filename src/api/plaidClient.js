@@ -17,7 +17,7 @@ export const plaidAPI = {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.message || 'Failed to create link token');
+      throw new Error(error.error || error.message || 'Failed to create link token');
     }
 
     return response.json();
