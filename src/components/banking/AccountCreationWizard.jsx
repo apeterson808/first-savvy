@@ -620,7 +620,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const renderSelectType = () => (
-    <div className="grid grid-cols-3 gap-[20px] max-w-md mx-auto">
+    <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
       {ACCOUNT_TYPE_CARDS.map(card => {
         const IconComponent = card.icon;
         return (
@@ -644,7 +644,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const renderSelectSubtype = () => {
     return (
-      <div className="grid grid-cols-3 gap-[20px] max-w-md mx-auto">
+      <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
         {selectedCard.subtypes.map(subtype => {
           const IconComponent = subtype.icon || selectedCard.icon;
           return (
@@ -1357,7 +1357,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
           </DialogHeader>
 
-          <div className="py-5 px-5 flex-1 overflow-y-auto">
+          <div className={`py-5 px-5 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'flex items-center justify-center' : ''}`}>
             {renderCurrentStep()}
           </div>
 
