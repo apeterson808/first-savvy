@@ -234,6 +234,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       toast.success('Account created successfully!');
       onOpenChange(false);
+      setTimeout(() => {
+        navigate(`/Banking/account/${newAccount.id}`);
+      }, 100);
     },
     onError: (error) => {
       logError(error, { action: 'createAccount' });
@@ -251,6 +254,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         setCurrentStep('loan-details');
       } else {
         onOpenChange(false);
+        setTimeout(() => {
+          navigate(`/Banking/account/${newAsset.id}`);
+        }, 100);
       }
     },
     onError: (error) => {
@@ -266,6 +272,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       onAccountCreated?.({ type: 'liability', account: newLiability });
       toast.success('Loan created successfully!');
       onOpenChange(false);
+      setTimeout(() => {
+        navigate(`/Banking/account/${newLiability.id}`);
+      }, 100);
     },
     onError: (error) => {
       logError(error, { action: 'createLiability' });
@@ -280,6 +289,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       onAccountCreated?.({ type: formData.subtype, account: newCategory });
       toast.success('Category created successfully!');
       onOpenChange(false);
+      setTimeout(() => {
+        navigate('/Budgeting');
+      }, 100);
     },
     onError: (error) => {
       logError(error, { action: 'createCategory' });
@@ -366,6 +378,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         toast.success('Vehicle created successfully!');
         onAccountCreated?.({ type: 'asset', account: newAsset });
         onOpenChange(false);
+        setTimeout(() => {
+          navigate(`/Banking/account/${newAsset.id}`);
+        }, 100);
         return;
       } else if (selectedCard.id === 'property') {
         const balanceValidation = validateAmount(formData.currentValue || '0', {
@@ -427,6 +442,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         toast.success('Property created successfully!');
         onAccountCreated?.({ type: 'asset', account: newAsset });
         onOpenChange(false);
+        setTimeout(() => {
+          navigate(`/Banking/account/${newAsset.id}`);
+        }, 100);
         return;
       } else if (selectedCard.id === 'investments') {
         const balanceValidation = validateAmount(formData.currentValue || '0', {
@@ -484,21 +502,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const getTotalSteps = () => {
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
-    if (currentStep === 'bank-search') return 6;
+    if (currentStep === 'bank-search') return 5;
     if (currentStep === 'select-subtype' || !selectedSubtype) {
-      return selectedCard.id === 'budget' ? 4 : (selectedCard.id === 'banking' ? 6 : 5);
+      return selectedCard.id === 'budget' ? 3 : (selectedCard.id === 'banking' ? 5 : 5);
     }
 
-    if (selectedCard.id === 'banking') return 6;
+    if (selectedCard.id === 'banking') return 5;
     if (selectedCard.id === 'vehicle') {
-      return formData.skipLoanDetails ? 2 : 4;
+      return formData.skipLoanDetails ? 2 : 3;
     }
     if (selectedCard.id === 'property') {
-      return formData.skipMortgageDetails ? 2 : 4;
+      return formData.skipMortgageDetails ? 2 : 3;
     }
-    if (selectedCard.id === 'investments') return 5;
-    if (selectedCard.id === 'loans') return 5;
-    if (selectedCard.id === 'budget') return 4;
+    if (selectedCard.id === 'investments') return 4;
+    if (selectedCard.id === 'loans') return 4;
+    if (selectedCard.id === 'budget') return 3;
 
     return 5;
   };
@@ -548,8 +566,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       'details': 2,
       'balance': 3,
       'loan-search': 3,
-      'loan-details': 4,
-      'review': getTotalSteps() - 1
+      'loan-details': 4
     };
     return stepMap[currentStep] || 0;
   };
@@ -591,7 +608,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       } else if (currentStep === 'details') {
         setCurrentStep('balance');
       } else if (currentStep === 'balance') {
-        setCurrentStep('review');
+        await handleSubmit();
       }
     } else if (selectedCard.id === 'vehicle') {
       if (currentStep === 'details') {
@@ -603,7 +620,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       } else if (currentStep === 'loan-search') {
         setCurrentStep('loan-details');
       } else if (currentStep === 'loan-details') {
-        setCurrentStep('review');
+        await handleSubmit();
       }
     } else if (selectedCard.id === 'property') {
       if (currentStep === 'details') {
@@ -615,15 +632,15 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       } else if (currentStep === 'loan-search') {
         setCurrentStep('loan-details');
       } else if (currentStep === 'loan-details') {
-        setCurrentStep('review');
+        await handleSubmit();
       }
     } else if (selectedCard.id === 'investments' || selectedCard.id === 'loans') {
       if (currentStep === 'details') {
-        setCurrentStep('review');
+        await handleSubmit();
       }
     } else if (selectedCard.id === 'budget') {
       if (currentStep === 'details') {
-        setCurrentStep('review');
+        await handleSubmit();
       }
     }
   };
@@ -1420,7 +1437,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       if (selectedCard?.id === 'property') return 'Mortgage Details';
       return 'Loan Details';
     }
-    if (currentStep === 'review') return 'Review & Create';
     return '';
   };
 
@@ -1462,8 +1478,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
-                  {(selectedCard?.id === 'vehicle' && formData.skipLoanDetails) || (selectedCard?.id === 'property' && formData.skipMortgageDetails) ? 'Finish' : 'Next'}
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  {(selectedCard?.id === 'vehicle' && formData.skipLoanDetails) ||
+                   (selectedCard?.id === 'property' && formData.skipMortgageDetails) ||
+                   selectedCard?.id === 'investments' ||
+                   selectedCard?.id === 'loans' ||
+                   selectedCard?.id === 'budget' ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      Finish
+                    </>
+                  ) : (
+                    <>
+                      Next
+                      <ChevronRight className="w-4 h-4 ml-1" />
+                    </>
+                  )}
                 </Button>
               )}
 
@@ -1474,8 +1503,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
-                  Next
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <Check className="w-4 h-4 mr-1" />
+                  Finish
                 </Button>
               )}
 
@@ -1483,23 +1512,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 <Button
                   type="button"
                   className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                  onClick={handleSubmit}
+                  onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
                   <Check className="w-4 h-4 mr-1" />
                   Finish
-                </Button>
-              )}
-
-              {currentStep === 'review' && (
-                <Button
-                  type="button"
-                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                  onClick={handleSubmit}
-                  disabled={isLoading}
-                >
-                  <Check className="w-4 h-4 mr-1" />
-                  Create
                 </Button>
               )}
             </div>
