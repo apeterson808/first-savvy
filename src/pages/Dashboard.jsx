@@ -17,8 +17,6 @@ import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import PlaidConnectionsTest from '../components/banking/PlaidConnectionsTest';
 
 export default function Dashboard() {
-  console.log('[Dashboard] Component rendering');
-
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [selectedAccount, setSelectedAccount] = useState('all');
@@ -27,8 +25,6 @@ export default function Dashboard() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [plaidTestOpen, setPlaidTestOpen] = useState(false);
   const [excludeTransfers, setExcludeTransfers] = useState(true);
-
-  console.log('[Dashboard] State initialized');
 
   const handleChartPointClick = (data) => {
     if (chartView === 'spending' && data?.fullDate) {

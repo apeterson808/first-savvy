@@ -47,14 +47,11 @@ export function useProtectedConfiguration(configName) {
 }
 
 export function useProtectedChangeDialog() {
-  console.log('[useProtectedChangeDialog] Hook called');
   const [isOpen, setIsOpen] = useState(false);
   const [dialogData, setDialogData] = useState(null);
 
   useEffect(() => {
-    console.log('[useProtectedChangeDialog useEffect] Setting up event listener');
     const handleShowDialog = (event) => {
-      console.log('[useProtectedChangeDialog] Event received, updating state');
       setDialogData(event.detail);
       setIsOpen(true);
     };
@@ -91,8 +88,6 @@ export function useProtectedChangeDialog() {
     setIsOpen(false);
     setDialogData(null);
   }, [dialogData]);
-
-  console.log('[useProtectedChangeDialog] Returning values');
 
   return {
     isOpen,

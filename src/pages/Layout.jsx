@@ -74,8 +74,6 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
 }
 
 export default function Layout({ children, currentPageName }) {
-  console.log('[Layout] Component rendering, currentPageName:', currentPageName);
-
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
@@ -83,31 +81,23 @@ export default function Layout({ children, currentPageName }) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log('[Layout] State initialized');
-
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
-
-  console.log('[Layout] useProtectedChangeDialog returned:', { isOpen, hasDialogData: !!dialogData });
 
   // Save current page to localStorage
   React.useEffect(() => {
-    console.log('[Layout useEffect] localStorage - Running');
     if (currentPageName) {
       localStorage.setItem('lastVisitedPage', location.pathname + location.search);
     }
   }, [currentPageName, location.pathname, location.search]);
 
   React.useEffect(() => {
-    console.log('[Layout useEffect] loadUserData - Running');
     const loadUserData = async () => {
       try {
         const authUser = await firstsavvy.auth.me();
-        console.log('[Layout] Setting user state');
         setUser(authUser);
 
         if (authUser?.id) {
           const profile = await getUserProfile(authUser.id);
-          console.log('[Layout] Setting userProfile state');
           setUserProfile(profile);
         }
       } catch (error) {
@@ -132,8 +122,6 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
     { name: 'Affiliate', icon: Users, page: 'Affiliate' }
   ];
-
-  console.log('[Layout] About to return JSX');
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
