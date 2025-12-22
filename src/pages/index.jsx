@@ -57,7 +57,6 @@ function _getCurrentPage(url) {
 function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
-
     const isAuthRoute = location.pathname === '/login' || location.pathname === '/auth/callback';
 
     if (isAuthRoute) {

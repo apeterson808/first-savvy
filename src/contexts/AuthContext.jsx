@@ -21,7 +21,8 @@ export const AuthProvider = ({ children }) => {
         setUser(user);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('[AuthContext] Error getting user:', error);
         setUser(null);
         setLoading(false);
       });

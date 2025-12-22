@@ -47,6 +47,10 @@ export function MockBankConnectionFlow({ institution, open, onClose, onSuccess }
     }
   }, [open]);
 
+  if (!institution) {
+    return null;
+  }
+
   const handleLogin = async () => {
     setIsProcessing(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
