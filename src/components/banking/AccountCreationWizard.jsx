@@ -624,7 +624,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       const currentYear = new Date().getFullYear();
       return (
         <div className="space-y-4 max-w-lg mx-auto">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div>
               <Label htmlFor="year">Year*</Label>
               <Input
@@ -648,8 +648,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 required
               />
             </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="model">Model*</Label>
               <Input
@@ -658,6 +656,18 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 onChange={(e) => updateFormData('model', e.target.value)}
                 placeholder="Camry"
                 required
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="vin">VIN (Optional)</Label>
+              <Input
+                id="vin"
+                value={formData.vin || ''}
+                onChange={(e) => updateFormData('vin', e.target.value)}
+                placeholder="1HGBH41JXMN109186"
+                maxLength={17}
               />
             </div>
             <div>
@@ -675,16 +685,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 />
               </div>
             </div>
-          </div>
-          <div>
-            <Label htmlFor="vin">VIN (Optional)</Label>
-            <Input
-              id="vin"
-              value={formData.vin || ''}
-              onChange={(e) => updateFormData('vin', e.target.value)}
-              placeholder="1HGBH41JXMN109186"
-              maxLength={17}
-            />
           </div>
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
