@@ -650,19 +650,20 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     } else if (selectedCard.id === 'vehicle') {
       const currentYear = new Date().getFullYear();
       return (
-        <div className="space-y-4 max-w-lg mx-auto">
+        <div className="space-y-2.5 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="displayName">Display Name (Optional)</Label>
+            <Label htmlFor="displayName" className="text-sm mb-1">Display Name (Optional)</Label>
             <Input
               id="displayName"
               value={formData.displayName || ''}
               onChange={(e) => updateFormData('displayName', e.target.value)}
               placeholder="My Truck"
+              className="h-9"
             />
           </div>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 gap-3">
             <div>
-              <Label htmlFor="year">Year*</Label>
+              <Label htmlFor="year" className="text-sm mb-1">Year*</Label>
               <Input
                 id="year"
                 type="number"
@@ -672,42 +673,46 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 min="1900"
                 max={currentYear + 1}
                 required
+                className="h-9"
               />
             </div>
             <div>
-              <Label htmlFor="make">Make*</Label>
+              <Label htmlFor="make" className="text-sm mb-1">Make*</Label>
               <Input
                 id="make"
                 value={formData.make || ''}
                 onChange={(e) => updateFormData('make', e.target.value)}
                 placeholder="Toyota"
                 required
+                className="h-9"
               />
             </div>
             <div>
-              <Label htmlFor="model">Model*</Label>
+              <Label htmlFor="model" className="text-sm mb-1">Model*</Label>
               <Input
                 id="model"
                 value={formData.model || ''}
                 onChange={(e) => updateFormData('model', e.target.value)}
                 placeholder="Camry"
                 required
+                className="h-9"
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label htmlFor="vin">VIN (Optional)</Label>
+              <Label htmlFor="vin" className="text-sm mb-1">VIN (Optional)</Label>
               <Input
                 id="vin"
                 value={formData.vin || ''}
                 onChange={(e) => updateFormData('vin', e.target.value)}
                 placeholder="1HGBH41JXMN109186"
                 maxLength={17}
+                className="h-9"
               />
             </div>
             <div>
-              <Label htmlFor="currentValue">Estimated Value*</Label>
+              <Label htmlFor="currentValue" className="text-sm mb-1">Estimated Value*</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                 <Input
@@ -718,19 +723,19 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                   onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
                   onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
                   placeholder="0.00"
-                  className="pl-7"
+                  className="pl-7 h-9"
                   required
                 />
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2 pt-2">
+          <div className="flex items-center space-x-2 pt-1">
             <Checkbox
               id="skipLoanDetails"
               checked={formData.skipLoanDetails || false}
               onCheckedChange={(checked) => updateFormData('skipLoanDetails', checked)}
             />
-            <Label htmlFor="skipLoanDetails" className="cursor-pointer font-normal">
+            <Label htmlFor="skipLoanDetails" className="cursor-pointer font-normal text-sm">
               Create without loan details
             </Label>
           </div>
