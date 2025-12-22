@@ -166,7 +166,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     } else if (currentStep === 'loan-details' || currentStep === 'balance') {
       setCurrentStep('details');
     } else if (currentStep === 'review') {
-      if (selectedCard.id === 'vehicle' && formData.hasLoan) {
+      if (selectedCard.id === 'vehicle' && !formData.skipLoanDetails) {
         setCurrentStep('loan-details');
       } else if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') {
         setCurrentStep('loan-details');
@@ -282,7 +282,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           year: parseInt(formData.year),
           make: formData.make.trim(),
           model: formData.model.trim(),
-          vehicleType: formData.vehicleType,
+          vehicleType: formData.vehicleType || 'Other',
           vin: formData.vin || null,
           estimatedValue: balanceValidation.value,
         };
@@ -290,7 +290,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         const newAsset = await createVehicleAsset(vehicleData);
         queryClient.invalidateQueries({ queryKey: ['assets'] });
 
-        if (formData.hasLoan && formData.loanBalance) {
+        if (!formData.skipLoanDetails && formData.loanBalance) {
           const loanBalanceValidation = validateAmount(formData.loanBalance, {
             allowZero: false,
             allowNegative: false
@@ -421,7 +421,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
     if (selectedCard.id === 'banking') return 5;
     if (selectedCard.id === 'vehicle') {
-      return formData.hasLoan ? 4 : 3;
+      return formData.skipLoanDetails ? 2 : 4;
     }
     if (selectedCard.id === 'property' && selectedSubtype.value === 'property_with_loan') return 6;
     if (selectedCard.id === 'property' && selectedSubtype.value === 'property_without_loan') return 5;
@@ -438,7 +438,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         'select-type': 0,
         'details': 1,
         'loan-details': 2,
-        'review': formData.hasLoan ? 3 : 2
+        'review': 3
       };
       return vehicleStepMap[currentStep] || 0;
     }
@@ -460,7 +460,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         return formData.name && formData.name.trim();
       }
       if (selectedCard.id === 'vehicle') {
-        return formData.year && formData.make && formData.make.trim() && formData.model && formData.model.trim() && formData.vehicleType && formData.currentValue;
+        return formData.year && formData.make && formData.make.trim() && formData.model && formData.model.trim() && formData.currentValue;
       }
       if (selectedCard.id === 'property') {
         return formData.name && formData.name.trim() && formData.currentValue;
@@ -484,7 +484,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     return true;
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (selectedCard.id === 'banking') {
       if (currentStep === 'details') {
         setCurrentStep('balance');
@@ -493,10 +493,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       }
     } else if (selectedCard.id === 'vehicle') {
       if (currentStep === 'details') {
-        if (formData.hasLoan) {
-          setCurrentStep('loan-details');
+        if (formData.skipLoanDetails) {
+          await handleSubmit();
         } else {
-          setCurrentStep('review');
+          setCurrentStep('loan-details');
         }
       } else if (currentStep === 'loan-details') {
         setCurrentStep('review');
@@ -660,24 +660,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             />
           </div>
           <div>
-            <Label htmlFor="vehicleType">Vehicle Type*</Label>
-            <Select
-              value={formData.vehicleType || ''}
-              onValueChange={(value) => updateFormData('vehicleType', value)}
-            >
-              <SelectTrigger id="vehicleType">
-                <SelectValue placeholder="Select vehicle type" />
-              </SelectTrigger>
-              <SelectContent>
-                {VEHICLE_TYPES.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
             <Label htmlFor="vin">VIN (Optional)</Label>
             <Input
               id="vin"
@@ -704,12 +686,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           </div>
           <div className="flex items-center space-x-2 pt-2">
             <Checkbox
-              id="hasLoan"
-              checked={formData.hasLoan || false}
-              onCheckedChange={(checked) => updateFormData('hasLoan', checked)}
+              id="skipLoanDetails"
+              checked={formData.skipLoanDetails || false}
+              onCheckedChange={(checked) => updateFormData('skipLoanDetails', checked)}
             />
-            <Label htmlFor="hasLoan" className="cursor-pointer font-normal">
-              This vehicle has an auto loan
+            <Label htmlFor="skipLoanDetails" className="cursor-pointer font-normal">
+              Create without loan details
             </Label>
           </div>
         </div>
@@ -1100,7 +1082,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
-                  Next
+                  {selectedCard?.id === 'vehicle' && formData.skipLoanDetails ? 'Finish' : 'Next'}
                   <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
               )}
