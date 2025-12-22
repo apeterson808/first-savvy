@@ -369,7 +369,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         }
 
         const propertyData = {
-          name: formData.name.trim(),
+          name: formData.displayName.trim(),
           address: formData.address?.trim() || null,
           city: formData.city?.trim() || null,
           state: formData.state?.trim() || null,
@@ -397,7 +397,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           }
 
           const mortgageData = {
-            name: `${formData.name.trim()} Mortgage`,
+            name: `${formData.displayName.trim()} Mortgage`,
             lenderName: formData.loanInstitution,
             currentBalance: loanBalanceValidation.value,
             originalAmount: formData.originalLoanAmount ? parseFloat(formData.originalLoanAmount) : loanBalanceValidation.value,
@@ -541,7 +541,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         return formData.displayName && formData.displayName.trim() && formData.currentValue;
       }
       if (selectedCard.id === 'property') {
-        return formData.name && formData.name.trim() && formData.currentValue;
+        return formData.displayName && formData.displayName.trim() && formData.currentValue;
       }
       if (selectedCard.id === 'investments') {
         return formData.name && formData.name.trim() && formData.institutionName;
@@ -798,14 +798,24 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       return (
         <div className="space-y-2.5 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="name" className="text-sm mb-1">Property Name*</Label>
+            <Label htmlFor="displayName" className="text-sm mb-1">Display Name*</Label>
+            <Input
+              id="displayName"
+              value={formData.displayName || ''}
+              onChange={(e) => updateFormData('displayName', e.target.value)}
+              placeholder="Main Residence"
+              className="h-9"
+              required
+            />
+          </div>
+          <div>
+            <Label htmlFor="name" className="text-sm mb-1">Property Name</Label>
             <Input
               id="name"
               value={formData.name || ''}
               onChange={(e) => updateFormData('name', e.target.value)}
-              placeholder="e.g., Main Residence, Beach House"
+              placeholder="e.g., 123 Main St"
               className="h-9"
-              required
             />
           </div>
           <div>
@@ -1212,10 +1222,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             <span className="text-gray-600">Type:</span>
             <span className="font-medium">{selectedSubtype.label}</span>
           </div>
-          {formData.name && (
+          {(formData.displayName || formData.name) && (
             <div className="flex justify-between">
               <span className="text-gray-600">Name:</span>
-              <span className="font-medium">{formData.name}</span>
+              <span className="font-medium">{formData.displayName || formData.name}</span>
             </div>
           )}
           {formData.institutionName && (
