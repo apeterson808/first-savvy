@@ -7,7 +7,7 @@ import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 
 export default function Banking() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -90,25 +90,11 @@ export default function Banking() {
     };
   }, []);
 
-  const handleTabChange = (value) => {
-    setActiveTab(value);
-    const newUrl = `${window.location.pathname}?tab=${value}`;
-    window.history.pushState({}, '', newUrl);
-  };
-
   return (
     <div className="p-3 rounded-sm">
-      <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full folder-tabs">
-        <TabsList className="folder-tabs">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="transactions">Transactions</TabsTrigger>
-          <TabsTrigger value="recurring">Recurring</TabsTrigger>
-          <TabsTrigger value="rules">Rules</TabsTrigger>
-          <TabsTrigger value="accounts">Accounts</TabsTrigger>
-        </TabsList>
+      <Tabs value={activeTab} className="w-full">
 
-        <TabsContent value="overview">
-          <div className="space-y-3">
+        <TabsContent value="overview" className="space-y-3">
           {/* Chart and Categories Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <SpendingChartCard
@@ -172,10 +158,9 @@ export default function Banking() {
               <p className="text-slate-600">Overview content coming soon</p>
             </CardContent>
           </Card>
-          </div>
         </TabsContent>
 
-        <TabsContent value="transactions">
+        <TabsContent value="transactions" className="space-y-3">
           <TransactionsTab 
             key={`txn-${filterKey}`}
             initialFilters={transactionFilters}
@@ -188,7 +173,7 @@ export default function Banking() {
           />
         </TabsContent>
 
-        <TabsContent value="recurring">
+        <TabsContent value="recurring" className="space-y-3">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Recurring Payments</p>
@@ -199,7 +184,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="rules">
+        <TabsContent value="rules" className="space-y-3">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Rules</p>
@@ -210,7 +195,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="accounts">
+        <TabsContent value="accounts" className="space-y-3">
           <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
         </TabsContent>
       </Tabs>
