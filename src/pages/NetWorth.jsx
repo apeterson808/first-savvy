@@ -4,7 +4,7 @@ import { TrendingUp } from 'lucide-react';
 
 export default function NetWorth() {
   return (
-    <div className="p-3">
+    <div className="p-4 md:p-6">
       <div className="max-w-4xl mx-auto">
         <Card className="shadow-sm border-slate-200">
           <CardHeader className="pb-8 pt-12">

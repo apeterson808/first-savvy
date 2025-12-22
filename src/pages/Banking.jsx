@@ -91,12 +91,12 @@ export default function Banking() {
   }, []);
 
   return (
-    <div className="p-3">
+    <div className="p-4 md:p-6">
       <Tabs value={activeTab} className="w-full">
 
-        <TabsContent value="overview" className="space-y-3">
+        <TabsContent value="overview" className="space-y-4">
           {/* Chart and Categories Row */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <SpendingChartCard
               transactions={transactions}
               accounts={accounts.filter(a => ['checking', 'savings', 'credit_card'].includes(a.account_type))}
@@ -127,7 +127,7 @@ export default function Banking() {
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="pb-2 pt-4 px-4">
                 <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Balance</p>
@@ -160,8 +160,8 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="transactions" className="space-y-3">
-          <TransactionsTab 
+        <TabsContent value="transactions" className="space-y-4">
+          <TransactionsTab
             key={`txn-${filterKey}`}
             initialFilters={transactionFilters}
             onFiltersApplied={() => {
@@ -173,7 +173,7 @@ export default function Banking() {
           />
         </TabsContent>
 
-        <TabsContent value="recurring" className="space-y-3">
+        <TabsContent value="recurring" className="space-y-4">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Recurring Payments</p>
@@ -184,7 +184,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="rules" className="space-y-3">
+        <TabsContent value="rules" className="space-y-4">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-2 pt-4 px-4">
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Rules</p>
@@ -195,7 +195,7 @@ export default function Banking() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="accounts" className="space-y-3">
+        <TabsContent value="accounts" className="space-y-4">
           <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
         </TabsContent>
       </Tabs>

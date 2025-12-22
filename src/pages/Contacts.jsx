@@ -31,7 +31,7 @@ export default function Contacts() {
   );
 
   return (
-    <div className="p-3 rounded-sm">
+    <div className="p-4 md:p-6">
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-2 pt-4 px-4">
           <div className="flex items-center justify-between">

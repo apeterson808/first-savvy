@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 
 export default function CreditScore() {
   return (
-    <div className="p-6 flex items-center justify-center min-h-[calc(100vh-120px)]">
+    <div className="p-4 md:p-6 flex items-center justify-center min-h-[calc(100vh-120px)]">
       <Card className="shadow-sm border-slate-200 max-w-md w-full">
         <CardContent className="pt-8 pb-8 text-center">
           <div className="w-16 h-16 rounded-full bg-light-blue/20 flex items-center justify-center mx-auto mb-4">

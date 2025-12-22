@@ -329,10 +329,10 @@ export default function Dashboard() {
   const upcomingBills = bills.slice(0, 3);
 
   return (
-    <div className="p-2">
-      <div className="flex flex-col lg:flex-row gap-2">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-col lg:flex-row gap-4">
         {/* Left Column - Chart & Transactions */}
-        <div className="flex-[2] space-y-2">
+        <div className="flex-[2] space-y-4">
           {/* Main Chart Card */}
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-1 pt-3 px-3">
@@ -470,7 +470,7 @@ export default function Dashboard() {
           </Card>
 
   {/* Two-column section below chart */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
     {/* Recent Transactions */}
     <RecentTransactionsCard />
 
@@ -538,7 +538,7 @@ export default function Dashboard() {
   </div>
 
         {/* Right Column - Net Worth & Quick Actions */}
-        <div className="flex flex-col gap-2 flex-1 max-w-[350px]">
+        <div className="flex flex-col gap-4 flex-1 max-w-[350px]">
           {/* Net Worth Card */}
           <Link to={createPageUrl('NetWorth')}>
             <Card className="shadow-sm border-slate-200 hover:shadow-md hover:border-sky-blue transition-all cursor-pointer group">
@@ -569,7 +569,7 @@ export default function Dashboard() {
           <CreditScoreCard creditScore={latestCreditScore} />
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-2">
+          <div className="grid grid-cols-1 gap-4">
             <Button
               variant="outline"
               className="w-full h-10"
