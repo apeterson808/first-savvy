@@ -210,6 +210,22 @@ export default function AccountsTable({ accounts, isLoading }) {
     }
   }, [availableEntityTypes, accountTypeFilter]);
 
+  React.useEffect(() => {
+    if (accountTypeFilter === 'Asset') {
+      setVisibleColumns(v => ({
+        ...v,
+        type: false,
+        detail: true
+      }));
+    } else {
+      setVisibleColumns(v => ({
+        ...v,
+        type: true,
+        detail: false
+      }));
+    }
+  }, [accountTypeFilter]);
+
   const entityTypeLabels = {
     'Asset': 'Assets',
     'BankAccount': 'Bank Accounts',
