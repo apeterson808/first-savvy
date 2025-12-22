@@ -677,8 +677,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 <Input
                   id="currentValue"
                   type="text"
-                  value={formData.currentValue || ''}
-                  onChange={(e) => updateFormData('currentValue', e.target.value.replace(/[^0-9.]/g, ''))}
+                  value={formData.currentValue ? Number(formData.currentValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
+                  onChange={(e) => {
+                    const rawValue = e.target.value.replace(/[^0-9.]/g, '');
+                    updateFormData('currentValue', rawValue);
+                  }}
                   placeholder="0.00"
                   className="pl-7"
                   required
