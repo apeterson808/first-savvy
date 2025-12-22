@@ -88,7 +88,7 @@ export default function Layout({ children, currentPageName }) {
     if (currentPageName) {
       localStorage.setItem('lastVisitedPage', location.pathname + location.search);
     }
-  }, [currentPageName, location.pathname, location.search]);
+  }, [currentPageName, location]);
 
   React.useEffect(() => {
     const loadUserData = async () => {

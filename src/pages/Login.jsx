@@ -23,9 +23,7 @@ export default function Login() {
       if (user) {
         navigate('/Dashboard');
       }
-    }).catch((error) => {
-      console.error('[Login] Error checking user:', error);
-    });
+    }).catch(() => {});
   }, [navigate]);
 
   const handleEmailAuth = async (e) => {

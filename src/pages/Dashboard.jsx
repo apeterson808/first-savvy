@@ -7,14 +7,13 @@ import { Button } from '@/components/ui/button';
 import AccountDropdown from '../components/common/AccountDropdown';
 import TimeRangeDropdown from '../components/common/TimeRangeDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle, Sparkles, RefreshCw } from 'lucide-react';
+import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
-import PlaidConnectionsTest from '../components/banking/PlaidConnectionsTest';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -23,7 +22,6 @@ export default function Dashboard() {
   const [chartView, setChartView] = useState('spending');
   const [timeRange, setTimeRange] = useState('ytd');
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [plaidTestOpen, setPlaidTestOpen] = useState(false);
   const [excludeTransfers, setExcludeTransfers] = useState(true);
 
   const handleChartPointClick = (data) => {
@@ -580,14 +578,6 @@ export default function Dashboard() {
               <Plus className="w-4 h-4 mr-2" />
               Add Account
             </Button>
-            <Button
-              variant="outline"
-              className="w-full h-10"
-              onClick={() => setPlaidTestOpen(true)}
-            >
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Test Plaid Sync
-            </Button>
             <Button variant="outline" className="w-full h-10">
               <Upload className="w-4 h-4 mr-2" />
               Upload Receipt
@@ -642,11 +632,6 @@ export default function Dashboard() {
           queryClient.invalidateQueries({ queryKey: ['accounts'] });
           queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
         }}
-        />
-
-        <PlaidConnectionsTest
-        open={plaidTestOpen}
-        onOpenChange={setPlaidTestOpen}
         />
         </div>
         );

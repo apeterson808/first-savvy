@@ -4,4 +4,6 @@ import App from '@/App.jsx'
 import '@/index.css'
 import '@/api/firstsavvyClient.js'
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />); 
+ReactDOM.createRoot(document.getElementById('root')).render(
+    <App />
+) 
