@@ -141,13 +141,13 @@ export default function AccountDetail() {
 
       const entityType = variables.entityType;
       if (entityType === 'Asset') {
-        navigate('/net-worth?tab=assets');
+        navigate('/NetWorth?tab=assets');
       } else if (entityType === 'Liability') {
-        navigate('/net-worth?tab=liabilities');
+        navigate('/NetWorth?tab=liabilities');
       } else if (entityType === 'Equity') {
-        navigate('/net-worth?tab=overview');
+        navigate('/NetWorth?tab=overview');
       } else {
-        navigate('/banking?tab=accounts');
+        navigate('/Banking?tab=accounts');
       }
     },
     onError: (error) => {
@@ -282,17 +282,17 @@ export default function AccountDetail() {
   const getBackPath = () => {
     switch (account.entityType) {
       case 'Asset':
-        return '/net-worth?tab=assets';
+        return '/NetWorth?tab=assets';
       case 'Liability':
-        return '/net-worth?tab=liabilities';
+        return '/NetWorth?tab=liabilities';
       case 'Equity':
-        return '/net-worth?tab=overview';
+        return '/NetWorth?tab=overview';
       case 'Income':
       case 'Expense':
       case 'BankAccount':
       case 'CreditCard':
       default:
-        return '/banking?tab=accounts';
+        return '/Banking?tab=accounts';
     }
   };
 
@@ -688,7 +688,7 @@ export default function AccountDetail() {
                       <div
                         key={linkedAccount.id}
                         className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/account/${linkedAccount.id}`)}
+                        onClick={() => navigate(`/Banking/account/${linkedAccount.id}`)}
                       >
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
