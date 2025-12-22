@@ -9,6 +9,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
@@ -30,7 +32,10 @@ import {
   Landmark,
   BadgeDollarSign,
   Receipt,
-  ShieldCheck
+  ShieldCheck,
+  Loader2,
+  CheckCircle2,
+  Info
 } from 'lucide-react';
 
 const VEHICLE_TYPES = [
@@ -51,6 +56,41 @@ const PROPERTY_TYPES = [
   'Commercial',
   'Land',
   'Other',
+];
+
+const MOCK_BANK_ACCOUNTS = [
+  {
+    id: 'mock-1',
+    name: 'Chase Freedom Checking',
+    type: 'checking',
+    last4: '1234',
+    balance: 2450.00,
+    institutionName: 'Chase'
+  },
+  {
+    id: 'mock-2',
+    name: 'Chase Sapphire Credit Card',
+    type: 'credit_card',
+    last4: '5678',
+    balance: -1250.00,
+    institutionName: 'Chase'
+  },
+  {
+    id: 'mock-3',
+    name: 'Chase Savings',
+    type: 'savings',
+    last4: '9012',
+    balance: 15000.00,
+    institutionName: 'Chase'
+  },
+  {
+    id: 'mock-4',
+    name: 'Chase Business Checking',
+    type: 'checking',
+    last4: '3456',
+    balance: 8500.00,
+    institutionName: 'Chase'
+  }
 ];
 
 const ACCOUNT_TYPE_CARDS = [
@@ -126,6 +166,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [selectedSubtype, setSelectedSubtype] = useState(null);
   const [formData, setFormData] = useState({});
   const [focusedFields, setFocusedFields] = useState({});
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('connecting');
+  const [mockBankAccounts, setMockBankAccounts] = useState([]);
+  const [checkedAccountIds, setCheckedAccountIds] = useState([]);
+  const [accountConfigurations, setAccountConfigurations] = useState({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -140,6 +185,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     setSelectedCard(null);
     setSelectedSubtype(null);
     setFormData({});
+    setShowConnectionModal(false);
+    setConnectionStatus('connecting');
+    setMockBankAccounts([]);
+    setCheckedAccountIds([]);
+    setAccountConfigurations({});
   };
 
   const handleCardSelect = (card) => {
@@ -166,6 +216,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (currentStep === 'bank-search') {
       setCurrentStep('select-type');
       setSelectedCard(null);
+    } else if (currentStep === 'configure-accounts') {
+      setCurrentStep('bank-search');
+      setMockBankAccounts([]);
+      setCheckedAccountIds([]);
+      setAccountConfigurations({});
     } else if (currentStep === 'select-subtype') {
       if (selectedCard?.id === 'banking') {
         setCurrentStep('bank-search');
@@ -203,6 +258,89 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleBankSimulation = () => {
+    setShowConnectionModal(true);
+    setConnectionStatus('connecting');
+
+    setTimeout(() => {
+      setConnectionStatus('authenticating');
+    }, 1500);
+
+    setTimeout(() => {
+      setConnectionStatus('success');
+      setMockBankAccounts(MOCK_BANK_ACCOUNTS);
+    }, 3000);
+  };
+
+  const handleConnectionContinue = () => {
+    setShowConnectionModal(false);
+    setConnectionStatus('connecting');
+    setCurrentStep('configure-accounts');
+  };
+
+  const handleToggleAccount = (accountId) => {
+    setCheckedAccountIds(prev => {
+      if (prev.includes(accountId)) {
+        const newChecked = prev.filter(id => id !== accountId);
+        setAccountConfigurations(prevConfig => {
+          const newConfig = { ...prevConfig };
+          delete newConfig[accountId];
+          return newConfig;
+        });
+        return newChecked;
+      } else {
+        const account = mockBankAccounts.find(acc => acc.id === accountId);
+        const today = new Date().toISOString().split('T')[0];
+        const ninetyDaysAgo = new Date();
+        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+        const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+
+        setAccountConfigurations(prevConfig => ({
+          ...prevConfig,
+          [accountId]: {
+            displayName: account.name,
+            accountType: account.type,
+            detailType: account.type,
+            startDatePreset: 'last_90',
+            startDate: startDate,
+            goLiveDate: today
+          }
+        }));
+        return [...prev, accountId];
+      }
+    });
+  };
+
+  const updateAccountConfiguration = (accountId, field, value) => {
+    setAccountConfigurations(prev => ({
+      ...prev,
+      [accountId]: {
+        ...prev[accountId],
+        [field]: value
+      }
+    }));
+
+    if (field === 'startDatePreset' && value !== 'custom') {
+      const today = new Date();
+      let daysAgo;
+      if (value === 'last_30') daysAgo = 30;
+      else if (value === 'last_60') daysAgo = 60;
+      else if (value === 'last_90') daysAgo = 90;
+
+      const calculatedDate = new Date();
+      calculatedDate.setDate(today.getDate() - daysAgo);
+      const dateStr = calculatedDate.toISOString().split('T')[0];
+
+      setAccountConfigurations(prev => ({
+        ...prev,
+        [accountId]: {
+          ...prev[accountId],
+          startDate: dateStr
+        }
+      }));
+    }
   };
 
   const formatAmountField = (fieldName, value, isFocused) => {
@@ -302,6 +440,43 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   });
 
   const handleSubmit = async () => {
+    if (selectedCard?.id === 'banking' && checkedAccountIds.length > 0) {
+      try {
+        let createdCount = 0;
+        for (const accountId of checkedAccountIds) {
+          const mockAccount = mockBankAccounts.find(acc => acc.id === accountId);
+          const config = accountConfigurations[accountId];
+
+          if (!mockAccount || !config) continue;
+
+          const accountNumber = Date.now().toString().slice(-6);
+          await firstsavvy.entities.Account.create({
+            account_name: config.displayName,
+            account_number: accountNumber,
+            account_type: config.accountType,
+            current_balance: mockAccount.balance,
+            institution_name: mockAccount.institutionName,
+            account_number_last4: mockAccount.last4,
+            start_date: config.startDate || null,
+            go_live_date: config.goLiveDate || null,
+            is_active: true
+          });
+          createdCount++;
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['accounts'] });
+        queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+        toast.success(`Successfully imported ${createdCount} account${createdCount !== 1 ? 's' : ''}!`);
+        onAccountCreated?.({ type: 'banking_batch', count: createdCount });
+        onOpenChange(false);
+        return;
+      } catch (error) {
+        console.error('Error creating accounts:', error);
+        toast.error(error.message || 'Failed to create accounts. Please try again.');
+        return;
+      }
+    }
+
     if (!selectedCard || !selectedSubtype) return;
 
     try {
@@ -505,6 +680,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
     if (currentStep === 'bank-search') return 5;
+    if (currentStep === 'configure-accounts') return 3;
     if (currentStep === 'select-subtype' || !selectedSubtype) {
       return selectedCard.id === 'budget' ? 3 : (selectedCard.id === 'banking' ? 5 : 5);
     }
@@ -528,6 +704,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       const bankingStepMap = {
         'select-type': 0,
         'bank-search': 1,
+        'configure-accounts': 2,
         'select-subtype': 2,
         'details': 3,
         'balance': 4,
@@ -574,6 +751,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const canProceed = () => {
+    if (currentStep === 'configure-accounts') {
+      if (checkedAccountIds.length === 0) return false;
+
+      for (const accountId of checkedAccountIds) {
+        const config = accountConfigurations[accountId];
+        if (!config || !config.displayName || !config.accountType || !config.startDate || !config.goLiveDate) {
+          return false;
+        }
+      }
+      return true;
+    }
     if (currentStep === 'details') {
       if (selectedCard.id === 'banking') {
         return formData.name && formData.name.trim();
@@ -607,6 +795,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (selectedCard.id === 'banking') {
       if (currentStep === 'bank-search') {
         setCurrentStep('select-subtype');
+      } else if (currentStep === 'configure-accounts') {
+        await handleSubmit();
       } else if (currentStep === 'details') {
         setCurrentStep('balance');
       } else if (currentStep === 'balance') {
@@ -1326,6 +1516,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           </p>
         </div>
 
+        <div className="text-center">
+          <Button
+            type="button"
+            className="bg-blue-600 hover:bg-blue-700"
+            onClick={handleBankSimulation}
+          >
+            Bank Simulation
+          </Button>
+        </div>
+
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
             <span className="w-full border-t" />
@@ -1398,12 +1598,238 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     </div>
   );
 
+  const renderConnectionModal = () => (
+    <Dialog open={showConnectionModal} onOpenChange={() => {}}>
+      <DialogContent className="w-[400px]">
+        <DialogHeader>
+          <DialogTitle className="text-center">
+            {connectionStatus === 'success' ? 'Connected Successfully!' : 'Connecting to Chase'}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="py-8 flex flex-col items-center space-y-4">
+          {connectionStatus === 'connecting' && (
+            <>
+              <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+              <p className="text-sm text-muted-foreground">Connecting to Chase Bank...</p>
+            </>
+          )}
+
+          {connectionStatus === 'authenticating' && (
+            <>
+              <div className="relative">
+                <Loader2 className="w-16 h-16 text-blue-600 animate-spin" />
+                <ShieldCheck className="w-8 h-8 text-green-600 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <p className="text-sm text-muted-foreground">Authenticating your credentials...</p>
+              <Progress value={66} className="w-full" />
+            </>
+          )}
+
+          {connectionStatus === 'success' && (
+            <>
+              <CheckCircle2 className="w-16 h-16 text-green-600" />
+              <p className="text-sm text-muted-foreground">Successfully connected to Chase!</p>
+              <Button
+                className="mt-4 bg-blue-600 hover:bg-blue-700"
+                onClick={handleConnectionContinue}
+              >
+                Continue
+              </Button>
+            </>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+
+  const renderConfigureAccountsStep = () => {
+    const accountTypeOptions = [
+      { value: 'checking', label: 'Checking' },
+      { value: 'savings', label: 'Savings' },
+      { value: 'credit_card', label: 'Credit Card' }
+    ];
+
+    return (
+      <div className="space-y-4 max-w-2xl mx-auto">
+        <div className="text-center mb-4">
+          <p className="text-sm text-muted-foreground">
+            Select accounts to import and configure their settings
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {mockBankAccounts.map(account => {
+            const isChecked = checkedAccountIds.includes(account.id);
+            const config = accountConfigurations[account.id];
+
+            return (
+              <Card key={account.id} className={isChecked ? 'border-blue-500' : ''}>
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-start space-x-3">
+                    <Checkbox
+                      id={`account-${account.id}`}
+                      checked={isChecked}
+                      onCheckedChange={() => handleToggleAccount(account.id)}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <Label
+                          htmlFor={`account-${account.id}`}
+                          className="text-base font-medium cursor-pointer"
+                        >
+                          {account.name} ...{account.last4}
+                        </Label>
+                        <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                          ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
+                      </div>
+
+                      {isChecked && config && (
+                        <div className="mt-4 space-y-3 pl-1">
+                          <div>
+                            <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                            <Input
+                              id={`displayName-${account.id}`}
+                              value={config.displayName}
+                              onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
+                              placeholder="Account name"
+                              className="h-9 mt-1"
+                            />
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-3">
+                            <div>
+                              <Label htmlFor={`accountType-${account.id}`} className="text-sm">Account Type*</Label>
+                              <Select
+                                value={config.accountType}
+                                onValueChange={(value) => updateAccountConfiguration(account.id, 'accountType', value)}
+                              >
+                                <SelectTrigger id={`accountType-${account.id}`} className="h-9 mt-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {accountTypeOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`detailType-${account.id}`} className="text-sm">Detail Type*</Label>
+                              <Select
+                                value={config.detailType}
+                                onValueChange={(value) => updateAccountConfiguration(account.id, 'detailType', value)}
+                              >
+                                <SelectTrigger id={`detailType-${account.id}`} className="h-9 mt-1">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {accountTypeOptions.map(opt => (
+                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div>
+                            <Label className="text-sm">Start Date*</Label>
+                            <div className="flex gap-2 mt-1">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={config.startDatePreset === 'last_30' ? 'default' : 'outline'}
+                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_30')}
+                                className="flex-1 h-9"
+                              >
+                                Last 30 days
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={config.startDatePreset === 'last_60' ? 'default' : 'outline'}
+                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_60')}
+                                className="flex-1 h-9"
+                              >
+                                Last 60 days
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={config.startDatePreset === 'last_90' ? 'default' : 'outline'}
+                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_90')}
+                                className="flex-1 h-9"
+                              >
+                                Last 90 days
+                              </Button>
+                            </div>
+                            {config.startDatePreset === 'custom' && (
+                              <Input
+                                type="date"
+                                value={config.startDate}
+                                onChange={(e) => updateAccountConfiguration(account.id, 'startDate', e.target.value)}
+                                className="h-9 mt-2"
+                              />
+                            )}
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant={config.startDatePreset === 'custom' ? 'default' : 'outline'}
+                              onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'custom')}
+                              className="w-full mt-2 h-9"
+                            >
+                              Custom date
+                            </Button>
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs">
+                                    <p className="text-xs">
+                                      Transactions before this date will be posted automatically. After this date, transactions will remain pending.
+                                    </p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                            <Input
+                              id={`goLiveDate-${account.id}`}
+                              type="date"
+                              value={config.goLiveDate}
+                              onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
+                              className="h-9 mt-1"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'select-type':
         return renderSelectType();
       case 'bank-search':
         return renderBankSearchStep();
+      case 'configure-accounts':
+        return renderConfigureAccountsStep();
       case 'select-subtype':
         return renderSelectSubtype();
       case 'details':
@@ -1424,6 +1850,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
     if (currentStep === 'bank-search') return 'Connect Bank Account';
+    if (currentStep === 'configure-accounts') return 'Configure Accounts to Import';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') return 'Account Details';
@@ -1443,35 +1870,49 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className={`w-[550px] p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-        <div className="relative flex flex-col h-[400px]">
-          <DialogHeader className="pt-5 px-5 flex-shrink-0">
-            <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
-          </DialogHeader>
+    <>
+      {renderConnectionModal()}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className={`${currentStep === 'configure-accounts' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'configure-accounts' ? 'h-[600px]' : 'h-[400px]'}`}>
+            <DialogHeader className="pt-5 px-5 flex-shrink-0">
+              <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
+            </DialogHeader>
 
-          <div className={`py-5 px-5 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'flex items-center justify-center' : ''}`}>
-            {renderCurrentStep()}
-          </div>
+            <div className={`py-5 px-5 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'flex items-center justify-center' : ''}`}>
+              {renderCurrentStep()}
+            </div>
 
-          {currentStep !== 'select-type' && (
-            <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBack}
-                disabled={isLoading}
-                className="rounded-full px-6"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
+            {currentStep !== 'select-type' && (
+              <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleBack}
+                  disabled={isLoading}
+                  className="rounded-full px-6"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Back
+                </Button>
 
-              {currentStep === 'bank-search' && <div />}
+                {currentStep === 'bank-search' && <div />}
 
-              {currentStep === 'select-subtype' && <div />}
+                {currentStep === 'select-subtype' && <div />}
 
-              {currentStep === 'loan-search' && <div />}
+                {currentStep === 'loan-search' && <div />}
+
+                {currentStep === 'configure-accounts' && (
+                  <Button
+                    type="button"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                    onClick={handleNext}
+                    disabled={!canProceed() || isLoading}
+                  >
+                    <Check className="w-4 h-4 mr-1" />
+                    Finish
+                  </Button>
+                )}
 
               {currentStep === 'details' && (
                 <Button
@@ -1528,5 +1969,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         </div>
       </DialogContent>
     </Dialog>
+    </>
   );
 }
