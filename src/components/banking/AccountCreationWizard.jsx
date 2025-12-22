@@ -116,6 +116,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedSubtype, setSelectedSubtype] = useState(null);
   const [formData, setFormData] = useState({});
+  const [focusedFields, setFocusedFields] = useState({});
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -180,6 +181,29 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const formatAmountField = (fieldName, value, isFocused) => {
+    if (!value) return '';
+    const numValue = Number(value.toString().replace(/,/g, ''));
+    if (isFocused) {
+      return numValue.toLocaleString('en-US');
+    }
+    return numValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  const handleAmountChange = (fieldName, rawValue) => {
+    const cleaned = rawValue.replace(/[^0-9.]/g, '');
+    updateFormData(fieldName, cleaned);
+  };
+
+  const handleAmountBlur = (fieldName, value) => {
+    setFocusedFields(prev => ({ ...prev, [fieldName]: false }));
+    if (value) {
+      const cleaned = value.replace(/,/g, '');
+      const formatted = Number(cleaned).toFixed(2);
+      updateFormData(fieldName, formatted);
+    }
   };
 
   const createAccountMutation = useMutation({
@@ -677,11 +701,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 <Input
                   id="currentValue"
                   type="text"
-                  value={formData.currentValue ? Number(formData.currentValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : ''}
-                  onChange={(e) => {
-                    const rawValue = e.target.value.replace(/[^0-9.]/g, '');
-                    updateFormData('currentValue', rawValue);
-                  }}
+                  value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
+                  onChange={(e) => handleAmountChange('currentValue', e.target.value)}
+                  onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
+                  onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
                   placeholder="0.00"
                   className="pl-7"
                   required
@@ -721,8 +744,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               <Input
                 id="currentValue"
                 type="text"
-                value={formData.currentValue || ''}
-                onChange={(e) => updateFormData('currentValue', e.target.value.replace(/[^0-9.]/g, ''))}
+                value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
+                onChange={(e) => handleAmountChange('currentValue', e.target.value)}
+                onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
+                onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
                 placeholder="0.00"
                 className="pl-7"
                 required
@@ -770,8 +795,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               <Input
                 id="currentValue"
                 type="text"
-                value={formData.currentValue || ''}
-                onChange={(e) => updateFormData('currentValue', e.target.value.replace(/[^0-9.]/g, ''))}
+                value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
+                onChange={(e) => handleAmountChange('currentValue', e.target.value)}
+                onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
+                onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
                 placeholder="0.00"
                 className="pl-7"
                 required
@@ -800,8 +827,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               <Input
                 id="currentBalance"
                 type="text"
-                value={formData.currentBalance || ''}
-                onChange={(e) => updateFormData('currentBalance', e.target.value.replace(/[^0-9.]/g, ''))}
+                value={formatAmountField('currentBalance', formData.currentBalance, focusedFields.currentBalance)}
+                onChange={(e) => handleAmountChange('currentBalance', e.target.value)}
+                onFocus={() => setFocusedFields(prev => ({ ...prev, currentBalance: true }))}
+                onBlur={(e) => handleAmountBlur('currentBalance', e.target.value)}
                 placeholder="0.00"
                 className="pl-7"
                 required
@@ -847,8 +876,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           <Input
             id="balance"
             type="text"
-            value={formData.balance || ''}
-            onChange={(e) => updateFormData('balance', e.target.value.replace(/[^0-9.-]/g, ''))}
+            value={formatAmountField('balance', formData.balance, focusedFields.balance)}
+            onChange={(e) => {
+              const cleaned = e.target.value.replace(/[^0-9.-]/g, '');
+              updateFormData('balance', cleaned);
+            }}
+            onFocus={() => setFocusedFields(prev => ({ ...prev, balance: true }))}
+            onBlur={(e) => handleAmountBlur('balance', e.target.value)}
             placeholder="0.00"
             className="pl-7"
           />
@@ -886,8 +920,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             <Input
               id="loanBalance"
               type="text"
-              value={formData.loanBalance || ''}
-              onChange={(e) => updateFormData('loanBalance', e.target.value.replace(/[^0-9.]/g, ''))}
+              value={formatAmountField('loanBalance', formData.loanBalance, focusedFields.loanBalance)}
+              onChange={(e) => handleAmountChange('loanBalance', e.target.value)}
+              onFocus={() => setFocusedFields(prev => ({ ...prev, loanBalance: true }))}
+              onBlur={(e) => handleAmountBlur('loanBalance', e.target.value)}
               placeholder="0.00"
               className="pl-7"
               required
@@ -901,8 +937,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             <Input
               id="originalLoanAmount"
               type="text"
-              value={formData.originalLoanAmount || ''}
-              onChange={(e) => updateFormData('originalLoanAmount', e.target.value.replace(/[^0-9.]/g, ''))}
+              value={formatAmountField('originalLoanAmount', formData.originalLoanAmount, focusedFields.originalLoanAmount)}
+              onChange={(e) => handleAmountChange('originalLoanAmount', e.target.value)}
+              onFocus={() => setFocusedFields(prev => ({ ...prev, originalLoanAmount: true }))}
+              onBlur={(e) => handleAmountBlur('originalLoanAmount', e.target.value)}
               placeholder="0.00"
               className="pl-7"
             />
