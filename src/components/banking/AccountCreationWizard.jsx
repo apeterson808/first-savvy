@@ -936,7 +936,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           required
         />
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="loanBalance">Current Balance*</Label>
           <div className="relative">
@@ -970,8 +970,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             />
           </div>
         </div>
-      </div>
-      <div className="grid grid-cols-4 gap-4">
         <div>
           <Label htmlFor="interestRate">Interest Rate (%)</Label>
           <Input
@@ -982,6 +980,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             placeholder="0.00"
           />
         </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="monthlyPayment">Monthly Payment</Label>
           <div className="relative">
