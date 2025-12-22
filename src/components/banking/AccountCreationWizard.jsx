@@ -887,7 +887,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             {renderCurrentStep()}
           </div>
 
-          {currentStep !== 'select-type' && currentStep !== 'select-subtype' && (
+          {currentStep !== 'select-type' && (
             <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
               <Button
                 type="button"
@@ -900,7 +900,33 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 Back
               </Button>
 
-              {currentStep !== 'review' && (
+              {currentStep === 'select-subtype' && <div />}
+
+              {currentStep === 'details' && (
+                <Button
+                  type="button"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  onClick={handleNext}
+                  disabled={!canProceed() || isLoading}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+
+              {currentStep === 'balance' && (
+                <Button
+                  type="button"
+                  className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                  onClick={handleNext}
+                  disabled={!canProceed() || isLoading}
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+
+              {currentStep === 'loan-details' && (
                 <Button
                   type="button"
                   className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
@@ -923,20 +949,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                   Create
                 </Button>
               )}
-            </div>
-          )}
-
-          {currentStep === 'select-subtype' && (
-            <div className="flex justify-center pt-4 pb-2 flex-shrink-0">
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={handleBack}
-                className="rounded-full px-6 text-gray-600 hover:bg-gray-100"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back
-              </Button>
             </div>
           )}
 
