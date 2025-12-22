@@ -87,21 +87,27 @@ export default function Layout({ children, currentPageName }) {
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
+  console.log('[Layout] useProtectedChangeDialog returned:', { isOpen, hasDialogData: !!dialogData });
+
   // Save current page to localStorage
   React.useEffect(() => {
+    console.log('[Layout useEffect] localStorage - Running');
     if (currentPageName) {
       localStorage.setItem('lastVisitedPage', location.pathname + location.search);
     }
   }, [currentPageName, location.pathname, location.search]);
 
   React.useEffect(() => {
+    console.log('[Layout useEffect] loadUserData - Running');
     const loadUserData = async () => {
       try {
         const authUser = await firstsavvy.auth.me();
+        console.log('[Layout] Setting user state');
         setUser(authUser);
 
         if (authUser?.id) {
           const profile = await getUserProfile(authUser.id);
+          console.log('[Layout] Setting userProfile state');
           setUserProfile(profile);
         }
       } catch (error) {
