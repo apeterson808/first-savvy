@@ -16,12 +16,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft, TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
+import { getAccountWithLinks } from '@/api/vehiclesAndLoans';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -34,11 +35,42 @@ export default function AccountDetail() {
     queryFn: async () => {
       const accounts = await firstsavvy.entities.Account.list();
       const categories = await firstsavvy.entities.Category.list();
-      const allAccounts = [...accounts, ...categories];
+      const assets = await firstsavvy.entities.Asset.list();
+      const liabilities = await firstsavvy.entities.Liability.list();
+      const equity = await firstsavvy.entities.Equity.list();
+
+      const allAccounts = [
+        ...accounts.map(a => ({
+          ...a,
+          entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
+        })),
+        ...categories.map(c => ({
+          ...c,
+          entityType: c.type === 'income' ? 'Income' : 'Expense'
+        })),
+        ...assets.map(a => ({ ...a, entityType: 'Asset' })),
+        ...liabilities.map(l => ({ ...l, entityType: 'Liability' })),
+        ...equity.map(e => ({ ...e, entityType: 'Equity' }))
+      ];
+
       return allAccounts.find(acc => acc.id === id);
     },
     enabled: !!id
   });
+
+  const { data: linkedAccountsData = { linkedAccounts: [] }, isLoading: linkedAccountsLoading } = useQuery({
+    queryKey: ['linkedAccounts', id, account?.entityType],
+    queryFn: async () => {
+      if (!account || !id) return { linkedAccounts: [] };
+      if (account.entityType === 'Asset' || account.entityType === 'Liability') {
+        return await getAccountWithLinks(id, account.entityType);
+      }
+      return { linkedAccounts: [] };
+    },
+    enabled: !!account && (account.entityType === 'Asset' || account.entityType === 'Liability')
+  });
+
+  const linkedAccounts = linkedAccountsData?.linkedAccounts || [];
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', 'account', id],
@@ -57,8 +89,14 @@ export default function AccountDetail() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data, entityType }) => {
-      if (entityType === 'BankAccount' || entityType === 'Account') {
+      if (entityType === 'BankAccount' || entityType === 'CreditCard' || entityType === 'Account') {
         return firstsavvy.entities.Account.update(id, data);
+      } else if (entityType === 'Asset') {
+        return firstsavvy.entities.Asset.update(id, data);
+      } else if (entityType === 'Liability') {
+        return firstsavvy.entities.Liability.update(id, data);
+      } else if (entityType === 'Equity') {
+        return firstsavvy.entities.Equity.update(id, data);
       } else {
         return firstsavvy.entities.Category.update(id, data);
       }
@@ -66,6 +104,9 @@ export default function AccountDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+      queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setIsEditMode(false);
       toast.success('Account updated successfully');
@@ -78,14 +119,23 @@ export default function AccountDetail() {
 
   const deleteMutation = useMutation({
     mutationFn: async ({ id, entityType }) => {
-      if (entityType === 'BankAccount' || entityType === 'Account') {
+      if (entityType === 'BankAccount' || entityType === 'CreditCard' || entityType === 'Account') {
         return firstsavvy.entities.Account.delete(id);
+      } else if (entityType === 'Asset') {
+        return firstsavvy.entities.Asset.delete(id);
+      } else if (entityType === 'Liability') {
+        return firstsavvy.entities.Liability.delete(id);
+      } else if (entityType === 'Equity') {
+        return firstsavvy.entities.Equity.delete(id);
       } else {
         return firstsavvy.entities.Category.delete(id);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+      queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Account deleted');
       navigate('/banking?tab=accounts');
@@ -98,8 +148,14 @@ export default function AccountDetail() {
 
   const toggleActiveMutation = useMutation({
     mutationFn: async ({ id, entityType, isActive }) => {
-      if (entityType === 'BankAccount' || entityType === 'Account') {
+      if (entityType === 'BankAccount' || entityType === 'CreditCard' || entityType === 'Account') {
         return firstsavvy.entities.Account.update(id, { is_active: !isActive });
+      } else if (entityType === 'Asset') {
+        return firstsavvy.entities.Asset.update(id, { is_active: !isActive });
+      } else if (entityType === 'Liability') {
+        return firstsavvy.entities.Liability.update(id, { is_active: !isActive });
+      } else if (entityType === 'Equity') {
+        return firstsavvy.entities.Equity.update(id, { is_active: !isActive });
       } else {
         return firstsavvy.entities.Category.update(id, { is_active: !isActive });
       }
@@ -107,6 +163,9 @@ export default function AccountDetail() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['assets'] });
+      queryClient.invalidateQueries({ queryKey: ['liabilities'] });
+      queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       toast.success('Account status updated');
     }
@@ -276,8 +335,18 @@ export default function AccountDetail() {
                 <h1 className="text-3xl font-bold">{account.name}</h1>
                 <div className="flex items-center gap-2 mt-3">
                   <Badge variant="outline" className="capitalize">
-                    {isBankAccount ? 'Bank Account' : account.type}
+                    {isBankAccount ? 'Bank Account' :
+                     account.entityType === 'CreditCard' ? 'Credit Card' :
+                     account.entityType === 'Asset' ? 'Asset' :
+                     account.entityType === 'Liability' ? 'Liability' :
+                     account.entityType === 'Equity' ? 'Equity' :
+                     account.type}
                   </Badge>
+                  {(account.type && account.entityType !== 'Income' && account.entityType !== 'Expense') && (
+                    <Badge variant="secondary" className="capitalize text-xs">
+                      {account.type}
+                    </Badge>
+                  )}
                   <Badge
                     className={
                       isActive
@@ -289,10 +358,19 @@ export default function AccountDetail() {
                   </Badge>
                 </div>
               </div>
-              {isBankAccount && (
+              {(isBankAccount || account.entityType === 'Asset' || account.entityType === 'Liability' || account.entityType === 'Equity') && (
                 <div className="text-right">
-                  <p className="text-sm text-slate-500">Current Balance</p>
-                  <p className="text-3xl font-bold text-slate-900">
+                  <p className="text-sm text-slate-500">
+                    {account.entityType === 'Asset' ? 'Current Value' :
+                     account.entityType === 'Liability' ? 'Amount Owed' :
+                     account.entityType === 'Equity' ? 'Current Value' :
+                     'Current Balance'}
+                  </p>
+                  <p className={`text-3xl font-bold ${
+                    account.entityType === 'Liability' ? 'text-burgundy' :
+                    account.entityType === 'Asset' ? 'text-forest-green' :
+                    'text-slate-900'
+                  }`}>
                     {formatCurrency(account.current_balance || 0)}
                   </p>
                 </div>
@@ -388,12 +466,12 @@ export default function AccountDetail() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {isBankAccount ? (
                     <>
-                      {(account.bank_name || account.institution) && (
+                      {(account.bank_name || account.institution || account.institution_name) && (
                         <div className="flex items-start gap-3">
                           <Building2 className="w-5 h-5 text-slate-400 mt-0.5" />
                           <div>
                             <p className="text-sm font-medium text-slate-500">Institution</p>
-                            <p className="text-base">{account.bank_name || account.institution}</p>
+                            <p className="text-base">{account.bank_name || account.institution || account.institution_name}</p>
                           </div>
                         </div>
                       )}
@@ -406,6 +484,133 @@ export default function AccountDetail() {
                           </div>
                         </div>
                       )}
+                    </>
+                  ) : account.entityType === 'Asset' ? (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Asset Type</p>
+                          <p className="text-base capitalize">{account.type}</p>
+                        </div>
+                      </div>
+                      {account.type === 'Vehicle' && (
+                        <>
+                          {account.vehicle_make && (
+                            <div className="flex items-start gap-3">
+                              <Car className="w-5 h-5 text-slate-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-slate-500">Make & Model</p>
+                                <p className="text-base">{account.vehicle_year} {account.vehicle_make} {account.vehicle_model}</p>
+                              </div>
+                            </div>
+                          )}
+                          {account.vehicle_type && (
+                            <div className="flex items-start gap-3">
+                              <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-slate-500">Vehicle Type</p>
+                                <p className="text-base capitalize">{account.vehicle_type}</p>
+                              </div>
+                            </div>
+                          )}
+                          {account.vin && (
+                            <div className="flex items-start gap-3">
+                              <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                              <div>
+                                <p className="text-sm font-medium text-slate-500">VIN</p>
+                                <p className="text-base font-mono">{account.vin}</p>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      <div className="flex items-start gap-3">
+                        <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Current Value</p>
+                          <p className="text-base">{formatCurrency(account.current_balance || 0)}</p>
+                        </div>
+                      </div>
+                    </>
+                  ) : account.entityType === 'Liability' ? (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Liability Type</p>
+                          <p className="text-base capitalize">{account.type}</p>
+                        </div>
+                      </div>
+                      {(account.institution || account.institution_name) && (
+                        <div className="flex items-start gap-3">
+                          <Building2 className="w-5 h-5 text-slate-400 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-500">Lender</p>
+                            <p className="text-base">{account.institution || account.institution_name}</p>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-start gap-3">
+                        <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Current Balance</p>
+                          <p className="text-base text-burgundy">{formatCurrency(account.current_balance || 0)}</p>
+                        </div>
+                      </div>
+                      {account.interest_rate && (
+                        <div className="flex items-start gap-3">
+                          <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-500">Interest Rate</p>
+                            <p className="text-base">{account.interest_rate}%</p>
+                          </div>
+                        </div>
+                      )}
+                      {account.monthly_payment && (
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-500">Monthly Payment</p>
+                            <p className="text-base">{formatCurrency(account.monthly_payment)}</p>
+                          </div>
+                        </div>
+                      )}
+                      {account.payment_due_date && (
+                        <div className="flex items-start gap-3">
+                          <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-500">Payment Due Date</p>
+                            <p className="text-base">Day {account.payment_due_date} of each month</p>
+                          </div>
+                        </div>
+                      )}
+                      {account.original_loan_amount && (
+                        <div className="flex items-start gap-3">
+                          <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-medium text-slate-500">Original Loan Amount</p>
+                            <p className="text-base">{formatCurrency(account.original_loan_amount)}</p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : account.entityType === 'Equity' ? (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Equity Type</p>
+                          <p className="text-base capitalize">{account.type}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-slate-500">Current Value</p>
+                          <p className="text-base">{formatCurrency(account.current_balance || 0)}</p>
+                        </div>
+                      </div>
                     </>
                   ) : (
                     <>
@@ -423,6 +628,93 @@ export default function AccountDetail() {
             )}
           </CardContent>
         </Card>
+
+        {(account.entityType === 'Asset' || account.entityType === 'Liability') && (
+          <Card>
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Link2 className="w-5 h-5 text-slate-600" />
+                <h2 className="text-xl font-semibold">
+                  {account.entityType === 'Asset' ? 'Linked Liabilities' : 'Linked Assets'}
+                </h2>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {linkedAccountsLoading ? (
+                <div className="text-center py-4 text-slate-500">
+                  Loading linked accounts...
+                </div>
+              ) : linkedAccounts.length === 0 ? (
+                <div className="text-center py-8 text-slate-500">
+                  <Link2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                  <p className="font-medium">No linked accounts</p>
+                  <p className="text-sm mt-1">
+                    {account.entityType === 'Asset'
+                      ? 'This asset is not currently linked to any loans or liabilities.'
+                      : 'This liability is not currently secured by any assets.'}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  <div className="space-y-3">
+                    {linkedAccounts.map((linkedAccount) => (
+                      <div
+                        key={linkedAccount.id}
+                        className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                        onClick={() => navigate(`/account/${linkedAccount.id}`)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                            {linkedAccount.entityType === 'Asset' ? (
+                              <Car className="w-5 h-5 text-primary" />
+                            ) : (
+                              <CreditCardIcon className="w-5 h-5 text-primary" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium">{linkedAccount.name}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs capitalize">
+                                {linkedAccount.type}
+                              </Badge>
+                              {linkedAccount.institution && (
+                                <span className="text-xs text-slate-500">{linkedAccount.institution}</span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`text-lg font-semibold ${linkedAccount.entityType === 'Liability' ? 'text-burgundy' : 'text-forest-green'}`}>
+                            {formatCurrency(linkedAccount.current_balance || 0)}
+                          </p>
+                          {linkedAccount.monthly_payment && (
+                            <p className="text-sm text-slate-500 mt-1">
+                              {formatCurrency(linkedAccount.monthly_payment)}/mo
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {account.entityType === 'Liability' && (
+                    <div className="mt-4 pt-4 border-t">
+                      <Button
+                        onClick={() => {
+                          toast.info('Payment feature coming soon');
+                        }}
+                        className="w-full gap-2"
+                      >
+                        <Wallet className="w-4 h-4" />
+                        Make Payment
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader>

@@ -219,3 +219,88 @@ export async function getUnlinkedAutoLoans() {
   if (error) throw error;
   return data;
 }
+
+export async function getAccountWithLinks(accountId, accountType) {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) throw new Error('User not authenticated');
+
+  let account = null;
+  let linkedAccounts = [];
+
+  if (accountType === 'Asset') {
+    const { data: asset, error: assetError } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('id', accountId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (assetError && assetError.code !== 'PGRST116') throw assetError;
+    if (asset) {
+      account = { ...asset, entityType: 'Asset' };
+
+      const { data: links, error: linksError } = await supabase
+        .from('asset_liability_links')
+        .select(`
+          *,
+          liability:liabilities(*)
+        `)
+        .eq('asset_id', accountId)
+        .eq('user_id', user.id);
+
+      if (linksError) throw linksError;
+      linkedAccounts = (links || []).map(link => ({
+        ...link.liability,
+        entityType: 'Liability',
+        linkType: link.relationship_type,
+        linkId: link.id
+      }));
+    }
+  } else if (accountType === 'Liability') {
+    const { data: liability, error: liabilityError } = await supabase
+      .from('liabilities')
+      .select('*')
+      .eq('id', accountId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (liabilityError && liabilityError.code !== 'PGRST116') throw liabilityError;
+    if (liability) {
+      account = { ...liability, entityType: 'Liability' };
+
+      const { data: links, error: linksError } = await supabase
+        .from('asset_liability_links')
+        .select(`
+          *,
+          asset:assets(*)
+        `)
+        .eq('liability_id', accountId)
+        .eq('user_id', user.id);
+
+      if (linksError) throw linksError;
+      linkedAccounts = (links || []).map(link => ({
+        ...link.asset,
+        entityType: 'Asset',
+        linkType: link.relationship_type,
+        linkId: link.id
+      }));
+    }
+  } else if (accountType === 'Equity') {
+    const { data: equity, error: equityError } = await supabase
+      .from('equity')
+      .select('*')
+      .eq('id', accountId)
+      .eq('user_id', user.id)
+      .single();
+
+    if (equityError && equityError.code !== 'PGRST116') throw equityError;
+    if (equity) {
+      account = { ...equity, entityType: 'Equity' };
+    }
+  }
+
+  return {
+    account,
+    linkedAccounts
+  };
+}
