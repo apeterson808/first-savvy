@@ -74,12 +74,16 @@ function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
 }
 
 export default function Layout({ children, currentPageName }) {
+  console.log('[Layout] Component rendering, currentPageName:', currentPageName);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  console.log('[Layout] State initialized');
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
@@ -122,6 +126,8 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
     { name: 'Affiliate', icon: Users, page: 'Affiliate' }
   ];
+
+  console.log('[Layout] About to return JSX');
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
