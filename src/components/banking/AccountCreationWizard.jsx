@@ -89,7 +89,7 @@ const ACCOUNT_TYPE_CARDS = [
     bgColor: '#FF7BAC',
     iconColor: 'text-white',
     subtypes: [
-      { value: 'retirement', label: 'Retirement Account (401k, IRA, Roth)', icon: Landmark },
+      { value: 'retirement', label: 'Retirement', icon: Landmark },
       { value: 'stocks', label: 'Stock', icon: TrendingUp },
       { value: 'crypto', label: 'Crypto', icon: BadgeDollarSign },
       { value: 'investment', label: 'Other Investments', icon: TrendingUp }
