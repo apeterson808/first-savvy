@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { supabase } from '@/api/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,9 +14,6 @@ import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
-import { BankInstitutionSearch } from './BankInstitutionSearch';
-import { PlaidLinkButton } from './PlaidLinkButton';
-import { AccountMappingWizard } from './AccountMappingWizard';
 import {
   Building2,
   Wallet,
@@ -130,22 +126,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [selectedSubtype, setSelectedSubtype] = useState(null);
   const [formData, setFormData] = useState({});
   const [focusedFields, setFocusedFields] = useState({});
-  const [selectedInstitution, setSelectedInstitution] = useState(null);
-  const [showConnectionFlow, setShowConnectionFlow] = useState(false);
-  const [plaidData, setPlaidData] = useState(null);
-  const [showMappingWizard, setShowMappingWizard] = useState(false);
-  const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState(null);
-
-  useEffect(() => {
-    const getUserId = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
-    };
-    if (open) getUserId();
-  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -158,9 +140,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     setSelectedCard(null);
     setSelectedSubtype(null);
     setFormData({});
-    setSelectedInstitution(null);
-    setShowConnectionFlow(false);
-    setIsGeneratingMockData(false);
   };
 
   const handleCardSelect = (card) => {
@@ -247,40 +226,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       const formatted = Number(cleaned).toFixed(2);
       updateFormData(fieldName, formatted);
     }
-  };
-
-  const handleInstitutionSelect = (institution) => {
-    setSelectedInstitution(institution);
-    setShowConnectionFlow(true);
-  };
-
-  const handleManualAdd = () => {
-    setCurrentStep('select-subtype');
-  };
-
-  const handlePlaidSuccess = (data) => {
-    setPlaidData(data);
-    setShowConnectionFlow(false);
-    setShowMappingWizard(true);
-  };
-
-  const handlePlaidExit = () => {
-    setShowConnectionFlow(false);
-    setSelectedInstitution(null);
-  };
-
-  const handleMappingComplete = (result) => {
-    queryClient.invalidateQueries({ queryKey: ['accounts'] });
-    queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-    queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['creditCards'] });
-
-    onAccountCreated?.({ type: 'plaid_connection', ...result });
-    onOpenChange(false);
-
-    setTimeout(() => {
-      navigate('/Banking');
-    }, 100);
   };
 
   const createAccountMutation = useMutation({
@@ -1358,10 +1303,51 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   );
 
   const renderBankSearchStep = () => (
-    <BankInstitutionSearch
-      onSelect={handleInstitutionSelect}
-      onManualAdd={handleManualAdd}
-    />
+    <div className="space-y-6 max-w-lg mx-auto">
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+          Search for your bank to securely connect your account
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="bankSearch">Search for your bank</Label>
+          <div className="relative">
+            <Input
+              id="bankSearch"
+              placeholder="Search for Chase, Wells Fargo, Bank of America..."
+              disabled
+              className="pl-3"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Institution integration coming soon.
+          </p>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or</span>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="text-xs"
+            onClick={handleNext}
+          >
+            Add Manually
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 
   const renderLoanSearchStep = () => (
@@ -1541,51 +1527,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           {renderProgressBar()}
         </div>
       </DialogContent>
-
-      <Dialog open={showConnectionFlow} onOpenChange={(open) => !open && handlePlaidExit()}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Connect with {selectedInstitution?.name || 'Your Bank'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 mt-4">
-            <div className="text-center space-y-4">
-              {selectedInstitution?.logo_url && (
-                <div className="w-16 h-16 rounded-full mx-auto overflow-hidden bg-white flex items-center justify-center border-2">
-                  <img
-                    src={selectedInstitution.logo_url}
-                    alt={selectedInstitution.name}
-                    className="w-12 h-12 object-contain"
-                  />
-                </div>
-              )}
-              <p className="text-sm text-muted-foreground">
-                Securely connect your {selectedInstitution?.name || 'bank'} account to import transactions automatically.
-              </p>
-            </div>
-            <div className="flex flex-col gap-3">
-              {userId && (
-                <PlaidLinkButton
-                  userId={userId}
-                  onSuccess={handlePlaidSuccess}
-                  onExit={handlePlaidExit}
-                >
-                  Continue with Plaid
-                </PlaidLinkButton>
-              )}
-              <Button variant="outline" onClick={handlePlaidExit}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <AccountMappingWizard
-        open={showMappingWizard}
-        onClose={() => setShowMappingWizard(false)}
-        plaidData={plaidData}
-        onComplete={handleMappingComplete}
-      />
     </Dialog>
   );
 }
