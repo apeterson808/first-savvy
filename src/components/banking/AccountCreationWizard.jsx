@@ -142,7 +142,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
-    if (card.subtypes && card.subtypes.length > 0) {
+    if (card.id === 'banking') {
+      setCurrentStep('bank-search');
+    } else if (card.subtypes && card.subtypes.length > 0) {
       setCurrentStep('select-subtype');
     } else {
       const subtypeValue = card.id === 'property' ? 'property' : card.id;
@@ -159,9 +161,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const handleBack = () => {
-    if (currentStep === 'select-subtype') {
+    if (currentStep === 'bank-search') {
       setCurrentStep('select-type');
       setSelectedCard(null);
+    } else if (currentStep === 'select-subtype') {
+      if (selectedCard?.id === 'banking') {
+        setCurrentStep('bank-search');
+      } else {
+        setCurrentStep('select-type');
+        setSelectedCard(null);
+      }
     } else if (currentStep === 'details') {
       if (selectedCard?.subtypes && selectedCard.subtypes.length > 0) {
         setCurrentStep('select-subtype');
@@ -475,11 +484,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const getTotalSteps = () => {
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
+    if (currentStep === 'bank-search') return 6;
     if (currentStep === 'select-subtype' || !selectedSubtype) {
-      return selectedCard.id === 'budget' ? 4 : 5;
+      return selectedCard.id === 'budget' ? 4 : (selectedCard.id === 'banking' ? 6 : 5);
     }
 
-    if (selectedCard.id === 'banking') return 5;
+    if (selectedCard.id === 'banking') return 6;
     if (selectedCard.id === 'vehicle') {
       return formData.skipLoanDetails ? 2 : 4;
     }
@@ -494,6 +504,18 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const getCurrentStepNumber = () => {
+    if (selectedCard?.id === 'banking') {
+      const bankingStepMap = {
+        'select-type': 0,
+        'bank-search': 1,
+        'select-subtype': 2,
+        'details': 3,
+        'balance': 4,
+        'review': 5
+      };
+      return bankingStepMap[currentStep] || 0;
+    }
+
     if (selectedCard?.id === 'vehicle') {
       if (formData.skipLoanDetails && currentStep === 'details') {
         return 2;
@@ -564,7 +586,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const handleNext = async () => {
     if (selectedCard.id === 'banking') {
-      if (currentStep === 'details') {
+      if (currentStep === 'bank-search') {
+        setCurrentStep('select-subtype');
+      } else if (currentStep === 'details') {
         setCurrentStep('balance');
       } else if (currentStep === 'balance') {
         setCurrentStep('review');
@@ -1259,6 +1283,54 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     </div>
   );
 
+  const renderBankSearchStep = () => (
+    <div className="space-y-6 max-w-lg mx-auto">
+      <div className="text-center">
+        <p className="text-sm text-muted-foreground">
+          Search for your bank to securely connect your account
+        </p>
+      </div>
+
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label htmlFor="bankSearch">Search for your bank</Label>
+          <div className="relative">
+            <Input
+              id="bankSearch"
+              placeholder="Search for Chase, Wells Fargo, Bank of America..."
+              disabled
+              className="pl-3"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Institution integration coming soon.
+          </p>
+        </div>
+
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">Or</span>
+          </div>
+        </div>
+
+        <div className="text-center">
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="text-xs"
+            onClick={handleNext}
+          >
+            Add Manually
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderLoanSearchStep = () => (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="text-center">
@@ -1311,6 +1383,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     switch (currentStep) {
       case 'select-type':
         return renderSelectType();
+      case 'bank-search':
+        return renderBankSearchStep();
       case 'select-subtype':
         return renderSelectSubtype();
       case 'details':
@@ -1330,6 +1404,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
+    if (currentStep === 'bank-search') return 'Connect Bank Account';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') return 'Account Details';
@@ -1373,6 +1448,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 <ChevronLeft className="w-4 h-4 mr-1" />
                 Back
               </Button>
+
+              {currentStep === 'bank-search' && <div />}
 
               {currentStep === 'select-subtype' && <div />}
 
