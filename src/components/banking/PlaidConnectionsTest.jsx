@@ -71,9 +71,12 @@ export default function PlaidConnectionsTest({ open, onOpenChange }) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+      <SheetContent className="w-full sm:max-w-lg overflow-y-auto" aria-describedby="plaid-connections-description">
         <SheetHeader>
           <SheetTitle>Plaid Connections</SheetTitle>
+          <p id="plaid-connections-description" className="text-sm text-slate-600">
+            Manage your connected bank accounts and sync transactions
+          </p>
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
