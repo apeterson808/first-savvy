@@ -16,8 +16,8 @@ import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import { BankInstitutionSearch } from './BankInstitutionSearch';
-import { MockBankConnectionFlow } from './MockBankConnectionFlow';
-import { createMockAccounts, generateMockTransactions } from '@/utils/mockBankDataGenerator';
+import { PlaidLinkButton } from './PlaidLinkButton';
+import { AccountMappingWizard } from './AccountMappingWizard';
 import {
   Building2,
   Wallet,
@@ -132,9 +132,20 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [focusedFields, setFocusedFields] = useState({});
   const [selectedInstitution, setSelectedInstitution] = useState(null);
   const [showConnectionFlow, setShowConnectionFlow] = useState(false);
+  const [plaidData, setPlaidData] = useState(null);
+  const [showMappingWizard, setShowMappingWizard] = useState(false);
   const [isGeneratingMockData, setIsGeneratingMockData] = useState(false);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [userId, setUserId] = useState(null);
+
+  useEffect(() => {
+    const getUserId = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) setUserId(user.id);
+    };
+    if (open) getUserId();
+  }, [open]);
 
   useEffect(() => {
     if (!open) {
@@ -247,58 +258,29 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     setCurrentStep('select-subtype');
   };
 
-  const handleBankConnectionSuccess = async (connectedAccounts) => {
-    setIsGeneratingMockData(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
+  const handlePlaidSuccess = (data) => {
+    setPlaidData(data);
+    setShowConnectionFlow(false);
+    setShowMappingWizard(true);
+  };
 
-      const accountsToCreate = connectedAccounts.map(acc => ({
-        type: acc.type,
-        name: acc.name,
-        lastFour: acc.lastFour,
-        balance: acc.balance,
-        limit: acc.limit,
-      }));
+  const handlePlaidExit = () => {
+    setShowConnectionFlow(false);
+    setSelectedInstitution(null);
+  };
 
-      const { accounts, serviceConnection } = await createMockAccounts(
-        connectedAccounts[0].institution,
-        accountsToCreate,
-        user.id
-      );
+  const handleMappingComplete = (result) => {
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    queryClient.invalidateQueries({ queryKey: ['creditCards'] });
 
-      const transactions = await generateMockTransactions(
-        accounts,
-        connectedAccounts[0].startDate,
-        connectedAccounts[0].goLiveDate,
-        user.id
-      );
+    onAccountCreated?.({ type: 'plaid_connection', ...result });
+    onOpenChange(false);
 
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['creditCards'] });
-      queryClient.invalidateQueries({ queryKey: ['serviceConnections'] });
-
-      toast.success(`Successfully connected ${accounts.length} accounts with ${transactions.length} transactions!`, {
-        duration: 5000,
-      });
-
-      onAccountCreated?.({ type: 'bank_connection', accounts, transactions, serviceConnection });
-      onOpenChange(false);
-
-      setTimeout(() => {
-        if (accounts.length > 0) {
-          navigate('/Banking');
-        }
-      }, 100);
-    } catch (error) {
-      console.error('Error generating mock data:', error);
-      toast.error('Failed to create mock accounts and transactions');
-    } finally {
-      setIsGeneratingMockData(false);
-      setShowConnectionFlow(false);
-    }
+    setTimeout(() => {
+      navigate('/Banking');
+    }, 100);
   };
 
   const createAccountMutation = useMutation({
@@ -1560,11 +1542,49 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         </div>
       </DialogContent>
 
-      <MockBankConnectionFlow
-        institution={selectedInstitution}
-        open={showConnectionFlow}
-        onClose={() => setShowConnectionFlow(false)}
-        onSuccess={handleBankConnectionSuccess}
+      <Dialog open={showConnectionFlow} onOpenChange={(open) => !open && handlePlaidExit()}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Connect with {selectedInstitution?.name || 'Your Bank'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 mt-4">
+            <div className="text-center space-y-4">
+              {selectedInstitution?.logo_url && (
+                <div className="w-16 h-16 rounded-full mx-auto overflow-hidden bg-white flex items-center justify-center border-2">
+                  <img
+                    src={selectedInstitution.logo_url}
+                    alt={selectedInstitution.name}
+                    className="w-12 h-12 object-contain"
+                  />
+                </div>
+              )}
+              <p className="text-sm text-muted-foreground">
+                Securely connect your {selectedInstitution?.name || 'bank'} account to import transactions automatically.
+              </p>
+            </div>
+            <div className="flex flex-col gap-3">
+              {userId && (
+                <PlaidLinkButton
+                  userId={userId}
+                  onSuccess={handlePlaidSuccess}
+                  onExit={handlePlaidExit}
+                >
+                  Continue with Plaid
+                </PlaidLinkButton>
+              )}
+              <Button variant="outline" onClick={handlePlaidExit}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AccountMappingWizard
+        open={showMappingWizard}
+        onClose={() => setShowMappingWizard(false)}
+        plaidData={plaidData}
+        onComplete={handleMappingComplete}
       />
     </Dialog>
   );
