@@ -180,14 +180,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const navigate = useNavigate();
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts-assets-liabilities', user?.id],
+    queryKey: ['chart-accounts-all', user?.id],
     queryFn: async () => {
       if (!user) return [];
       const { data, error } = await firstsavvy
         .from('user_chart_of_accounts')
         .select('*')
         .eq('user_id', user.id)
-        .in('account_type', ['asset', 'liability'])
         .eq('is_active', true)
         .order('account_number');
       return data || [];
