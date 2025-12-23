@@ -1,7 +1,10 @@
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 export default function useAllAccounts() {
+  const { user } = useAuth();
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
     queryKey: ['accounts'],
     queryFn: () => firstsavvy.entities.Account.list('-created_at'),
@@ -26,9 +29,14 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const { data: categories = [], isLoading: loadingCategories } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name'),
+  const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user,
     staleTime: 30000,
   });
 
@@ -79,11 +87,21 @@ export default function useAllAccounts() {
       entityType: 'Equity',
       typeDetailDisplay: getTypeDetailDisplay(e.account_type, e.account_detail)
     })),
-    ...categories.filter(c => c.type === 'income').map(c => ({ ...c, account_name: c.name, entityType: 'Income' })),
-    ...categories.filter(c => c.type === 'expense').map(c => ({ ...c, account_name: c.name, entityType: 'Expense' })),
+    ...chartAccounts.filter(c => c.account_class === 'income').map(c => ({
+      ...c,
+      account_name: c.custom_display_name || c.category || c.account_name,
+      name: c.custom_display_name || c.category || c.account_name,
+      entityType: 'Income'
+    })),
+    ...chartAccounts.filter(c => c.account_class === 'expense').map(c => ({
+      ...c,
+      account_name: c.custom_display_name || c.category || c.account_name,
+      name: c.custom_display_name || c.category || c.account_name,
+      entityType: 'Expense'
+    })),
   ];
 
-  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingEquity || loadingCategories;
+  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingEquity || loadingChartAccounts;
 
   return {
     allAccounts,
@@ -105,9 +123,18 @@ export default function useAllAccounts() {
     assets,
     liabilities,
     equity,
-    categories,
-    incomeCategories: categories.filter(c => c.type === 'income'),
-    expenseCategories: categories.filter(c => c.type === 'expense'),
+    chartAccounts,
+    categories: chartAccounts,
+    incomeCategories: chartAccounts.filter(c => c.account_class === 'income').map(c => ({
+      ...c,
+      name: c.custom_display_name || c.category || c.account_name,
+      type: 'income'
+    })),
+    expenseCategories: chartAccounts.filter(c => c.account_class === 'expense').map(c => ({
+      ...c,
+      name: c.custom_display_name || c.category || c.account_name,
+      type: 'expense'
+    })),
     getTypeDetailDisplay,
     isLoading,
   };

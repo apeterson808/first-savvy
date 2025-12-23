@@ -26,6 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import TransactionTimeline from '@/components/contacts/TransactionTimeline';
 import CategoryBreakdown from '@/components/contacts/CategoryBreakdown';
 import TransactionVolume from '@/components/contacts/TransactionVolume';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -46,6 +48,7 @@ export default function ContactDetail() {
   const [emailValue, setEmailValue] = useState('');
   const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const { data: contact, isLoading: contactLoading } = useQuery({
     queryKey: ['contact', id],
@@ -63,9 +66,14 @@ export default function ContactDetail() {
     enabled: !!id
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user
   });
 
   const updateMutation = useMutation({
@@ -248,7 +256,6 @@ export default function ContactDetail() {
       phone: phoneValue || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
-      REMOVED_FIELD_default_category_id: formData.get('REMOVED_FIELD_default_category_id') || undefined,
       status,
       linked_user_id: detectedUser?.id || contact.linked_user_id || undefined,
       connection_status: detectedUser ? 'platform_user' : (contact.connection_status || 'not_checked')
@@ -484,21 +491,6 @@ export default function ContactDetail() {
                     />
                   </div>
 
-                  <div>
-                    <Label htmlFor="REMOVED_FIELD_default_category_id">Default Category</Label>
-                    <ClickThroughSelect
-                      name="REMOVED_FIELD_default_category_id"
-                      defaultValue={contact.REMOVED_FIELD_default_category_id}
-                      placeholder="Select category (optional)"
-                    >
-                      {categories.map(cat => (
-                        <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </ClickThroughSelectItem>
-                      ))}
-                    </ClickThroughSelect>
-                  </div>
-
                   <div className="md:col-span-2">
                     <Label htmlFor="notes">Notes</Label>
                     <Textarea
@@ -547,18 +539,6 @@ export default function ContactDetail() {
                       <div>
                         <p className="text-sm font-medium text-slate-500">Address</p>
                         <p className="text-base">{contact.address}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {contact.REMOVED_FIELD_default_category_id && (
-                    <div className="flex items-start gap-3">
-                      <Tag className="w-5 h-5 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Default Category</p>
-                        <p className="text-base">
-                          {categories.find(c => c.id === contact.REMOVED_FIELD_default_category_id)?.name || '-'}
-                        </p>
                       </div>
                     </div>
                   )}
@@ -688,7 +668,7 @@ export default function ContactDetail() {
                         <TableCell>{format(new Date(transaction.date), 'MMM d, yyyy')}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>
-                          {categories.find(c => c.id === transaction.category_id)?.name || '-'}
+                          {chartAccounts.find(c => c.id === transaction.chart_account_id) ? getDisplayName(chartAccounts.find(c => c.id === transaction.chart_account_id)) : '-'}
                         </TableCell>
                         <TableCell className="capitalize">
                           <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>

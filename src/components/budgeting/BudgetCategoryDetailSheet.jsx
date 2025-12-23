@@ -13,8 +13,10 @@ import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import BudgetConflictDialog from './BudgetConflictDialog';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, category, currentSpent }) {
+  const { user } = useAuth();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [localName, setLocalName] = useState('');
@@ -63,9 +65,16 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   });
 
   const updateCategoryMutation = useMutation({
-    mutationFn: ({ id, data }) => firstsavvy.entities.Category.update(id, data),
+    mutationFn: ({ id, data }) => {
+      if (!user) throw new Error('User not authenticated');
+      return firstsavvy.from('user_chart_of_accounts')
+        .update(data)
+        .eq('id', id)
+        .eq('user_id', user.id);
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
     }
   });
 

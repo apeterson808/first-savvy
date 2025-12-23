@@ -23,12 +23,15 @@ import { formatCurrency } from '@/components/utils/formatters';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
 import { getAccountWithLinks } from '@/api/vehiclesAndLoans';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
 
 export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   const urlParams = new URLSearchParams(window.location.search);
   const returnUrl = urlParams.get('from') || '?tab=accounts';
@@ -37,19 +40,23 @@ export default function AccountDetail() {
     queryKey: ['account', id],
     queryFn: async () => {
       const accounts = await firstsavvy.entities.Account.list();
-      const categories = await firstsavvy.entities.Category.list();
+      const chartAccounts = user ? await getUserChartOfAccounts(user.id) : [];
       const assets = await firstsavvy.entities.Asset.list();
       const liabilities = await firstsavvy.entities.Liability.list();
       const equity = await firstsavvy.entities.Equity.list();
+
+      const level3ChartAccounts = chartAccounts.filter(c => c.level === 3);
 
       const allAccounts = [
         ...accounts.map(a => ({
           ...a,
           entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
         })),
-        ...categories.map(c => ({
+        ...level3ChartAccounts.map(c => ({
           ...c,
-          entityType: c.type === 'income' ? 'Income' : 'Expense'
+          entityType: c.account_class === 'income' ? 'Income' : 'Expense',
+          name: c.custom_display_name || c.category || c.account_name,
+          type: c.account_class
         })),
         ...assets.map(a => ({ ...a, entityType: 'Asset' })),
         ...liabilities.map(l => ({ ...l, entityType: 'Liability' })),
@@ -100,8 +107,14 @@ export default function AccountDetail() {
         return firstsavvy.entities.Liability.update(id, data);
       } else if (entityType === 'Equity') {
         return firstsavvy.entities.Equity.update(id, data);
+      } else if (entityType === 'Income' || entityType === 'Expense') {
+        if (!user) throw new Error('User not authenticated');
+        return firstsavvy.from('user_chart_of_accounts')
+          .update(data)
+          .eq('id', id)
+          .eq('user_id', user.id);
       } else {
-        return firstsavvy.entities.Category.update(id, data);
+        throw new Error('Unknown entity type');
       }
     },
     onSuccess: () => {
@@ -110,7 +123,7 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       queryClient.invalidateQueries({ queryKey: ['equity'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       setIsEditMode(false);
       toast.success('Account updated successfully');
     },
@@ -130,8 +143,11 @@ export default function AccountDetail() {
         return firstsavvy.entities.Liability.delete(id);
       } else if (entityType === 'Equity') {
         return firstsavvy.entities.Equity.delete(id);
+      } else if (entityType === 'Income' || entityType === 'Expense') {
+        if (!user) throw new Error('User not authenticated');
+        return deleteUserCreatedAccount(user.id, id);
       } else {
-        return firstsavvy.entities.Category.delete(id);
+        throw new Error('Unknown entity type');
       }
     },
     onSuccess: () => {
@@ -139,7 +155,7 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       queryClient.invalidateQueries({ queryKey: ['equity'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       toast.success('Account deleted');
       navigate(`/banking${returnUrl}`);
     },
@@ -159,8 +175,14 @@ export default function AccountDetail() {
         return firstsavvy.entities.Liability.update(id, { is_active: !isActive });
       } else if (entityType === 'Equity') {
         return firstsavvy.entities.Equity.update(id, { is_active: !isActive });
+      } else if (entityType === 'Income' || entityType === 'Expense') {
+        if (!user) throw new Error('User not authenticated');
+        return firstsavvy.from('user_chart_of_accounts')
+          .update({ is_active: !isActive })
+          .eq('id', id)
+          .eq('user_id', user.id);
       } else {
-        return firstsavvy.entities.Category.update(id, { is_active: !isActive });
+        throw new Error('Unknown entity type');
       }
     },
     onSuccess: () => {
@@ -169,7 +191,7 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       queryClient.invalidateQueries({ queryKey: ['equity'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       toast.success('Account status updated');
     }
   });

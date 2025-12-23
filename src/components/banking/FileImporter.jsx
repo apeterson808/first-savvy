@@ -16,12 +16,15 @@ import { Loader2, Upload, CheckCircle2, AlertCircle, FileText } from 'lucide-rea
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { createPageUrl } from '../../pages/utils';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCreationWizard from './AccountCreationWizard';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 export default function FileImporter({ open, onOpenChange, onImportComplete }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [file, setFile] = useState(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -34,9 +37,14 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
   const [showAddAccountSheet, setShowAddAccountSheet] = useState(false);
   const queryClient = useQueryClient();
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user
   });
 
   const { data: accounts = [] } = useQuery({
@@ -340,10 +348,11 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
       const selectedAccount = accounts.find(acc => acc.id === accountId);
       const accountStartDate = selectedAccount?.start_date;
 
-      // Map categories
-      const categoryMap = {};
-      categories.forEach(cat => {
-        categoryMap[cat.name.toLowerCase()] = cat.id;
+      // Map chart accounts by display name
+      const chartAccountMap = {};
+      chartAccounts.forEach(acc => {
+        const displayName = acc.custom_display_name || acc.category || acc.account_name;
+        chartAccountMap[displayName.toLowerCase()] = acc.id;
       });
 
       // Transform and create transactions

@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 const renderActiveShape = (props) => {
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -64,18 +66,24 @@ export default function BudgetAllocationGauge({ budgets, groups, totalIncome }) 
   const [showCelebration, setShowCelebration] = useState(false);
   const [hasShownCelebration, setHasShownCelebration] = useState(false);
   const prevPercentRef = useRef(0);
+  const { user } = useAuth();
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user
   });
 
-  const getCategory = (id) => categories.find(c => c.id === id);
+  const getChartAccount = (id) => chartAccounts.find(c => c.id === id);
 
   const getBudgetColor = (budget) => {
     if (budget.color) return budget.color;
-    const category = getCategory(budget.chart_account_id);
-    if (category?.color) return category.color;
+    const chartAccount = getChartAccount(budget.chart_account_id);
+    if (chartAccount?.color) return chartAccount.color;
     return '#64748b';
   };
 

@@ -27,6 +27,8 @@ import { Mail, Phone, MapPin, Tag, FileText, TrendingUp, DollarSign, Hash, Calen
 import { format } from 'date-fns';
 import AccountDetectionField from './AccountDetectionField';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -43,6 +45,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [phoneValue, setPhoneValue] = useState('');
   const [emailValue, setEmailValue] = useState('');
+  const { user } = useAuth();
   const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
@@ -58,15 +61,14 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
     enabled: !!contact?.id && open,
   });
 
-  const { data: category } = useQuery({
-    queryKey: ['category', contact?.REMOVED_FIELD_default_category_id],
-    queryFn: () => firstsavvy.entities.Category.get(contact.REMOVED_FIELD_default_category_id),
-    enabled: !!contact?.REMOVED_FIELD_default_category_id,
-  });
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user
   });
 
   const updateMutation = useMutation({
@@ -253,7 +255,6 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
       phone: phoneValue || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
-      REMOVED_FIELD_default_category_id: formData.get('REMOVED_FIELD_default_category_id') || undefined,
       status,
       linked_user_id: detectedUser?.id || contact.linked_user_id || undefined,
       connection_status: detectedUser ? 'platform_user' : (contact.connection_status || 'not_checked')
@@ -458,21 +459,6 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
                       placeholder="Street address, city, state, zip"
                       rows={2}
                     />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="REMOVED_FIELD_default_category_id">Default Category</Label>
-                    <ClickThroughSelect
-                      name="REMOVED_FIELD_default_category_id"
-                      defaultValue={contact.REMOVED_FIELD_default_category_id}
-                      placeholder="Select category (optional)"
-                    >
-                      {categories.map(cat => (
-                        <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </ClickThroughSelectItem>
-                      ))}
-                    </ClickThroughSelect>
                   </div>
 
                   <div>

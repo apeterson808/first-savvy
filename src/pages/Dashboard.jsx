@@ -14,10 +14,13 @@ import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOf
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [chartView, setChartView] = useState('spending');
   const [timeRange, setTimeRange] = useState('ytd');
@@ -81,14 +84,19 @@ export default function Dashboard() {
     queryFn: () => firstsavvy.entities.CreditScore.list('-last_checked', 1)
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name'),
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user,
     staleTime: 30000
   });
 
   const latestCreditScore = creditScores[0];
-  const getCategoryById = (id) => categories.find(c => c.id === id);
+  const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
 
   // Calculate net worth (only active accounts)
   const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_balance || 0), 0);
@@ -200,7 +208,7 @@ export default function Dashboard() {
           const matchesAccount = selectedAccount === 'all'
             ? activeAccountIds.includes(t.account_id)
             : t.account_id === selectedAccount;
-          const category = getCategoryById(t.chart_account_id);
+          const category = getChartAccountById(t.chart_account_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
         });
@@ -243,7 +251,7 @@ export default function Dashboard() {
           const matchesAccount = selectedAccount === 'all'
             ? activeAccountIds.includes(t.account_id)
             : t.account_id === selectedAccount;
-          const category = getCategoryById(t.chart_account_id);
+          const category = getChartAccountById(t.chart_account_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return tDateStr >= monthStartStr && tDateStr <= monthEndStr && t.status === 'posted' && matchesAccount && !isTransfer;
         });
@@ -289,7 +297,7 @@ export default function Dashboard() {
           const tDate = new Date(t.date);
           if (isNaN(tDate.getTime())) return false;
           const matchesAccount = activeAccountIds.includes(t.account_id);
-          const category = getCategoryById(t.chart_account_id);
+          const category = getChartAccountById(t.chart_account_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return tDate >= monthStart && tDate <= monthEnd && t.type === 'expense' && t.status === 'posted' && matchesAccount && !isTransfer;
         } catch (e) {
@@ -304,7 +312,7 @@ export default function Dashboard() {
 
     return expenseBudgets
       .map(budget => {
-        const category = getCategoryById(budget.chart_account_id);
+        const category = getChartAccountById(budget.chart_account_id);
         const spent = spendingByCategory[budget.chart_account_id] || 0;
         const limit = budget.allocated_amount || 0;
         const percentage = limit > 0 ? (spent / limit) * 100 : 0;

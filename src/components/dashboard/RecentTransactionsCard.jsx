@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigate } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { createPageUrl } from '../../pages/utils';
 import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AccountCreationWizard from '../banking/AccountCreationWizard';
@@ -14,10 +14,13 @@ import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
 import { formatTransactionDescription } from '../utils/formatters';
 import { Upload } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 export default function RecentTransactionsCard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
@@ -38,9 +41,14 @@ export default function RecentTransactionsCard() {
     queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000)
   });
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const accounts = await getUserChartOfAccounts(user.id);
+      return accounts.filter(a => a.level === 3);
+    },
+    enabled: !!user
   });
 
   const { data: transactions = [] } = useQuery({
@@ -72,8 +80,8 @@ export default function RecentTransactionsCard() {
     const needsSuggestion = allPendingTransactions
       .filter(t => activeAccountIds.includes(t.account_id))
       .filter(t => !t.ai_suggested_chart_account_id && !autoCategorizingIds.has(t.id));
-    
-    if (needsSuggestion.length === 0 || categories.length === 0) return;
+
+    if (needsSuggestion.length === 0 || chartAccounts.length === 0) return;
 
     // Mark as being processed
     setAutoCategorizingIds(prev => {
@@ -90,23 +98,17 @@ export default function RecentTransactionsCard() {
               transaction.description,
               transactions,
               categorizationRules,
-              transaction.amount
+              transaction.amount,
+              chartAccounts
             );
 
-            if (suggestion && suggestion.category) {
-              const matchingCategory = categories.find(c =>
-                c.name.toLowerCase() === suggestion.category.toLowerCase() &&
-                c.type === suggestion.type
-              );
-
-              if (matchingCategory) {
-                updateMutation.mutate({
-                  id: transaction.id,
-                  data: {
-                    ai_suggested_chart_account_id: matchingCategory.id
-                  }
-                });
-              }
+            if (suggestion && suggestion.chartAccountId) {
+              updateMutation.mutate({
+                id: transaction.id,
+                data: {
+                  ai_suggested_chart_account_id: suggestion.chartAccountId
+                }
+              });
             }
           } catch (err) {
             console.error(`Failed to categorize transaction ${transaction.id}:`, err);
@@ -118,7 +120,7 @@ export default function RecentTransactionsCard() {
     };
 
     getSuggestions();
-  }, [allPendingTransactions.length, categories.length]);
+  }, [allPendingTransactions.length, chartAccounts.length]);
 
   const recentTransactions = pendingTransactions;
 
@@ -269,7 +271,7 @@ export default function RecentTransactionsCard() {
         onOpenChange={setAddCategorySheetOpen}
         onAccountCreated={() => {
           setCategorySearchTerm('');
-          queryClient.invalidateQueries({ queryKey: ['categories'] });
+          queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
         }}
       />
 
