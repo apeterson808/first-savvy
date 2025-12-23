@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,7 +104,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
-  const initialFilter = urlParams.get('filter') || '';
+  const initialFilter = urlParams.get('filter') || 'all';
 
   const [accountTypeFilter, setAccountTypeFilter] = useState(initialFilter);
   const [showInactive, setShowInactive] = useState(false);
@@ -191,7 +190,7 @@ export default function AccountsTable({ accounts, isLoading }) {
 
   // Filter accounts based on selected type and active status
   const filteredAccounts = accounts.filter(acc => {
-    const matchesType = !accountTypeFilter || acc.entityType === accountTypeFilter;
+    const matchesType = accountTypeFilter === 'all' || !accountTypeFilter || acc.entityType === accountTypeFilter;
     const matchesActive = showInactive || acc.is_active !== false;
     return matchesType && matchesActive;
   });
@@ -207,10 +206,9 @@ export default function AccountsTable({ accounts, isLoading }) {
 
   React.useEffect(() => {
     if (availableEntityTypes.length > 0) {
-      if (!accountTypeFilter || !availableEntityTypes.includes(accountTypeFilter)) {
-        const newFilter = availableEntityTypes[0];
-        setAccountTypeFilter(newFilter);
-        updateUrlFilter(newFilter);
+      if (accountTypeFilter && accountTypeFilter !== 'all' && !availableEntityTypes.includes(accountTypeFilter)) {
+        setAccountTypeFilter('all');
+        updateUrlFilter('all');
       }
     }
   }, [availableEntityTypes, accountTypeFilter]);
@@ -227,7 +225,13 @@ export default function AccountsTable({ accounts, isLoading }) {
   };
 
   React.useEffect(() => {
-    if (accountTypeFilter === 'Asset' || accountTypeFilter === 'BankAccount') {
+    if (accountTypeFilter === 'all') {
+      setVisibleColumns(v => ({
+        ...v,
+        type: true,
+        detail: false
+      }));
+    } else if (accountTypeFilter === 'Asset' || accountTypeFilter === 'BankAccount') {
       setVisibleColumns(v => ({
         ...v,
         type: false,
@@ -419,36 +423,47 @@ export default function AccountsTable({ accounts, isLoading }) {
             </Button>
           </div>
 
-          {/* Filter Buttons */}
-          <div className="flex items-center gap-0">
-            <Tabs value={accountTypeFilter} onValueChange={handleFilterChange}>
-              <TabsList className="h-8">
-                {availableEntityTypes.map(entityType => (
-                  <TabsTrigger key={entityType} value={entityType} className="text-xs px-3">
-                    {entityTypeLabels[entityType] || entityType}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={() => setWizardOpen(true)}
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Settings className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-52">
+          {/* Filter Dropdown */}
+          <div className="flex items-center gap-2">
+            <ClickThroughSelect
+              value={accountTypeFilter}
+              onValueChange={handleFilterChange}
+              placeholder="Select account type"
+              triggerClassName="h-9 w-48"
+            >
+              <ClickThroughSelectItem value="all">
+                All Accounts
+              </ClickThroughSelectItem>
+              {availableEntityTypes.map(entityType => (
+                <ClickThroughSelectItem key={entityType} value={entityType}>
+                  <div className="flex items-center justify-between w-full">
+                    <span>{entityTypeLabels[entityType] || entityType}</span>
+                    <span className="text-[10px] text-slate-500 ml-2">
+                      {accountTypeCounts[entityType] || 0}
+                    </span>
+                  </div>
+                </ClickThroughSelectItem>
+              ))}
+            </ClickThroughSelect>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setWizardOpen(true)}
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-52">
                   <DropdownMenuItem onClick={() => setShowInactive(!showInactive)}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${showInactive ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
                       {showInactive && <Check className="w-3 h-3 text-white" />}
