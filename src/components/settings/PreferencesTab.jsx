@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { Globe, DollarSign, Calendar, Palette } from 'lucide-react';
+import { Globe, DollarSign, Calendar, Palette, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { toast } from 'sonner';
 import { updateUserProfile } from '../../api/userSettings';
 import { useTheme } from 'next-themes';
+import { supabase } from '../../api/supabaseClient';
 
 const CURRENCIES = [
   { value: 'USD', label: 'US Dollar (USD)' },
@@ -56,6 +58,7 @@ const LANGUAGES = [
 export default function PreferencesTab({ profile, onUpdate }) {
   const { theme, setTheme } = useTheme();
   const [loading, setLoading] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const [preferences, setPreferences] = useState({
     currency: profile?.currency || 'USD',
     date_format: profile?.date_format || 'MM/DD/YYYY',
@@ -95,16 +98,63 @@ export default function PreferencesTab({ profile, onUpdate }) {
     }
   };
 
+  const handleResetData = async () => {
+    if (profile?.id === 'demo') {
+      toast.info('Demo mode: Reset not available');
+      return;
+    }
+
+    setResetting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error('You must be logged in to reset your data');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-user-data`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reset data');
+      }
+
+      toast.success('Your data has been reset successfully');
+
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+    } catch (error) {
+      console.error('Error resetting data:', error);
+      toast.error(error.message || 'Failed to reset data');
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Preferences</CardTitle>
-        <CardDescription>
-          Customize your application experience
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Preferences</CardTitle>
+          <CardDescription>
+            Customize your application experience
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="theme" className="flex items-center gap-2">
@@ -238,5 +288,63 @@ export default function PreferencesTab({ profile, onUpdate }) {
         </form>
       </CardContent>
     </Card>
+
+    <Card className="border-destructive">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-destructive">
+          <AlertTriangle className="h-5 w-5" />
+          Danger Zone
+        </CardTitle>
+        <CardDescription>
+          Irreversible actions that will permanently affect your account
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-4 p-4 rounded-lg border border-destructive/50 bg-destructive/5">
+            <div className="space-y-1 flex-1">
+              <h3 className="font-medium text-sm">Reset All Data</h3>
+              <p className="text-sm text-muted-foreground">
+                This will permanently delete all your accounts, transactions, budgets, assets, liabilities, contacts, and chart of accounts. Your chart of accounts will be reset to the default template.
+              </p>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive" size="sm" disabled={resetting}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  {resetting ? 'Resetting...' : 'Reset Data'}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete all of your:
+                    <ul className="list-disc list-inside mt-2 space-y-1">
+                      <li>Bank accounts and credit cards</li>
+                      <li>Transactions and budgets</li>
+                      <li>Assets, liabilities, and equity</li>
+                      <li>Contacts and bills</li>
+                      <li>Chart of accounts (will be reset to default)</li>
+                    </ul>
+                    <p className="mt-3 font-semibold">This will restart your profile as if you were a new user.</p>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleResetData}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    Yes, reset everything
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </div>
   );
 }
