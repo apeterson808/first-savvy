@@ -1,4 +1,5 @@
 import { firstsavvy } from './firstsavvyClient';
+import { accountClassifications } from './accountClassifications';
 
 export const Account = firstsavvy.entities.Account;
 
@@ -38,7 +39,9 @@ export const CreditCard = firstsavvy.entities.CreditCard;
 
 export const Contact = firstsavvy.entities.Contact;
 
+export const AccountClassification = firstsavvy.entities.AccountClassification;
 
+export { accountClassifications };
 
 // auth sdk:
 export const User = firstsavvy.auth;

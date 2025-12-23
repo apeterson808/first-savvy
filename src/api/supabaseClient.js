@@ -148,7 +148,8 @@ export const createSupabaseClient = () => {
       SharedResource: createEntityAPI('shared_resources'),
       HouseholdGroup: createEntityAPI('household_groups'),
       HouseholdMember: createEntityAPI('household_members'),
-      Invitation: createEntityAPI('invitations')
+      Invitation: createEntityAPI('invitations'),
+      AccountClassification: createEntityAPI('account_classifications')
     },
     auth: {
       async signUp(email, password, fullName) {
