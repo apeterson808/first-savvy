@@ -84,7 +84,7 @@ export default function AccountDetail() {
       if (account.entityType === 'BankAccount') {
         return allTransactions.filter(t => t.account_id === id);
       } else {
-        return allTransactions.filter(t => t.category_id === id);
+        return allTransactions.filter(t => t.chart_account_id === id);
       }
     },
     enabled: !!id && !!account

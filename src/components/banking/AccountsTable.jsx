@@ -143,8 +143,8 @@ export default function AccountsTable({ accounts, isLoading }) {
       return tDate >= monthStart && tDate <= monthEnd && t.status === 'posted';
     })
     .reduce((acc, t) => {
-      if (t.category_id) {
-        acc[t.category_id] = (acc[t.category_id] || 0) + t.amount;
+      if (t.chart_account_id) {
+        acc[t.chart_account_id] = (acc[t.chart_account_id] || 0) + t.amount;
       }
       return acc;
     }, {});
@@ -157,8 +157,8 @@ export default function AccountsTable({ accounts, isLoading }) {
       if (t.account_id) {
         countMap.set(t.account_id, (countMap.get(t.account_id) || 0) + 1);
       }
-      if (t.category_id) {
-        countMap.set(t.category_id, (countMap.get(t.category_id) || 0) + 1);
+      if (t.chart_account_id) {
+        countMap.set(t.chart_account_id, (countMap.get(t.chart_account_id) || 0) + 1);
       }
     });
 
@@ -179,7 +179,7 @@ export default function AccountsTable({ accounts, isLoading }) {
       return true;
     }
 
-    // Check if account has any transactions (using account_id or category_id)
+    // Check if account has any transactions (using account_id or chart_account_id)
     if (transactionCountMap.get(account.id) > 0) {
       return true;
     }

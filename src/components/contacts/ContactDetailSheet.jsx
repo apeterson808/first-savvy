@@ -59,9 +59,9 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
   });
 
   const { data: category } = useQuery({
-    queryKey: ['category', contact?.default_category_id],
-    queryFn: () => firstsavvy.entities.Category.get(contact.default_category_id),
-    enabled: !!contact?.default_category_id,
+    queryKey: ['category', contact?.REMOVED_FIELD_default_category_id],
+    queryFn: () => firstsavvy.entities.Category.get(contact.REMOVED_FIELD_default_category_id),
+    enabled: !!contact?.REMOVED_FIELD_default_category_id,
   });
 
   const { data: categories = [] } = useQuery({
@@ -253,7 +253,7 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
       phone: phoneValue || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
-      default_category_id: formData.get('default_category_id') || undefined,
+      REMOVED_FIELD_default_category_id: formData.get('REMOVED_FIELD_default_category_id') || undefined,
       status,
       linked_user_id: detectedUser?.id || contact.linked_user_id || undefined,
       connection_status: detectedUser ? 'platform_user' : (contact.connection_status || 'not_checked')
@@ -461,10 +461,10 @@ export default function ContactDetailSheet({ contact, open, onOpenChange }) {
                   </div>
 
                   <div>
-                    <Label htmlFor="default_category_id">Default Category</Label>
+                    <Label htmlFor="REMOVED_FIELD_default_category_id">Default Category</Label>
                     <ClickThroughSelect
-                      name="default_category_id"
-                      defaultValue={contact.default_category_id}
+                      name="REMOVED_FIELD_default_category_id"
+                      defaultValue={contact.REMOVED_FIELD_default_category_id}
                       placeholder="Select category (optional)"
                     >
                       {categories.map(cat => (

@@ -300,7 +300,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
                 transfer_pair_id: pairId,
                 type: txnType,
                 original_type: txn.original_type || txn.type,
-                category_id: null
+                chart_account_id: null
               })
             );
 
@@ -309,7 +309,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
                 transfer_pair_id: pairId,
                 type: candidateType,
                 original_type: candidate.original_type || candidate.type,
-                category_id: null
+                chart_account_id: null
               })
             );
 
@@ -373,7 +373,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
             amount,
             type,
             account_id: accountId,
-            category_id: categoryId,
+            chart_account_id: categoryId,
             status: 'pending',
             payment_method: 'card'
           };

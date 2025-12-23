@@ -43,7 +43,6 @@ export default function AddContactSheet({
     phone: '',
     address: '',
     notes: '',
-    default_category_id: '',
   });
   const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
@@ -87,7 +86,6 @@ export default function AddContactSheet({
       phone: '',
       address: '',
       notes: '',
-      default_category_id: '',
     });
     setDetectedUser(null);
   };
@@ -196,7 +194,6 @@ export default function AddContactSheet({
       phone: formData.phone || undefined,
       address: formData.address.trim() || undefined,
       notes: formData.notes.trim() || undefined,
-      default_category_id: formData.default_category_id || undefined,
       linked_user_id: detectedUser?.id || undefined,
       connection_status: detectedUser ? 'platform_user' : 'not_checked'
     };
@@ -307,21 +304,6 @@ export default function AddContactSheet({
               placeholder="Street address, city, state, zip"
               rows={2}
             />
-          </div>
-
-          <div>
-            <Label htmlFor="default_category_id">Default Category</Label>
-            <ClickThroughSelect
-              value={formData.default_category_id}
-              onValueChange={(value) => updateFormField('default_category_id', value)}
-              placeholder="Select category (optional)"
-            >
-              {categories.map(cat => (
-                <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                  {cat.name}
-                </ClickThroughSelectItem>
-              ))}
-            </ClickThroughSelect>
           </div>
 
           <div>

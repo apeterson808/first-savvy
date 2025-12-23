@@ -74,7 +74,7 @@ export default function BudgetAllocationGauge({ budgets, groups, totalIncome }) 
 
   const getBudgetColor = (budget) => {
     if (budget.color) return budget.color;
-    const category = getCategory(budget.category_id);
+    const category = getCategory(budget.chart_account_id);
     if (category?.color) return category.color;
     return '#64748b';
   };

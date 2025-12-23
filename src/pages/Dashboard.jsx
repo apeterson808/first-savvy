@@ -200,7 +200,7 @@ export default function Dashboard() {
           const matchesAccount = selectedAccount === 'all'
             ? activeAccountIds.includes(t.account_id)
             : t.account_id === selectedAccount;
-          const category = getCategoryById(t.category_id);
+          const category = getCategoryById(t.chart_account_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
         });
@@ -243,7 +243,7 @@ export default function Dashboard() {
           const matchesAccount = selectedAccount === 'all'
             ? activeAccountIds.includes(t.account_id)
             : t.account_id === selectedAccount;
-          const category = getCategoryById(t.category_id);
+          const category = getCategoryById(t.chart_account_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return tDateStr >= monthStartStr && tDateStr <= monthEndStr && t.status === 'posted' && matchesAccount && !isTransfer;
         });
@@ -281,7 +281,7 @@ export default function Dashboard() {
     const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
     const expenseBudgets = budgets.filter(b => expenseGroupIds.has(b.group_id));
 
-    // Calculate spending by category_id
+    // Calculate spending by chart_account_id
     const spendingByCategory = transactions
       .filter(t => {
         if (!t.date) return false;
@@ -289,7 +289,7 @@ export default function Dashboard() {
           const tDate = new Date(t.date);
           if (isNaN(tDate.getTime())) return false;
           const matchesAccount = activeAccountIds.includes(t.account_id);
-          const category = getCategoryById(t.category_id);
+          const category = getCategoryById(t.chart_account_id);
           const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
           return tDate >= monthStart && tDate <= monthEnd && t.type === 'expense' && t.status === 'posted' && matchesAccount && !isTransfer;
         } catch (e) {
@@ -297,15 +297,15 @@ export default function Dashboard() {
         }
       })
       .reduce((acc, t) => {
-        const key = t.category_id || t.category;
+        const key = t.chart_account_id || t.category;
         if (key) acc[key] = (acc[key] || 0) + t.amount;
         return acc;
       }, {});
 
     return expenseBudgets
       .map(budget => {
-        const category = getCategoryById(budget.category_id);
-        const spent = spendingByCategory[budget.category_id] || 0;
+        const category = getCategoryById(budget.chart_account_id);
+        const spent = spendingByCategory[budget.chart_account_id] || 0;
         const limit = budget.allocated_amount || 0;
         const percentage = limit > 0 ? (spent / limit) * 100 : 0;
         const color = budget.color || category?.color || '#64748b';

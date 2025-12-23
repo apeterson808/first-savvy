@@ -248,7 +248,7 @@ export default function ContactDetail() {
       phone: phoneValue || undefined,
       address: formData.get('address') || undefined,
       notes: formData.get('notes') || undefined,
-      default_category_id: formData.get('default_category_id') || undefined,
+      REMOVED_FIELD_default_category_id: formData.get('REMOVED_FIELD_default_category_id') || undefined,
       status,
       linked_user_id: detectedUser?.id || contact.linked_user_id || undefined,
       connection_status: detectedUser ? 'platform_user' : (contact.connection_status || 'not_checked')
@@ -485,10 +485,10 @@ export default function ContactDetail() {
                   </div>
 
                   <div>
-                    <Label htmlFor="default_category_id">Default Category</Label>
+                    <Label htmlFor="REMOVED_FIELD_default_category_id">Default Category</Label>
                     <ClickThroughSelect
-                      name="default_category_id"
-                      defaultValue={contact.default_category_id}
+                      name="REMOVED_FIELD_default_category_id"
+                      defaultValue={contact.REMOVED_FIELD_default_category_id}
                       placeholder="Select category (optional)"
                     >
                       {categories.map(cat => (
@@ -551,13 +551,13 @@ export default function ContactDetail() {
                     </div>
                   )}
 
-                  {contact.default_category_id && (
+                  {contact.REMOVED_FIELD_default_category_id && (
                     <div className="flex items-start gap-3">
                       <Tag className="w-5 h-5 text-slate-400 mt-0.5" />
                       <div>
                         <p className="text-sm font-medium text-slate-500">Default Category</p>
                         <p className="text-base">
-                          {categories.find(c => c.id === contact.default_category_id)?.name || '-'}
+                          {categories.find(c => c.id === contact.REMOVED_FIELD_default_category_id)?.name || '-'}
                         </p>
                       </div>
                     </div>

@@ -277,7 +277,7 @@ export default function Budgeting() {
                 const isIncomeGroup = group.type === 'income';
                 const dataByCategory = isIncomeGroup ? incomeByCategory : spendingByCategory;
 
-                const budgetedCategoryIds = new Set(groupBudgets.map(b => b.category_id));
+                const budgetedCategoryIds = new Set(groupBudgets.map(b => b.chart_account_id));
                 const unbudgetedAmount = Object.entries(dataByCategory).reduce((sum, [categoryId, amount]) => {
                   if (categoryId === '__uncategorized__' || categoryId === '__uncategorized_income__' || !budgetedCategoryIds.has(categoryId)) {
                     return sum + amount;

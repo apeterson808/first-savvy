@@ -257,7 +257,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!fullPendingTransactions.length || !categories.length) return;
 
       const transactionsNeedingSuggestions = fullPendingTransactions.filter(
-        t => !t.ai_suggested_category_id && t.type !== 'transfer' && t.description
+        t => t.type !== 'transfer' && t.description
       );
 
       if (transactionsNeedingSuggestions.length === 0) return;
@@ -282,9 +282,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             );
 
             if (matchingCategory) {
-              await firstsavvy.entities.Transaction.update(transaction.id, {
-                ai_suggested_category_id: matchingCategory.id
-              });
               queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
             }
           }
@@ -420,7 +417,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const isFromActiveAccount = activeAccountIds.includes(transactionAccountId);
     if (!isFromActiveAccount) return false;
 
-    const category = categories.find(c => c.id === t.category_id);
+    const category = categories.find(c => c.id === t.chart_account_id);
     const categoryName = category?.name || '';
     const matchesSearch = searchTerm === '' ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -452,7 +449,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
     
     // Category filter
-    const matchesCategory = filters.category === 'all' || t.category_id === filters.category;
+    const matchesCategory = filters.category === 'all' || t.chart_account_id === filters.category;
     
     // Type filter - handle 'expense_income' for showing both but not transfers
     let matchesType = true;
@@ -553,7 +550,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const autoCategorizeTransactions = async () => {
     // Get uncategorized pending transactions
     const uncategorized = filteredTransactions.filter(t => 
-      !t.category_id && (t.status === 'pending' || !t.status)
+      !t.chart_account_id && (t.status === 'pending' || !t.status)
     );
     
     if (uncategorized.length === 0) {
@@ -591,7 +588,7 @@ ${categoryList.map(c => `- ${sanitizeForLLM(c.name)} (${c.type}) [ID: ${c.id}]`)
 Transactions to categorize:
 ${transactionDescriptions.map(t => `- ID: ${t.id}, Description: "${t.description}", Amount: $${t.amount}`).join('\n')}
 
-For each transaction, return the category_id that best matches. Consider:
+For each transaction, return the chart_account_id that best matches. Consider:
 - The description text and what it implies about the transaction
 - Whether it's likely income or expense based on context
 - Common spending patterns (e.g., "Starbucks" = food/dining, "Payroll" = salary)`,
@@ -604,10 +601,10 @@ For each transaction, return the category_id that best matches. Consider:
                   type: "object",
                   properties: {
                     transaction_id: { type: "string" },
-                    category_id: { type: "string" },
+                    chart_account_id: { type: "string" },
                     type: { type: "string", enum: ["income", "expense"] }
                   },
-                  required: ["transaction_id", "category_id", "type"]
+                  required: ["transaction_id", "chart_account_id", "type"]
                 }
               }
             },
@@ -618,9 +615,9 @@ For each transaction, return the category_id that best matches. Consider:
         // Apply categorizations
         for (const cat of result.categorizations) {
           const transaction = batch.find(t => t.id === cat.transaction_id);
-          if (transaction && cat.category_id) {
+          if (transaction && cat.chart_account_id) {
             await firstsavvy.entities.Transaction.update(cat.transaction_id, {
-              category_id: cat.category_id,
+              chart_account_id: cat.chart_account_id,
               type: cat.type
             });
           }
@@ -640,9 +637,9 @@ For each transaction, return the category_id that best matches. Consider:
 
   // Auto-categorize uncategorized transactions on load - batched to avoid rate limits
   React.useEffect(() => {
-    // Find transactions that need AI suggestions (ones without existing ai_suggested_category_id)
+    // Find transactions that need AI suggestions (ones without existing ai_suggested_chart_account_id)
     const needsSuggestion = filteredTransactions.filter(t => 
-      !t.ai_suggested_category_id && 
+      !t.ai_suggested_chart_account_id && 
       !autoCategorizingIds.has(t.id)
     );
     
@@ -684,7 +681,7 @@ For each transaction, return the category_id that best matches. Consider:
                 updateMutation.mutate({
                   id: transaction.id,
                   data: {
-                    ai_suggested_category_id: matchingCategory.id
+                    ai_suggested_chart_account_id: matchingCategory.id
                   }
                 });
               }
@@ -1482,7 +1479,7 @@ For each transaction, return the category_id that best matches. Consider:
 
                             // For regular transactions, show editable category dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
-                              const category = categories.find(c => c.id === transaction.category_id);
+                              const category = categories.find(c => c.id === transaction.chart_account_id);
                               const displayName = category ? getAccountDisplayName({
                                 account_type: category.type,
                                 detail_type: category.detail_type,
@@ -1493,7 +1490,7 @@ For each transaction, return the category_id that best matches. Consider:
 
                             return (
                               <CategoryDropdown
-                                value={transaction.category_id}
+                                value={transaction.chart_account_id}
                                 onValueChange={(value) => {
                                   if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                   const categoryValue = value === '' ? null : value;
@@ -1501,13 +1498,12 @@ For each transaction, return the category_id that best matches. Consider:
                                   updateMutation.mutate({
                                     id: transaction.id,
                                     data: {
-                                      category_id: categoryValue,
+                                      chart_account_id: categoryValue,
                                       type: selectedCategory ? selectedCategory.type : transaction.type
                                     }
                                   });
                                 }}
                                 transactionType={transaction.type}
-                                aiSuggestionId={transaction.ai_suggested_category_id}
                                 disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
                                 onAddNew={(searchTerm) => {
                                   setCategorySearchTerm(searchTerm);
@@ -1827,16 +1823,16 @@ For each transaction, return the category_id that best matches. Consider:
                                             <div>
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <CategoryDropdown
-                                                value={transaction.category_id || ''}
+                                                value={transaction.chart_account_id || ''}
                                                 onValueChange={(value) => {
                                                   const categoryValue = value === '' ? null : value;
                                                   const selectedCategory = categoryValue ? categories.find(c => c.id === categoryValue) : null;
                                                   updateMutation.mutate({
                                                     id: transaction.id,
                                                     data: {
-                                                      category_id: categoryValue,
+                                                      chart_account_id: categoryValue,
                                                       type: selectedCategory?.type || transaction.type,
-                                                      ai_suggested_category_id: null
+                                                      ai_suggested_chart_account_id: null
                                                     }
                                                   });
                                                 }}
@@ -1903,12 +1899,12 @@ For each transaction, return the category_id that best matches. Consider:
                                     })() && (
                                       <>
                                         <div className="mb-4 space-y-3">
-                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && transaction.category_id && (
+                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && transaction.chart_account_id && (
                                             <div>
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <Input
                                                 value={(() => {
-                                                  const category = categories.find(c => c.id === transaction.category_id);
+                                                  const category = categories.find(c => c.id === transaction.chart_account_id);
                                                   return category ? getAccountDisplayName({
                                                     account_type: category.type,
                                                     detail_type: category.detail_type,
@@ -2211,7 +2207,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                                   transfer_pair_id: pairId,
                                                                   type: transactionType,
                                                                   original_type: transaction.original_type || transaction.type,
-                                                                  category_id: null
+                                                                  chart_account_id: null
                                                                 }
                                                               });
                                                               updateMutation.mutate({
@@ -2220,7 +2216,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                                   transfer_pair_id: pairId,
                                                                   type: matchType,
                                                                   original_type: match.original_type || match.type,
-                                                                  category_id: null
+                                                                  chart_account_id: null
                                                                 }
                                                               });
                                                               setSelectedMatches(prev => ({
@@ -2552,7 +2548,7 @@ For each transaction, return the category_id that best matches. Consider:
                                                 if (transaction) {
                                                   updateMutation.mutate({
                                                     id: transaction.id,
-                                                    data: { category_id: newCategory.id, type: newCategory.type }
+                                                    data: { chart_account_id: newCategory.id, type: newCategory.type }
                                                   });
                                                 }
                                               }

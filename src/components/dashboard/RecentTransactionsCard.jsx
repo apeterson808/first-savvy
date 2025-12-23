@@ -71,7 +71,7 @@ export default function RecentTransactionsCard() {
   useEffect(() => {
     const needsSuggestion = allPendingTransactions
       .filter(t => activeAccountIds.includes(t.account_id))
-      .filter(t => !t.ai_suggested_category_id && !autoCategorizingIds.has(t.id));
+      .filter(t => !t.ai_suggested_chart_account_id && !autoCategorizingIds.has(t.id));
     
     if (needsSuggestion.length === 0 || categories.length === 0) return;
 
@@ -103,7 +103,7 @@ export default function RecentTransactionsCard() {
                 updateMutation.mutate({
                   id: transaction.id,
                   data: {
-                    ai_suggested_category_id: matchingCategory.id
+                    ai_suggested_chart_account_id: matchingCategory.id
                   }
                 });
               }
@@ -229,15 +229,15 @@ export default function RecentTransactionsCard() {
                   {transaction.type === 'expense' ? '-' : '+'}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <CategoryDropdown
-                  value={transaction.category_id}
+                  value={transaction.chart_account_id}
                   onValueChange={(value) => {
                     updateMutation.mutate({
                       id: transaction.id,
-                      data: { ...transaction, category_id: value }
+                      data: { ...transaction, chart_account_id: value }
                     });
                   }}
                   transactionType={transaction.type}
-                  aiSuggestionId={transaction.ai_suggested_category_id}
+                  aiSuggestionId={transaction.ai_suggested_chart_account_id}
                   triggerClassName="h-6 text-[10px] w-24 px-1"
                   placeholder="Category"
                   onAddNew={(searchTerm) => {

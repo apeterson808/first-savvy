@@ -36,7 +36,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
   const [deletingCategory, setDeletingCategory] = useState(null);
 
   const getCategoryUsageCount = (categoryId) => {
-    return transactions.filter(t => t.category_id === categoryId).length;
+    return transactions.filter(t => t.chart_account_id === categoryId).length;
   };
 
   const filteredCategories = useMemo(() => {
@@ -57,8 +57,8 @@ export default function CategoriesManagementTab({ categories, transactions }) {
 
       if (usageCount > 0) {
         await firstsavvy.from('transactions')
-          .update({ category_id: null })
-          .eq('category_id', deletingCategory.id);
+          .update({ chart_account_id: null })
+          .eq('chart_account_id', deletingCategory.id);
       }
 
       await firstsavvy.entities.Category.delete(deletingCategory.id);

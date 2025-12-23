@@ -113,7 +113,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
         const tDate = new Date(t.date);
         if (isNaN(tDate.getTime())) return false;
         const matchesAccount = activeAccountIds.includes(t.bank_account_id);
-        const matchesCategory = budget ? (t.category_id === budget.category_id) : false;
+        const matchesCategory = budget ? (t.chart_account_id === budget.chart_account_id) : false;
         return tDate >= monthStart && tDate <= monthEnd && 
                t.status === 'posted' && 
                matchesAccount && 
@@ -157,7 +157,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
       const tDate = new Date(t.date);
       if (isNaN(tDate.getTime())) return false;
       const matchesAccount = activeAccountIds.includes(t.bank_account_id);
-      const matchesCategory = budget ? (t.category_id === budget.category_id) : false;
+      const matchesCategory = budget ? (t.chart_account_id === budget.chart_account_id) : false;
       return tDate >= monthStart && tDate <= today && 
              t.status === 'posted' && 
              matchesAccount && 
@@ -243,15 +243,15 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const handleColorChange = (newColor) => {
     setLocalColor(newColor);
     updateBudgetMutation.mutate({ id: budget.id, data: { color: newColor } });
-    if (budget.category_id) {
-      updateCategoryMutation.mutate({ id: budget.category_id, data: { color: newColor } });
+    if (budget.chart_account_id) {
+      updateCategoryMutation.mutate({ id: budget.chart_account_id, data: { color: newColor } });
     }
   };
 
   const handleIconChange = (newIcon) => {
     setLocalIcon(newIcon);
-    if (budget.category_id) {
-      updateCategoryMutation.mutate({ id: budget.category_id, data: { icon: newIcon } });
+    if (budget.chart_account_id) {
+      updateCategoryMutation.mutate({ id: budget.chart_account_id, data: { icon: newIcon } });
     }
   };
 
@@ -259,8 +259,8 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     const trimmedName = localName.trim();
     if (trimmedName && trimmedName !== budget.name) {
       await updateBudgetMutation.mutateAsync({ id: budget.id, data: { name: trimmedName } });
-      if (budget.category_id) {
-        await updateCategoryMutation.mutateAsync({ id: budget.category_id, data: { name: trimmedName } });
+      if (budget.chart_account_id) {
+        await updateCategoryMutation.mutateAsync({ id: budget.chart_account_id, data: { name: trimmedName } });
       }
     } else {
       setLocalName(budget.name || category?.name || '');
