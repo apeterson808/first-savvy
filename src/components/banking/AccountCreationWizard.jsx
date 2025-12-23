@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
+import { getAccountTypes, getAccountDetails } from '@/utils/accountTypeMapping';
 import {
   Building2,
   Wallet,
@@ -1695,28 +1696,60 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
                       {isChecked && config && (
                         <div className="mt-4 space-y-3 pl-1">
-                          <div>
-                            <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
-                            <Input
-                              id={`displayName-${account.id}`}
-                              value={config.displayName}
-                              onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                              placeholder="Account name"
-                              className="h-9 mt-1"
-                            />
-                          </div>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                              <Input
+                                id={`displayName-${account.id}`}
+                                value={config.displayName}
+                                onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
+                                placeholder="Account name"
+                                className="h-9 mt-1"
+                              />
+                            </div>
 
-                          <div>
-                            <TypeDetailSelector
-                              classFilter={config.classType}
-                              accountType={config.account_type}
-                              accountDetail={config.account_detail}
-                              onTypeChange={(type) => updateAccountConfiguration(account.id, 'account_type', type)}
-                              onDetailChange={(detail) => updateAccountConfiguration(account.id, 'account_detail', detail)}
-                              typeLabel="Account Type"
-                              detailLabel="Account Detail"
-                              required={true}
-                            />
+                            <div>
+                              <Label htmlFor={`account-type-${account.id}`} className="text-sm">
+                                Account Type<span className="text-red-500">*</span>
+                              </Label>
+                              <Select
+                                value={config.account_type || ''}
+                                onValueChange={(value) => updateAccountConfiguration(account.id, 'account_type', value)}
+                              >
+                                <SelectTrigger id={`account-type-${account.id}`} className="h-9 mt-1">
+                                  <SelectValue placeholder="Select type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {getAccountTypes(config.classType).map((type) => (
+                                    <SelectItem key={type} value={type}>
+                                      {type}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
+                                Account Detail<span className="text-red-500">*</span>
+                              </Label>
+                              <Select
+                                value={config.account_detail || ''}
+                                onValueChange={(value) => updateAccountConfiguration(account.id, 'account_detail', value)}
+                                disabled={!config.account_type}
+                              >
+                                <SelectTrigger id={`account-detail-${account.id}`} className="h-9 mt-1">
+                                  <SelectValue placeholder="Select detail" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {config.account_type && getAccountDetails(config.classType, config.account_type).map((detail) => (
+                                    <SelectItem key={detail} value={detail}>
+                                      {detail}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
                           </div>
 
                           <div>
