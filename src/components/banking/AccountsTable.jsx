@@ -21,7 +21,13 @@ import EditAccountDialog from './EditAccountDialog';
 import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
-import { getDetailTypeDisplayName, getAccountDisplayName } from '../utils/constants';
+import { getAccountDisplayName } from '../utils/constants';
+import { accountClassifications } from '@/api/accountClassifications';
+
+const getDetailTypeDisplayName = (type) => {
+  if (!type) return 'Unknown';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
 
 // Editable inline name component
 function EditableAccountName({ account }) {

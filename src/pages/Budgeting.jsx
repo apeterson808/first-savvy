@@ -65,7 +65,7 @@ export default function Budgeting() {
     budgetGroups,
     budgets,
     transactions,
-    categories,
+    classifications,
     isLoading,
     hasSetupStarted,
     spendingByCategory,
@@ -88,20 +88,14 @@ export default function Budgeting() {
       const incomeSpending = {};
 
       recentTransactions.forEach(t => {
-        if (t.type === 'expense' && t.category_id) {
-          expenseSpending[t.category_id] = (expenseSpending[t.category_id] || 0) + t.amount;
-        } else if (t.type === 'income' && t.category_id) {
-          incomeSpending[t.category_id] = (incomeSpending[t.category_id] || 0) + t.amount;
+        if (t.type === 'expense' && t.account_classification_id) {
+          expenseSpending[t.account_classification_id] = (expenseSpending[t.account_classification_id] || 0) + t.amount;
+        } else if (t.type === 'income' && t.account_classification_id) {
+          incomeSpending[t.account_classification_id] = (incomeSpending[t.account_classification_id] || 0) + t.amount;
         }
       });
 
-      for (const category of categories) {
-        if (!category.icon) {
-          const suggestedIcon = suggestIconForName(category.name);
-          await firstsavvy.entities.Category.update(category.id, { icon: suggestedIcon });
-        }
-      }
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['account-classifications-budget'] });
 
       if (Object.keys(incomeSpending).length > 0) {
         const incomeGroup = await firstsavvy.entities.BudgetGroup.create({
@@ -110,29 +104,32 @@ export default function Budgeting() {
           order: 0
         });
 
-        const sortedIncomeCategories = Object.entries(incomeSpending).sort((a, b) => {
-          const catA = categories.find(c => c.id === a[0]);
-          const catB = categories.find(c => c.id === b[0]);
-          return (catA?.name || 'Unknown').localeCompare(catB?.name || 'Unknown');
+        const sortedIncomeClassifications = Object.entries(incomeSpending).sort((a, b) => {
+          const classA = classifications.find(c => c.id === a[0]);
+          const classB = classifications.find(c => c.id === b[0]);
+          const nameA = classA?.display_name || classA?.category || 'Unknown';
+          const nameB = classB?.display_name || classB?.category || 'Unknown';
+          return nameA.localeCompare(nameB);
         });
 
         let order = 0;
         const usedColors = new Set();
-        for (const [categoryId, total] of sortedIncomeCategories) {
+        for (const [classificationId, total] of sortedIncomeClassifications) {
           const monthlyAvg = total / 12;
           const rounded = Math.ceil(monthlyAvg / 10) * 10;
-          const category = categories.find(c => c.id === categoryId);
-          const color = category?.color || getNextColor(usedColors);
+          const classification = classifications.find(c => c.id === classificationId);
+          const displayName = classification?.display_name || classification?.category || 'Unknown';
+          const color = classification?.color || getNextColor(usedColors);
           usedColors.add(color);
 
           await firstsavvy.entities.Budget.create({
-            name: category?.name || 'Unknown',
-            category_id: categoryId,
+            name: displayName,
+            account_classification_id: classificationId,
             allocated_amount: Math.max(rounded, 10),
             group_id: incomeGroup.id,
             order: order++,
             color,
-            icon: category?.icon || suggestIconForName(category?.name || 'Unknown'),
+            icon: classification?.icon || suggestIconForName(displayName),
             is_active: true
           });
         }
@@ -145,29 +142,32 @@ export default function Budgeting() {
           order: 1
         });
 
-        const sortedExpenseCategories = Object.entries(expenseSpending).sort((a, b) => {
-          const catA = categories.find(c => c.id === a[0]);
-          const catB = categories.find(c => c.id === b[0]);
-          return (catA?.name || 'Unknown').localeCompare(catB?.name || 'Unknown');
+        const sortedExpenseClassifications = Object.entries(expenseSpending).sort((a, b) => {
+          const classA = classifications.find(c => c.id === a[0]);
+          const classB = classifications.find(c => c.id === b[0]);
+          const nameA = classA?.display_name || classA?.category || 'Unknown';
+          const nameB = classB?.display_name || classB?.category || 'Unknown';
+          return nameA.localeCompare(nameB);
         });
 
         let order = 0;
         const usedExpenseColors = new Set();
-        for (const [categoryId, total] of sortedExpenseCategories) {
+        for (const [classificationId, total] of sortedExpenseClassifications) {
           const monthlyAvg = total / 12;
           const rounded = Math.ceil(monthlyAvg / 10) * 10;
-          const category = categories.find(c => c.id === categoryId);
-          const color = category?.color || getNextColor(usedExpenseColors);
+          const classification = classifications.find(c => c.id === classificationId);
+          const displayName = classification?.display_name || classification?.category || 'Unknown';
+          const color = classification?.color || getNextColor(usedExpenseColors);
           usedExpenseColors.add(color);
 
           await firstsavvy.entities.Budget.create({
-            name: category?.name || 'Unknown',
-            category_id: categoryId,
+            name: displayName,
+            account_classification_id: classificationId,
             allocated_amount: Math.max(rounded, 10),
             group_id: expenseGroup.id,
             order: order++,
             color,
-            icon: category?.icon || suggestIconForName(category?.name || 'Unknown'),
+            icon: classification?.icon || suggestIconForName(displayName),
             is_active: true
           });
         }

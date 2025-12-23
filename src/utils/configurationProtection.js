@@ -1,5 +1,5 @@
 import { protectedConfigurationService } from '@/api/protectedConfigurations';
-import { DETAIL_TYPE_LABELS, getAccountDisplayName } from '@/components/utils/constants';
+import { getAccountDisplayName } from '@/components/utils/constants';
 
 export class ConfigurationIntegrityChecker {
   constructor() {
@@ -60,12 +60,12 @@ export class ConfigurationIntegrityChecker {
 
   extractCurrentCategoryLogic() {
     return {
-      detailTypeLabels: DETAIL_TYPE_LABELS,
       displayNameFunction: getAccountDisplayName.toString(),
       filteringApproach: {
         transferHandling: 'Separate income/expense transfer categories',
         normalCategories: 'Filter by type and exclude transfers',
-        aiSuggestion: 'Show suggested category first'
+        aiSuggestion: 'Show suggested category first',
+        classificationBased: 'Uses account_classifications table for all categorization'
       }
     };
   }

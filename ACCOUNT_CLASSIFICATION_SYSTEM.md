@@ -1,5 +1,9 @@
 # Account Classification System
 
+> **⚠️ IMPORTANT: This is the ONLY chart of accounts system**
+>
+> As of the classification system migration, this is the single source of truth for ALL account types, categories, and financial classifications. There are NO hardcoded account types anywhere in the codebase. Everything is data-driven from these 89 classifications.
+
 ## Overview
 
 The account classification system provides a three-tier hierarchy for organizing all account types across your financial management app:
