@@ -20,9 +20,19 @@ const DEFAULT_COLORS = [
 ];
 
 export default function CategoryBreakdownDonut({ transactions, selectedMonth, selectedAccount, accounts = [], onCategoryClick }) {
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name'),
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['userChartOfAccounts'],
+    queryFn: async () => {
+      const { data: { user } } = await firstsavvy.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
     staleTime: 0,
     refetchOnMount: 'always'
   });
@@ -41,8 +51,8 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
     refetchOnMount: 'always'
   });
 
-  const getCategoryById = (id) => categories.find(c => c.id === id);
-  const getBudgetByCategoryId = (categoryId) => budgets.find(b => b.category_id === categoryId);
+  const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
+  const getBudgetByChartAccountId = (chartAccountId) => budgets.find(b => b.chart_account_id === chartAccountId);
   const [activeIndex, setActiveIndex] = useState(null);
 
   const today = new Date();
@@ -58,22 +68,22 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
       if (!t.date) return false;
       const tDate = new Date(t.date);
       if (isNaN(tDate.getTime())) return false;
-      const matchesAccount = selectedAccount === 'all' 
+      const matchesAccount = selectedAccount === 'all'
         ? activeAccountIds.includes(t.account_id)
         : t.account_id === selectedAccount;
-      const matchesMonth = tDate.getMonth() === targetDate.getMonth() && 
+      const matchesMonth = tDate.getMonth() === targetDate.getMonth() &&
                           tDate.getFullYear() === targetDate.getFullYear();
       // For current month, only include transactions up to today
       const matchesDay = !isCurrentMonth || tDate.getDate() <= currentDay;
       return t.type === 'expense' && t.status === 'posted' && matchesAccount && matchesMonth && matchesDay;
     })
     .reduce((acc, t) => {
-      const category = getCategoryById(t.category_id);
-      const budget = getBudgetByCategoryId(t.category_id);
-      const categoryName = category?.name || 'uncategorized';
+      const chartAccount = getChartAccountById(t.chart_account_id);
+      const budget = getBudgetByChartAccountId(t.chart_account_id);
+      const categoryName = chartAccount?.custom_display_name || chartAccount?.category || 'uncategorized';
       if (!acc[categoryName]) {
-        // Prioritize budget color, then category color
-        acc[categoryName] = { amount: 0, color: budget?.color || category?.color, categoryId: t.category_id };
+        // Prioritize budget color, then chart account color
+        acc[categoryName] = { amount: 0, color: budget?.color || chartAccount?.color, chartAccountId: t.chart_account_id };
       }
       acc[categoryName].amount += Math.abs(t.amount);
       return acc;
@@ -91,7 +101,7 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
     name: categoryName.replace(/_/g, ' '),
     value: cat.amount,
     color: cat.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
-    categoryId: cat.categoryId
+    chartAccountId: cat.chartAccountId
   }));
 
   // Add "other" category if there are more than 6 categories
@@ -159,8 +169,8 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
                     onMouseLeave={() => setActiveIndex(null)}
                     onClick={(data, index) => {
                       const entry = chartData[index];
-                      if (entry?.categoryId && onCategoryClick) {
-                        onCategoryClick(entry.categoryId, entry.name);
+                      if (entry?.chartAccountId && onCategoryClick) {
+                        onCategoryClick(entry.chartAccountId, entry.name);
                       }
                     }}
                   >

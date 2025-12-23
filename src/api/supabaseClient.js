@@ -129,7 +129,6 @@ export const createSupabaseClient = () => {
       Transaction: createEntityAPI('transactions'),
       Budget: createEntityAPI('budgets'),
       BudgetGroup: createEntityAPI('budget_groups'),
-      Category: createEntityAPI('categories'),
       Goal: createEntityAPI('goals'),
       Bill: createEntityAPI('bills'),
       Asset: createEntityAPI('assets'),
@@ -148,8 +147,7 @@ export const createSupabaseClient = () => {
       SharedResource: createEntityAPI('shared_resources'),
       HouseholdGroup: createEntityAPI('household_groups'),
       HouseholdMember: createEntityAPI('household_members'),
-      Invitation: createEntityAPI('invitations'),
-      AccountClassification: createEntityAPI('account_classifications')
+      Invitation: createEntityAPI('invitations')
     },
     auth: {
       async signUp(email, password, fullName) {

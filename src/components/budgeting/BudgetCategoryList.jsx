@@ -34,17 +34,27 @@ const ICON_MAP = {
 };
 
 export default function BudgetCategoryList({ budgets, spendingByCategory, isIncome = false, unbudgetedAmount = 0 }) {
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['userChartOfAccounts'],
+    queryFn: async () => {
+      const { data: { user } } = await firstsavvy.auth.getUser();
+      if (!user) return [];
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
-  const getCategoryById = (id) => categories.find(c => c.id === id);
+  const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
 
   const getBudgetColor = (budget) => {
     if (budget.color) return budget.color;
-    const category = getCategoryById(budget.category_id);
-    if (category?.color) return category.color;
+    const chartAccount = getChartAccountById(budget.chart_account_id);
+    if (chartAccount?.color) return chartAccount.color;
     return '#64748b';
   };
 
@@ -59,15 +69,12 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, isInco
 
   return (
     <div className="divide-y divide-slate-100">
-      {budgets.filter(budget => {
-        const category = getCategoryById(budget.category_id);
-        return category?.detail_type !== 'transfer';
-      }).map((budget) => {
-        const spent = spendingByCategory[budget.category_id] || spendingByCategory[budget.name] || 0;
+      {budgets.map((budget) => {
+        const spent = spendingByCategory[budget.chart_account_id] || spendingByCategory[budget.name] || 0;
         const percent = (spent / budget.allocated_amount) * 100;
         const remaining = budget.allocated_amount - spent;
         const budgetColor = getBudgetColor(budget);
-        const category = getCategoryById(budget.category_id);
+        const chartAccount = getChartAccountById(budget.chart_account_id);
 
         return (
           <div
@@ -79,9 +86,9 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, isInco
                 className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
                 style={{ backgroundColor: budgetColor }}
               >
-                {category?.icon && ICON_MAP[category.icon] && React.createElement(ICON_MAP[category.icon], { className: "w-4 h-4 text-white" })}
+                {chartAccount?.icon && ICON_MAP[chartAccount.icon] && React.createElement(ICON_MAP[chartAccount.icon], { className: "w-4 h-4 text-white" })}
               </div>
-              <span className="text-sm font-medium text-slate-900">{budget.name || category?.name}</span>
+              <span className="text-sm font-medium text-slate-900">{budget.name || chartAccount?.custom_display_name || chartAccount?.category}</span>
             </div>
 
             <div className="flex-1 flex items-center">

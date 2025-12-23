@@ -46,13 +46,13 @@ export function useBudgetData() {
     const incomeTransactions = currentMonthTransactions.filter(t => t.type === 'income');
 
     const spendingByCategory = expenseTransactions.reduce((acc, t) => {
-      const key = t.category_id || '__uncategorized__';
+      const key = t.chart_account_id || '__uncategorized__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
 
     const incomeByCategory = incomeTransactions.reduce((acc, t) => {
-      const key = t.category_id || '__uncategorized_income__';
+      const key = t.chart_account_id || '__uncategorized_income__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});

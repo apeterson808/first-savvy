@@ -3,7 +3,7 @@ import { Sparkles, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { aiCategorizeTransaction } from '@/api/functions';
 
-export async function suggestCategory(description, transactions, rules, amount = null, categories = []) {
+export async function suggestCategory(description, transactions, rules, amount = null, chartAccounts = []) {
   if (!description || description.length < 2) return null;
 
   const descLower = description.toLowerCase().trim();
@@ -35,6 +35,7 @@ export async function suggestCategory(description, transactions, rules, amount =
 
       if (matches) {
         return {
+          chartAccountId: rule.chart_account_id,
           category: rule.category,
           type: rule.transaction_type,
           confidence: 'rule',
@@ -44,32 +45,33 @@ export async function suggestCategory(description, transactions, rules, amount =
     }
   }
 
-  if (transactions && transactions.length > 0 && categories.length > 0) {
-    const categoryCount = {};
+  if (transactions && transactions.length > 0 && chartAccounts.length > 0) {
+    const accountCount = {};
 
     transactions.forEach(t => {
-      if (!t.description || !t.category_id) return;
+      if (!t.description || !t.chart_account_id) return;
 
-      const category = categories.find(c => c.id === t.category_id);
-      if (!category) return;
+      const chartAccount = chartAccounts.find(c => c.id === t.chart_account_id);
+      if (!chartAccount) return;
 
       const tDescLower = t.description.toLowerCase();
 
       if (tDescLower.includes(descLower) || descLower.includes(tDescLower) ||
           (descLower.length > 4 && tDescLower.includes(descLower.substring(0, 4)))) {
-        const key = `${category.name}|${t.type}`;
-        categoryCount[key] = (categoryCount[key] || 0) + 1;
+        const displayName = chartAccount.custom_display_name || chartAccount.category || 'Other';
+        const key = `${chartAccount.id}|${displayName}|${t.type}`;
+        accountCount[key] = (accountCount[key] || 0) + 1;
       }
     });
 
     let maxCount = 0;
     let bestMatch = null;
 
-    Object.entries(categoryCount).forEach(([key, count]) => {
+    Object.entries(accountCount).forEach(([key, count]) => {
       if (count > maxCount) {
         maxCount = count;
-        const [category, type] = key.split('|');
-        bestMatch = { category, type, confidence: 'history', matchCount: count };
+        const [chartAccountId, category, type] = key.split('|');
+        bestMatch = { chartAccountId, category, type, confidence: 'history', matchCount: count };
       }
     });
 
@@ -80,8 +82,9 @@ export async function suggestCategory(description, transactions, rules, amount =
 
   try {
     const aiResult = await aiCategorizeTransaction({ description, amount });
-    if (aiResult && aiResult.category) {
+    if (aiResult && (aiResult.chartAccountId || aiResult.category)) {
       return {
+        chartAccountId: aiResult.chartAccountId,
         category: aiResult.category,
         type: aiResult.type,
         confidence: aiResult.confidence || 'ai'

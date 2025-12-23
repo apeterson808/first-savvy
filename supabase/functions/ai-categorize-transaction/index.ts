@@ -11,11 +11,13 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-interface Category {
+interface ChartAccount {
   id: string;
-  name: string;
-  type: 'income' | 'expense';
-  detail_type?: string;
+  account_number: number;
+  account_type: 'income' | 'expense' | 'asset' | 'liability' | 'equity';
+  account_detail?: string;
+  category?: string;
+  custom_display_name?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -69,17 +71,18 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const { data: categories, error: categoriesError } = await supabase
-      .from('categories')
-      .select('id, name, type, detail_type')
+    const { data: chartAccounts, error: chartAccountsError } = await supabase
+      .from('user_chart_of_accounts')
+      .select('id, account_number, account_type, account_detail, category, custom_display_name')
       .eq('user_id', user.id)
-      .neq('detail_type', 'transfer')
-      .order('name');
+      .eq('is_active', true)
+      .in('account_type', ['income', 'expense'])
+      .order('account_number');
 
-    if (categoriesError) {
-      console.error('Error fetching categories:', categoriesError);
+    if (chartAccountsError) {
+      console.error('Error fetching chart accounts:', chartAccountsError);
       return new Response(
-        JSON.stringify({ error: 'Failed to fetch user categories' }),
+        JSON.stringify({ error: 'Failed to fetch user chart accounts' }),
         {
           status: 500,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -87,9 +90,9 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (!categories || categories.length === 0) {
+    if (!chartAccounts || chartAccounts.length === 0) {
       return new Response(
-        JSON.stringify({ error: 'No categories found for user' }),
+        JSON.stringify({ error: 'No chart accounts found for user' }),
         {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -97,12 +100,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const fallbackCategory = suggestCategoryFallback(description, amount, categories);
-    if (fallbackCategory) {
+    const fallbackAccount = suggestChartAccountFallback(description, amount, chartAccounts);
+    if (fallbackAccount) {
       return new Response(
         JSON.stringify({
-          category: fallbackCategory.name,
-          type: fallbackCategory.type,
+          chartAccountId: fallbackAccount.id,
+          accountNumber: fallbackAccount.account_number,
+          category: fallbackAccount.custom_display_name || fallbackAccount.category,
+          type: fallbackAccount.account_type,
           confidence: 'pattern',
         }),
         {
@@ -113,6 +118,7 @@ Deno.serve(async (req: Request) => {
     }
     return new Response(
       JSON.stringify({
+        chartAccountId: null,
         category: null,
         type: null,
         confidence: 'none',
@@ -137,40 +143,43 @@ Deno.serve(async (req: Request) => {
   }
 });
 
-function suggestCategoryFallback(description: string, amount: number | undefined, categories: Category[]): Category | null {
+function suggestChartAccountFallback(description: string, amount: number | undefined, chartAccounts: ChartAccount[]): ChartAccount | null {
   const descLower = description.toLowerCase();
 
   const patterns = [
-    { keywords: ['grocery', 'food', 'market', 'safeway', 'whole foods', 'trader', 'costco', 'kroger'], categoryName: 'groceries' },
-    { keywords: ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'chipotle', 'dining', 'pizza', 'burger'], categoryName: 'dining' },
-    { keywords: ['gas', 'fuel', 'shell', 'chevron', 'uber', 'lyft', 'taxi', 'transit', 'parking'], categoryName: 'transportation' },
-    { keywords: ['amazon', 'target', 'walmart', 'best buy', 'shopping', 'store', 'retail'], categoryName: 'shopping' },
-    { keywords: ['netflix', 'spotify', 'hulu', 'apple', 'subscription', 'membership', 'monthly'], categoryName: 'subscriptions' },
-    { keywords: ['doctor', 'hospital', 'pharmacy', 'cvs', 'walgreens', 'medical', 'health', 'dental'], categoryName: 'health' },
-    { keywords: ['electric', 'water', 'gas bill', 'internet', 'phone', 'verizon', 'att', 'comcast', 'utility'], categoryName: 'utilities' },
-    { keywords: ['rent', 'mortgage', 'lease', 'housing', 'property'], categoryName: 'housing' },
-    { keywords: ['insurance', 'premium'], categoryName: 'insurance' },
-    { keywords: ['paycheck', 'salary', 'direct deposit', 'payroll', 'wages'], categoryName: 'salary' },
+    { keywords: ['grocery', 'food', 'market', 'safeway', 'whole foods', 'trader', 'costco', 'kroger'], categoryName: 'groceries', accountNumber: 5030 },
+    { keywords: ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'chipotle', 'dining', 'pizza', 'burger'], categoryName: 'dining out', accountNumber: 5031 },
+    { keywords: ['gas', 'fuel', 'shell', 'chevron'], categoryName: 'gas & fuel', accountNumber: 5041 },
+    { keywords: ['uber', 'lyft', 'taxi', 'transit', 'parking'], categoryName: 'transportation', accountNumber: 5040 },
+    { keywords: ['amazon', 'target', 'walmart', 'best buy', 'store', 'retail'], categoryName: 'shopping', accountNumber: 5091 },
+    { keywords: ['netflix', 'spotify', 'hulu', 'apple music', 'youtube premium'], categoryName: 'subscriptions', accountNumber: 5090 },
+    { keywords: ['doctor', 'hospital', 'pharmacy', 'cvs', 'walgreens', 'dental'], categoryName: 'healthcare', accountNumber: 5060 },
+    { keywords: ['electric', 'water', 'gas bill', 'utility'], categoryName: 'utilities', accountNumber: 5020 },
+    { keywords: ['internet', 'phone', 'verizon', 'att', 'comcast'], categoryName: 'internet', accountNumber: 5021 },
+    { keywords: ['rent', 'mortgage', 'lease', 'housing'], categoryName: 'rent / mortgage', accountNumber: 5011 },
+    { keywords: ['insurance', 'premium'], categoryName: 'insurance', accountNumber: 5050 },
+    { keywords: ['paycheck', 'salary', 'direct deposit', 'payroll', 'wages'], categoryName: 'salary', accountNumber: 4011 },
   ];
 
   for (const pattern of patterns) {
     if (pattern.keywords.some(keyword => descLower.includes(keyword))) {
-      const matchedCategory = categories.find(c =>
-        c.name.toLowerCase().includes(pattern.categoryName) ||
-        pattern.categoryName.includes(c.name.toLowerCase())
+      const matchedAccount = chartAccounts.find(c =>
+        c.account_number === pattern.accountNumber ||
+        (c.category && c.category.toLowerCase().includes(pattern.categoryName)) ||
+        (c.custom_display_name && c.custom_display_name.toLowerCase().includes(pattern.categoryName))
       );
-      if (matchedCategory) {
-        return matchedCategory;
+      if (matchedAccount) {
+        return matchedAccount;
       }
     }
   }
 
   if (amount !== undefined && amount > 0) {
-    const expenseCategory = categories.find(c => c.type === 'expense');
-    if (expenseCategory) return expenseCategory;
+    const expenseAccount = chartAccounts.find(c => c.account_type === 'expense' && c.category);
+    if (expenseAccount) return expenseAccount;
   } else if (amount !== undefined && amount < 0) {
-    const incomeCategory = categories.find(c => c.type === 'income');
-    if (incomeCategory) return incomeCategory;
+    const incomeAccount = chartAccounts.find(c => c.account_type === 'income' && c.category);
+    if (incomeAccount) return incomeAccount;
   }
 
   return null;
