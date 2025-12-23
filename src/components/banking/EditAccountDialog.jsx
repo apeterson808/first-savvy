@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import AccountClassificationSelector from '@/components/common/AccountClassificationSelector';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
@@ -20,7 +21,8 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
         name: isCategory ? account.name : account.account_name,
         institution: account.institution || '',
         current_balance: account.current_balance || 0,
-        notes: account.notes || ''
+        notes: account.notes || '',
+        account_classification_id: account.account_classification_id || null
       });
     }
   }, [account]);
@@ -36,27 +38,31 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           account_name: data.name,
           institution: data.institution,
           current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes
+          notes: data.notes,
+          account_classification_id: data.account_classification_id || null
         });
       } else if (entityType === 'Asset') {
         return await firstsavvy.entities.Asset.update(account.id, {
           name: data.name,
           institution: data.institution,
           current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes
+          notes: data.notes,
+          account_classification_id: data.account_classification_id || null
         });
       } else if (entityType === 'Liability') {
         return await firstsavvy.entities.Liability.update(account.id, {
           name: data.name,
           institution: data.institution,
           current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes
+          notes: data.notes,
+          account_classification_id: data.account_classification_id || null
         });
       } else if (entityType === 'Equity') {
         return await firstsavvy.entities.Equity.update(account.id, {
           name: data.name,
           current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes
+          notes: data.notes,
+          account_classification_id: data.account_classification_id || null
         });
       } else if (entityType === 'Income' || entityType === 'Expense') {
         return await firstsavvy.entities.Category.update(account.id, {
@@ -113,6 +119,14 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
               placeholder="Enter name"
             />
           </div>
+
+          {!isCategory && (
+            <AccountClassificationSelector
+              value={formData.account_classification_id}
+              onValueChange={(value) => setFormData({ ...formData, account_classification_id: value })}
+              label="Account Type"
+            />
+          )}
 
           {showInstitution && (
             <div>
