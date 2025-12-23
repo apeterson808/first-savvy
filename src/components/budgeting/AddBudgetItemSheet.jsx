@@ -17,6 +17,8 @@ import BudgetConflictDialog from './BudgetConflictDialog';
 import { ChevronLeft, Trash2 } from 'lucide-react';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { getIncomeAccounts, getExpenseAccounts, getDisplayName } from '@/api/chartOfAccounts';
 
 const GROUP_COLORS = {
   income: '#22c55e',
@@ -32,27 +34,36 @@ const DEFAULT_COLOR = '#52A5CE';
 
 export default function AddBudgetItemSheet({ open, onOpenChange, groups, existingBudgetColors = [], editingBudget = null, onDelete = null }) {
   const isEditMode = !!editingBudget;
-  
+  const { user } = useAuth();
+
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedGroupId, setSelectedGroupId] = useState('');
   const [limitAmount, setLimitAmount] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
-  
+
   // New group form state
   const [showNewGroupForm, setShowNewGroupForm] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
-  
+
   // Conflict dialog state
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [pendingBudgetData, setPendingBudgetData] = useState(null);
 
   const queryClient = useQueryClient();
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts-budget', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const [income, expense] = await Promise.all([
+        getIncomeAccounts(user.id),
+        getExpenseAccounts(user.id)
+      ]);
+      return [...income, ...expense].filter(a => a.level === 3);
+    },
+    enabled: !!user
   });
 
   // Populate form when editing - set group first, then category
@@ -68,7 +79,7 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
   // Set category after group is set (needs separate effect to ensure categoryType is correct)
   React.useEffect(() => {
     if (editingBudget && open && selectedGroupId === editingBudget.group_id) {
-      setSelectedCategoryId(editingBudget.category_id || '');
+      setSelectedCategoryId(editingBudget.chart_account_id || '');
     }
   }, [editingBudget, open, selectedGroupId]);
 
@@ -77,21 +88,21 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
     queryFn: () => firstsavvy.entities.Budget.list()
   });
 
-  // Get categories not already in a budget (exclude current budget's category when editing)
-  const usedCategoryIds = new Set(
+  // Get chart accounts not already in a budget (exclude current budget's account when editing)
+  const usedAccountIds = new Set(
     existingBudgets
       .filter(b => !isEditMode || b.id !== editingBudget?.id)
-      .map(b => b.category_id)
+      .map(b => b.chart_account_id)
       .filter(Boolean)
   );
-  
-  // Get category type from selected group
-  const selectedGroup = groups.find(g => g.id === selectedGroupId);
-  const categoryType = selectedGroup?.type || '';
 
-  // Include current budget's category when editing, plus all unused categories
-  const availableCategories = categories.filter(c => 
-    c.type === categoryType && (!usedCategoryIds.has(c.id) || (isEditMode && c.id === editingBudget?.category_id))
+  // Get account type from selected group
+  const selectedGroup = groups.find(g => g.id === selectedGroupId);
+  const accountType = selectedGroup?.type || '';
+
+  // Include current budget's account when editing, plus all unused accounts
+  const availableAccounts = chartAccounts.filter(a =>
+    a.account_type === accountType && (!usedAccountIds.has(a.id) || (isEditMode && a.id === editingBudget?.chart_account_id))
   );
 
   const createBudgetMutation = useMutation({
@@ -157,22 +168,24 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
     
     if (!selectedCategoryId || !selectedGroupId || !limitAmount) return;
 
-    const selectedCategory = categories.find(c => c.id === selectedCategoryId);
+    const selectedAccount = chartAccounts.find(a => a.id === selectedCategoryId);
     const newAmount = parseFloat(limitAmount) || 0;
-    
-    // Update category icon if changed
-    if (selectedIcon && selectedIcon !== selectedCategory?.icon) {
-      await firstsavvy.entities.Category.update(selectedCategoryId, { icon: selectedIcon });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+
+    // Update chart account icon if changed
+    if (selectedIcon && selectedIcon !== selectedAccount?.icon) {
+      await firstsavvy.from('user_chart_of_accounts')
+        .update({ icon: selectedIcon })
+        .eq('id', selectedCategoryId);
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts-budget'] });
     }
-    
+
     const budgetData = {
-      name: selectedCategory?.name || 'Budget Item',
-      category_id: selectedCategoryId,
+      name: selectedAccount ? getDisplayName(selectedAccount) : 'Budget Item',
+      chart_account_id: selectedCategoryId,
       group_id: selectedGroupId,
       allocated_amount: newAmount,
       color: selectedColor || DEFAULT_COLOR,
-      icon: selectedIcon || selectedCategory?.icon,
+      icon: selectedIcon || selectedAccount?.icon,
       is_active: true
     };
 
@@ -362,22 +375,23 @@ export default function AddBudgetItemSheet({ open, onOpenChange, groups, existin
                 placeholder="Select category"
                 triggerClassName="hover:bg-slate-50"
                 renderValue={(value) => {
-                                        const cat = categories.find(c => c.id === value);
-                                        if (!cat) return null;
-                                        return <span className="truncate">{cat.name}</span>;
+                                        const acc = chartAccounts.find(a => a.id === value);
+                                        if (!acc) return null;
+                                        return <span className="truncate">{getDisplayName(acc)}</span>;
                                       }}
               >
                 <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium" isAction>
                   + Add new category
                 </ClickThroughSelectItem>
-                {availableCategories.map(cat => (
-                                        <ClickThroughSelectItem key={cat.id} value={cat.id} data-display={cat.name}>
-                                          {cat.name}
+                {availableAccounts.map(acc => (
+                                        <ClickThroughSelectItem key={acc.id} value={acc.id} data-display={getDisplayName(acc)}>
+                                          <span className="text-xs text-gray-500 font-mono mr-2">{acc.account_number}</span>
+                                          {getDisplayName(acc)}
                                         </ClickThroughSelectItem>
                                       ))}
-                {availableCategories.length === 0 && selectedGroupId && (
+                {availableAccounts.length === 0 && selectedGroupId && (
                   <div className="px-2 py-2 text-xs text-slate-400 text-center">
-                    No available categories
+                    No available accounts
                   </div>
                 )}
                 {!selectedGroupId && (

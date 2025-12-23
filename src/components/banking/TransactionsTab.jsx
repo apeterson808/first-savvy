@@ -37,7 +37,7 @@ import AccountCreationWizard from './AccountCreationWizard';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatTransactionDescription } from '../utils/formatters';
-import CategoryDropdown from '../common/CategoryDropdown';
+import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
@@ -212,9 +212,29 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
 
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts-income-expense'],
+    queryFn: async () => {
+      const { data: user } = await firstsavvy.auth.getUser();
+      if (!user) return [];
+      const [income, expense] = await Promise.all([
+        firstsavvy.from('user_chart_of_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('account_type', 'income')
+          .eq('level', 3)
+          .eq('is_active', true)
+          .order('account_number'),
+        firstsavvy.from('user_chart_of_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('account_type', 'expense')
+          .eq('level', 3)
+          .eq('is_active', true)
+          .order('account_number')
+      ]);
+      return [...(income.data || []), ...(expense.data || [])];
+    }
   });
 
   const { data: categorizationRules = [] } = useQuery({

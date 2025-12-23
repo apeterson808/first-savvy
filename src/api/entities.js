@@ -20,8 +20,6 @@ export const CreditScore = firstsavvy.entities.CreditScore;
 
 export const BudgetGroup = firstsavvy.entities.BudgetGroup;
 
-export const Category = firstsavvy.entities.Category;
-
 export const DetailType = firstsavvy.entities.DetailType;
 
 export const AuditLog = firstsavvy.entities.AuditLog;

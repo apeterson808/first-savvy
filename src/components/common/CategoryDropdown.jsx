@@ -1,28 +1,9 @@
-/*
- * ⚠️ PROTECTED CONFIGURATION ⚠️
- *
- * This file is part of a protected configuration system and changes require explicit confirmation.
- * Any modifications to this component's filtering logic must be reviewed and approved.
- *
- * Protected aspects:
- * - Category filtering logic (transfer handling, income/expense separation)
- * - Display name function integration
- * - AI suggestion handling
- *
- * To make changes:
- * 1. Navigate to Settings > Protected tab to unlock the configuration
- * 2. Make your changes
- * 3. Confirm the change when prompted
- *
- * For more information, see the Protected Configurations documentation.
- */
-
 import React, { useState } from 'react';
-import { firstsavvy } from '@/api/firstsavvyClient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Sparkles } from 'lucide-react';
-import { getAccountDisplayName } from '../utils/constants';
+import { Sparkles, Plus } from 'lucide-react';
+import { getIncomeAccounts, getExpenseAccounts, getDisplayName, getFullDisplayName, createUserIncomeCategory, createUserExpenseCategory } from '@/api/chartOfAccounts';
 
 export default function CategoryDropdown({
   value,
@@ -36,37 +17,47 @@ export default function CategoryDropdown({
   isTransactionTransfer = false,
   transactionAmount = 0
 }) {
+  const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name', 1000)
+  const accountType = transactionType === 'income' ? 'income' : 'expense';
+
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', accountType, user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      if (accountType === 'income') {
+        return await getIncomeAccounts(user.id);
+      } else {
+        return await getExpenseAccounts(user.id);
+      }
+    },
+    enabled: !!user && !isTransactionTransfer
   });
 
-  const transferIncomeCategory = categories.find(c => c.type === 'income' && c.detail_type === 'transfer');
-  const transferExpenseCategory = categories.find(c => c.type === 'expense' && c.detail_type === 'transfer');
+  const level3Accounts = chartAccounts.filter(a => a.level === 3 && a.is_active);
 
-  let availableCategories = [];
-  let currentDisplayValue = value || (aiSuggestionId && !isTransactionTransfer ? aiSuggestionId : value);
+  const transferIncomeAccount = chartAccounts.find(a => a.account_detail === 'Transfer Income');
+  const transferExpenseAccount = chartAccounts.find(a => a.account_detail === 'Transfer Expense');
+
+  let availableAccounts = [];
+  let currentDisplayValue = value;
 
   if (isTransactionTransfer) {
-    const targetTransferCategory = transactionAmount > 0 ? transferIncomeCategory : transferExpenseCategory;
-    if (targetTransferCategory) {
-      availableCategories = [targetTransferCategory];
-      currentDisplayValue = targetTransferCategory.id;
+    const targetTransferAccount = transactionAmount > 0 ? transferIncomeAccount : transferExpenseAccount;
+    if (targetTransferAccount) {
+      availableAccounts = [targetTransferAccount];
+      currentDisplayValue = targetTransferAccount.id;
     }
   } else {
-    const nonTransferCategories = categories.filter(c => c.is_active !== false && c.detail_type !== 'transfer');
-    availableCategories = transactionType === 'expense'
-      ? nonTransferCategories.filter(c => c.type === 'expense')
-      : nonTransferCategories.filter(c => c.type === 'income');
+    availableAccounts = level3Accounts;
   }
 
-  const suggestedCategory = aiSuggestionId ? categories.find(c => c.id === aiSuggestionId) : null;
+  const suggestedAccount = aiSuggestionId ? availableAccounts.find(a => a.id === aiSuggestionId) : null;
 
-  if (suggestedCategory && !availableCategories.find(c => c.id === aiSuggestionId)) {
-    availableCategories = [suggestedCategory, ...availableCategories];
+  if (suggestedAccount && !availableAccounts.find(a => a.id === aiSuggestionId)) {
+    availableAccounts = [suggestedAccount, ...availableAccounts];
   }
 
   const handleOpenChange = (open) => {
@@ -76,12 +67,36 @@ export default function CategoryDropdown({
     }
   };
 
+  const handleAddNew = async (categoryName) => {
+    if (!user || !categoryName?.trim()) return;
+
+    try {
+      const newAccount = accountType === 'income'
+        ? await createUserIncomeCategory(user.id, { name: categoryName.trim() })
+        : await createUserExpenseCategory(user.id, { name: categoryName.trim() });
+
+      if (onAddNew) {
+        onAddNew(categoryName);
+      }
+      if (onValueChange && newAccount) {
+        onValueChange(newAccount.id);
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+    }
+  };
+
+  const selectedAccount = availableAccounts.find(a => a.id === currentDisplayValue);
+  const displayValue = selectedAccount
+    ? getDisplayName(selectedAccount)
+    : placeholder;
+
   return (
     <ClickThroughSelect
-      value={currentDisplayValue}
+      value={currentDisplayValue || ''}
       onValueChange={(val) => {
         if (val === '__add_new__' && onAddNew) {
-          onAddNew(searchTerm);
+          handleAddNew(searchTerm);
           return;
         }
         onValueChange?.(val);
@@ -91,50 +106,49 @@ export default function CategoryDropdown({
       placeholder={placeholder}
       triggerClassName={`${triggerClassName} ${disabled || isTransactionTransfer ? 'opacity-50 pointer-events-none' : ''}`}
       enableSearch={true}
+      disabled={disabled || isTransactionTransfer}
+      displayValue={displayValue}
     >
-      {onAddNew && (
+      {onAddNew && searchTerm && (
         <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-          + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
+          <Plus className="w-3 h-3 mr-1" />
+          Add new category: "{searchTerm}"
         </ClickThroughSelectItem>
       )}
-      {suggestedCategory && (
-        <>
+      {suggestedAccount && (
+        <ClickThroughSelectItem
+          key={`suggested-${suggestedAccount.id}`}
+          value={suggestedAccount.id}
+          isRecommended={true}
+          data-display={getDisplayName(suggestedAccount)}
+          className="flex items-center justify-between whitespace-nowrap"
+        >
+          <span className="truncate">
+            {getDisplayName(suggestedAccount)}
+          </span>
+          <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
+        </ClickThroughSelectItem>
+      )}
+      {availableAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
+        const displayName = getDisplayName(acc);
+        return (
           <ClickThroughSelectItem
-            key={`suggested-${suggestedCategory.id}`}
-            value={suggestedCategory.id}
-            isRecommended={true}
-            data-display={getAccountDisplayName({
-              account_type: suggestedCategory.type,
-              detail_type: suggestedCategory.detail_type,
-              name: suggestedCategory.name
-            })}
+            key={acc.id}
+            value={acc.id}
+            data-display={displayName}
             className="flex items-center justify-between whitespace-nowrap"
           >
-            <span className="truncate">
-              {getAccountDisplayName({
-                account_type: suggestedCategory.type,
-                detail_type: suggestedCategory.detail_type,
-                name: suggestedCategory.name
-              })}
-            </span>
-            <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
-          </ClickThroughSelectItem>
-        </>
-      )}
-      {availableCategories.filter(cat => cat.id !== aiSuggestionId).map((cat) => {
-        const displayName = getAccountDisplayName({
-          account_type: cat.type,
-          detail_type: cat.detail_type,
-          name: cat.name
-        });
-        return (
-          <ClickThroughSelectItem key={cat.id} value={cat.id} data-display={displayName} className="flex items-center justify-between whitespace-nowrap">
-            <span className="truncate">{displayName}</span>
+            <span className="text-xs text-gray-500 font-mono mr-2">{acc.account_number}</span>
+            <span className="truncate flex-1">{displayName}</span>
           </ClickThroughSelectItem>
         );
       })}
-      {isTransactionTransfer && availableCategories.length > 0 && (
-        <ClickThroughSelectItem key={availableCategories[0].id} value={availableCategories[0].id} data-display="Transfer">
+      {isTransactionTransfer && availableAccounts.length > 0 && (
+        <ClickThroughSelectItem
+          key={availableAccounts[0].id}
+          value={availableAccounts[0].id}
+          data-display="Transfer"
+        >
           <span className="truncate">Transfer</span>
         </ClickThroughSelectItem>
       )}
