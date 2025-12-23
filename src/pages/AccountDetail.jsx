@@ -494,10 +494,10 @@ export default function AccountDetail() {
                         <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-slate-500">Asset Type</p>
-                          <p className="text-base capitalize">{account.type}</p>
+                          <p className="text-base capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
                         </div>
                       </div>
-                      {account.type === 'Vehicle' && (
+                      {account.detail_type === 'vehicle' && (
                         <>
                           {account.vehicle_make && (
                             <div className="flex items-start gap-3">
@@ -542,7 +542,7 @@ export default function AccountDetail() {
                         <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
                         <div>
                           <p className="text-sm font-medium text-slate-500">Liability Type</p>
-                          <p className="text-base capitalize">{account.type}</p>
+                          <p className="text-base capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
                         </div>
                       </div>
                       {(account.institution || account.institution_name) && (

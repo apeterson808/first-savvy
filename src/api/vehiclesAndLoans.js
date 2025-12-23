@@ -7,7 +7,8 @@ export async function createVehicleAsset(vehicleData) {
   const assetRecord = {
     user_id: user.id,
     name: vehicleData.name,
-    type: 'Vehicle',
+    type: 'Asset',
+    detail_type: 'vehicle',
     current_balance: vehicleData.estimatedValue,
     vehicle_year: vehicleData.year,
     vehicle_make: vehicleData.make,
@@ -33,7 +34,8 @@ export async function createAutoLoan(loanData) {
   const liabilityRecord = {
     user_id: user.id,
     name: loanData.name || `${loanData.lenderName} Auto Loan`,
-    type: 'Auto Loan',
+    type: 'Liability',
+    detail_type: 'auto_loan',
     current_balance: loanData.currentBalance,
     interest_rate: loanData.interestRate || null,
     original_loan_amount: loanData.originalAmount || loanData.currentBalance,
@@ -190,7 +192,7 @@ export async function getUnlinkedAssets() {
     .from('assets')
     .select('*')
     .eq('user_id', user.id)
-    .eq('type', 'Vehicle');
+    .eq('detail_type', 'vehicle');
 
   if (assetsError) throw assetsError;
 
@@ -213,7 +215,7 @@ export async function getUnlinkedAutoLoans() {
     .from('liabilities')
     .select('*')
     .eq('user_id', user.id)
-    .eq('type', 'Auto Loan')
+    .eq('detail_type', 'auto_loan')
     .is('linked_asset_id', null);
 
   if (error) throw error;

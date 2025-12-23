@@ -7,7 +7,8 @@ export async function createPropertyAsset(propertyData) {
   const assetRecord = {
     user_id: user.id,
     name: propertyData.name,
-    type: 'Property',
+    type: 'Asset',
+    detail_type: 'property',
     current_balance: propertyData.estimatedValue,
     property_address: propertyData.address || null,
     property_city: propertyData.city || null,
@@ -38,7 +39,8 @@ export async function createMortgage(mortgageData) {
   const liabilityRecord = {
     user_id: user.id,
     name: mortgageData.name || `${mortgageData.lenderName} Mortgage`,
-    type: 'Mortgage',
+    type: 'Liability',
+    detail_type: 'mortgage',
     current_balance: mortgageData.currentBalance,
     interest_rate: mortgageData.interestRate || null,
     original_loan_amount: mortgageData.originalAmount || mortgageData.currentBalance,
@@ -89,7 +91,7 @@ export async function getPropertyWithMortgage(propertyId) {
     .select('*')
     .eq('id', propertyId)
     .eq('user_id', user.id)
-    .eq('type', 'Property')
+    .eq('detail_type', 'property')
     .single();
 
   if (propertyError) throw propertyError;
@@ -119,7 +121,7 @@ export async function getUnlinkedProperties() {
     .from('assets')
     .select('*')
     .eq('user_id', user.id)
-    .eq('type', 'Property');
+    .eq('detail_type', 'property');
 
   if (propertiesError) throw propertiesError;
 
@@ -142,7 +144,7 @@ export async function getUnlinkedMortgages() {
     .from('liabilities')
     .select('*')
     .eq('user_id', user.id)
-    .eq('type', 'Mortgage')
+    .eq('detail_type', 'mortgage')
     .is('linked_asset_id', null);
 
   if (error) throw error;
