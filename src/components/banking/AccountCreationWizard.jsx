@@ -18,7 +18,6 @@ import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { getAccountTypes, getAccountDetails } from '@/utils/accountTypeMapping';
-import ChartAccountDropdown from '@/components/common/ChartAccountDropdown';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -196,6 +195,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     enabled: !!user && open
   });
 
+  const { data: existingAccounts = [] } = useQuery({
+    queryKey: ['existing-bank-accounts', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await firstsavvy
+        .from('accounts')
+        .select('id, account_name, account_type, institution_name, account_number_last4')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('account_name');
+      return data || [];
+    },
+    enabled: !!user && open
+  });
+
   useEffect(() => {
     if (!open) {
       resetWizard();
@@ -342,9 +356,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         setAccountConfigurations(prevConfig => ({
           ...prevConfig,
           [accountId]: {
+            import_mode: 'new',
             displayName: account.name,
             classType: classType,
             chart_account_id: defaultChartAccountId,
+            existing_account_id: null,
             startDatePreset: 'last_90',
             startDate: startDate,
             goLiveDate: today
@@ -485,37 +501,61 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (selectedCard?.id === 'banking' && checkedAccountIds.length > 0) {
       try {
         let createdCount = 0;
+        let linkedCount = 0;
+
         for (const accountId of checkedAccountIds) {
           const mockAccount = mockBankAccounts.find(acc => acc.id === accountId);
           const config = accountConfigurations[accountId];
 
           if (!mockAccount || !config) continue;
 
-          const accountNumber = Date.now().toString().slice(-6);
-          await firstsavvy.entities.Account.create({
-            account_name: config.displayName,
-            account_number: accountNumber,
-            account_type: mockAccount.type,
-            chart_account_id: config.chart_account_id,
-            current_balance: mockAccount.balance,
-            institution_name: mockAccount.institutionName,
-            account_number_last4: mockAccount.last4,
-            start_date: config.startDate || null,
-            go_live_date: config.goLiveDate || null,
-            is_active: true
-          });
-          createdCount++;
+          if (config.import_mode === 'new') {
+            const accountNumber = Date.now().toString().slice(-6);
+            await firstsavvy.entities.Account.create({
+              account_name: config.displayName,
+              account_number: accountNumber,
+              account_type: mockAccount.type,
+              chart_account_id: config.chart_account_id,
+              current_balance: mockAccount.balance,
+              institution_name: mockAccount.institutionName,
+              account_number_last4: mockAccount.last4,
+              start_date: config.startDate || null,
+              go_live_date: config.goLiveDate || null,
+              is_active: true
+            });
+            createdCount++;
+          } else if (config.import_mode === 'existing' && config.existing_account_id) {
+            await firstsavvy
+              .from('accounts')
+              .update({
+                current_balance: mockAccount.balance,
+                start_date: config.startDate,
+                go_live_date: config.goLiveDate,
+                institution_name: mockAccount.institutionName,
+                account_number_last4: mockAccount.last4
+              })
+              .eq('id', config.existing_account_id);
+            linkedCount++;
+          }
         }
 
         queryClient.invalidateQueries({ queryKey: ['accounts'] });
         queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-        toast.success(`Successfully imported ${createdCount} account${createdCount !== 1 ? 's' : ''}!`);
-        onAccountCreated?.({ type: 'banking_batch', count: createdCount });
+
+        if (createdCount > 0 && linkedCount > 0) {
+          toast.success(`Created ${createdCount} new account${createdCount !== 1 ? 's' : ''} and linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
+        } else if (createdCount > 0) {
+          toast.success(`Successfully created ${createdCount} account${createdCount !== 1 ? 's' : ''}!`);
+        } else if (linkedCount > 0) {
+          toast.success(`Successfully linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
+        }
+
+        onAccountCreated?.({ type: 'banking_batch', count: createdCount + linkedCount });
         onOpenChange(false);
         return;
       } catch (error) {
-        console.error('Error creating accounts:', error);
-        toast.error(error.message || 'Failed to create accounts. Please try again.');
+        console.error('Error processing accounts:', error);
+        toast.error(error.message || 'Failed to process accounts. Please try again.');
         return;
       }
     }
@@ -799,8 +839,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
       for (const accountId of checkedAccountIds) {
         const config = accountConfigurations[accountId];
-        if (!config || !config.displayName || !config.chart_account_id || !config.startDate || !config.goLiveDate) {
+        if (!config || !config.startDate || !config.goLiveDate) {
           return false;
+        }
+        if (config.import_mode === 'new') {
+          if (!config.displayName || !config.chart_account_id) {
+            return false;
+          }
+        } else if (config.import_mode === 'existing') {
+          if (!config.existing_account_id) {
+            return false;
+          }
         }
       }
       return true;
@@ -1713,34 +1762,87 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
                       {isChecked && config && (
                         <div className="mt-4 space-y-3 pl-1">
-                          <div className="grid grid-cols-3 gap-3">
-                            <div>
-                              <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
-                              <Input
-                                id={`displayName-${account.id}`}
-                                value={config.displayName}
-                                onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                                placeholder="Account name"
-                                className="h-9 mt-1"
+                          <div className="flex gap-4 mb-3">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                id={`new-${account.id}`}
+                                checked={config.import_mode === 'new'}
+                                onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'new')}
+                                className="w-4 h-4"
                               />
-                            </div>
-
-                            <div>
-                              <Label htmlFor={`chart-account-${account.id}`} className="text-sm">
-                                Chart of Accounts<span className="text-red-500">*</span>
+                              <Label htmlFor={`new-${account.id}`} className="text-sm font-medium cursor-pointer">
+                                Create New Account
                               </Label>
-                              <div className="mt-1">
-                                <ChartAccountDropdown
-                                  value={config.chart_account_id || ''}
-                                  onValueChange={(value) => updateAccountConfiguration(account.id, 'chart_account_id', value)}
-                                  accountTypes={['asset', 'liability']}
-                                  placeholder="Select account classification"
-                                  triggerClassName="h-9"
-                                  showAccountNumbers={true}
-                                />
-                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                id={`existing-${account.id}`}
+                                checked={config.import_mode === 'existing'}
+                                onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'existing')}
+                                className="w-4 h-4"
+                              />
+                              <Label htmlFor={`existing-${account.id}`} className="text-sm font-medium cursor-pointer">
+                                Import to Existing Account
+                              </Label>
                             </div>
                           </div>
+
+                          {config.import_mode === 'new' ? (
+                            <>
+                              <div>
+                                <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                                <Input
+                                  id={`displayName-${account.id}`}
+                                  value={config.displayName}
+                                  onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
+                                  placeholder="Account name"
+                                  className="h-9 mt-1"
+                                />
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-3">
+                                <div>
+                                  <Label className="text-sm text-muted-foreground">Account Type</Label>
+                                  <div className="h-9 mt-1 flex items-center px-3 bg-muted rounded-md text-sm">
+                                    {chartAccounts.find(a => a.id === config.chart_account_id)?.account_type || 'Auto-detected'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-sm text-muted-foreground">Account Detail</Label>
+                                  <div className="h-9 mt-1 flex items-center px-3 bg-muted rounded-md text-sm">
+                                    {chartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || 'Auto-detected'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <Label className="text-sm text-muted-foreground">Category</Label>
+                                  <div className="h-9 mt-1 flex items-center px-3 bg-muted rounded-md text-sm">
+                                    {chartAccounts.find(a => a.id === config.chart_account_id)?.account_category || 'Auto-detected'}
+                                  </div>
+                                </div>
+                              </div>
+                            </>
+                          ) : (
+                            <div>
+                              <Label htmlFor={`existing-account-${account.id}`} className="text-sm">Select Existing Account*</Label>
+                              <Select
+                                value={config.existing_account_id || ''}
+                                onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
+                              >
+                                <SelectTrigger id={`existing-account-${account.id}`} className="h-9 mt-1">
+                                  <SelectValue placeholder="Select account" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {existingAccounts.map((acc) => (
+                                    <SelectItem key={acc.id} value={acc.id}>
+                                      {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
 
                           <div>
                             <Label className="text-sm">Start Date*</Label>
