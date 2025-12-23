@@ -1821,7 +1821,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {[...new Set(chartAccounts.map(a => a.account_type))].sort().map((type) => (
+                                      {[...new Set(chartAccounts.map(a => a.account_type))].filter(Boolean).sort().map((type) => (
                                         <SelectItem key={type} value={type}>
                                           {type}
                                         </SelectItem>
@@ -1851,7 +1851,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       {(() => {
                                         const currentType = chartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
                                         const filtered = chartAccounts.filter(a => a.account_type === currentType);
-                                        return [...new Set(filtered.map(a => a.account_detail))].sort().map((detail) => (
+                                        return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).sort().map((detail) => (
                                           <SelectItem key={detail} value={detail}>
                                             {detail}
                                           </SelectItem>
@@ -1863,13 +1863,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                 <div>
                                   <Label htmlFor={`account-category-${account.id}`} className="text-sm">Category</Label>
                                   <Select
-                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_category || ''}
+                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.category || ''}
                                     onValueChange={(value) => {
                                       const currentAccount = chartAccounts.find(a => a.id === config.chart_account_id);
                                       const matchingAccount = chartAccounts.find(a =>
                                         a.account_type === currentAccount?.account_type &&
                                         a.account_detail === currentAccount?.account_detail &&
-                                        a.account_category === value
+                                        a.category === value
                                       );
                                       if (matchingAccount) {
                                         updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
@@ -1886,7 +1886,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                           a.account_type === currentAccount?.account_type &&
                                           a.account_detail === currentAccount?.account_detail
                                         );
-                                        return [...new Set(filtered.map(a => a.account_category))].sort().map((category) => (
+                                        return [...new Set(filtered.map(a => a.category))].filter(Boolean).sort().map((category) => (
                                           <SelectItem key={category} value={category}>
                                             {category}
                                           </SelectItem>
