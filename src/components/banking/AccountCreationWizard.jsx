@@ -297,14 +297,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
         const startDate = ninetyDaysAgo.toISOString().split('T')[0];
 
-        const accountType = account.type === 'credit_card' ? 'liability' : 'asset';
-
         setAccountConfigurations(prevConfig => ({
           ...prevConfig,
           [accountId]: {
             displayName: account.name,
-            accountType: accountType,
-            detailType: account.type,
+            accountType: account.type,
             startDatePreset: 'last_90',
             startDate: startDate,
             goLiveDate: today
@@ -316,21 +313,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const updateAccountConfiguration = (accountId, field, value) => {
-    setAccountConfigurations(prev => {
-      const updates = {
+    setAccountConfigurations(prev => ({
+      ...prev,
+      [accountId]: {
         ...prev[accountId],
         [field]: value
-      };
-
-      if (field === 'accountType') {
-        updates.detailType = '';
       }
-
-      return {
-        ...prev,
-        [accountId]: updates
-      };
-    });
+    }));
 
     if (field === 'startDatePreset' && value !== 'custom') {
       const today = new Date();
@@ -463,7 +452,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           await firstsavvy.entities.Account.create({
             account_name: config.displayName,
             account_number: accountNumber,
-            account_type: config.detailType,
+            account_type: config.accountType,
             current_balance: mockAccount.balance,
             institution_name: mockAccount.institutionName,
             account_number_last4: mockAccount.last4,
@@ -766,7 +755,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
       for (const accountId of checkedAccountIds) {
         const config = accountConfigurations[accountId];
-        if (!config || !config.displayName || !config.accountType || !config.detailType || !config.startDate || !config.goLiveDate) {
+        if (!config || !config.displayName || !config.accountType || !config.startDate || !config.goLiveDate) {
           return false;
         }
       }
@@ -1649,28 +1638,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const renderConfigureAccountsStep = () => {
     const accountTypeOptions = [
-      { value: 'asset', label: 'Asset' },
-      { value: 'liability', label: 'Liability' }
+      { value: 'checking', label: 'Checking' },
+      { value: 'savings', label: 'Savings' },
+      { value: 'credit_card', label: 'Credit Card' },
+      { value: 'investment', label: 'Investment' },
+      { value: 'loan', label: 'Loan' },
+      { value: 'cash', label: 'Cash' },
+      { value: 'property', label: 'Property' },
+      { value: 'vehicle', label: 'Vehicle' },
+      { value: 'other_asset', label: 'Other Asset' },
+      { value: 'other_liability', label: 'Other Liability' }
     ];
-
-    const getDetailTypeOptions = (accountType) => {
-      if (accountType === 'asset') {
-        return [
-          { value: 'checking', label: 'Checking' },
-          { value: 'savings', label: 'Savings' },
-          { value: 'investment', label: 'Investment' },
-          { value: 'cash', label: 'Cash' },
-          { value: 'other_asset', label: 'Other Asset' }
-        ];
-      } else if (accountType === 'liability') {
-        return [
-          { value: 'credit_card', label: 'Credit Card' },
-          { value: 'loan', label: 'Loan' },
-          { value: 'other_liability', label: 'Other Liability' }
-        ];
-      }
-      return [];
-    };
 
     return (
       <div className="space-y-4 max-w-2xl mx-auto">
@@ -1715,40 +1693,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             />
                           </div>
 
-                          <div className="grid grid-cols-2 gap-3">
-                            <div>
-                              <Label htmlFor={`accountType-${account.id}`} className="text-sm">Account Type*</Label>
-                              <Select
-                                value={config.accountType}
-                                onValueChange={(value) => updateAccountConfiguration(account.id, 'accountType', value)}
-                              >
-                                <SelectTrigger id={`accountType-${account.id}`} className="h-9 mt-1">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {accountTypeOptions.map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label htmlFor={`detailType-${account.id}`} className="text-sm">Detail Type*</Label>
-                              <Select
-                                value={config.detailType}
-                                onValueChange={(value) => updateAccountConfiguration(account.id, 'detailType', value)}
-                              >
-                                <SelectTrigger id={`detailType-${account.id}`} className="h-9 mt-1">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getDetailTypeOptions(config.accountType).map(opt => (
-                                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                          <div>
+                            <Label htmlFor={`accountType-${account.id}`} className="text-sm">Account Type*</Label>
+                            <Select
+                              value={config.accountType}
+                              onValueChange={(value) => updateAccountConfiguration(account.id, 'accountType', value)}
+                            >
+                              <SelectTrigger id={`accountType-${account.id}`} className="h-9 mt-1">
+                                <SelectValue placeholder="Select account type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {accountTypeOptions.map(opt => (
+                                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </div>
 
                           <div>
