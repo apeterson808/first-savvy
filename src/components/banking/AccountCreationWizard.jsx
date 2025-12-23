@@ -1804,22 +1804,96 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
                               <div className="grid grid-cols-3 gap-3">
                                 <div>
-                                  <Label className="text-sm text-muted-foreground">Account Type</Label>
-                                  <div className="h-9 mt-1 flex items-center px-3 bg-muted rounded-md text-sm">
-                                    {chartAccounts.find(a => a.id === config.chart_account_id)?.account_type || 'Auto-detected'}
-                                  </div>
+                                  <Label htmlFor={`account-type-${account.id}`} className="text-sm">Account Type</Label>
+                                  <Select
+                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_type || ''}
+                                    onValueChange={(value) => {
+                                      const matchingAccount = chartAccounts.find(a =>
+                                        a.account_type === value &&
+                                        a.account_detail === chartAccounts.find(c => c.id === config.chart_account_id)?.account_detail
+                                      );
+                                      if (matchingAccount) {
+                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger id={`account-type-${account.id}`} className="h-9 mt-1">
+                                      <SelectValue placeholder="Select type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {[...new Set(chartAccounts.map(a => a.account_type))].sort().map((type) => (
+                                        <SelectItem key={type} value={type}>
+                                          {type}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 <div>
-                                  <Label className="text-sm text-muted-foreground">Account Detail</Label>
-                                  <div className="h-9 mt-1 flex items-center px-3 bg-muted rounded-md text-sm">
-                                    {chartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || 'Auto-detected'}
-                                  </div>
+                                  <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
+                                  <Select
+                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
+                                    onValueChange={(value) => {
+                                      const currentType = chartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
+                                      const matchingAccount = chartAccounts.find(a =>
+                                        a.account_type === currentType &&
+                                        a.account_detail === value
+                                      );
+                                      if (matchingAccount) {
+                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 mt-1">
+                                      <SelectValue placeholder="Select detail" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {(() => {
+                                        const currentType = chartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
+                                        const filtered = chartAccounts.filter(a => a.account_type === currentType);
+                                        return [...new Set(filtered.map(a => a.account_detail))].sort().map((detail) => (
+                                          <SelectItem key={detail} value={detail}>
+                                            {detail}
+                                          </SelectItem>
+                                        ));
+                                      })()}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                                 <div>
-                                  <Label className="text-sm text-muted-foreground">Category</Label>
-                                  <div className="h-9 mt-1 flex items-center px-3 bg-muted rounded-md text-sm">
-                                    {chartAccounts.find(a => a.id === config.chart_account_id)?.account_category || 'Auto-detected'}
-                                  </div>
+                                  <Label htmlFor={`account-category-${account.id}`} className="text-sm">Category</Label>
+                                  <Select
+                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_category || ''}
+                                    onValueChange={(value) => {
+                                      const currentAccount = chartAccounts.find(a => a.id === config.chart_account_id);
+                                      const matchingAccount = chartAccounts.find(a =>
+                                        a.account_type === currentAccount?.account_type &&
+                                        a.account_detail === currentAccount?.account_detail &&
+                                        a.account_category === value
+                                      );
+                                      if (matchingAccount) {
+                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger id={`account-category-${account.id}`} className="h-9 mt-1">
+                                      <SelectValue placeholder="Select category" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {(() => {
+                                        const currentAccount = chartAccounts.find(a => a.id === config.chart_account_id);
+                                        const filtered = chartAccounts.filter(a =>
+                                          a.account_type === currentAccount?.account_type &&
+                                          a.account_detail === currentAccount?.account_detail
+                                        );
+                                        return [...new Set(filtered.map(a => a.account_category))].sort().map((category) => (
+                                          <SelectItem key={category} value={category}>
+                                            {category}
+                                          </SelectItem>
+                                        ));
+                                      })()}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
                             </>
