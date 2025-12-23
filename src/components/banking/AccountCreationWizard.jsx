@@ -297,11 +297,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
         const startDate = ninetyDaysAgo.toISOString().split('T')[0];
 
+        const accountType = account.type === 'credit_card' ? 'liability' : 'asset';
+
         setAccountConfigurations(prevConfig => ({
           ...prevConfig,
           [accountId]: {
             displayName: account.name,
-            accountType: account.type,
+            accountType: accountType,
             detailType: account.type,
             startDatePreset: 'last_90',
             startDate: startDate,
@@ -314,13 +316,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const updateAccountConfiguration = (accountId, field, value) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
+    setAccountConfigurations(prev => {
+      const updates = {
         ...prev[accountId],
         [field]: value
+      };
+
+      if (field === 'accountType') {
+        updates.detailType = '';
       }
-    }));
+
+      return {
+        ...prev,
+        [accountId]: updates
+      };
+    });
 
     if (field === 'startDatePreset' && value !== 'custom') {
       const today = new Date();
@@ -453,7 +463,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           await firstsavvy.entities.Account.create({
             account_name: config.displayName,
             account_number: accountNumber,
-            account_type: config.accountType,
+            account_type: config.detailType,
             current_balance: mockAccount.balance,
             institution_name: mockAccount.institutionName,
             account_number_last4: mockAccount.last4,
@@ -756,7 +766,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
       for (const accountId of checkedAccountIds) {
         const config = accountConfigurations[accountId];
-        if (!config || !config.displayName || !config.accountType || !config.startDate || !config.goLiveDate) {
+        if (!config || !config.displayName || !config.accountType || !config.detailType || !config.startDate || !config.goLiveDate) {
           return false;
         }
       }
@@ -1639,10 +1649,28 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const renderConfigureAccountsStep = () => {
     const accountTypeOptions = [
-      { value: 'checking', label: 'Checking' },
-      { value: 'savings', label: 'Savings' },
-      { value: 'credit_card', label: 'Credit Card' }
+      { value: 'asset', label: 'Asset' },
+      { value: 'liability', label: 'Liability' }
     ];
+
+    const getDetailTypeOptions = (accountType) => {
+      if (accountType === 'asset') {
+        return [
+          { value: 'checking', label: 'Checking' },
+          { value: 'savings', label: 'Savings' },
+          { value: 'investment', label: 'Investment' },
+          { value: 'cash', label: 'Cash' },
+          { value: 'other_asset', label: 'Other Asset' }
+        ];
+      } else if (accountType === 'liability') {
+        return [
+          { value: 'credit_card', label: 'Credit Card' },
+          { value: 'loan', label: 'Loan' },
+          { value: 'other_liability', label: 'Other Liability' }
+        ];
+      }
+      return [];
+    };
 
     return (
       <div className="space-y-4 max-w-2xl mx-auto">
@@ -1721,7 +1749,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {accountTypeOptions.map(opt => (
+                                  {getDetailTypeOptions(config.accountType).map(opt => (
                                     <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                                   ))}
                                 </SelectContent>
