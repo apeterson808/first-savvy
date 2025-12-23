@@ -17,25 +17,27 @@ function ClassificationItem({ classification, onEdit }) {
 
   const getClassBadgeColor = (classType) => {
     const colors = {
-      'asset': 'bg-green-100 text-green-800',
-      'liability': 'bg-red-100 text-red-800',
-      'income': 'bg-blue-100 text-blue-800',
-      'expense': 'bg-orange-100 text-orange-800',
-      'equity': 'bg-purple-100 text-purple-800'
+      'asset': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      'liability': 'bg-rose-100 text-rose-700 border-rose-200',
+      'income': 'bg-sky-100 text-sky-700 border-sky-200',
+      'expense': 'bg-orange-100 text-orange-700 border-orange-200',
+      'equity': 'bg-purple-100 text-purple-700 border-purple-200'
     };
-    return colors[classType] || 'bg-gray-100 text-gray-800';
+    return colors[classType] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
   return (
-    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50">
+    <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-slate-50 transition-colors">
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-1">
-          <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${getClassBadgeColor(classification.class)}`}>
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className={`text-xs px-2 py-0.5 rounded border font-semibold ${getClassBadgeColor(classification.class)}`}>
             {classification.class}
           </span>
-          <span className="text-xs text-slate-500">{classification.type}</span>
+          <span className="text-xs text-slate-500 font-medium">{classification.type}</span>
           {isCustom && (
-            <Badge variant="outline" className="text-xs">Custom</Badge>
+            <span className="text-xs px-1.5 py-0.5 rounded border bg-violet-100 text-violet-700 border-violet-200 font-medium">
+              Custom
+            </span>
           )}
         </div>
         <p className="font-medium text-sm">{displayName}</p>
@@ -47,7 +49,7 @@ function ClassificationItem({ classification, onEdit }) {
         variant="ghost"
         size="sm"
         onClick={() => onEdit(classification)}
-        className="ml-2"
+        className="ml-2 hover:bg-slate-100"
       >
         <Pencil className="h-4 w-4" />
       </Button>
@@ -107,6 +109,17 @@ function EditClassificationDialog({ open, onOpenChange, classification }) {
 
   if (!classification) return null;
 
+  const getClassBadgeColor = (classType) => {
+    const colors = {
+      'asset': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      'liability': 'bg-rose-100 text-rose-700 border-rose-200',
+      'income': 'bg-sky-100 text-sky-700 border-sky-200',
+      'expense': 'bg-orange-100 text-orange-700 border-orange-200',
+      'equity': 'bg-purple-100 text-purple-700 border-purple-200'
+    };
+    return colors[classType] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
@@ -116,8 +129,8 @@ function EditClassificationDialog({ open, onOpenChange, classification }) {
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            <div className="flex items-center gap-2 text-sm">
-              <span className={`px-1.5 py-0.5 rounded text-xs ${classification.class === 'asset' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+            <div className="flex items-center gap-2 text-sm bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+              <span className={`px-2 py-0.5 rounded border text-xs font-semibold ${getClassBadgeColor(classification.class)}`}>
                 {classification.class}
               </span>
               <span className="text-slate-400">›</span>
@@ -237,21 +250,39 @@ export default function AccountClassificationsTab() {
           </div>
         ) : (
           <Tabs value={selectedClass} onValueChange={setSelectedClass}>
-            <TabsList className="grid w-full grid-cols-5 mb-4">
-              <TabsTrigger value="asset">
-                Assets ({classGroups.asset.length})
+            <TabsList className="grid w-full grid-cols-5 mb-6 h-auto p-1">
+              <TabsTrigger value="asset" className="data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-900">
+                <div className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">Assets</span>
+                  <span className="sm:hidden">Assets</span>
+                  <span className="text-xs opacity-70">({classGroups.asset.length})</span>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="liability">
-                Liabilities ({classGroups.liability.length})
+              <TabsTrigger value="liability" className="data-[state=active]:bg-rose-100 data-[state=active]:text-rose-900">
+                <div className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">Liabilities</span>
+                  <span className="sm:hidden">Liabs</span>
+                  <span className="text-xs opacity-70">({classGroups.liability.length})</span>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="income">
-                Income ({classGroups.income.length})
+              <TabsTrigger value="income" className="data-[state=active]:bg-sky-100 data-[state=active]:text-sky-900">
+                <div className="flex items-center gap-1.5">
+                  <span>Income</span>
+                  <span className="text-xs opacity-70">({classGroups.income.length})</span>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="expense">
-                Expenses ({classGroups.expense.length})
+              <TabsTrigger value="expense" className="data-[state=active]:bg-orange-100 data-[state=active]:text-orange-900">
+                <div className="flex items-center gap-1.5">
+                  <span className="hidden sm:inline">Expenses</span>
+                  <span className="sm:hidden">Exp</span>
+                  <span className="text-xs opacity-70">({classGroups.expense.length})</span>
+                </div>
               </TabsTrigger>
-              <TabsTrigger value="equity">
-                Equity ({classGroups.equity.length})
+              <TabsTrigger value="equity" className="data-[state=active]:bg-purple-100 data-[state=active]:text-purple-900">
+                <div className="flex items-center gap-1.5">
+                  <span>Equity</span>
+                  <span className="text-xs opacity-70">({classGroups.equity.length})</span>
+                </div>
               </TabsTrigger>
             </TabsList>
 

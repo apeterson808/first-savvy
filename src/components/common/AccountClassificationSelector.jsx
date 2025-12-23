@@ -65,13 +65,13 @@ export default function AccountClassificationSelector({
 
   const getClassBadgeColor = (classType) => {
     const colors = {
-      'asset': 'bg-green-100 text-green-800',
-      'liability': 'bg-red-100 text-red-800',
-      'income': 'bg-blue-100 text-blue-800',
-      'expense': 'bg-orange-100 text-orange-800',
-      'equity': 'bg-purple-100 text-purple-800'
+      'asset': 'bg-emerald-100 text-emerald-700 border-emerald-200',
+      'liability': 'bg-rose-100 text-rose-700 border-rose-200',
+      'income': 'bg-sky-100 text-sky-700 border-sky-200',
+      'expense': 'bg-orange-100 text-orange-700 border-orange-200',
+      'equity': 'bg-purple-100 text-purple-700 border-purple-200'
     };
-    return colors[classType] || 'bg-gray-100 text-gray-800';
+    return colors[classType] || 'bg-gray-100 text-gray-800 border-gray-200';
   };
 
   return (
@@ -100,7 +100,7 @@ export default function AccountClassificationSelector({
                   <div className="flex items-center justify-between w-full">
                     <span>{type}</span>
                     {classType && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${getClassBadgeColor(classType)}`}>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${getClassBadgeColor(classType)}`}>
                         {classType}
                       </span>
                     )}
@@ -130,7 +130,7 @@ export default function AccountClassificationSelector({
                   <div className="flex items-center justify-between w-full">
                     <span>{displayName}</span>
                     {isCustom && (
-                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-800">
+                      <span className="text-[10px] px-1.5 py-0.5 rounded border bg-violet-100 text-violet-700 border-violet-200 font-medium">
                         custom
                       </span>
                     )}
@@ -148,9 +148,9 @@ export default function AccountClassificationSelector({
       </div>
 
       {selectedClassification && (
-        <div className="text-xs text-slate-600 bg-slate-50 p-2 rounded border border-slate-200">
+        <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
           <div className="flex items-center gap-2">
-            <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${getClassBadgeColor(selectedClassification.class)}`}>
+            <span className={`px-2 py-0.5 rounded border text-[10px] font-semibold ${getClassBadgeColor(selectedClassification.class)}`}>
               {selectedClassification.class}
             </span>
             <span className="text-slate-400">›</span>
