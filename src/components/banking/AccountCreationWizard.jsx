@@ -18,6 +18,9 @@ import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { getAccountTypes, getAccountDetails } from '@/utils/accountTypeMapping';
+import ChartAccountDropdown from '@/components/common/ChartAccountDropdown';
+import { useAuth } from '@/contexts/AuthContext';
+import { useQuery } from '@tanstack/react-query';
 import {
   Building2,
   Wallet,
@@ -163,6 +166,7 @@ const ACCOUNT_TYPE_CARDS = [
 ];
 
 export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState('select-type');
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedSubtype, setSelectedSubtype] = useState(null);
@@ -175,6 +179,22 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const [accountConfigurations, setAccountConfigurations] = useState({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts-assets-liabilities', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await firstsavvy
+        .from('user_chart_of_accounts')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('account_type', ['asset', 'liability'])
+        .eq('is_active', true)
+        .order('account_number');
+      return data || [];
+    },
+    enabled: !!user && open
+  });
 
   useEffect(() => {
     if (!open) {
@@ -282,15 +302,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     setCurrentStep('configure-accounts');
   };
 
-  const getTypeDetailForAccountType = (accountType) => {
-    const typeDetailMap = {
-      'checking': { account_type: 'Bank Account', account_detail: 'Checking' },
-      'savings': { account_type: 'Bank Account', account_detail: 'Savings' },
-      'credit_card': { account_type: 'Credit Card', account_detail: 'Personal Credit Card' },
-      'investment': { account_type: 'Investment', account_detail: 'Brokerage Account' },
+  const getDefaultChartAccountForType = (accountType) => {
+    const detailMap = {
+      'checking': 'Checking',
+      'savings': 'Savings',
+      'credit_card': 'Credit Card',
     };
 
-    return typeDetailMap[accountType] || { account_type: null, account_detail: null };
+    const detail = detailMap[accountType];
+    if (!detail) return null;
+
+    const matchingAccount = chartAccounts.find(a =>
+      a.account_detail === detail && a.is_active
+    );
+
+    return matchingAccount?.id || null;
   };
 
   const handleToggleAccount = (accountId) => {
@@ -310,7 +336,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
         const startDate = ninetyDaysAgo.toISOString().split('T')[0];
 
-        const { account_type, account_detail } = getTypeDetailForAccountType(account.type);
+        const defaultChartAccountId = getDefaultChartAccountForType(account.type);
         const classType = account.type === 'credit_card' ? 'liability' : 'asset';
 
         setAccountConfigurations(prevConfig => ({
@@ -318,8 +344,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           [accountId]: {
             displayName: account.name,
             classType: classType,
-            account_type: account_type,
-            account_detail: account_detail,
+            chart_account_id: defaultChartAccountId,
             startDatePreset: 'last_90',
             startDate: startDate,
             goLiveDate: today
@@ -331,21 +356,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const updateAccountConfiguration = (accountId, field, value) => {
-    setAccountConfigurations(prev => {
-      const updates = {
+    setAccountConfigurations(prev => ({
+      ...prev,
+      [accountId]: {
         ...prev[accountId],
         [field]: value
-      };
-
-      if (field === 'account_type') {
-        updates.account_detail = null;
       }
-
-      return {
-        ...prev,
-        [accountId]: updates
-      };
-    });
+    }));
 
     if (field === 'startDatePreset' && value !== 'custom') {
       const today = new Date();
@@ -478,8 +495,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           await firstsavvy.entities.Account.create({
             account_name: config.displayName,
             account_number: accountNumber,
-            account_type: config.account_type,
-            account_detail: config.account_detail,
+            account_type: mockAccount.type,
+            chart_account_id: config.chart_account_id,
             current_balance: mockAccount.balance,
             institution_name: mockAccount.institutionName,
             account_number_last4: mockAccount.last4,
@@ -782,7 +799,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
       for (const accountId of checkedAccountIds) {
         const config = accountConfigurations[accountId];
-        if (!config || !config.displayName || !config.account_type || !config.account_detail || !config.startDate || !config.goLiveDate) {
+        if (!config || !config.displayName || !config.chart_account_id || !config.startDate || !config.goLiveDate) {
           return false;
         }
       }
@@ -1709,46 +1726,19 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             </div>
 
                             <div>
-                              <Label htmlFor={`account-type-${account.id}`} className="text-sm">
-                                Account Type<span className="text-red-500">*</span>
+                              <Label htmlFor={`chart-account-${account.id}`} className="text-sm">
+                                Chart of Accounts<span className="text-red-500">*</span>
                               </Label>
-                              <Select
-                                value={config.account_type || ''}
-                                onValueChange={(value) => updateAccountConfiguration(account.id, 'account_type', value)}
-                              >
-                                <SelectTrigger id={`account-type-${account.id}`} className="h-9 mt-1">
-                                  <SelectValue placeholder="Select type" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {getAccountTypes(config.classType).map((type) => (
-                                    <SelectItem key={type} value={type}>
-                                      {type}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
-
-                            <div>
-                              <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
-                                Account Detail<span className="text-red-500">*</span>
-                              </Label>
-                              <Select
-                                value={config.account_detail || ''}
-                                onValueChange={(value) => updateAccountConfiguration(account.id, 'account_detail', value)}
-                                disabled={!config.account_type}
-                              >
-                                <SelectTrigger id={`account-detail-${account.id}`} className="h-9 mt-1">
-                                  <SelectValue placeholder="Select detail" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {config.account_type && getAccountDetails(config.classType, config.account_type).map((detail) => (
-                                    <SelectItem key={detail} value={detail}>
-                                      {detail}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
+                              <div className="mt-1">
+                                <ChartAccountDropdown
+                                  value={config.chart_account_id || ''}
+                                  onValueChange={(value) => updateAccountConfiguration(account.id, 'chart_account_id', value)}
+                                  accountTypes={['asset', 'liability']}
+                                  placeholder="Select account classification"
+                                  triggerClassName="h-9"
+                                  showAccountNumbers={true}
+                                />
+                              </div>
                             </div>
                           </div>
 
