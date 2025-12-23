@@ -13,7 +13,6 @@ export default function AccountClassificationSelector({
   required = false,
   error = null
 }) {
-  const [selectedType, setSelectedType] = useState('');
   const [selectedClassification, setSelectedClassification] = useState(null);
 
   const { data: allClassifications = [] } = useQuery({
@@ -22,42 +21,46 @@ export default function AccountClassificationSelector({
     staleTime: 5 * 60 * 1000
   });
 
-  const types = React.useMemo(() => {
-    const typeSet = new Set(allClassifications.map(c => c.type));
-    return Array.from(typeSet).sort();
-  }, [allClassifications]);
+  const groupedClassifications = React.useMemo(() => {
+    const groups = {};
+    allClassifications.forEach(c => {
+      const key = `${c.class}|${c.type}`;
+      if (!groups[key]) {
+        groups[key] = {
+          class: c.class,
+          type: c.type,
+          items: []
+        };
+      }
+      groups[key].items.push(c);
+    });
 
-  const categoriesForType = React.useMemo(() => {
-    if (!selectedType) return [];
-    return allClassifications
-      .filter(c => c.type === selectedType)
-      .sort((a, b) => {
+    Object.values(groups).forEach(group => {
+      group.items.sort((a, b) => {
         const aName = accountClassifications.getDisplayName(a);
         const bName = accountClassifications.getDisplayName(b);
         return aName.localeCompare(bName);
       });
-  }, [selectedType, allClassifications]);
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      const classOrder = { asset: 1, liability: 2, income: 3, expense: 4, equity: 5 };
+      const classCompare = (classOrder[a.class] || 99) - (classOrder[b.class] || 99);
+      if (classCompare !== 0) return classCompare;
+      return a.type.localeCompare(b.type);
+    });
+  }, [allClassifications]);
 
   useEffect(() => {
     if (value && allClassifications.length > 0) {
       const classification = allClassifications.find(c => c.id === value);
-      if (classification) {
-        setSelectedType(classification.type);
-        setSelectedClassification(classification);
-      }
+      setSelectedClassification(classification);
     } else {
-      setSelectedType('');
       setSelectedClassification(null);
     }
   }, [value, allClassifications]);
 
-  const handleTypeChange = (type) => {
-    setSelectedType(type);
-    setSelectedClassification(null);
-    onValueChange?.(null);
-  };
-
-  const handleCategoryChange = (classificationId) => {
+  const handleChange = (classificationId) => {
     const classification = allClassifications.find(c => c.id === classificationId);
     setSelectedClassification(classification);
     onValueChange?.(classificationId);
@@ -83,51 +86,31 @@ export default function AccountClassificationSelector({
         </Label>
       )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label className="text-xs text-slate-500 mb-1.5 block">Type</Label>
-          <ClickThroughSelect
-            value={selectedType}
-            onValueChange={handleTypeChange}
-            placeholder="Select type"
-            triggerClassName="h-9 border-slate-300"
-            disabled={disabled}
-          >
-            {types.map(type => {
-              const classType = allClassifications.find(c => c.type === type)?.class;
-              return (
-                <ClickThroughSelectItem key={type} value={type}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{type}</span>
-                    {classType && (
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded border font-medium ${getClassBadgeColor(classType)}`}>
-                        {classType}
-                      </span>
-                    )}
-                  </div>
-                </ClickThroughSelectItem>
-              );
-            })}
-          </ClickThroughSelect>
-        </div>
-
-        <div>
-          <Label className="text-xs text-slate-500 mb-1.5 block">Category</Label>
-          <ClickThroughSelect
-            value={selectedClassification?.id || ''}
-            onValueChange={handleCategoryChange}
-            placeholder={selectedType ? "Select category" : "Select type first"}
-            triggerClassName="h-9 border-slate-300"
-            disabled={disabled || !selectedType}
-            enableSearch={true}
-          >
-            {categoriesForType.map(classification => {
+      <ClickThroughSelect
+        value={selectedClassification?.id || ''}
+        onValueChange={handleChange}
+        placeholder="Select account type"
+        disabled={disabled}
+        enableSearch={true}
+      >
+        {groupedClassifications.map((group) => (
+          <React.Fragment key={`${group.class}-${group.type}`}>
+            <div className="px-2 py-1.5 text-xs font-semibold text-slate-500 bg-slate-50 sticky top-0">
+              <div className="flex items-center gap-1.5">
+                <span className={`px-1.5 py-0.5 rounded border text-[10px] font-semibold ${getClassBadgeColor(group.class)}`}>
+                  {group.class}
+                </span>
+                <span>›</span>
+                <span>{group.type}</span>
+              </div>
+            </div>
+            {group.items.map(classification => {
               const displayName = accountClassifications.getDisplayName(classification);
               const isCustom = classification.is_custom;
 
               return (
                 <ClickThroughSelectItem key={classification.id} value={classification.id}>
-                  <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center justify-between w-full pl-2">
                     <span>{displayName}</span>
                     {isCustom && (
                       <span className="text-[10px] px-1.5 py-0.5 rounded border bg-violet-100 text-violet-700 border-violet-200 font-medium">
@@ -138,14 +121,14 @@ export default function AccountClassificationSelector({
                 </ClickThroughSelectItem>
               );
             })}
-            {categoriesForType.length === 0 && selectedType && (
-              <div className="px-2 py-1.5 text-sm text-slate-500 italic">
-                No categories available for this type
-              </div>
-            )}
-          </ClickThroughSelect>
-        </div>
-      </div>
+          </React.Fragment>
+        ))}
+        {allClassifications.length === 0 && (
+          <div className="px-2 py-1.5 text-sm text-slate-500 italic">
+            No account types available
+          </div>
+        )}
+      </ClickThroughSelect>
 
       {selectedClassification && (
         <div className="text-xs text-slate-600 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
