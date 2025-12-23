@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { accountClassifications } from '@/api/accountClassifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +16,7 @@ import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
-import AccountClassificationSelector from '@/components/common/AccountClassificationSelector';
+import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import {
   Building2,
   Wallet,
@@ -176,12 +175,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: allClassifications = [], isLoading: isLoadingClassifications } = useQuery({
-    queryKey: ['account-classifications'],
-    queryFn: () => accountClassifications.getAll(),
-    staleTime: 5 * 60 * 1000
-  });
-
   useEffect(() => {
     if (!open) {
       resetWizard();
@@ -288,22 +281,15 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     setCurrentStep('configure-accounts');
   };
 
-  const findClassificationForAccountType = (accountType) => {
-    const typeToClassificationMap = {
-      'checking': { class: 'asset', type: 'bank accounts', category: 'checking' },
-      'savings': { class: 'asset', type: 'bank accounts', category: 'savings' },
-      'credit_card': { class: 'liability', type: 'credit card', category: 'credit card' },
-      'investment': { class: 'asset', type: 'investment accounts', category: 'brokerage' },
+  const getTypeDetailForAccountType = (accountType) => {
+    const typeDetailMap = {
+      'checking': { account_type: 'Bank Account', account_detail: 'Checking' },
+      'savings': { account_type: 'Bank Account', account_detail: 'Savings' },
+      'credit_card': { account_type: 'Credit Card', account_detail: 'Personal Credit Card' },
+      'investment': { account_type: 'Investment', account_detail: 'Brokerage Account' },
     };
 
-    const mapping = typeToClassificationMap[accountType];
-    if (!mapping) return null;
-
-    return allClassifications.find(c =>
-      c.class === mapping.class &&
-      c.type === mapping.type &&
-      c.category === mapping.category
-    );
+    return typeDetailMap[accountType] || { account_type: null, account_detail: null };
   };
 
   const handleToggleAccount = (accountId) => {
@@ -323,7 +309,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
         const startDate = ninetyDaysAgo.toISOString().split('T')[0];
 
-        const classification = findClassificationForAccountType(account.type);
+        const { account_type, account_detail } = getTypeDetailForAccountType(account.type);
         const classType = account.type === 'credit_card' ? 'liability' : 'asset';
 
         setAccountConfigurations(prevConfig => ({
@@ -331,7 +317,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           [accountId]: {
             displayName: account.name,
             classType: classType,
-            account_classification_id: classification?.id || null,
+            account_type: account_type,
+            account_detail: account_detail,
             startDatePreset: 'last_90',
             startDate: startDate,
             goLiveDate: today
@@ -349,8 +336,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         [field]: value
       };
 
-      if (field === 'classType') {
-        updates.account_classification_id = null;
+      if (field === 'account_type') {
+        updates.account_detail = null;
       }
 
       return {
@@ -490,7 +477,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           await firstsavvy.entities.Account.create({
             account_name: config.displayName,
             account_number: accountNumber,
-            account_classification_id: config.account_classification_id,
+            account_type: config.account_type,
+            account_detail: config.account_detail,
             current_balance: mockAccount.balance,
             institution_name: mockAccount.institutionName,
             account_number_last4: mockAccount.last4,
@@ -793,7 +781,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
       for (const accountId of checkedAccountIds) {
         const config = accountConfigurations[accountId];
-        if (!config || !config.displayName || !config.account_classification_id || !config.startDate || !config.goLiveDate) {
+        if (!config || !config.displayName || !config.account_type || !config.account_detail || !config.startDate || !config.goLiveDate) {
           return false;
         }
       }
@@ -1719,11 +1707,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                           </div>
 
                           <div>
-                            <AccountClassificationSelector
-                              value={config.account_classification_id}
-                              onValueChange={(classificationId) => updateAccountConfiguration(account.id, 'account_classification_id', classificationId)}
+                            <TypeDetailSelector
                               classFilter={config.classType}
-                              label="Account Classification"
+                              accountType={config.account_type}
+                              accountDetail={config.account_detail}
+                              onTypeChange={(type) => updateAccountConfiguration(account.id, 'account_type', type)}
+                              onDetailChange={(detail) => updateAccountConfiguration(account.id, 'account_detail', detail)}
+                              typeLabel="Account Type"
+                              detailLabel="Account Detail"
                               required={true}
                             />
                           </div>

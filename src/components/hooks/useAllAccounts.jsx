@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { accountClassifications } from '@/api/accountClassifications';
 
 export default function useAllAccounts() {
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
@@ -33,12 +32,6 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const { data: classifications = [], isLoading: loadingClassifications } = useQuery({
-    queryKey: ['account-classifications'],
-    queryFn: () => accountClassifications.getAll(),
-    staleTime: 5 * 60 * 1000,
-  });
-
   const transactionalAccounts = accounts.filter(a =>
     ['checking', 'savings', 'credit_card'].includes(a.account_type) && a.is_active !== false
   );
@@ -51,19 +44,12 @@ export default function useAllAccounts() {
     a.account_type === 'credit_card' && a.is_active !== false
   );
 
-  const getClassification = (classificationId) => {
-    if (!classificationId) return null;
-    return classifications.find(c => c.id === classificationId);
-  };
-
-  const getClassificationDisplay = (classificationId) => {
-    const classification = getClassification(classificationId);
-    if (!classification) return null;
+  const getTypeDetailDisplay = (accountType, accountDetail) => {
+    if (!accountType) return null;
     return {
-      class: classification.class,
-      type: classification.type,
-      category: accountClassifications.getDisplayName(classification),
-      full: `${classification.class} › ${classification.type} › ${accountClassifications.getDisplayName(classification)}`
+      type: accountType,
+      detail: accountDetail,
+      full: accountDetail ? `${accountType} › ${accountDetail}` : accountType
     };
   };
 
@@ -73,35 +59,31 @@ export default function useAllAccounts() {
       account_name: a.account_name || a.name,
       institution: a.institution_name,
       entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount',
-      classification: getClassification(a.account_classification_id),
-      classificationDisplay: getClassificationDisplay(a.account_classification_id)
+      typeDetailDisplay: getTypeDetailDisplay(a.account_type, a.account_detail)
     })),
     ...assets.map(a => ({
       ...a,
       account_name: a.name,
       entityType: 'Asset',
-      classification: getClassification(a.account_classification_id),
-      classificationDisplay: getClassificationDisplay(a.account_classification_id)
+      typeDetailDisplay: getTypeDetailDisplay(a.account_type, a.account_detail)
     })),
     ...liabilities.map(l => ({
       ...l,
       account_name: l.name,
       entityType: 'Liability',
-      classification: getClassification(l.account_classification_id),
-      classificationDisplay: getClassificationDisplay(l.account_classification_id)
+      typeDetailDisplay: getTypeDetailDisplay(l.account_type, l.account_detail)
     })),
     ...equity.map(e => ({
       ...e,
       account_name: e.name,
       entityType: 'Equity',
-      classification: getClassification(e.account_classification_id),
-      classificationDisplay: getClassificationDisplay(e.account_classification_id)
+      typeDetailDisplay: getTypeDetailDisplay(e.account_type, e.account_detail)
     })),
     ...categories.filter(c => c.type === 'income').map(c => ({ ...c, account_name: c.name, entityType: 'Income' })),
     ...categories.filter(c => c.type === 'expense').map(c => ({ ...c, account_name: c.name, entityType: 'Expense' })),
   ];
 
-  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingEquity || loadingCategories || loadingClassifications;
+  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingEquity || loadingCategories;
 
   return {
     allAccounts,
@@ -110,8 +92,7 @@ export default function useAllAccounts() {
       account_name: a.account_name || a.name,
       institution: a.institution_name,
       entityType: 'BankAccount',
-      classification: getClassification(a.account_classification_id),
-      classificationDisplay: getClassificationDisplay(a.account_classification_id)
+      typeDetailDisplay: getTypeDetailDisplay(a.account_type, a.account_detail)
     })),
     creditCards: creditCards.map(c => ({
       ...c,
@@ -119,8 +100,7 @@ export default function useAllAccounts() {
       last_four: c.account_number_last4,
       institution: c.institution_name,
       entityType: 'CreditCard',
-      classification: getClassification(c.account_classification_id),
-      classificationDisplay: getClassificationDisplay(c.account_classification_id)
+      typeDetailDisplay: getTypeDetailDisplay(c.account_type, c.account_detail)
     })),
     assets,
     liabilities,
@@ -128,9 +108,7 @@ export default function useAllAccounts() {
     categories,
     incomeCategories: categories.filter(c => c.type === 'income'),
     expenseCategories: categories.filter(c => c.type === 'expense'),
-    classifications,
-    getClassification,
-    getClassificationDisplay,
+    getTypeDetailDisplay,
     isLoading,
   };
 }

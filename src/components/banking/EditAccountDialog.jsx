@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import AccountClassificationSelector from '@/components/common/AccountClassificationSelector';
+import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
@@ -22,7 +22,8 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
         institution: account.institution || '',
         current_balance: account.current_balance || 0,
         notes: account.notes || '',
-        account_classification_id: account.account_classification_id || null
+        account_type: account.account_type || null,
+        account_detail: account.account_detail || null
       });
     }
   }, [account]);
@@ -39,7 +40,8 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           institution: data.institution,
           current_balance: parseFloat(data.current_balance) || 0,
           notes: data.notes,
-          account_classification_id: data.account_classification_id || null
+          account_type: data.account_type || null,
+          account_detail: data.account_detail || null
         });
       } else if (entityType === 'Asset') {
         return await firstsavvy.entities.Asset.update(account.id, {
@@ -47,7 +49,8 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           institution: data.institution,
           current_balance: parseFloat(data.current_balance) || 0,
           notes: data.notes,
-          account_classification_id: data.account_classification_id || null
+          account_type: data.account_type || null,
+          account_detail: data.account_detail || null
         });
       } else if (entityType === 'Liability') {
         return await firstsavvy.entities.Liability.update(account.id, {
@@ -55,14 +58,16 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           institution: data.institution,
           current_balance: parseFloat(data.current_balance) || 0,
           notes: data.notes,
-          account_classification_id: data.account_classification_id || null
+          account_type: data.account_type || null,
+          account_detail: data.account_detail || null
         });
       } else if (entityType === 'Equity') {
         return await firstsavvy.entities.Equity.update(account.id, {
           name: data.name,
           current_balance: parseFloat(data.current_balance) || 0,
           notes: data.notes,
-          account_classification_id: data.account_classification_id || null
+          account_type: data.account_type || null,
+          account_detail: data.account_detail || null
         });
       } else if (entityType === 'Income' || entityType === 'Expense') {
         return await firstsavvy.entities.Category.update(account.id, {
@@ -121,10 +126,14 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           </div>
 
           {!isCategory && (
-            <AccountClassificationSelector
-              value={formData.account_classification_id}
-              onValueChange={(value) => setFormData({ ...formData, account_classification_id: value })}
-              label="Account Type"
+            <TypeDetailSelector
+              classFilter={account?.entityType === 'Asset' ? 'asset' : account?.entityType === 'Liability' ? 'liability' : 'equity'}
+              accountType={formData.account_type}
+              accountDetail={formData.account_detail}
+              onTypeChange={(type) => setFormData({ ...formData, account_type: type })}
+              onDetailChange={(detail) => setFormData({ ...formData, account_detail: detail })}
+              typeLabel="Account Type"
+              detailLabel="Account Detail"
             />
           )}
 

@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { accountClassifications } from '@/api/accountClassifications';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
 export function useBudgetData() {
@@ -25,17 +24,7 @@ export function useBudgetData() {
     queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
-  const { data: classifications = [], isLoading: classificationsLoading } = useQuery({
-    queryKey: ['account-classifications-budget'],
-    queryFn: async () => {
-      const income = await accountClassifications.getIncomeClassifications();
-      const expense = await accountClassifications.getExpenseClassifications();
-      return [...income, ...expense];
-    },
-    staleTime: 5 * 60 * 1000
-  });
-
-  const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading || classificationsLoading;
+  const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading;
 
   const calculatedData = useMemo(() => {
     const today = new Date();
@@ -57,13 +46,13 @@ export function useBudgetData() {
     const incomeTransactions = currentMonthTransactions.filter(t => t.type === 'income');
 
     const spendingByCategory = expenseTransactions.reduce((acc, t) => {
-      const key = t.account_classification_id || '__uncategorized__';
+      const key = t.category_id || '__uncategorized__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
 
     const incomeByCategory = incomeTransactions.reduce((acc, t) => {
-      const key = t.account_classification_id || '__uncategorized_income__';
+      const key = t.category_id || '__uncategorized_income__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
@@ -92,14 +81,13 @@ export function useBudgetData() {
       monthStart,
       monthEnd
     };
-  }, [transactions, accounts, classifications, budgets, budgetGroups]);
+  }, [transactions, accounts, budgets, budgetGroups]);
 
   return {
     budgetGroups,
     budgets,
     transactions,
     accounts,
-    classifications,
     isLoading,
     hasSetupStarted: budgetGroups.length > 0,
     ...calculatedData

@@ -2,20 +2,20 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { accountClassifications } from '@/api/accountClassifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import AccountClassificationSelector from '@/components/common/AccountClassificationSelector';
+import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { validateAmount } from '../utils/validation';
 import { DollarSign, Loader2 } from 'lucide-react';
 
 export default function SimpleAccountCreationDialog({ open, onOpenChange, onAccountCreated }) {
   const [formData, setFormData] = useState({
     account_name: '',
-    account_classification_id: null,
+    account_type: null,
+    account_detail: null,
     current_balance: '',
     institution_name: '',
     account_number_last4: ''
@@ -28,7 +28,8 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
   const resetForm = () => {
     setFormData({
       account_name: '',
-      account_classification_id: null,
+      account_type: null,
+      account_detail: null,
       current_balance: '',
       institution_name: '',
       account_number_last4: ''
@@ -50,8 +51,12 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
       newErrors.account_name = 'Account name is required';
     }
 
-    if (!formData.account_classification_id) {
-      newErrors.account_classification_id = 'Account type is required';
+    if (!formData.account_type) {
+      newErrors.account_type = 'Account type is required';
+    }
+
+    if (!formData.account_detail) {
+      newErrors.account_detail = 'Account detail is required';
     }
 
     const balanceValidation = validateAmount(formData.current_balance || '0', {
@@ -68,50 +73,18 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
 
   const createAccountMutation = useMutation({
     mutationFn: async (data) => {
-      const classification = await accountClassifications.getClassification?.(data.account_classification_id)
-        || await firstsavvy.entities.AccountClassification.get(data.account_classification_id);
+      const accountNumber = Date.now().toString().slice(-6);
 
-      if (!classification) {
-        throw new Error('Invalid classification selected');
-      }
-
-      if (classification.class === 'asset') {
-        if (classification.type === 'bank accounts' || classification.type === 'cash') {
-          return await firstsavvy.entities.Account.create(data);
-        } else {
-          return await firstsavvy.entities.Asset.create({
-            name: data.account_name,
-            detail_type: classification.category,
-            estimated_value: parseFloat(data.current_balance || 0),
-            account_classification_id: data.account_classification_id,
-            institution_name: data.institution_name || null
-          });
-        }
-      } else if (classification.class === 'liability') {
-        if (classification.type === 'credit card') {
-          return await firstsavvy.entities.Account.create({
-            ...data,
-            account_type: 'credit_card'
-          });
-        } else {
-          return await firstsavvy.entities.Liability.create({
-            name: data.account_name,
-            detail_type: classification.category,
-            current_balance: parseFloat(data.current_balance || 0),
-            account_classification_id: data.account_classification_id,
-            institution_name: data.institution_name || null
-          });
-        }
-      } else if (classification.class === 'equity') {
-        return await firstsavvy.entities.Equity.create({
-          name: data.account_name,
-          detail_type: classification.category,
-          current_balance: parseFloat(data.current_balance || 0),
-          account_classification_id: data.account_classification_id
-        });
-      }
-
-      throw new Error('Unsupported account class');
+      return await firstsavvy.entities.Account.create({
+        account_name: data.account_name,
+        account_number: accountNumber,
+        account_type: data.account_type,
+        account_detail: data.account_detail,
+        current_balance: data.current_balance,
+        institution_name: data.institution_name || null,
+        account_number_last4: data.account_number_last4 || null,
+        is_active: true
+      });
     },
     onSuccess: (newAccount) => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
@@ -146,13 +119,9 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
       allowNegative: true
     });
 
-    const accountNumber = Date.now().toString().slice(-6);
-
     createAccountMutation.mutate({
       ...formData,
-      current_balance: balanceValidation.value,
-      account_number: accountNumber,
-      is_active: true
+      current_balance: balanceValidation.value
     });
   };
 
@@ -188,14 +157,22 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
               )}
             </div>
 
-            <AccountClassificationSelector
-              value={formData.account_classification_id}
-              onValueChange={(value) => updateFormData('account_classification_id', value)}
+            <TypeDetailSelector
               classFilter="asset"
-              label="Account Type"
+              accountType={formData.account_type}
+              accountDetail={formData.account_detail}
+              onTypeChange={(type) => updateFormData('account_type', type)}
+              onDetailChange={(detail) => updateFormData('account_detail', detail)}
+              typeLabel="Account Type"
+              detailLabel="Account Detail"
               required
-              error={errors.account_classification_id}
             />
+            {errors.account_type && (
+              <p className="text-xs text-red-600 mt-1">{errors.account_type}</p>
+            )}
+            {errors.account_detail && (
+              <p className="text-xs text-red-600 mt-1">{errors.account_detail}</p>
+            )}
 
             <div>
               <Label htmlFor="current_balance">Current Balance</Label>

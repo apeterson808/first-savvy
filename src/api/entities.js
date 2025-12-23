@@ -1,5 +1,4 @@
 import { firstsavvy } from './firstsavvyClient';
-import { accountClassifications } from './accountClassifications';
 
 export const Account = firstsavvy.entities.Account;
 

@@ -22,7 +22,6 @@ import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getAccountDisplayName } from '../utils/constants';
-import { accountClassifications } from '@/api/accountClassifications';
 
 const getDetailTypeDisplayName = (type) => {
   if (!type) return 'Unknown';
