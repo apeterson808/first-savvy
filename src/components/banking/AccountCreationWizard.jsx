@@ -1674,12 +1674,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
     return (
       <div className="space-y-4 max-w-2xl mx-auto">
-        <div className="text-center mb-4">
-          <p className="text-sm text-muted-foreground">
-            Select accounts to import and configure their settings
-          </p>
-        </div>
-
         <div className="space-y-3">
           {mockBankAccounts.map(account => {
             const isChecked = checkedAccountIds.includes(account.id);
