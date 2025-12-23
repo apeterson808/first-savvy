@@ -141,59 +141,38 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
 
         <form onSubmit={handleSubmit}>
           <div className="space-y-4 py-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor="account_name">
-                  Name <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="account_name"
-                  value={formData.account_name}
-                  onChange={(e) => updateFormData('account_name', e.target.value)}
-                  placeholder="e.g., Chase Checking"
-                  className="mt-1.5"
-                />
-                {errors.account_name && (
-                  <p className="text-xs text-red-600 mt-1">{errors.account_name}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="account_type">
-                  Type <span className="text-red-500">*</span>
-                </Label>
-                <TypeDetailSelector
-                  classFilter="asset"
-                  accountType={formData.account_type}
-                  accountDetail={formData.account_detail}
-                  onTypeChange={(type) => updateFormData('account_type', type)}
-                  onDetailChange={(detail) => updateFormData('account_detail', detail)}
-                  showTypeOnly
-                  inline
-                />
-                {errors.account_type && (
-                  <p className="text-xs text-red-600 mt-1">{errors.account_type}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="account_detail">
-                  Detail {formData.account_type && <span className="text-red-500">*</span>}
-                </Label>
-                <TypeDetailSelector
-                  classFilter="asset"
-                  accountType={formData.account_type}
-                  accountDetail={formData.account_detail}
-                  onTypeChange={(type) => updateFormData('account_type', type)}
-                  onDetailChange={(detail) => updateFormData('account_detail', detail)}
-                  showDetailOnly
-                  inline
-                />
-                {errors.account_detail && (
-                  <p className="text-xs text-red-600 mt-1">{errors.account_detail}</p>
-                )}
-              </div>
+            <div>
+              <Label htmlFor="account_name">
+                Account Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="account_name"
+                value={formData.account_name}
+                onChange={(e) => updateFormData('account_name', e.target.value)}
+                placeholder="e.g., Chase Checking"
+                className="mt-1.5"
+              />
+              {errors.account_name && (
+                <p className="text-xs text-red-600 mt-1">{errors.account_name}</p>
+              )}
             </div>
+
+            <TypeDetailSelector
+              classFilter="asset"
+              accountType={formData.account_type}
+              accountDetail={formData.account_detail}
+              onTypeChange={(type) => updateFormData('account_type', type)}
+              onDetailChange={(detail) => updateFormData('account_detail', detail)}
+              typeLabel="Account Type"
+              detailLabel="Account Detail"
+              required
+            />
+            {errors.account_type && (
+              <p className="text-xs text-red-600 mt-1">{errors.account_type}</p>
+            )}
+            {errors.account_detail && (
+              <p className="text-xs text-red-600 mt-1">{errors.account_detail}</p>
+            )}
 
             <div>
               <Label htmlFor="current_balance">Current Balance</Label>

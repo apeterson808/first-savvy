@@ -115,54 +115,26 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isCategory ? (
-            <div className="grid grid-cols-3 gap-3">
-              <div>
-                <Label htmlFor="name">Name</Label>
-                <Input
-                  id="name"
-                  value={formData.name || ''}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Enter name"
-                />
-              </div>
+          <div>
+            <Label htmlFor="name">Name</Label>
+            <Input
+              id="name"
+              value={formData.name || ''}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter name"
+            />
+          </div>
 
-              <div>
-                <Label htmlFor="account_type">Type</Label>
-                <TypeDetailSelector
-                  classFilter={account?.entityType === 'Asset' ? 'asset' : account?.entityType === 'Liability' ? 'liability' : 'equity'}
-                  accountType={formData.account_type}
-                  accountDetail={formData.account_detail}
-                  onTypeChange={(type) => setFormData({ ...formData, account_type: type })}
-                  onDetailChange={(detail) => setFormData({ ...formData, account_detail: detail })}
-                  showTypeOnly
-                  inline
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="account_detail">Detail</Label>
-                <TypeDetailSelector
-                  classFilter={account?.entityType === 'Asset' ? 'asset' : account?.entityType === 'Liability' ? 'liability' : 'equity'}
-                  accountType={formData.account_type}
-                  accountDetail={formData.account_detail}
-                  onTypeChange={(type) => setFormData({ ...formData, account_type: type })}
-                  onDetailChange={(detail) => setFormData({ ...formData, account_detail: detail })}
-                  showDetailOnly
-                  inline
-                />
-              </div>
-            </div>
-          ) : (
-            <div>
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={formData.name || ''}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Enter name"
-              />
-            </div>
+          {!isCategory && (
+            <TypeDetailSelector
+              classFilter={account?.entityType === 'Asset' ? 'asset' : account?.entityType === 'Liability' ? 'liability' : 'equity'}
+              accountType={formData.account_type}
+              accountDetail={formData.account_detail}
+              onTypeChange={(type) => setFormData({ ...formData, account_type: type })}
+              onDetailChange={(detail) => setFormData({ ...formData, account_detail: detail })}
+              typeLabel="Account Type"
+              detailLabel="Account Detail"
+            />
           )}
 
           {showInstitution && (
