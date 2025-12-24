@@ -1,42 +1,27 @@
-import React, { useState } from 'react';
-import { X, Plus } from 'lucide-react';
+import React from 'react';
+import { Plus } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
-import { toast } from 'sonner';
 
 export function ProfileTabBar({ onAddProfileClick }) {
-  const { profileTabs, activeTabId, switchToTab, closeProfileTab } = useProfile();
-  const [draggedTab, setDraggedTab] = useState(null);
+  const { profiles, activeProfile, switchProfile } = useProfile();
 
-  const handleTabClick = (tabId) => {
-    if (tabId !== activeTabId) {
-      switchToTab(tabId);
+  const handleTabClick = (profile) => {
+    if (profile.id !== activeProfile?.id) {
+      switchProfile(profile);
     }
   };
 
-  const handleCloseTab = async (e, tabId) => {
-    e.stopPropagation();
-    try {
-      await closeProfileTab(tabId);
-      toast.success('Profile closed');
-    } catch (error) {
-      toast.error(error.message || 'Failed to close profile');
-    }
-  };
-
-  if (profileTabs.length === 0) return null;
+  if (!profiles || profiles.length === 0) return null;
 
   return (
     <div className="flex items-center gap-1 overflow-hidden">
-      {profileTabs.map((tab) => {
-        const isActive = tab.id === activeTabId;
+      {profiles.map((profile) => {
+        const isActive = profile.id === activeProfile?.id;
 
         return (
           <div
-            key={tab.id}
-            onClick={() => handleTabClick(tab.id)}
-            draggable
-            onDragStart={() => setDraggedTab(tab)}
-            onDragEnd={() => setDraggedTab(null)}
+            key={profile.id}
+            onClick={() => handleTabClick(profile)}
             className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative ${
               isActive
                 ? 'bg-slate-100 text-slate-900 z-10'
@@ -54,20 +39,13 @@ export function ProfileTabBar({ onAddProfileClick }) {
             }}
           >
             <span className="text-sm font-medium truncate flex-1">
-              {tab.profile_name}
+              {profile.display_name}
             </span>
-
-            <button
-              onClick={(e) => handleCloseTab(e, tab.id)}
-              className="p-0.5 rounded hover:bg-slate-200 transition-colors flex-shrink-0"
-            >
-              <X className="w-3 h-3 text-slate-500" />
-            </button>
           </div>
         );
       })}
 
-      {profileTabs.length < 10 && (
+      {profiles.length < 10 && onAddProfileClick && (
         <button
           onClick={onAddProfileClick}
           className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 transition-colors"
