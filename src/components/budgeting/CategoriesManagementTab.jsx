@@ -41,13 +41,14 @@ export default function CategoriesManagementTab({ categories, transactions }) {
 
   const filteredCategories = useMemo(() => {
     const query = searchQuery.toLowerCase();
-    return categories.filter(cat =>
-      cat.name.toLowerCase().includes(query)
-    );
+    return categories.filter(cat => {
+      const name = cat.custom_display_name || cat.category || '';
+      return name.toLowerCase().includes(query);
+    });
   }, [categories, searchQuery]);
 
-  const incomeCategories = filteredCategories.filter(c => c.type === 'income');
-  const expenseCategories = filteredCategories.filter(c => c.type === 'expense');
+  const incomeCategories = filteredCategories.filter(c => c.account_type === 'income');
+  const expenseCategories = filteredCategories.filter(c => c.account_type === 'expense');
 
   const handleDeleteCategory = async () => {
     if (!deletingCategory) return;
@@ -61,13 +62,14 @@ export default function CategoriesManagementTab({ categories, transactions }) {
           .eq('chart_account_id', deletingCategory.id);
       }
 
-      await firstsavvy.entities.Category.delete(deletingCategory.id);
+      await firstsavvy.entities.ChartAccount.delete(deletingCategory.id);
 
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
-      toast.success(`Category "${deletingCategory.name}" deleted successfully`);
+      toast.success(`Category "${deletingCategory.custom_display_name || deletingCategory.category}" deleted successfully`);
       setDeletingCategory(null);
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -78,7 +80,8 @@ export default function CategoriesManagementTab({ categories, transactions }) {
   const CategoryRow = ({ category }) => {
     const IconComponent = Icons[category.icon] || Icons.Circle;
     const usageCount = getCategoryUsageCount(category.id);
-    const isSystemCategory = category.is_system;
+    const isSystemCategory = !category.is_user_created;
+    const categoryName = category.custom_display_name || category.category;
 
     return (
       <TableRow>
@@ -92,7 +95,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
         </TableCell>
         <TableCell className="font-medium py-2 flex-1">
           <div className="flex items-center gap-2">
-            {category.name}
+            {categoryName}
             {isSystemCategory && (
               <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
                 System
@@ -230,7 +233,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             <AlertDialogDescription>
               {deletingCategory && (
                 <>
-                  Are you sure you want to delete the category "{deletingCategory.name}"?
+                  Are you sure you want to delete the category "{deletingCategory.custom_display_name || deletingCategory.category}"?
                   {getCategoryUsageCount(deletingCategory.id) > 0 && (
                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900">
                       <p className="font-medium">Warning:</p>

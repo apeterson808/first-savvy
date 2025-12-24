@@ -37,8 +37,8 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
   useEffect(() => {
     if (editingCategory) {
       setFormData({
-        name: editingCategory.name || '',
-        type: editingCategory.type || 'expense',
+        name: editingCategory.custom_display_name || editingCategory.category || '',
+        type: editingCategory.account_type || 'expense',
         icon: editingCategory.icon || 'Circle',
         color: editingCategory.color || '#52A5CE',
       });
@@ -72,8 +72,8 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
 
     try {
       if (editingCategory) {
-        await firstsavvy.entities.Category.update(editingCategory.id, {
-          name: formData.name.trim(),
+        await firstsavvy.entities.ChartAccount.update(editingCategory.id, {
+          custom_display_name: formData.name.trim(),
           icon: formData.icon,
           color: formData.color,
         });
@@ -87,18 +87,40 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
 
         toast.success('Category updated successfully');
       } else {
-        await firstsavvy.entities.Category.create({
-          name: formData.name.trim(),
-          type: formData.type,
+        const { data: user } = await firstsavvy.auth.getUser();
+        if (!user) throw new Error('User not authenticated');
+
+        const accountTypePrefix = formData.type === 'income' ? 4 : 5;
+        const { data: existingAccounts } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .select('account_number')
+          .eq('user_id', user.id)
+          .gte('account_number', accountTypePrefix * 1000)
+          .lt('account_number', (accountTypePrefix + 1) * 1000)
+          .order('account_number', { ascending: false })
+          .limit(1);
+
+        const nextAccountNumber = existingAccounts && existingAccounts.length > 0
+          ? existingAccounts[0].account_number + 1
+          : accountTypePrefix * 1000 + 100;
+
+        await firstsavvy.entities.ChartAccount.create({
+          account_number: nextAccountNumber,
+          category: formData.name.trim(),
+          custom_display_name: formData.name.trim(),
+          account_type: formData.type,
+          level: 3,
           icon: formData.icon,
           color: formData.color,
-          is_system: false,
+          is_user_created: true,
+          is_active: true,
         });
 
         toast.success('Category created successfully');
       }
 
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
       onOpenChange(false);

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -65,7 +65,6 @@ export default function Budgeting() {
     budgetGroups,
     budgets,
     transactions,
-    classifications,
     isLoading,
     hasSetupStarted,
     spendingByCategory,
@@ -74,6 +73,31 @@ export default function Budgeting() {
     totalSpent,
     totalBudgeted
   } = useBudgetData();
+
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts-income-expense'],
+    queryFn: async () => {
+      const { data: user } = await firstsavvy.auth.getUser();
+      if (!user) return [];
+      const [income, expense] = await Promise.all([
+        firstsavvy.from('user_chart_of_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('account_type', 'income')
+          .eq('level', 3)
+          .eq('is_active', true)
+          .order('account_number'),
+        firstsavvy.from('user_chart_of_accounts')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('account_type', 'expense')
+          .eq('level', 3)
+          .eq('is_active', true)
+          .order('account_number')
+      ]);
+      return [...(income.data || []), ...(expense.data || [])];
+    }
+  });
 
   const handleAutoCreate = async () => {
     setIsAutoCreating(true);
@@ -88,14 +112,14 @@ export default function Budgeting() {
       const incomeSpending = {};
 
       recentTransactions.forEach(t => {
-        if (t.type === 'expense' && t.account_classification_id) {
-          expenseSpending[t.account_classification_id] = (expenseSpending[t.account_classification_id] || 0) + t.amount;
-        } else if (t.type === 'income' && t.account_classification_id) {
-          incomeSpending[t.account_classification_id] = (incomeSpending[t.account_classification_id] || 0) + t.amount;
+        if (t.type === 'expense' && t.chart_account_id) {
+          expenseSpending[t.chart_account_id] = (expenseSpending[t.chart_account_id] || 0) + t.amount;
+        } else if (t.type === 'income' && t.chart_account_id) {
+          incomeSpending[t.chart_account_id] = (incomeSpending[t.chart_account_id] || 0) + t.amount;
         }
       });
 
-      queryClient.invalidateQueries({ queryKey: ['account-classifications-budget'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
 
       if (Object.keys(incomeSpending).length > 0) {
         const incomeGroup = await firstsavvy.entities.BudgetGroup.create({
@@ -104,32 +128,32 @@ export default function Budgeting() {
           order: 0
         });
 
-        const sortedIncomeClassifications = Object.entries(incomeSpending).sort((a, b) => {
-          const classA = classifications.find(c => c.id === a[0]);
-          const classB = classifications.find(c => c.id === b[0]);
-          const nameA = classA?.display_name || classA?.category || 'Unknown';
-          const nameB = classB?.display_name || classB?.category || 'Unknown';
+        const sortedIncomeAccounts = Object.entries(incomeSpending).sort((a, b) => {
+          const accountA = chartAccounts.find(c => c.id === a[0]);
+          const accountB = chartAccounts.find(c => c.id === b[0]);
+          const nameA = accountA?.custom_display_name || accountA?.category || 'Unknown';
+          const nameB = accountB?.custom_display_name || accountB?.category || 'Unknown';
           return nameA.localeCompare(nameB);
         });
 
         let order = 0;
         const usedColors = new Set();
-        for (const [classificationId, total] of sortedIncomeClassifications) {
+        for (const [chartAccountId, total] of sortedIncomeAccounts) {
           const monthlyAvg = total / 12;
           const rounded = Math.ceil(monthlyAvg / 10) * 10;
-          const classification = classifications.find(c => c.id === classificationId);
-          const displayName = classification?.display_name || classification?.category || 'Unknown';
-          const color = classification?.color || getNextColor(usedColors);
+          const chartAccount = chartAccounts.find(c => c.id === chartAccountId);
+          const displayName = chartAccount?.custom_display_name || chartAccount?.category || 'Unknown';
+          const color = chartAccount?.color || getNextColor(usedColors);
           usedColors.add(color);
 
           await firstsavvy.entities.Budget.create({
             name: displayName,
-            account_classification_id: classificationId,
+            chart_account_id: chartAccountId,
             allocated_amount: Math.max(rounded, 10),
             group_id: incomeGroup.id,
             order: order++,
             color,
-            icon: classification?.icon || suggestIconForName(displayName),
+            icon: chartAccount?.icon || suggestIconForName(displayName),
             is_active: true
           });
         }
@@ -142,32 +166,32 @@ export default function Budgeting() {
           order: 1
         });
 
-        const sortedExpenseClassifications = Object.entries(expenseSpending).sort((a, b) => {
-          const classA = classifications.find(c => c.id === a[0]);
-          const classB = classifications.find(c => c.id === b[0]);
-          const nameA = classA?.display_name || classA?.category || 'Unknown';
-          const nameB = classB?.display_name || classB?.category || 'Unknown';
+        const sortedExpenseAccounts = Object.entries(expenseSpending).sort((a, b) => {
+          const accountA = chartAccounts.find(c => c.id === a[0]);
+          const accountB = chartAccounts.find(c => c.id === b[0]);
+          const nameA = accountA?.custom_display_name || accountA?.category || 'Unknown';
+          const nameB = accountB?.custom_display_name || accountB?.category || 'Unknown';
           return nameA.localeCompare(nameB);
         });
 
         let order = 0;
         const usedExpenseColors = new Set();
-        for (const [classificationId, total] of sortedExpenseClassifications) {
+        for (const [chartAccountId, total] of sortedExpenseAccounts) {
           const monthlyAvg = total / 12;
           const rounded = Math.ceil(monthlyAvg / 10) * 10;
-          const classification = classifications.find(c => c.id === classificationId);
-          const displayName = classification?.display_name || classification?.category || 'Unknown';
-          const color = classification?.color || getNextColor(usedExpenseColors);
+          const chartAccount = chartAccounts.find(c => c.id === chartAccountId);
+          const displayName = chartAccount?.custom_display_name || chartAccount?.category || 'Unknown';
+          const color = chartAccount?.color || getNextColor(usedExpenseColors);
           usedExpenseColors.add(color);
 
           await firstsavvy.entities.Budget.create({
             name: displayName,
-            account_classification_id: classificationId,
+            chart_account_id: chartAccountId,
             allocated_amount: Math.max(rounded, 10),
             group_id: expenseGroup.id,
             order: order++,
             color,
-            icon: classification?.icon || suggestIconForName(displayName),
+            icon: chartAccount?.icon || suggestIconForName(displayName),
             is_active: true
           });
         }
@@ -398,7 +422,7 @@ export default function Budgeting() {
         </TabsContent>
 
         <TabsContent value="categories" className="mt-0">
-          <CategoriesManagementTab categories={categories} transactions={transactions} />
+          <CategoriesManagementTab categories={chartAccounts} transactions={transactions} />
         </TabsContent>
       </Tabs>
 
