@@ -254,7 +254,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   React.useEffect(() => {
     const generateSuggestions = async () => {
-      if (!fullPendingTransactions.length || !categories.length) return;
+      if (!fullPendingTransactions.length || !chartAccounts.length) return;
 
       const transactionsNeedingSuggestions = fullPendingTransactions.filter(
         t => t.type !== 'transfer' && t.description
@@ -272,11 +272,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             fullPostedTransactions,
             categorizationRules,
             transaction.amount,
-            categories
+            chartAccounts
           );
 
           if (suggestion && suggestion.category) {
-            const matchingCategory = categories.find(c =>
+            const matchingCategory = chartAccounts.find(c =>
               c.name.toLowerCase() === suggestion.category.toLowerCase() &&
               c.type === suggestion.type
             );
@@ -292,7 +292,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     };
 
     generateSuggestions();
-  }, [fullPendingTransactions.length, categories.length, fullPostedTransactions.length, categorizationRules.length]);
+  }, [fullPendingTransactions.length, chartAccounts.length, fullPostedTransactions.length, categorizationRules.length]);
 
   // Auto-apply AI-suggested contacts (one-time only, unless manually changed)
   React.useEffect(() => {
@@ -417,7 +417,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const isFromActiveAccount = activeAccountIds.includes(transactionAccountId);
     if (!isFromActiveAccount) return false;
 
-    const category = categories.find(c => c.id === t.chart_account_id);
+    const category = chartAccounts.find(c => c.id === t.chart_account_id);
     const categoryName = category?.name || '';
     const matchesSearch = searchTerm === '' ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -542,10 +542,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   // Group categories by type for display
-  const expenseCategories = categories.filter(c => c.type === 'expense');
-  const incomeCategories = categories.filter(c => c.type === 'income');
+  const expenseCategories = chartAccounts.filter(c => c.account_type === 'expense');
+  const incomeCategories = chartAccounts.filter(c => c.account_type === 'income');
 
-  const getCategoryById = (id) => categories.find(c => c.id === id);
+  const getCategoryById = (id) => chartAccounts.find(c => c.id === id);
 
   const autoCategorizeTransactions = async () => {
     // Get uncategorized pending transactions
@@ -562,7 +562,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     
     try {
       // Build category list for LLM
-      const categoryList = categories.map(c => ({
+      const categoryList = chartAccounts.map(c => ({
         id: c.id,
         name: c.name,
         type: c.type
@@ -643,7 +643,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
       !autoCategorizingIds.has(t.id)
     );
     
-    if (needsSuggestion.length === 0 || categories.length === 0) return;
+    if (needsSuggestion.length === 0 || chartAccounts.length === 0) return;
     
     // Limit to first 3 transactions and add delay to avoid rate limits
     const batch = needsSuggestion.slice(0, 3);
@@ -672,7 +672,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
             );
 
             if (suggestion && suggestion.category) {
-              const matchingCategory = categories.find(c =>
+              const matchingCategory = chartAccounts.find(c =>
                 c.name.toLowerCase() === suggestion.category.toLowerCase() &&
                 c.type === suggestion.type
               );
@@ -696,7 +696,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
     };
 
     return () => clearTimeout(timer);
-    }, [filteredTransactions.length, categories.length]);
+    }, [filteredTransactions.length, chartAccounts.length]);
 
     // Auto-suggest contacts for transactions without contact_id
     React.useEffect(() => {
@@ -1479,7 +1479,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
 
                             // For regular transactions, show editable category dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
-                              const category = categories.find(c => c.id === transaction.chart_account_id);
+                              const category = chartAccounts.find(c => c.id === transaction.chart_account_id);
                               const displayName = category ? getAccountDisplayName({
                                 account_type: category.type,
                                 detail_type: category.detail_type,
@@ -1494,7 +1494,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                 onValueChange={(value) => {
                                   if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                   const categoryValue = value === '' ? null : value;
-                                  const selectedCategory = categoryValue ? categories.find(c => c.id === categoryValue) : null;
+                                  const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
                                   updateMutation.mutate({
                                     id: transaction.id,
                                     data: {
@@ -1826,7 +1826,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                                 value={transaction.chart_account_id || ''}
                                                 onValueChange={(value) => {
                                                   const categoryValue = value === '' ? null : value;
-                                                  const selectedCategory = categoryValue ? categories.find(c => c.id === categoryValue) : null;
+                                                  const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
                                                   updateMutation.mutate({
                                                     id: transaction.id,
                                                     data: {
@@ -1904,7 +1904,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <Input
                                                 value={(() => {
-                                                  const category = categories.find(c => c.id === transaction.chart_account_id);
+                                                  const category = chartAccounts.find(c => c.id === transaction.chart_account_id);
                                                   return category ? getAccountDisplayName({
                                                     account_type: category.type,
                                                     detail_type: category.detail_type,
@@ -2530,7 +2530,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                               setFilterPanelOpen(false);
                             }}
                             accounts={accounts}
-                            categories={categories}
+                            categories={chartAccounts}
                             expenseCategories={expenseCategories}
                             incomeCategories={incomeCategories}
                           />
@@ -2542,7 +2542,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                               setCategorySearchTerm('');
                                               setTriggeringTransactionId(null);
                                               setTriggeringTransactionType(null);
-                                              await queryClient.invalidateQueries({ queryKey: ['categories'] });
+                                              await queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
                                               if (triggeringTransactionId && newCategory) {
                                                 const transaction = transactions.find(t => t.id === triggeringTransactionId);
                                                 if (transaction) {
