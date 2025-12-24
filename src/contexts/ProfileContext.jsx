@@ -48,9 +48,9 @@ export const ProfileProvider = ({ children }) => {
       if (membershipsError) throw membershipsError;
 
       if (!memberships || memberships.length === 0) {
-        const profileId = await ensureDefaultProfile();
+        const result = await ensureCompleteProvisioning();
 
-        if (profileId) {
+        if (result?.success) {
           await loadProfiles();
           return;
         } else {
@@ -85,15 +85,15 @@ export const ProfileProvider = ({ children }) => {
     }
   }, [user]);
 
-  const ensureDefaultProfile = async () => {
+  const ensureCompleteProvisioning = async () => {
     try {
-      const { data, error } = await firstsavvy.rpc('ensure_default_profile');
+      const { data, error } = await firstsavvy.rpc('ensure_complete_provisioning');
 
       if (error) throw error;
 
       return data;
     } catch (err) {
-      console.error('Error ensuring default profile:', err);
+      console.error('Error ensuring complete provisioning:', err);
       return null;
     }
   };

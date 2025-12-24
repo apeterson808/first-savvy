@@ -14,17 +14,22 @@ import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOf
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
+import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [chartView, setChartView] = useState('spending');
   const [timeRange, setTimeRange] = useState('ytd');
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [profileSetupOpen, setProfileSetupOpen] = useState(false);
+  const [userProfileData, setUserProfileData] = useState(null);
   const [excludeTransfers, setExcludeTransfers] = useState(true);
 
   const handleChartPointClick = (data) => {
@@ -97,6 +102,38 @@ export default function Dashboard() {
 
   const latestCreditScore = creditScores[0];
   const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
+
+  useEffect(() => {
+    const checkProfileSetup = async () => {
+      if (!user?.id || !activeProfile) return;
+
+      const hasShownDialog = sessionStorage.getItem('profileSetupShown');
+      if (hasShownDialog) return;
+
+      try {
+        const { data: userProfile } = await firstsavvy
+          .from('user_profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        const shouldShowDialog =
+          !userProfile?.full_name ||
+          userProfile.full_name === '' ||
+          (activeProfile?.display_name === 'Personal' && !userProfile?.full_name);
+
+        if (shouldShowDialog) {
+          setUserProfileData(userProfile);
+          setProfileSetupOpen(true);
+          sessionStorage.setItem('profileSetupShown', 'true');
+        }
+      } catch (error) {
+        console.error('Error checking profile setup:', error);
+      }
+    };
+
+    checkProfileSetup();
+  }, [user, activeProfile]);
 
   // Calculate net worth (only active accounts)
   const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_balance || 0), 0);
@@ -640,6 +677,13 @@ export default function Dashboard() {
           queryClient.invalidateQueries({ queryKey: ['accounts'] });
           queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
         }}
+        />
+
+        <ProfileSetupDialog
+        open={profileSetupOpen}
+        onClose={() => setProfileSetupOpen(false)}
+        currentFullName={userProfileData?.full_name || ''}
+        currentDisplayName={activeProfile?.display_name || 'Personal'}
         />
         </div>
         );
