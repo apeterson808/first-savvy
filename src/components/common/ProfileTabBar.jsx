@@ -124,12 +124,8 @@ export function ProfileTabBar({ onAddProfileClick }) {
       {profileTabs.length < 10 && (
         <button
           onClick={onAddProfileClick}
-          className="flex items-center justify-center px-2 py-1.5 bg-slate-50 hover:bg-slate-100 transition-colors flex-shrink-0 text-slate-600"
+          className="flex items-center justify-center px-2 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 transition-colors"
           title="Add profile"
-          style={{
-            borderTopLeftRadius: '8px',
-            borderTopRightRadius: '8px',
-          }}
         >
           <Plus className="w-4 h-4" />
         </button>

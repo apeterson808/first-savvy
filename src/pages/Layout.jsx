@@ -177,12 +177,10 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             {/* Profile Tabs */}
-            <div className="relative">
-              <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
-              {/* Prominent horizontal border line */}
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-300 z-0"></div>
-            </div>
+            <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
           </div>
+          {/* Prominent horizontal border line - spans full width */}
+          <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-300 z-0"></div>
         </header>
 
         {/* Page Content */}
