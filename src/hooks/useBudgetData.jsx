@@ -24,7 +24,20 @@ export function useBudgetData() {
     queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
-  const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading;
+  const { data: categories = [], isLoading: categoriesLoading } = useQuery({
+    queryKey: ['chart-accounts-income-expense'],
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('*')
+        .in('account_type', ['income', 'expense'])
+        .order('category', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
+  const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;
 
   const calculatedData = useMemo(() => {
     const today = new Date();
@@ -88,6 +101,7 @@ export function useBudgetData() {
     budgets,
     transactions,
     accounts,
+    categories,
     isLoading,
     hasSetupStarted: budgetGroups.length > 0,
     ...calculatedData

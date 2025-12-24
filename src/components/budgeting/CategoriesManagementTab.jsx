@@ -57,7 +57,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
       const usageCount = getCategoryUsageCount(deletingCategory.id);
 
       if (usageCount > 0) {
-        await firstsavvy.from('transactions')
+        await firstsavvy.supabase.from('transactions')
           .update({ chart_account_id: null })
           .eq('chart_account_id', deletingCategory.id);
       }

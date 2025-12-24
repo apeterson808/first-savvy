@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,13 +13,10 @@ import {
 } from "@/components/ui/sheet";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-const GROUP_COLORS = {
-  income: '#22c55e',
-  expense: '#3b82f6'
-};
-
-export default function EditBudgetGroupSheet({ open, onOpenChange, group, onSave, onDelete }) {
+export default function EditBudgetGroupSheet({ open, onOpenChange, group }) {
+  const queryClient = useQueryClient();
   const [name, setName] = useState('');
   const [type, setType] = useState('expense');
 
@@ -28,15 +27,61 @@ export default function EditBudgetGroupSheet({ open, onOpenChange, group, onSave
     }
   }, [group, open]);
 
+  const updateGroupMutation = useMutation({
+    mutationFn: ({ id, data }) => firstsavvy.entities.BudgetGroup.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
+      toast.success('Budget group updated successfully');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('Error updating budget group:', error);
+      toast.error('Failed to update budget group');
+    }
+  });
+
+  const deleteGroupMutation = useMutation({
+    mutationFn: async (id) => {
+      const { data: budgets } = await firstsavvy.supabase
+        .from('budgets')
+        .delete()
+        .eq('group_id', id);
+
+      await firstsavvy.entities.BudgetGroup.delete(id);
+      return { id, budgets };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgetGroups'] });
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      toast.success('Budget group and associated items deleted successfully');
+      onOpenChange(false);
+    },
+    onError: (error) => {
+      console.error('Error deleting budget group:', error);
+      toast.error('Failed to delete budget group');
+    }
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!name.trim()) return;
-    
-    onSave({
-      name: name.trim(),
-      type
+    if (!name.trim()) {
+      toast.error('Group name is required');
+      return;
+    }
+
+    updateGroupMutation.mutate({
+      id: group.id,
+      data: {
+        name: name.trim(),
+        type
+      }
     });
-    onOpenChange(false);
+  };
+
+  const handleDelete = () => {
+    if (window.confirm('Are you sure you want to delete this budget group? All budget items in this group will also be deleted.')) {
+      deleteGroupMutation.mutate(group.id);
+    }
   };
 
   const resetForm = () => {
@@ -53,7 +98,7 @@ export default function EditBudgetGroupSheet({ open, onOpenChange, group, onSave
         <SheetHeader>
           <SheetTitle>Edit Budget Group</SheetTitle>
         </SheetHeader>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div>
             <Label htmlFor="name">Group Name*</Label>
@@ -74,16 +119,10 @@ export default function EditBudgetGroupSheet({ open, onOpenChange, group, onSave
               triggerClassName="hover:bg-slate-50"
             >
               <ClickThroughSelectItem value="expense">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: GROUP_COLORS.expense }} />
-                  <span>Expense</span>
-                </div>
+                Expense Group
               </ClickThroughSelectItem>
               <ClickThroughSelectItem value="income">
-                <div className="flex items-center gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: GROUP_COLORS.income }} />
-                  <span>Income</span>
-                </div>
+                Income Group
               </ClickThroughSelectItem>
             </ClickThroughSelect>
           </div>
@@ -92,31 +131,27 @@ export default function EditBudgetGroupSheet({ open, onOpenChange, group, onSave
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
-              className="bg-blue-600 hover:bg-blue-700"
-              disabled={!name.trim()}
+            <Button
+              type="submit"
+              className="bg-primary hover:bg-primary/90"
+              disabled={!name.trim() || updateGroupMutation.isPending}
             >
-              Save
+              Update
             </Button>
           </SheetFooter>
-          
-          {onDelete && (
-            <div className="pt-4 mt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300 hover:border-red-400"
-                onClick={() => {
-                  onDelete(group.id);
-                  onOpenChange(false);
-                }}
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Delete Budget Group
-              </Button>
-            </div>
-          )}
+
+          <div className="pt-4 mt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 border-red-300 hover:border-red-400"
+              onClick={handleDelete}
+              disabled={deleteGroupMutation.isPending}
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Budget Group
+            </Button>
+          </div>
         </form>
       </SheetContent>
     </Sheet>

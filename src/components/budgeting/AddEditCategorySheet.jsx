@@ -24,12 +24,18 @@ import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
 import { suggestIconForName } from '@/components/utils/iconMapper';
 
-export default function AddEditCategorySheet({ open, onOpenChange, editingCategory }) {
+export default function AddEditCategorySheet({
+  open,
+  onOpenChange,
+  editingCategory,
+  accountType,
+  onCategoryCreated
+}) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    type: 'expense',
+    type: accountType || 'expense',
     icon: 'Circle',
     color: '#52A5CE',
   });
@@ -45,12 +51,12 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
     } else {
       setFormData({
         name: '',
-        type: 'expense',
+        type: accountType || 'expense',
         icon: 'Circle',
         color: '#52A5CE',
       });
     }
-  }, [editingCategory, open]);
+  }, [editingCategory, open, accountType]);
 
   const handleNameChange = (name) => {
     setFormData(prev => ({
@@ -78,7 +84,7 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
           color: formData.color,
         });
 
-        await firstsavvy.from('budgets')
+        await firstsavvy.supabase.from('budgets')
           .update({
             icon: formData.icon,
             color: formData.color,
@@ -92,7 +98,7 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
         const user = data.user;
 
         const accountTypePrefix = formData.type === 'income' ? 4 : 5;
-        const { data: existingAccounts } = await firstsavvy
+        const { data: existingAccounts } = await firstsavvy.supabase
           .from('user_chart_of_accounts')
           .select('account_number')
           .eq('user_id', user.id)
@@ -105,7 +111,7 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
           ? existingAccounts[0].account_number + 1
           : accountTypePrefix * 1000 + 100;
 
-        await firstsavvy.entities.ChartAccount.create({
+        const newCategory = await firstsavvy.entities.ChartAccount.create({
           account_number: nextAccountNumber,
           category: formData.name.trim(),
           custom_display_name: formData.name.trim(),
@@ -116,6 +122,10 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
           is_user_created: true,
           is_active: true,
         });
+
+        if (onCategoryCreated) {
+          onCategoryCreated(newCategory);
+        }
 
         toast.success('Category created successfully');
       }
