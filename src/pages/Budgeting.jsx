@@ -77,8 +77,12 @@ export default function Budgeting() {
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts-income-expense'],
     queryFn: async () => {
-      const { data: user } = await firstsavvy.auth.getUser();
-      if (!user) return [];
+      const { data, error } = await firstsavvy.auth.getUser();
+      if (error || !data?.user) {
+        console.error('Auth error:', error);
+        return [];
+      }
+      const user = data.user;
       const [income, expense] = await Promise.all([
         firstsavvy.from('user_chart_of_accounts')
           .select('*')
@@ -95,11 +99,7 @@ export default function Budgeting() {
           .eq('is_active', true)
           .order('account_number')
       ]);
-      const result = [...(income.data || []), ...(expense.data || [])];
-      console.log('Chart Accounts Query Result:', result);
-      console.log('Income:', income);
-      console.log('Expense:', expense);
-      return result;
+      return [...(income.data || []), ...(expense.data || [])];
     }
   });
 

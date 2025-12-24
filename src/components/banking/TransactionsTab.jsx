@@ -215,8 +215,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts-income-expense'],
     queryFn: async () => {
-      const { data: user } = await firstsavvy.auth.getUser();
-      if (!user) return [];
+      const { data, error } = await firstsavvy.auth.getUser();
+      if (error || !data?.user) return [];
+      const user = data.user;
       const [income, expense] = await Promise.all([
         firstsavvy.from('user_chart_of_accounts')
           .select('*')

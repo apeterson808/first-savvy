@@ -87,8 +87,9 @@ export default function AddEditCategorySheet({ open, onOpenChange, editingCatego
 
         toast.success('Category updated successfully');
       } else {
-        const { data: user } = await firstsavvy.auth.getUser();
-        if (!user) throw new Error('User not authenticated');
+        const { data, error } = await firstsavvy.auth.getUser();
+        if (error || !data?.user) throw new Error('User not authenticated');
+        const user = data.user;
 
         const accountTypePrefix = formData.type === 'income' ? 4 : 5;
         const { data: existingAccounts } = await firstsavvy

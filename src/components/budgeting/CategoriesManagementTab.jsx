@@ -50,11 +50,6 @@ export default function CategoriesManagementTab({ categories, transactions }) {
   const incomeCategories = filteredCategories.filter(c => c.account_type === 'income');
   const expenseCategories = filteredCategories.filter(c => c.account_type === 'expense');
 
-  console.log('CategoriesManagementTab - categories prop:', categories);
-  console.log('CategoriesManagementTab - filteredCategories:', filteredCategories);
-  console.log('CategoriesManagementTab - incomeCategories:', incomeCategories);
-  console.log('CategoriesManagementTab - expenseCategories:', expenseCategories);
-
   const handleDeleteCategory = async () => {
     if (!deletingCategory) return;
 
