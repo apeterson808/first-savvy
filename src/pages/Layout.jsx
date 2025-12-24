@@ -14,70 +14,15 @@ import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
 import { getUserProfile } from '@/api/userSettings';
 import ProtectedChangeWarningDialog from '@/components/common/ProtectedChangeWarningDialog';
 import { useProtectedChangeDialog } from '@/hooks/useProtectedConfiguration';
-
-
-function HeaderTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
-  const [activeTab, setActiveTab] = useState(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get('tab') || defaultTab;
-  });
-
-  useEffect(() => {
-    const handlePopState = () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      setActiveTab(urlParams.get('tab') || defaultTab);
-    };
-    window.addEventListener('popstate', handlePopState);
-    
-    const interval = setInterval(() => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const currentTab = urlParams.get('tab') || defaultTab;
-      setActiveTab(prev => prev !== currentTab ? currentTab : prev);
-    }, 100);
-    
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-      clearInterval(interval);
-    };
-  }, [defaultTab]);
-
-  return (
-    <div className="flex items-end gap-0.5 -mb-px">
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab;
-        const isDisabled = disabledTabs.includes(tab);
-        return (
-          <button
-            key={tab}
-            disabled={isDisabled}
-            onClick={() => {
-              if (isDisabled) return;
-              const newUrl = `${window.location.pathname}?tab=${tab}`;
-              window.history.pushState({}, '', newUrl);
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className={`px-3 py-1.5 text-sm font-medium transition-all capitalize relative ${
-              isActive
-                ? 'bg-slate-100 text-slate-900 border-t border-l border-r border-slate-200 rounded-t-lg z-10'
-                : isDisabled
-                ? 'text-slate-300 cursor-not-allowed bg-white/50 border border-slate-200 rounded-t-md'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 bg-white border border-slate-200 rounded-t-md'
-            }`}
-            style={isActive ? { marginBottom: '-1px', paddingBottom: 'calc(0.375rem + 1px)' } : {}}
-          >
-            {tab.replace(/_/g, ' ')}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
+import { ProfileTabBar } from '@/components/common/ProfileTabBar';
+import { ProfileSelector } from '@/components/common/ProfileSelector';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
+  const [profileSelectorOpen, setProfileSelectorOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -231,16 +176,8 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </div>
 
-            {/* Page Tabs */}
-            {currentPageName === 'Banking' && (
-              <HeaderTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
-            )}
-            {currentPageName === 'Budgeting' && (
-              <HeaderTabs tabs={['overview', 'setup', 'categories']} />
-            )}
-            {currentPageName === 'NetWorth' && (
-              <HeaderTabs tabs={['overview', 'assets', 'liabilities']} />
-            )}
+            {/* Profile Tabs */}
+            <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
           </div>
         </header>
 
@@ -263,6 +200,11 @@ export default function Layout({ children, currentPageName }) {
         changeDescription={dialogData?.configuration?.description}
         onConfirm={handleConfirm}
         onCancel={handleCancel}
+      />
+
+      <ProfileSelector
+        open={profileSelectorOpen}
+        onOpenChange={setProfileSelectorOpen}
       />
 
       {/* CSS to fix toaster blocking clicks */}

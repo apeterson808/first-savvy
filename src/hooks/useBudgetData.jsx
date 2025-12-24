@@ -2,30 +2,38 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { useProfile } from '@/contexts/ProfileContext';
 
 export function useBudgetData() {
+  const { activeProfile } = useProfile();
+  const profileId = activeProfile?.id || 'default';
+
   const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
-    queryKey: ['budgetGroups'],
-    queryFn: () => firstsavvy.entities.BudgetGroup.list('order')
+    queryKey: ['budgetGroups', profileId],
+    queryFn: () => firstsavvy.entities.BudgetGroup.list('order'),
+    enabled: !!activeProfile
   });
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
-    queryKey: ['budgets'],
-    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true })
+    queryKey: ['budgets', profileId],
+    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true }),
+    enabled: !!activeProfile
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000)
+    queryKey: ['transactions', profileId],
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
+    enabled: !!activeProfile
   });
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
+    queryKey: ['accounts', profileId],
+    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true }),
+    enabled: !!activeProfile
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['chart-accounts-income-expense'],
+    queryKey: ['chart-accounts-income-expense', profileId],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
@@ -34,7 +42,8 @@ export function useBudgetData() {
         .order('category', { ascending: true });
       if (error) throw error;
       return data || [];
-    }
+    },
+    enabled: !!activeProfile
   });
 
   const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;

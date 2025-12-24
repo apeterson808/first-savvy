@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { Plus, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
+import { PageTabs } from '@/components/common/PageTabs';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetOverviewCards from '../components/budgeting/BudgetOverviewCards';
@@ -88,6 +89,7 @@ export default function Budgeting() {
         )}
       </div>
 
+      <PageTabs tabs={['overview', 'setup', 'categories']} />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
           {!hasSetupStarted ? (

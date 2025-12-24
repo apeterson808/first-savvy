@@ -8,6 +8,7 @@ import AccountsTable from '../components/banking/AccountsTable';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { PageTabs } from '@/components/common/PageTabs';
 
 export default function Banking() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -81,6 +82,7 @@ export default function Banking() {
 
   return (
     <div className="p-4 md:p-6">
+      <PageTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-4">

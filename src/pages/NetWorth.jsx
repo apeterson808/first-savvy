@@ -1,10 +1,12 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { TrendingUp } from 'lucide-react';
+import { PageTabs } from '@/components/common/PageTabs';
 
 export default function NetWorth() {
   return (
     <div className="p-4 md:p-6">
+      <PageTabs tabs={['overview', 'assets', 'liabilities']} />
       <div className="max-w-4xl mx-auto">
         <Card className="shadow-sm border-slate-200">
           <CardHeader className="pb-8 pt-12">

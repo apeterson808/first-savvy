@@ -1,42 +1,50 @@
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 export default function useAllAccounts() {
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
+  const profileId = activeProfile?.id || 'default';
+
   const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
-    queryKey: ['accounts'],
+    queryKey: ['accounts', profileId],
     queryFn: () => firstsavvy.entities.Account.list('-created_at'),
     staleTime: 30000,
+    enabled: !!activeProfile,
   });
 
   const { data: assets = [], isLoading: loadingAssets } = useQuery({
-    queryKey: ['assets'],
+    queryKey: ['assets', profileId],
     queryFn: () => firstsavvy.entities.Asset.list('name'),
     staleTime: 30000,
+    enabled: !!activeProfile,
   });
 
   const { data: liabilities = [], isLoading: loadingLiabilities } = useQuery({
-    queryKey: ['liabilities'],
+    queryKey: ['liabilities', profileId],
     queryFn: () => firstsavvy.entities.Liability.list('name'),
     staleTime: 30000,
+    enabled: !!activeProfile,
   });
 
   const { data: equity = [], isLoading: loadingEquity } = useQuery({
-    queryKey: ['equity'],
+    queryKey: ['equity', profileId],
     queryFn: () => firstsavvy.entities.Equity.list('name'),
     staleTime: 30000,
+    enabled: !!activeProfile,
   });
 
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
-    queryKey: ['chart-accounts', user?.id],
+    queryKey: ['chart-accounts', user?.id, profileId],
     queryFn: async () => {
       if (!user) return [];
       const accounts = await getUserChartOfAccounts(user.id);
       return accounts.filter(a => a.level === 3);
     },
-    enabled: !!user,
+    enabled: !!user && !!activeProfile,
     staleTime: 30000,
   });
 
