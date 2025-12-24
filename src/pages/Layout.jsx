@@ -135,9 +135,9 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="h-20 bg-white px-4 relative border-b border-slate-200">
-          <div className="h-full flex flex-col justify-start pt-2">
-            <div className="flex items-center justify-between mb-2">
+        <header className="bg-white px-4 relative">
+          <div className="flex flex-col">
+            <div className="flex items-center justify-between pt-3 pb-2">
               <div className="flex items-center gap-4">
                 <button
                   onClick={() => setSidebarOpen(true)}
@@ -177,7 +177,11 @@ export default function Layout({ children, currentPageName }) {
             </div>
 
             {/* Profile Tabs */}
-            <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
+            <div className="relative">
+              <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
+              {/* Prominent horizontal border line */}
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-300 z-0"></div>
+            </div>
           </div>
         </header>
 
