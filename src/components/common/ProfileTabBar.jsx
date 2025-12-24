@@ -12,7 +12,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
   };
 
   return (
-    <div className="flex items-center gap-0 overflow-hidden min-h-[36px] px-3">
+    <div className="flex items-center gap-1 overflow-hidden min-h-[36px]">
       {loading ? (
         <div className="flex items-center gap-2 px-3 py-1 text-sm text-slate-500">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -29,7 +29,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
                 onClick={() => handleTabClick(profile)}
                 className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative ${
                   isActive
-                    ? 'bg-slate-100 text-slate-900 z-10 profile-tab-active'
+                    ? 'bg-slate-100 text-slate-900 z-10'
                     : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
                 style={{
@@ -41,8 +41,6 @@ export function ProfileTabBar({ onAddProfileClick }) {
                   borderTopRightRadius: '12px',
                   marginBottom: isActive ? '-2px' : '0',
                   paddingBottom: isActive ? 'calc(0.25rem + 2px)' : '0.25rem',
-                  marginLeft: isActive ? '12px' : '4px',
-                  marginRight: isActive ? '12px' : '4px',
                 }}
               >
                 <span className="text-sm font-medium truncate flex-1">
