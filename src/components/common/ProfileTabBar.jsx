@@ -26,7 +26,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
   if (profileTabs.length === 0) return null;
 
   return (
-    <div className="flex items-center gap-1 overflow-x-auto scrollbar-thin scrollbar-thumb-slate-300">
+    <div className="flex items-center gap-1 overflow-x-hidden">
       {profileTabs.map((tab) => {
         const isActive = tab.id === activeTabId;
 
