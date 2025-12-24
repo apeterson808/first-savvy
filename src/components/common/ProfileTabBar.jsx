@@ -37,7 +37,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
             draggable
             onDragStart={() => setDraggedTab(tab)}
             onDragEnd={() => setDraggedTab(null)}
-            className={`group flex items-center gap-1.5 px-2.5 py-0.5 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative ${
+            className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative ${
               isActive
                 ? 'bg-slate-100 text-slate-900 z-10'
                 : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -50,10 +50,10 @@ export function ProfileTabBar({ onAddProfileClick }) {
               borderTopLeftRadius: '12px',
               borderTopRightRadius: '12px',
               marginBottom: isActive ? '-2px' : '0',
-              paddingBottom: isActive ? 'calc(0.125rem + 2px)' : '0.125rem',
+              paddingBottom: isActive ? 'calc(0.25rem + 2px)' : '0.25rem',
             }}
           >
-            <span className="text-xs font-medium truncate flex-1">
+            <span className="text-sm font-medium truncate flex-1">
               {tab.profile_name}
             </span>
 
@@ -70,10 +70,10 @@ export function ProfileTabBar({ onAddProfileClick }) {
       {profileTabs.length < 10 && (
         <button
           onClick={onAddProfileClick}
-          className="flex items-center justify-center px-2 py-1 flex-shrink-0 text-slate-500 hover:text-slate-700 transition-colors"
+          className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 transition-colors"
           title="Add profile"
         >
-          <Plus className="w-3.5 h-3.5" />
+          <Plus className="w-4 h-4" />
         </button>
       )}
     </div>
