@@ -14,16 +14,20 @@ export const useAuth = () => {
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState(null);
 
   useEffect(() => {
     firstsavvy.auth.getUser()
       .then(user => {
         setUser(user);
         setLoading(false);
+        setConnectionError(null);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('Auth connection error:', error);
         setUser(null);
         setLoading(false);
+        setConnectionError(error.message || 'Unable to connect to Supabase');
       });
 
     const subscription = firstsavvy.auth.onAuthStateChange((event, session) => {
@@ -44,6 +48,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     loading,
+    connectionError,
     signOut: async () => {
       await firstsavvy.auth.signOut();
       setUser(null);

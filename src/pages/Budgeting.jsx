@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { format, subMonths } from 'date-fns';
-import { Sparkles, Loader2, Plus, Settings, Undo2 } from 'lucide-react';
+import { Sparkles, Loader2, Plus, Settings, Undo2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetOverviewCards from '../components/budgeting/BudgetOverviewCards';
@@ -33,6 +35,7 @@ const getNextColor = (usedColors) => {
 
 export default function Budgeting() {
   const queryClient = useQueryClient();
+  const { user, connectionError } = useAuth();
   const [isAutoCreating, setIsAutoCreating] = useState(false);
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
@@ -74,15 +77,18 @@ export default function Budgeting() {
     totalBudgeted
   } = useBudgetData();
 
-  const { data: chartAccounts = [] } = useQuery({
+  const { data: chartAccounts = [], error: chartAccountsError, isLoading: chartAccountsLoading } = useQuery({
     queryKey: ['chart-accounts-income-expense'],
     queryFn: async () => {
+      console.log('Fetching chart accounts...');
       const { data, error } = await firstsavvy.auth.getUser();
       if (error || !data?.user) {
-        console.error('Auth error:', error);
-        return [];
+        console.error('Auth error when fetching categories:', error);
+        throw new Error(error?.message || 'Not authenticated');
       }
       const user = data.user;
+      console.log('Authenticated user:', user.id);
+
       const [income, expense] = await Promise.all([
         firstsavvy.from('user_chart_of_accounts')
           .select('*')
@@ -99,8 +105,22 @@ export default function Budgeting() {
           .eq('is_active', true)
           .order('account_number')
       ]);
-      return [...(income.data || []), ...(expense.data || [])];
-    }
+
+      if (income.error) {
+        console.error('Error fetching income categories:', income.error);
+        throw income.error;
+      }
+      if (expense.error) {
+        console.error('Error fetching expense categories:', expense.error);
+        throw expense.error;
+      }
+
+      const result = [...(income.data || []), ...(expense.data || [])];
+      console.log('Fetched chart accounts:', result.length);
+      return result;
+    },
+    enabled: !!user && !connectionError,
+    retry: 1
   });
 
   const handleAutoCreate = async () => {
@@ -240,6 +260,38 @@ export default function Budgeting() {
 
   return (
     <div className="p-4 md:p-6">
+      {connectionError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Connection Error</AlertTitle>
+          <AlertDescription>
+            Unable to connect to the database. Please check your internet connection and refresh the page.
+            {connectionError && <div className="mt-2 text-xs opacity-80">Error: {connectionError}</div>}
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!user && !connectionError && (
+        <Alert className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Authentication Required</AlertTitle>
+          <AlertDescription>
+            Please log in to view your budget information.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {chartAccountsError && (
+        <Alert variant="destructive" className="mb-6">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error Loading Categories</AlertTitle>
+          <AlertDescription>
+            Unable to load budget categories. This may be due to a database connection issue.
+            <div className="mt-2 text-xs opacity-80">Error: {chartAccountsError.message}</div>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {activeTab === 'overview' && (
         <div className="flex items-center justify-between mb-6">
           <div>
