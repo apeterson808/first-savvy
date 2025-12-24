@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useAuth } from './AuthContext';
 
@@ -14,248 +14,110 @@ export const useProfile = () => {
 
 export const ProfileProvider = ({ children }) => {
   const { user } = useAuth();
-  const [profileTabs, setProfileTabs] = useState([]);
-  const [activeTabId, setActiveTabId] = useState(null);
+  const [profiles, setProfiles] = useState([]);
+  const [activeProfile, setActiveProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const isCreatingDefaultTab = useRef(false);
+  const [error, setError] = useState(null);
 
-  const loadProfileTabs = useCallback(async () => {
+  const loadProfiles = useCallback(async () => {
     if (!user) {
+      setProfiles([]);
+      setActiveProfile(null);
       setLoading(false);
       return;
     }
 
     try {
-      const { data: tabs, error } = await firstsavvy.supabase
-        .from('profile_tabs')
-        .select('*')
-        .eq('owner_user_id', user.id)
-        .order('tab_order');
+      setLoading(true);
+      setError(null);
 
-      if (error) throw error;
+      const { data: memberships, error: membershipsError } = await firstsavvy
+        .from('profile_memberships')
+        .select(`
+          role,
+          profile:profiles (
+            id,
+            profile_type,
+            display_name,
+            is_deleted,
+            created_at
+          )
+        `)
+        .eq('user_id', user.id);
 
-      if (!tabs || tabs.length === 0) {
-        if (isCreatingDefaultTab.current) {
+      if (membershipsError) throw membershipsError;
+
+      if (!memberships || memberships.length === 0) {
+        const profileId = await ensureDefaultProfile();
+
+        if (profileId) {
+          await loadProfiles();
           return;
-        }
-        isCreatingDefaultTab.current = true;
-
-        const { data: userProfile } = await firstsavvy.supabase
-          .from('user_profiles')
-          .select('full_name, email, avatar_url, tab_display_name')
-          .eq('id', user.id)
-          .maybeSingle();
-
-        const getFirstName = (fullName) => {
-          if (!fullName) return null;
-          return fullName.split(' ')[0];
-        };
-
-        const displayName = userProfile?.tab_display_name ||
-                           getFirstName(userProfile?.full_name) ||
-                           user.email ||
-                           'My Profile';
-
-        const defaultTab = {
-          owner_user_id: user.id,
-          profile_user_id: user.id,
-          profile_type: 'personal',
-          profile_name: displayName,
-          profile_metadata: {
-            avatar_url: userProfile?.avatar_url,
-            email: userProfile?.email || user.email,
-          },
-          tab_order: 0,
-          is_active: true,
-          state_data: {},
-        };
-
-        const { data: newTab, error: insertError } = await firstsavvy.supabase
-          .from('profile_tabs')
-          .insert(defaultTab)
-          .select()
-          .single();
-
-        if (insertError) {
-          isCreatingDefaultTab.current = false;
-          throw insertError;
-        }
-
-        setProfileTabs([newTab]);
-        setActiveTabId(newTab.id);
-        isCreatingDefaultTab.current = false;
-      } else {
-        setProfileTabs(tabs);
-        const activeTab = tabs.find((t) => t.is_active);
-        if (activeTab) {
-          setActiveTabId(activeTab.id);
-        } else if (tabs.length > 0) {
-          setActiveTabId(tabs[0].id);
+        } else {
+          throw new Error('Failed to create default profile');
         }
       }
-    } catch (error) {
-      console.error('Error loading profile tabs:', error);
-      isCreatingDefaultTab.current = false;
-    } finally {
+
+      const profilesList = memberships
+        .filter(m => m.profile && !m.profile.is_deleted)
+        .map(m => ({
+          ...m.profile,
+          role: m.role
+        }));
+
+      setProfiles(profilesList);
+
+      const savedProfileId = localStorage.getItem('activeProfileId');
+      const savedProfile = profilesList.find(p => p.id === savedProfileId);
+
+      if (savedProfile) {
+        setActiveProfile(savedProfile);
+      } else if (profilesList.length > 0) {
+        setActiveProfile(profilesList[0]);
+        localStorage.setItem('activeProfileId', profilesList[0].id);
+      }
+
+      setLoading(false);
+    } catch (err) {
+      console.error('Error loading profiles:', err);
+      setError(err.message);
       setLoading(false);
     }
   }, [user]);
 
-  useEffect(() => {
-    loadProfileTabs();
-
-    const handleProfileUpdate = () => {
-      loadProfileTabs();
-    };
-
-    window.addEventListener('profileUpdated', handleProfileUpdate);
-
-    return () => {
-      window.removeEventListener('profileUpdated', handleProfileUpdate);
-    };
-  }, [loadProfileTabs]);
-
-  const switchToTab = async (tabId) => {
+  const ensureDefaultProfile = async () => {
     try {
-      if (activeTabId) {
-        await firstsavvy.supabase
-          .from('profile_tabs')
-          .update({ is_active: false })
-          .eq('id', activeTabId);
-      }
-
-      await firstsavvy.supabase
-        .from('profile_tabs')
-        .update({
-          is_active: true,
-          last_accessed_at: new Date().toISOString(),
-        })
-        .eq('id', tabId);
-
-      setActiveTabId(tabId);
-      setProfileTabs((prev) =>
-        prev.map((tab) => ({
-          ...tab,
-          is_active: tab.id === tabId,
-        }))
-      );
-    } catch (error) {
-      console.error('Error switching tabs:', error);
-    }
-  };
-
-  const addProfileTab = async (profileData) => {
-    if (profileTabs.length >= 10) {
-      throw new Error('Maximum of 10 profile tabs allowed');
-    }
-
-    const existingTab = profileTabs.find(
-      (tab) => tab.profile_user_id === profileData.profile_user_id
-    );
-    if (existingTab) {
-      await switchToTab(existingTab.id);
-      return existingTab;
-    }
-
-    const newTab = {
-      owner_user_id: user.id,
-      profile_user_id: profileData.profile_user_id,
-      profile_type: profileData.profile_type,
-      profile_name: profileData.profile_name,
-      profile_metadata: profileData.profile_metadata || {},
-      tab_order: profileTabs.length,
-      is_active: false,
-      state_data: {},
-    };
-
-    try {
-      const { data: insertedTab, error } = await firstsavvy.supabase
-        .from('profile_tabs')
-        .insert(newTab)
-        .select()
-        .single();
+      const { data, error } = await firstsavvy.rpc('ensure_default_profile');
 
       if (error) throw error;
 
-      setProfileTabs((prev) => [...prev, insertedTab]);
-      await switchToTab(insertedTab.id);
-      return insertedTab;
-    } catch (error) {
-      console.error('Error adding profile tab:', error);
-      throw error;
+      return data;
+    } catch (err) {
+      console.error('Error ensuring default profile:', err);
+      return null;
     }
   };
 
-  const closeProfileTab = async (tabId) => {
-    const tab = profileTabs.find((t) => t.id === tabId);
-    if (!tab) return;
+  useEffect(() => {
+    loadProfiles();
+  }, [loadProfiles]);
 
-    try {
-      await firstsavvy.supabase.from('profile_tabs').delete().eq('id', tabId);
-
-      const remainingTabs = profileTabs.filter((t) => t.id !== tabId);
-      setProfileTabs(remainingTabs);
-
-      if (tab.is_active && remainingTabs.length > 0) {
-        await switchToTab(remainingTabs[0].id);
-      }
-    } catch (error) {
-      console.error('Error closing profile tab:', error);
-      throw error;
-    }
+  const switchProfile = (profile) => {
+    setActiveProfile(profile);
+    localStorage.setItem('activeProfileId', profile.id);
   };
 
-  const updateTabOrder = async (reorderedTabs) => {
-    try {
-      const updates = reorderedTabs.map((tab, index) => ({
-        id: tab.id,
-        tab_order: index,
-      }));
-
-      for (const update of updates) {
-        await firstsavvy.supabase
-          .from('profile_tabs')
-          .update({ tab_order: update.tab_order })
-          .eq('id', update.id);
-      }
-
-      setProfileTabs(reorderedTabs);
-    } catch (error) {
-      console.error('Error updating tab order:', error);
-      throw error;
-    }
+  const refreshProfiles = async () => {
+    await loadProfiles();
   };
-
-  const updateTabState = async (tabId, stateData) => {
-    try {
-      await firstsavvy.supabase
-        .from('profile_tabs')
-        .update({ state_data: stateData })
-        .eq('id', tabId);
-
-      setProfileTabs((prev) =>
-        prev.map((tab) =>
-          tab.id === tabId ? { ...tab, state_data: stateData } : tab
-        )
-      );
-    } catch (error) {
-      console.error('Error updating tab state:', error);
-    }
-  };
-
-  const activeProfile = profileTabs.find((tab) => tab.id === activeTabId);
 
   const value = {
-    profileTabs,
-    activeTabId,
+    profiles,
     activeProfile,
     loading,
-    switchToTab,
-    addProfileTab,
-    closeProfileTab,
-    updateTabOrder,
-    updateTabState,
-    refreshTabs: loadProfileTabs,
+    error,
+    switchProfile,
+    refreshProfiles
   };
 
   return (

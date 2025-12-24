@@ -10,11 +10,11 @@ export const getChartOfAccountsTemplates = async () => {
   return data;
 };
 
-export const getUserChartOfAccounts = async (userId, filters = {}) => {
+export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   let query = supabase
     .from('user_chart_of_accounts')
     .select('*')
-    .eq('user_id', userId);
+    .eq('profile_id', profileId);
 
   if (filters.accountType) {
     query = query.eq('account_type', filters.accountType);
@@ -36,9 +36,9 @@ export const getUserChartOfAccounts = async (userId, filters = {}) => {
   return data;
 };
 
-export const getUserChartOfAccountsHierarchy = async (userId, accountType = null) => {
+export const getUserChartOfAccountsHierarchy = async (profileId, accountType = null) => {
   const filters = accountType ? { accountType } : {};
-  const accounts = await getUserChartOfAccounts(userId, filters);
+  const accounts = await getUserChartOfAccounts(profileId, filters);
 
   const accountMap = {};
   const rootAccounts = [];
@@ -74,11 +74,11 @@ export const getChartAccountById = async (accountId) => {
   return data;
 };
 
-export const getChartAccountByNumber = async (userId, accountNumber) => {
-  const { data, error } = await supabase
+export const getChartAccountByNumber = async (profileId, accountNumber) => {
+  const { data, error} = await supabase
     .from('user_chart_of_accounts')
     .select('*')
-    .eq('user_id', userId)
+    .eq('profile_id', profileId)
     .eq('account_number', accountNumber)
     .maybeSingle();
 
@@ -86,9 +86,9 @@ export const getChartAccountByNumber = async (userId, accountNumber) => {
   return data;
 };
 
-export const createUserIncomeCategory = async (userId, categoryData) => {
+export const createUserIncomeCategory = async (profileId, categoryData) => {
   const { data, error } = await supabase.rpc('add_user_income_category', {
-    p_user_id: userId,
+    p_profile_id: profileId,
     p_category_name: categoryData.name,
     p_account_number: categoryData.accountNumber || null,
     p_icon: categoryData.icon || null,
@@ -99,9 +99,9 @@ export const createUserIncomeCategory = async (userId, categoryData) => {
   return data;
 };
 
-export const createUserExpenseCategory = async (userId, categoryData) => {
+export const createUserExpenseCategory = async (profileId, categoryData) => {
   const { data, error } = await supabase.rpc('add_user_expense_category', {
-    p_user_id: userId,
+    p_profile_id: profileId,
     p_category_name: categoryData.name,
     p_account_number: categoryData.accountNumber || null,
     p_icon: categoryData.icon || null,
@@ -130,9 +130,9 @@ export const updateAccountNumber = async (accountId, newAccountNumber) => {
   if (error) throw error;
 };
 
-export const getNextAvailableAccountNumber = async (userId, accountType) => {
+export const getNextAvailableAccountNumber = async (profileId, accountType) => {
   const { data, error } = await supabase.rpc('get_next_available_account_number', {
-    p_user_id: userId,
+    p_profile_id: profileId,
     p_account_type: accountType
   });
 
@@ -176,24 +176,24 @@ export const updateAccountIconColor = async (accountId, icon, color) => {
   if (error) throw error;
 };
 
-export const getIncomeAccounts = async (userId) => {
-  return getUserChartOfAccounts(userId, { accountType: 'income', isActive: true });
+export const getIncomeAccounts = async (profileId) => {
+  return getUserChartOfAccounts(profileId, { accountType: 'income', isActive: true });
 };
 
-export const getExpenseAccounts = async (userId) => {
-  return getUserChartOfAccounts(userId, { accountType: 'expense', isActive: true });
+export const getExpenseAccounts = async (profileId) => {
+  return getUserChartOfAccounts(profileId, { accountType: 'expense', isActive: true });
 };
 
-export const getAssetAccounts = async (userId) => {
-  return getUserChartOfAccounts(userId, { accountType: 'asset', isActive: true });
+export const getAssetAccounts = async (profileId) => {
+  return getUserChartOfAccounts(profileId, { accountType: 'asset', isActive: true });
 };
 
-export const getLiabilityAccounts = async (userId) => {
-  return getUserChartOfAccounts(userId, { accountType: 'liability', isActive: true });
+export const getLiabilityAccounts = async (profileId) => {
+  return getUserChartOfAccounts(profileId, { accountType: 'liability', isActive: true });
 };
 
-export const getEquityAccounts = async (userId) => {
-  return getUserChartOfAccounts(userId, { accountType: 'equity', isActive: true });
+export const getEquityAccounts = async (profileId) => {
+  return getUserChartOfAccounts(profileId, { accountType: 'equity', isActive: true });
 };
 
 export const getAccountNumberRanges = async (accountType) => {
