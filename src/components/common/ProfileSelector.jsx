@@ -29,7 +29,7 @@ export function ProfileSelector({ open, onOpenChange }) {
   const loadAvailableProfiles = async () => {
     setLoading(true);
     try {
-      const { data: profile, error } = await firstsavvy
+      const { data: profile, error } = await firstsavvy.supabase
         .from('user_profiles')
         .select('*')
         .eq('id', user.id)

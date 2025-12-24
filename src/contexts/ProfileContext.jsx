@@ -25,7 +25,7 @@ export const ProfileProvider = ({ children }) => {
     }
 
     try {
-      const { data: tabs, error } = await firstsavvy
+      const { data: tabs, error } = await firstsavvy.supabase
         .from('profile_tabs')
         .select('*')
         .eq('owner_user_id', user.id)
@@ -34,7 +34,7 @@ export const ProfileProvider = ({ children }) => {
       if (error) throw error;
 
       if (!tabs || tabs.length === 0) {
-        const { data: userProfile } = await firstsavvy
+        const { data: userProfile } = await firstsavvy.supabase
           .from('user_profiles')
           .select('full_name, email, avatar_url')
           .eq('id', user.id)
@@ -55,7 +55,7 @@ export const ProfileProvider = ({ children }) => {
           state_data: {},
         };
 
-        const { data: newTab, error: insertError } = await firstsavvy
+        const { data: newTab, error: insertError } = await firstsavvy.supabase
           .from('profile_tabs')
           .insert(defaultTab)
           .select()
@@ -88,13 +88,13 @@ export const ProfileProvider = ({ children }) => {
   const switchToTab = async (tabId) => {
     try {
       if (activeTabId) {
-        await firstsavvy
+        await firstsavvy.supabase
           .from('profile_tabs')
           .update({ is_active: false })
           .eq('id', activeTabId);
       }
 
-      await firstsavvy
+      await firstsavvy.supabase
         .from('profile_tabs')
         .update({
           is_active: true,
@@ -140,7 +140,7 @@ export const ProfileProvider = ({ children }) => {
     };
 
     try {
-      const { data: insertedTab, error } = await firstsavvy
+      const { data: insertedTab, error } = await firstsavvy.supabase
         .from('profile_tabs')
         .insert(newTab)
         .select()
@@ -166,7 +166,7 @@ export const ProfileProvider = ({ children }) => {
     }
 
     try {
-      await firstsavvy.from('profile_tabs').delete().eq('id', tabId);
+      await firstsavvy.supabase.from('profile_tabs').delete().eq('id', tabId);
 
       const remainingTabs = profileTabs.filter((t) => t.id !== tabId);
       setProfileTabs(remainingTabs);
@@ -188,7 +188,7 @@ export const ProfileProvider = ({ children }) => {
       }));
 
       for (const update of updates) {
-        await firstsavvy
+        await firstsavvy.supabase
           .from('profile_tabs')
           .update({ tab_order: update.tab_order })
           .eq('id', update.id);
@@ -203,7 +203,7 @@ export const ProfileProvider = ({ children }) => {
 
   const updateTabState = async (tabId, stateData) => {
     try {
-      await firstsavvy
+      await firstsavvy.supabase
         .from('profile_tabs')
         .update({ state_data: stateData })
         .eq('id', tabId);
@@ -224,7 +224,7 @@ export const ProfileProvider = ({ children }) => {
 
     try {
       const newPinnedState = !tab.is_pinned;
-      await firstsavvy
+      await firstsavvy.supabase
         .from('profile_tabs')
         .update({ is_pinned: newPinnedState })
         .eq('id', tabId);
