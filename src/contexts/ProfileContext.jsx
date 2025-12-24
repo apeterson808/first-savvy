@@ -67,14 +67,53 @@ export const ProfileProvider = ({ children }) => {
 
       setProfiles(profilesList);
 
-      const savedProfileId = localStorage.getItem('activeProfileId');
-      const savedProfile = profilesList.find(p => p.id === savedProfileId);
+      const { data: activeTabs, error: tabError } = await firstsavvy
+        .from('profile_tabs')
+        .select(`
+          id,
+          owner_user_id,
+          display_name,
+          profile:profiles!profile_tabs_owner_user_id_fkey (
+            id,
+            profile_type,
+            display_name,
+            is_deleted
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (savedProfile) {
-        setActiveProfile(savedProfile);
-      } else if (profilesList.length > 0) {
-        setActiveProfile(profilesList[0]);
-        localStorage.setItem('activeProfileId', profilesList[0].id);
+      if (tabError && tabError.code !== 'PGRST116') {
+        console.error('Error loading active tab:', tabError);
+      }
+
+      let activeProfileToSet = null;
+
+      if (activeTabs && activeTabs.profile && !activeTabs.profile.is_deleted) {
+        const membership = memberships.find(m => m.profile?.id === activeTabs.profile.id);
+        if (membership) {
+          activeProfileToSet = {
+            ...activeTabs.profile,
+            role: membership.role
+          };
+        }
+      }
+
+      if (!activeProfileToSet && profilesList.length > 0) {
+        activeProfileToSet = profilesList[0];
+        await firstsavvy
+          .from('profile_tabs')
+          .update({ is_active: true })
+          .eq('user_id', user.id)
+          .eq('owner_user_id', activeProfileToSet.id)
+          .maybeSingle();
+      }
+
+      setActiveProfile(activeProfileToSet);
+
+      if (activeProfileToSet) {
+        localStorage.setItem('activeProfileId', activeProfileToSet.id);
       }
 
       setLoading(false);
@@ -91,9 +130,29 @@ export const ProfileProvider = ({ children }) => {
 
       if (error) throw error;
 
+      if (data?.success) {
+        const verificationResult = await verifyUserProvisioning();
+        if (verificationResult && !verificationResult.success) {
+          console.warn('Provisioning verification failed:', verificationResult.diagnostics);
+        }
+      }
+
       return data;
     } catch (err) {
       console.error('Error ensuring complete provisioning:', err);
+      return null;
+    }
+  };
+
+  const verifyUserProvisioning = async () => {
+    try {
+      const { data, error } = await firstsavvy.rpc('verify_user_provisioning');
+
+      if (error) throw error;
+
+      return data;
+    } catch (err) {
+      console.error('Error verifying user provisioning:', err);
       return null;
     }
   };
@@ -102,9 +161,29 @@ export const ProfileProvider = ({ children }) => {
     loadProfiles();
   }, [loadProfiles]);
 
-  const switchProfile = (profile) => {
-    setActiveProfile(profile);
-    localStorage.setItem('activeProfileId', profile.id);
+  const switchProfile = async (profile) => {
+    if (!user || !profile) return;
+
+    try {
+      await firstsavvy
+        .from('profile_tabs')
+        .update({ is_active: false })
+        .eq('user_id', user.id);
+
+      await firstsavvy
+        .from('profile_tabs')
+        .update({ is_active: true })
+        .eq('user_id', user.id)
+        .eq('owner_user_id', profile.id);
+
+      setActiveProfile(profile);
+      localStorage.setItem('activeProfileId', profile.id);
+
+      window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
+    } catch (err) {
+      console.error('Error switching profile:', err);
+      throw err;
+    }
   };
 
   const refreshProfiles = async () => {

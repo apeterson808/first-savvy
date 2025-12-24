@@ -1,11 +1,13 @@
 import { supabase } from './supabaseClient';
 
-export async function createPropertyAsset(propertyData) {
+export async function createPropertyAsset(propertyData, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const assetRecord = {
     user_id: user.id,
+    profile_id: profileId,
     name: propertyData.name,
     type: 'Asset',
     detail_type: 'property',
@@ -32,12 +34,14 @@ export async function createPropertyAsset(propertyData) {
   return data;
 }
 
-export async function createMortgage(mortgageData) {
+export async function createMortgage(mortgageData, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const liabilityRecord = {
     user_id: user.id,
+    profile_id: profileId,
     name: mortgageData.name || `${mortgageData.lenderName} Mortgage`,
     type: 'Liability',
     detail_type: 'mortgage',
@@ -61,20 +65,21 @@ export async function createMortgage(mortgageData) {
   return data;
 }
 
-export async function createPropertyWithMortgage(propertyData, mortgageData) {
+export async function createPropertyWithMortgage(propertyData, mortgageData, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   try {
-    const property = await createPropertyAsset(propertyData);
+    const property = await createPropertyAsset(propertyData, profileId);
 
     const mortgage = await createMortgage({
       ...mortgageData,
       linkedAssetId: property.id,
-    });
+    }, profileId);
 
     const { createAssetLiabilityLink } = await import('./vehiclesAndLoans');
-    await createAssetLiabilityLink(property.id, mortgage.id);
+    await createAssetLiabilityLink(property.id, mortgage.id, profileId);
 
     return { property, mortgage };
   } catch (error) {
@@ -82,15 +87,16 @@ export async function createPropertyWithMortgage(propertyData, mortgageData) {
   }
 }
 
-export async function getPropertyWithMortgage(propertyId) {
+export async function getPropertyWithMortgage(propertyId, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data: property, error: propertyError } = await supabase
     .from('assets')
     .select('*')
     .eq('id', propertyId)
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .eq('detail_type', 'property')
     .single();
 
@@ -103,7 +109,7 @@ export async function getPropertyWithMortgage(propertyId) {
       liability:liabilities(*)
     `)
     .eq('asset_id', propertyId)
-    .eq('user_id', user.id);
+    .eq('profile_id', profileId);
 
   if (linksError) throw linksError;
 
@@ -113,14 +119,15 @@ export async function getPropertyWithMortgage(propertyId) {
   };
 }
 
-export async function getUnlinkedProperties() {
+export async function getUnlinkedProperties(profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data: allProperties, error: propertiesError } = await supabase
     .from('assets')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .eq('detail_type', 'property');
 
   if (propertiesError) throw propertiesError;
@@ -128,7 +135,7 @@ export async function getUnlinkedProperties() {
   const { data: linkedAssetIds, error: linksError } = await supabase
     .from('asset_liability_links')
     .select('asset_id')
-    .eq('user_id', user.id);
+    .eq('profile_id', profileId);
 
   if (linksError) throw linksError;
 
@@ -136,14 +143,15 @@ export async function getUnlinkedProperties() {
   return allProperties.filter(property => !linkedIds.has(property.id));
 }
 
-export async function getUnlinkedMortgages() {
+export async function getUnlinkedMortgages(profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data, error } = await supabase
     .from('liabilities')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .eq('detail_type', 'mortgage')
     .is('linked_asset_id', null);
 

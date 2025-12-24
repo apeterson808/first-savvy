@@ -19,6 +19,7 @@ import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgage
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { getAccountTypes, getAccountDetails } from '@/utils/accountTypeMapping';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
 import {
   Building2,
@@ -166,6 +167,7 @@ const ACCOUNT_TYPE_CARDS = [
 
 export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [currentStep, setCurrentStep] = useState('select-type');
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedSubtype, setSelectedSubtype] = useState(null);
@@ -602,7 +604,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           estimatedValue: balanceValidation.value,
         };
 
-        const newAsset = await createVehicleAsset(vehicleData);
+        const newAsset = await createVehicleAsset(vehicleData, activeProfile.id);
         queryClient.invalidateQueries({ queryKey: ['assets'] });
 
         if (!formData.skipLoanDetails && formData.loanBalance) {
@@ -627,8 +629,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             linkedAssetId: newAsset.id,
           };
 
-          const newLoan = await createAutoLoan(loanData);
-          await createAssetLiabilityLink(newAsset.id, newLoan.id);
+          const newLoan = await createAutoLoan(loanData, activeProfile.id);
+          await createAssetLiabilityLink(newAsset.id, newLoan.id, activeProfile.id);
           queryClient.invalidateQueries({ queryKey: ['liabilities'] });
           queryClient.invalidateQueries({ queryKey: ['assetLinks'] });
           queryClient.invalidateQueries({ queryKey: ['liabilityLinks'] });
@@ -666,7 +668,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           purchaseDate: formData.purchaseDate || null,
         };
 
-        const newAsset = await createPropertyAsset(propertyData);
+        const newAsset = await createPropertyAsset(propertyData, activeProfile.id);
         queryClient.invalidateQueries({ queryKey: ['assets'] });
 
         if (!formData.skipMortgageDetails && formData.loanBalance) {
@@ -691,8 +693,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             linkedAssetId: newAsset.id,
           };
 
-          const newMortgage = await createMortgage(mortgageData);
-          await createAssetLiabilityLink(newAsset.id, newMortgage.id);
+          const newMortgage = await createMortgage(mortgageData, activeProfile.id);
+          await createAssetLiabilityLink(newAsset.id, newMortgage.id, activeProfile.id);
           queryClient.invalidateQueries({ queryKey: ['liabilities'] });
           queryClient.invalidateQueries({ queryKey: ['assetLinks'] });
           queryClient.invalidateQueries({ queryKey: ['liabilityLinks'] });

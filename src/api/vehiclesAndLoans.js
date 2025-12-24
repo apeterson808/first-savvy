@@ -1,11 +1,13 @@
 import { supabase } from './supabaseClient';
 
-export async function createVehicleAsset(vehicleData) {
+export async function createVehicleAsset(vehicleData, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const assetRecord = {
     user_id: user.id,
+    profile_id: profileId,
     name: vehicleData.name,
     type: 'Asset',
     detail_type: 'vehicle',
@@ -27,12 +29,14 @@ export async function createVehicleAsset(vehicleData) {
   return data;
 }
 
-export async function createAutoLoan(loanData) {
+export async function createAutoLoan(loanData, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const liabilityRecord = {
     user_id: user.id,
+    profile_id: profileId,
     name: loanData.name || `${loanData.lenderName} Auto Loan`,
     type: 'Liability',
     detail_type: 'auto_loan',
@@ -56,12 +60,14 @@ export async function createAutoLoan(loanData) {
   return data;
 }
 
-export async function createAssetLiabilityLink(assetId, liabilityId, relationshipType = 'secures') {
+export async function createAssetLiabilityLink(assetId, liabilityId, profileId, relationshipType = 'secures') {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const linkRecord = {
     user_id: user.id,
+    profile_id: profileId,
     asset_id: assetId,
     liability_id: liabilityId,
     relationship_type: relationshipType,
@@ -78,24 +84,26 @@ export async function createAssetLiabilityLink(assetId, liabilityId, relationshi
   await supabase
     .from('liabilities')
     .update({ linked_asset_id: assetId })
-    .eq('id', liabilityId);
+    .eq('id', liabilityId)
+    .eq('profile_id', profileId);
 
   return data;
 }
 
-export async function createVehicleWithLoan(vehicleData, loanData) {
+export async function createVehicleWithLoan(vehicleData, loanData, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   try {
-    const vehicle = await createVehicleAsset(vehicleData);
+    const vehicle = await createVehicleAsset(vehicleData, profileId);
 
     const loan = await createAutoLoan({
       ...loanData,
       linkedAssetId: vehicle.id,
-    });
+    }, profileId);
 
-    await createAssetLiabilityLink(vehicle.id, loan.id);
+    await createAssetLiabilityLink(vehicle.id, loan.id, profileId);
 
     return { vehicle, loan };
   } catch (error) {
@@ -103,36 +111,39 @@ export async function createVehicleWithLoan(vehicleData, loanData) {
   }
 }
 
-export async function unlinkAssetLiability(assetId, liabilityId) {
+export async function unlinkAssetLiability(assetId, liabilityId, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { error: linkError } = await supabase
     .from('asset_liability_links')
     .delete()
-    .match({ asset_id: assetId, liability_id: liabilityId, user_id: user.id });
+    .match({ asset_id: assetId, liability_id: liabilityId, profile_id: profileId });
 
   if (linkError) throw linkError;
 
   const { error: liabilityError } = await supabase
     .from('liabilities')
     .update({ linked_asset_id: null })
-    .eq('id', liabilityId);
+    .eq('id', liabilityId)
+    .eq('profile_id', profileId);
 
   if (liabilityError) throw liabilityError;
 
   return true;
 }
 
-export async function getAssetWithLinks(assetId) {
+export async function getAssetWithLinks(assetId, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data: asset, error: assetError } = await supabase
     .from('assets')
     .select('*')
     .eq('id', assetId)
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .single();
 
   if (assetError) throw assetError;
@@ -144,7 +155,7 @@ export async function getAssetWithLinks(assetId) {
       liability:liabilities(*)
     `)
     .eq('asset_id', assetId)
-    .eq('user_id', user.id);
+    .eq('profile_id', profileId);
 
   if (linksError) throw linksError;
 
@@ -154,15 +165,16 @@ export async function getAssetWithLinks(assetId) {
   };
 }
 
-export async function getLiabilityWithLinks(liabilityId) {
+export async function getLiabilityWithLinks(liabilityId, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data: liability, error: liabilityError } = await supabase
     .from('liabilities')
     .select('*')
     .eq('id', liabilityId)
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .single();
 
   if (liabilityError) throw liabilityError;
@@ -174,7 +186,7 @@ export async function getLiabilityWithLinks(liabilityId) {
       asset:assets(*)
     `)
     .eq('liability_id', liabilityId)
-    .eq('user_id', user.id);
+    .eq('profile_id', profileId);
 
   if (linksError) throw linksError;
 
@@ -184,14 +196,15 @@ export async function getLiabilityWithLinks(liabilityId) {
   };
 }
 
-export async function getUnlinkedAssets() {
+export async function getUnlinkedAssets(profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data: allAssets, error: assetsError } = await supabase
     .from('assets')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .eq('detail_type', 'vehicle');
 
   if (assetsError) throw assetsError;
@@ -199,7 +212,7 @@ export async function getUnlinkedAssets() {
   const { data: linkedAssetIds, error: linksError } = await supabase
     .from('asset_liability_links')
     .select('asset_id')
-    .eq('user_id', user.id);
+    .eq('profile_id', profileId);
 
   if (linksError) throw linksError;
 
@@ -207,14 +220,15 @@ export async function getUnlinkedAssets() {
   return allAssets.filter(asset => !linkedIds.has(asset.id));
 }
 
-export async function getUnlinkedAutoLoans() {
+export async function getUnlinkedAutoLoans(profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   const { data, error } = await supabase
     .from('liabilities')
     .select('*')
-    .eq('user_id', user.id)
+    .eq('profile_id', profileId)
     .eq('detail_type', 'auto_loan')
     .is('linked_asset_id', null);
 
@@ -222,9 +236,10 @@ export async function getUnlinkedAutoLoans() {
   return data;
 }
 
-export async function getAccountWithLinks(accountId, accountType) {
+export async function getAccountWithLinks(accountId, accountType, profileId) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('User not authenticated');
+  if (!profileId) throw new Error('Profile ID is required');
 
   let account = null;
   let linkedAccounts = [];
@@ -234,7 +249,7 @@ export async function getAccountWithLinks(accountId, accountType) {
       .from('assets')
       .select('*')
       .eq('id', accountId)
-      .eq('user_id', user.id)
+      .eq('profile_id', profileId)
       .single();
 
     if (assetError && assetError.code !== 'PGRST116') throw assetError;
@@ -248,7 +263,7 @@ export async function getAccountWithLinks(accountId, accountType) {
           liability:liabilities(*)
         `)
         .eq('asset_id', accountId)
-        .eq('user_id', user.id);
+        .eq('profile_id', profileId);
 
       if (linksError) throw linksError;
       linkedAccounts = (links || []).map(link => ({
@@ -263,7 +278,7 @@ export async function getAccountWithLinks(accountId, accountType) {
       .from('liabilities')
       .select('*')
       .eq('id', accountId)
-      .eq('user_id', user.id)
+      .eq('profile_id', profileId)
       .single();
 
     if (liabilityError && liabilityError.code !== 'PGRST116') throw liabilityError;
@@ -277,7 +292,7 @@ export async function getAccountWithLinks(accountId, accountType) {
           asset:assets(*)
         `)
         .eq('liability_id', accountId)
-        .eq('user_id', user.id);
+        .eq('profile_id', profileId);
 
       if (linksError) throw linksError;
       linkedAccounts = (links || []).map(link => ({
@@ -292,7 +307,7 @@ export async function getAccountWithLinks(accountId, accountType) {
       .from('equity')
       .select('*')
       .eq('id', accountId)
-      .eq('user_id', user.id)
+      .eq('profile_id', profileId)
       .single();
 
     if (equityError && equityError.code !== 'PGRST116') throw equityError;

@@ -24,6 +24,7 @@ import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
 import { getAccountWithLinks } from '@/api/vehiclesAndLoans';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
 
 export default function AccountDetail() {
@@ -32,6 +33,7 @@ export default function AccountDetail() {
   const [isEditMode, setIsEditMode] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
 
   const urlParams = new URLSearchParams(window.location.search);
   const returnUrl = urlParams.get('from') || '?tab=accounts';
@@ -69,15 +71,15 @@ export default function AccountDetail() {
   });
 
   const { data: linkedAccountsData = { linkedAccounts: [] }, isLoading: linkedAccountsLoading } = useQuery({
-    queryKey: ['linkedAccounts', id, account?.entityType],
+    queryKey: ['linkedAccounts', id, account?.entityType, activeProfile?.id],
     queryFn: async () => {
-      if (!account || !id) return { linkedAccounts: [] };
+      if (!account || !id || !activeProfile) return { linkedAccounts: [] };
       if (account.entityType === 'Asset' || account.entityType === 'Liability') {
-        return await getAccountWithLinks(id, account.entityType);
+        return await getAccountWithLinks(id, account.entityType, activeProfile.id);
       }
       return { linkedAccounts: [] };
     },
-    enabled: !!account && (account.entityType === 'Asset' || account.entityType === 'Liability')
+    enabled: !!account && !!activeProfile && (account.entityType === 'Asset' || account.entityType === 'Liability')
   });
 
   const linkedAccounts = linkedAccountsData?.linkedAccounts || [];
