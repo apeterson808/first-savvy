@@ -26,7 +26,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
   }, [defaultTab]);
 
   return (
-    <div className="flex items-end gap-0.5 mb-4">
+    <div className="inline-flex items-center rounded-lg bg-muted p-1 mb-4">
       {tabs.map((tab) => {
         const isActive = activeTab === tab;
         const isDisabled = disabledTabs.includes(tab);
@@ -40,14 +40,13 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
               window.history.pushState({}, '', newUrl);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className={`px-4 py-2 text-sm font-medium transition-all capitalize relative ${
+            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
               isActive
-                ? 'bg-white text-slate-900 border-t border-l border-r border-slate-200 rounded-t-lg z-10 shadow-sm'
+                ? 'bg-background text-foreground shadow-sm'
                 : isDisabled
-                ? 'text-slate-300 cursor-not-allowed bg-slate-50 border border-slate-200 rounded-t-md'
-                : 'text-slate-600 hover:bg-white/60 hover:text-slate-900 bg-slate-50 border border-slate-200 rounded-t-md hover:shadow-sm'
+                ? 'text-muted-foreground/50 cursor-not-allowed'
+                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
             }`}
-            style={isActive ? { marginBottom: '-1px', paddingBottom: 'calc(0.5rem + 1px)' } : {}}
           >
             {tab.replace(/_/g, ' ')}
           </button>
