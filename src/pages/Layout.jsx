@@ -135,7 +135,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="bg-white px-4 relative">
+        <header className="bg-white px-4 relative overflow-y-hidden">
           <div className="flex flex-col">
             <div className="flex items-center justify-between pt-3 pb-2">
               <div className="flex items-center gap-4">
