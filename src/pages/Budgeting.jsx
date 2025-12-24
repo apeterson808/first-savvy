@@ -95,7 +95,11 @@ export default function Budgeting() {
           .eq('is_active', true)
           .order('account_number')
       ]);
-      return [...(income.data || []), ...(expense.data || [])];
+      const result = [...(income.data || []), ...(expense.data || [])];
+      console.log('Chart Accounts Query Result:', result);
+      console.log('Income:', income);
+      console.log('Expense:', expense);
+      return result;
     }
   });
 
