@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useAuth } from './AuthContext';
 
@@ -17,6 +17,7 @@ export const ProfileProvider = ({ children }) => {
   const [profileTabs, setProfileTabs] = useState([]);
   const [activeTabId, setActiveTabId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const isCreatingDefaultTab = useRef(false);
 
   const loadProfileTabs = useCallback(async () => {
     if (!user) {
@@ -34,6 +35,11 @@ export const ProfileProvider = ({ children }) => {
       if (error) throw error;
 
       if (!tabs || tabs.length === 0) {
+        if (isCreatingDefaultTab.current) {
+          return;
+        }
+        isCreatingDefaultTab.current = true;
+
         const { data: userProfile } = await firstsavvy.supabase
           .from('user_profiles')
           .select('full_name, email, avatar_url')
@@ -61,21 +67,26 @@ export const ProfileProvider = ({ children }) => {
           .select()
           .single();
 
-        if (insertError) throw insertError;
+        if (insertError) {
+          isCreatingDefaultTab.current = false;
+          throw insertError;
+        }
 
         setProfileTabs([newTab]);
         setActiveTabId(newTab.id);
+        isCreatingDefaultTab.current = false;
       } else {
         setProfileTabs(tabs);
         const activeTab = tabs.find((t) => t.is_active);
         if (activeTab) {
           setActiveTabId(activeTab.id);
         } else if (tabs.length > 0) {
-          await switchToTab(tabs[0].id);
+          setActiveTabId(tabs[0].id);
         }
       }
     } catch (error) {
       console.error('Error loading profile tabs:', error);
+      isCreatingDefaultTab.current = false;
     } finally {
       setLoading(false);
     }
