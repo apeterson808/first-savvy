@@ -90,14 +90,14 @@ export default function Budgeting() {
       console.log('Authenticated user:', user.id);
 
       const [income, expense] = await Promise.all([
-        firstsavvy.from('user_chart_of_accounts')
+        firstsavvy.supabase.from('user_chart_of_accounts')
           .select('*')
           .eq('user_id', user.id)
           .eq('account_type', 'income')
           .eq('level', 3)
           .eq('is_active', true)
           .order('account_number'),
-        firstsavvy.from('user_chart_of_accounts')
+        firstsavvy.supabase.from('user_chart_of_accounts')
           .select('*')
           .eq('user_id', user.id)
           .eq('account_type', 'expense')
