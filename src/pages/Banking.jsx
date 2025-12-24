@@ -40,14 +40,12 @@ export default function Banking() {
     setActiveTab('transactions');
   };
 
-  // Sync activeTab with URL on popstate only (back/forward buttons)
   React.useEffect(() => {
     const syncTabWithUrl = () => {
       const urlParams = new URLSearchParams(window.location.search);
       const newTab = urlParams.get('tab') || 'overview';
       setActiveTab(newTab);
-      
-      // Check for date param (from Dashboard click)
+
       const dateParam = urlParams.get('date');
       const accountParam = urlParams.get('account');
       if (dateParam) {
@@ -55,13 +53,21 @@ export default function Banking() {
       }
     };
 
-    // Listen for popstate (back/forward buttons)
     window.addEventListener('popstate', syncTabWithUrl);
 
     return () => {
       window.removeEventListener('popstate', syncTabWithUrl);
     };
   }, []);
+
+  React.useEffect(() => {
+    const handleProfileSwitch = () => {
+      queryClient.invalidateQueries();
+    };
+
+    window.addEventListener('profileSwitched', handleProfileSwitch);
+    return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
+  }, [queryClient]);
 
   const { allAccounts, isLoading: accountsLoading } = useAllAccounts();
 

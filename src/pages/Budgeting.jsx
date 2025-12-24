@@ -26,6 +26,15 @@ export default function Budgeting() {
   const [editingGroup, setEditingGroup] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
+  React.useEffect(() => {
+    const handleProfileSwitch = () => {
+      queryClient.invalidateQueries();
+    };
+
+    window.addEventListener('profileSwitched', handleProfileSwitch);
+    return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
+  }, [queryClient]);
+
   const {
     budgetGroups,
     budgets,

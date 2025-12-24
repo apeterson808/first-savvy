@@ -19,10 +19,34 @@ if (typeof window !== 'undefined') {
   window.supabase = supabase;
 }
 
+const getActiveProfileId = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('activeProfileId');
+  }
+  return null;
+};
+
+const TABLES_WITH_PROFILE_ID = [
+  'accounts', 'transactions', 'budgets', 'budget_groups',
+  'goals', 'bills', 'assets', 'liabilities', 'equity',
+  'contacts', 'user_chart_of_accounts', 'credit_cards',
+  'credit_scores', 'vehicles', 'auto_loans', 'properties',
+  'mortgages', 'plaid_items'
+];
+
 const createEntityAPI = (tableName) => {
+  const requiresProfileId = TABLES_WITH_PROFILE_ID.includes(tableName);
+
   return {
     async list(orderBy = 'created_at', limit = null) {
       let query = supabase.from(tableName).select('*');
+
+      if (requiresProfileId) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          query = query.eq('profile_id', profileId);
+        }
+      }
 
       if (orderBy) {
         const isDescending = orderBy.startsWith('-');
@@ -42,9 +66,20 @@ const createEntityAPI = (tableName) => {
     async filter(conditions = {}, orderBy = null, limit = null) {
       let query = supabase.from(tableName).select('*');
 
+      if (requiresProfileId) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          query = query.eq('profile_id', profileId);
+        }
+      }
+
       for (const [key, value] of Object.entries(conditions)) {
         if (value !== undefined && value !== null) {
-          query = query.eq(key, value);
+          if (Array.isArray(value)) {
+            query = query.in(key, value);
+          } else {
+            query = query.eq(key, value);
+          }
         }
       }
 
@@ -64,11 +99,19 @@ const createEntityAPI = (tableName) => {
     },
 
     async get(id) {
-      const { data, error } = await supabase
+      let query = supabase
         .from(tableName)
         .select('*')
-        .eq('id', id)
-        .maybeSingle();
+        .eq('id', id);
+
+      if (requiresProfileId) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          query = query.eq('profile_id', profileId);
+        }
+      }
+
+      const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
       return data;
@@ -76,11 +119,18 @@ const createEntityAPI = (tableName) => {
 
     async create(record) {
       const userId = (await supabase.auth.getUser()).data.user?.id;
-      const recordWithUser = userId ? { ...record, user_id: userId } : record;
+      let recordToInsert = userId ? { ...record, user_id: userId } : record;
+
+      if (requiresProfileId && !recordToInsert.profile_id) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          recordToInsert = { ...recordToInsert, profile_id: profileId };
+        }
+      }
 
       const { data, error } = await supabase
         .from(tableName)
-        .insert(recordWithUser)
+        .insert(recordToInsert)
         .select()
         .single();
 
@@ -93,13 +143,22 @@ const createEntityAPI = (tableName) => {
 
     async bulkCreate(records) {
       const userId = (await supabase.auth.getUser()).data.user?.id;
-      const recordsWithUser = userId
+      let recordsToInsert = userId
         ? records.map(record => ({ ...record, user_id: userId }))
         : records;
 
+      if (requiresProfileId) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          recordsToInsert = recordsToInsert.map(record =>
+            record.profile_id ? record : { ...record, profile_id: profileId }
+          );
+        }
+      }
+
       const { data, error } = await supabase
         .from(tableName)
-        .insert(recordsWithUser)
+        .insert(recordsToInsert)
         .select();
 
       if (error) throw error;
@@ -107,22 +166,38 @@ const createEntityAPI = (tableName) => {
     },
 
     async update(id, updates) {
-      const { data, error } = await supabase
+      let query = supabase
         .from(tableName)
         .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+        .eq('id', id);
+
+      if (requiresProfileId) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          query = query.eq('profile_id', profileId);
+        }
+      }
+
+      const { data, error } = await query.select().single();
 
       if (error) throw error;
       return data;
     },
 
     async delete(id) {
-      const { error } = await supabase
+      let query = supabase
         .from(tableName)
         .delete()
         .eq('id', id);
+
+      if (requiresProfileId) {
+        const profileId = getActiveProfileId();
+        if (profileId) {
+          query = query.eq('profile_id', profileId);
+        }
+      }
+
+      const { error } = await query;
 
       if (error) throw error;
       return { success: true };

@@ -38,13 +38,13 @@ export default function useAllAccounts() {
   });
 
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
-    queryKey: ['chart-accounts', user?.id, profileId],
+    queryKey: ['chart-accounts', profileId],
     queryFn: async () => {
-      if (!user) return [];
-      const accounts = await getUserChartOfAccounts(user.id);
+      if (!activeProfile) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
       return accounts.filter(a => a.level === 3);
     },
-    enabled: !!user && !!activeProfile,
+    enabled: !!activeProfile,
     staleTime: 30000,
   });
 

@@ -90,13 +90,13 @@ export default function Dashboard() {
   });
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts', user?.id],
+    queryKey: ['chart-accounts', activeProfile?.id],
     queryFn: async () => {
-      if (!user) return [];
-      const accounts = await getUserChartOfAccounts(user.id);
+      if (!activeProfile) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
       return accounts.filter(a => a.level === 3);
     },
-    enabled: !!user,
+    enabled: !!activeProfile,
     staleTime: 30000
   });
 
@@ -134,6 +134,15 @@ export default function Dashboard() {
 
     checkProfileSetup();
   }, [user, activeProfile]);
+
+  useEffect(() => {
+    const handleProfileSwitch = () => {
+      queryClient.invalidateQueries();
+    };
+
+    window.addEventListener('profileSwitched', handleProfileSwitch);
+    return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
+  }, [queryClient]);
 
   // Calculate net worth (only active accounts)
   const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_balance || 0), 0);

@@ -41,6 +41,15 @@ export default function Transactions() {
   const [sortBy, setSortBy] = useState('-date');
   const queryClient = useQueryClient();
 
+  React.useEffect(() => {
+    const handleProfileSwitch = () => {
+      queryClient.invalidateQueries();
+    };
+
+    window.addEventListener('profileSwitched', handleProfileSwitch);
+    return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
+  }, [queryClient]);
+
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions', sortBy],
     queryFn: () => firstsavvy.entities.Transaction.list(sortBy, 1000)

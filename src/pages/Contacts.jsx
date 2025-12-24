@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,16 @@ export default function Contacts() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const queryClient = useQueryClient();
+
+  React.useEffect(() => {
+    const handleProfileSwitch = () => {
+      queryClient.invalidateQueries();
+    };
+
+    window.addEventListener('profileSwitched', handleProfileSwitch);
+    return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
+  }, [queryClient]);
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts'],
