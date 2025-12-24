@@ -42,21 +42,30 @@ export const ProfileProvider = ({ children }) => {
 
         const { data: userProfile } = await firstsavvy.supabase
           .from('user_profiles')
-          .select('full_name, email, avatar_url')
+          .select('full_name, email, avatar_url, tab_display_name')
           .eq('id', user.id)
           .maybeSingle();
+
+        const getFirstName = (fullName) => {
+          if (!fullName) return null;
+          return fullName.split(' ')[0];
+        };
+
+        const displayName = userProfile?.tab_display_name ||
+                           getFirstName(userProfile?.full_name) ||
+                           user.email ||
+                           'My Profile';
 
         const defaultTab = {
           owner_user_id: user.id,
           profile_user_id: user.id,
           profile_type: 'personal',
-          profile_name: userProfile?.full_name || user.email || 'My Profile',
+          profile_name: displayName,
           profile_metadata: {
             avatar_url: userProfile?.avatar_url,
             email: userProfile?.email || user.email,
           },
           tab_order: 0,
-          is_pinned: true,
           is_active: true,
           state_data: {},
         };
@@ -94,6 +103,16 @@ export const ProfileProvider = ({ children }) => {
 
   useEffect(() => {
     loadProfileTabs();
+
+    const handleProfileUpdate = () => {
+      loadProfileTabs();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, [loadProfileTabs]);
 
   const switchToTab = async (tabId) => {
@@ -145,7 +164,6 @@ export const ProfileProvider = ({ children }) => {
       profile_name: profileData.profile_name,
       profile_metadata: profileData.profile_metadata || {},
       tab_order: profileTabs.length,
-      is_pinned: false,
       is_active: false,
       state_data: {},
     };
@@ -171,10 +189,6 @@ export const ProfileProvider = ({ children }) => {
   const closeProfileTab = async (tabId) => {
     const tab = profileTabs.find((t) => t.id === tabId);
     if (!tab) return;
-
-    if (tab.is_pinned) {
-      throw new Error('Cannot close a pinned tab');
-    }
 
     try {
       await firstsavvy.supabase.from('profile_tabs').delete().eq('id', tabId);
@@ -229,28 +243,6 @@ export const ProfileProvider = ({ children }) => {
     }
   };
 
-  const togglePinTab = async (tabId) => {
-    const tab = profileTabs.find((t) => t.id === tabId);
-    if (!tab) return;
-
-    try {
-      const newPinnedState = !tab.is_pinned;
-      await firstsavvy.supabase
-        .from('profile_tabs')
-        .update({ is_pinned: newPinnedState })
-        .eq('id', tabId);
-
-      setProfileTabs((prev) =>
-        prev.map((t) =>
-          t.id === tabId ? { ...t, is_pinned: newPinnedState } : t
-        )
-      );
-    } catch (error) {
-      console.error('Error toggling pin:', error);
-      throw error;
-    }
-  };
-
   const activeProfile = profileTabs.find((tab) => tab.id === activeTabId);
 
   const value = {
@@ -263,7 +255,6 @@ export const ProfileProvider = ({ children }) => {
     closeProfileTab,
     updateTabOrder,
     updateTabState,
-    togglePinTab,
     refreshTabs: loadProfileTabs,
   };
 

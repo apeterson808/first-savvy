@@ -1,16 +1,10 @@
 import React, { useState } from 'react';
-import { X, Plus, Pin, PinOff } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
 
 export function ProfileTabBar({ onAddProfileClick }) {
-  const { profileTabs, activeTabId, switchToTab, closeProfileTab, togglePinTab } = useProfile();
+  const { profileTabs, activeTabId, switchToTab, closeProfileTab } = useProfile();
   const [draggedTab, setDraggedTab] = useState(null);
 
   const handleTabClick = (tabId) => {
@@ -19,27 +13,13 @@ export function ProfileTabBar({ onAddProfileClick }) {
     }
   };
 
-  const handleCloseTab = async (e, tab) => {
+  const handleCloseTab = async (e, tabId) => {
     e.stopPropagation();
-    if (tab.is_pinned) {
-      toast.error('Cannot close a pinned profile');
-      return;
-    }
     try {
-      await closeProfileTab(tab.id);
+      await closeProfileTab(tabId);
       toast.success('Profile closed');
     } catch (error) {
       toast.error(error.message || 'Failed to close profile');
-    }
-  };
-
-  const handleTogglePin = async (e, tab) => {
-    e.stopPropagation();
-    try {
-      await togglePinTab(tab.id);
-      toast.success(tab.is_pinned ? 'Profile unpinned' : 'Profile pinned');
-    } catch (error) {
-      toast.error('Failed to toggle pin');
     }
   };
 
@@ -77,46 +57,14 @@ export function ProfileTabBar({ onAddProfileClick }) {
               {tab.profile_name}
             </span>
 
-            <div className="flex items-center gap-1 flex-shrink-0">
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  asChild
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    className={`opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 transition-opacity ${
-                      isActive ? 'hover:bg-slate-200' : ''
-                    }`}
-                  >
-                    <X className="w-3.5 h-3.5 text-slate-500" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={(e) => handleTogglePin(e, tab)}>
-                    {tab.is_pinned ? (
-                      <>
-                        <PinOff className="w-4 h-4 mr-2" />
-                        Unpin Profile
-                      </>
-                    ) : (
-                      <>
-                        <Pin className="w-4 h-4 mr-2" />
-                        Pin Profile
-                      </>
-                    )}
-                  </DropdownMenuItem>
-                  {!tab.is_pinned && (
-                    <DropdownMenuItem
-                      onClick={(e) => handleCloseTab(e, tab)}
-                      className="text-red-600 focus:text-red-600"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Close Profile
-                    </DropdownMenuItem>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+            <button
+              onClick={(e) => handleCloseTab(e, tab.id)}
+              className={`opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-200 transition-opacity flex-shrink-0 ${
+                isActive ? 'hover:bg-slate-200' : ''
+              }`}
+            >
+              <X className="w-3.5 h-3.5 text-slate-500" />
+            </button>
           </div>
         );
       })}

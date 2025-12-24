@@ -16,6 +16,7 @@ export default function ProfileTab({ user, profile, onUpdate }) {
 
   const [formData, setFormData] = useState({
     full_name: profile?.full_name || '',
+    tab_display_name: profile?.tab_display_name || '',
     email: profile?.email || user?.email || '',
     phone: profile?.phone || '',
     bio: profile?.bio || '',
@@ -180,30 +181,46 @@ export default function ProfileTab({ user, profile, onUpdate }) {
             </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name</Label>
-              <Input
-                id="full_name"
-                name="full_name"
-                value={formData.full_name}
-                onChange={handleInputChange}
-                placeholder="Enter your full name"
-              />
+          <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="full_name">Full Name</Label>
+                <Input
+                  id="full_name"
+                  name="full_name"
+                  value={formData.full_name}
+                  onChange={handleInputChange}
+                  placeholder="Enter your full name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  placeholder="Enter your email"
+                  disabled
+                />
+                <p className="text-xs text-muted-foreground">
+                  Email changes must be done through the Security tab
+                </p>
+              </div>
             </div>
+
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="tab_display_name">Tab Display Name</Label>
               <Input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
+                id="tab_display_name"
+                name="tab_display_name"
+                value={formData.tab_display_name}
                 onChange={handleInputChange}
-                placeholder="Enter your email"
-                disabled
+                placeholder="How your profile appears in tabs"
               />
               <p className="text-xs text-muted-foreground">
-                Email changes must be done through the Security tab
+                Customize how your profile appears in tabs. Leave blank to use your first name.
               </p>
             </div>
           </div>

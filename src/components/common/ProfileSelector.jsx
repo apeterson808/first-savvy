@@ -31,7 +31,7 @@ export function ProfileSelector({ open, onOpenChange }) {
     try {
       const { data: profile, error } = await firstsavvy.supabase
         .from('user_profiles')
-        .select('*')
+        .select('full_name, email, avatar_url, tab_display_name')
         .eq('id', user.id)
         .maybeSingle();
 
@@ -43,6 +43,11 @@ export function ProfileSelector({ open, onOpenChange }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getFirstName = (fullName) => {
+    if (!fullName) return null;
+    return fullName.split(' ')[0];
   };
 
   const handleSelectProfile = async (profileData) => {
@@ -76,9 +81,15 @@ export function ProfileSelector({ open, onOpenChange }) {
   const availableProfiles = [];
 
   if (userProfile) {
+    const displayName = userProfile.tab_display_name ||
+                       getFirstName(userProfile.full_name) ||
+                       user.email ||
+                       'My Profile';
+
     availableProfiles.push({
       id: user.id,
-      name: userProfile.full_name || user.email || 'My Profile',
+      name: displayName,
+      fullName: userProfile.full_name || user.email || 'My Profile',
       email: userProfile.email || user.email,
       avatar_url: userProfile.avatar_url,
       type: 'personal',
