@@ -18,10 +18,17 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     firstsavvy.auth.getUser()
-      .then(user => {
-        setUser(user);
-        setLoading(false);
-        setConnectionError(null);
+      .then(({ data, error }) => {
+        if (error) {
+          console.error('Auth error:', error);
+          setUser(null);
+          setLoading(false);
+          setConnectionError(error.message || 'Authentication failed');
+        } else {
+          setUser(data?.user || null);
+          setLoading(false);
+          setConnectionError(null);
+        }
       })
       .catch((error) => {
         console.error('Auth connection error:', error);

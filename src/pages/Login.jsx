@@ -19,8 +19,8 @@ export default function Login() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    firstsavvy.auth.getUser().then(user => {
-      if (user) {
+    firstsavvy.auth.getUser().then(({ data }) => {
+      if (data?.user) {
         navigate('/Dashboard');
       }
     }).catch(() => {});

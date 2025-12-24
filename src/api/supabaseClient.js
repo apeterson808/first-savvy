@@ -195,8 +195,7 @@ export const createSupabaseClient = () => {
       },
       async getUser() {
         const { data, error } = await supabase.auth.getUser();
-        if (error) throw error;
-        return data.user;
+        return { data, error };
       },
       async me() {
         const { data, error } = await supabase.auth.getUser();
