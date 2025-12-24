@@ -133,6 +133,9 @@ const createEntityAPI = (tableName) => {
 export const createSupabaseClient = () => {
   return {
     supabase,
+    from: (...args) => supabase.from(...args),
+    rpc: (...args) => supabase.rpc(...args),
+    storage: supabase.storage,
     entities: {
       Account: createEntityAPI('accounts'),
       BankAccount: createEntityAPI('bank_accounts'),
