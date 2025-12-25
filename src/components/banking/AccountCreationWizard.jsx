@@ -319,9 +319,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const getDefaultChartAccountForType = (accountType) => {
     const detailMap = {
-      'checking': 'Checking',
-      'savings': 'Savings',
-      'credit_card': 'Credit Card',
+      'checking': 'checking_account',
+      'savings': 'savings_account',
+      'credit_card': 'personal_credit_card',
     };
 
     const detail = detailMap[accountType];
@@ -370,6 +370,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         return [...prev, accountId];
       }
     });
+  };
+
+  const getChartAccountDisplayName = (chartAccountId) => {
+    const chartAccount = chartAccounts.find(a => a.id === chartAccountId);
+    return chartAccount?.display_name || '';
   };
 
   const updateAccountConfiguration = (accountId, field, value) => {
@@ -512,8 +517,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
           if (config.import_mode === 'new') {
             const accountNumber = Date.now().toString().slice(-6);
+            const finalDisplayName = config.displayName || getChartAccountDisplayName(config.chart_account_id) || mockAccount.name;
             await firstsavvy.entities.Account.create({
-              account_name: config.displayName,
+              account_name: finalDisplayName,
               account_number: accountNumber,
               account_type: mockAccount.type,
               chart_account_id: config.chart_account_id,
@@ -1798,20 +1804,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   id={`displayName-${account.id}`}
                                   value={config.displayName}
                                   onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                                  placeholder="Account name"
+                                  placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
                                   className="h-9 mt-1"
                                 />
                               </div>
 
-                              <div className="grid grid-cols-3 gap-3">
+                              <div className="grid grid-cols-2 gap-3">
                                 <div>
                                   <Label htmlFor={`account-type-${account.id}`} className="text-sm">Account Type</Label>
                                   <Select
                                     value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_type || ''}
                                     onValueChange={(value) => {
+                                      const currentDetail = chartAccounts.find(c => c.id === config.chart_account_id)?.account_detail;
                                       const matchingAccount = chartAccounts.find(a =>
                                         a.account_type === value &&
-                                        a.account_detail === chartAccounts.find(c => c.id === config.chart_account_id)?.account_detail
+                                        a.account_detail === currentDetail
                                       );
                                       if (matchingAccount) {
                                         updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
@@ -1855,41 +1862,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                         return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).sort().map((detail) => (
                                           <SelectItem key={detail} value={detail}>
                                             {detail}
-                                          </SelectItem>
-                                        ));
-                                      })()}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label htmlFor={`account-category-${account.id}`} className="text-sm">Category</Label>
-                                  <Select
-                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.category || ''}
-                                    onValueChange={(value) => {
-                                      const currentAccount = chartAccounts.find(a => a.id === config.chart_account_id);
-                                      const matchingAccount = chartAccounts.find(a =>
-                                        a.account_type === currentAccount?.account_type &&
-                                        a.account_detail === currentAccount?.account_detail &&
-                                        a.category === value
-                                      );
-                                      if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger id={`account-category-${account.id}`} className="h-9 mt-1">
-                                      <SelectValue placeholder="Select category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {(() => {
-                                        const currentAccount = chartAccounts.find(a => a.id === config.chart_account_id);
-                                        const filtered = chartAccounts.filter(a =>
-                                          a.account_type === currentAccount?.account_type &&
-                                          a.account_detail === currentAccount?.account_detail
-                                        );
-                                        return [...new Set(filtered.map(a => a.category))].filter(Boolean).sort().map((category) => (
-                                          <SelectItem key={category} value={category}>
-                                            {category}
                                           </SelectItem>
                                         ));
                                       })()}
