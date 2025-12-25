@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
+import { formatLabel } from '../utils/formatters';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
@@ -489,7 +490,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     const detail = detailMap[accountType];
     if (!detail) return null;
 
-    const matchingAccount = chartAccounts.find(a =>
+    const matchingAccount = userChartAccounts.find(a =>
       a.account_detail === detail
     );
 
@@ -535,20 +536,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const getChartAccountDisplayName = (chartAccountId) => {
-    const chartAccount = chartAccounts.find(a => a.id === chartAccountId);
+    const chartAccount = userChartAccounts.find(a => a.id === chartAccountId);
     return chartAccount?.display_name || '';
-  };
-
-  const getUserChartAccountId = (templateId) => {
-    const template = chartAccounts.find(t => t.id === templateId);
-    if (!template) return null;
-
-    const userAccount = userChartAccounts.find(ua =>
-      ua.account_type === template.account_type &&
-      ua.account_detail === template.account_detail
-    );
-
-    return userAccount?.id || null;
   };
 
   const updateAccountConfiguration = (accountId, field, value) => {
@@ -690,10 +679,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           if (!mockAccount || !config) continue;
 
           if (config.import_mode === 'new') {
-            const userChartAccountId = getUserChartAccountId(config.chart_account_id);
-
-            if (!userChartAccountId) {
-              console.warn(`No matching user chart account found for template ID: ${config.chart_account_id}`);
+            if (!config.chart_account_id) {
+              console.warn(`No chart account ID found for account: ${accountId}`);
               continue;
             }
 
@@ -703,7 +690,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               account_name: finalDisplayName,
               account_number: accountNumber,
               account_type: mockAccount.type,
-              chart_account_id: userChartAccountId,
+              chart_account_id: config.chart_account_id,
               current_balance: mockAccount.balance,
               institution_name: mockAccount.institutionName,
               account_number_last4: mockAccount.last4,
@@ -2012,10 +1999,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                 <div>
                                   <Label htmlFor={`account-type-${account.id}`} className="text-sm">Account Type</Label>
                                   <Select
-                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_type || ''}
+                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_type || ''}
                                     onValueChange={(value) => {
-                                      const currentDetail = chartAccounts.find(c => c.id === config.chart_account_id)?.account_detail;
-                                      const matchingAccount = chartAccounts.find(a =>
+                                      const currentDetail = userChartAccounts.find(c => c.id === config.chart_account_id)?.account_detail;
+                                      const matchingAccount = userChartAccounts.find(a =>
                                         a.account_type === value &&
                                         a.account_detail === currentDetail
                                       );
@@ -2028,9 +2015,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       <SelectValue placeholder="Select type" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                      {[...new Set(chartAccounts.map(a => a.account_type))].filter(Boolean).sort().map((type) => (
+                                      {[...new Set(userChartAccounts.map(a => a.account_type))].filter(Boolean).sort().map((type) => (
                                         <SelectItem key={type} value={type}>
-                                          {type}
+                                          {formatLabel(type)}
                                         </SelectItem>
                                       ))}
                                     </SelectContent>
@@ -2039,10 +2026,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                 <div>
                                   <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
                                   <Select
-                                    value={chartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
+                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
                                     onValueChange={(value) => {
-                                      const currentType = chartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
-                                      const matchingAccount = chartAccounts.find(a =>
+                                      const currentType = userChartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
+                                      const matchingAccount = userChartAccounts.find(a =>
                                         a.account_type === currentType &&
                                         a.account_detail === value
                                       );
@@ -2056,11 +2043,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                     </SelectTrigger>
                                     <SelectContent>
                                       {(() => {
-                                        const currentType = chartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
-                                        const filtered = chartAccounts.filter(a => a.account_type === currentType);
+                                        const currentType = userChartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
+                                        const filtered = userChartAccounts.filter(a => a.account_type === currentType);
                                         return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).sort().map((detail) => (
                                           <SelectItem key={detail} value={detail}>
-                                            {detail}
+                                            {formatLabel(detail)}
                                           </SelectItem>
                                         ));
                                       })()}
