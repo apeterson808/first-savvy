@@ -1995,65 +1995,37 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                 />
                               </div>
 
-                              <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                  <Label htmlFor={`account-type-${account.id}`} className="text-sm">Account Type</Label>
-                                  <Select
-                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_type || ''}
-                                    onValueChange={(value) => {
-                                      const currentDetail = userChartAccounts.find(c => c.id === config.chart_account_id)?.account_detail;
-                                      const matchingAccount = userChartAccounts.find(a =>
-                                        a.account_type === value &&
-                                        a.account_detail === currentDetail
-                                      );
-                                      if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger id={`account-type-${account.id}`} className="h-9 mt-1">
-                                      <SelectValue placeholder="Select type" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {[...new Set(userChartAccounts.map(a => a.account_type))].filter(Boolean).sort().map((type) => (
-                                        <SelectItem key={type} value={type}>
-                                          {formatLabel(type)}
+                              <div>
+                                <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
+                                <Select
+                                  value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
+                                  onValueChange={(value) => {
+                                    const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
+                                    if (matchingAccount) {
+                                      updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                    }
+                                  }}
+                                >
+                                  <SelectTrigger id={`account-detail-${account.id}`} className="h-9 mt-1">
+                                    <SelectValue placeholder="Select detail" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {(() => {
+                                      const detailMap = {
+                                        'checking': ['checking_account'],
+                                        'savings': ['savings_account'],
+                                        'credit_card': ['personal_credit_card', 'business_credit_card'],
+                                      };
+                                      const validDetails = detailMap[account.type] || [];
+                                      const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
+                                      return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
+                                        <SelectItem key={detail} value={detail}>
+                                          {formatLabel(detail)}
                                         </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                                <div>
-                                  <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
-                                  <Select
-                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
-                                    onValueChange={(value) => {
-                                      const currentType = userChartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
-                                      const matchingAccount = userChartAccounts.find(a =>
-                                        a.account_type === currentType &&
-                                        a.account_detail === value
-                                      );
-                                      if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 mt-1">
-                                      <SelectValue placeholder="Select detail" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {(() => {
-                                        const currentType = userChartAccounts.find(a => a.id === config.chart_account_id)?.account_type;
-                                        const filtered = userChartAccounts.filter(a => a.account_type === currentType);
-                                        return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).sort().map((detail) => (
-                                          <SelectItem key={detail} value={detail}>
-                                            {formatLabel(detail)}
-                                          </SelectItem>
-                                        ));
-                                      })()}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
+                                      ));
+                                    })()}
+                                  </SelectContent>
+                                </Select>
                               </div>
                             </>
                           ) : (
