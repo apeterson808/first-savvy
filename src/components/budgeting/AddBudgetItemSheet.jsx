@@ -135,7 +135,7 @@ export default function AddBudgetItemSheet({
     }
 
     const budgetData = {
-      name: selectedAccount?.custom_display_name || selectedAccount?.category || 'Budget Item',
+      name: selectedAccount?.display_name || selectedAccount?.account_detail || 'Budget Item',
       chart_account_id: selectedCategoryId,
       group_id: selectedGroupId,
       allocated_amount: newAmount,
@@ -291,7 +291,7 @@ export default function AddBudgetItemSheet({
                 </ClickThroughSelectItem>
                 {availableCategories.map(cat => (
                   <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                    {cat.custom_display_name || cat.category}
+                    {cat.display_name || cat.account_detail}
                   </ClickThroughSelectItem>
                 ))}
                 {availableCategories.length === 0 && selectedGroupId && (

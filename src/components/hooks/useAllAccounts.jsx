@@ -42,7 +42,7 @@ export default function useAllAccounts() {
     queryFn: async () => {
       if (!activeProfile) return [];
       const accounts = await getUserChartOfAccounts(activeProfile.id);
-      return accounts.filter(a => a.level === 3);
+      return accounts;
     },
     enabled: !!activeProfile,
     staleTime: 30000,
@@ -95,16 +95,16 @@ export default function useAllAccounts() {
       entityType: 'Equity',
       typeDetailDisplay: getTypeDetailDisplay(e.account_type, e.account_detail)
     })),
-    ...chartAccounts.filter(c => c.account_class === 'income').map(c => ({
+    ...chartAccounts.filter(c => c.class === 'income').map(c => ({
       ...c,
-      account_name: c.custom_display_name || c.category || c.account_name,
-      name: c.custom_display_name || c.category || c.account_name,
+      account_name: c.display_name || c.account_detail || c.account_name,
+      name: c.display_name || c.account_detail || c.account_name,
       entityType: 'Income'
     })),
-    ...chartAccounts.filter(c => c.account_class === 'expense').map(c => ({
+    ...chartAccounts.filter(c => c.class === 'expense').map(c => ({
       ...c,
-      account_name: c.custom_display_name || c.category || c.account_name,
-      name: c.custom_display_name || c.category || c.account_name,
+      account_name: c.display_name || c.account_detail || c.account_name,
+      name: c.display_name || c.account_detail || c.account_name,
       entityType: 'Expense'
     })),
   ];
@@ -133,14 +133,14 @@ export default function useAllAccounts() {
     equity,
     chartAccounts,
     categories: chartAccounts,
-    incomeCategories: chartAccounts.filter(c => c.account_class === 'income').map(c => ({
+    incomeCategories: chartAccounts.filter(c => c.class === 'income').map(c => ({
       ...c,
-      name: c.custom_display_name || c.category || c.account_name,
+      name: c.display_name || c.account_detail || c.account_name,
       type: 'income'
     })),
-    expenseCategories: chartAccounts.filter(c => c.account_class === 'expense').map(c => ({
+    expenseCategories: chartAccounts.filter(c => c.class === 'expense').map(c => ({
       ...c,
-      name: c.custom_display_name || c.category || c.account_name,
+      name: c.display_name || c.account_detail || c.account_name,
       type: 'expense'
     })),
     getTypeDetailDisplay,

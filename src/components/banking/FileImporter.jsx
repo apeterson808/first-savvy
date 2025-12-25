@@ -351,7 +351,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
       // Map chart accounts by display name
       const chartAccountMap = {};
       chartAccounts.forEach(acc => {
-        const displayName = acc.custom_display_name || acc.category || acc.account_name;
+        const displayName = acc.display_name || acc.account_detail || acc.account_name;
         chartAccountMap[displayName.toLowerCase()] = acc.id;
       });
 

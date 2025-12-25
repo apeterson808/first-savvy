@@ -88,7 +88,7 @@ export default function BudgetCategoryList({ budgets, spendingByCategory, isInco
               >
                 {chartAccount?.icon && ICON_MAP[chartAccount.icon] && React.createElement(ICON_MAP[chartAccount.icon], { className: "w-4 h-4 text-white" })}
               </div>
-              <span className="text-sm font-medium text-slate-900">{budget.name || chartAccount?.custom_display_name || chartAccount?.category}</span>
+              <span className="text-sm font-medium text-slate-900">{budget.name || chartAccount?.display_name || chartAccount?.account_detail}</span>
             </div>
 
             <div className="flex-1 flex items-center">

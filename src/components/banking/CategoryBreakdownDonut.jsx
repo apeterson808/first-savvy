@@ -80,7 +80,7 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
     .reduce((acc, t) => {
       const chartAccount = getChartAccountById(t.chart_account_id);
       const budget = getBudgetByChartAccountId(t.chart_account_id);
-      const categoryName = chartAccount?.custom_display_name || chartAccount?.category || 'uncategorized';
+      const categoryName = chartAccount?.display_name || chartAccount?.account_detail || 'uncategorized';
       if (!acc[categoryName]) {
         // Prioritize budget color, then chart account color
         acc[categoryName] = { amount: 0, color: budget?.color || chartAccount?.color, chartAccountId: t.chart_account_id };

@@ -47,18 +47,16 @@ export default function AccountDetail() {
       const liabilities = await firstsavvy.entities.Liability.list();
       const equity = await firstsavvy.entities.Equity.list();
 
-      const level3ChartAccounts = chartAccounts.filter(c => c.level === 3);
-
       const allAccounts = [
         ...accounts.map(a => ({
           ...a,
           entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
         })),
-        ...level3ChartAccounts.map(c => ({
+        ...chartAccounts.map(c => ({
           ...c,
-          entityType: c.account_class === 'income' ? 'Income' : 'Expense',
-          name: c.custom_display_name || c.category || c.account_name,
-          type: c.account_class
+          entityType: c.class === 'income' ? 'Income' : 'Expense',
+          name: c.display_name || c.account_detail || c.account_name,
+          type: c.class
         })),
         ...assets.map(a => ({ ...a, entityType: 'Asset' })),
         ...liabilities.map(l => ({ ...l, entityType: 'Liability' })),

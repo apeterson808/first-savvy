@@ -42,13 +42,13 @@ export default function CategoriesManagementTab({ categories, transactions }) {
   const filteredCategories = useMemo(() => {
     const query = searchQuery.toLowerCase();
     return categories.filter(cat => {
-      const name = cat.custom_display_name || cat.category || '';
+      const name = cat.display_name || cat.account_detail || '';
       return name.toLowerCase().includes(query);
     });
   }, [categories, searchQuery]);
 
-  const incomeCategories = filteredCategories.filter(c => c.account_type === 'income');
-  const expenseCategories = filteredCategories.filter(c => c.account_type === 'expense');
+  const incomeCategories = filteredCategories.filter(c => c.class === 'income');
+  const expenseCategories = filteredCategories.filter(c => c.class === 'expense');
 
   const handleDeleteCategory = async () => {
     if (!deletingCategory) return;
@@ -69,7 +69,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
-      toast.success(`Category "${deletingCategory.custom_display_name || deletingCategory.category}" deleted successfully`);
+      toast.success(`Category "${deletingCategory.display_name || deletingCategory.account_detail}" deleted successfully`);
       setDeletingCategory(null);
     } catch (error) {
       console.error('Error deleting category:', error);
@@ -81,7 +81,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
     const IconComponent = Icons[category.icon] || Icons.Circle;
     const usageCount = getCategoryUsageCount(category.id);
     const isSystemCategory = !category.is_user_created;
-    const categoryName = category.custom_display_name || category.category;
+    const categoryName = category.display_name || category.account_detail;
 
     return (
       <TableRow>
@@ -233,7 +233,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
             <AlertDialogDescription>
               {deletingCategory && (
                 <>
-                  Are you sure you want to delete the category "{deletingCategory.custom_display_name || deletingCategory.category}"?
+                  Are you sure you want to delete the category "{deletingCategory.display_name || deletingCategory.account_detail}"?
                   {getCategoryUsageCount(deletingCategory.id) > 0 && (
                     <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-900">
                       <p className="font-medium">Warning:</p>

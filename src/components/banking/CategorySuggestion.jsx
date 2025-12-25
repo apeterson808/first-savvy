@@ -58,7 +58,7 @@ export async function suggestCategory(description, transactions, rules, amount =
 
       if (tDescLower.includes(descLower) || descLower.includes(tDescLower) ||
           (descLower.length > 4 && tDescLower.includes(descLower.substring(0, 4)))) {
-        const displayName = chartAccount.custom_display_name || chartAccount.category || 'Other';
+        const displayName = chartAccount.display_name || chartAccount.account_detail || 'Other';
         const key = `${chartAccount.id}|${displayName}|${t.type}`;
         accountCount[key] = (accountCount[key] || 0) + 1;
       }

@@ -30,20 +30,18 @@ export default function ChartAccountDropdown({
     enabled: !!user
   });
 
-  const level3Accounts = accounts.filter(a => a.level === 3);
-
   const filteredAccounts = searchTerm
-    ? level3Accounts.filter(account => {
+    ? accounts.filter(account => {
         const displayName = getFullDisplayName(account).toLowerCase();
         return displayName.includes(searchTerm.toLowerCase());
       })
-    : level3Accounts;
+    : accounts;
 
   const sortedAccounts = [...filteredAccounts].sort((a, b) =>
     a.account_number - b.account_number
   );
 
-  const selectedAccount = level3Accounts.find(a => a.id === value);
+  const selectedAccount = accounts.find(a => a.id === value);
 
   return (
     <ClickThroughSelect
@@ -67,7 +65,7 @@ export default function ChartAccountDropdown({
         >
           <span className="font-mono text-xs text-gray-500">{account.account_number}</span>
           <span className="flex-1">
-            {account.custom_display_name || account.category || account.display_name_default}
+            {account.display_name || account.account_detail || 'Unnamed'}
           </span>
           {account.is_user_created && (
             <span className="text-xs text-gray-400">Custom</span>

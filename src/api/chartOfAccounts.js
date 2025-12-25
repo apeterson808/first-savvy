@@ -4,7 +4,7 @@ export const getChartOfAccountsTemplates = async () => {
   const { data, error } = await supabase
     .from('chart_of_accounts_templates')
     .select('*')
-    .order('account_type, sort_order, account_number');
+    .order('class, sort_order, account_number');
 
   if (error) throw error;
   return data;
@@ -15,6 +15,10 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
     .from('user_chart_of_accounts')
     .select('*')
     .eq('profile_id', profileId);
+
+  if (filters.class) {
+    query = query.eq('class', filters.class);
+  }
 
   if (filters.accountType) {
     query = query.eq('account_type', filters.accountType);
@@ -36,31 +40,31 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   return data;
 };
 
-export const getUserChartOfAccountsHierarchy = async (profileId, accountType = null) => {
-  const filters = accountType ? { accountType } : {};
+export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null) => {
+  const filters = classFilter ? { class: classFilter } : {};
   const accounts = await getUserChartOfAccounts(profileId, filters);
 
-  const accountMap = {};
-  const rootAccounts = [];
+  const grouped = {};
 
   accounts.forEach(account => {
-    const displayName = account.custom_display_name || account.category || account.account_detail || account.display_name_default;
-    accountMap[account.account_number] = {
-      ...account,
-      displayName,
-      children: []
-    };
-  });
+    const classKey = account.class || 'other';
+    const typeKey = account.account_type || 'uncategorized';
 
-  accounts.forEach(account => {
-    if (account.parent_account_number && accountMap[account.parent_account_number]) {
-      accountMap[account.parent_account_number].children.push(accountMap[account.account_number]);
-    } else if (account.level === 1) {
-      rootAccounts.push(accountMap[account.account_number]);
+    if (!grouped[classKey]) {
+      grouped[classKey] = {};
     }
+
+    if (!grouped[classKey][typeKey]) {
+      grouped[classKey][typeKey] = [];
+    }
+
+    grouped[classKey][typeKey].push({
+      ...account,
+      displayName: account.display_name || account.account_detail || 'Unnamed Account'
+    });
   });
 
-  return rootAccounts;
+  return grouped;
 };
 
 export const getChartAccountById = async (accountId) => {
@@ -177,42 +181,48 @@ export const updateAccountIconColor = async (accountId, icon, color) => {
 };
 
 export const getIncomeAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { accountType: 'income', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'income', isActive: true });
 };
 
 export const getExpenseAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { accountType: 'expense', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'expense', isActive: true });
 };
 
 export const getAssetAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { accountType: 'asset', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'asset', isActive: true });
 };
 
 export const getLiabilityAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { accountType: 'liability', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'liability', isActive: true });
 };
 
 export const getEquityAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { accountType: 'equity', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'equity', isActive: true });
 };
 
-export const getAccountNumberRanges = async (accountType) => {
-  const { data, error } = await supabase
+export const getAccountNumberRanges = async (classValue) => {
+  const accounts = await supabase
     .from('chart_of_accounts_templates')
-    .select('number_range_start, number_range_end')
-    .eq('account_type', accountType)
-    .eq('level', 1)
-    .maybeSingle();
+    .select('account_number')
+    .eq('class', classValue)
+    .order('account_number');
 
-  if (error) throw error;
-  return data;
+  if (accounts.error) throw accounts.error;
+
+  if (!accounts.data || accounts.data.length === 0) {
+    return { start: null, end: null };
+  }
+
+  const numbers = accounts.data.map(a => a.account_number);
+  return {
+    start: Math.min(...numbers),
+    end: Math.max(...numbers)
+  };
 };
 
 export const getDisplayName = (account) => {
-  return account.custom_display_name ||
-         account.category ||
+  return account.display_name ||
          account.account_detail ||
-         account.display_name_default ||
          'Unnamed Account';
 };
 

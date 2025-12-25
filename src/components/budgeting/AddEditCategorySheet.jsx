@@ -43,8 +43,8 @@ export default function AddEditCategorySheet({
   useEffect(() => {
     if (editingCategory) {
       setFormData({
-        name: editingCategory.custom_display_name || editingCategory.category || '',
-        type: editingCategory.account_type || 'expense',
+        name: editingCategory.display_name || editingCategory.account_detail || '',
+        type: editingCategory.class || 'expense',
         icon: editingCategory.icon || 'Circle',
         color: editingCategory.color || '#52A5CE',
       });

@@ -131,13 +131,13 @@ const EditAccountDialog = ({ account, open, onClose, onSave }) => {
 
   useEffect(() => {
     if (account) {
-      setDisplayName(account.custom_display_name || account.displayName);
+      setDisplayName(account.display_name || account.displayName);
       setAccountNumber(account.account_number);
       setIcon(account.icon || '');
       setColor(account.color || '');
 
       if (account.is_user_created) {
-        getAccountNumberRanges(account.account_type).then(range => {
+        getAccountNumberRanges(account.class).then(range => {
           setNumberRange(range);
         });
       }
@@ -146,7 +146,7 @@ const EditAccountDialog = ({ account, open, onClose, onSave }) => {
 
   const handleSave = async () => {
     try {
-      if (displayName !== (account.custom_display_name || account.displayName)) {
+      if (displayName !== (account.display_name || account.displayName)) {
         await updateAccountDisplayName(account.id, displayName);
       }
 
