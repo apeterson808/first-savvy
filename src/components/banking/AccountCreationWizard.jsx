@@ -182,33 +182,41 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const navigate = useNavigate();
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts-all', user?.id],
+    queryKey: ['chart-accounts-all', activeProfile?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!activeProfile?.id) return [];
       const { data, error } = await firstsavvy
         .from('user_chart_of_accounts')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('profile_id', activeProfile.id)
         .eq('is_active', true)
         .order('account_number');
+      if (error) {
+        console.error('Error fetching chart accounts:', error);
+        return [];
+      }
       return data || [];
     },
-    enabled: !!user && open
+    enabled: !!activeProfile?.id && open
   });
 
   const { data: existingAccounts = [] } = useQuery({
-    queryKey: ['existing-bank-accounts', user?.id],
+    queryKey: ['existing-bank-accounts', activeProfile?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!activeProfile?.id) return [];
       const { data, error } = await firstsavvy
         .from('accounts')
         .select('id, account_name, account_type, institution_name, account_number_last4')
-        .eq('user_id', user.id)
+        .eq('profile_id', activeProfile.id)
         .eq('is_active', true)
         .order('account_name');
+      if (error) {
+        console.error('Error fetching existing accounts:', error);
+        return [];
+      }
       return data || [];
     },
-    enabled: !!user && open
+    enabled: !!activeProfile?.id && open
   });
 
   useEffect(() => {
