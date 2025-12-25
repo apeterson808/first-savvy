@@ -97,72 +97,207 @@ const MOCK_BANK_ACCOUNTS = [
   }
 ];
 
-const ACCOUNT_TYPE_CARDS = [
-  {
-    id: 'banking',
-    title: 'Banking',
-    icon: Building2,
-    bgColor: '#52A5CE',
-    iconColor: 'text-white',
-    subtypes: [
-      { value: 'checking', label: 'Checking', icon: Wallet },
-      { value: 'savings', label: 'Savings', icon: PiggyBank },
-      { value: 'credit_card', label: 'Credit Card', icon: CreditCard }
-    ]
-  },
-  {
-    id: 'vehicle',
-    title: 'Vehicle',
-    icon: Car,
-    bgColor: '#AACC96',
-    iconColor: 'text-white',
-    subtypes: []
-  },
-  {
-    id: 'property',
-    title: 'Property',
-    icon: Home,
-    bgColor: '#EF6F3C',
-    iconColor: 'text-white',
-    subtypes: []
-  },
-  {
-    id: 'investments',
-    title: 'Investments',
-    icon: TrendingUp,
-    bgColor: '#FF7BAC',
-    iconColor: 'text-white',
-    subtypes: [
-      { value: 'retirement', label: 'Retirement', icon: Landmark },
-      { value: 'stocks', label: 'Stock', icon: TrendingUp },
-      { value: 'crypto', label: 'Crypto', icon: BadgeDollarSign },
-      { value: 'investment', label: 'Other', icon: TrendingUp }
-    ]
-  },
-  {
-    id: 'loans',
-    title: 'Loans & Debts',
-    icon: FileText,
-    bgColor: '#6D1F42',
-    iconColor: 'text-white',
-    subtypes: [
-      { value: 'personal_loan', label: 'Personal', icon: FileText },
-      { value: 'student_loan', label: 'Student', icon: FileText },
-      { value: 'medical_debt', label: 'Medical', icon: FileText }
-    ]
-  },
-  {
-    id: 'budget',
-    title: 'Budget Category',
-    icon: DollarSign,
-    bgColor: '#EFCE7B',
-    iconColor: 'text-white',
-    subtypes: [
-      { value: 'income', label: 'Income', icon: BadgeDollarSign },
-      { value: 'expense', label: 'Expense', icon: Receipt }
-    ]
+const buildAccountTypeCardsFromTemplates = (templates) => {
+  if (!templates || templates.length === 0) {
+    return [];
   }
-];
+
+  const cards = [];
+
+  const bankingSubtypes = [];
+  const checkingTemplate = templates.find(t => t.account_detail === 'checking_account');
+  if (checkingTemplate) {
+    bankingSubtypes.push({
+      value: 'checking',
+      label: checkingTemplate.display_name,
+      icon: Wallet,
+      templateId: checkingTemplate.id
+    });
+  }
+
+  const savingsTemplate = templates.find(t => t.account_detail === 'savings_account');
+  if (savingsTemplate) {
+    bankingSubtypes.push({
+      value: 'savings',
+      label: savingsTemplate.display_name,
+      icon: PiggyBank,
+      templateId: savingsTemplate.id
+    });
+  }
+
+  const creditCardTemplate = templates.find(t => t.account_detail === 'personal_credit_card');
+  if (creditCardTemplate) {
+    bankingSubtypes.push({
+      value: 'credit_card',
+      label: creditCardTemplate.display_name,
+      icon: CreditCard,
+      templateId: creditCardTemplate.id
+    });
+  }
+
+  if (bankingSubtypes.length > 0) {
+    cards.push({
+      id: 'banking',
+      title: 'Banking',
+      icon: Building2,
+      bgColor: '#52A5CE',
+      iconColor: 'text-white',
+      subtypes: bankingSubtypes
+    });
+  }
+
+  const hasVehicles = templates.some(t => t.account_type === 'vehicles');
+  if (hasVehicles) {
+    cards.push({
+      id: 'vehicle',
+      title: 'Vehicle',
+      icon: Car,
+      bgColor: '#AACC96',
+      iconColor: 'text-white',
+      subtypes: []
+    });
+  }
+
+  const hasRealEstate = templates.some(t => t.account_type === 'real_estate');
+  if (hasRealEstate) {
+    cards.push({
+      id: 'property',
+      title: 'Property',
+      icon: Home,
+      bgColor: '#EF6F3C',
+      iconColor: 'text-white',
+      subtypes: []
+    });
+  }
+
+  const investmentSubtypes = [];
+  const investmentTemplates = templates.filter(t =>
+    t.account_type === 'investments' &&
+    !['primary_residence', 'secondary_residence', 'land', 'other_real_estate'].includes(t.account_detail)
+  );
+
+  investmentTemplates.forEach(template => {
+    if (template.account_detail === 'account_401k' ||
+        template.account_detail === 'traditional_ira' ||
+        template.account_detail === 'roth_ira') {
+      investmentSubtypes.push({
+        value: 'retirement',
+        label: template.display_name,
+        icon: Landmark,
+        templateId: template.id,
+        accountDetail: template.account_detail
+      });
+    } else if (template.account_detail === 'crypto_wallet') {
+      investmentSubtypes.push({
+        value: 'crypto',
+        label: template.display_name,
+        icon: BadgeDollarSign,
+        templateId: template.id,
+        accountDetail: template.account_detail
+      });
+    } else if (template.account_detail === 'brokerage_account') {
+      investmentSubtypes.push({
+        value: 'stocks',
+        label: template.display_name,
+        icon: TrendingUp,
+        templateId: template.id,
+        accountDetail: template.account_detail
+      });
+    } else {
+      investmentSubtypes.push({
+        value: 'investment',
+        label: template.display_name,
+        icon: TrendingUp,
+        templateId: template.id,
+        accountDetail: template.account_detail
+      });
+    }
+  });
+
+  if (investmentSubtypes.length > 0) {
+    cards.push({
+      id: 'investments',
+      title: 'Investments',
+      icon: TrendingUp,
+      bgColor: '#FF7BAC',
+      iconColor: 'text-white',
+      subtypes: investmentSubtypes
+    });
+  }
+
+  const loanSubtypes = [];
+  const loanTemplates = templates.filter(t =>
+    t.account_type === 'loans' &&
+    !['mortgage_primary', 'mortgage_secondary', 'auto_loan', 'rv_loan'].includes(t.account_detail)
+  );
+
+  loanTemplates.forEach(template => {
+    let icon = FileText;
+    let value = template.account_detail;
+
+    if (template.account_detail === 'personal_loan') {
+      icon = FileText;
+      value = 'personal_loan';
+    } else if (template.account_detail === 'student_loan') {
+      icon = FileText;
+      value = 'student_loan';
+    } else if (template.account_detail === 'medical_debt') {
+      icon = FileText;
+      value = 'medical_debt';
+    }
+
+    loanSubtypes.push({
+      value,
+      label: template.display_name,
+      icon,
+      templateId: template.id,
+      accountDetail: template.account_detail
+    });
+  });
+
+  if (loanSubtypes.length > 0) {
+    cards.push({
+      id: 'loans',
+      title: 'Loans & Debts',
+      icon: FileText,
+      bgColor: '#6D1F42',
+      iconColor: 'text-white',
+      subtypes: loanSubtypes
+    });
+  }
+
+  const hasIncome = templates.some(t => t.class === 'income');
+  const hasExpense = templates.some(t => t.class === 'expense');
+
+  if (hasIncome || hasExpense) {
+    const budgetSubtypes = [];
+    if (hasIncome) {
+      budgetSubtypes.push({
+        value: 'income',
+        label: 'Income',
+        icon: BadgeDollarSign
+      });
+    }
+    if (hasExpense) {
+      budgetSubtypes.push({
+        value: 'expense',
+        label: 'Expense',
+        icon: Receipt
+      });
+    }
+
+    cards.push({
+      id: 'budget',
+      title: 'Budget Category',
+      icon: DollarSign,
+      bgColor: '#EFCE7B',
+      iconColor: 'text-white',
+      subtypes: budgetSubtypes
+    });
+  }
+
+  return cards;
+};
 
 export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
   const { user } = useAuth();
@@ -180,7 +315,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const { data: chartAccounts = [] } = useQuery({
+  const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
     queryFn: async () => {
       const { data, error } = await firstsavvy
@@ -195,6 +330,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     },
     enabled: open
   });
+
+  const accountTypeCards = React.useMemo(() => {
+    return buildAccountTypeCardsFromTemplates(chartAccounts);
+  }, [chartAccounts]);
 
   const { data: userChartAccounts = [] } = useQuery({
     queryKey: ['user-chart-accounts', activeProfile?.id],
@@ -993,28 +1132,46 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     );
   };
 
-  const renderSelectType = () => (
-    <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
-      {ACCOUNT_TYPE_CARDS.map(card => {
-        const IconComponent = card.icon;
-        return (
-          <div
-            key={card.id}
-            className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
-            onClick={() => handleCardSelect(card)}
-          >
+  const renderSelectType = () => {
+    if (isLoadingTemplates) {
+      return (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+        </div>
+      );
+    }
+
+    if (accountTypeCards.length === 0) {
+      return (
+        <div className="text-center py-12 text-muted-foreground">
+          No account types available. Please contact support.
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+        {accountTypeCards.map(card => {
+          const IconComponent = card.icon;
+          return (
             <div
-              className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
-              style={{ backgroundColor: card.bgColor }}
+              key={card.id}
+              className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+              onClick={() => handleCardSelect(card)}
             >
-              <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
+              <div
+                className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                style={{ backgroundColor: card.bgColor }}
+              >
+                <IconComponent className={`w-10 h-10 ${card.iconColor}`} strokeWidth={2} />
+              </div>
+              <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
             </div>
-            <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{card.title}</span>
-          </div>
-        );
-      })}
-    </div>
-  );
+          );
+        })}
+      </div>
+    );
+  };
 
   const renderSelectSubtype = () => {
     return (
