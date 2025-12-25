@@ -158,7 +158,7 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
             </div>
 
             <TypeDetailSelector
-              classFilter="asset"
+              classFilter={null}
               accountType={formData.account_type}
               accountDetail={formData.account_detail}
               onTypeChange={(type) => updateFormData('account_type', type)}
