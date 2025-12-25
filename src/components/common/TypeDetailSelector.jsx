@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getAccountTypes, getAccountDetails } from '@/utils/accountTypeMapping';
+import { useAccountTypesByClass, useAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 
 export default function TypeDetailSelector({
   classFilter,
@@ -14,8 +14,8 @@ export default function TypeDetailSelector({
   required = false,
   disabled = false
 }) {
-  const availableTypes = getAccountTypes(classFilter);
-  const availableDetails = accountType ? getAccountDetails(classFilter, accountType) : [];
+  const { accountTypes: availableTypes = [], isLoading: typesLoading } = useAccountTypesByClass(classFilter);
+  const { accountDetails: availableDetails = [], isLoading: detailsLoading } = useAccountDetailsByType(classFilter, accountType);
 
   useEffect(() => {
     if (accountType && !availableDetails.includes(accountDetail)) {
@@ -33,10 +33,10 @@ export default function TypeDetailSelector({
         <Select
           value={accountType || ''}
           onValueChange={(value) => onTypeChange?.(value)}
-          disabled={disabled}
+          disabled={disabled || typesLoading}
         >
           <SelectTrigger id="account-type">
-            <SelectValue placeholder="Select type" />
+            <SelectValue placeholder={typesLoading ? "Loading..." : "Select type"} />
           </SelectTrigger>
           <SelectContent>
             {availableTypes.map((type) => (
@@ -57,10 +57,10 @@ export default function TypeDetailSelector({
           <Select
             value={accountDetail || ''}
             onValueChange={(value) => onDetailChange?.(value)}
-            disabled={disabled}
+            disabled={disabled || detailsLoading}
           >
             <SelectTrigger id="account-detail">
-              <SelectValue placeholder="Select detail" />
+              <SelectValue placeholder={detailsLoading ? "Loading..." : "Select detail"} />
             </SelectTrigger>
             <SelectContent>
               {availableDetails.map((detail) => (

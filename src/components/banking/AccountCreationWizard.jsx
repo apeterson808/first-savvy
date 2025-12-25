@@ -17,7 +17,6 @@ import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
-import { getAccountTypes, getAccountDetails } from '@/utils/accountTypeMapping';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
