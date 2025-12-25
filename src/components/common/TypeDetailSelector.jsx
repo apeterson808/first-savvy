@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAccountTypesByClass, useAccountDetailsByType } from '@/hooks/useChartOfAccounts';
+import { formatLabel } from '@/components/utils/formatters';
 
 export default function TypeDetailSelector({
   classFilter,
@@ -41,7 +42,7 @@ export default function TypeDetailSelector({
           <SelectContent>
             {availableTypes.map((type) => (
               <SelectItem key={type} value={type}>
-                {type}
+                {formatLabel(type)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -65,7 +66,7 @@ export default function TypeDetailSelector({
             <SelectContent>
               {availableDetails.map((detail) => (
                 <SelectItem key={detail} value={detail}>
-                  {detail}
+                  {formatLabel(detail)}
                 </SelectItem>
               ))}
             </SelectContent>
