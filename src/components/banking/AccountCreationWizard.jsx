@@ -182,7 +182,23 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const navigate = useNavigate();
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts-all', activeProfile?.id],
+    queryKey: ['chart-accounts-templates'],
+    queryFn: async () => {
+      const { data, error } = await firstsavvy
+        .from('chart_of_accounts_templates')
+        .select('*')
+        .order('class, sort_order, account_number');
+      if (error) {
+        console.error('Error fetching chart account templates:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: open
+  });
+
+  const { data: userChartAccounts = [] } = useQuery({
+    queryKey: ['user-chart-accounts', activeProfile?.id],
     queryFn: async () => {
       if (!activeProfile?.id) return [];
       const { data, error } = await firstsavvy
@@ -192,7 +208,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         .eq('is_active', true)
         .order('account_number');
       if (error) {
-        console.error('Error fetching chart accounts:', error);
+        console.error('Error fetching user chart accounts:', error);
         return [];
       }
       return data || [];
@@ -336,7 +352,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     if (!detail) return null;
 
     const matchingAccount = chartAccounts.find(a =>
-      a.account_detail === detail && a.is_active
+      a.account_detail === detail
     );
 
     return matchingAccount?.id || null;
@@ -383,6 +399,18 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const getChartAccountDisplayName = (chartAccountId) => {
     const chartAccount = chartAccounts.find(a => a.id === chartAccountId);
     return chartAccount?.display_name || '';
+  };
+
+  const getUserChartAccountId = (templateId) => {
+    const template = chartAccounts.find(t => t.id === templateId);
+    if (!template) return null;
+
+    const userAccount = userChartAccounts.find(ua =>
+      ua.account_type === template.account_type &&
+      ua.account_detail === template.account_detail
+    );
+
+    return userAccount?.id || null;
   };
 
   const updateAccountConfiguration = (accountId, field, value) => {
@@ -524,13 +552,20 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           if (!mockAccount || !config) continue;
 
           if (config.import_mode === 'new') {
+            const userChartAccountId = getUserChartAccountId(config.chart_account_id);
+
+            if (!userChartAccountId) {
+              console.warn(`No matching user chart account found for template ID: ${config.chart_account_id}`);
+              continue;
+            }
+
             const accountNumber = Date.now().toString().slice(-6);
             const finalDisplayName = config.displayName || getChartAccountDisplayName(config.chart_account_id) || mockAccount.name;
             await firstsavvy.entities.Account.create({
               account_name: finalDisplayName,
               account_number: accountNumber,
               account_type: mockAccount.type,
-              chart_account_id: config.chart_account_id,
+              chart_account_id: userChartAccountId,
               current_balance: mockAccount.balance,
               institution_name: mockAccount.institutionName,
               account_number_last4: mockAccount.last4,
