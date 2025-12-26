@@ -73,14 +73,14 @@ export const ProfileProvider = ({ children }) => {
           id,
           owner_user_id,
           display_name,
-          profile:profiles!profile_tabs_owner_user_id_fkey (
+          profile:profiles!profile_tabs_profile_id_fkey (
             id,
             profile_type,
             display_name,
             is_deleted
           )
         `)
-        .eq('user_id', user.id)
+        .eq('owner_user_id', user.id)
         .eq('is_active', true)
         .maybeSingle();
 
@@ -105,8 +105,8 @@ export const ProfileProvider = ({ children }) => {
         await firstsavvy
           .from('profile_tabs')
           .update({ is_active: true })
-          .eq('user_id', user.id)
-          .eq('owner_user_id', activeProfileToSet.id)
+          .eq('owner_user_id', user.id)
+          .eq('profile_id', activeProfileToSet.id)
           .maybeSingle();
       }
 
@@ -168,13 +168,13 @@ export const ProfileProvider = ({ children }) => {
       await firstsavvy
         .from('profile_tabs')
         .update({ is_active: false })
-        .eq('user_id', user.id);
+        .eq('owner_user_id', user.id);
 
       await firstsavvy
         .from('profile_tabs')
         .update({ is_active: true })
-        .eq('user_id', user.id)
-        .eq('owner_user_id', profile.id);
+        .eq('owner_user_id', user.id)
+        .eq('profile_id', profile.id);
 
       setActiveProfile(profile);
       localStorage.setItem('activeProfileId', profile.id);
