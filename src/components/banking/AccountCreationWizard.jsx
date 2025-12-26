@@ -1978,32 +1978,47 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                       className="mt-1"
                     />
                     <div className="flex-1">
-                      <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor={`account-${account.id}`}
-                          className="text-base font-medium cursor-pointer"
-                        >
-                          {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
-                        </Label>
-                        <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                          ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
+                      {!isChecked ? (
+                        <div className="flex items-center justify-between">
+                          <Label
+                            htmlFor={`account-${account.id}`}
+                            className="text-base font-medium cursor-pointer"
+                          >
+                            {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
+                          </Label>
+                          <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                            ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ) : (
+                        config && (
+                          <div className="space-y-3">
+                            <div>
+                              <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                              <div className="flex items-center gap-3 mt-1">
+                                <Input
+                                  id={`displayName-${account.id}`}
+                                  value={formatAccountDisplayLabel(config.displayName, account.last4, config.show_suffix)}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    const suffix = account.last4 && config.show_suffix ? ` (${account.last4})` : '';
+                                    if (suffix && value.endsWith(suffix)) {
+                                      const newDisplayName = value.slice(0, -suffix.length);
+                                      updateAccountConfiguration(account.id, 'displayName', newDisplayName);
+                                    } else if (!suffix) {
+                                      updateAccountConfiguration(account.id, 'displayName', value);
+                                    }
+                                  }}
+                                  placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
+                                  className="h-9 flex-1"
+                                />
+                                <span className={`text-sm font-medium whitespace-nowrap ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                  ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                            </div>
 
-                      {isChecked && config && (
-                        <div className="mt-4 space-y-3 pl-1">
-                          <div className="flex-1">
-                            <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
-                            <Input
-                              id={`displayName-${account.id}`}
-                              value={config.displayName}
-                              onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                              placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                              className="h-9 mt-1"
-                            />
-                          </div>
-
-                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex items-center justify-between gap-4">
                             <div className="flex gap-4">
                               <div className="flex items-center gap-2">
                                 <input
@@ -2182,6 +2197,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             />
                           </div>
                         </div>
+                        )
                       )}
                     </div>
                   </div>
