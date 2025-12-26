@@ -2050,17 +2050,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                     updateAccountConfiguration(account.id, 'import_mode', value);
                                   }
                                 }}
-                                className="inline-flex border rounded-lg p-0.5 bg-slate-100"
+                                className="inline-flex border rounded-full p-0.5 bg-slate-100 h-7"
                               >
                                 <ToggleGroupItem
                                   value="new"
-                                  className="px-3 py-1 text-xs rounded-md data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
+                                  className="px-3 py-0 text-xs h-6 rounded-full data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
                                 >
                                   New
                                 </ToggleGroupItem>
                                 <ToggleGroupItem
                                   value="existing"
-                                  className="px-3 py-1 text-xs rounded-md data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
+                                  className="px-3 py-0 text-xs h-6 rounded-full data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
                                 >
                                   Existing
                                 </ToggleGroupItem>
