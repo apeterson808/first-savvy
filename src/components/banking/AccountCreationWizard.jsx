@@ -2016,14 +2016,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             {config.import_mode === 'new' ? (
                               <div>
                                 <div className="flex items-center justify-between mb-1">
-                                  <div className="flex items-center gap-4 flex-1">
-                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                      Display Name*
-                                    </Label>
-                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
-                                      Account Detail
-                                    </Label>
-                                  </div>
+                                  <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                    Display Name*
+                                  </Label>
                                   <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                                     ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
@@ -2040,12 +2035,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
                                     />
                                     {account.last4 && config.show_suffix && (
-                                      <span className="text-muted-foreground text-sm pointer-events-none ml-1 whitespace-nowrap">
+                                      <span className="text-muted-foreground text-sm pointer-events-none whitespace-nowrap">
                                         ({account.last4})
                                       </span>
                                     )}
                                   </div>
                                   <div className="sm:w-[200px] w-full">
+                                    <div className="mb-1">
+                                      <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
+                                        Account Detail
+                                      </Label>
+                                    </div>
                                     <Select
                                       value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
                                       onValueChange={(value) => {
