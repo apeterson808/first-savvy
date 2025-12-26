@@ -2142,51 +2142,58 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             )}
 
                             <div>
-                              <Label className="text-sm mb-2 block">Start Date*</Label>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <Select
-                                  value={config.startDatePreset || 'last_60'}
-                                  onValueChange={(value) => updateAccountConfiguration(account.id, 'startDatePreset', value)}
-                                >
-                                  <SelectTrigger className="h-9">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="last_30">Last 30 days</SelectItem>
-                                    <SelectItem value="last_60">Last 60 days</SelectItem>
-                                    <SelectItem value="year_to_date">Year to date</SelectItem>
-                                    <SelectItem value="custom">Custom</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                <div>
+                                  <Label className="text-sm mb-2 block">Start Date*</Label>
+                                  <Select
+                                    value={config.startDatePreset || 'last_60'}
+                                    onValueChange={(value) => updateAccountConfiguration(account.id, 'startDatePreset', value)}
+                                  >
+                                    <SelectTrigger className="h-9">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="last_30">Last 30 days</SelectItem>
+                                      <SelectItem value="last_60">Last 60 days</SelectItem>
+                                      <SelectItem value="year_to_date">Year to date</SelectItem>
+                                      <SelectItem value="custom">Custom</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
 
-                                <Input
-                                  type="date"
-                                  value={config.startDate || ''}
-                                  onChange={(e) => handleStartDateManualChange(account.id, e.target.value)}
-                                  className="h-9"
-                                />
+                                <div>
+                                  <Label className="text-sm mb-2 block opacity-0">Date</Label>
+                                  <Input
+                                    type="date"
+                                    value={config.startDate || ''}
+                                    onChange={(e) => handleStartDateManualChange(account.id, e.target.value)}
+                                    className="h-9"
+                                  />
+                                </div>
 
-                                <div className="flex items-center gap-2">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                        </TooltipTrigger>
+                                        <TooltipContent className="max-w-xs">
+                                          <p className="text-xs">
+                                            Transactions before this date will be posted automatically. After this date, transactions will remain pending.
+                                          </p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
+                                  </div>
                                   <Input
                                     id={`goLiveDate-${account.id}`}
                                     type="date"
                                     value={config.goLiveDate || ''}
                                     onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
-                                    className="h-9 flex-1"
-                                    placeholder="Go Live Date"
+                                    className="h-9"
                                   />
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <Info className="w-4 h-4 text-muted-foreground cursor-help flex-shrink-0" />
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-xs">
-                                        <p className="text-xs">
-                                          <strong>Go Live Date:</strong> Transactions before this date will be posted automatically. After this date, transactions will remain pending.
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
                                 </div>
                               </div>
                             </div>
