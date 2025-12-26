@@ -101,7 +101,7 @@ export default function CategoriesTab() {
     return budgets.find(b => b.chart_account_id === categoryId);
   };
 
-  const renderBudgetedCategoryRow = (category) => {
+  const renderBudgetedCategoryRow = (category, index) => {
     const budget = getBudgetForCategory(category.id);
     if (!budget) return null;
 
@@ -110,21 +110,21 @@ export default function CategoriesTab() {
     const values = getAllCadenceValues(amount, cadence);
 
     return (
-      <tr key={category.id} className="border-b hover:bg-muted/50">
-        <td className="px-4 font-medium">{category.display_name}</td>
-        <td className={`px-4 text-right ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
+      <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
+        <td className="py-3 px-4 font-medium">{category.display_name}</td>
+        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.daily, 2)}
         </td>
-        <td className={`px-4 text-right ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.weekly, 2)}
         </td>
-        <td className={`px-4 text-right ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.monthly, 2)}
         </td>
-        <td className={`px-4 text-right ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.yearly, 0)}
         </td>
-        <td className="px-4 text-right">
+        <td className="py-3 px-4 text-right">
           <div className="flex gap-2 justify-end">
             <Button
               variant="ghost"
@@ -146,25 +146,25 @@ export default function CategoriesTab() {
     );
   };
 
-  const renderAvailableCategoryRow = (category) => {
+  const renderAvailableCategoryRow = (category, index) => {
     const usage = categoryUsage[category.id];
     const everUsed = usage?.everUsed || false;
     const lastUsed = usage?.lastUsed;
 
     return (
-      <tr key={category.id} className="border-b hover:bg-muted/50">
-        <td className="px-4 font-medium">{category.display_name}</td>
-        <td className="px-4">
+      <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
+        <td className="py-3 px-4 font-medium">{category.display_name}</td>
+        <td className="py-3 px-4">
           {everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
-        <td className="px-4 text-muted-foreground text-sm">
+        <td className="py-3 px-4 text-muted-foreground text-sm">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <td className="px-4 text-right">
+        <td className="py-3 px-4 text-right">
           <Button
             variant="outline"
             size="sm"
@@ -205,28 +205,28 @@ export default function CategoriesTab() {
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b bg-muted/30">
+                    <tr className="border-b-2 bg-muted/50">
                       {renderRow === renderBudgetedCategoryRow ? (
                         <>
-                          <th className="px-4 text-left font-semibold">Category</th>
-                          <th className="px-4 text-right font-semibold">Daily</th>
-                          <th className="px-4 text-right font-semibold">Weekly</th>
-                          <th className="px-4 text-right font-semibold">Monthly</th>
-                          <th className="px-4 text-right font-semibold">Yearly</th>
-                          <th className="px-4 text-right font-semibold">Actions</th>
+                          <th className="py-3 px-4 text-left font-bold">Category</th>
+                          <th className="py-3 px-4 text-right font-bold">Daily</th>
+                          <th className="py-3 px-4 text-right font-bold">Weekly</th>
+                          <th className="py-3 px-4 text-right font-bold">Monthly</th>
+                          <th className="py-3 px-4 text-right font-bold">Yearly</th>
+                          <th className="py-3 px-4 text-right font-bold">Actions</th>
                         </>
                       ) : (
                         <>
-                          <th className="px-4 text-left font-semibold">Category</th>
-                          <th className="px-4 text-left font-semibold">Ever Used</th>
-                          <th className="px-4 text-left font-semibold">Last Used</th>
-                          <th className="px-4 text-right font-semibold"></th>
+                          <th className="py-3 px-4 text-left font-bold">Category</th>
+                          <th className="py-3 px-4 text-left font-bold">Ever Used</th>
+                          <th className="py-3 px-4 text-left font-bold">Last Used</th>
+                          <th className="py-3 px-4 text-right font-bold"></th>
                         </>
                       )}
                     </tr>
                   </thead>
                   <tbody>
-                    {categories.map(renderRow)}
+                    {categories.map((category, index) => renderRow(category, index))}
                   </tbody>
                 </table>
               </div>
