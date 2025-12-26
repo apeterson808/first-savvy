@@ -2016,11 +2016,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             {config.import_mode === 'new' ? (
                               <div>
                                 <div className="flex items-center justify-between mb-1">
-                                  <div className="flex flex-col sm:flex-row gap-2">
-                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm w-full sm:w-[50%]">
+                                  <div className="flex gap-2 flex-1">
+                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm flex-1">
                                       Display Name*
                                     </Label>
-                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm w-full sm:w-[50%]">
+                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm flex-1">
                                       Account Detail
                                     </Label>
                                   </div>
@@ -2028,8 +2028,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                     ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
                                 </div>
-                                <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full sm:w-[50%] min-w-0">
+                                <div className="flex gap-2 mt-1">
+                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex-1 min-w-0">
                                     <input
                                       id={`displayName-${account.id}`}
                                       value={config.displayName || ''}
@@ -2054,7 +2054,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       }
                                     }}
                                   >
-                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full sm:w-[50%]">
+                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 flex-1">
                                       <SelectValue placeholder="Select detail" />
                                     </SelectTrigger>
                                     <SelectContent>
