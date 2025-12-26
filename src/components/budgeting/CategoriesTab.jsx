@@ -252,11 +252,11 @@ export default function CategoriesTab() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Budgeted Categories</CardTitle>
+          <CardTitle>Categories</CardTitle>
         </CardHeader>
         <CardContent>
           {renderSection(
-            'Budgeted Income Categories',
+            'Income',
             budgetedIncomeCategories,
             'budgetedIncome',
             renderBudgetedCategoryRow,
@@ -264,7 +264,7 @@ export default function CategoriesTab() {
           )}
 
           {renderSection(
-            'Budgeted Expense Categories',
+            'Expenses',
             budgetedExpenseCategories,
             'budgetedExpense',
             renderBudgetedCategoryRow,
