@@ -23,6 +23,15 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
 import {
+  generateTransactionsForAccount,
+  generateCreditCardPayments,
+  checkForMatchingTransfers,
+  createMatchedTransferTransactions,
+  insertTransactionsAndRegistry,
+  updateTransferRegistry,
+  calculateTransactionCounts
+} from '@/api/transactionGenerator';
+import {
   Building2,
   Wallet,
   CreditCard,
@@ -722,6 +731,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       try {
         let createdCount = 0;
         let linkedCount = 0;
+        const createdAccounts = [];
 
         for (const accountId of checkedAccountIds) {
           const mockAccount = mockBankAccounts.find(acc => acc.id === accountId);
@@ -737,7 +747,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
             const accountNumber = Date.now().toString().slice(-6);
             const finalDisplayName = config.displayName || getChartAccountDisplayName(config.chart_account_id) || mockAccount.name;
-            await firstsavvy.entities.Account.create({
+            const newAccount = await firstsavvy.entities.Account.create({
               account_name: finalDisplayName,
               account_number: accountNumber,
               account_type: mockAccount.type,
@@ -749,6 +759,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               show_account_suffix: config.show_suffix ?? true,
               is_active: true
             });
+            createdAccounts.push({ account: newAccount, config, mockAccount });
             createdCount++;
           } else if (config.import_mode === 'existing' && config.existing_account_id) {
             const existingAccount = existingAccounts.find(acc => acc.id === config.existing_account_id);
@@ -771,8 +782,65 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           }
         }
 
+        if (createdAccounts.length > 0) {
+          try {
+            const allTransactions = [];
+            const allRegistryEntries = [];
+
+            for (const { account, config, mockAccount } of createdAccounts) {
+              const transactions = await generateTransactionsForAccount(
+                { id: account.id, type: mockAccount.type, name: account.account_name },
+                user.id,
+                currentProfile.id,
+                config.startDate,
+                config.goLiveDate
+              );
+              allTransactions.push(...transactions);
+
+              if (mockAccount.type === 'credit_card') {
+                const matchingEntries = await checkForMatchingTransfers(
+                  { id: account.id, type: mockAccount.type, name: account.account_name },
+                  user.id,
+                  currentProfile.id
+                );
+
+                if (matchingEntries.length > 0) {
+                  const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
+                    { id: account.id, type: mockAccount.type, name: account.account_name },
+                    matchingEntries,
+                    user.id,
+                    currentProfile.id
+                  );
+                  allTransactions.push(...matchedTransactions);
+                  await updateTransferRegistry(registryUpdates);
+                }
+              } else if (mockAccount.type === 'checking' || mockAccount.type === 'savings') {
+                const creditCardAccounts = createdAccounts
+                  .filter(acc => acc.mockAccount.type === 'credit_card')
+                  .map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }));
+
+                const { payments, registryEntries } = await generateCreditCardPayments(
+                  { id: account.id, type: mockAccount.type, name: account.account_name },
+                  user.id,
+                  currentProfile.id,
+                  config.startDate,
+                  config.goLiveDate,
+                  createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }))
+                );
+                allTransactions.push(...payments);
+                allRegistryEntries.push(...registryEntries);
+              }
+            }
+
+            await insertTransactionsAndRegistry(allTransactions, allRegistryEntries);
+          } catch (txError) {
+            console.error('Error generating transactions:', txError);
+          }
+        }
+
         queryClient.invalidateQueries({ queryKey: ['accounts'] });
         queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
         if (createdCount > 0 && linkedCount > 0) {
           toast.success(`Created ${createdCount} new account${createdCount !== 1 ? 's' : ''} and linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
@@ -2203,6 +2271,29 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   />
                                 </div>
                               </div>
+
+                              {config.startDate && config.goLiveDate && (
+                                <div className="mt-2">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div className="text-xs text-muted-foreground cursor-help inline-flex items-center gap-1">
+                                          <Info className="w-3 h-3" />
+                                          {(() => {
+                                            const counts = calculateTransactionCounts(config.startDate, config.goLiveDate);
+                                            return `${counts.total} transactions (${counts.posted} posted, ${counts.pending} pending)`;
+                                          })()}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs">
+                                        <p className="text-xs">
+                                          Estimated number of transactions based on date range. Transactions before Go Live Date will be posted, after will be pending.
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
+                              )}
                             </div>
                         </div>
                         )
