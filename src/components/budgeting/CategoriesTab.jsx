@@ -111,20 +111,20 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-        <td className="py-3 px-4 font-medium">{category.display_name}</td>
-        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className="px-4 font-medium">{category.display_name}</td>
+        <td className={`px-4 text-right tabular-nums ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.daily, 2)}
         </td>
-        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`px-4 text-right tabular-nums ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.weekly, 2)}
         </td>
-        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`px-4 text-right tabular-nums ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.monthly, 2)}
         </td>
-        <td className={`py-3 px-4 text-right tabular-nums ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`px-4 text-right tabular-nums ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.yearly, 0)}
         </td>
-        <td className="py-3 px-4 text-right">
+        <td className="px-4 text-right">
           <div className="flex gap-2 justify-end">
             <Button
               variant="ghost"
@@ -153,18 +153,18 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-        <td className="py-3 px-4 font-medium">{category.display_name}</td>
-        <td className="py-3 px-4">
+        <td className="px-4 font-medium">{category.display_name}</td>
+        <td className="px-4">
           {everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
-        <td className="py-3 px-4 text-muted-foreground text-sm">
+        <td className="px-4 text-muted-foreground text-sm">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <td className="py-3 px-4 text-right">
+        <td className="px-4 text-right">
           <Button
             variant="outline"
             size="sm"
