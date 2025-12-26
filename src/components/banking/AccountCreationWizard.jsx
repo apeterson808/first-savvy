@@ -2016,11 +2016,11 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             {config.import_mode === 'new' ? (
                               <div>
                                 <div className="flex items-center justify-between mb-1">
-                                  <div className="flex gap-6">
-                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                  <div className="flex flex-col sm:flex-row gap-2">
+                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm w-full sm:w-[50%]">
                                       Display Name*
                                     </Label>
-                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
+                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm w-full sm:w-[50%]">
                                       Account Detail
                                     </Label>
                                   </div>
