@@ -102,12 +102,15 @@ export const ProfileProvider = ({ children }) => {
 
       if (!activeProfileToSet && profilesList.length > 0) {
         activeProfileToSet = profilesList[0];
-        await firstsavvy
+        const { error: activateError } = await firstsavvy
           .from('profile_tabs')
           .update({ is_active: true })
           .eq('owner_user_id', user.id)
-          .eq('profile_id', activeProfileToSet.id)
-          .maybeSingle();
+          .eq('profile_id', activeProfileToSet.id);
+
+        if (activateError) {
+          console.error('Error setting default active tab:', activateError);
+        }
       }
 
       setActiveProfile(activeProfileToSet);
@@ -165,16 +168,24 @@ export const ProfileProvider = ({ children }) => {
     if (!user || !profile) return;
 
     try {
-      await firstsavvy
+      const { error: deactivateError } = await firstsavvy
         .from('profile_tabs')
         .update({ is_active: false })
         .eq('owner_user_id', user.id);
 
-      await firstsavvy
+      if (deactivateError) {
+        console.error('Error deactivating tabs:', deactivateError);
+      }
+
+      const { error: activateError } = await firstsavvy
         .from('profile_tabs')
         .update({ is_active: true })
         .eq('owner_user_id', user.id)
         .eq('profile_id', profile.id);
+
+      if (activateError) {
+        console.error('Error activating tab:', activateError);
+      }
 
       setActiveProfile(profile);
       localStorage.setItem('activeProfileId', profile.id);
