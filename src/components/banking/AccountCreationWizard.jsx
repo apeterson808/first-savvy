@@ -2035,7 +2035,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
                                       onFocus={(e) => e.target.select()}
                                       placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                      className="flex-1 bg-transparent outline-none text-sm"
+                                      className="bg-transparent outline-none text-sm min-w-0"
+                                      style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
                                     />
                                     {account.last4 && config.show_suffix && (
                                       <span className="text-muted-foreground text-sm pointer-events-none ml-1">
