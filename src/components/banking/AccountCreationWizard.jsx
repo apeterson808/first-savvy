@@ -2029,7 +2029,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   </span>
                                 </div>
                                 <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full sm:w-[60%] min-w-0">
+                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full sm:w-[50%] min-w-0">
                                     <input
                                       id={`displayName-${account.id}`}
                                       value={config.displayName || ''}
@@ -2054,7 +2054,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       }
                                     }}
                                   >
-                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full sm:w-[40%]">
+                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full sm:w-[50%]">
                                       <SelectValue placeholder="Select detail" />
                                     </SelectTrigger>
                                     <SelectContent>
