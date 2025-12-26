@@ -2013,34 +2013,82 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                       ) : (
                         config && (
                           <div className="space-y-3">
-                            <div>
-                              <div className="flex items-center justify-between mb-1">
-                                <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                  {config.import_mode === 'new' ? 'Display Name*' : 'Select Account*'}
-                                </Label>
-                                <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                  ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
-                              </div>
-                              <div className="mt-1">
-                                {config.import_mode === 'new' ? (
-                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                            {config.import_mode === 'new' ? (
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <div className="flex items-center gap-4 flex-1">
+                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                      Display Name*
+                                    </Label>
+                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
+                                      Account Detail
+                                    </Label>
+                                  </div>
+                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="flex flex-col sm:flex-row gap-2 mt-1">
+                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex-1 min-w-0">
                                     <input
                                       id={`displayName-${account.id}`}
                                       value={config.displayName || ''}
                                       onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
                                       onFocus={(e) => e.target.select()}
                                       placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                      className="bg-transparent outline-none text-sm min-w-0"
+                                      className="bg-transparent outline-none text-sm min-w-0 flex-1"
                                       style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
                                     />
                                     {account.last4 && config.show_suffix && (
-                                      <span className="text-muted-foreground text-sm pointer-events-none ml-1">
+                                      <span className="text-muted-foreground text-sm pointer-events-none ml-1 whitespace-nowrap">
                                         ({account.last4})
                                       </span>
                                     )}
                                   </div>
-                                ) : (
+                                  <div className="sm:w-auto w-full">
+                                    <Select
+                                      value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
+                                      onValueChange={(value) => {
+                                        const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
+                                        if (matchingAccount) {
+                                          updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9 sm:w-auto w-full">
+                                        <SelectValue placeholder="Select detail" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {(() => {
+                                          const detailMap = {
+                                            'checking': ['checking_account'],
+                                            'savings': ['savings_account'],
+                                            'credit_card': ['personal_credit_card', 'business_credit_card'],
+                                          };
+                                          const validDetails = detailMap[account.type] || [];
+                                          const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
+                                          return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
+                                            <SelectItem key={detail} value={detail}>
+                                              {formatLabel(detail)}
+                                            </SelectItem>
+                                          ));
+                                        })()}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div>
+                                <div className="flex items-center justify-between mb-1">
+                                  <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                    Select Account*
+                                  </Label>
+                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </span>
+                                </div>
+                                <div className="mt-1">
                                   <Select
                                     value={config.existing_account_id || ''}
                                     onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
@@ -2056,9 +2104,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                )}
+                                </div>
                               </div>
-                            </div>
+                            )}
 
                             <div className="flex items-center gap-3 flex-wrap">
                               <ToggleGroup
@@ -2101,41 +2149,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                 </div>
                               )}
                             </div>
-
-                            {config.import_mode === 'new' && (
-                              <div>
-                                <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
-                                <Select
-                                  value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
-                                  onValueChange={(value) => {
-                                    const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
-                                    if (matchingAccount) {
-                                      updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
-                                    }
-                                  }}
-                                >
-                                  <SelectTrigger id={`account-detail-${account.id}`} className="h-9 mt-1">
-                                    <SelectValue placeholder="Select detail" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {(() => {
-                                      const detailMap = {
-                                        'checking': ['checking_account'],
-                                        'savings': ['savings_account'],
-                                        'credit_card': ['personal_credit_card', 'business_credit_card'],
-                                      };
-                                      const validDetails = detailMap[account.type] || [];
-                                      const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
-                                      return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
-                                        <SelectItem key={detail} value={detail}>
-                                          {formatLabel(detail)}
-                                        </SelectItem>
-                                      ));
-                                    })()}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
 
                             <div>
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
