@@ -393,10 +393,10 @@ export default function Dashboard() {
               <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                 <div className="flex items-center gap-4">
                   <Tabs value={chartView} onValueChange={setChartView}>
-                    <TabsList className="h-8">
-                      <TabsTrigger value="spending" className="text-xs px-3">Spending</TabsTrigger>
-                      <TabsTrigger value="income" className="text-xs px-3">Money In/Out</TabsTrigger>
-                      <TabsTrigger value="balance" className="text-xs px-3">Cash Balance</TabsTrigger>
+                    <TabsList className="h-7 rounded-full">
+                      <TabsTrigger value="spending" className="text-xs px-3 py-0.5 h-6 rounded-full">Spending</TabsTrigger>
+                      <TabsTrigger value="income" className="text-xs px-3 py-0.5 h-6 rounded-full">Money In/Out</TabsTrigger>
+                      <TabsTrigger value="balance" className="text-xs px-3 py-0.5 h-6 rounded-full">Cash Balance</TabsTrigger>
                     </TabsList>
                   </Tabs>
                   {chartView === 'income' && (
