@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { format } from 'date-fns';
 import { Plus, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
@@ -60,8 +59,6 @@ export default function Budgeting() {
     );
   }
 
-  const today = new Date();
-
   return (
     <div className="p-4 md:p-6">
       {connectionError && (
@@ -88,7 +85,6 @@ export default function Budgeting() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
-          <p className="text-sm text-slate-500">{format(today, 'MMMM yyyy')}</p>
         </div>
         {activeTab === 'overview' && hasSetupStarted && (
           <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-primary hover:bg-primary/90">
