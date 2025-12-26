@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Switch } from '@/components/ui/switch';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatLabel } from '../utils/formatters';
@@ -1995,10 +1995,15 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                         config && (
                           <div className="space-y-3">
                             <div>
-                              <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                {config.import_mode === 'new' ? 'Display Name*' : 'Select Account*'}
-                              </Label>
-                              <div className="flex items-center gap-3 mt-1">
+                              <div className="flex items-center justify-between mb-1">
+                                <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                  {config.import_mode === 'new' ? 'Display Name*' : 'Select Account*'}
+                                </Label>
+                                <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                  ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </span>
+                              </div>
+                              <div className="mt-1">
                                 {config.import_mode === 'new' ? (
                                   <Input
                                     id={`displayName-${account.id}`}
@@ -2014,14 +2019,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       }
                                     }}
                                     placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                    className="h-9 max-w-xs"
+                                    className="h-9"
                                   />
                                 ) : (
                                   <Select
                                     value={config.existing_account_id || ''}
                                     onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
                                   >
-                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9 max-w-xs">
+                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9">
                                       <SelectValue placeholder="Select account" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -2033,28 +2038,33 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                     </SelectContent>
                                   </Select>
                                 )}
-                                <span className={`text-sm font-medium whitespace-nowrap ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                  ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                </span>
                               </div>
                             </div>
 
-                            <div className="flex items-center gap-3">
-                              <div className="flex items-center gap-2">
-                                <Switch
-                                  id={`import-mode-${account.id}`}
-                                  checked={config.import_mode === 'existing'}
-                                  onCheckedChange={(checked) => {
-                                    updateAccountConfiguration(account.id, 'import_mode', checked ? 'existing' : 'new');
-                                  }}
-                                />
-                                <Label
-                                  htmlFor={`import-mode-${account.id}`}
-                                  className="text-sm cursor-pointer whitespace-nowrap"
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <ToggleGroup
+                                type="single"
+                                value={config.import_mode}
+                                onValueChange={(value) => {
+                                  if (value) {
+                                    updateAccountConfiguration(account.id, 'import_mode', value);
+                                  }
+                                }}
+                                className="inline-flex border rounded-md p-0.5 bg-slate-100"
+                              >
+                                <ToggleGroupItem
+                                  value="new"
+                                  className="px-4 py-1.5 text-sm rounded data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
                                 >
-                                  {config.import_mode === 'existing' ? 'Add to existing account' : 'Create new account'}
-                                </Label>
-                              </div>
+                                  New
+                                </ToggleGroupItem>
+                                <ToggleGroupItem
+                                  value="existing"
+                                  className="px-4 py-1.5 text-sm rounded data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
+                                >
+                                  Existing
+                                </ToggleGroupItem>
+                              </ToggleGroup>
 
                               {config.import_mode === 'new' && account.last4 && (
                                 <div className="flex items-center gap-2">
