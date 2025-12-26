@@ -52,17 +52,16 @@ export function useBudgetData() {
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['chart-accounts-income-expense', profileId],
+    queryKey: ['chart-accounts-templates-income-expense'],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
-        .from('user_chart_of_accounts')
+        .from('chart_of_accounts_templates')
         .select('*')
         .in('class', ['income', 'expense'])
         .order('display_name', { ascending: true });
       if (error) throw error;
       return data || [];
-    },
-    enabled: !!activeProfile
+    }
   });
 
   const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;
