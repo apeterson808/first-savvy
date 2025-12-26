@@ -39,7 +39,7 @@ export function useBudgetData() {
         .from('user_chart_of_accounts')
         .select('*')
         .in('account_type', ['income', 'expense'])
-        .order('category', { ascending: true });
+        .order('display_name', { ascending: true });
       if (error) throw error;
       return data || [];
     },
