@@ -313,7 +313,7 @@ const formatAccountDisplayLabel = (displayName, last4, showSuffix) => {
     return displayName;
   }
 
-  return `${displayName} (••${last4})`;
+  return `${displayName} (${last4})`;
 };
 
 export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
