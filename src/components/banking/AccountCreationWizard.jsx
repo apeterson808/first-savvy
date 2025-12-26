@@ -2061,7 +2061,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                         }
                                       }}
                                     >
-                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9">
+                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full">
                                         <SelectValue placeholder="Select detail" />
                                       </SelectTrigger>
                                       <SelectContent>
