@@ -24,9 +24,9 @@ export function useBudgetData() {
           chartAccount:user_chart_of_accounts!budgets_chart_account_id_fkey(
             id,
             display_name,
+            class,
             account_type,
             account_detail,
-            category,
             icon,
             color
           )
@@ -57,7 +57,7 @@ export function useBudgetData() {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
         .select('*')
-        .in('account_type', ['income', 'expense'])
+        .in('class', ['income', 'expense'])
         .order('display_name', { ascending: true });
       if (error) throw error;
       return data || [];

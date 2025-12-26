@@ -79,7 +79,7 @@ export default function AddEditCategorySheet({
     try {
       if (editingCategory) {
         await firstsavvy.entities.ChartAccount.update(editingCategory.id, {
-          custom_display_name: formData.name.trim(),
+          display_name: formData.name.trim(),
           icon: formData.icon,
           color: formData.color,
         });
@@ -93,15 +93,10 @@ export default function AddEditCategorySheet({
 
         toast.success('Category updated successfully');
       } else {
-        const { data, error } = await firstsavvy.auth.getUser();
-        if (error || !data?.user) throw new Error('User not authenticated');
-        const user = data.user;
-
         const accountTypePrefix = formData.type === 'income' ? 4 : 5;
         const { data: existingAccounts } = await firstsavvy.supabase
           .from('user_chart_of_accounts')
           .select('account_number')
-          .eq('user_id', user.id)
           .gte('account_number', accountTypePrefix * 1000)
           .lt('account_number', (accountTypePrefix + 1) * 1000)
           .order('account_number', { ascending: false })
@@ -113,10 +108,8 @@ export default function AddEditCategorySheet({
 
         const newCategory = await firstsavvy.entities.ChartAccount.create({
           account_number: nextAccountNumber,
-          category: formData.name.trim(),
-          custom_display_name: formData.name.trim(),
-          account_type: formData.type,
-          level: 3,
+          display_name: formData.name.trim(),
+          class: formData.type,
           icon: formData.icon,
           color: formData.color,
           is_user_created: true,

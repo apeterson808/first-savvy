@@ -73,10 +73,10 @@ Deno.serve(async (req: Request) => {
 
     const { data: chartAccounts, error: chartAccountsError } = await supabase
       .from('user_chart_of_accounts')
-      .select('id, account_number, account_type, account_detail, category, custom_display_name')
+      .select('id, account_number, class, account_type, account_detail, display_name')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .in('account_type', ['income', 'expense'])
+      .in('class', ['income', 'expense'])
       .order('account_number');
 
     if (chartAccountsError) {

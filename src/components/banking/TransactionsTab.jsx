@@ -44,6 +44,7 @@ import TransferMatchDialog from './TransferMatchDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
+import { useProfile } from '@/contexts/ProfileContext';
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -212,30 +213,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
 
 
+  const { activeProfile } = useProfile();
+
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts-income-expense'],
+    queryKey: ['chart-accounts-income-expense', activeProfile?.id],
     queryFn: async () => {
-      const { data, error } = await firstsavvy.auth.getUser();
-      if (error || !data?.user) return [];
-      const user = data.user;
-      const [income, expense] = await Promise.all([
-        firstsavvy.from('user_chart_of_accounts')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('account_type', 'income')
-          .eq('level', 3)
-          .eq('is_active', true)
-          .order('account_number'),
-        firstsavvy.from('user_chart_of_accounts')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('account_type', 'expense')
-          .eq('level', 3)
-          .eq('is_active', true)
-          .order('account_number')
-      ]);
-      return [...(income.data || []), ...(expense.data || [])];
-    }
+      if (!activeProfile?.id) return [];
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('*')
+        .eq('profile_id', activeProfile.id)
+        .in('class', ['income', 'expense'])
+        .eq('is_active', true)
+        .order('account_number');
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeProfile
   });
 
   const { data: categorizationRules = [] } = useQuery({
@@ -543,8 +537,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   // Group categories by type for display
-  const expenseCategories = chartAccounts.filter(c => c.account_type === 'expense');
-  const incomeCategories = chartAccounts.filter(c => c.account_type === 'income');
+  const expenseCategories = chartAccounts.filter(c => c.class === 'expense');
+  const incomeCategories = chartAccounts.filter(c => c.class === 'income');
 
   const getCategoryById = (id) => chartAccounts.find(c => c.id === id);
 
