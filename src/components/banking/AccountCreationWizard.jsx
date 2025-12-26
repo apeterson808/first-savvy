@@ -2015,65 +2015,67 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                           <div className="space-y-3">
                             {config.import_mode === 'new' ? (
                               <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex gap-6">
-                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                      Display Name*
-                                    </Label>
+                                <div className="flex flex-col sm:flex-row gap-2">
+                                  <div className="w-full sm:w-[50%] space-y-1">
+                                    <div className="flex items-center justify-between">
+                                      <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                        Display Name*
+                                      </Label>
+                                      <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
+                                        ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                      </span>
+                                    </div>
+                                    <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full min-w-0">
+                                      <input
+                                        id={`displayName-${account.id}`}
+                                        value={config.displayName || ''}
+                                        onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
+                                        onFocus={(e) => e.target.select()}
+                                        placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
+                                        className="bg-transparent outline-none text-sm min-w-0 flex-1"
+                                        style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
+                                      />
+                                      {account.last4 && config.show_suffix && (
+                                        <span className="text-muted-foreground text-sm pointer-events-none whitespace-nowrap">
+                                          ({account.last4})
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="w-full sm:w-[50%] space-y-1">
                                     <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
                                       Account Detail
                                     </Label>
+                                    <Select
+                                      value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
+                                      onValueChange={(value) => {
+                                        const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
+                                        if (matchingAccount) {
+                                          updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                        }
+                                      }}
+                                    >
+                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full">
+                                        <SelectValue placeholder="Select detail" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {(() => {
+                                          const detailMap = {
+                                            'checking': ['checking_account'],
+                                            'savings': ['savings_account'],
+                                            'credit_card': ['personal_credit_card', 'business_credit_card'],
+                                          };
+                                          const validDetails = detailMap[account.type] || [];
+                                          const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
+                                          return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
+                                            <SelectItem key={detail} value={detail}>
+                                              {formatLabel(detail)}
+                                            </SelectItem>
+                                          ));
+                                        })()}
+                                      </SelectContent>
+                                    </Select>
                                   </div>
-                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="flex flex-col sm:flex-row gap-2 mt-1">
-                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 w-full sm:w-[50%] min-w-0">
-                                    <input
-                                      id={`displayName-${account.id}`}
-                                      value={config.displayName || ''}
-                                      onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                                      onFocus={(e) => e.target.select()}
-                                      placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                      className="bg-transparent outline-none text-sm min-w-0 flex-1"
-                                      style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
-                                    />
-                                    {account.last4 && config.show_suffix && (
-                                      <span className="text-muted-foreground text-sm pointer-events-none whitespace-nowrap">
-                                        ({account.last4})
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Select
-                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
-                                    onValueChange={(value) => {
-                                      const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
-                                      if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full sm:w-[50%]">
-                                      <SelectValue placeholder="Select detail" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {(() => {
-                                        const detailMap = {
-                                          'checking': ['checking_account'],
-                                          'savings': ['savings_account'],
-                                          'credit_card': ['personal_credit_card', 'business_credit_card'],
-                                        };
-                                        const validDetails = detailMap[account.type] || [];
-                                        const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
-                                        return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
-                                          <SelectItem key={detail} value={detail}>
-                                            {formatLabel(detail)}
-                                          </SelectItem>
-                                        ));
-                                      })()}
-                                    </SelectContent>
-                                  </Select>
                                 </div>
                               </div>
                             ) : (
