@@ -2016,9 +2016,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             {config.import_mode === 'new' ? (
                               <div>
                                 <div className="flex items-center justify-between mb-1">
-                                  <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                    Display Name*
-                                  </Label>
+                                  <div className="flex gap-6">
+                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                      Display Name*
+                                    </Label>
+                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
+                                      Account Detail
+                                    </Label>
+                                  </div>
                                   <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                                     ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                   </span>
@@ -2040,42 +2045,35 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       </span>
                                     )}
                                   </div>
-                                  <div className="sm:w-[200px] w-full">
-                                    <div className="mb-1">
-                                      <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
-                                        Account Detail
-                                      </Label>
-                                    </div>
-                                    <Select
-                                      value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
-                                      onValueChange={(value) => {
-                                        const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
-                                        if (matchingAccount) {
-                                          updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
-                                        }
-                                      }}
-                                    >
-                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full">
-                                        <SelectValue placeholder="Select detail" />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        {(() => {
-                                          const detailMap = {
-                                            'checking': ['checking_account'],
-                                            'savings': ['savings_account'],
-                                            'credit_card': ['personal_credit_card', 'business_credit_card'],
-                                          };
-                                          const validDetails = detailMap[account.type] || [];
-                                          const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
-                                          return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
-                                            <SelectItem key={detail} value={detail}>
-                                              {formatLabel(detail)}
-                                            </SelectItem>
-                                          ));
-                                        })()}
-                                      </SelectContent>
-                                    </Select>
-                                  </div>
+                                  <Select
+                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
+                                    onValueChange={(value) => {
+                                      const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
+                                      if (matchingAccount) {
+                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                      }
+                                    }}
+                                  >
+                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 sm:w-[200px] w-full">
+                                      <SelectValue placeholder="Select detail" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {(() => {
+                                        const detailMap = {
+                                          'checking': ['checking_account'],
+                                          'savings': ['savings_account'],
+                                          'credit_card': ['personal_credit_card', 'business_credit_card'],
+                                        };
+                                        const validDetails = detailMap[account.type] || [];
+                                        const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
+                                        return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
+                                          <SelectItem key={detail} value={detail}>
+                                            {formatLabel(detail)}
+                                          </SelectItem>
+                                        ));
+                                      })()}
+                                    </SelectContent>
+                                  </Select>
                                 </div>
                               </div>
                             ) : (
