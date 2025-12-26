@@ -833,8 +833,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             }
 
             await insertTransactionsAndRegistry(allTransactions, allRegistryEntries);
+            console.log(`Successfully generated ${allTransactions.length} transactions`);
           } catch (txError) {
             console.error('Error generating transactions:', txError);
+            toast.warning('Accounts created successfully, but transaction generation failed. Please try importing transactions manually.');
           }
         }
 
