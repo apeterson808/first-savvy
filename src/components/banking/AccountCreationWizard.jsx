@@ -527,9 +527,13 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       } else {
         const account = mockBankAccounts.find(acc => acc.id === accountId);
         const today = new Date().toISOString().split('T')[0];
-        const ninetyDaysAgo = new Date();
-        ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-        const startDate = ninetyDaysAgo.toISOString().split('T')[0];
+        const sixtyDaysAgo = new Date();
+        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+        const startDate = sixtyDaysAgo.toISOString().split('T')[0];
+
+        const firstOfMonth = new Date();
+        firstOfMonth.setDate(1);
+        const goLiveDate = firstOfMonth.toISOString().split('T')[0];
 
         const defaultChartAccountId = getDefaultChartAccountForType(account.type);
         const classType = account.type === 'credit_card' ? 'liability' : 'asset';
@@ -542,9 +546,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             classType: classType,
             chart_account_id: defaultChartAccountId,
             existing_account_id: null,
-            startDatePreset: 'last_90',
+            startDatePreset: 'last_60',
             startDate: startDate,
-            goLiveDate: today,
+            goLiveDate: goLiveDate,
             show_suffix: true
           }
         }));
@@ -568,15 +572,23 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     }));
 
     if (field === 'startDatePreset' && value !== 'custom') {
-      const today = new Date();
-      let daysAgo;
-      if (value === 'last_30') daysAgo = 30;
-      else if (value === 'last_60') daysAgo = 60;
-      else if (value === 'last_90') daysAgo = 90;
+      let dateStr;
 
-      const calculatedDate = new Date();
-      calculatedDate.setDate(today.getDate() - daysAgo);
-      const dateStr = calculatedDate.toISOString().split('T')[0];
+      if (value === 'year_to_date') {
+        const yearStart = new Date();
+        yearStart.setMonth(0);
+        yearStart.setDate(1);
+        dateStr = yearStart.toISOString().split('T')[0];
+      } else {
+        const today = new Date();
+        let daysAgo;
+        if (value === 'last_30') daysAgo = 30;
+        else if (value === 'last_60') daysAgo = 60;
+
+        const calculatedDate = new Date();
+        calculatedDate.setDate(today.getDate() - daysAgo);
+        dateStr = calculatedDate.toISOString().split('T')[0];
+      }
 
       setAccountConfigurations(prev => ({
         ...prev,
@@ -594,6 +606,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
       [accountId]: {
         ...prev[accountId],
         show_suffix: checked
+      }
+    }));
+  };
+
+  const handleStartDateManualChange = (accountId, newDate) => {
+    setAccountConfigurations(prev => ({
+      ...prev,
+      [accountId]: {
+        ...prev[accountId],
+        startDate: newDate,
+        startDatePreset: 'custom'
       }
     }));
   };
@@ -2119,78 +2142,53 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             )}
 
                             <div>
-                              <Label className="text-sm">Start Date*</Label>
-                              <div className="flex gap-2 mt-1">
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={config.startDatePreset === 'last_30' ? 'default' : 'outline'}
-                                  onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_30')}
-                                  className="flex-1 h-9"
+                              <Label className="text-sm mb-2 block">Start Date*</Label>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                <Select
+                                  value={config.startDatePreset || 'last_60'}
+                                  onValueChange={(value) => updateAccountConfiguration(account.id, 'startDatePreset', value)}
                                 >
-                                  Last 30 days
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={config.startDatePreset === 'last_60' ? 'default' : 'outline'}
-                                  onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_60')}
-                                  className="flex-1 h-9"
-                                >
-                                  Last 60 days
-                                </Button>
-                                <Button
-                                  type="button"
-                                  size="sm"
-                                  variant={config.startDatePreset === 'last_90' ? 'default' : 'outline'}
-                                  onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_90')}
-                                  className="flex-1 h-9"
-                                >
-                                  Last 90 days
-                                </Button>
-                              </div>
-                              {config.startDatePreset === 'custom' && (
+                                  <SelectTrigger className="h-9">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="last_30">Last 30 days</SelectItem>
+                                    <SelectItem value="last_60">Last 60 days</SelectItem>
+                                    <SelectItem value="year_to_date">Year to date</SelectItem>
+                                    <SelectItem value="custom">Custom</SelectItem>
+                                  </SelectContent>
+                                </Select>
+
                                 <Input
                                   type="date"
-                                  value={config.startDate}
-                                  onChange={(e) => updateAccountConfiguration(account.id, 'startDate', e.target.value)}
-                                  className="h-9 mt-2"
+                                  value={config.startDate || ''}
+                                  onChange={(e) => handleStartDateManualChange(account.id, e.target.value)}
+                                  className="h-9"
                                 />
-                              )}
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={config.startDatePreset === 'custom' ? 'default' : 'outline'}
-                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'custom')}
-                                className="w-full mt-2 h-9"
-                              >
-                                Custom date
-                              </Button>
-                            </div>
 
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                                    </TooltipTrigger>
-                                    <TooltipContent className="max-w-xs">
-                                      <p className="text-xs">
-                                        Transactions before this date will be posted automatically. After this date, transactions will remain pending.
-                                      </p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    id={`goLiveDate-${account.id}`}
+                                    type="date"
+                                    value={config.goLiveDate || ''}
+                                    onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
+                                    className="h-9 flex-1"
+                                    placeholder="Go Live Date"
+                                  />
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Info className="w-4 h-4 text-muted-foreground cursor-help flex-shrink-0" />
+                                      </TooltipTrigger>
+                                      <TooltipContent className="max-w-xs">
+                                        <p className="text-xs">
+                                          <strong>Go Live Date:</strong> Transactions before this date will be posted automatically. After this date, transactions will remain pending.
+                                        </p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                </div>
                               </div>
-                              <Input
-                                id={`goLiveDate-${account.id}`}
-                                type="date"
-                                value={config.goLiveDate}
-                                onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
-                                className="h-9 mt-1"
-                              />
                             </div>
                         </div>
                         )
