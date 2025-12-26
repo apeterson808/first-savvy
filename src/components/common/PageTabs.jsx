@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
+export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions }) {
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || defaultTab;
@@ -26,32 +26,35 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [] }) {
   }, [defaultTab]);
 
   return (
-    <div className="inline-flex items-center rounded-lg bg-muted p-1 mb-4">
-      {tabs.map((tab) => {
-        const isActive = activeTab === tab;
-        const isDisabled = disabledTabs.includes(tab);
-        return (
-          <button
-            key={tab}
-            disabled={isDisabled}
-            onClick={() => {
-              if (isDisabled) return;
-              const newUrl = `${window.location.pathname}?tab=${tab}`;
-              window.history.pushState({}, '', newUrl);
-              window.dispatchEvent(new PopStateEvent('popstate'));
-            }}
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
-              isActive
-                ? 'bg-background text-foreground shadow-sm'
-                : isDisabled
-                ? 'text-muted-foreground/50 cursor-not-allowed'
-                : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
-            }`}
-          >
-            {tab.replace(/_/g, ' ')}
-          </button>
-        );
-      })}
+    <div className="flex items-center justify-between mb-4">
+      <div className="inline-flex items-center rounded-lg bg-muted p-1">
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab;
+          const isDisabled = disabledTabs.includes(tab);
+          return (
+            <button
+              key={tab}
+              disabled={isDisabled}
+              onClick={() => {
+                if (isDisabled) return;
+                const newUrl = `${window.location.pathname}?tab=${tab}`;
+                window.history.pushState({}, '', newUrl);
+                window.dispatchEvent(new PopStateEvent('popstate'));
+              }}
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+                isActive
+                  ? 'bg-background text-foreground shadow-sm'
+                  : isDisabled
+                  ? 'text-muted-foreground/50 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+              }`}
+            >
+              {tab.replace(/_/g, ' ')}
+            </button>
+          );
+        })}
+      </div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }

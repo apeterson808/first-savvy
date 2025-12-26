@@ -82,19 +82,17 @@ export default function Budgeting() {
         </Alert>
       )}
 
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">Budgeting</h1>
-        </div>
-        {activeTab === 'overview' && hasSetupStarted && (
-          <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-primary hover:bg-primary/90">
-            <Plus className="w-4 h-4 mr-2" />
-            Add Budget
-          </Button>
-        )}
-      </div>
-
-      <PageTabs tabs={['overview', 'setup', 'categories']} />
+      <PageTabs
+        tabs={['overview', 'setup', 'categories']}
+        actions={
+          activeTab === 'overview' && hasSetupStarted && (
+            <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-primary hover:bg-primary/90">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Budget
+            </Button>
+          )
+        }
+      />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
           {!hasSetupStarted ? (
