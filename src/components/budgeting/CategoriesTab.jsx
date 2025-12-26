@@ -64,10 +64,25 @@ export default function CategoriesTab() {
     }
   });
 
+  const addBudgetMutation = useMutation({
+    mutationFn: (budgetData) => firstsavvy.entities.Budget.create(budgetData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      toast.success('Category added to budget');
+    },
+    onError: (error) => {
+      console.error('Error adding budget:', error);
+      toast.error('Failed to add category to budget');
+    }
+  });
+
   const handleAddBudget = (category) => {
-    setSelectedCategory(category);
-    setEditingBudget(null);
-    setAddBudgetSheetOpen(true);
+    const budgetData = {
+      chart_account_id: category.id,
+      allocated_amount: 0,
+      cadence: 'monthly'
+    };
+    addBudgetMutation.mutate(budgetData);
   };
 
   const handleEditBudget = (budget) => {
@@ -137,11 +152,7 @@ export default function CategoriesTab() {
     const lastUsed = usage?.lastUsed;
 
     return (
-      <tr
-        key={category.id}
-        className="border-b hover:bg-muted/50 cursor-pointer"
-        onClick={() => handleAddBudget(category)}
-      >
+      <tr key={category.id} className="border-b hover:bg-muted/50">
         <td className="px-4 font-medium">{category.display_name}</td>
         <td className="px-4">
           {everUsed ? (
@@ -157,10 +168,7 @@ export default function CategoriesTab() {
           <Button
             variant="outline"
             size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleAddBudget(category);
-            }}
+            onClick={() => handleAddBudget(category)}
           >
             <Plus className="h-4 w-4 mr-1" />
             Add
