@@ -15,7 +15,7 @@ import BudgetAllocationDonut from '../components/budgeting/BudgetAllocationDonut
 import BudgetSetupTable from '../components/budgeting/BudgetSetupTable';
 import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import EditBudgetGroupSheet from '../components/budgeting/EditBudgetGroupSheet';
-import CategoriesManagementTab from '../components/budgeting/CategoriesManagementTab';
+import CategoriesTab from '../components/budgeting/CategoriesTab';
 
 export default function Budgeting() {
   const queryClient = useQueryClient();
@@ -205,7 +205,7 @@ export default function Budgeting() {
         </TabsContent>
 
         <TabsContent value="categories" className="mt-0">
-          <CategoriesManagementTab categories={categories} transactions={transactions} />
+          <CategoriesTab />
         </TabsContent>
       </Tabs>
 

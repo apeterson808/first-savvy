@@ -115,6 +115,65 @@ export function useBudgetData() {
       .filter(b => expenseGroupIds.has(b.group_id))
       .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
+    const categoryUsage = transactions.reduce((acc, t) => {
+      if (t.chart_account_id) {
+        if (!acc[t.chart_account_id]) {
+          acc[t.chart_account_id] = {
+            everUsed: true,
+            lastUsed: t.date,
+            count: 0
+          };
+        }
+        acc[t.chart_account_id].count += 1;
+        if (t.date && (!acc[t.chart_account_id].lastUsed || new Date(t.date) > new Date(acc[t.chart_account_id].lastUsed))) {
+          acc[t.chart_account_id].lastUsed = t.date;
+        }
+      }
+      return acc;
+    }, {});
+
+    const budgetedCategoryIds = new Set(budgets.map(b => b.chart_account_id));
+
+    const budgetedIncomeCategories = categories
+      .filter(c => c.class === 'income' && budgetedCategoryIds.has(c.id))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+    const budgetedExpenseCategories = categories
+      .filter(c => c.class === 'expense' && budgetedCategoryIds.has(c.id))
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+    const availableIncomeCategories = categories
+      .filter(c => c.class === 'income' && !budgetedCategoryIds.has(c.id))
+      .sort((a, b) => {
+        const aUsage = categoryUsage[a.id];
+        const bUsage = categoryUsage[b.id];
+        if (aUsage?.everUsed && !bUsage?.everUsed) return -1;
+        if (!aUsage?.everUsed && bUsage?.everUsed) return 1;
+        if (aUsage?.everUsed && bUsage?.everUsed) {
+          const aDate = new Date(aUsage.lastUsed);
+          const bDate = new Date(bUsage.lastUsed);
+          if (aDate > bDate) return -1;
+          if (aDate < bDate) return 1;
+        }
+        return a.display_name.localeCompare(b.display_name);
+      });
+
+    const availableExpenseCategories = categories
+      .filter(c => c.class === 'expense' && !budgetedCategoryIds.has(c.id))
+      .sort((a, b) => {
+        const aUsage = categoryUsage[a.id];
+        const bUsage = categoryUsage[b.id];
+        if (aUsage?.everUsed && !bUsage?.everUsed) return -1;
+        if (!aUsage?.everUsed && bUsage?.everUsed) return 1;
+        if (aUsage?.everUsed && bUsage?.everUsed) {
+          const aDate = new Date(aUsage.lastUsed);
+          const bDate = new Date(bUsage.lastUsed);
+          if (aDate > bDate) return -1;
+          if (aDate < bDate) return 1;
+        }
+        return a.display_name.localeCompare(b.display_name);
+      });
+
     return {
       spendingByCategory,
       incomeByCategory,
@@ -127,9 +186,14 @@ export function useBudgetData() {
       monthStart,
       monthEnd,
       refundTransactions,
-      regularIncomeTransactions
+      regularIncomeTransactions,
+      categoryUsage,
+      budgetedIncomeCategories,
+      budgetedExpenseCategories,
+      availableIncomeCategories,
+      availableExpenseCategories
     };
-  }, [transactions, accounts, budgets, budgetGroups]);
+  }, [transactions, accounts, budgets, budgetGroups, categories]);
 
   return {
     budgetGroups,
@@ -139,6 +203,11 @@ export function useBudgetData() {
     categories,
     isLoading,
     hasSetupStarted: budgetGroups.length > 0,
+    categoryUsage: calculatedData.categoryUsage,
+    budgetedIncomeCategories: calculatedData.budgetedIncomeCategories,
+    budgetedExpenseCategories: calculatedData.budgetedExpenseCategories,
+    availableIncomeCategories: calculatedData.availableIncomeCategories,
+    availableExpenseCategories: calculatedData.availableExpenseCategories,
     ...calculatedData
   };
 }

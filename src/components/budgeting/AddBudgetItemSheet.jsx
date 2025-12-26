@@ -24,7 +24,9 @@ export default function AddBudgetItemSheet({
   onOpenChange,
   groups,
   categories = [],
-  editingBudget = null
+  editingBudget = null,
+  preselectedCategoryId = null,
+  preselectedGroupId = null
 }) {
   const isEditMode = !!editingBudget;
   const queryClient = useQueryClient();
@@ -34,6 +36,7 @@ export default function AddBudgetItemSheet({
   const [limitAmount, setLimitAmount] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
+  const [selectedCadence, setSelectedCadence] = useState('monthly');
 
   const [showNewGroupForm, setShowNewGroupForm] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -48,8 +51,16 @@ export default function AddBudgetItemSheet({
       setLimitAmount(editingBudget.allocated_amount?.toString() || '');
       setSelectedColor(editingBudget.color || '');
       setSelectedIcon(editingBudget.icon || '');
+      setSelectedCadence(editingBudget.cadence || 'monthly');
+    } else if (open && !editingBudget) {
+      if (preselectedCategoryId) {
+        setSelectedCategoryId(preselectedCategoryId);
+      }
+      if (preselectedGroupId) {
+        setSelectedGroupId(preselectedGroupId);
+      }
     }
-  }, [editingBudget, open]);
+  }, [editingBudget, open, preselectedCategoryId, preselectedGroupId]);
 
   useEffect(() => {
     if (selectedCategoryId && !selectedColor) {
@@ -106,6 +117,7 @@ export default function AddBudgetItemSheet({
     setLimitAmount('');
     setSelectedColor('');
     setSelectedIcon('');
+    setSelectedCadence('monthly');
     setShowNewGroupForm(false);
     setNewGroupName('');
     setNewGroupType('expense');
@@ -151,6 +163,7 @@ export default function AddBudgetItemSheet({
       chart_account_id: selectedCategoryId,
       group_id: selectedGroupId,
       allocated_amount: newAmount,
+      cadence: selectedCadence,
       color: selectedColor || DEFAULT_COLOR,
       icon: selectedIcon || selectedAccount?.icon,
       is_active: true
@@ -315,7 +328,7 @@ export default function AddBudgetItemSheet({
             </div>
 
             <div>
-              <Label htmlFor="limitAmount">Monthly Amount*</Label>
+              <Label htmlFor="limitAmount">Budget Amount*</Label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
                 <Input
@@ -327,6 +340,24 @@ export default function AddBudgetItemSheet({
                   className="pl-7"
                 />
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="cadence">Time Period*</Label>
+              <ClickThroughSelect
+                value={selectedCadence}
+                onValueChange={setSelectedCadence}
+                placeholder="Select time period"
+                triggerClassName="hover:bg-slate-50"
+              >
+                <ClickThroughSelectItem value="daily">Daily</ClickThroughSelectItem>
+                <ClickThroughSelectItem value="weekly">Weekly</ClickThroughSelectItem>
+                <ClickThroughSelectItem value="monthly">Monthly</ClickThroughSelectItem>
+                <ClickThroughSelectItem value="yearly">Yearly</ClickThroughSelectItem>
+              </ClickThroughSelect>
+              <p className="text-xs text-muted-foreground mt-1">
+                The amount above represents a {selectedCadence} budget
+              </p>
             </div>
 
             <div>
