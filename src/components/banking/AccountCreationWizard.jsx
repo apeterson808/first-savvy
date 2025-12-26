@@ -1979,25 +1979,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1 mr-4">
-                          <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
-                          <Input
-                            id={`displayName-${account.id}`}
-                            value={formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
-                            onChange={(e) => {
-                              const value = e.target.value;
-                              const suffix = account.last4 && config?.show_suffix ? ` (${account.last4})` : '';
-                              if (suffix && value.endsWith(suffix)) {
-                                const newDisplayName = value.slice(0, -suffix.length);
-                                updateAccountConfiguration(account.id, 'displayName', newDisplayName);
-                              } else if (!suffix) {
-                                updateAccountConfiguration(account.id, 'displayName', value);
-                              }
-                            }}
-                            placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                            className="h-9 mt-1"
-                          />
-                        </div>
+                        <Label
+                          htmlFor={`account-${account.id}`}
+                          className="text-base font-medium cursor-pointer"
+                        >
+                          {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
+                        </Label>
                         <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                           ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
@@ -2005,6 +1992,17 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
                       {isChecked && config && (
                         <div className="mt-4 space-y-3 pl-1">
+                          <div className="flex-1">
+                            <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                            <Input
+                              id={`displayName-${account.id}`}
+                              value={config.displayName}
+                              onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
+                              placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
+                              className="h-9 mt-1"
+                            />
+                          </div>
+
                           <div className="flex items-center justify-between gap-4">
                             <div className="flex gap-4">
                               <div className="flex items-center gap-2">
