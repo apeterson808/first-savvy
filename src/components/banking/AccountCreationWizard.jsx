@@ -747,8 +747,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               account_number_last4: mockAccount.last4,
               external_account_suffix: mockAccount.last4 || null,
               show_account_suffix: config.show_suffix ?? true,
-              start_date: config.startDate || null,
-              go_live_date: config.goLiveDate || null,
               is_active: true
             });
             createdCount++;
@@ -756,8 +754,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             const existingAccount = existingAccounts.find(acc => acc.id === config.existing_account_id);
             const updateData = {
               current_balance: mockAccount.balance,
-              start_date: config.startDate,
-              go_live_date: config.goLiveDate,
               institution_name: mockAccount.institutionName,
               show_account_suffix: config.show_suffix ?? true
             };
