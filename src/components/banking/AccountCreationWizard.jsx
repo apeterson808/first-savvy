@@ -300,6 +300,22 @@ const buildAccountTypeCardsFromTemplates = (templates) => {
   return cards;
 };
 
+const formatAccountDisplayLabel = (displayName, last4, showSuffix) => {
+  if (!displayName || !displayName.trim()) {
+    return '';
+  }
+
+  if (!showSuffix) {
+    return displayName;
+  }
+
+  if (!last4 || last4.trim() === '') {
+    return displayName;
+  }
+
+  return `${displayName} (••${last4})`;
+};
+
 export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -527,7 +543,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             existing_account_id: null,
             startDatePreset: 'last_90',
             startDate: startDate,
-            goLiveDate: today
+            goLiveDate: today,
+            show_suffix: true
           }
         }));
         return [...prev, accountId];
@@ -568,6 +585,16 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         }
       }));
     }
+  };
+
+  const handleSuffixToggle = (accountId, checked) => {
+    setAccountConfigurations(prev => ({
+      ...prev,
+      [accountId]: {
+        ...prev[accountId],
+        show_suffix: checked
+      }
+    }));
   };
 
   const formatAmountField = (fieldName, value, isFocused) => {
@@ -694,21 +721,31 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               current_balance: mockAccount.balance,
               institution_name: mockAccount.institutionName,
               account_number_last4: mockAccount.last4,
+              external_account_suffix: mockAccount.last4 || null,
+              show_account_suffix: config.show_suffix ?? true,
               start_date: config.startDate || null,
               go_live_date: config.goLiveDate || null,
               is_active: true
             });
             createdCount++;
           } else if (config.import_mode === 'existing' && config.existing_account_id) {
+            const existingAccount = existingAccounts.find(acc => acc.id === config.existing_account_id);
+            const updateData = {
+              current_balance: mockAccount.balance,
+              start_date: config.startDate,
+              go_live_date: config.goLiveDate,
+              institution_name: mockAccount.institutionName,
+              show_account_suffix: config.show_suffix ?? true
+            };
+
+            if (mockAccount.last4) {
+              updateData.account_number_last4 = mockAccount.last4;
+              updateData.external_account_suffix = mockAccount.last4;
+            }
+
             await firstsavvy
               .from('accounts')
-              .update({
-                current_balance: mockAccount.balance,
-                start_date: config.startDate,
-                go_live_date: config.goLiveDate,
-                institution_name: mockAccount.institutionName,
-                account_number_last4: mockAccount.last4
-              })
+              .update(updateData)
               .eq('id', config.existing_account_id);
             linkedCount++;
           }
@@ -1946,7 +1983,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                           htmlFor={`account-${account.id}`}
                           className="text-base font-medium cursor-pointer"
                         >
-                          {account.name} ...{account.last4}
+                          {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
                         </Label>
                         <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                           ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -1995,6 +2032,22 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                 />
                               </div>
 
+                              {account.last4 && (
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`showSuffix-${account.id}`}
+                                    checked={config.show_suffix}
+                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
+                                  />
+                                  <Label
+                                    htmlFor={`showSuffix-${account.id}`}
+                                    className="text-sm font-normal cursor-pointer"
+                                  >
+                                    Include last 4 digits in account name
+                                  </Label>
+                                </div>
+                              )}
+
                               <div>
                                 <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
                                 <Select
@@ -2029,24 +2082,42 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                               </div>
                             </>
                           ) : (
-                            <div>
-                              <Label htmlFor={`existing-account-${account.id}`} className="text-sm">Select Existing Account*</Label>
-                              <Select
-                                value={config.existing_account_id || ''}
-                                onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
-                              >
-                                <SelectTrigger id={`existing-account-${account.id}`} className="h-9 mt-1">
-                                  <SelectValue placeholder="Select account" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {existingAccounts.map((acc) => (
-                                    <SelectItem key={acc.id} value={acc.id}>
-                                      {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                            </div>
+                            <>
+                              <div>
+                                <Label htmlFor={`existing-account-${account.id}`} className="text-sm">Select Existing Account*</Label>
+                                <Select
+                                  value={config.existing_account_id || ''}
+                                  onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
+                                >
+                                  <SelectTrigger id={`existing-account-${account.id}`} className="h-9 mt-1">
+                                    <SelectValue placeholder="Select account" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {existingAccounts.map((acc) => (
+                                      <SelectItem key={acc.id} value={acc.id}>
+                                        {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {account.last4 && (
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`showSuffix-existing-${account.id}`}
+                                    checked={config.show_suffix}
+                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
+                                  />
+                                  <Label
+                                    htmlFor={`showSuffix-existing-${account.id}`}
+                                    className="text-sm font-normal cursor-pointer"
+                                  >
+                                    Include last 4 digits in account name
+                                  </Label>
+                                </div>
+                              )}
+                            </>
                           )}
 
                           <div>
