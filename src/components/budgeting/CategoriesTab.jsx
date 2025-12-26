@@ -137,7 +137,11 @@ export default function CategoriesTab() {
     const lastUsed = usage?.lastUsed;
 
     return (
-      <tr key={category.id} className="border-b hover:bg-muted/50">
+      <tr
+        key={category.id}
+        className="border-b hover:bg-muted/50 cursor-pointer"
+        onClick={() => handleAddBudget(category)}
+      >
         <td className="px-4 font-medium">{category.display_name}</td>
         <td className="px-4">
           {everUsed ? (
@@ -153,7 +157,10 @@ export default function CategoriesTab() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleAddBudget(category)}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleAddBudget(category);
+            }}
           >
             <Plus className="h-4 w-4 mr-1" />
             Add
