@@ -96,20 +96,20 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className="border-b hover:bg-muted/50">
-        <td className="py-3 px-4 font-medium">{category.display_name}</td>
-        <td className={`py-3 px-4 text-right ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className="px-4 font-medium">{category.display_name}</td>
+        <td className={`px-4 text-right ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.daily, 2)}
         </td>
-        <td className={`py-3 px-4 text-right ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`px-4 text-right ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.weekly, 2)}
         </td>
-        <td className={`py-3 px-4 text-right ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`px-4 text-right ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.monthly, 2)}
         </td>
-        <td className={`py-3 px-4 text-right ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
+        <td className={`px-4 text-right ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
           {formatCadenceAmount(values.yearly, 0)}
         </td>
-        <td className="py-3 px-4 text-right">
+        <td className="px-4 text-right">
           <div className="flex gap-2 justify-end">
             <Button
               variant="ghost"
@@ -138,18 +138,18 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className="border-b hover:bg-muted/50">
-        <td className="py-3 px-4 font-medium">{category.display_name}</td>
-        <td className="py-3 px-4">
+        <td className="px-4 font-medium">{category.display_name}</td>
+        <td className="px-4">
           {everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
-        <td className="py-3 px-4 text-muted-foreground text-sm">
+        <td className="px-4 text-muted-foreground text-sm">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <td className="py-3 px-4 text-right">
+        <td className="px-4 text-right">
           <Button
             variant="outline"
             size="sm"
@@ -193,19 +193,19 @@ export default function CategoriesTab() {
                     <tr className="border-b bg-muted/30">
                       {renderRow === renderBudgetedCategoryRow ? (
                         <>
-                          <th className="py-3 px-4 text-left font-semibold">Category</th>
-                          <th className="py-3 px-4 text-right font-semibold">Daily</th>
-                          <th className="py-3 px-4 text-right font-semibold">Weekly</th>
-                          <th className="py-3 px-4 text-right font-semibold">Monthly</th>
-                          <th className="py-3 px-4 text-right font-semibold">Yearly</th>
-                          <th className="py-3 px-4 text-right font-semibold">Actions</th>
+                          <th className="px-4 text-left font-semibold">Category</th>
+                          <th className="px-4 text-right font-semibold">Daily</th>
+                          <th className="px-4 text-right font-semibold">Weekly</th>
+                          <th className="px-4 text-right font-semibold">Monthly</th>
+                          <th className="px-4 text-right font-semibold">Yearly</th>
+                          <th className="px-4 text-right font-semibold">Actions</th>
                         </>
                       ) : (
                         <>
-                          <th className="py-3 px-4 text-left font-semibold">Category</th>
-                          <th className="py-3 px-4 text-left font-semibold">Ever Used</th>
-                          <th className="py-3 px-4 text-left font-semibold">Last Used</th>
-                          <th className="py-3 px-4 text-right font-semibold"></th>
+                          <th className="px-4 text-left font-semibold">Category</th>
+                          <th className="px-4 text-left font-semibold">Ever Used</th>
+                          <th className="px-4 text-left font-semibold">Last Used</th>
+                          <th className="px-4 text-right font-semibold"></th>
                         </>
                       )}
                     </tr>
