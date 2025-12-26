@@ -127,6 +127,19 @@ export default function AddBudgetItemSheet({
       return;
     }
 
+    if (!isEditMode) {
+      const existingBudgets = queryClient.getQueryData(['budgets']);
+      const duplicateBudget = existingBudgets?.find(
+        b => b.chart_account_id === selectedCategoryId && b.id !== editingBudget?.id
+      );
+
+      if (duplicateBudget) {
+        const accountName = selectedAccount?.display_name || selectedAccount?.account_detail;
+        toast.error(`A budget already exists for "${accountName}"`);
+        return;
+      }
+    }
+
     if (selectedIcon && selectedIcon !== selectedAccount?.icon) {
       await firstsavvy.supabase.from('user_chart_of_accounts')
         .update({ icon: selectedIcon })
@@ -135,7 +148,6 @@ export default function AddBudgetItemSheet({
     }
 
     const budgetData = {
-      name: selectedAccount?.display_name || selectedAccount?.account_detail || 'Budget Item',
       chart_account_id: selectedCategoryId,
       group_id: selectedGroupId,
       allocated_amount: newAmount,

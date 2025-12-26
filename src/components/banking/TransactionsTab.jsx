@@ -1471,6 +1471,11 @@ For each transaction, return the chart_account_id that best matches. Consider:
                               );
                             }
 
+                            // For refunds, show refund indicator
+                            if (transaction.type === 'income' && transaction.original_type === 'expense') {
+                              return <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>;
+                            }
+
                             // For transfers/credit card payments, show type label (not editable)
                             if (transaction.type === 'transfer') {
                               return <span className="text-xs px-1">Transfer</span>;

@@ -16,7 +16,26 @@ export function useBudgetData() {
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets', profileId],
-    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true }),
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('budgets')
+        .select(`
+          *,
+          chartAccount:user_chart_of_accounts!budgets_chart_account_id_fkey(
+            id,
+            display_name,
+            account_type,
+            account_detail,
+            category,
+            icon,
+            color
+          )
+        `)
+        .eq('is_active', true)
+        .order('order', { ascending: true, nullsFirst: false });
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!activeProfile
   });
 
@@ -67,19 +86,23 @@ export function useBudgetData() {
     const expenseTransactions = currentMonthTransactions.filter(t => t.type === 'expense');
     const incomeTransactions = currentMonthTransactions.filter(t => t.type === 'income');
 
+    const refundTransactions = incomeTransactions.filter(t => t.original_type === 'expense');
+    const regularIncomeTransactions = incomeTransactions.filter(t => t.original_type !== 'expense');
+
     const spendingByCategory = expenseTransactions.reduce((acc, t) => {
       const key = t.chart_account_id || '__uncategorized__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
 
-    const incomeByCategory = incomeTransactions.reduce((acc, t) => {
+    const incomeByCategory = regularIncomeTransactions.reduce((acc, t) => {
       const key = t.chart_account_id || '__uncategorized_income__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
 
-    const totalActualIncome = incomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const totalActualIncome = regularIncomeTransactions.reduce((sum, t) => sum + t.amount, 0);
+    const totalRefunds = refundTransactions.reduce((sum, t) => sum + t.amount, 0);
     const totalSpent = Object.values(spendingByCategory).reduce((sum, amt) => sum + amt, 0);
 
     const incomeGroupIds = new Set(budgetGroups.filter(g => g.type === 'income').map(g => g.id));
@@ -96,12 +119,15 @@ export function useBudgetData() {
       spendingByCategory,
       incomeByCategory,
       totalActualIncome,
+      totalRefunds,
       totalSpent,
       budgetedIncome,
       totalBudgeted,
       remaining: totalBudgeted - totalSpent,
       monthStart,
-      monthEnd
+      monthEnd,
+      refundTransactions,
+      regularIncomeTransactions
     };
   }, [transactions, accounts, budgets, budgetGroups]);
 

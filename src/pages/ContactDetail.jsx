@@ -672,7 +672,7 @@ export default function ContactDetail() {
                         </TableCell>
                         <TableCell className="capitalize">
                           <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>
-                            {transaction.type}
+                            {transaction.type === 'income' && transaction.original_type === 'expense' ? 'refund' : transaction.type}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
