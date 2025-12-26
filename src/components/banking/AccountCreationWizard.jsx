@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Switch } from '@/components/ui/switch';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatLabel } from '../utils/formatters';
@@ -2014,14 +2014,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       }
                                     }}
                                     placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                    className="h-9 flex-1"
+                                    className="h-9 max-w-xs"
                                   />
                                 ) : (
                                   <Select
                                     value={config.existing_account_id || ''}
                                     onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
                                   >
-                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9 flex-1">
+                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9 max-w-xs">
                                       <SelectValue placeholder="Select account" />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -2039,26 +2039,25 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                               </div>
                             </div>
 
-                            <div className="flex items-center justify-between gap-4">
-                              <ToggleGroup
-                                type="single"
-                                value={config.import_mode}
-                                onValueChange={(value) => {
-                                  if (value) updateAccountConfiguration(account.id, 'import_mode', value);
-                                }}
-                                variant="outline"
-                                className="justify-start"
-                              >
-                                <ToggleGroupItem value="new" className="px-4">
-                                  New Account
-                                </ToggleGroupItem>
-                                <ToggleGroupItem value="existing" className="px-4">
-                                  Existing Account
-                                </ToggleGroupItem>
-                              </ToggleGroup>
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2">
+                                <Switch
+                                  id={`import-mode-${account.id}`}
+                                  checked={config.import_mode === 'existing'}
+                                  onCheckedChange={(checked) => {
+                                    updateAccountConfiguration(account.id, 'import_mode', checked ? 'existing' : 'new');
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`import-mode-${account.id}`}
+                                  className="text-sm cursor-pointer whitespace-nowrap"
+                                >
+                                  {config.import_mode === 'existing' ? 'Add to existing account' : 'Create new account'}
+                                </Label>
+                              </div>
 
                               {config.import_mode === 'new' && account.last4 && (
-                                <div className="flex items-center space-x-2">
+                                <div className="flex items-center gap-2">
                                   <Checkbox
                                     id={`showSuffix-${account.id}`}
                                     checked={config.show_suffix}
