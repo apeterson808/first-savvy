@@ -234,7 +234,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         date: transactionDate.toISOString().split('T')[0],
         amount: amount,
         description: incomeTemplate.description,
-        type: 'income',
+        transaction_type: 'income',
         status: status,
         chart_account_id: chartAccount?.id || null
       });
@@ -255,7 +255,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
           date: transactionDate.toISOString().split('T')[0],
           amount: accountData.type === 'credit' ? amount : -amount,
           description: merchant,
-          type: 'expense',
+          transaction_type: 'expense',
           status: status,
           chart_account_id: chartAccount?.id || null
         });
@@ -272,7 +272,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
           date: transactionDate.toISOString().split('T')[0],
           amount: accountData.type === 'credit' ? amount : -amount,
           description: merchant,
-          type: 'expense',
+          transaction_type: 'expense',
           status: status,
           chart_account_id: null
         });
@@ -343,7 +343,7 @@ export async function generateCreditCardPayments(accountData, userId, profileId,
         date: currentDate.toISOString().split('T')[0],
         amount: -amount,
         description: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
-        type: 'transfer',
+        transaction_type: 'transfer',
         status: status,
         chart_account_id: null,
         transfer_pair_id: null
@@ -399,7 +399,7 @@ export async function createMatchedTransferTransactions(accountData, matchingEnt
       date: entry.transaction_date,
       amount: accountData.type === 'credit' ? -entry.amount : entry.amount,
       description: `PAYMENT RECEIVED - ${entry.description_pattern}`,
-      type: 'transfer',
+      transaction_type: 'transfer',
       status: 'posted',
       chart_account_id: null,
       transfer_pair_id: null

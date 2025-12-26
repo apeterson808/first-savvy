@@ -38,7 +38,6 @@ import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validatio
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatTransactionDescription } from '../utils/formatters';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
-import CategoryDropdown from '../common/CategoryDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
