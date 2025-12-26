@@ -1979,12 +1979,25 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                     />
                     <div className="flex-1">
                       <div className="flex items-center justify-between">
-                        <Label
-                          htmlFor={`account-${account.id}`}
-                          className="text-base font-medium cursor-pointer"
-                        >
-                          {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
-                        </Label>
+                        <div className="flex-1 mr-4">
+                          <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                          <Input
+                            id={`displayName-${account.id}`}
+                            value={formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              const suffix = account.last4 && config?.show_suffix ? ` (${account.last4})` : '';
+                              if (suffix && value.endsWith(suffix)) {
+                                const newDisplayName = value.slice(0, -suffix.length);
+                                updateAccountConfiguration(account.id, 'displayName', newDisplayName);
+                              } else if (!suffix) {
+                                updateAccountConfiguration(account.id, 'displayName', value);
+                              }
+                            }}
+                            placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
+                            className="h-9 mt-1"
+                          />
+                        </div>
                         <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                           ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
@@ -1992,61 +2005,53 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
                       {isChecked && config && (
                         <div className="mt-4 space-y-3 pl-1">
-                          <div className="flex gap-4 mb-3">
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                id={`new-${account.id}`}
-                                checked={config.import_mode === 'new'}
-                                onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'new')}
-                                className="w-4 h-4"
-                              />
-                              <Label htmlFor={`new-${account.id}`} className="text-sm font-medium cursor-pointer">
-                                Create New Account
-                              </Label>
+                          <div className="flex items-center justify-between gap-4">
+                            <div className="flex gap-4">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  id={`new-${account.id}`}
+                                  checked={config.import_mode === 'new'}
+                                  onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'new')}
+                                  className="w-4 h-4"
+                                />
+                                <Label htmlFor={`new-${account.id}`} className="text-sm font-medium cursor-pointer">
+                                  Create New Account
+                                </Label>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="radio"
+                                  id={`existing-${account.id}`}
+                                  checked={config.import_mode === 'existing'}
+                                  onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'existing')}
+                                  className="w-4 h-4"
+                                />
+                                <Label htmlFor={`existing-${account.id}`} className="text-sm font-medium cursor-pointer">
+                                  Import to Existing Account
+                                </Label>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="radio"
-                                id={`existing-${account.id}`}
-                                checked={config.import_mode === 'existing'}
-                                onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'existing')}
-                                className="w-4 h-4"
-                              />
-                              <Label htmlFor={`existing-${account.id}`} className="text-sm font-medium cursor-pointer">
-                                Import to Existing Account
-                              </Label>
-                            </div>
+
+                            {account.last4 && (
+                              <div className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`showSuffix-${account.id}`}
+                                  checked={config.show_suffix}
+                                  onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
+                                />
+                                <Label
+                                  htmlFor={`showSuffix-${account.id}`}
+                                  className="text-sm font-normal cursor-pointer whitespace-nowrap"
+                                >
+                                  Include last 4 digits
+                                </Label>
+                              </div>
+                            )}
                           </div>
 
                           {config.import_mode === 'new' ? (
                             <>
-                              <div>
-                                <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
-                                <Input
-                                  id={`displayName-${account.id}`}
-                                  value={config.displayName}
-                                  onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                                  placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                  className="h-9 mt-1"
-                                />
-                              </div>
-
-                              {account.last4 && (
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`showSuffix-${account.id}`}
-                                    checked={config.show_suffix}
-                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
-                                  />
-                                  <Label
-                                    htmlFor={`showSuffix-${account.id}`}
-                                    className="text-sm font-normal cursor-pointer"
-                                  >
-                                    Include last 4 digits in account name
-                                  </Label>
-                                </div>
-                              )}
 
                               <div>
                                 <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
@@ -2101,22 +2106,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   </SelectContent>
                                 </Select>
                               </div>
-
-                              {account.last4 && (
-                                <div className="flex items-center space-x-2">
-                                  <Checkbox
-                                    id={`showSuffix-existing-${account.id}`}
-                                    checked={config.show_suffix}
-                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
-                                  />
-                                  <Label
-                                    htmlFor={`showSuffix-existing-${account.id}`}
-                                    className="text-sm font-normal cursor-pointer"
-                                  >
-                                    Include last 4 digits in account name
-                                  </Label>
-                                </div>
-                              )}
                             </>
                           )}
 
