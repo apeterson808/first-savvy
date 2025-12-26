@@ -2045,7 +2045,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       </span>
                                     )}
                                   </div>
-                                  <div className="sm:w-auto w-full">
+                                  <div className="sm:w-[200px] w-full">
                                     <Select
                                       value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
                                       onValueChange={(value) => {
@@ -2055,7 +2055,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                         }
                                       }}
                                     >
-                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9 sm:w-auto w-full">
+                                      <SelectTrigger id={`account-detail-${account.id}`} className="h-9 w-full">
                                         <SelectValue placeholder="Select detail" />
                                       </SelectTrigger>
                                       <SelectContent>
