@@ -23,7 +23,26 @@ export default function Budgeting() {
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [editingGroup, setEditingGroup] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab') || 'overview';
+  });
+
+  React.useEffect(() => {
+    const handleUrlChange = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tab = urlParams.get('tab') || 'overview';
+      setActiveTab(tab);
+    };
+
+    const interval = setInterval(handleUrlChange, 100);
+    window.addEventListener('popstate', handleUrlChange);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('popstate', handleUrlChange);
+    };
+  }, []);
 
   React.useEffect(() => {
     const handleProfileSwitch = () => {
