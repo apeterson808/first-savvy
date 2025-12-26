@@ -2028,22 +2028,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                               </div>
                               <div className="mt-1">
                                 {config.import_mode === 'new' ? (
-                                  <Input
-                                    id={`displayName-${account.id}`}
-                                    value={formatAccountDisplayLabel(config.displayName, account.last4, config.show_suffix)}
-                                    onChange={(e) => {
-                                      const value = e.target.value;
-                                      const suffix = account.last4 && config.show_suffix ? ` (${account.last4})` : '';
-                                      if (suffix && value.endsWith(suffix)) {
-                                        const newDisplayName = value.slice(0, -suffix.length);
-                                        updateAccountConfiguration(account.id, 'displayName', newDisplayName);
-                                      } else if (!suffix) {
-                                        updateAccountConfiguration(account.id, 'displayName', value);
-                                      }
-                                    }}
-                                    placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                    className="h-9"
-                                  />
+                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+                                    <input
+                                      id={`displayName-${account.id}`}
+                                      value={config.displayName || ''}
+                                      onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
+                                      onFocus={(e) => e.target.select()}
+                                      placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
+                                      className="flex-1 bg-transparent outline-none text-sm"
+                                    />
+                                    {account.last4 && config.show_suffix && (
+                                      <span className="text-muted-foreground text-sm pointer-events-none ml-1">
+                                        ({account.last4})
+                                      </span>
+                                    )}
+                                  </div>
                                 ) : (
                                   <Select
                                     value={config.existing_account_id || ''}
