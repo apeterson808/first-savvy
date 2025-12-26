@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { formatLabel } from '../utils/formatters';
@@ -1994,24 +1995,44 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                         config && (
                           <div className="space-y-3">
                             <div>
-                              <Label htmlFor={`displayName-${account.id}`} className="text-sm">Display Name*</Label>
+                              <Label htmlFor={`displayName-${account.id}`} className="text-sm">
+                                {config.import_mode === 'new' ? 'Display Name*' : 'Select Account*'}
+                              </Label>
                               <div className="flex items-center gap-3 mt-1">
-                                <Input
-                                  id={`displayName-${account.id}`}
-                                  value={formatAccountDisplayLabel(config.displayName, account.last4, config.show_suffix)}
-                                  onChange={(e) => {
-                                    const value = e.target.value;
-                                    const suffix = account.last4 && config.show_suffix ? ` (${account.last4})` : '';
-                                    if (suffix && value.endsWith(suffix)) {
-                                      const newDisplayName = value.slice(0, -suffix.length);
-                                      updateAccountConfiguration(account.id, 'displayName', newDisplayName);
-                                    } else if (!suffix) {
-                                      updateAccountConfiguration(account.id, 'displayName', value);
-                                    }
-                                  }}
-                                  placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                  className="h-9 flex-1"
-                                />
+                                {config.import_mode === 'new' ? (
+                                  <Input
+                                    id={`displayName-${account.id}`}
+                                    value={formatAccountDisplayLabel(config.displayName, account.last4, config.show_suffix)}
+                                    onChange={(e) => {
+                                      const value = e.target.value;
+                                      const suffix = account.last4 && config.show_suffix ? ` (${account.last4})` : '';
+                                      if (suffix && value.endsWith(suffix)) {
+                                        const newDisplayName = value.slice(0, -suffix.length);
+                                        updateAccountConfiguration(account.id, 'displayName', newDisplayName);
+                                      } else if (!suffix) {
+                                        updateAccountConfiguration(account.id, 'displayName', value);
+                                      }
+                                    }}
+                                    placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
+                                    className="h-9 flex-1"
+                                  />
+                                ) : (
+                                  <Select
+                                    value={config.existing_account_id || ''}
+                                    onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
+                                  >
+                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9 flex-1">
+                                      <SelectValue placeholder="Select account" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {existingAccounts.map((acc) => (
+                                        <SelectItem key={acc.id} value={acc.id}>
+                                          {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
                                 <span className={`text-sm font-medium whitespace-nowrap ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
                                   ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                 </span>
@@ -2019,53 +2040,41 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                             </div>
 
                             <div className="flex items-center justify-between gap-4">
-                            <div className="flex gap-4">
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="radio"
-                                  id={`new-${account.id}`}
-                                  checked={config.import_mode === 'new'}
-                                  onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'new')}
-                                  className="w-4 h-4"
-                                />
-                                <Label htmlFor={`new-${account.id}`} className="text-sm font-medium cursor-pointer">
-                                  Create New Account
-                                </Label>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="radio"
-                                  id={`existing-${account.id}`}
-                                  checked={config.import_mode === 'existing'}
-                                  onChange={() => updateAccountConfiguration(account.id, 'import_mode', 'existing')}
-                                  className="w-4 h-4"
-                                />
-                                <Label htmlFor={`existing-${account.id}`} className="text-sm font-medium cursor-pointer">
-                                  Import to Existing Account
-                                </Label>
-                              </div>
+                              <ToggleGroup
+                                type="single"
+                                value={config.import_mode}
+                                onValueChange={(value) => {
+                                  if (value) updateAccountConfiguration(account.id, 'import_mode', value);
+                                }}
+                                variant="outline"
+                                className="justify-start"
+                              >
+                                <ToggleGroupItem value="new" className="px-4">
+                                  New Account
+                                </ToggleGroupItem>
+                                <ToggleGroupItem value="existing" className="px-4">
+                                  Existing Account
+                                </ToggleGroupItem>
+                              </ToggleGroup>
+
+                              {config.import_mode === 'new' && account.last4 && (
+                                <div className="flex items-center space-x-2">
+                                  <Checkbox
+                                    id={`showSuffix-${account.id}`}
+                                    checked={config.show_suffix}
+                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
+                                  />
+                                  <Label
+                                    htmlFor={`showSuffix-${account.id}`}
+                                    className="text-sm font-normal cursor-pointer whitespace-nowrap"
+                                  >
+                                    Include last 4 digits
+                                  </Label>
+                                </div>
+                              )}
                             </div>
 
-                            {account.last4 && (
-                              <div className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`showSuffix-${account.id}`}
-                                  checked={config.show_suffix}
-                                  onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
-                                />
-                                <Label
-                                  htmlFor={`showSuffix-${account.id}`}
-                                  className="text-sm font-normal cursor-pointer whitespace-nowrap"
-                                >
-                                  Include last 4 digits
-                                </Label>
-                              </div>
-                            )}
-                          </div>
-
-                          {config.import_mode === 'new' ? (
-                            <>
-
+                            {config.import_mode === 'new' && (
                               <div>
                                 <Label htmlFor={`account-detail-${account.id}`} className="text-sm">Account Detail</Label>
                                 <Select
@@ -2098,104 +2107,82 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   </SelectContent>
                                 </Select>
                               </div>
-                            </>
-                          ) : (
-                            <>
-                              <div>
-                                <Label htmlFor={`existing-account-${account.id}`} className="text-sm">Select Existing Account*</Label>
-                                <Select
-                                  value={config.existing_account_id || ''}
-                                  onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
-                                >
-                                  <SelectTrigger id={`existing-account-${account.id}`} className="h-9 mt-1">
-                                    <SelectValue placeholder="Select account" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {existingAccounts.map((acc) => (
-                                      <SelectItem key={acc.id} value={acc.id}>
-                                        {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </>
-                          )}
-
-                          <div>
-                            <Label className="text-sm">Start Date*</Label>
-                            <div className="flex gap-2 mt-1">
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={config.startDatePreset === 'last_30' ? 'default' : 'outline'}
-                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_30')}
-                                className="flex-1 h-9"
-                              >
-                                Last 30 days
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={config.startDatePreset === 'last_60' ? 'default' : 'outline'}
-                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_60')}
-                                className="flex-1 h-9"
-                              >
-                                Last 60 days
-                              </Button>
-                              <Button
-                                type="button"
-                                size="sm"
-                                variant={config.startDatePreset === 'last_90' ? 'default' : 'outline'}
-                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_90')}
-                                className="flex-1 h-9"
-                              >
-                                Last 90 days
-                              </Button>
-                            </div>
-                            {config.startDatePreset === 'custom' && (
-                              <Input
-                                type="date"
-                                value={config.startDate}
-                                onChange={(e) => updateAccountConfiguration(account.id, 'startDate', e.target.value)}
-                                className="h-9 mt-2"
-                              />
                             )}
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant={config.startDatePreset === 'custom' ? 'default' : 'outline'}
-                              onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'custom')}
-                              className="w-full mt-2 h-9"
-                            >
-                              Custom date
-                            </Button>
-                          </div>
 
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
-                              <TooltipProvider>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                                  </TooltipTrigger>
-                                  <TooltipContent className="max-w-xs">
-                                    <p className="text-xs">
-                                      Transactions before this date will be posted automatically. After this date, transactions will remain pending.
-                                    </p>
-                                  </TooltipContent>
-                                </Tooltip>
-                              </TooltipProvider>
+                            <div>
+                              <Label className="text-sm">Start Date*</Label>
+                              <div className="flex gap-2 mt-1">
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={config.startDatePreset === 'last_30' ? 'default' : 'outline'}
+                                  onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_30')}
+                                  className="flex-1 h-9"
+                                >
+                                  Last 30 days
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={config.startDatePreset === 'last_60' ? 'default' : 'outline'}
+                                  onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_60')}
+                                  className="flex-1 h-9"
+                                >
+                                  Last 60 days
+                                </Button>
+                                <Button
+                                  type="button"
+                                  size="sm"
+                                  variant={config.startDatePreset === 'last_90' ? 'default' : 'outline'}
+                                  onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'last_90')}
+                                  className="flex-1 h-9"
+                                >
+                                  Last 90 days
+                                </Button>
+                              </div>
+                              {config.startDatePreset === 'custom' && (
+                                <Input
+                                  type="date"
+                                  value={config.startDate}
+                                  onChange={(e) => updateAccountConfiguration(account.id, 'startDate', e.target.value)}
+                                  className="h-9 mt-2"
+                                />
+                              )}
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant={config.startDatePreset === 'custom' ? 'default' : 'outline'}
+                                onClick={() => updateAccountConfiguration(account.id, 'startDatePreset', 'custom')}
+                                className="w-full mt-2 h-9"
+                              >
+                                Custom date
+                              </Button>
                             </div>
-                            <Input
-                              id={`goLiveDate-${account.id}`}
-                              type="date"
-                              value={config.goLiveDate}
-                              onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
-                              className="h-9 mt-1"
-                            />
-                          </div>
+
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs">
+                                      <p className="text-xs">
+                                        Transactions before this date will be posted automatically. After this date, transactions will remain pending.
+                                      </p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              </div>
+                              <Input
+                                id={`goLiveDate-${account.id}`}
+                                type="date"
+                                value={config.goLiveDate}
+                                onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
+                                className="h-9 mt-1"
+                              />
+                            </div>
                         </div>
                         )
                       )}
