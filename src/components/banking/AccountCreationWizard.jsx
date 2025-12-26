@@ -2017,12 +2017,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                               <div>
                                 <div className="flex items-center justify-between mb-2">
                                   <div className="flex items-center gap-3 flex-1">
-                                    <div className="flex-[2]">
+                                    <div className="flex-[3]">
                                       <Label htmlFor={`displayName-${account.id}`} className="text-sm">
                                         Display Name*
                                       </Label>
                                     </div>
-                                    <div className="flex-1">
+                                    <div className="flex-[2]">
                                       <Label htmlFor={`account-detail-${account.id}`} className="text-sm">
                                         Account Detail
                                       </Label>
@@ -2033,7 +2033,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                   </span>
                                 </div>
                                 <div className="flex gap-3">
-                                  <div className="flex-[2] min-w-0">
+                                  <div className="flex-[3] min-w-0">
                                     <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
                                       <input
                                         id={`displayName-${account.id}`}
@@ -2051,7 +2051,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                       )}
                                     </div>
                                   </div>
-                                  <div className="flex-1">
+                                  <div className="flex-[2]">
                                     <Select
                                       value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
                                       onValueChange={(value) => {
