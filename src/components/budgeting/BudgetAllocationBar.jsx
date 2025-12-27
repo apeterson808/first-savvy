@@ -89,8 +89,8 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const allSegments = unallocatedSegment ? [...budgetSegments, unallocatedSegment] : budgetSegments;
 
   return (
-    <div className="border border-slate-200 rounded-lg p-5 bg-white shadow-sm mb-4">
-      <div className="flex items-center justify-between mb-4">
+    <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm mb-4">
+      <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
           Budget Allocation
         </p>
@@ -98,7 +98,7 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
       <TooltipProvider delayDuration={100}>
         <div className="relative">
-          <div className="flex w-full h-14 rounded-lg overflow-hidden shadow-sm border border-slate-200">
+          <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
           {allSegments.map((segment, index) => {
             const Icon = segment.icon && ICON_MAP[segment.icon];
             const isHovered = hoveredCategory === segment.id;
@@ -119,7 +119,7 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
                     onMouseLeave={() => setHoveredCategory(null)}
                   >
                     {segment.percentage > 5 && Icon && (
-                      <Icon className="w-5 h-5 text-white/90 drop-shadow" />
+                      <Icon className="w-4 h-4 text-white/90 drop-shadow" />
                     )}
                   </div>
                 </TooltipTrigger>
@@ -160,17 +160,18 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
               className="absolute top-full left-0 -translate-x-1/2 flex flex-col items-center"
               style={{ left: `${expensePercentage}%` }}
             >
-              <div className="w-0.5 h-4 bg-slate-400" />
-              <div className="text-xs text-slate-600 whitespace-nowrap font-medium">
-                ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                <span className="text-slate-500 font-normal ml-1">
-                  {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+              <div className="w-px h-3 bg-slate-600" />
+              <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
+                <span className="font-medium">
+                  ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
+                {' '}
+                {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
               </div>
             </div>
           )}
         </div>
-        <div className="h-10" />
+        <div className="h-8" />
       </TooltipProvider>
     </div>
   );
