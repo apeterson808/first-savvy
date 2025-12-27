@@ -70,7 +70,7 @@ export default function InlineEditableAmount({
 
   if (isEditing) {
     return (
-      <td className={`px-4 text-right ${isActiveCadence ? 'font-semibold' : 'text-muted-foreground'}`}>
+      <td className="text-right">
         <input
           ref={inputRef}
           type="text"
@@ -78,7 +78,9 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="w-full text-right bg-blue-100 border border-blue-400 px-0 py-0 focus:outline-none focus:bg-blue-50 tabular-nums"
+          className={`w-full text-right bg-blue-50 px-4 py-0 focus:outline-none focus:bg-blue-100 tabular-nums border-0 ${
+            isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
+          }`}
         />
       </td>
     );
