@@ -12,9 +12,9 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import AppearancePicker from '@/components/common/AppearancePicker';
 import { toast } from 'sonner';
 
@@ -36,6 +36,7 @@ export default function AddBudgetItemSheet({
   const [selectedIcon, setSelectedIcon] = useState('');
   const [selectedCadence, setSelectedCadence] = useState('monthly');
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -147,6 +148,11 @@ export default function AddBudgetItemSheet({
 
   const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
 
+  const filteredCategories = availableCategories.filter(cat => {
+    const name = cat.display_name || cat.account_detail || '';
+    return name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
   return (
     <Sheet open={open} onOpenChange={(isOpen) => {
       if (!isOpen) resetForm();
@@ -160,7 +166,10 @@ export default function AddBudgetItemSheet({
         <form onSubmit={handleSubmit} className="space-y-4 py-4 flex-1 overflow-y-auto">
           <div>
             <Label htmlFor="category">Category*</Label>
-            <Popover open={categoryDropdownOpen} onOpenChange={setCategoryDropdownOpen}>
+            <Popover open={categoryDropdownOpen} onOpenChange={(isOpen) => {
+              setCategoryDropdownOpen(isOpen);
+              if (!isOpen) setSearchQuery('');
+            }}>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
@@ -175,32 +184,48 @@ export default function AddBudgetItemSheet({
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search categories..." />
-                  <CommandList className="max-h-[300px]">
-                    <CommandEmpty>No category found.</CommandEmpty>
-                    <CommandGroup>
-                      {availableCategories.map((cat) => (
-                        <CommandItem
-                          key={cat.id}
-                          value={cat.display_name || cat.account_detail}
-                          onSelect={() => {
-                            setSelectedCategoryId(cat.id);
-                            setCategoryDropdownOpen(false);
-                          }}
-                        >
-                          <Check
+                <div className="flex flex-col">
+                  <Input
+                    placeholder="Search categories..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="rounded-none border-x-0 border-t-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                    autoFocus
+                  />
+                  <ScrollArea className="h-[300px]">
+                    {filteredCategories.length === 0 ? (
+                      <div className="py-6 text-center text-sm text-muted-foreground">
+                        No category found.
+                      </div>
+                    ) : (
+                      <div className="p-1">
+                        {filteredCategories.map((cat) => (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategoryId(cat.id);
+                              setCategoryDropdownOpen(false);
+                              setSearchQuery('');
+                            }}
                             className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedCategoryId === cat.id ? "opacity-100" : "opacity-0"
+                              "w-full flex items-center px-2 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                              selectedCategoryId === cat.id && "bg-accent"
                             )}
-                          />
-                          {cat.display_name || cat.account_detail}
-                        </CommandItem>
-                      ))}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedCategoryId === cat.id ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {cat.display_name || cat.account_detail}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </ScrollArea>
+                </div>
               </PopoverContent>
             </Popover>
           </div>
