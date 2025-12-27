@@ -78,8 +78,7 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="w-full text-right bg-blue-50 border-2 border-blue-500 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-600 tabular-nums"
-          style={{ minWidth: '100px' }}
+          className="w-full text-right bg-blue-100 border border-blue-400 px-0 py-0 focus:outline-none focus:bg-blue-50 tabular-nums"
         />
       </td>
     );
