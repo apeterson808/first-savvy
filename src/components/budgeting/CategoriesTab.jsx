@@ -298,7 +298,7 @@ export default function CategoriesTab() {
                     {isBudgetedSection ? (
                       <>
                         <th
-                          className="py-2 px-4 text-left font-bold w-[20%] cursor-pointer hover:bg-slate-100"
+                          className="py-2 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-100"
                           onClick={() => toggleSection(sectionKey)}
                         >
                           <div className="flex items-center gap-2">
@@ -307,11 +307,11 @@ export default function CategoriesTab() {
                             <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-normal w-[16%]">Daily</th>
-                        <th className="py-2 px-4 text-left font-normal w-[16%]">Weekly</th>
-                        <th className="py-2 px-4 text-left font-bold w-[16%] bg-blue-100/70">Monthly</th>
-                        <th className="py-2 px-4 text-left font-normal w-[16%]">Yearly</th>
-                        <th className="py-2 px-4 text-right font-bold w-[16%]">Action</th>
+                        <th className="py-2 px-4 text-left font-normal w-[14%]">Daily</th>
+                        <th className="py-2 px-4 text-left font-normal w-[14%]">Weekly</th>
+                        <th className="py-2 px-4 text-left font-bold w-[14%] bg-blue-100/70">Monthly</th>
+                        <th className="py-2 px-4 text-left font-normal w-[14%]">Yearly</th>
+                        <th className="py-2 px-4 text-right font-bold w-[14%]">Action</th>
                       </>
                     ) : (
                       <>
