@@ -20,6 +20,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { convertCadence } from '@/utils/cadenceUtils';
 
 const ICON_MAP = {
   Home, House, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
@@ -39,12 +47,21 @@ const ICON_MAP = {
 
 export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
+  const [selectedCadence, setSelectedCadence] = useState('monthly');
 
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
 
-  const totalExpenseBudgeted = expenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
-  const totalIncomeBudgeted = incomeBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+  const totalExpenseBudgeted = expenseBudgets.reduce((sum, b) => {
+    const convertedAmount = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', selectedCadence);
+    return sum + convertedAmount;
+  }, 0);
+
+  const totalIncomeBudgeted = incomeBudgets.reduce((sum, b) => {
+    const convertedAmount = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', selectedCadence);
+    return sum + convertedAmount;
+  }, 0);
+
   const unallocated = Math.max(0, totalIncomeBudgeted - totalExpenseBudgeted);
 
   if (totalExpenseBudgeted === 0 || expenseBudgets.length === 0) {
@@ -54,14 +71,17 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const totalForBar = totalIncomeBudgeted > 0 ? totalIncomeBudgeted : totalExpenseBudgeted;
 
   const budgetSegments = expenseBudgets
-    .map(budget => ({
-      id: budget.id,
-      name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unknown',
-      amount: budget.allocated_amount || 0,
-      color: budget.chartAccount?.color || '#64748b',
-      icon: budget.chartAccount?.icon,
-      percentage: ((budget.allocated_amount || 0) / totalForBar) * 100
-    }))
+    .map(budget => {
+      const convertedAmount = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', selectedCadence);
+      return {
+        id: budget.id,
+        name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unknown',
+        amount: convertedAmount,
+        color: budget.chartAccount?.color || '#64748b',
+        icon: budget.chartAccount?.icon,
+        percentage: (convertedAmount / totalForBar) * 100
+      };
+    })
     .sort((a, b) => b.amount - a.amount);
 
   const unallocatedSegment = unallocated > 0 ? {
@@ -75,15 +95,35 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
   const allSegments = unallocatedSegment ? [...budgetSegments, unallocatedSegment] : budgetSegments;
 
+  const cadenceLabels = {
+    daily: 'Daily',
+    weekly: 'Weekly',
+    monthly: 'Monthly',
+    yearly: 'Yearly'
+  };
+
   return (
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm mb-4">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold text-slate-700">
           Budget Allocation
         </h3>
-        <span className="text-xs text-slate-500">
-          ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Total Income
-        </span>
+        <div className="flex items-center gap-3">
+          <Select value={selectedCadence} onValueChange={setSelectedCadence}>
+            <SelectTrigger className="h-7 w-[110px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="daily">Daily</SelectItem>
+              <SelectItem value="weekly">Weekly</SelectItem>
+              <SelectItem value="monthly">Monthly</SelectItem>
+              <SelectItem value="yearly">Yearly</SelectItem>
+            </SelectContent>
+          </Select>
+          <span className="text-xs text-slate-500">
+            ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Total Income
+          </span>
+        </div>
       </div>
 
       <TooltipProvider delayDuration={100}>
