@@ -8,7 +8,8 @@ export default function InlineEditableAmount({
   isActiveCadence,
   onUpdate,
   isLoading = false,
-  hasBorder = false
+  hasBorder = false,
+  isMonthlyColumn = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -71,7 +72,7 @@ export default function InlineEditableAmount({
 
   if (isEditing) {
     return (
-      <td className={`text-right ${hasBorder ? 'border-r' : ''}`}>
+      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-blue-50/50' : ''}`}>
         <input
           ref={inputRef}
           type="text"
@@ -79,7 +80,7 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className={`w-full text-right bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0 ${
+          className={`w-full text-left bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0 ${
             isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
           }`}
         />
@@ -89,13 +90,13 @@ export default function InlineEditableAmount({
 
   return (
     <td
-      className={`px-4 text-right tabular-nums cursor-pointer hover:bg-muted/20 transition-colors ${
+      className={`px-4 text-left tabular-nums cursor-pointer hover:bg-slate-50/70 transition-colors ${
         isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
-      } ${isLoading ? 'opacity-50' : ''} ${hasBorder ? 'border-r' : ''}`}
+      } ${isLoading ? 'opacity-50' : ''} ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-blue-50/50' : ''}`}
       onClick={handleClick}
     >
       {isLoading ? (
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           <span>{formatCadenceAmount(value, 2)}</span>
         </div>

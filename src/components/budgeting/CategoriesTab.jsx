@@ -136,8 +136,8 @@ export default function CategoriesTab() {
     const isUpdating = updatingBudgetId === budget.id;
 
     return (
-      <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-        <td className="px-4 font-medium border-r">{category.display_name}</td>
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+        <td className="px-4 font-medium border-r border-slate-100">{category.display_name}</td>
         <InlineEditableAmount
           value={values.daily}
           cadence="daily"
@@ -161,6 +161,7 @@ export default function CategoriesTab() {
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
           hasBorder={true}
+          isMonthlyColumn={true}
         />
         <InlineEditableAmount
           value={values.yearly}
@@ -170,24 +171,6 @@ export default function CategoriesTab() {
           isLoading={isUpdating}
           hasBorder={true}
         />
-        <td className="px-4 text-right border-r">
-          <div className="flex gap-2 justify-end">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleEditBudget(budget)}
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleDeleteBudget(budget.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
-          </div>
-        </td>
       </tr>
     );
   };
@@ -198,19 +181,19 @@ export default function CategoriesTab() {
     const lastUsed = usage?.lastUsed;
 
     return (
-      <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-        <td className="px-4 font-medium border-r">{category.display_name}</td>
-        <td className="px-4 border-r">
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+        <td className="px-4 font-medium border-r border-slate-200">{category.display_name}</td>
+        <td className="px-4 border-r border-slate-200">
           {everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
-        <td className="px-4 text-muted-foreground text-sm border-r">
+        <td className="px-4 text-muted-foreground text-sm border-r border-slate-200">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <td className="px-4 text-right border-r">
+        <td className="px-4 text-right">
           <Button
             variant="outline"
             size="sm"
@@ -224,14 +207,34 @@ export default function CategoriesTab() {
     );
   };
 
+  const calculateTotals = (categories) => {
+    return categories.reduce((totals, category) => {
+      const budget = getBudgetForCategory(category.id);
+      if (!budget) return totals;
+
+      const cadence = budget.cadence || 'monthly';
+      const amount = budget.allocated_amount || 0;
+      const values = getAllCadenceValues(amount, cadence);
+
+      return {
+        daily: totals.daily + values.daily,
+        weekly: totals.weekly + values.weekly,
+        monthly: totals.monthly + values.monthly,
+        yearly: totals.yearly + values.yearly
+      };
+    }, { daily: 0, weekly: 0, monthly: 0, yearly: 0 });
+  };
+
   const renderSection = (title, categories, sectionKey, renderRow, emptyMessage) => {
     const isCollapsed = collapsedSections[sectionKey];
     const count = categories.length;
+    const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
+    const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
 
     return (
       <div className="mb-6">
         <div
-          className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted"
+          className="flex items-center justify-between p-4 bg-slate-100/60 rounded-lg cursor-pointer hover:bg-slate-100"
           onClick={() => toggleSection(sectionKey)}
         >
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -251,28 +254,36 @@ export default function CategoriesTab() {
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
                   <thead>
-                    <tr className="border-b-2 bg-muted/50">
-                      {renderRow === renderBudgetedCategoryRow ? (
+                    <tr className="border-b-2 border-slate-200 bg-slate-100/60">
+                      {isBudgetedSection ? (
                         <>
-                          <th className="py-3 px-4 text-left font-bold border-r w-[25%]">Category</th>
-                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Daily</th>
-                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Weekly</th>
-                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Monthly</th>
-                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Yearly</th>
-                          <th className="py-3 px-4 text-right font-bold border-r w-[19%]">Actions</th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[25%]">Category</th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Daily</th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Weekly</th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[18.75%] bg-blue-50/50">Monthly</th>
+                          <th className="py-3 px-4 text-left font-bold w-[18.75%]">Yearly</th>
                         </>
                       ) : (
                         <>
-                          <th className="py-3 px-4 text-left font-bold border-r w-[40%]">Category</th>
-                          <th className="py-3 px-4 text-left font-bold border-r w-[20%]">Ever Used</th>
-                          <th className="py-3 px-4 text-left font-bold border-r w-[20%]">Last Used</th>
-                          <th className="py-3 px-4 text-right font-bold border-r w-[20%]"></th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[40%]">Category</th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Ever Used</th>
+                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Last Used</th>
+                          <th className="py-3 px-4 text-right font-bold w-[20%]"></th>
                         </>
                       )}
                     </tr>
                   </thead>
                   <tbody>
                     {categories.map((category, index) => renderRow(category, index))}
+                    {totals && (
+                      <tr className="border-t-2 border-slate-200 bg-slate-100/60 font-bold">
+                        <td className="px-4 py-3 border-r border-slate-200">Total</td>
+                        <td className="px-4 py-3 text-left border-r border-slate-200">${totals.daily.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-left border-r border-slate-200">${totals.weekly.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-left border-r border-slate-200 bg-blue-50/50">${totals.monthly.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-left">${totals.yearly.toFixed(2)}</td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -298,7 +309,7 @@ export default function CategoriesTab() {
     <div className="space-y-8">
       <Card>
         <CardHeader>
-          <CardTitle>Categories</CardTitle>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
         </CardHeader>
         <CardContent>
           {renderSection(
