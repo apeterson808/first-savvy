@@ -77,14 +77,14 @@ export default function SankeyCashFlow({ budgets }) {
   }
 
   const width = 800;
-  const height = Math.max(300, Math.max(incomeNodes.length, expenseNodes.length) * 40 + 80);
-  const padding = { top: 40, bottom: 40, left: 20, right: 20 };
+  const height = Math.max(250, Math.max(incomeNodes.length, expenseNodes.length) * 25 + 50);
+  const padding = { top: 25, bottom: 25, left: 20, right: 20 };
 
   const leftX = padding.left + 120;
   const centerX = width / 2;
   const rightX = width - padding.right - 120;
   const nodeWidth = 12;
-  const gap = 8;
+  const gap = 5;
 
   const usableHeight = height - padding.top - padding.bottom;
 
@@ -94,8 +94,8 @@ export default function SankeyCashFlow({ budgets }) {
 
   const positionedIncomeNodes = incomeNodes.map(node => {
     const nodeHeight = totalIncome > 0
-      ? Math.max(20, (node.amount / totalIncome) * leftAvailableHeight)
-      : 20;
+      ? Math.max(15, (node.amount / totalIncome) * leftAvailableHeight)
+      : 15;
     const positioned = { ...node, y: leftY, height: nodeHeight };
     leftY += nodeHeight + gap;
     return positioned;
@@ -111,8 +111,8 @@ export default function SankeyCashFlow({ budgets }) {
 
   const positionedExpenseNodes = expenseNodes.map(node => {
     const nodeHeight = allExpenses > 0
-      ? Math.max(20, (node.amount / allExpenses) * rightAvailableHeight)
-      : 20;
+      ? Math.max(15, (node.amount / allExpenses) * rightAvailableHeight)
+      : 15;
     const positioned = { ...node, y: rightY, height: nodeHeight };
     rightY += nodeHeight + gap;
     return positioned;
@@ -121,8 +121,8 @@ export default function SankeyCashFlow({ budgets }) {
   let unallocatedNode = null;
   if (unallocated > 0) {
     const nodeHeight = allExpenses > 0
-      ? Math.max(20, (unallocated / allExpenses) * rightAvailableHeight)
-      : 20;
+      ? Math.max(15, (unallocated / allExpenses) * rightAvailableHeight)
+      : 15;
     unallocatedNode = {
       id: 'unallocated',
       name: 'Unallocated',
@@ -180,7 +180,7 @@ export default function SankeyCashFlow({ budgets }) {
 
   return (
     <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ minHeight: '300px' }}>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ minHeight: '250px' }}>
         <defs>
           {leftFlows.map(node => (
             <linearGradient key={`grad-left-${node.id}`} id={`grad-left-${node.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
