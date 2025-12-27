@@ -105,9 +105,9 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   return (
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-slate-700">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
           Budget Allocation
-        </h3>
+        </p>
         <div className="flex items-center gap-3">
           <Select value={selectedCadence} onValueChange={setSelectedCadence}>
             <SelectTrigger className="h-7 w-[110px] text-xs">
