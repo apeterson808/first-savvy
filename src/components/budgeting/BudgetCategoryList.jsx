@@ -33,8 +33,8 @@ const ICON_MAP = {
 
 export default function BudgetCategoryList({ budgets, spendingByCategory, isIncome = false, unbudgetedAmount = 0 }) {
   const getBudgetColor = (budget) => {
-    if (budget.color) return budget.color;
     if (budget.chartAccount?.color) return budget.chartAccount.color;
+    if (budget.color) return budget.color;
     return '#64748b';
   };
 
