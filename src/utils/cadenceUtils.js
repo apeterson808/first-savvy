@@ -1,5 +1,5 @@
-const DAYS_PER_MONTH = 30.4375;
-const WEEKS_PER_MONTH = 4.3333;
+const DAYS_PER_YEAR = 365;
+const WEEKS_PER_YEAR = 52;
 const MONTHS_PER_YEAR = 12;
 
 export function convertToDaily(amount, fromCadence) {
@@ -7,11 +7,13 @@ export function convertToDaily(amount, fromCadence) {
     case 'daily':
       return amount;
     case 'weekly':
-      return amount / 7;
+      const yearlyFromWeekly = amount * WEEKS_PER_YEAR;
+      return yearlyFromWeekly / DAYS_PER_YEAR;
     case 'monthly':
-      return amount / DAYS_PER_MONTH;
+      const yearlyFromMonthly = amount * MONTHS_PER_YEAR;
+      return yearlyFromMonthly / DAYS_PER_YEAR;
     case 'yearly':
-      return amount / (DAYS_PER_MONTH * MONTHS_PER_YEAR);
+      return amount / DAYS_PER_YEAR;
     default:
       return amount;
   }
@@ -20,13 +22,15 @@ export function convertToDaily(amount, fromCadence) {
 export function convertToWeekly(amount, fromCadence) {
   switch (fromCadence) {
     case 'daily':
-      return amount * 7;
+      const yearlyFromDaily = amount * DAYS_PER_YEAR;
+      return yearlyFromDaily / WEEKS_PER_YEAR;
     case 'weekly':
       return amount;
     case 'monthly':
-      return amount / WEEKS_PER_MONTH;
+      const yearlyFromMonthly = amount * MONTHS_PER_YEAR;
+      return yearlyFromMonthly / WEEKS_PER_YEAR;
     case 'yearly':
-      return amount / (WEEKS_PER_MONTH * MONTHS_PER_YEAR);
+      return amount / WEEKS_PER_YEAR;
     default:
       return amount;
   }
@@ -35,9 +39,11 @@ export function convertToWeekly(amount, fromCadence) {
 export function convertToMonthly(amount, fromCadence) {
   switch (fromCadence) {
     case 'daily':
-      return amount * DAYS_PER_MONTH;
+      const yearlyFromDaily = amount * DAYS_PER_YEAR;
+      return yearlyFromDaily / MONTHS_PER_YEAR;
     case 'weekly':
-      return amount * WEEKS_PER_MONTH;
+      const yearlyFromWeekly = amount * WEEKS_PER_YEAR;
+      return yearlyFromWeekly / MONTHS_PER_YEAR;
     case 'monthly':
       return amount;
     case 'yearly':
@@ -50,9 +56,9 @@ export function convertToMonthly(amount, fromCadence) {
 export function convertToYearly(amount, fromCadence) {
   switch (fromCadence) {
     case 'daily':
-      return amount * DAYS_PER_MONTH * MONTHS_PER_YEAR;
+      return amount * DAYS_PER_YEAR;
     case 'weekly':
-      return amount * WEEKS_PER_MONTH * MONTHS_PER_YEAR;
+      return amount * WEEKS_PER_YEAR;
     case 'monthly':
       return amount * MONTHS_PER_YEAR;
     case 'yearly':
@@ -79,8 +85,10 @@ export function convertCadence(amount, fromCadence, toCadence) {
   }
 }
 
-export function formatCadenceAmount(amount, decimals = 0) {
+export function formatCadenceAmount(amount, cadence = 'monthly') {
   if (typeof amount !== 'number' || isNaN(amount)) return '$0';
+
+  const decimals = cadence === 'daily' ? 2 : 0;
 
   return amount.toLocaleString('en-US', {
     style: 'currency',
@@ -91,11 +99,16 @@ export function formatCadenceAmount(amount, decimals = 0) {
 }
 
 export function getAllCadenceValues(amount, sourceCadence) {
+  const daily = convertCadence(amount, sourceCadence, 'daily');
+  const weekly = convertCadence(amount, sourceCadence, 'weekly');
+  const monthly = convertCadence(amount, sourceCadence, 'monthly');
+  const yearly = convertCadence(amount, sourceCadence, 'yearly');
+
   return {
-    daily: convertCadence(amount, sourceCadence, 'daily'),
-    weekly: convertCadence(amount, sourceCadence, 'weekly'),
-    monthly: convertCadence(amount, sourceCadence, 'monthly'),
-    yearly: convertCadence(amount, sourceCadence, 'yearly'),
+    daily: daily,
+    weekly: Math.ceil(weekly),
+    monthly: Math.ceil(monthly),
+    yearly: Math.ceil(yearly),
     source: sourceCadence
   };
 }

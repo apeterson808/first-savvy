@@ -47,28 +47,36 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
 
   const calculatePeriodAmount = (monthlyAmount, period) => {
     if (!monthlyAmount) return 0;
+    const DAYS_PER_YEAR = 365;
+    const WEEKS_PER_YEAR = 52;
+    const MONTHS_PER_YEAR = 12;
+
+    const yearly = monthlyAmount * MONTHS_PER_YEAR;
+
     switch (period) {
       case 'daily':
-        return monthlyAmount / 30;
+        return yearly / DAYS_PER_YEAR;
       case 'weekly':
-        return monthlyAmount / 4.33;
+        return Math.ceil(yearly / WEEKS_PER_YEAR);
       case 'monthly':
-        return monthlyAmount;
+        return Math.ceil(monthlyAmount);
       case 'yearly':
-        return monthlyAmount * 12;
+        return Math.ceil(yearly);
       default:
         return monthlyAmount;
     }
   };
 
-  const formatAmount = (amount) => {
+  const formatAmount = (amount, period) => {
+    if (period === 'daily') {
+      return amount.toFixed(2);
+    }
+
     if (amount >= 1000) {
       return (amount / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
     }
-    if (amount >= 100) {
-      return Math.round(amount).toString();
-    }
-    return amount.toFixed(2);
+
+    return Math.round(amount).toString();
   };
 
   const renderGroup = (group) => {
@@ -155,16 +163,16 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
                   {/* Amount Columns */}
                   <div className="flex-1 flex items-center justify-end gap-2 text-sm">
                     <div className="w-24 text-center tabular-nums">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'))}</span>
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'), 'daily')}</span>
                     </div>
                     <div className="w-24 text-center tabular-nums">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'))}</span>
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'), 'weekly')}</span>
                     </div>
                     <div className="w-28 text-center tabular-nums font-semibold">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-900">{formatAmount(monthlyAmount)}</span>
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-900">{formatAmount(monthlyAmount, 'monthly')}</span>
                     </div>
                     <div className="w-28 text-center tabular-nums">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'))}</span>
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'), 'yearly')}</span>
                     </div>
                   </div>
 
@@ -181,16 +189,16 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
 
               <div className="flex-1 flex items-center justify-end gap-2 text-sm font-semibold tabular-nums">
                 <div className="w-24 text-center text-slate-900">
-                  ${formatAmount(totals.daily)}
+                  ${formatAmount(totals.daily, 'daily')}
                 </div>
                 <div className="w-24 text-center text-slate-900">
-                  ${formatAmount(totals.weekly)}
+                  ${formatAmount(totals.weekly, 'weekly')}
                 </div>
                 <div className="w-28 text-center font-bold text-slate-900">
-                  ${formatAmount(totals.monthly)}
+                  ${formatAmount(totals.monthly, 'monthly')}
                 </div>
                 <div className="w-28 text-center text-slate-900">
-                  ${formatAmount(totals.yearly)}
+                  ${formatAmount(totals.yearly, 'yearly')}
                 </div>
               </div>
 

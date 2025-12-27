@@ -98,10 +98,10 @@ export default function InlineEditableAmount({
       {isLoading ? (
         <div className="flex items-center gap-2">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{formatCadenceAmount(value, 2)}</span>
+          <span>{formatCadenceAmount(value, cadence)}</span>
         </div>
       ) : (
-        formatCadenceAmount(value, isActiveCadence && cadence === 'yearly' ? 0 : 2)
+        formatCadenceAmount(value, cadence)
       )}
     </td>
   );
