@@ -79,7 +79,7 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className={`w-full text-right bg-muted/30 px-4 py-0 focus:outline-none focus:bg-muted/50 tabular-nums border-0 ${
+          className={`w-full text-right bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0 ${
             isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
           }`}
         />
