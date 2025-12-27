@@ -97,7 +97,7 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
       </div>
 
       <TooltipProvider delayDuration={100}>
-        <div className="relative">
+        <div className="relative pb-8">
           <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
           {allSegments.map((segment, index) => {
             const Icon = segment.icon && ICON_MAP[segment.icon];
@@ -157,11 +157,11 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
           {totalIncomeBudgeted > 0 && (
             <div
-              className="absolute bottom-0 -translate-x-1/2 z-20 flex flex-col items-center"
+              className="absolute top-full -translate-x-1/2 z-20 flex flex-col items-center"
               style={{ left: `${expensePercentage}%` }}
             >
-              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-slate-600" />
-              <div className="mt-1.5 text-[11px] text-slate-500 whitespace-nowrap">
+              <div className="w-px h-3 bg-slate-600" />
+              <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
                 <span className="font-medium">
                   ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
