@@ -183,6 +183,26 @@ export default function CategoriesTab() {
           isLoading={isUpdating}
           hasBorder={true}
         />
+        <td className="px-4 text-right">
+          <div className="flex items-center justify-end gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleEditBudget(budget)}
+              className="h-8 w-8 p-0"
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteBudget(budget.id)}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        </td>
       </tr>
     );
   };
@@ -278,7 +298,7 @@ export default function CategoriesTab() {
                     {isBudgetedSection ? (
                       <>
                         <th
-                          className="py-2 px-4 text-left font-bold w-[25%] cursor-pointer hover:bg-slate-100"
+                          className="py-2 px-4 text-left font-bold w-[20%] cursor-pointer hover:bg-slate-100"
                           onClick={() => toggleSection(sectionKey)}
                         >
                           <div className="flex items-center gap-2">
@@ -287,10 +307,11 @@ export default function CategoriesTab() {
                             <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Daily</th>
-                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Weekly</th>
-                        <th className="py-2 px-4 text-left font-bold w-[18.75%] bg-blue-100/70">Monthly</th>
-                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Yearly</th>
+                        <th className="py-2 px-4 text-left font-normal w-[16%]">Daily</th>
+                        <th className="py-2 px-4 text-left font-normal w-[16%]">Weekly</th>
+                        <th className="py-2 px-4 text-left font-bold w-[16%] bg-blue-100/70">Monthly</th>
+                        <th className="py-2 px-4 text-left font-normal w-[16%]">Yearly</th>
+                        <th className="py-2 px-4 text-right font-bold w-[16%]">Action</th>
                       </>
                     ) : (
                       <>
@@ -304,9 +325,9 @@ export default function CategoriesTab() {
                             <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-bold w-[20%]">Ever Used</th>
-                        <th className="py-2 px-4 text-left font-bold w-[20%]">Last Used</th>
-                        <th className="py-2 px-4 text-right font-bold w-[20%]"></th>
+                        <th className="py-2 px-4 text-left font-normal w-[20%]">Ever Used</th>
+                        <th className="py-2 px-4 text-left font-normal w-[20%]">Last Used</th>
+                        <th className="py-2 px-4 text-right font-normal w-[20%]">Action</th>
                       </>
                     )}
                   </tr>
@@ -319,7 +340,7 @@ export default function CategoriesTab() {
                 {totals && (
                   <tbody>
                     <tr className="border-t-2 border-slate-200 bg-slate-100/60">
-                      <td className="px-4 py-2 border-r border-slate-200 font-bold">{totalLabel}</td>
+                      <td className="px-4 py-2 border-r border-slate-200">{totalLabel}</td>
                       <td className="px-4 py-2 border-r border-slate-100">
                         <div className="flex justify-between tabular-nums">
                           <span className={totals.daily === 0 ? 'font-semibold' : ''}>{dailyFormatted.sign}</span>
@@ -338,12 +359,13 @@ export default function CategoriesTab() {
                           <span className="text-right">{monthlyFormatted.amount}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2">
+                      <td className="px-4 py-2 border-r border-slate-100">
                         <div className="flex justify-between tabular-nums">
                           <span className={totals.yearly === 0 ? 'font-semibold' : ''}>{yearlyFormatted.sign}</span>
                           <span className={`text-right ${totals.yearly === 0 ? 'font-semibold' : ''}`}>{yearlyFormatted.amount}</span>
                         </div>
                       </td>
+                      <td className="px-4 py-2"></td>
                     </tr>
                   </tbody>
                 )}
