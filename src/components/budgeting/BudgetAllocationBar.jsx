@@ -157,20 +157,16 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
           {totalIncomeBudgeted > 0 && (
             <div
-              className="absolute bottom-0 z-20"
+              className="absolute bottom-0 -translate-x-1/2 z-20 flex flex-col items-center"
               style={{ left: `${expensePercentage}%` }}
             >
-              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full">
-                <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-slate-700" />
-                <div className="mt-1 text-xs text-slate-500 whitespace-nowrap -translate-x-1/2 ml-[6px]">
-                  <span className="font-semibold">
-                    ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  {' '}
-                  <span>
-                    {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
-                  </span>
-                </div>
+              <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-t-[6px] border-t-slate-600" />
+              <div className="mt-1.5 text-[11px] text-slate-500 whitespace-nowrap">
+                <span className="font-medium">
+                  ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+                {' '}
+                {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
               </div>
             </div>
           )}
