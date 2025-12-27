@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { Plus, AlertCircle } from 'lucide-react';
@@ -9,8 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PageTabs } from '@/components/common/PageTabs';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
-import BudgetOverviewCards from '../components/budgeting/BudgetOverviewCards';
-import BudgetCategoryList from '../components/budgeting/BudgetCategoryList';
+import BudgetTrackerContainer from '../components/budgeting/BudgetTrackerContainer';
 import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import CategoriesTab from '../components/budgeting/CategoriesTab';
 
@@ -58,9 +56,8 @@ export default function Budgeting() {
     hasSetupStarted,
     spendingByCategory,
     incomeByCategory,
-    totalActualIncome,
-    totalSpent,
-    totalBudgeted
+    monthStart,
+    monthEnd
   } = useBudgetData();
 
   if (isLoading) {
@@ -124,46 +121,13 @@ export default function Budgeting() {
               </div>
             </div>
           ) : (
-            <>
-              <BudgetOverviewCards
-                totalIncome={totalActualIncome}
-                totalBudgeted={totalBudgeted}
-                totalSpent={totalSpent}
-              />
-
-              {budgetGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {
-                const groupBudgets = budgets.filter(b => b.group_id === group.id);
-
-                const isIncomeGroup = group.type === 'income';
-                const dataByCategory = isIncomeGroup ? incomeByCategory : spendingByCategory;
-
-                const budgetedCategoryIds = new Set(groupBudgets.map(b => b.chart_account_id));
-                const unbudgetedAmount = Object.entries(dataByCategory).reduce((sum, [categoryId, amount]) => {
-                  if (categoryId === '__uncategorized__' || categoryId === '__uncategorized_income__' || !budgetedCategoryIds.has(categoryId)) {
-                    return sum + amount;
-                  }
-                  return sum;
-                }, 0);
-
-                if (groupBudgets.length === 0 && unbudgetedAmount === 0) return null;
-
-                return (
-                  <Card key={group.id} className="mt-4 shadow-sm border-slate-200 bg-white">
-                    <CardHeader className="pb-3 pt-4 px-6">
-                      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{group.name}</p>
-                    </CardHeader>
-                    <CardContent className="px-6 pb-4">
-                      <BudgetCategoryList
-                        budgets={groupBudgets}
-                        spendingByCategory={dataByCategory}
-                        isIncome={isIncomeGroup}
-                        unbudgetedAmount={unbudgetedAmount}
-                      />
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </>
+            <BudgetTrackerContainer
+              budgets={budgets}
+              spendingByCategory={spendingByCategory}
+              incomeByCategory={incomeByCategory}
+              monthStart={monthStart}
+              monthEnd={monthEnd}
+            />
           )}
         </TabsContent>
 
