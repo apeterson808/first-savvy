@@ -67,33 +67,15 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="pb-3 pt-4 px-6">
           <div
-            className="flex items-center justify-between cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer"
             onClick={() => toggleSection(sectionKey)}
           >
-            <div className="flex items-center gap-2">
-              {isCollapsed ? <ChevronRight className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{title}</p>
-            </div>
-            <div className="flex items-center gap-4 text-sm">
-              <div className="text-right">
-                <div className="text-xs text-slate-500">Total</div>
-                <div className="font-semibold text-slate-900">
-                  ${(isIncome ? totalIncomeActual : totalExpenseActual).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  <span className="text-slate-400 font-normal mx-1">/</span>
-                  ${(isIncome ? totalIncomeBudgeted : totalExpenseBudgeted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="text-xs text-slate-500">Progress</div>
-                <div className={`font-semibold ${(isIncome ? incomePercentage : expensePercentage) > 100 ? 'text-red-600' : 'text-slate-900'}`}>
-                  {(isIncome ? incomePercentage : expensePercentage).toFixed(0)}%
-                </div>
-              </div>
-            </div>
+            {isCollapsed ? <ChevronRight className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{title}</p>
           </div>
         </CardHeader>
         {!isCollapsed && (
-          <CardContent className="px-6 pb-4 space-y-1">
+          <CardContent className="px-6 pb-4 space-y-3">
             {sortedBudgets.map(budget => (
               <BudgetProgressPill
                 key={budget.id}
@@ -122,40 +104,40 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-lg bg-white border border-slate-200">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Income</span>
+            <div className="p-3 rounded-lg bg-white border border-slate-200">
+              <div className="flex items-center gap-2 mb-1.5">
+                <TrendingUp className="w-3.5 h-3.5 text-green-600" />
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Income</span>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
+              <div className="text-xl font-bold text-slate-900 mb-0.5">
                 ${totalIncomeActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-[11px] text-slate-500">
                 of ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} budgeted
               </div>
             </div>
 
-            <div className="p-4 rounded-lg bg-white border border-slate-200">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingDown className="w-4 h-4 text-red-600" />
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Expenses</span>
+            <div className="p-3 rounded-lg bg-white border border-slate-200">
+              <div className="flex items-center gap-2 mb-1.5">
+                <TrendingDown className="w-3.5 h-3.5 text-red-600" />
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Expenses</span>
               </div>
-              <div className="text-2xl font-bold text-slate-900 mb-1">
+              <div className="text-xl font-bold text-slate-900 mb-0.5">
                 ${totalExpenseActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-[11px] text-slate-500">
                 of ${totalExpenseBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} budgeted
               </div>
             </div>
 
-            <div className="p-4 rounded-lg bg-white border border-slate-200">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Net</span>
+            <div className="p-3 rounded-lg bg-white border border-slate-200">
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Net</span>
               </div>
-              <div className={`text-2xl font-bold mb-1 ${netActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <div className={`text-xl font-bold mb-0.5 ${netActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {netActual >= 0 ? '+' : '-'}${Math.abs(netActual).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="text-[11px] text-slate-500">
                 vs {netBudgeted >= 0 ? '+' : '-'}${Math.abs(netBudgeted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} planned
               </div>
             </div>
