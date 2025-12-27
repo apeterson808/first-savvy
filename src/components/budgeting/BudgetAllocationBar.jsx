@@ -161,17 +161,18 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
               style={{ left: `${expensePercentage}%` }}
             >
               <div className="w-px h-3 bg-slate-600" />
-              <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
+              <div className="mt-1 text-[11px] text-slate-500 flex flex-col items-center">
                 <span className="font-medium">
                   ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                {' '}
-                {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+                <span>
+                  {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+                </span>
               </div>
             </div>
           )}
         </div>
-        <div className="h-8" />
+        <div className="h-14" />
       </TooltipProvider>
     </div>
   );
