@@ -20,13 +20,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { convertCadence } from '@/utils/cadenceUtils';
 
 const ICON_MAP = {
@@ -47,22 +40,22 @@ const ICON_MAP = {
 
 export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
-  const [selectedCadence, setSelectedCadence] = useState('monthly');
 
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
 
   const totalExpenseBudgeted = expenseBudgets.reduce((sum, b) => {
-    const convertedAmount = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', selectedCadence);
+    const convertedAmount = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
     return sum + convertedAmount;
   }, 0);
 
   const totalIncomeBudgeted = incomeBudgets.reduce((sum, b) => {
-    const convertedAmount = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', selectedCadence);
+    const convertedAmount = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
     return sum + convertedAmount;
   }, 0);
 
-  const unallocated = Math.max(0, totalIncomeBudgeted - totalExpenseBudgeted);
+  const unallocated = totalIncomeBudgeted - totalExpenseBudgeted;
+  const expensePercentage = totalIncomeBudgeted > 0 ? (totalExpenseBudgeted / totalIncomeBudgeted) * 100 : 100;
 
   if (totalExpenseBudgeted === 0 || expenseBudgets.length === 0) {
     return null;
@@ -72,7 +65,7 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
   const budgetSegments = expenseBudgets
     .map(budget => {
-      const convertedAmount = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', selectedCadence);
+      const convertedAmount = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', 'monthly');
       return {
         id: budget.id,
         name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unknown',
@@ -95,39 +88,17 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
   const allSegments = unallocatedSegment ? [...budgetSegments, unallocatedSegment] : budgetSegments;
 
-  const cadenceLabels = {
-    daily: 'Daily',
-    weekly: 'Weekly',
-    monthly: 'Monthly',
-    yearly: 'Yearly'
-  };
-
   return (
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm mb-4">
       <div className="flex items-center justify-between mb-3">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
           Budget Allocation
         </p>
-        <div className="flex items-center gap-3">
-          <Select value={selectedCadence} onValueChange={setSelectedCadence}>
-            <SelectTrigger className="h-7 w-[110px] text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="daily">Daily</SelectItem>
-              <SelectItem value="weekly">Weekly</SelectItem>
-              <SelectItem value="monthly">Monthly</SelectItem>
-              <SelectItem value="yearly">Yearly</SelectItem>
-            </SelectContent>
-          </Select>
-          <span className="text-xs text-slate-500">
-            ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Total Income
-          </span>
-        </div>
       </div>
 
       <TooltipProvider delayDuration={100}>
-        <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
+        <div className="relative">
+          <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
           {allSegments.map((segment, index) => {
             const Icon = segment.icon && ICON_MAP[segment.icon];
             const isHovered = hoveredCategory === segment.id;
@@ -182,35 +153,32 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
               </Tooltip>
             );
           })}
+          </div>
+
+          {totalIncomeBudgeted > 0 && (
+            <div
+              className="absolute top-0 bottom-0 w-0.5 bg-slate-700 z-20"
+              style={{ left: `${expensePercentage}%` }}
+            >
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-3 h-3 bg-slate-700 rotate-45" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 h-6 w-0.5 bg-slate-700" />
+            </div>
+          )}
         </div>
       </TooltipProvider>
 
-      <div className="mt-4 flex items-center justify-between px-2">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">Income:</span>
-          <span className="text-sm font-semibold text-emerald-600">
-            ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+      {totalIncomeBudgeted > 0 && (
+        <div className="mt-8 flex justify-center">
+          <div className="text-center">
+            <span className={`text-lg font-bold ${unallocated > 0 ? 'text-emerald-600' : unallocated < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
+              ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+            <span className="text-sm text-slate-600 ml-2">
+              {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+            </span>
+          </div>
         </div>
-
-        <div className="text-slate-400">-</div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">Expenses:</span>
-          <span className="text-sm font-semibold text-rose-600">
-            ${totalExpenseBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-
-        <div className="text-slate-400">=</div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-slate-600">Remaining:</span>
-          <span className={`text-sm font-bold ${unallocated > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-            ${unallocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
