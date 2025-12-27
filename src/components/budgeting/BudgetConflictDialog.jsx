@@ -4,27 +4,23 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle } from 'lucide-react';
 
-export default function BudgetConflictDialog({ 
-  open, 
-  onOpenChange, 
+export default function BudgetConflictDialog({
+  open,
+  onOpenChange,
   conflictBudget,
   requestedAmount,
   totalIncome,
   allBudgets,
-  groups,
   onSave
 }) {
   const [adjustments, setAdjustments] = useState({});
   const [incomeAdjustments, setIncomeAdjustments] = useState({});
 
   // Get expense and income budgets
-  const expenseGroupIds = new Set(groups.filter(g => g.type === 'expense').map(g => g.id));
-  const incomeGroupIds = new Set(groups.filter(g => g.type === 'income').map(g => g.id));
-  
-  const otherExpenseBudgets = allBudgets.filter(b => 
-    expenseGroupIds.has(b.group_id) && b.id !== conflictBudget?.id
+  const otherExpenseBudgets = allBudgets.filter(b =>
+    b.chartAccount?.class === 'expense' && b.id !== conflictBudget?.id
   );
-  const incomeBudgets = allBudgets.filter(b => incomeGroupIds.has(b.group_id));
+  const incomeBudgets = allBudgets.filter(b => b.chartAccount?.class === 'income');
 
   // Calculate the overflow amount
   const currentOtherExpenses = otherExpenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);

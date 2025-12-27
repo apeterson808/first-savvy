@@ -61,12 +61,23 @@ export default function Dashboard() {
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true })
-  });
-
-  const { data: budgetGroups = [] } = useQuery({
-    queryKey: ['budgetGroups'],
-    queryFn: () => firstsavvy.entities.BudgetGroup.list()
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('budgets')
+        .select(`
+          *,
+          chartAccount:user_chart_of_accounts!budgets_chart_account_id_fkey(
+            id,
+            display_name,
+            class,
+            account_type,
+            account_detail
+          )
+        `)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const { data: bills = [] } = useQuery({
@@ -331,9 +342,8 @@ export default function Dashboard() {
     const monthEnd = endOfMonth(today);
     const activeAccountIds = accounts.map(a => a.id);
 
-    // Get expense group IDs (matching Budgeting page)
-    const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
-    const expenseBudgets = budgets.filter(b => expenseGroupIds.has(b.group_id));
+    // Get expense budgets (matching Budgeting page)
+    const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
 
     // Calculate spending by chart_account_id
     const spendingByCategory = transactions

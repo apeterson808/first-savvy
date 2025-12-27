@@ -8,12 +8,6 @@ export function useBudgetData() {
   const { activeProfile } = useProfile();
   const profileId = activeProfile?.id || 'default';
 
-  const { data: budgetGroups = [], isLoading: groupsLoading } = useQuery({
-    queryKey: ['budgetGroups', profileId],
-    queryFn: () => firstsavvy.entities.BudgetGroup.list('order'),
-    enabled: !!activeProfile
-  });
-
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets', profileId],
     queryFn: async () => {
@@ -66,7 +60,7 @@ export function useBudgetData() {
     enabled: !!activeProfile
   });
 
-  const isLoading = groupsLoading || budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;
+  const isLoading = budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;
 
   const calculatedData = useMemo(() => {
     const today = new Date();
@@ -106,14 +100,12 @@ export function useBudgetData() {
     const totalRefunds = refundTransactions.reduce((sum, t) => sum + t.amount, 0);
     const totalSpent = Object.values(spendingByCategory).reduce((sum, amt) => sum + amt, 0);
 
-    const incomeGroupIds = new Set(budgetGroups.filter(g => g.type === 'income').map(g => g.id));
     const budgetedIncome = budgets
-      .filter(b => incomeGroupIds.has(b.group_id))
+      .filter(b => b.chartAccount?.class === 'income')
       .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
-    const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
     const totalBudgeted = budgets
-      .filter(b => expenseGroupIds.has(b.group_id))
+      .filter(b => b.chartAccount?.class === 'expense')
       .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
     const categoryUsage = transactions.reduce((acc, t) => {
@@ -194,16 +186,15 @@ export function useBudgetData() {
       availableIncomeCategories,
       availableExpenseCategories
     };
-  }, [transactions, accounts, budgets, budgetGroups, categories]);
+  }, [transactions, accounts, budgets, categories]);
 
   return {
-    budgetGroups,
     budgets,
     transactions,
     accounts,
     categories,
     isLoading,
-    hasSetupStarted: budgetGroups.length > 0,
+    hasSetupStarted: budgets.length > 0,
     categoryUsage: calculatedData.categoryUsage,
     budgetedIncomeCategories: calculatedData.budgetedIncomeCategories,
     budgetedExpenseCategories: calculatedData.budgetedExpenseCategories,

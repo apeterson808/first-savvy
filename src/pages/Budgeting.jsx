@@ -48,7 +48,6 @@ export default function Budgeting() {
   }, [queryClient]);
 
   const {
-    budgetGroups,
     budgets,
     transactions,
     categories,
@@ -139,7 +138,6 @@ export default function Budgeting() {
       <AddBudgetItemSheet
         open={addSheetOpen}
         onOpenChange={setAddSheetOpen}
-        groups={budgetGroups}
         categories={categories}
       />
 
@@ -147,7 +145,6 @@ export default function Budgeting() {
         <AddBudgetItemSheet
           open={!!editingBudget}
           onOpenChange={(open) => !open && setEditingBudget(null)}
-          groups={budgetGroups}
           categories={categories}
           editingBudget={editingBudget}
         />

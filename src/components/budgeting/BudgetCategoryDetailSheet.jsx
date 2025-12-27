@@ -27,7 +27,6 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const amountInputRef = useRef(null);
   const queryClient = useQueryClient();
 
-  const [selectedGroupId, setSelectedGroupId] = useState('');
   const [limitAmount, setLimitAmount] = useState('');
   const [isSubAccount, setIsSubAccount] = useState(false);
   const [parentBudgetId, setParentBudgetId] = useState('');
@@ -45,14 +44,25 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
   });
 
-  const { data: budgetGroups = [] } = useQuery({
-    queryKey: ['budgetGroups'],
-    queryFn: () => firstsavvy.entities.BudgetGroup.list()
-  });
-
   const { data: existingBudgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => firstsavvy.entities.Budget.list()
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('budgets')
+        .select(`
+          *,
+          chartAccount:user_chart_of_accounts!budgets_chart_account_id_fkey(
+            id,
+            display_name,
+            class,
+            account_type,
+            account_detail
+          )
+        `)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    }
   });
 
   const activeAccountIds = accounts.map(a => a.id);
@@ -145,14 +155,12 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   const lastMonthSpent = historicalData[4]?.spent || 0;
   const monthlyAverage = historicalData.slice(0, 5).reduce((sum, d) => sum + d.spent, 0) / 5;
 
-  const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
   const currentTotalExpenses = existingBudgets
-    .filter(b => expenseGroupIds.has(b.group_id) && b.id !== budget?.id)
+    .filter(b => b.chartAccount?.class === 'expense' && b.id !== budget?.id)
     .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
-  const incomeGroupIds = new Set(budgetGroups.filter(g => g.type === 'income').map(g => g.id));
   const totalIncome = existingBudgets
-    .filter(b => incomeGroupIds.has(b.group_id))
+    .filter(b => b.chartAccount?.class === 'income')
     .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
   const allParentBudgets = existingBudgets.filter(b => !b.parent_budget_id);
@@ -181,7 +189,7 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
   if (!budget) return null;
 
   const handleSaveBudgetDetails = async () => {
-    if (!selectedGroupId || !limitAmount) {
+    if (!limitAmount) {
       toast.error('Please fill in all required fields');
       return;
     }
@@ -208,14 +216,13 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
     }
 
     const budgetData = {
-      group_id: selectedGroupId,
       allocated_amount: newAmount,
       allow_rollover: allowRollover,
       parent_budget_id: isSubAccount ? parentBudgetId || null : null,
     };
 
-    const targetGroup = budgetGroups.find(g => g.id === selectedGroupId);
-    if (targetGroup?.type === 'expense' && totalIncome > 0) {
+    const isExpenseBudget = budget.chartAccount?.class === 'expense';
+    if (isExpenseBudget && totalIncome > 0) {
       const newTotalExpenses = currentTotalExpenses + newAmount;
       if (newTotalExpenses > totalIncome) {
         setPendingBudgetData(budgetData);
@@ -322,8 +329,8 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
       allocated_amount: newAmount,
     };
 
-    const targetGroup = budgetGroups.find(g => g.id === budget.group_id);
-    if (targetGroup?.type === 'expense' && totalIncome > 0) {
+    const isExpenseBudget = budget.chartAccount?.class === 'expense';
+    if (isExpenseBudget && totalIncome > 0) {
       const newTotalExpenses = currentTotalExpenses + newAmount;
       if (newTotalExpenses > totalIncome) {
         setPendingBudgetData(budgetData);
@@ -604,7 +611,6 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
         requestedAmount={pendingBudgetData?.allocated_amount || 0}
         totalIncome={totalIncome}
         allBudgets={existingBudgets}
-        groups={budgetGroups}
         onSave={handleConflictSave}
       />
     </Sheet>

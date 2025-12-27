@@ -41,7 +41,7 @@ const ICON_MAP = {
   Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 };
 
-export default function BudgetAllocationBar({ budgets, budgetGroups }) {
+export default function BudgetAllocationBar({ budgets }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
   const [viewMode, setViewMode] = useState('bar');
 
