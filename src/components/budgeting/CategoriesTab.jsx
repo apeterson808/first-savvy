@@ -393,7 +393,7 @@ export default function CategoriesTab() {
 
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-3 pt-4 px-6">
-          <CardTitle className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Available Categories (Not Budgeted)</CardTitle>
+          <CardTitle className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Not Budgeted</CardTitle>
         </CardHeader>
         <CardContent className="px-6 pb-4">
           {renderSection(
