@@ -40,8 +40,7 @@ const ICON_MAP = {
 export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
 
-  const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
-  const expenseBudgets = budgets.filter(b => expenseGroupIds.has(b.group_id));
+  const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
 
   const totalBudgeted = expenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
@@ -61,8 +60,8 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
     .sort((a, b) => b.amount - a.amount);
 
   return (
-    <div className="mb-4">
-      <div className="flex items-center justify-between mb-2">
+    <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm mb-4">
+      <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
           Budget Allocation
         </h3>
