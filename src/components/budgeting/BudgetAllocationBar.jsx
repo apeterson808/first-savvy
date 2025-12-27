@@ -157,28 +157,25 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
 
           {totalIncomeBudgeted > 0 && (
             <div
-              className="absolute top-0 bottom-0 w-0.5 bg-slate-700 z-20"
+              className="absolute bottom-0 z-20"
               style={{ left: `${expensePercentage}%` }}
             >
-              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-3 h-3 bg-slate-700 rotate-45" />
-              <div className="absolute top-full left-1/2 -translate-x-1/2 h-6 w-0.5 bg-slate-700" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-full">
+                <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-slate-700" />
+                <div className="mt-1 text-xs text-slate-500 whitespace-nowrap -translate-x-1/2 ml-[6px]">
+                  <span className="font-semibold">
+                    ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  {' '}
+                  <span>
+                    {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+                  </span>
+                </div>
+              </div>
             </div>
           )}
         </div>
       </TooltipProvider>
-
-      {totalIncomeBudgeted > 0 && (
-        <div className="mt-8 flex justify-center">
-          <div className="text-center">
-            <span className={`text-lg font-bold ${unallocated > 0 ? 'text-emerald-600' : unallocated < 0 ? 'text-rose-600' : 'text-slate-600'}`}>
-              ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </span>
-            <span className="text-sm text-slate-600 ml-2">
-              {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
-            </span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
