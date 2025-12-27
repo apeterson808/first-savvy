@@ -56,8 +56,12 @@ export default function Budgeting() {
     spendingByCategory,
     incomeByCategory,
     monthStart,
-    monthEnd
+    monthEnd,
+    availableIncomeCategories,
+    availableExpenseCategories
   } = useBudgetData();
+
+  const availableCategories = [...availableIncomeCategories, ...availableExpenseCategories];
 
   if (isLoading) {
     return (
@@ -138,14 +142,14 @@ export default function Budgeting() {
       <AddBudgetItemSheet
         open={addSheetOpen}
         onOpenChange={setAddSheetOpen}
-        categories={categories}
+        availableCategories={availableCategories}
       />
 
       {editingBudget && (
         <AddBudgetItemSheet
           open={!!editingBudget}
           onOpenChange={(open) => !open && setEditingBudget(null)}
-          categories={categories}
+          availableCategories={availableCategories}
           editingBudget={editingBudget}
         />
       )}

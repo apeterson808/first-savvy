@@ -11,9 +11,11 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 import AppearancePicker from '@/components/common/AppearancePicker';
-import AddEditCategorySheet from './AddEditCategorySheet';
 import { toast } from 'sonner';
 
 const DEFAULT_COLOR = '#52A5CE';
@@ -21,7 +23,7 @@ const DEFAULT_COLOR = '#52A5CE';
 export default function AddBudgetItemSheet({
   open,
   onOpenChange,
-  categories = [],
+  availableCategories = [],
   editingBudget = null,
   preselectedCategoryId = null
 }) {
@@ -33,8 +35,7 @@ export default function AddBudgetItemSheet({
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
   const [selectedCadence, setSelectedCadence] = useState('monthly');
-
-  const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -100,7 +101,7 @@ export default function AddBudgetItemSheet({
       return;
     }
 
-    const selectedAccount = categories.find(a => a.id === selectedCategoryId);
+    const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
     const newAmount = parseFloat(limitAmount) || 0;
 
     if (newAmount <= 0) {
@@ -144,118 +145,126 @@ export default function AddBudgetItemSheet({
     }
   };
 
-  const handleCategorySelect = (value) => {
-    if (value === '__add_new__') {
-      setAddCategorySheetOpen(true);
-    } else {
-      setSelectedCategoryId(value);
-    }
-  };
-
-  const availableCategories = categories;
+  const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
 
   return (
-    <>
-      <Sheet open={open} onOpenChange={(isOpen) => {
-        if (!isOpen) resetForm();
-        onOpenChange(isOpen);
-      }}>
-        <SheetContent className="overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle>{isEditMode ? 'Edit Budget Item' : 'Add Budget Item'}</SheetTitle>
-          </SheetHeader>
+    <Sheet open={open} onOpenChange={(isOpen) => {
+      if (!isOpen) resetForm();
+      onOpenChange(isOpen);
+    }}>
+      <SheetContent className="overflow-y-auto max-h-screen flex flex-col">
+        <SheetHeader>
+          <SheetTitle>{isEditMode ? 'Edit Budget Item' : 'Add Budget Item'}</SheetTitle>
+        </SheetHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="category">Category*</Label>
-              <ClickThroughSelect
-                value={selectedCategoryId}
-                onValueChange={handleCategorySelect}
-                placeholder="Select a category"
-                triggerClassName="hover:bg-slate-50"
-              >
-                <ClickThroughSelectItem value="__add_new__" className="text-primary font-medium" isAction>
-                  + Create New Category
-                </ClickThroughSelectItem>
-                {availableCategories.map(cat => (
-                  <ClickThroughSelectItem key={cat.id} value={cat.id}>
-                    {cat.display_name || cat.account_detail}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
+        <form onSubmit={handleSubmit} className="space-y-4 py-4 flex-1 overflow-y-auto">
+          <div>
+            <Label htmlFor="category">Category*</Label>
+            <Popover open={categoryDropdownOpen} onOpenChange={setCategoryDropdownOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={categoryDropdownOpen}
+                  className="w-full justify-between font-normal"
+                >
+                  {selectedCategory
+                    ? (selectedCategory.display_name || selectedCategory.account_detail)
+                    : "Select a category"}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[400px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search categories..." />
+                  <CommandList>
+                    <CommandEmpty>No category found.</CommandEmpty>
+                    <CommandGroup>
+                      {availableCategories.map((cat) => (
+                        <CommandItem
+                          key={cat.id}
+                          value={cat.display_name || cat.account_detail}
+                          onSelect={() => {
+                            setSelectedCategoryId(cat.id);
+                            setCategoryDropdownOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedCategoryId === cat.id ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {cat.display_name || cat.account_detail}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="limitAmount">Budget Amount*</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+              <Input
+                id="limitAmount"
+                type="text"
+                value={limitAmount}
+                onChange={(e) => setLimitAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                placeholder="0.00"
+                className="pl-7"
+              />
             </div>
+          </div>
 
-            <div>
-              <Label htmlFor="limitAmount">Budget Amount*</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                <Input
-                  id="limitAmount"
-                  type="text"
-                  value={limitAmount}
-                  onChange={(e) => setLimitAmount(e.target.value.replace(/[^0-9.]/g, ''))}
-                  placeholder="0.00"
-                  className="pl-7"
-                />
-              </div>
+          <div>
+            <Label htmlFor="cadence">Time Period*</Label>
+            <select
+              id="cadence"
+              value={selectedCadence}
+              onChange={(e) => setSelectedCadence(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              The amount above represents a {selectedCadence} budget
+            </p>
+          </div>
+
+          <div>
+            <Label>Appearance</Label>
+            <div className="mt-2">
+              <AppearancePicker
+                color={selectedColor}
+                icon={selectedIcon}
+                onColorChange={setSelectedColor}
+                onIconChange={setSelectedIcon}
+              />
             </div>
+          </div>
+        </form>
 
-            <div>
-              <Label htmlFor="cadence">Time Period*</Label>
-              <ClickThroughSelect
-                value={selectedCadence}
-                onValueChange={setSelectedCadence}
-                placeholder="Select time period"
-                triggerClassName="hover:bg-slate-50"
-              >
-                <ClickThroughSelectItem value="daily">Daily</ClickThroughSelectItem>
-                <ClickThroughSelectItem value="weekly">Weekly</ClickThroughSelectItem>
-                <ClickThroughSelectItem value="monthly">Monthly</ClickThroughSelectItem>
-                <ClickThroughSelectItem value="yearly">Yearly</ClickThroughSelectItem>
-              </ClickThroughSelect>
-              <p className="text-xs text-muted-foreground mt-1">
-                The amount above represents a {selectedCadence} budget
-              </p>
-            </div>
-
-            <div>
-              <Label>Appearance</Label>
-              <div className="mt-2">
-                <AppearancePicker
-                  color={selectedColor}
-                  icon={selectedIcon}
-                  onColorChange={setSelectedColor}
-                  onIconChange={setSelectedIcon}
-                />
-              </div>
-            </div>
-
-            <SheetFooter className="pt-4">
-              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                Cancel
-              </Button>
-              <Button
-                type="submit"
-                className="bg-primary hover:bg-primary/90"
-                disabled={!selectedCategoryId || !limitAmount || createBudgetMutation.isPending || updateBudgetMutation.isPending}
-              >
-                {isEditMode ? 'Update' : 'Create'}
-              </Button>
-            </SheetFooter>
-          </form>
-        </SheetContent>
-      </Sheet>
-
-      <AddEditCategorySheet
-        open={addCategorySheetOpen}
-        onOpenChange={setAddCategorySheetOpen}
-        onCategoryCreated={(newCategory) => {
-          queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
-          if (newCategory?.id) {
-            setSelectedCategoryId(newCategory.id);
-          }
-        }}
-      />
-    </>
+        <SheetFooter className="pt-4 mt-auto">
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            onClick={handleSubmit}
+            className="bg-primary hover:bg-primary/90"
+            disabled={!selectedCategoryId || !limitAmount || createBudgetMutation.isPending || updateBudgetMutation.isPending}
+          >
+            {isEditMode ? 'Update' : 'Create'}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 }
