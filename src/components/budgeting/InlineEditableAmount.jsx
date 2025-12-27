@@ -79,7 +79,7 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className={`w-full text-right bg-blue-50 px-4 py-0 focus:outline-none focus:bg-blue-100 tabular-nums border-0 ${
+          className={`w-full text-right bg-muted/30 px-4 py-0 focus:outline-none focus:bg-muted/50 tabular-nums border-0 ${
             isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
           }`}
         />
@@ -89,7 +89,7 @@ export default function InlineEditableAmount({
 
   return (
     <td
-      className={`px-4 text-right tabular-nums cursor-pointer hover:bg-blue-50/50 transition-colors ${
+      className={`px-4 text-right tabular-nums cursor-pointer hover:bg-muted/20 transition-colors ${
         isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
       } ${isLoading ? 'opacity-50' : ''} ${hasBorder ? 'border-r' : ''}`}
       onClick={handleClick}
