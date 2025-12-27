@@ -137,13 +137,14 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-        <td className="px-4 font-medium">{category.display_name}</td>
+        <td className="px-4 font-medium border-r">{category.display_name}</td>
         <InlineEditableAmount
           value={values.daily}
           cadence="daily"
           isActiveCadence={cadence === 'daily'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
+          hasBorder={true}
         />
         <InlineEditableAmount
           value={values.weekly}
@@ -151,6 +152,7 @@ export default function CategoriesTab() {
           isActiveCadence={cadence === 'weekly'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
+          hasBorder={true}
         />
         <InlineEditableAmount
           value={values.monthly}
@@ -158,6 +160,7 @@ export default function CategoriesTab() {
           isActiveCadence={cadence === 'monthly'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
+          hasBorder={true}
         />
         <InlineEditableAmount
           value={values.yearly}
@@ -165,8 +168,9 @@ export default function CategoriesTab() {
           isActiveCadence={cadence === 'yearly'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
+          hasBorder={true}
         />
-        <td className="px-4 text-right">
+        <td className="px-4 text-right border-r">
           <div className="flex gap-2 justify-end">
             <Button
               variant="ghost"
@@ -195,18 +199,18 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
-        <td className="px-4 font-medium">{category.display_name}</td>
-        <td className="px-4">
+        <td className="px-4 font-medium border-r">{category.display_name}</td>
+        <td className="px-4 border-r">
           {everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
-        <td className="px-4 text-muted-foreground text-sm">
+        <td className="px-4 text-muted-foreground text-sm border-r">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <td className="px-4 text-right">
+        <td className="px-4 text-right border-r">
           <Button
             variant="outline"
             size="sm"
@@ -250,19 +254,19 @@ export default function CategoriesTab() {
                     <tr className="border-b-2 bg-muted/50">
                       {renderRow === renderBudgetedCategoryRow ? (
                         <>
-                          <th className="py-3 px-4 text-left font-bold">Category</th>
-                          <th className="py-3 px-4 text-right font-bold">Daily</th>
-                          <th className="py-3 px-4 text-right font-bold">Weekly</th>
-                          <th className="py-3 px-4 text-right font-bold">Monthly</th>
-                          <th className="py-3 px-4 text-right font-bold">Yearly</th>
-                          <th className="py-3 px-4 text-right font-bold">Actions</th>
+                          <th className="py-3 px-4 text-left font-bold border-r">Category</th>
+                          <th className="py-3 px-4 text-right font-bold border-r">Daily</th>
+                          <th className="py-3 px-4 text-right font-bold border-r">Weekly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r">Monthly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r">Yearly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r">Actions</th>
                         </>
                       ) : (
                         <>
-                          <th className="py-3 px-4 text-left font-bold">Category</th>
-                          <th className="py-3 px-4 text-left font-bold">Ever Used</th>
-                          <th className="py-3 px-4 text-left font-bold">Last Used</th>
-                          <th className="py-3 px-4 text-right font-bold"></th>
+                          <th className="py-3 px-4 text-left font-bold border-r">Category</th>
+                          <th className="py-3 px-4 text-left font-bold border-r">Ever Used</th>
+                          <th className="py-3 px-4 text-left font-bold border-r">Last Used</th>
+                          <th className="py-3 px-4 text-right font-bold border-r"></th>
                         </>
                       )}
                     </tr>

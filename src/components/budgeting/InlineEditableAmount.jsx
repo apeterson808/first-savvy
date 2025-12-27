@@ -7,7 +7,8 @@ export default function InlineEditableAmount({
   cadence,
   isActiveCadence,
   onUpdate,
-  isLoading = false
+  isLoading = false,
+  hasBorder = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -70,7 +71,7 @@ export default function InlineEditableAmount({
 
   if (isEditing) {
     return (
-      <td className="text-right">
+      <td className={`text-right ${hasBorder ? 'border-r' : ''}`}>
         <input
           ref={inputRef}
           type="text"
@@ -90,7 +91,7 @@ export default function InlineEditableAmount({
     <td
       className={`px-4 text-right tabular-nums cursor-pointer hover:bg-blue-50/50 transition-colors ${
         isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
-      } ${isLoading ? 'opacity-50' : ''}`}
+      } ${isLoading ? 'opacity-50' : ''} ${hasBorder ? 'border-r' : ''}`}
       onClick={handleClick}
     >
       {isLoading ? (
