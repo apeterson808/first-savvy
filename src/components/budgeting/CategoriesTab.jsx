@@ -232,7 +232,7 @@ export default function CategoriesTab() {
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
     const categoryColumnLabel = isBudgetedSection
       ? (title === 'Income Categories' ? 'Income Categories' : 'Expense Categories')
-      : 'Category';
+      : (title.includes('Income') ? 'Income Categories' : 'Expense Categories');
     const totalLabel = title === 'Income Categories' ? 'Income Total' : 'Expense Total';
 
     const dailyFormatted = totals ? formatAccountingAmount(totals.daily) : null;
