@@ -3,7 +3,7 @@ import { useBudgetData } from '@/hooks/useBudgetData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react';
-import { formatCadenceAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
+import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
@@ -137,7 +137,7 @@ export default function CategoriesTab() {
 
     return (
       <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-4 font-medium border-r border-slate-100">{category.display_name}</td>
+        <td className="px-4 border-r border-slate-100">{category.display_name}</td>
         <InlineEditableAmount
           value={values.daily}
           cadence="daily"
@@ -233,6 +233,12 @@ export default function CategoriesTab() {
     const categoryColumnLabel = isBudgetedSection
       ? (title === 'Income' ? 'Income Categories' : 'Expense Categories')
       : 'Category';
+    const totalLabel = title === 'Income' ? 'Income Total' : 'Expense Total';
+
+    const dailyFormatted = totals ? formatAccountingAmount(totals.daily) : null;
+    const weeklyFormatted = totals ? formatAccountingAmount(totals.weekly) : null;
+    const monthlyFormatted = totals ? formatAccountingAmount(totals.monthly) : null;
+    const yearlyFormatted = totals ? formatAccountingAmount(totals.yearly) : null;
 
     return (
       <div className="mb-6">
@@ -241,63 +247,85 @@ export default function CategoriesTab() {
             {emptyMessage}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full table-fixed">
-              <thead>
-                <tr className="border-b-2 border-slate-200 bg-slate-100/60">
-                  {isBudgetedSection ? (
-                    <>
-                      <th
-                        className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[25%] cursor-pointer hover:bg-slate-100"
-                        onClick={() => toggleSection(sectionKey)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                          {categoryColumnLabel}
-                          <Badge variant="secondary">{count}</Badge>
-                        </div>
-                      </th>
-                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Daily</th>
-                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Weekly</th>
-                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[18.75%] bg-blue-50/50">Monthly</th>
-                      <th className="py-2 px-4 text-left font-bold w-[18.75%]">Yearly</th>
-                    </>
-                  ) : (
-                    <>
-                      <th
-                        className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[40%] cursor-pointer hover:bg-slate-100"
-                        onClick={() => toggleSection(sectionKey)}
-                      >
-                        <div className="flex items-center gap-2">
-                          {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                          {categoryColumnLabel}
-                          <Badge variant="secondary">{count}</Badge>
-                        </div>
-                      </th>
-                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Ever Used</th>
-                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Last Used</th>
-                      <th className="py-2 px-4 text-right font-bold w-[20%]"></th>
-                    </>
-                  )}
-                </tr>
-              </thead>
-              {!isCollapsed && (
-                <tbody>
-                  {categories.map((category, index) => renderRow(category, index))}
-                </tbody>
-              )}
-              {totals && (
-                <tbody>
-                  <tr className="border-t-2 border-slate-200 bg-slate-100/60 font-bold">
-                    <td className="px-4 py-2 border-r border-slate-200">Total</td>
-                    <td className="px-4 py-2 text-left border-r border-slate-200">${totals.daily.toFixed(2)}</td>
-                    <td className="px-4 py-2 text-left border-r border-slate-200">${Math.round(totals.weekly).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-left border-r border-slate-200 bg-blue-50/50">${Math.round(totals.monthly).toLocaleString()}</td>
-                    <td className="px-4 py-2 text-left">${Math.round(totals.yearly).toLocaleString()}</td>
+          <div className="border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full table-fixed">
+                <thead>
+                  <tr className="border-b-2 border-slate-200 bg-slate-100/60">
+                    {isBudgetedSection ? (
+                      <>
+                        <th
+                          className="py-2 px-4 text-left font-bold w-[25%] cursor-pointer hover:bg-slate-100"
+                          onClick={() => toggleSection(sectionKey)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                            {categoryColumnLabel}
+                            <Badge variant="secondary">{count}</Badge>
+                          </div>
+                        </th>
+                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Daily</th>
+                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Weekly</th>
+                        <th className="py-2 px-4 text-left font-bold w-[18.75%] bg-blue-100/70">Monthly</th>
+                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Yearly</th>
+                      </>
+                    ) : (
+                      <>
+                        <th
+                          className="py-2 px-4 text-left font-bold w-[40%] cursor-pointer hover:bg-slate-100"
+                          onClick={() => toggleSection(sectionKey)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                            {categoryColumnLabel}
+                            <Badge variant="secondary">{count}</Badge>
+                          </div>
+                        </th>
+                        <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Ever Used</th>
+                        <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Last Used</th>
+                        <th className="py-2 px-4 text-right font-bold w-[20%]"></th>
+                      </>
+                    )}
                   </tr>
-                </tbody>
-              )}
-            </table>
+                </thead>
+                {!isCollapsed && (
+                  <tbody>
+                    {categories.map((category, index) => renderRow(category, index))}
+                  </tbody>
+                )}
+                {totals && (
+                  <tbody>
+                    <tr className="border-t-2 border-slate-200 bg-slate-100/60">
+                      <td className="px-4 py-2 border-r border-slate-200 font-bold">{totalLabel}</td>
+                      <td className="px-4 py-2 border-r border-slate-100">
+                        <div className="flex justify-between tabular-nums">
+                          <span className={totals.daily === 0 ? 'font-semibold' : ''}>{dailyFormatted.sign}</span>
+                          <span className={`text-right ${totals.daily === 0 ? 'font-semibold' : ''}`}>{dailyFormatted.amount}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 border-r border-slate-100">
+                        <div className="flex justify-between tabular-nums">
+                          <span className={totals.weekly === 0 ? 'font-semibold' : ''}>{weeklyFormatted.sign}</span>
+                          <span className={`text-right ${totals.weekly === 0 ? 'font-semibold' : ''}`}>{weeklyFormatted.amount}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2 border-r border-slate-100 bg-blue-100/70">
+                        <div className="flex justify-between tabular-nums font-semibold">
+                          <span>{monthlyFormatted.sign}</span>
+                          <span className="text-right">{monthlyFormatted.amount}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-2">
+                        <div className="flex justify-between tabular-nums">
+                          <span className={totals.yearly === 0 ? 'font-semibold' : ''}>{yearlyFormatted.sign}</span>
+                          <span className={`text-right ${totals.yearly === 0 ? 'font-semibold' : ''}`}>{yearlyFormatted.amount}</span>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                )}
+              </table>
+            </div>
           </div>
         )}
       </div>

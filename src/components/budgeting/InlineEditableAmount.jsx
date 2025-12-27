@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { formatCadenceAmount } from '@/utils/cadenceUtils';
+import { formatAccountingAmount } from '@/utils/cadenceUtils';
 import { Loader2 } from 'lucide-react';
 
 export default function InlineEditableAmount({
@@ -70,9 +70,12 @@ export default function InlineEditableAmount({
     }
   };
 
+  const isZero = value === 0;
+  const formatted = formatAccountingAmount(value);
+
   if (isEditing) {
     return (
-      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-blue-50/50' : ''}`}>
+      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-blue-100/70' : ''}`}>
         <input
           ref={inputRef}
           type="text"
@@ -81,7 +84,7 @@ export default function InlineEditableAmount({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
           className={`w-full text-left bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0 ${
-            isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
+            isMonthlyColumn ? 'font-semibold' : ''
           }`}
         />
       </td>
@@ -90,18 +93,24 @@ export default function InlineEditableAmount({
 
   return (
     <td
-      className={`px-4 text-left tabular-nums cursor-pointer hover:bg-slate-50/70 transition-colors ${
-        isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
-      } ${isLoading ? 'opacity-50' : ''} ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-blue-50/50' : ''}`}
+      className={`cursor-pointer hover:bg-slate-50/70 transition-colors ${
+        isLoading ? 'opacity-50' : ''
+      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-blue-100/70' : ''}`}
       onClick={handleClick}
     >
       {isLoading ? (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-4">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <span>{formatCadenceAmount(value, cadence)}</span>
+          <div className="flex justify-between w-full tabular-nums">
+            <span className={isMonthlyColumn || isZero ? 'font-semibold' : ''}>{formatted.sign}</span>
+            <span className={`text-right ${isMonthlyColumn || isZero ? 'font-semibold' : ''}`}>{formatted.amount}</span>
+          </div>
         </div>
       ) : (
-        formatCadenceAmount(value, cadence)
+        <div className="flex justify-between px-4 tabular-nums">
+          <span className={isMonthlyColumn || isZero ? 'font-semibold' : ''}>{formatted.sign}</span>
+          <span className={`text-right ${isMonthlyColumn || isZero ? 'font-semibold' : ''}`}>{formatted.amount}</span>
+        </div>
       )}
     </td>
   );

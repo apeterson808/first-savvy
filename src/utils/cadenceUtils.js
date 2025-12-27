@@ -105,10 +105,24 @@ export function getAllCadenceValues(amount, sourceCadence) {
   const yearly = convertCadence(amount, sourceCadence, 'yearly');
 
   return {
-    daily: daily,
+    daily: Math.ceil(daily),
     weekly: Math.ceil(weekly),
     monthly: Math.ceil(monthly),
     yearly: Math.ceil(yearly),
     source: sourceCadence
+  };
+}
+
+export function formatAccountingAmount(amount) {
+  if (typeof amount !== 'number' || isNaN(amount)) {
+    return { sign: '$', amount: '0' };
+  }
+
+  const roundedAmount = Math.round(amount);
+  const formattedNumber = roundedAmount.toLocaleString('en-US');
+
+  return {
+    sign: '$',
+    amount: formattedNumber
   };
 }
