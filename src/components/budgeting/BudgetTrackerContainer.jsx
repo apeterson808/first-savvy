@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import BudgetProgressPill from './BudgetProgressPill';
 import { convertCadence } from '@/utils/cadenceUtils';
@@ -74,7 +73,6 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
             <div className="flex items-center gap-2">
               {isCollapsed ? <ChevronRight className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
               <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{title}</p>
-              <Badge variant="secondary">{count}</Badge>
             </div>
             <div className="flex items-center gap-4 text-sm">
               <div className="text-right">
