@@ -76,14 +76,15 @@ export default function SankeyCashFlow({ budgets }) {
     );
   }
 
-  const width = 800;
-  const height = Math.max(250, Math.max(incomeNodes.length, expenseNodes.length) * 25 + 50);
-  const padding = { top: 25, bottom: 25, left: 20, right: 20 };
+  const width = 900;
+  const height = Math.max(250, Math.max(incomeNodes.length, expenseNodes.length) * 25 + 80);
+  const padding = { top: 50, bottom: 30, left: 10, right: 20 };
 
-  const leftX = padding.left + 120;
+  const leftX = padding.left + 100;
   const centerX = width / 2;
-  const rightX = width - padding.right - 120;
+  const rightX = width - padding.right - 150;
   const nodeWidth = 12;
+  const centerNodeWidth = 60;
   const gap = 5;
 
   const usableHeight = height - padding.top - padding.bottom;
@@ -179,8 +180,8 @@ export default function SankeyCashFlow({ budgets }) {
   });
 
   return (
-    <div className="w-full overflow-x-auto">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ minHeight: '250px' }}>
+    <div className="w-full overflow-x-auto pb-2">
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto" style={{ minHeight: '300px' }}>
         <defs>
           {leftFlows.map(node => (
             <linearGradient key={`grad-left-${node.id}`} id={`grad-left-${node.id}`} x1="0%" y1="0%" x2="100%" y2="0%">
@@ -198,13 +199,12 @@ export default function SankeyCashFlow({ budgets }) {
         </defs>
 
         {leftFlows.map(node => {
-          const Icon = node.icon && ICON_MAP[node.icon];
           return (
             <g key={`left-flow-${node.id}`}>
               <path
                 d={createFlowPath(
                   leftX + nodeWidth, node.y, node.height,
-                  centerX, node.sourceY, node.sourceH
+                  centerX - centerNodeWidth / 2, node.sourceY, node.sourceH
                 )}
                 fill={`url(#grad-left-${node.id})`}
                 className="transition-opacity cursor-pointer"
@@ -217,7 +217,6 @@ export default function SankeyCashFlow({ budgets }) {
         })}
 
         {positionedIncomeNodes.map(node => {
-          const Icon = node.icon && ICON_MAP[node.icon];
           return (
             <g key={`left-node-${node.id}`}>
               <rect
@@ -226,7 +225,6 @@ export default function SankeyCashFlow({ budgets }) {
                 width={nodeWidth}
                 height={node.height}
                 fill={node.color}
-                rx={6}
               />
               <text
                 x={leftX - 8}
@@ -237,42 +235,29 @@ export default function SankeyCashFlow({ budgets }) {
               >
                 {node.name}
               </text>
-              {Icon && node.height >= 24 && (
-                <g transform={`translate(${leftX + nodeWidth + 8}, ${node.y + node.height / 2})`}>
-                  <circle r="10" fill={node.color} opacity="0.2" />
-                  <foreignObject x="-8" y="-8" width="16" height="16">
-                    <div className="flex items-center justify-center w-full h-full">
-                      <Icon className="w-3 h-3" style={{ color: node.color }} />
-                    </div>
-                  </foreignObject>
-                </g>
-              )}
-              {node.height >= 16 && (
-                <text
-                  x={leftX - 8}
-                  y={node.y + node.height / 2 + 14}
-                  textAnchor="end"
-                  dominantBaseline="middle"
-                  className="text-[10px] fill-slate-500"
-                >
-                  {formatAmount(node.amount)}
-                </text>
-              )}
+              <text
+                x={leftX - 8}
+                y={node.y + node.height / 2 + 14}
+                textAnchor="end"
+                dominantBaseline="middle"
+                className="text-[10px] fill-slate-500"
+              >
+                {formatAmount(node.amount)}
+              </text>
             </g>
           );
         })}
 
         <rect
-          x={centerX - nodeWidth / 2}
+          x={centerX - centerNodeWidth / 2}
           y={centerY}
-          width={nodeWidth}
+          width={centerNodeWidth}
           height={centerHeight}
           fill="#0ea5e9"
-          rx={6}
         />
         <text
           x={centerX}
-          y={centerY - 12}
+          y={centerY - 20}
           textAnchor="middle"
           className="text-sm fill-slate-800 font-semibold"
         >
@@ -280,7 +265,7 @@ export default function SankeyCashFlow({ budgets }) {
         </text>
         <text
           x={centerX}
-          y={height - padding.bottom + 20}
+          y={centerY - 6}
           textAnchor="middle"
           className="text-xs fill-slate-600"
         >
@@ -288,12 +273,11 @@ export default function SankeyCashFlow({ budgets }) {
         </text>
 
         {rightFlows.map(node => {
-          const Icon = node.icon && ICON_MAP[node.icon];
           return (
             <g key={`right-flow-${node.id}`}>
               <path
                 d={createFlowPath(
-                  centerX + nodeWidth / 2, node.targetY, node.targetH,
+                  centerX + centerNodeWidth / 2, node.targetY, node.targetH,
                   rightX, node.y, node.height
                 )}
                 fill={`url(#grad-right-${node.id})`}
@@ -307,7 +291,6 @@ export default function SankeyCashFlow({ budgets }) {
         })}
 
         {[...positionedExpenseNodes, ...(unallocatedNode ? [unallocatedNode] : [])].map(node => {
-          const Icon = node.icon && ICON_MAP[node.icon];
           return (
             <g key={`right-node-${node.id}`}>
               <rect
@@ -316,7 +299,6 @@ export default function SankeyCashFlow({ budgets }) {
                 width={nodeWidth}
                 height={node.height}
                 fill={node.color}
-                rx={6}
               />
               <text
                 x={rightX + nodeWidth + 8}
@@ -325,29 +307,8 @@ export default function SankeyCashFlow({ budgets }) {
                 dominantBaseline="middle"
                 className="text-xs fill-slate-700 font-medium"
               >
-                {node.name}
+                {node.name} <tspan className="fill-slate-500 font-normal">{formatAmount(node.amount)}</tspan>
               </text>
-              {Icon && node.height >= 24 && (
-                <g transform={`translate(${rightX - 18}, ${node.y + node.height / 2})`}>
-                  <circle r="10" fill={node.color} opacity="0.2" />
-                  <foreignObject x="-8" y="-8" width="16" height="16">
-                    <div className="flex items-center justify-center w-full h-full">
-                      <Icon className="w-3 h-3" style={{ color: node.color }} />
-                    </div>
-                  </foreignObject>
-                </g>
-              )}
-              {node.height >= 16 && (
-                <text
-                  x={rightX + nodeWidth + 8}
-                  y={node.y + node.height / 2 + 14}
-                  textAnchor="start"
-                  dominantBaseline="middle"
-                  className="text-[10px] fill-slate-500"
-                >
-                  {formatAmount(node.amount)}
-                </text>
-              )}
             </g>
           );
         })}
