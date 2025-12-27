@@ -15,7 +15,7 @@ import {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 } from 'lucide-react';
 
 // Map icon names to components
@@ -32,7 +32,7 @@ const ICON_MAP = {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 };
 
 const ICON_NAMES = Object.keys(ICON_MAP);

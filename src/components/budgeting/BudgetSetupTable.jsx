@@ -13,7 +13,7 @@ import {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -31,7 +31,7 @@ const ICON_MAP = {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 };
 
 export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEditGroup }) {

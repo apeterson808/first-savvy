@@ -12,7 +12,7 @@ import {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 } from 'lucide-react';
 import {
   Tooltip,
@@ -35,7 +35,7 @@ const ICON_MAP = {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 };
 
 export default function BudgetAllocationBar({ budgets, budgetGroups }) {
@@ -161,18 +161,17 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
               style={{ left: `${expensePercentage}%` }}
             >
               <div className="w-px h-3 bg-slate-600" />
-              <div className="mt-1 text-[11px] text-slate-500 flex flex-col items-center">
+              <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
                 <span className="font-medium">
                   ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
-                <span>
-                  {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
-                </span>
+                {' '}
+                {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
               </div>
             </div>
           )}
         </div>
-        <div className="h-14" />
+        <div className="h-8" />
       </TooltipProvider>
     </div>
   );
