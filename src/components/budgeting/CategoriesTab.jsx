@@ -134,19 +134,17 @@ export default function CategoriesTab() {
     const amount = budget.allocated_amount || 0;
     const values = getAllCadenceValues(amount, cadence);
     const isUpdating = updatingBudgetId === budget.id;
-    const isZero = amount === 0;
 
     return (
-      <tr key={category.id} className={`border-b border-slate-200 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'} group`}>
-        <td className="px-4 py-2.5 font-medium border-r border-slate-200">{category.display_name}</td>
+      <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
+        <td className="px-4 font-medium border-r">{category.display_name}</td>
         <InlineEditableAmount
           value={values.daily}
           cadence="daily"
           isActiveCadence={cadence === 'daily'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
-          isMonthly={false}
-          isZero={isZero}
+          hasBorder={true}
         />
         <InlineEditableAmount
           value={values.weekly}
@@ -154,8 +152,7 @@ export default function CategoriesTab() {
           isActiveCadence={cadence === 'weekly'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
-          isMonthly={false}
-          isZero={isZero}
+          hasBorder={true}
         />
         <InlineEditableAmount
           value={values.monthly}
@@ -163,8 +160,7 @@ export default function CategoriesTab() {
           isActiveCadence={cadence === 'monthly'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
-          isMonthly={true}
-          isZero={isZero}
+          hasBorder={true}
         />
         <InlineEditableAmount
           value={values.yearly}
@@ -172,16 +168,14 @@ export default function CategoriesTab() {
           isActiveCadence={cadence === 'yearly'}
           onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
           isLoading={isUpdating}
-          isMonthly={false}
-          isZero={isZero}
+          hasBorder={true}
         />
-        <td className="px-4 py-2.5 text-right border-l border-slate-200">
+        <td className="px-4 text-right border-r">
           <div className="flex gap-2 justify-end">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleEditBudget(budget)}
-              className="opacity-40 group-hover:opacity-100 transition-opacity"
             >
               <Pencil className="h-4 w-4" />
             </Button>
@@ -189,7 +183,6 @@ export default function CategoriesTab() {
               variant="ghost"
               size="sm"
               onClick={() => handleDeleteBudget(budget.id)}
-              className="opacity-40 group-hover:opacity-100 transition-opacity"
             >
               <Trash2 className="h-4 w-4" />
             </Button>
@@ -205,19 +198,19 @@ export default function CategoriesTab() {
     const lastUsed = usage?.lastUsed;
 
     return (
-      <tr key={category.id} className={`border-b border-slate-200 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-4 py-2.5 font-medium border-r border-slate-200">{category.display_name}</td>
-        <td className="px-4 py-2.5">
+      <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
+        <td className="px-4 font-medium border-r">{category.display_name}</td>
+        <td className="px-4 border-r">
           {everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
-        <td className="px-4 py-2.5 text-muted-foreground text-sm">
+        <td className="px-4 text-muted-foreground text-sm border-r">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <td className="px-4 py-2.5 text-right">
+        <td className="px-4 text-right border-r">
           <Button
             variant="outline"
             size="sm"
@@ -234,7 +227,6 @@ export default function CategoriesTab() {
   const renderSection = (title, categories, sectionKey, renderRow, emptyMessage) => {
     const isCollapsed = collapsedSections[sectionKey];
     const count = categories.length;
-    const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
 
     return (
       <div className="mb-6">
@@ -242,7 +234,7 @@ export default function CategoriesTab() {
           className="flex items-center justify-between p-4 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted"
           onClick={() => toggleSection(sectionKey)}
         >
-          <h3 className="text-lg font-bold flex items-center gap-2">
+          <h3 className="text-lg font-semibold flex items-center gap-2">
             {title}
             <Badge variant="secondary">{count}</Badge>
           </h3>
@@ -251,13 +243,6 @@ export default function CategoriesTab() {
 
         {!isCollapsed && (
           <div className="mt-4">
-            {isBudgetedSection && (
-              <div className="mb-3 border-b border-slate-200 pb-3">
-                <p className="text-xs text-muted-foreground">
-                  Amounts shown as Daily / Weekly / Monthly / Yearly equivalents
-                </p>
-              </div>
-            )}
             {categories.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 {emptyMessage}
@@ -266,22 +251,22 @@ export default function CategoriesTab() {
               <div className="overflow-x-auto">
                 <table className="w-full table-fixed">
                   <thead>
-                    <tr className="border-b border-slate-300 bg-muted/50">
-                      {isBudgetedSection ? (
+                    <tr className="border-b-2 bg-muted/50">
+                      {renderRow === renderBudgetedCategoryRow ? (
                         <>
-                          <th className="py-3 px-4 text-left font-semibold text-slate-700 border-r border-slate-200 w-[25%]">Category</th>
-                          <th className="py-3 px-4 text-right font-medium text-slate-600 w-[14%]">Daily</th>
-                          <th className="py-3 px-4 text-right font-medium text-slate-600 w-[14%]">Weekly</th>
-                          <th className="py-3 px-4 text-right font-bold text-slate-900 bg-slate-50/50 w-[14%]">Monthly</th>
-                          <th className="py-3 px-4 text-right font-medium text-slate-600 w-[14%]">Yearly</th>
-                          <th className="py-3 px-4 text-right font-semibold text-slate-700 border-l border-slate-200 w-[19%]">Actions</th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[25%]">Category</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Daily</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Weekly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Monthly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Yearly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[19%]">Actions</th>
                         </>
                       ) : (
                         <>
-                          <th className="py-3 px-4 text-left font-semibold text-slate-700 border-r border-slate-200 w-[40%]">Category</th>
-                          <th className="py-3 px-4 text-left font-medium text-slate-600 w-[20%]">Ever Used</th>
-                          <th className="py-3 px-4 text-left font-medium text-slate-600 w-[20%]">Last Used</th>
-                          <th className="py-3 px-4 text-right font-medium text-slate-600 w-[20%]"></th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[40%]">Category</th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[20%]">Ever Used</th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[20%]">Last Used</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[20%]"></th>
                         </>
                       )}
                     </tr>
