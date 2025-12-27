@@ -7,6 +7,7 @@ import { formatCadenceAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
+import InlineEditableAmount from './InlineEditableAmount';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
@@ -40,6 +41,7 @@ export default function CategoriesTab() {
   const [addBudgetSheetOpen, setAddBudgetSheetOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [editingBudget, setEditingBudget] = useState(null);
+  const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'sections', JSON.stringify(collapsedSections));
@@ -76,6 +78,20 @@ export default function CategoriesTab() {
     }
   });
 
+  const updateBudgetMutation = useMutation({
+    mutationFn: ({ id, data }) => firstsavvy.entities.Budget.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      setUpdatingBudgetId(null);
+      toast.success('Budget updated successfully');
+    },
+    onError: (error) => {
+      console.error('Error updating budget:', error);
+      setUpdatingBudgetId(null);
+      toast.error('Failed to update budget');
+    }
+  });
+
   const handleAddBudget = (category) => {
     const budgetData = {
       chart_account_id: category.id,
@@ -101,6 +117,15 @@ export default function CategoriesTab() {
     return budgets.find(b => b.chart_account_id === categoryId);
   };
 
+  const handleUpdateBudgetAmount = async (budgetId, newAmount, editedCadence) => {
+    setUpdatingBudgetId(budgetId);
+    const updateData = {
+      allocated_amount: newAmount,
+      cadence: editedCadence
+    };
+    updateBudgetMutation.mutate({ id: budgetId, data: updateData });
+  };
+
   const renderBudgetedCategoryRow = (category, index) => {
     const budget = getBudgetForCategory(category.id);
     if (!budget) return null;
@@ -108,22 +133,39 @@ export default function CategoriesTab() {
     const cadence = budget.cadence || 'monthly';
     const amount = budget.allocated_amount || 0;
     const values = getAllCadenceValues(amount, cadence);
+    const isUpdating = updatingBudgetId === budget.id;
 
     return (
       <tr key={category.id} className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-background' : 'bg-muted/20'}`}>
         <td className="px-4 font-medium">{category.display_name}</td>
-        <td className={`px-4 text-right tabular-nums ${cadence === 'daily' ? 'font-semibold' : 'text-muted-foreground'}`}>
-          {formatCadenceAmount(values.daily, 2)}
-        </td>
-        <td className={`px-4 text-right tabular-nums ${cadence === 'weekly' ? 'font-semibold' : 'text-muted-foreground'}`}>
-          {formatCadenceAmount(values.weekly, 2)}
-        </td>
-        <td className={`px-4 text-right tabular-nums ${cadence === 'monthly' ? 'font-semibold' : 'text-muted-foreground'}`}>
-          {formatCadenceAmount(values.monthly, 2)}
-        </td>
-        <td className={`px-4 text-right tabular-nums ${cadence === 'yearly' ? 'font-semibold' : 'text-muted-foreground'}`}>
-          {formatCadenceAmount(values.yearly, 0)}
-        </td>
+        <InlineEditableAmount
+          value={values.daily}
+          cadence="daily"
+          isActiveCadence={cadence === 'daily'}
+          onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
+          isLoading={isUpdating}
+        />
+        <InlineEditableAmount
+          value={values.weekly}
+          cadence="weekly"
+          isActiveCadence={cadence === 'weekly'}
+          onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
+          isLoading={isUpdating}
+        />
+        <InlineEditableAmount
+          value={values.monthly}
+          cadence="monthly"
+          isActiveCadence={cadence === 'monthly'}
+          onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
+          isLoading={isUpdating}
+        />
+        <InlineEditableAmount
+          value={values.yearly}
+          cadence="yearly"
+          isActiveCadence={cadence === 'yearly'}
+          onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
+          isLoading={isUpdating}
+        />
         <td className="px-4 text-right">
           <div className="flex gap-2 justify-end">
             <Button
