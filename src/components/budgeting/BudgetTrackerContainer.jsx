@@ -93,7 +93,7 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
           </div>
         </CardHeader>
         {!isCollapsed && (
-          <CardContent className="px-6 pb-4 space-y-2">
+          <CardContent className="px-6 pb-4 space-y-1">
             {sortedBudgets.map(budget => (
               <BudgetProgressPill
                 key={budget.id}

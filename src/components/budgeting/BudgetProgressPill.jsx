@@ -44,65 +44,34 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   return (
     <div className="group relative">
-      <div className="p-3 rounded-lg border border-slate-200 bg-white hover:shadow-md transition-all duration-200">
-        <div className="relative h-10 rounded-full overflow-hidden" style={{ backgroundColor: bgColor }}>
-          <div
-            className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
-            style={{
-              width: `${displayPercentage}%`,
-              backgroundColor: progressColor
-            }}
-          />
+      <div className="relative h-10 rounded-full overflow-hidden" style={{ backgroundColor: bgColor }}>
+        <div
+          className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
+          style={{
+            width: `${displayPercentage}%`,
+            backgroundColor: progressColor
+          }}
+        />
 
-          <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <IconComponent className="w-4 h-4 flex-shrink-0" style={{ color: categoryColor }} />
-              <span className="font-semibold text-sm text-slate-900 truncate">
-                {categoryData?.display_name || 'Unknown Category'}
+        <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
+          <div className="flex items-center gap-2.5 min-w-0 flex-1">
+            <IconComponent className="w-4 h-4 flex-shrink-0" style={{ color: categoryColor }} />
+            <span className="font-semibold text-sm text-slate-900 truncate">
+              {categoryData?.display_name || 'Unknown Category'}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+            <div className="flex items-center gap-1.5 text-xs font-medium">
+              <span className="text-slate-900">
+                ${actualAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
-            </div>
-
-            <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-              <div className="flex items-center gap-1.5 text-xs font-medium">
-                <span className="text-slate-900">
-                  ${actualAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-                <span className="text-slate-400">/</span>
-                <span className="text-slate-600">
-                  ${budgetedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              </div>
+              <span className="text-slate-400">/</span>
+              <span className="text-slate-600">
+                ${budgetedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center justify-between mt-2">
-          <span className="text-[10px] text-slate-500">
-            {isOverBudget ? (
-              <span className="text-red-600 font-medium">
-                Over by ${Math.abs(remaining).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            ) : (
-              <span>
-                ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} remaining
-              </span>
-            )}
-          </span>
-          {!isIncome && (isOverBudget || isNearLimit) && (
-            <span className="text-[10px] font-medium">
-              {isOverBudget ? (
-                <span className="text-red-600 flex items-center gap-1">
-                  <Icons.AlertCircle className="w-3 h-3" />
-                  Over Budget
-                </span>
-              ) : (
-                <span className="text-amber-600 flex items-center gap-1">
-                  <Icons.AlertTriangle className="w-3 h-3" />
-                  Near Limit
-                </span>
-              )}
-            </span>
-          )}
         </div>
       </div>
     </div>
