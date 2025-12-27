@@ -255,22 +255,6 @@ export default function SankeyCashFlow({ budgets }) {
           height={centerHeight}
           fill="#0ea5e9"
         />
-        <text
-          x={centerX}
-          y={centerY - 20}
-          textAnchor="middle"
-          className="text-sm fill-slate-800 font-semibold"
-        >
-          Budget
-        </text>
-        <text
-          x={centerX}
-          y={centerY - 6}
-          textAnchor="middle"
-          className="text-xs fill-slate-600"
-        >
-          {formatAmount(totalIncome)}
-        </text>
 
         {rightFlows.map(node => {
           return (
