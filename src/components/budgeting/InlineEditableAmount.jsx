@@ -8,7 +8,8 @@ export default function InlineEditableAmount({
   isActiveCadence,
   onUpdate,
   isLoading = false,
-  hasBorder = false
+  isMonthly = false,
+  isZero = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -69,9 +70,17 @@ export default function InlineEditableAmount({
     }
   };
 
+  const getTextColor = () => {
+    if (isZero) return 'text-slate-400';
+    if (isMonthly) return isActiveCadence ? 'text-slate-900 font-bold' : 'text-slate-800 font-semibold';
+    return isActiveCadence ? 'font-semibold text-slate-900' : 'text-slate-600';
+  };
+
+  const cellBgClass = isMonthly ? 'bg-slate-50/50' : '';
+
   if (isEditing) {
     return (
-      <td className={`text-right ${hasBorder ? 'border-r' : ''}`}>
+      <td className={`text-right py-2.5 ${cellBgClass}`}>
         <input
           ref={inputRef}
           type="text"
@@ -79,9 +88,7 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className={`w-full text-right bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0 ${
-            isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
-          }`}
+          className={`w-full text-right bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0 ${getTextColor()}`}
         />
       </td>
     );
@@ -89,9 +96,9 @@ export default function InlineEditableAmount({
 
   return (
     <td
-      className={`px-4 text-right tabular-nums cursor-pointer hover:bg-muted/20 transition-colors ${
-        isActiveCadence ? 'font-semibold' : 'text-muted-foreground'
-      } ${isLoading ? 'opacity-50' : ''} ${hasBorder ? 'border-r' : ''}`}
+      className={`px-4 py-2.5 text-right tabular-nums cursor-pointer hover:bg-slate-100/30 transition-colors ${getTextColor()} ${
+        isLoading ? 'opacity-50' : ''
+      } ${cellBgClass}`}
       onClick={handleClick}
     >
       {isLoading ? (
