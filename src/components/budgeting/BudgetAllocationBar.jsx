@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import {
-  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
+  Home, House, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
   Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
   Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
   Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
@@ -22,7 +22,7 @@ import {
 } from '@/components/ui/tooltip';
 
 const ICON_MAP = {
-  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
+  Home, House, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
   Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
   Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
   Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
@@ -41,12 +41,17 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
 
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
+  const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
 
-  const totalBudgeted = expenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+  const totalExpenseBudgeted = expenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+  const totalIncomeBudgeted = incomeBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+  const unallocated = Math.max(0, totalIncomeBudgeted - totalExpenseBudgeted);
 
-  if (totalBudgeted === 0 || expenseBudgets.length === 0) {
+  if (totalExpenseBudgeted === 0 || expenseBudgets.length === 0) {
     return null;
   }
+
+  const totalForBar = totalIncomeBudgeted > 0 ? totalIncomeBudgeted : totalExpenseBudgeted;
 
   const budgetSegments = expenseBudgets
     .map(budget => ({
@@ -55,24 +60,35 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
       amount: budget.allocated_amount || 0,
       color: budget.chartAccount?.color || '#64748b',
       icon: budget.chartAccount?.icon,
-      percentage: ((budget.allocated_amount || 0) / totalBudgeted) * 100
+      percentage: ((budget.allocated_amount || 0) / totalForBar) * 100
     }))
     .sort((a, b) => b.amount - a.amount);
+
+  const unallocatedSegment = unallocated > 0 ? {
+    id: 'unallocated',
+    name: 'Unallocated',
+    amount: unallocated,
+    color: '#e2e8f0',
+    icon: null,
+    percentage: (unallocated / totalForBar) * 100
+  } : null;
+
+  const allSegments = unallocatedSegment ? [...budgetSegments, unallocatedSegment] : budgetSegments;
 
   return (
     <div className="border border-slate-200 rounded-lg p-4 bg-white shadow-sm mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+        <h3 className="text-sm font-semibold text-slate-700">
           Budget Allocation
         </h3>
         <span className="text-xs text-slate-500">
-          ${totalBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Total
+          ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Total Income
         </span>
       </div>
 
       <TooltipProvider delayDuration={100}>
         <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
-          {budgetSegments.map((segment, index) => {
+          {allSegments.map((segment, index) => {
             const Icon = segment.icon && ICON_MAP[segment.icon];
             const isHovered = hoveredCategory === segment.id;
 
@@ -91,8 +107,8 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
                     onMouseEnter={() => setHoveredCategory(segment.id)}
                     onMouseLeave={() => setHoveredCategory(null)}
                   >
-                    {segment.percentage > 8 && Icon && (
-                      <Icon className="w-4 h-4 text-white/90" />
+                    {segment.percentage > 5 && Icon && (
+                      <Icon className="w-4 h-4 text-white/90 drop-shadow" />
                     )}
                   </div>
                 </TooltipTrigger>
@@ -129,37 +145,31 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
         </div>
       </TooltipProvider>
 
-      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2">
-        {budgetSegments.slice(0, 5).map((segment) => {
-          const Icon = segment.icon && ICON_MAP[segment.icon];
-          return (
-            <div
-              key={segment.id}
-              className="flex items-center gap-1.5 cursor-pointer transition-opacity"
-              style={{ opacity: hoveredCategory && hoveredCategory !== segment.id ? 0.5 : 1 }}
-              onMouseEnter={() => setHoveredCategory(segment.id)}
-              onMouseLeave={() => setHoveredCategory(null)}
-            >
-              <div
-                className="w-3 h-3 rounded-sm flex-shrink-0"
-                style={{ backgroundColor: segment.color }}
-              />
-              <span className="text-xs text-slate-600 truncate max-w-[120px]">
-                {segment.name}
-              </span>
-              <span className="text-xs text-slate-400">
-                {segment.percentage.toFixed(0)}%
-              </span>
-            </div>
-          );
-        })}
-        {budgetSegments.length > 5 && (
-          <div className="flex items-center gap-1.5">
-            <span className="text-xs text-slate-500">
-              +{budgetSegments.length - 5} more
-            </span>
-          </div>
-        )}
+      <div className="mt-4 flex items-center justify-between px-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-600">Income:</span>
+          <span className="text-sm font-semibold text-emerald-600">
+            ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        <div className="text-slate-400">-</div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-600">Expenses:</span>
+          <span className="text-sm font-semibold text-rose-600">
+            ${totalExpenseBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
+
+        <div className="text-slate-400">=</div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-slate-600">Remaining:</span>
+          <span className={`text-sm font-bold ${unallocated > 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+            ${unallocated.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </span>
+        </div>
       </div>
     </div>
   );
