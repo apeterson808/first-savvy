@@ -305,7 +305,6 @@ export default function CategoriesTab() {
                           <div className="flex items-center gap-2">
                             {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                             {categoryColumnLabel}
-                            <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
                         <th className="py-2 px-4 text-left font-normal w-[14%]">Daily</th>
@@ -323,7 +322,6 @@ export default function CategoriesTab() {
                           <div className="flex items-center gap-2">
                             {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                             {categoryColumnLabel}
-                            <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
                         <th className="py-2 px-4 text-left font-normal w-[20%]">Ever Used</th>
