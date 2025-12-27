@@ -231,9 +231,9 @@ export default function CategoriesTab() {
     const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
     const categoryColumnLabel = isBudgetedSection
-      ? (title === 'Income' ? 'Income Categories' : 'Expense Categories')
+      ? (title === 'Income Categories' ? 'Income Categories' : 'Expense Categories')
       : 'Category';
-    const totalLabel = title === 'Income' ? 'Income Total' : 'Expense Total';
+    const totalLabel = title === 'Income Categories' ? 'Income Total' : 'Expense Total';
 
     const dailyFormatted = totals ? formatAccountingAmount(totals.daily) : null;
     const weeklyFormatted = totals ? formatAccountingAmount(totals.weekly) : null;
@@ -281,8 +281,8 @@ export default function CategoriesTab() {
                             <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Ever Used</th>
-                        <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Last Used</th>
+                        <th className="py-2 px-4 text-left font-bold w-[20%]">Ever Used</th>
+                        <th className="py-2 px-4 text-left font-bold w-[20%]">Last Used</th>
                         <th className="py-2 px-4 text-right font-bold w-[20%]"></th>
                       </>
                     )}
@@ -351,7 +351,7 @@ export default function CategoriesTab() {
         </CardHeader>
         <CardContent className="px-6 pb-4">
           {renderSection(
-            'Income',
+            'Income Categories',
             budgetedIncomeCategories,
             'budgetedIncome',
             renderBudgetedCategoryRow,
@@ -359,7 +359,7 @@ export default function CategoriesTab() {
           )}
 
           {renderSection(
-            'Expenses',
+            'Expense Categories',
             budgetedExpenseCategories,
             'budgetedExpense',
             renderBudgetedCategoryRow,
