@@ -10,7 +10,6 @@ import { PageTabs } from '@/components/common/PageTabs';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetOverviewCards from '../components/budgeting/BudgetOverviewCards';
-import BudgetAllocationBar from '../components/budgeting/BudgetAllocationBar';
 import BudgetCategoryList from '../components/budgeting/BudgetCategoryList';
 import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import CategoriesTab from '../components/budgeting/CategoriesTab';
@@ -130,11 +129,6 @@ export default function Budgeting() {
                 totalIncome={totalActualIncome}
                 totalBudgeted={totalBudgeted}
                 totalSpent={totalSpent}
-              />
-
-              <BudgetAllocationBar
-                budgets={budgets}
-                budgetGroups={budgetGroups}
               />
 
               {budgetGroups.sort((a, b) => (a.order || 0) - (b.order || 0)).map(group => {

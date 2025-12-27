@@ -7,6 +7,7 @@ import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtil
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
+import BudgetAllocationBar from './BudgetAllocationBar';
 import InlineEditableAmount from './InlineEditableAmount';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
@@ -390,6 +391,11 @@ export default function CategoriesTab() {
 
   return (
     <div className="space-y-4">
+      <BudgetAllocationBar
+        budgets={budgets}
+        budgetGroups={budgetGroups}
+      />
+
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-3 pt-4 px-6">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
