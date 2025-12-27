@@ -284,15 +284,17 @@ export default function CategoriesTab() {
               {!isCollapsed && (
                 <tbody>
                   {categories.map((category, index) => renderRow(category, index))}
-                  {totals && (
-                    <tr className="border-t-2 border-slate-200 bg-slate-100/60 font-bold">
-                      <td className="px-4 py-2 border-r border-slate-200">Total</td>
-                      <td className="px-4 py-2 text-left border-r border-slate-200">${totals.daily.toFixed(2)}</td>
-                      <td className="px-4 py-2 text-left border-r border-slate-200">${Math.round(totals.weekly).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-left border-r border-slate-200 bg-blue-50/50">${Math.round(totals.monthly).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-left">${Math.round(totals.yearly).toLocaleString()}</td>
-                    </tr>
-                  )}
+                </tbody>
+              )}
+              {totals && (
+                <tbody>
+                  <tr className="border-t-2 border-slate-200 bg-slate-100/60 font-bold">
+                    <td className="px-4 py-2 border-r border-slate-200">Total</td>
+                    <td className="px-4 py-2 text-left border-r border-slate-200">${totals.daily.toFixed(2)}</td>
+                    <td className="px-4 py-2 text-left border-r border-slate-200">${Math.round(totals.weekly).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-left border-r border-slate-200 bg-blue-50/50">${Math.round(totals.monthly).toLocaleString()}</td>
+                    <td className="px-4 py-2 text-left">${Math.round(totals.yearly).toLocaleString()}</td>
+                  </tr>
                 </tbody>
               )}
             </table>
