@@ -230,64 +230,72 @@ export default function CategoriesTab() {
     const count = categories.length;
     const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
+    const categoryColumnLabel = isBudgetedSection
+      ? (title === 'Income' ? 'Income Categories' : 'Expense Categories')
+      : 'Category';
 
     return (
       <div className="mb-6">
-        <div
-          className="flex items-center justify-between p-4 bg-slate-100/60 rounded-lg cursor-pointer hover:bg-slate-100"
-          onClick={() => toggleSection(sectionKey)}
-        >
-          <h3 className="text-lg font-semibold flex items-center gap-2">
-            {title}
-            <Badge variant="secondary">{count}</Badge>
-          </h3>
-          {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-        </div>
-
-        {!isCollapsed && (
-          <div className="mt-4">
-            {categories.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                {emptyMessage}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed">
-                  <thead>
-                    <tr className="border-b-2 border-slate-200 bg-slate-100/60">
-                      {isBudgetedSection ? (
-                        <>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[25%]">Category</th>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Daily</th>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Weekly</th>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[18.75%] bg-blue-50/50">Monthly</th>
-                          <th className="py-3 px-4 text-left font-bold w-[18.75%]">Yearly</th>
-                        </>
-                      ) : (
-                        <>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[40%]">Category</th>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Ever Used</th>
-                          <th className="py-3 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Last Used</th>
-                          <th className="py-3 px-4 text-right font-bold w-[20%]"></th>
-                        </>
-                      )}
+        {categories.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            {emptyMessage}
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full table-fixed">
+              <thead>
+                <tr className="border-b-2 border-slate-200 bg-slate-100/60">
+                  {isBudgetedSection ? (
+                    <>
+                      <th
+                        className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[25%] cursor-pointer hover:bg-slate-100"
+                        onClick={() => toggleSection(sectionKey)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                          {categoryColumnLabel}
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      </th>
+                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Daily</th>
+                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[18.75%]">Weekly</th>
+                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[18.75%] bg-blue-50/50">Monthly</th>
+                      <th className="py-2 px-4 text-left font-bold w-[18.75%]">Yearly</th>
+                    </>
+                  ) : (
+                    <>
+                      <th
+                        className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[40%] cursor-pointer hover:bg-slate-100"
+                        onClick={() => toggleSection(sectionKey)}
+                      >
+                        <div className="flex items-center gap-2">
+                          {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                          {categoryColumnLabel}
+                          <Badge variant="secondary">{count}</Badge>
+                        </div>
+                      </th>
+                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Ever Used</th>
+                      <th className="py-2 px-4 text-left font-bold border-r border-slate-200 w-[20%]">Last Used</th>
+                      <th className="py-2 px-4 text-right font-bold w-[20%]"></th>
+                    </>
+                  )}
+                </tr>
+              </thead>
+              {!isCollapsed && (
+                <tbody>
+                  {categories.map((category, index) => renderRow(category, index))}
+                  {totals && (
+                    <tr className="border-t-2 border-slate-200 bg-slate-100/60 font-bold">
+                      <td className="px-4 py-2 border-r border-slate-200">Total</td>
+                      <td className="px-4 py-2 text-left border-r border-slate-200">${totals.daily.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-left border-r border-slate-200">${totals.weekly.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-left border-r border-slate-200 bg-blue-50/50">${totals.monthly.toFixed(2)}</td>
+                      <td className="px-4 py-2 text-left">${totals.yearly.toFixed(2)}</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {categories.map((category, index) => renderRow(category, index))}
-                    {totals && (
-                      <tr className="border-t-2 border-slate-200 bg-slate-100/60 font-bold">
-                        <td className="px-4 py-3 border-r border-slate-200">Total</td>
-                        <td className="px-4 py-3 text-left border-r border-slate-200">${totals.daily.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-left border-r border-slate-200">${totals.weekly.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-left border-r border-slate-200 bg-blue-50/50">${totals.monthly.toFixed(2)}</td>
-                        <td className="px-4 py-3 text-left">${totals.yearly.toFixed(2)}</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                  )}
+                </tbody>
+              )}
+            </table>
           </div>
         )}
       </div>
