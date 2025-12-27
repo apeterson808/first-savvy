@@ -84,7 +84,7 @@ export default function SankeyCashFlow({ budgets }) {
   const centerX = width / 2;
   const rightX = width - padding.right - 150;
   const nodeWidth = 12;
-  const centerNodeWidth = 60;
+  const centerNodeWidth = 30;
   const gap = 5;
 
   const usableHeight = height - padding.top - padding.bottom;
