@@ -344,12 +344,12 @@ export default function CategoriesTab() {
   const expenseGroup = budgetGroups.find(g => g.type === 'expense');
 
   return (
-    <div className="space-y-8">
-      <Card>
-        <CardHeader>
+    <div className="space-y-4">
+      <Card className="shadow-sm border-slate-200">
+        <CardHeader className="pb-3 pt-4 px-6">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-6 pb-4">
           {renderSection(
             'Income',
             budgetedIncomeCategories,
@@ -368,11 +368,11 @@ export default function CategoriesTab() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Available Categories (Not Budgeted)</CardTitle>
+      <Card className="shadow-sm border-slate-200">
+        <CardHeader className="pb-3 pt-4 px-6">
+          <CardTitle className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Available Categories (Not Budgeted)</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-6 pb-4">
           {renderSection(
             'Available Income Categories',
             availableIncomeCategories,
