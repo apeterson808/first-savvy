@@ -180,32 +180,32 @@ export default function BudgetSetupTable({ budgets, groups, onEditBudget, onEdit
                 </div>
               );
             })}
-
-            {/* Total Row */}
-            <div className="flex items-center gap-2 py-2 px-3 bg-slate-50">
-              <div className="w-5"></div>
-              <div className="w-7"></div>
-              <span className="text-sm font-semibold text-slate-900 min-w-[200px]">Total</span>
-
-              <div className="flex-1 flex items-center justify-end gap-2 text-sm font-semibold tabular-nums">
-                <div className="w-24 text-center text-slate-900">
-                  ${formatAmount(totals.daily, 'daily')}
-                </div>
-                <div className="w-24 text-center text-slate-900">
-                  ${formatAmount(totals.weekly, 'weekly')}
-                </div>
-                <div className="w-28 text-center font-bold text-slate-900">
-                  ${formatAmount(totals.monthly, 'monthly')}
-                </div>
-                <div className="w-28 text-center text-slate-900">
-                  ${formatAmount(totals.yearly, 'yearly')}
-                </div>
-              </div>
-
-              <div className="w-6"></div>
-            </div>
           </>
         )}
+
+        {/* Total Row */}
+        <div className="flex items-center gap-2 py-2 px-3 bg-slate-50">
+          <div className="w-5"></div>
+          <div className="w-7"></div>
+          <span className="text-sm font-semibold text-slate-900 min-w-[200px]">Total</span>
+
+          <div className="flex-1 flex items-center justify-end gap-2 text-sm font-semibold tabular-nums">
+            <div className="w-24 text-center text-slate-900">
+              ${formatAmount(totals.daily, 'daily')}
+            </div>
+            <div className="w-24 text-center text-slate-900">
+              ${formatAmount(totals.weekly, 'weekly')}
+            </div>
+            <div className="w-28 text-center font-bold text-slate-900">
+              ${formatAmount(totals.monthly, 'monthly')}
+            </div>
+            <div className="w-28 text-center text-slate-900">
+              ${formatAmount(totals.yearly, 'yearly')}
+            </div>
+          </div>
+
+          <div className="w-6"></div>
+        </div>
       </div>
     );
   };
