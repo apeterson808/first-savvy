@@ -11,6 +11,7 @@ import InlineEditableAmount from './InlineEditableAmount';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
+import * as Icons from 'lucide-react';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -134,9 +135,18 @@ export default function CategoriesTab() {
     const amount = budget.allocated_amount || 0;
     const values = getAllCadenceValues(amount, cadence);
     const isUpdating = updatingBudgetId === budget.id;
+    const IconComponent = Icons[category.icon] || Icons.Circle;
 
     return (
       <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+        <td className="px-4 py-2 border-r border-slate-100 w-12">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: `${category.color}20` }}
+          >
+            <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
+          </div>
+        </td>
         <td className="px-4 border-r border-slate-100">{category.display_name}</td>
         <InlineEditableAmount
           value={values.daily}
@@ -179,9 +189,18 @@ export default function CategoriesTab() {
     const usage = categoryUsage[category.id];
     const everUsed = usage?.everUsed || false;
     const lastUsed = usage?.lastUsed;
+    const IconComponent = Icons[category.icon] || Icons.Circle;
 
     return (
       <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+        <td className="px-4 py-2 border-r border-slate-200 w-12">
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: `${category.color}20` }}
+          >
+            <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
+          </div>
+        </td>
         <td className="px-4 font-medium border-r border-slate-200">{category.display_name}</td>
         <td className="px-4 border-r border-slate-200">
           {everUsed ? (
@@ -254,8 +273,9 @@ export default function CategoriesTab() {
                   <tr className="border-b-2 border-slate-200 bg-slate-100/60">
                     {isBudgetedSection ? (
                       <>
+                        <th className="py-2 px-4 w-12"></th>
                         <th
-                          className="py-2 px-4 text-left font-bold w-[25%] cursor-pointer hover:bg-slate-100"
+                          className="py-2 px-4 text-left font-bold w-[22%] cursor-pointer hover:bg-slate-100"
                           onClick={() => toggleSection(sectionKey)}
                         >
                           <div className="flex items-center gap-2">
@@ -264,15 +284,16 @@ export default function CategoriesTab() {
                             <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Daily</th>
-                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Weekly</th>
-                        <th className="py-2 px-4 text-left font-bold w-[18.75%] bg-blue-100/70">Monthly</th>
-                        <th className="py-2 px-4 text-left font-normal w-[18.75%]">Yearly</th>
+                        <th className="py-2 px-4 text-left font-normal w-[19.5%]">Daily</th>
+                        <th className="py-2 px-4 text-left font-normal w-[19.5%]">Weekly</th>
+                        <th className="py-2 px-4 text-left font-bold w-[19.5%] bg-blue-100/70">Monthly</th>
+                        <th className="py-2 px-4 text-left font-normal w-[19.5%]">Yearly</th>
                       </>
                     ) : (
                       <>
+                        <th className="py-2 px-4 w-12"></th>
                         <th
-                          className="py-2 px-4 text-left font-bold w-[40%] cursor-pointer hover:bg-slate-100"
+                          className="py-2 px-4 text-left font-bold w-[35%] cursor-pointer hover:bg-slate-100"
                           onClick={() => toggleSection(sectionKey)}
                         >
                           <div className="flex items-center gap-2">
@@ -281,9 +302,9 @@ export default function CategoriesTab() {
                             <Badge variant="secondary">{count}</Badge>
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-bold w-[20%]">Ever Used</th>
-                        <th className="py-2 px-4 text-left font-bold w-[20%]">Last Used</th>
-                        <th className="py-2 px-4 text-right font-bold w-[20%]"></th>
+                        <th className="py-2 px-4 text-left font-bold w-[18%]">Ever Used</th>
+                        <th className="py-2 px-4 text-left font-bold w-[18%]">Last Used</th>
+                        <th className="py-2 px-4 text-right font-bold w-[18%]"></th>
                       </>
                     )}
                   </tr>
@@ -296,6 +317,7 @@ export default function CategoriesTab() {
                 {totals && (
                   <tbody>
                     <tr className="border-t-2 border-slate-200 bg-slate-100/60">
+                      <td className="px-4 py-2 border-r border-slate-200"></td>
                       <td className="px-4 py-2 border-r border-slate-200 font-bold">{totalLabel}</td>
                       <td className="px-4 py-2 border-r border-slate-100">
                         <div className="flex justify-between tabular-nums">
