@@ -249,24 +249,24 @@ export default function CategoriesTab() {
               </div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full table-fixed">
                   <thead>
                     <tr className="border-b-2 bg-muted/50">
                       {renderRow === renderBudgetedCategoryRow ? (
                         <>
-                          <th className="py-3 px-4 text-left font-bold border-r">Category</th>
-                          <th className="py-3 px-4 text-right font-bold border-r">Daily</th>
-                          <th className="py-3 px-4 text-right font-bold border-r">Weekly</th>
-                          <th className="py-3 px-4 text-right font-bold border-r">Monthly</th>
-                          <th className="py-3 px-4 text-right font-bold border-r">Yearly</th>
-                          <th className="py-3 px-4 text-right font-bold border-r">Actions</th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[25%]">Category</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Daily</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Weekly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Monthly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[14%]">Yearly</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[19%]">Actions</th>
                         </>
                       ) : (
                         <>
-                          <th className="py-3 px-4 text-left font-bold border-r">Category</th>
-                          <th className="py-3 px-4 text-left font-bold border-r">Ever Used</th>
-                          <th className="py-3 px-4 text-left font-bold border-r">Last Used</th>
-                          <th className="py-3 px-4 text-right font-bold border-r"></th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[40%]">Category</th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[20%]">Ever Used</th>
+                          <th className="py-3 px-4 text-left font-bold border-r w-[20%]">Last Used</th>
+                          <th className="py-3 px-4 text-right font-bold border-r w-[20%]"></th>
                         </>
                       )}
                     </tr>
