@@ -12,7 +12,8 @@ import {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby,
+  BarChart3, GitBranch
 } from 'lucide-react';
 import {
   Tooltip,
@@ -20,7 +21,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { Button } from '@/components/ui/button';
 import { convertCadence } from '@/utils/cadenceUtils';
+import SankeyCashFlow from './SankeyCashFlow';
 
 const ICON_MAP = {
   Home, House, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
@@ -40,6 +43,7 @@ const ICON_MAP = {
 
 export default function BudgetAllocationBar({ budgets, budgetGroups }) {
   const [hoveredCategory, setHoveredCategory] = useState(null);
+  const [viewMode, setViewMode] = useState('bar');
 
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
@@ -94,85 +98,109 @@ export default function BudgetAllocationBar({ budgets, budgetGroups }) {
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
           Budget Allocation
         </p>
+        <div className="flex gap-1">
+          <Button
+            variant={viewMode === 'bar' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('bar')}
+            className="h-7 px-2"
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+          </Button>
+          <Button
+            variant={viewMode === 'sankey' ? 'default' : 'ghost'}
+            size="sm"
+            onClick={() => setViewMode('sankey')}
+            className="h-7 px-2"
+          >
+            <GitBranch className="w-3.5 h-3.5" />
+          </Button>
+        </div>
       </div>
 
-      <TooltipProvider delayDuration={100}>
-        <div className="relative">
-          <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
-          {allSegments.map((segment, index) => {
-            const Icon = segment.icon && ICON_MAP[segment.icon];
-            const isHovered = hoveredCategory === segment.id;
+      {viewMode === 'bar' ? (
+        <TooltipProvider delayDuration={100}>
+          <div className="relative">
+            <div className="flex w-full h-10 rounded-lg overflow-hidden shadow-sm border border-slate-200">
+            {allSegments.map((segment, index) => {
+              const Icon = segment.icon && ICON_MAP[segment.icon];
+              const isHovered = hoveredCategory === segment.id;
 
-            return (
-              <Tooltip key={segment.id}>
-                <TooltipTrigger asChild>
-                  <div
-                    className="relative flex items-center justify-center transition-all duration-200 cursor-pointer"
-                    style={{
-                      width: `${segment.percentage}%`,
-                      backgroundColor: segment.color,
-                      opacity: hoveredCategory && !isHovered ? 0.5 : 1,
-                      transform: isHovered ? 'scale(1.02)' : 'scale(1)',
-                      zIndex: isHovered ? 10 : index
-                    }}
-                    onMouseEnter={() => setHoveredCategory(segment.id)}
-                    onMouseLeave={() => setHoveredCategory(null)}
-                  >
-                    {segment.percentage > 5 && Icon && (
-                      <Icon className="w-4 h-4 text-white/90 drop-shadow" />
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="bg-white border border-slate-200 shadow-lg">
-                  <div className="flex items-center gap-2 mb-1">
-                    {Icon && (
-                      <div
-                        className="w-6 h-6 rounded flex items-center justify-center"
-                        style={{ backgroundColor: segment.color }}
-                      >
-                        <Icon className="w-3.5 h-3.5 text-white" />
+              return (
+                <Tooltip key={segment.id}>
+                  <TooltipTrigger asChild>
+                    <div
+                      className="relative flex items-center justify-center transition-all duration-200 cursor-pointer"
+                      style={{
+                        width: `${segment.percentage}%`,
+                        backgroundColor: segment.color,
+                        opacity: hoveredCategory && !isHovered ? 0.5 : 1,
+                        transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+                        zIndex: isHovered ? 10 : index
+                      }}
+                      onMouseEnter={() => setHoveredCategory(segment.id)}
+                      onMouseLeave={() => setHoveredCategory(null)}
+                    >
+                      {segment.percentage > 5 && Icon && (
+                        <Icon className="w-4 h-4 text-white/90 drop-shadow" />
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" className="bg-white border border-slate-200 shadow-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      {Icon && (
+                        <div
+                          className="w-6 h-6 rounded flex items-center justify-center"
+                          style={{ backgroundColor: segment.color }}
+                        >
+                          <Icon className="w-3.5 h-3.5 text-white" />
+                        </div>
+                      )}
+                      <span className="font-medium text-slate-900">{segment.name}</span>
+                    </div>
+                    <div className="text-sm space-y-0.5">
+                      <div className="flex justify-between gap-4">
+                        <span className="text-slate-500">Budgeted:</span>
+                        <span className="font-medium text-slate-900">
+                          ${segment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>
                       </div>
-                    )}
-                    <span className="font-medium text-slate-900">{segment.name}</span>
-                  </div>
-                  <div className="text-sm space-y-0.5">
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Budgeted:</span>
-                      <span className="font-medium text-slate-900">
-                        ${segment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </span>
+                      <div className="flex justify-between gap-4">
+                        <span className="text-slate-500">Allocation:</span>
+                        <span className="font-medium text-slate-900">
+                          {segment.percentage.toFixed(1)}%
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex justify-between gap-4">
-                      <span className="text-slate-500">Allocation:</span>
-                      <span className="font-medium text-slate-900">
-                        {segment.percentage.toFixed(1)}%
-                      </span>
-                    </div>
-                  </div>
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-          </div>
-
-          {totalIncomeBudgeted > 0 && (
-            <div
-              className="absolute top-full left-0 -translate-x-1/2 flex flex-col items-center"
-              style={{ left: `${expensePercentage}%` }}
-            >
-              <div className="w-px h-3 bg-slate-600" />
-              <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
-                <span className="font-medium">
-                  ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-                {' '}
-                {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
-              </div>
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
             </div>
-          )}
+
+            {totalIncomeBudgeted > 0 && (
+              <div
+                className="absolute top-full left-0 -translate-x-1/2 flex flex-col items-center"
+                style={{ left: `${expensePercentage}%` }}
+              >
+                <div className="w-px h-3 bg-slate-600" />
+                <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
+                  <span className="font-medium">
+                    ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                  {' '}
+                  {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="h-8" />
+        </TooltipProvider>
+      ) : (
+        <div className="mt-2">
+          <SankeyCashFlow budgets={budgets} />
         </div>
-        <div className="h-8" />
-      </TooltipProvider>
+      )}
     </div>
   );
 }
