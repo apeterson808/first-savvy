@@ -2,6 +2,14 @@ import React from 'react';
 import * as Icons from 'lucide-react';
 import { convertCadence } from '@/utils/cadenceUtils';
 
+function lightenColor(hex, percent = 80) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = (num >> 16) + Math.round((255 - (num >> 16)) * (percent / 100));
+  const g = ((num >> 8) & 0x00FF) + Math.round((255 - ((num >> 8) & 0x00FF)) * (percent / 100));
+  const b = (num & 0x0000FF) + Math.round((255 - (num & 0x0000FF)) * (percent / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
+
 export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false }) {
   const categoryData = budget.chartAccount;
   const IconComponent = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Icons.Circle;
@@ -17,8 +25,10 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   const isOverBudget = actualAmount > budgetedAmount;
   const isNearLimit = percentage >= 80 && percentage < 100;
 
-  let progressColor = isIncome ? '#10b981' : '#3b82f6';
-  let bgColor = isIncome ? '#d1fae5' : '#dbeafe';
+  const categoryColor = categoryData?.color || '#64748b';
+
+  let progressColor = categoryColor;
+  let bgColor = lightenColor(categoryColor, 85);
 
   if (!isIncome) {
     if (isOverBudget) {
@@ -31,7 +41,6 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   }
 
   const displayPercentage = Math.min(percentage, 100);
-  const categoryColor = categoryData?.color || '#64748b';
 
   return (
     <div className="group relative">
