@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
@@ -72,8 +71,7 @@ const CUSTOM_COLOR_PALETTE = [
 const DEFAULT_COLOR = '#52A5CE';
 
 export default function AppearancePicker({ color, icon, onColorChange, onIconChange, inline = false }) {
-  const [colorOpen, setColorOpen] = useState(false);
-  const [iconOpen, setIconOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
 
   const selectedColor = color || DEFAULT_COLOR;
@@ -83,9 +81,10 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
     iconName.toLowerCase().includes(search.toLowerCase())
   );
 
-  if (inline) {
-    return (
-      <div className="p-4 border border-slate-200 rounded-md bg-slate-50 space-y-4">
+  const pickerContent = (
+    <div className="space-y-4">
+      {/* Preview (only show in inline mode) */}
+      {inline && (
         <div className="flex items-center gap-3">
           <div
             className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -95,152 +94,94 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
           </div>
           <span className="text-sm text-slate-600">Preview</span>
         </div>
+      )}
 
-        <div>
-          <h4 className="text-sm font-medium text-slate-700 mb-2">Color</h4>
-          <div className="grid grid-cols-6 gap-2">
-            {CUSTOM_COLOR_PALETTE.map((colorOption) => (
+      {/* Color Section */}
+      <div>
+        <h4 className="text-sm font-medium text-slate-700 mb-2">Color</h4>
+        <div className="grid grid-cols-6 gap-2">
+          {CUSTOM_COLOR_PALETTE.map((colorOption) => (
+            <button
+              key={colorOption.hex}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onColorChange?.(colorOption.hex);
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              className={`w-9 h-9 rounded-full border-2 transition-all ${
+                selectedColor === colorOption.hex
+                  ? 'border-slate-800 scale-110'
+                  : 'border-slate-300 hover:scale-105 hover:border-slate-400'
+              }`}
+              style={{ backgroundColor: colorOption.hex }}
+              title={colorOption.name}
+            />
+          ))}
+        </div>
+      </div>
+
+      {/* Icon Section */}
+      <div>
+        <h4 className="text-sm font-medium text-slate-700 mb-2">Icon</h4>
+        <Input
+          placeholder="Search icons..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-8 text-sm mb-2"
+        />
+        <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+          {filteredIcons.map((iconName) => {
+            const Icon = ICON_MAP[iconName];
+            if (!Icon) return null;
+
+            return (
               <button
-                key={colorOption.hex}
+                key={iconName}
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onColorChange?.(colorOption.hex);
+                  onIconChange?.(iconName);
                 }}
                 onMouseDown={(e) => e.preventDefault()}
-                className={`w-9 h-9 rounded-full border-2 transition-all ${
-                  selectedColor === colorOption.hex
-                    ? 'border-slate-800 scale-110'
-                    : 'border-slate-300 hover:scale-105 hover:border-slate-400'
+                className={`w-9 h-9 flex items-center justify-center rounded hover:bg-slate-100 transition-colors ${
+                  icon === iconName ? 'bg-blue-100 text-blue-600' : 'text-slate-600'
                 }`}
-                style={{ backgroundColor: colorOption.hex }}
-                title={colorOption.name}
-              />
-            ))}
-          </div>
+                title={iconName}
+              >
+                <Icon className="w-4 h-4" />
+              </button>
+            );
+          })}
         </div>
+      </div>
+    </div>
+  );
 
-        <div>
-          <h4 className="text-sm font-medium text-slate-700 mb-2">Icon</h4>
-          <Input
-            placeholder="Search icons..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-8 text-sm mb-2"
-          />
-          <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
-            {filteredIcons.map((iconName) => {
-              const Icon = ICON_MAP[iconName];
-              if (!Icon) return null;
-
-              return (
-                <button
-                  key={iconName}
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onIconChange?.(iconName);
-                  }}
-                  onMouseDown={(e) => e.preventDefault()}
-                  className={`w-9 h-9 flex items-center justify-center rounded hover:bg-slate-100 transition-colors ${
-                    icon === iconName ? 'bg-blue-100 text-blue-600' : 'text-slate-600'
-                  }`}
-                  title={iconName}
-                >
-                  <Icon className="w-4 h-4" />
-                </button>
-              );
-            })}
-          </div>
-        </div>
+  if (inline) {
+    return (
+      <div className="p-4 border border-slate-200 rounded-md bg-slate-50">
+        {pickerContent}
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <div
-        className="w-10 h-10 rounded-full flex items-center justify-center"
-        style={{ backgroundColor: selectedColor }}
-      >
-        <SelectedIcon className="w-5 h-5 text-white" />
-      </div>
-
-      <Popover open={colorOpen} onOpenChange={setColorOpen}>
-        <PopoverTrigger asChild>
-          <Button type="button" variant="link" className="text-sm text-slate-600 hover:text-slate-900 p-0 h-auto">
-            Color
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 p-4" align="start">
-          <div className="grid grid-cols-6 gap-2">
-            {CUSTOM_COLOR_PALETTE.map((colorOption) => (
-              <button
-                key={colorOption.hex}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  onColorChange?.(colorOption.hex);
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                className={`w-9 h-9 rounded-full border-2 transition-all ${
-                  selectedColor === colorOption.hex
-                    ? 'border-slate-800 scale-110'
-                    : 'border-slate-300 hover:scale-105 hover:border-slate-400'
-                }`}
-                style={{ backgroundColor: colorOption.hex }}
-                title={colorOption.name}
-              />
-            ))}
-          </div>
-        </PopoverContent>
-      </Popover>
-
-      <Popover open={iconOpen} onOpenChange={setIconOpen}>
-        <PopoverTrigger asChild>
-          <Button type="button" variant="link" className="text-sm text-slate-600 hover:text-slate-900 p-0 h-auto">
-            Icon
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-64 p-4" align="start">
-          <div className="space-y-2">
-            <Input
-              placeholder="Search icons..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-8 text-sm"
-            />
-            <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
-              {filteredIcons.map((iconName) => {
-                const Icon = ICON_MAP[iconName];
-                if (!Icon) return null;
-
-                return (
-                  <button
-                    key={iconName}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      onIconChange?.(iconName);
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    className={`w-9 h-9 flex items-center justify-center rounded hover:bg-slate-100 transition-colors ${
-                      icon === iconName ? 'bg-blue-100 text-blue-600' : 'text-slate-600'
-                    }`}
-                    title={iconName}
-                  >
-                    <Icon className="w-4 h-4" />
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="w-10 h-10 rounded-full flex items-center justify-center hover:opacity-80 transition-opacity"
+          style={{ backgroundColor: selectedColor }}
+        >
+          <SelectedIcon className="w-5 h-5 text-white" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-4" align="start">
+        {pickerContent}
+      </PopoverContent>
+    </Popover>
   );
 }
