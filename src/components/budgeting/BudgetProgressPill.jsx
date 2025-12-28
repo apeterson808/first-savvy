@@ -56,9 +56,14 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
         <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
           <div className="flex items-center gap-2.5 min-w-0 flex-1">
             <IconComponent className="w-4 h-4 flex-shrink-0" style={{ color: categoryColor }} />
-            <span className="font-semibold text-sm text-slate-900 truncate">
-              {categoryData?.display_name || 'Unknown Category'}
-            </span>
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <span className="font-semibold text-sm text-slate-900 truncate">
+                {categoryData?.display_name || 'Unknown Category'}
+              </span>
+              <span className="text-xs text-slate-400 font-normal flex-shrink-0">
+                {percentage.toFixed(0)}%
+              </span>
+            </div>
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
