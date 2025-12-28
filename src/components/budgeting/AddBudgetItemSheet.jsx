@@ -113,7 +113,7 @@ export default function AddBudgetItemSheet({
       setSelectedCategoryId(newCategory.id);
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
     }
   };
 
@@ -158,7 +158,7 @@ export default function AddBudgetItemSheet({
       await firstsavvy.supabase.from('user_chart_of_accounts')
         .update(updates)
         .eq('id', selectedCategoryId);
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
     }
 
     const budgetData = {

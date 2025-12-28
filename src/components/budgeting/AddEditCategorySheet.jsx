@@ -123,7 +123,7 @@ export default function AddEditCategorySheet({
       }
 
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
       onOpenChange(false);

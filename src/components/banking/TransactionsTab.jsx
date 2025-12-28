@@ -2542,7 +2542,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                               setCategorySearchTerm('');
                                               setTriggeringTransactionId(null);
                                               setTriggeringTransactionType(null);
-                                              await queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
+                                              await queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
                                               if (triggeringTransactionId && newCategory) {
                                                 const transaction = transactions.find(t => t.id === triggeringTransactionId);
                                                 if (transaction) {

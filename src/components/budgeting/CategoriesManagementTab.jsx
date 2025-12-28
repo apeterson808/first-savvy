@@ -65,7 +65,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
       await firstsavvy.entities.ChartAccount.delete(deletingCategory.id);
 
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
