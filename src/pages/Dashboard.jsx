@@ -8,6 +8,7 @@ import AccountDropdown from '../components/common/AccountDropdown';
 import TimeRangeDropdown from '../components/common/TimeRangeDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
@@ -18,6 +19,16 @@ import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import { useBudgetData } from '@/hooks/useBudgetData';
+import { convertCadence } from '@/utils/cadenceUtils';
+
+function lightenColor(hex, percent = 80) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = (num >> 16) + Math.round((255 - (num >> 16)) * (percent / 100));
+  const g = ((num >> 8) & 0x00FF) + Math.round((255 - ((num >> 8) & 0x00FF)) * (percent / 100));
+  const b = (num & 0x0000FF) + Math.round((255 - (num & 0x0000FF)) * (percent / 100));
+  return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -30,7 +41,8 @@ export default function Dashboard() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
   const [userProfileData, setUserProfileData] = useState(null);
-  const [excludeTransfers, setExcludeTransfers] = useState(true);
+
+  const { budgets: budgetData, spendingByCategory } = useBudgetData();
 
   const handleChartPointClick = (data) => {
     if (chartView === 'spending' && data?.fullDate) {
@@ -57,27 +69,6 @@ export default function Dashboard() {
     queryKey: ['transactions'],
     queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
     staleTime: 30000
-  });
-
-  const { data: budgets = [] } = useQuery({
-    queryKey: ['budgets'],
-    queryFn: async () => {
-      const { data, error } = await firstsavvy.supabase
-        .from('budgets')
-        .select(`
-          *,
-          chartAccount:user_chart_of_accounts!budgets_chart_account_id_fkey(
-            id,
-            display_name,
-            class,
-            account_type,
-            account_detail
-          )
-        `)
-        .eq('is_active', true);
-      if (error) throw error;
-      return data || [];
-    }
   });
 
   const { data: bills = [] } = useQuery({
@@ -265,8 +256,7 @@ export default function Dashboard() {
           const matchesAccount = selectedAccount === 'all'
             ? activeAccountIds.includes(t.account_id)
             : t.account_id === selectedAccount;
-          const category = getChartAccountById(t.chart_account_id);
-          const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
+          const isTransfer = t.type === 'transfer';
           return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
         });
 
@@ -308,8 +298,7 @@ export default function Dashboard() {
           const matchesAccount = selectedAccount === 'all'
             ? activeAccountIds.includes(t.account_id)
             : t.account_id === selectedAccount;
-          const category = getChartAccountById(t.chart_account_id);
-          const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
+          const isTransfer = t.type === 'transfer';
           return tDateStr >= monthStartStr && tDateStr <= monthEndStr && t.status === 'posted' && matchesAccount && !isTransfer;
         });
 
@@ -335,57 +324,46 @@ export default function Dashboard() {
 
   const chartData = generateChartData();
 
-  // Calculate budget utilization (matching Budgeting page logic, sorted by utilization %)
-  const getBudgetUtilization = () => {
-    const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
-    const activeAccountIds = accounts.map(a => a.id);
+  const budgetUtilization = budgetData
+    .filter(b => b.chartAccount?.class === 'expense')
+    .map(budget => {
+      const categoryData = budget.chartAccount;
+      const budgetedAmount = convertCadence(
+        parseFloat(budget.allocated_amount || 0),
+        budget.cadence || 'monthly',
+        'monthly'
+      );
+      const spent = spendingByCategory[budget.chart_account_id] || 0;
+      const percentage = budgetedAmount > 0 ? (spent / budgetedAmount) * 100 : 0;
 
-    // Get expense budgets (matching Budgeting page)
-    const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
+      const isOverBudget = spent > budgetedAmount;
+      const isNearLimit = percentage >= 80 && percentage < 100;
 
-    // Calculate spending by chart_account_id
-    const spendingByCategory = transactions
-      .filter(t => {
-        if (!t.date) return false;
-        try {
-          const tDate = new Date(t.date);
-          if (isNaN(tDate.getTime())) return false;
-          const matchesAccount = activeAccountIds.includes(t.account_id);
-          const category = getChartAccountById(t.chart_account_id);
-          const isTransfer = excludeTransfers && category?.detail_type === 'transfer';
-          return tDate >= monthStart && tDate <= monthEnd && t.type === 'expense' && t.status === 'posted' && matchesAccount && !isTransfer;
-        } catch (e) {
-          return false;
-        }
-      })
-      .reduce((acc, t) => {
-        const key = t.chart_account_id || t.category;
-        if (key) acc[key] = (acc[key] || 0) + t.amount;
-        return acc;
-      }, {});
+      const categoryColor = categoryData?.color || '#64748b';
+      let progressColor = categoryColor;
+      let bgColor = lightenColor(categoryColor, 85);
 
-    return expenseBudgets
-      .map(budget => {
-        const category = getChartAccountById(budget.chart_account_id);
-        const spent = spendingByCategory[budget.chart_account_id] || 0;
-        const limit = budget.allocated_amount || 0;
-        const percentage = limit > 0 ? (spent / limit) * 100 : 0;
-        const color = budget.color || category?.color || '#64748b';
-        return {
-          categoryName: budget.name || category?.name || 'Unknown',
-          spent,
-          limit,
-          percentage,
-          color
-        };
-      })
-      .filter(item => item.limit > 0)
-      .sort((a, b) => b.percentage - a.percentage);
-  };
+      if (isOverBudget) {
+        progressColor = '#ef4444';
+        bgColor = '#fee2e2';
+      } else if (isNearLimit) {
+        progressColor = '#f59e0b';
+        bgColor = '#fef3c7';
+      }
 
-  const budgetUtilization = getBudgetUtilization();
+      return {
+        categoryName: categoryData?.display_name || 'Unknown',
+        icon: categoryData?.icon || 'Circle',
+        spent,
+        limit: budgetedAmount,
+        percentage,
+        categoryColor,
+        progressColor,
+        bgColor
+      };
+    })
+    .filter(item => item.limit > 0)
+    .sort((a, b) => b.percentage - a.percentage);
 
 
 
@@ -552,25 +530,46 @@ export default function Dashboard() {
       </CardHeader>
       <CardContent>
         {budgetUtilization.length > 0 ? (
-          <div className="space-y-2">
-            {budgetUtilization.slice(0, 4).map((item, index) => (
-              <div key={index} className="p-2 bg-slate-50 rounded-lg">
-                <div className="flex items-center justify-between mb-1">
-                  <p className="font-medium text-xs capitalize truncate">{item.categoryName}</p>
-                  <span className="text-xs text-slate-600">
-                    ${item.spent.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                    /${item.limit.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                  </span>
+          <div className="space-y-2.5">
+            {budgetUtilization.slice(0, 5).map((item, index) => {
+              const IconComponent = item.icon && Icons[item.icon] ? Icons[item.icon] : Icons.Circle;
+              const displayPercentage = Math.min(item.percentage, 100);
+
+              return (
+                <div key={index} className="group relative">
+                  <div className="relative h-10 rounded-full overflow-hidden" style={{ backgroundColor: item.bgColor }}>
+                    <div
+                      className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
+                      style={{
+                        width: `${displayPercentage}%`,
+                        backgroundColor: item.progressColor
+                      }}
+                    />
+
+                    <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <IconComponent className="w-4 h-4 flex-shrink-0" style={{ color: item.categoryColor }} />
+                        <span className="font-semibold text-sm text-slate-900 truncate">
+                          {item.categoryName}
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                        <div className="flex items-center gap-1.5 text-xs font-medium">
+                          <span className="text-slate-900">
+                            ${item.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-slate-400">/</span>
+                          <span className="text-slate-600">
+                            ${item.limit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
-                  <div
-                    className="h-full rounded-full transition-all"
-                    style={{ width: `${Math.min(item.percentage, 100)}%`, backgroundColor: item.color || '#64748b' }}
-                  />
-                </div>
-                <p className="text-[10px] text-slate-500 mt-0.5">{item.percentage.toFixed(0)}% used</p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 px-4">
