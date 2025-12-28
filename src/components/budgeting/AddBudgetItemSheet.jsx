@@ -146,9 +146,17 @@ export default function AddBudgetItemSheet({
       }
     }
 
+    const updates = {};
     if (selectedIcon && selectedIcon !== selectedAccount?.icon) {
+      updates.icon = selectedIcon;
+    }
+    if (selectedColor && selectedColor !== selectedAccount?.color) {
+      updates.color = selectedColor;
+    }
+
+    if (Object.keys(updates).length > 0) {
       await firstsavvy.supabase.from('user_chart_of_accounts')
-        .update({ icon: selectedIcon })
+        .update(updates)
         .eq('id', selectedCategoryId);
       queryClient.invalidateQueries({ queryKey: ['chart-accounts-income-expense'] });
     }
