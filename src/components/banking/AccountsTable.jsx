@@ -267,18 +267,6 @@ export default function AccountsTable({ accounts, isLoading }) {
     'Liability': 'Liabilities'
   };
 
-  // Calculate account counts by type (only count active accounts unless showing inactive)
-  const accountTypeCounts = React.useMemo(() => {
-    const counts = {};
-    accounts.forEach(acc => {
-      const matchesActive = showInactive || acc.is_active !== false;
-      if (matchesActive) {
-        const type = acc.entityType;
-        counts[type] = (counts[type] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [accounts, showInactive]);
 
   // Sort helper
   const handleSort = (column) => {
@@ -441,12 +429,7 @@ export default function AccountsTable({ accounts, isLoading }) {
               </ClickThroughSelectItem>
               {availableEntityTypes.map(entityType => (
                 <ClickThroughSelectItem key={entityType} value={entityType}>
-                  <div className="flex items-center justify-between w-full">
-                    <span>{entityTypeLabels[entityType] || entityType}</span>
-                    <span className="text-[10px] text-slate-500 ml-2">
-                      {accountTypeCounts[entityType] || 0}
-                    </span>
-                  </div>
+                  {entityTypeLabels[entityType] || entityType}
                 </ClickThroughSelectItem>
               ))}
             </ClickThroughSelect>
