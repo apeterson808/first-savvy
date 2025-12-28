@@ -62,10 +62,14 @@ export default function AddBudgetItemSheet({
   }, [editingBudget, open, preselectedCategoryId, availableCategories]);
 
   useEffect(() => {
-    if (selectedCategoryId && !selectedColor) {
-      setSelectedColor(DEFAULT_COLOR);
+    if (selectedCategoryId && !isEditMode) {
+      const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
+      if (selectedCategory) {
+        setSelectedColor(selectedCategory.color || DEFAULT_COLOR);
+        setSelectedIcon(selectedCategory.icon || 'Circle');
+      }
     }
-  }, [selectedCategoryId, selectedColor]);
+  }, [selectedCategoryId, availableCategories, isEditMode]);
 
   const createBudgetMutation = useMutation({
     mutationFn: (data) => firstsavvy.entities.Budget.create(data),
