@@ -44,7 +44,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   return (
     <div className="group relative">
-      <div className="relative h-10 rounded-full overflow-hidden" style={{ backgroundColor: bgColor }}>
+      <div className="relative h-9 rounded-full overflow-hidden" style={{ backgroundColor: bgColor }}>
         <div
           className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
           style={{

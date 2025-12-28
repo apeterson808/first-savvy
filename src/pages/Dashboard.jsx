@@ -518,7 +518,7 @@ export default function Dashboard() {
 
     {/* Top Utilized Budgets */}
     <Card className="shadow-sm border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3 px-3">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-3">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Top Utilized Budgets</p>
         <Button
           variant="link"
@@ -537,7 +537,7 @@ export default function Dashboard() {
 
               return (
                 <div key={index} className="group relative">
-                  <div className="relative h-10 rounded-full overflow-hidden" style={{ backgroundColor: item.bgColor }}>
+                  <div className="relative h-9 rounded-full overflow-hidden" style={{ backgroundColor: item.bgColor }}>
                     <div
                       className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
                       style={{
