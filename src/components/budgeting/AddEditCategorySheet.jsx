@@ -20,8 +20,7 @@ import {
 } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
-import IconPicker from '@/components/common/IconPicker';
-import ColorPicker from '@/components/common/ColorPicker';
+import AppearancePicker from '@/components/common/AppearancePicker';
 import { suggestIconForName } from '@/components/utils/iconMapper';
 
 export default function AddEditCategorySheet({
@@ -184,29 +183,14 @@ export default function AddEditCategorySheet({
           </div>
 
           <div className="space-y-2">
-            <Label>Icon</Label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-4 py-2 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-600">
-                {formData.icon}
-              </div>
-              <IconPicker
-                value={formData.icon}
-                onValueChange={(icon) => setFormData(prev => ({ ...prev, icon }))}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <Label>Color</Label>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 px-4 py-2 border border-slate-200 rounded-md bg-slate-50 text-sm text-slate-600">
-                {formData.color}
-              </div>
-              <ColorPicker
-                value={formData.color}
-                onChange={(color) => setFormData(prev => ({ ...prev, color }))}
-              />
-            </div>
+            <Label>Appearance</Label>
+            <AppearancePicker
+              color={formData.color}
+              icon={formData.icon}
+              onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
+              onIconChange={(icon) => setFormData(prev => ({ ...prev, icon }))}
+              inline={true}
+            />
           </div>
 
           <div className="flex gap-3 pt-4">
