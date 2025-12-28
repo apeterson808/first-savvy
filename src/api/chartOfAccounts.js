@@ -40,13 +40,8 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   return data;
 };
 
-export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null, showInactive = false) => {
+export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null) => {
   const filters = classFilter ? { class: classFilter } : {};
-
-  if (!showInactive) {
-    filters.isActive = true;
-  }
-
   const accounts = await getUserChartOfAccounts(profileId, filters);
 
   const grouped = {};
