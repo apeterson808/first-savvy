@@ -11,13 +11,6 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import { toast } from 'sonner';
@@ -202,17 +195,17 @@ export default function AddBudgetItemSheet({
 
           <div>
             <Label htmlFor="cadence">Time Period*</Label>
-            <Select value={selectedCadence} onValueChange={setSelectedCadence}>
-              <SelectTrigger className="h-10">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="daily">Daily</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="yearly">Yearly</SelectItem>
-              </SelectContent>
-            </Select>
+            <select
+              id="cadence"
+              value={selectedCadence}
+              onChange={(e) => setSelectedCadence(e.target.value)}
+              className="w-full px-3 py-2 border border-slate-200 rounded-md bg-white"
+            >
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="yearly">Yearly</option>
+            </select>
             <p className="text-xs text-muted-foreground mt-1">
               The amount above represents a {selectedCadence} budget
             </p>
