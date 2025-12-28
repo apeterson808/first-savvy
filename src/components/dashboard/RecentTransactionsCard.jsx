@@ -9,11 +9,10 @@ import { createPageUrl } from '../../pages/utils';
 import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AccountCreationWizard from '../banking/AccountCreationWizard';
-import FileImporter from '../banking/FileImporter';
 import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
 import { formatTransactionDescription } from '../utils/formatters';
-import { Upload } from 'lucide-react';
+import { Sparkles, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
@@ -26,7 +25,7 @@ export default function RecentTransactionsCard() {
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingValue, setEditingValue] = useState('');
-  const [fileImporterOpen, setFileImporterOpen] = useState(false);
+  const [accountWizardOpen, setAccountWizardOpen] = useState(false);
   const inputRef = useRef(null);
 
   const { data: bankAccounts = [] } = useQuery({
@@ -176,22 +175,35 @@ export default function RecentTransactionsCard() {
       </CardHeader>
       <CardContent className="px-4 pb-4">
         {recentTransactions.length === 0 ? (
-          <div className="py-3">
-            <div className="text-center mb-3">
-              <p className="text-xs text-slate-600 mb-3">Connect an account to start tracking transactions</p>
-            </div>
-
-            <button
-              onClick={() => setFileImporterOpen(true)}
-              className="w-full p-3 bg-slate-50 border border-slate-200 rounded hover:border-slate-300 hover:shadow-sm transition-all text-left"
-            >
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
-                  <Upload className="w-4 h-4 text-teal-600" />
+          <div className="py-6 text-center">
+            {transactions.length === 0 ? (
+              <>
+                <div className="mb-4 flex justify-center">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                    <Sparkles className="w-6 h-6 text-blue-500" />
+                  </div>
                 </div>
-                <span className="text-xs font-medium text-slate-900">Import transactions from file</span>
-              </div>
-            </button>
+                <p className="text-sm font-medium text-slate-900 mb-1">Ready to take control of your finances?</p>
+                <p className="text-xs text-slate-600 mb-4">Connect your first account to start tracking your money</p>
+                <Button
+                  onClick={() => setAccountWizardOpen(true)}
+                  className="mx-auto"
+                  style={{ backgroundColor: '#52A5CE' }}
+                >
+                  Connect Account
+                </Button>
+              </>
+            ) : (
+              <>
+                <div className="mb-4 flex justify-center">
+                  <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-green-500" />
+                  </div>
+                </div>
+                <p className="text-sm font-medium text-slate-900 mb-1">You're all caught up!</p>
+                <p className="text-xs text-slate-600">Everything is categorized and ready to go</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="space-y-2">
@@ -267,18 +279,18 @@ export default function RecentTransactionsCard() {
       </CardContent>
 
       <AccountCreationWizard
+        open={accountWizardOpen}
+        onOpenChange={setAccountWizardOpen}
+        onAccountCreated={handleSuccess}
+      />
+
+      <AccountCreationWizard
         open={addCategorySheetOpen}
         onOpenChange={setAddCategorySheetOpen}
         onAccountCreated={() => {
           setCategorySearchTerm('');
           queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
         }}
-      />
-
-      <FileImporter
-        open={fileImporterOpen}
-        onOpenChange={setFileImporterOpen}
-        onImportComplete={handleSuccess}
       />
     </Card>
   );
