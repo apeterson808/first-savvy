@@ -206,16 +206,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
     </div>
   ) : (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <div className="flex items-center justify-center pb-4 border-b border-slate-200">
-        <div
-          className="w-14 h-14 rounded-full flex items-center justify-center shadow-md"
-          style={{ backgroundColor: selectedColor }}
-        >
-          <SelectedIcon className="w-7 h-7 text-white" />
-        </div>
-      </div>
-
-      <TabsList className="w-full grid grid-cols-2 mt-4">
+      <TabsList className="w-full grid grid-cols-2">
         <TabsTrigger value="color">Color</TabsTrigger>
         <TabsTrigger value="icon">Icon</TabsTrigger>
       </TabsList>
