@@ -41,13 +41,17 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
 };
 
 export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null, showInactive = false) => {
+  console.log('getUserChartOfAccountsHierarchy called:', { profileId, classFilter, showInactive });
+
   const filters = classFilter ? { class: classFilter } : {};
 
   if (!showInactive) {
     filters.isActive = true;
   }
 
+  console.log('Filters applied:', filters);
   const accounts = await getUserChartOfAccounts(profileId, filters);
+  console.log('Accounts returned:', accounts?.length);
 
   const classOrder = ['asset', 'liability', 'equity', 'income', 'expense'];
   const classLabels = {

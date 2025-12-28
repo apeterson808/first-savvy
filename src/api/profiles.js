@@ -123,8 +123,15 @@ export const removeProfileMember = async (membershipId) => {
 };
 
 export const manualProvisionCurrentUser = async () => {
+  console.log('Calling manual_provision_current_user RPC...');
   const { data, error } = await supabase.rpc('manual_provision_current_user');
 
-  if (error) throw error;
+  console.log('RPC Response:', { data, error });
+
+  if (error) {
+    console.error('RPC Error:', error);
+    throw error;
+  }
+
   return data;
 };
