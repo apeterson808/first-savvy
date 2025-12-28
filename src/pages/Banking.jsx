@@ -5,9 +5,10 @@ import TransactionsTab from '../components/banking/TransactionsTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
+import ChartOfAccountsTab from '../components/settings/ChartOfAccountsTab';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { PageTabs } from '@/components/common/PageTabs';
 
 export default function Banking() {
@@ -193,7 +194,20 @@ export default function Banking() {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-4">
-          <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
+          <Tabs defaultValue="list" className="w-full">
+            <TabsList>
+              <TabsTrigger value="list">Accounts List</TabsTrigger>
+              <TabsTrigger value="chart">Chart of Accounts</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="list" className="mt-4">
+              <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
+            </TabsContent>
+
+            <TabsContent value="chart" className="mt-4">
+              <ChartOfAccountsTab />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
