@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import {
   Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
@@ -73,6 +74,10 @@ const DEFAULT_COLOR = '#52A5CE';
 export default function AppearancePicker({ color, icon, onColorChange, onIconChange, inline = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('color');
+  const [hasSelectedColor, setHasSelectedColor] = useState(false);
+  const [hasSelectedIcon, setHasSelectedIcon] = useState(false);
+  const closeTimeoutRef = useRef(null);
 
   const selectedColor = color || DEFAULT_COLOR;
   const SelectedIcon = icon && ICON_MAP[icon] ? ICON_MAP[icon] : Circle;
@@ -81,24 +86,68 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
     iconName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const pickerContent = (
-    <div className="space-y-4">
-      {/* Preview (only show in inline mode) */}
-      {inline && (
-        <div className="flex items-center gap-3">
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: selectedColor }}
-          >
-            <SelectedIcon className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-sm text-slate-600">Preview</span>
-        </div>
-      )}
+  useEffect(() => {
+    if (!open) {
+      setHasSelectedColor(false);
+      setHasSelectedIcon(false);
+      setSearch('');
+      setActiveTab('color');
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+        closeTimeoutRef.current = null;
+      }
+    }
+  }, [open]);
 
-      {/* Color Section */}
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleColorSelect = (newColor) => {
+    onColorChange?.(newColor);
+    setHasSelectedColor(true);
+
+    if (!inline && hasSelectedIcon) {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+      closeTimeoutRef.current = setTimeout(() => {
+        setOpen(false);
+      }, 300);
+    }
+  };
+
+  const handleIconSelect = (newIcon) => {
+    onIconChange?.(newIcon);
+    setHasSelectedIcon(true);
+
+    if (!inline && hasSelectedColor) {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+      closeTimeoutRef.current = setTimeout(() => {
+        setOpen(false);
+      }, 300);
+    }
+  };
+
+  const pickerContent = inline ? (
+    <div className="space-y-4">
+      <div className="flex items-center justify-center">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center shadow-md"
+          style={{ backgroundColor: selectedColor }}
+        >
+          <SelectedIcon className="w-8 h-8 text-white" />
+        </div>
+      </div>
+
       <div>
-        <h4 className="text-sm font-medium text-slate-700 mb-2">Color</h4>
+        <h4 className="text-sm font-medium text-slate-700 mb-3">Color</h4>
         <div className="grid grid-cols-6 gap-2">
           {CUSTOM_COLOR_PALETTE.map((colorOption) => (
             <button
@@ -107,31 +156,29 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onColorChange?.(colorOption.hex);
+                handleColorSelect(colorOption.hex);
               }}
               onMouseDown={(e) => e.preventDefault()}
-              className={`w-9 h-9 rounded-full border-2 transition-all ${
+              className={`w-10 h-10 rounded-full border-2 transition-all ${
                 selectedColor === colorOption.hex
                   ? 'border-slate-800 scale-110'
                   : 'border-slate-300 hover:scale-105 hover:border-slate-400'
               }`}
               style={{ backgroundColor: colorOption.hex }}
-              title={colorOption.name}
             />
           ))}
         </div>
       </div>
 
-      {/* Icon Section */}
       <div>
-        <h4 className="text-sm font-medium text-slate-700 mb-2">Icon</h4>
+        <h4 className="text-sm font-medium text-slate-700 mb-3">Icon</h4>
         <Input
           placeholder="Search icons..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="h-8 text-sm mb-2"
+          className="h-9 text-sm mb-3"
         />
-        <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+        <div className="grid grid-cols-6 gap-1 max-h-64 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
           {filteredIcons.map((iconName) => {
             const Icon = ICON_MAP[iconName];
             if (!Icon) return null;
@@ -143,21 +190,92 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  onIconChange?.(iconName);
+                  handleIconSelect(iconName);
                 }}
                 onMouseDown={(e) => e.preventDefault()}
-                className={`w-9 h-9 flex items-center justify-center rounded hover:bg-slate-100 transition-colors ${
-                  icon === iconName ? 'bg-blue-100 text-blue-600' : 'text-slate-600'
+                className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
+                  icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
                 }`}
-                title={iconName}
               >
-                <Icon className="w-4 h-4" />
+                <Icon className="w-5 h-5" />
               </button>
             );
           })}
         </div>
       </div>
     </div>
+  ) : (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <div className="flex items-center justify-center pb-4 border-b border-slate-200">
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center shadow-md"
+          style={{ backgroundColor: selectedColor }}
+        >
+          <SelectedIcon className="w-7 h-7 text-white" />
+        </div>
+      </div>
+
+      <TabsList className="w-full grid grid-cols-2 mt-4">
+        <TabsTrigger value="color">Color</TabsTrigger>
+        <TabsTrigger value="icon">Icon</TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="color" className="mt-4">
+        <div className="grid grid-cols-6 gap-2">
+          {CUSTOM_COLOR_PALETTE.map((colorOption) => (
+            <button
+              key={colorOption.hex}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleColorSelect(colorOption.hex);
+              }}
+              onMouseDown={(e) => e.preventDefault()}
+              className={`w-10 h-10 rounded-full border-2 transition-all ${
+                selectedColor === colorOption.hex
+                  ? 'border-slate-800 scale-110'
+                  : 'border-slate-300 hover:scale-105 hover:border-slate-400'
+              }`}
+              style={{ backgroundColor: colorOption.hex }}
+            />
+          ))}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="icon" className="mt-4">
+        <Input
+          placeholder="Search icons..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-9 text-sm mb-3"
+        />
+        <div className="grid grid-cols-6 gap-1 max-h-64 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+          {filteredIcons.map((iconName) => {
+            const Icon = ICON_MAP[iconName];
+            if (!Icon) return null;
+
+            return (
+              <button
+                key={iconName}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleIconSelect(iconName);
+                }}
+                onMouseDown={(e) => e.preventDefault()}
+                className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
+                  icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                }`}
+              >
+                <Icon className="w-5 h-5" />
+              </button>
+            );
+          })}
+        </div>
+      </TabsContent>
+    </Tabs>
   );
 
   if (inline) {
@@ -179,7 +297,11 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
           <SelectedIcon className="w-5 h-5 text-white" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4" align="start">
+      <PopoverContent className="w-80 p-4" align="start" onKeyDown={(e) => {
+        if (e.key === 'Escape') {
+          setOpen(false);
+        }
+      }}>
         {pickerContent}
       </PopoverContent>
     </Popover>
