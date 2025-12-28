@@ -528,7 +528,7 @@ export default function Dashboard() {
           View all
         </Button>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-2">
         {budgetUtilization.length > 0 ? (
           <div className="space-y-2.5">
             {budgetUtilization.slice(0, 5).map((item, index) => {
