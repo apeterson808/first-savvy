@@ -2,17 +2,20 @@ import { useQuery } from '@tanstack/react-query';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
-export function useChartOfAccounts(classFilter = null) {
+export function useChartOfAccounts(classFilter = null, options = {}) {
   const { activeProfile } = useProfile();
+  const { includeInactive = false, onlyActive = true } = options;
 
   return useQuery({
-    queryKey: ['user-chart-of-accounts', activeProfile?.id, classFilter],
+    queryKey: ['user-chart-of-accounts', activeProfile?.id, classFilter, includeInactive, onlyActive],
     queryFn: async () => {
       if (!activeProfile?.id) return [];
 
-      const filters = {
-        isActive: true
-      };
+      const filters = {};
+
+      if (onlyActive && !includeInactive) {
+        filters.isActive = true;
+      }
 
       if (classFilter) {
         filters.class = classFilter;

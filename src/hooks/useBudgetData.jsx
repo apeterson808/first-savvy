@@ -52,7 +52,6 @@ export function useBudgetData() {
         .from('user_chart_of_accounts')
         .select('*')
         .in('class', ['income', 'expense'])
-        .eq('is_active', true)
         .order('display_name', { ascending: true });
       if (error) throw error;
       return data || [];

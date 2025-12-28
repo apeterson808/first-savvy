@@ -17,11 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { ChevronRight, ChevronDown, Plus, Edit2, Trash2, Lock, Unlock } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Edit2, Trash2, Lock, Unlock, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
 
@@ -40,6 +41,25 @@ const AccountNode = ({ account, onEdit, onToggleActive, onDelete, depth = 0 }) =
       case 'expense': return 'bg-orange-100 text-orange-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getActivationStatusBadge = () => {
+    if (!account.is_active) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge variant="secondary" className="text-xs">Inactive</Badge>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Account is not currently in use.</p>
+              <p className="text-xs">Activate by adding to budget or linking account.</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    return null;
   };
 
   return (
@@ -67,9 +87,7 @@ const AccountNode = ({ account, onEdit, onToggleActive, onDelete, depth = 0 }) =
             <Badge variant="outline" className="text-xs">Custom</Badge>
           )}
 
-          {!account.is_active && (
-            <Badge variant="secondary" className="text-xs">Inactive</Badge>
-          )}
+          {getActivationStatusBadge()}
         </div>
 
         <div className="flex items-center gap-1">
@@ -337,11 +355,12 @@ export default function ChartOfAccountsTab() {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addDialogType, setAddDialogType] = useState('income');
+  const [showInactive, setShowInactive] = useState(false);
 
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const hierarchy = await getUserChartOfAccountsHierarchy(user.id);
+      const hierarchy = await getUserChartOfAccountsHierarchy(user.id, !showInactive);
       setAccounts(hierarchy);
     } catch (error) {
       toast.error('Failed to load chart of accounts');
@@ -354,7 +373,7 @@ export default function ChartOfAccountsTab() {
     if (user) {
       loadAccounts();
     }
-  }, [user]);
+  }, [user, showInactive]);
 
   const handleEdit = (account) => {
     setSelectedAccount(account);
@@ -399,20 +418,41 @@ export default function ChartOfAccountsTab() {
       <div>
         <h3 className="text-lg font-semibold">Chart of Accounts</h3>
         <p className="text-sm text-gray-600 mt-1">
-          Manage your unified chart of accounts. Balance sheet accounts (Assets, Liabilities, Equity)
-          have fixed structures with editable display names. Income and Expense accounts can be fully customized.
+          Manage your unified chart of accounts. Accounts activate automatically when used in budgets or linked to financial instruments.
         </p>
       </div>
 
-      <div className="flex gap-2">
-        <Button onClick={() => openAddDialog('income')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Income Category
-        </Button>
-        <Button onClick={() => openAddDialog('expense')}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Expense Category
-        </Button>
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          <Button onClick={() => openAddDialog('income')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Income Category
+          </Button>
+          <Button onClick={() => openAddDialog('expense')}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Expense Category
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Switch
+            checked={showInactive}
+            onCheckedChange={setShowInactive}
+          />
+          <Label className="cursor-pointer" onClick={() => setShowInactive(!showInactive)}>
+            {showInactive ? (
+              <span className="flex items-center gap-1">
+                <Eye className="h-4 w-4" />
+                Showing Inactive
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <EyeOff className="h-4 w-4" />
+                Hiding Inactive
+              </span>
+            )}
+          </Label>
+        </div>
       </div>
 
       <Separator />
