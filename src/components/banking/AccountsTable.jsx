@@ -113,13 +113,13 @@ export default function AccountsTable({ accounts, isLoading }) {
 
   const [accountTypeFilter, setAccountTypeFilter] = useState(initialFilter);
   const [showInactive, setShowInactive] = useState(false);
-  const [sortColumn, setSortColumn] = useState('accountType');
+  const [sortColumn, setSortColumn] = useState('accountNumber');
   const [sortDirection, setSortDirection] = useState('asc');
   const [visibleColumns, setVisibleColumns] = useState({
+    accountNumber: true,
     name: true,
-    institution: true,
     type: true,
-    detail: false,
+    detail: true,
     balance: true,
     status: true
   });
@@ -200,9 +200,8 @@ export default function AccountsTable({ accounts, isLoading }) {
     return matchesType && matchesActive;
   });
 
-  // Only show entity types that have accounts, but maintain this order
   const availableEntityTypes = React.useMemo(() => {
-    const allTypes = ['BankAccount', 'CreditCard', 'Expense', 'Income', 'Asset', 'Equity', 'Liability'];
+    const allTypes = ['Asset', 'Liability', 'Equity', 'Income', 'Expense'];
     return allTypes.filter(type => {
       const matchesActive = showInactive || accounts.some(acc => acc.entityType === type && acc.is_active !== false);
       return accounts.some(acc => acc.entityType === type) && matchesActive;
@@ -234,37 +233,23 @@ export default function AccountsTable({ accounts, isLoading }) {
       setVisibleColumns(v => ({
         ...v,
         type: true,
-        detail: false
-      }));
-    } else if (accountTypeFilter === 'Asset' || accountTypeFilter === 'BankAccount') {
-      setVisibleColumns(v => ({
-        ...v,
-        type: false,
         detail: true
-      }));
-    } else if (accountTypeFilter === 'Expense' || accountTypeFilter === 'Income' || accountTypeFilter === 'CreditCard') {
-      setVisibleColumns(v => ({
-        ...v,
-        type: false,
-        detail: false
       }));
     } else {
       setVisibleColumns(v => ({
         ...v,
-        type: true,
-        detail: false
+        type: false,
+        detail: true
       }));
     }
   }, [accountTypeFilter]);
 
   const entityTypeLabels = {
     'Asset': 'Assets',
-    'BankAccount': 'Bank Accounts',
-    'CreditCard': 'Credit Cards',
+    'Liability': 'Liabilities',
     'Equity': 'Equity',
-    'Expense': 'Expenses',
     'Income': 'Income',
-    'Liability': 'Liabilities'
+    'Expense': 'Expenses'
   };
 
 
@@ -315,29 +300,29 @@ export default function AccountsTable({ accounts, isLoading }) {
       let aVal, bVal;
 
       switch (sortColumn) {
+        case 'accountNumber':
+          aVal = a.account_number || 0;
+          bVal = b.account_number || 0;
+          break;
         case 'name':
-          aVal = (a.account_name || '').toLowerCase();
-          bVal = (b.account_name || '').toLowerCase();
+          aVal = (a.display_name || a.account_detail || a.account_name || '').toLowerCase();
+          bVal = (b.display_name || b.account_detail || b.account_name || '').toLowerCase();
           break;
         case 'accountType':
-          aVal = (a.entityType === 'BankAccount' ? 'Bank Account' : a.entityType === 'CreditCard' ? 'Credit Card' : a.entityType || '').toLowerCase();
-          bVal = (b.entityType === 'BankAccount' ? 'Bank Account' : b.entityType === 'CreditCard' ? 'Credit Card' : b.entityType || '').toLowerCase();
-          break;
-        case 'institution':
-          aVal = (a.institution || '').toLowerCase();
-          bVal = (b.institution || '').toLowerCase();
+          aVal = (a.entityType || '').toLowerCase();
+          bVal = (b.entityType || '').toLowerCase();
           break;
         case 'type':
-          aVal = getDetailTypeDisplayName(a.entityType === 'BankAccount' || a.entityType === 'CreditCard' ? a.account_type : a.detail_type).toLowerCase();
-          bVal = getDetailTypeDisplayName(b.entityType === 'BankAccount' || b.entityType === 'CreditCard' ? b.account_type : b.detail_type).toLowerCase();
+          aVal = getDetailTypeDisplayName(a.account_type).toLowerCase();
+          bVal = getDetailTypeDisplayName(b.account_type).toLowerCase();
           break;
         case 'balance':
           aVal = getAccountBalance(a);
           bVal = getAccountBalance(b);
           break;
         default:
-          aVal = (a.account_name || '').toLowerCase();
-          bVal = (b.account_name || '').toLowerCase();
+          aVal = a.account_number || 0;
+          bVal = b.account_number || 0;
       }
       
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
@@ -460,29 +445,29 @@ export default function AccountsTable({ accounts, isLoading }) {
                   </DropdownMenuItem>
                   <div className="h-px bg-slate-200 my-1" />
                   <div className="px-2 py-1 text-[10px] font-semibold text-slate-400 uppercase">Columns</div>
+                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, accountNumber: !v.accountNumber }))}>
+                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.accountNumber ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
+                      {visibleColumns.accountNumber && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    Account #
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, name: !v.name }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.name ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
                       {visibleColumns.name && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    Name
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, institution: !v.institution }))}>
-                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.institution ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
-                      {visibleColumns.institution && <Check className="w-3 h-3 text-white" />}
-                    </div>
-                    Institution
+                    Account Name
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, type: !v.type }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.type ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
                       {visibleColumns.type && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    Type
+                    Class
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, detail: !v.detail }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.detail ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
                       {visibleColumns.detail && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    Detail
+                    Type
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, balance: !v.balance }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.balance ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
@@ -556,38 +541,38 @@ export default function AccountsTable({ accounts, isLoading }) {
               <table className="w-full">
               <thead className="bg-slate-50">
                 <tr className="bg-slate-50 text-xs">
+                  {visibleColumns.accountNumber && (
+                    <th
+                      className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
+                      onClick={() => handleSort('accountNumber')}
+                    >
+                      <div className="flex items-center">Account #{getSortIcon('accountNumber')}</div>
+                    </th>
+                  )}
                   {visibleColumns.name && (
                     <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('name')}
                     >
-                      <div className="flex items-center">Display Name{getSortIcon('name')}</div>
+                      <div className="flex items-center">Account Name{getSortIcon('name')}</div>
                     </th>
-                    )}
-                    {visibleColumns.institution && (
-                    <th
-                      className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
-                      onClick={() => handleSort('institution')}
-                    >
-                      <div className="flex items-center">Institution{getSortIcon('institution')}</div>
-                    </th>
-                    )}
-                    {visibleColumns.type && (
+                  )}
+                  {visibleColumns.type && (
                     <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('accountType')}
                     >
-                      <div className="flex items-center">Account Type{getSortIcon('accountType')}</div>
+                      <div className="flex items-center">Class{getSortIcon('accountType')}</div>
                     </th>
-                    )}
-                    {visibleColumns.detail && (
+                  )}
+                  {visibleColumns.detail && (
                     <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('type')}
                     >
-                      <div className="flex items-center">Detail Type{getSortIcon('type')}</div>
+                      <div className="flex items-center">Type{getSortIcon('type')}</div>
                     </th>
-                    )}
+                  )}
                   {visibleColumns.balance && (
                     <th
                       className="font-semibold text-slate-700 text-right px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
@@ -610,34 +595,31 @@ export default function AccountsTable({ accounts, isLoading }) {
                             className="group hover:bg-blue-50/50 border-t border-slate-100 cursor-pointer transition-colors"
                             onClick={() => navigate(`/banking/account/${account.id}?from=${encodeURIComponent(window.location.search)}`)}
                           >
-                            {visibleColumns.name && (
-                              <td className={`px-4 py-0.5 ${account.isSubAccount ? 'pl-10' : 'pl-4'}`}>
-                                {account.isSubAccount && (
-                                  <span className="inline-block w-4 h-4 mr-1 text-slate-400">└</span>
-                                )}
-                                <span className="text-xs text-slate-900 font-medium group-hover:text-blue-700">
-                                  {getAccountDisplayName(account)}
+                            {visibleColumns.accountNumber && (
+                              <td className="px-4 py-0.5">
+                                <span className="text-xs text-slate-600 font-mono">
+                                  {account.account_number}
                                 </span>
                               </td>
                             )}
-                            {visibleColumns.institution && (
+                            {visibleColumns.name && (
                               <td className="px-4 py-0.5">
-                                <span className="text-xs text-slate-600">
-                                  {account.bank_name || account.institution || '-'}
+                                <span className="text-xs text-slate-900 font-medium group-hover:text-blue-700">
+                                  {account.display_name || account.account_detail || account.account_name}
                                 </span>
                               </td>
                             )}
                             {visibleColumns.type && (
                              <td className="px-4 py-0.5">
                                <span className="text-xs text-slate-600">
-                                 {account.entityType === 'BankAccount' ? 'Bank Account' : account.entityType === 'CreditCard' ? 'Credit Card' : account.entityType}
+                                 {account.entityType}
                                </span>
                              </td>
                             )}
                             {visibleColumns.detail && (
                              <td className="px-4 py-0.5">
                                <span className="text-xs text-slate-600">
-                                 {getDetailTypeDisplayName(account.entityType === 'BankAccount' || account.entityType === 'CreditCard' ? account.account_type : account.detail_type)}
+                                 {getDetailTypeDisplayName(account.account_type)}
                                </span>
                              </td>
                             )}

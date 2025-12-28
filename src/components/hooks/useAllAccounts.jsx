@@ -9,34 +9,6 @@ export default function useAllAccounts() {
   const { activeProfile } = useProfile();
   const profileId = activeProfile?.id || 'default';
 
-  const { data: accounts = [], isLoading: loadingAccounts } = useQuery({
-    queryKey: ['accounts', profileId],
-    queryFn: () => firstsavvy.entities.Account.list('-created_at'),
-    staleTime: 30000,
-    enabled: !!activeProfile,
-  });
-
-  const { data: assets = [], isLoading: loadingAssets } = useQuery({
-    queryKey: ['assets', profileId],
-    queryFn: () => firstsavvy.entities.Asset.list('name'),
-    staleTime: 30000,
-    enabled: !!activeProfile,
-  });
-
-  const { data: liabilities = [], isLoading: loadingLiabilities } = useQuery({
-    queryKey: ['liabilities', profileId],
-    queryFn: () => firstsavvy.entities.Liability.list('name'),
-    staleTime: 30000,
-    enabled: !!activeProfile,
-  });
-
-  const { data: equity = [], isLoading: loadingEquity } = useQuery({
-    queryKey: ['equity', profileId],
-    queryFn: () => firstsavvy.entities.Equity.list('name'),
-    staleTime: 30000,
-    enabled: !!activeProfile,
-  });
-
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
     queryKey: ['chart-accounts', profileId],
     queryFn: async () => {
@@ -48,18 +20,6 @@ export default function useAllAccounts() {
     staleTime: 30000,
   });
 
-  const transactionalAccounts = accounts.filter(a =>
-    ['checking', 'savings', 'credit_card'].includes(a.account_type) && a.is_active !== false
-  );
-
-  const bankAccounts = accounts.filter(a =>
-    ['checking', 'savings'].includes(a.account_type) && a.is_active !== false
-  );
-
-  const creditCards = accounts.filter(a =>
-    a.account_type === 'credit_card' && a.is_active !== false
-  );
-
   const getTypeDetailDisplay = (accountType, accountDetail) => {
     if (!accountType) return null;
     return {
@@ -69,87 +29,72 @@ export default function useAllAccounts() {
     };
   };
 
-  const allAccounts = [
-    ...accounts.map(a => ({
-      ...a,
-      account_name: a.account_name || a.name,
-      institution: a.institution_name,
-      entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount',
-      typeDetailDisplay: getTypeDetailDisplay(a.account_type, a.account_detail)
-    })),
-    ...assets.map(a => ({
-      ...a,
-      account_name: a.name,
-      entityType: 'Asset',
-      typeDetailDisplay: getTypeDetailDisplay(a.account_type, a.account_detail)
-    })),
-    ...liabilities.map(l => ({
-      ...l,
-      account_name: l.name,
-      entityType: 'Liability',
-      typeDetailDisplay: getTypeDetailDisplay(l.account_type, l.account_detail)
-    })),
-    ...equity.map(e => ({
-      ...e,
-      account_name: e.name,
-      entityType: 'Equity',
-      typeDetailDisplay: getTypeDetailDisplay(e.account_type, e.account_detail)
-    })),
-    ...chartAccounts.filter(c => c.class === 'income').map(c => ({
-      ...c,
-      account_name: c.display_name || c.account_detail || c.account_name,
-      name: c.display_name || c.account_detail || c.account_name,
-      detail_type: c.account_detail,
-      entityType: 'Income',
-      typeDetailDisplay: getTypeDetailDisplay('Income', c.account_detail)
-    })),
-    ...chartAccounts.filter(c => c.class === 'expense').map(c => ({
-      ...c,
-      account_name: c.display_name || c.account_detail || c.account_name,
-      name: c.display_name || c.account_detail || c.account_name,
-      detail_type: c.account_detail,
-      entityType: 'Expense',
-      typeDetailDisplay: getTypeDetailDisplay('Expense', c.account_detail)
-    })),
-  ];
+  const mapChartAccountToDisplay = (account) => {
+    const classLabel = account.class ? account.class.charAt(0).toUpperCase() + account.class.slice(1) : 'Unknown';
+    return {
+      ...account,
+      account_name: account.display_name || account.account_detail || `Account ${account.account_number}`,
+      name: account.display_name || account.account_detail || `Account ${account.account_number}`,
+      entityType: classLabel,
+      detail_type: account.account_detail,
+      typeDetailDisplay: getTypeDetailDisplay(account.account_type, account.account_detail),
+      current_balance: account.current_balance || 0
+    };
+  };
 
-  const isLoading = loadingAccounts || loadingAssets || loadingLiabilities || loadingEquity || loadingChartAccounts;
+  const allAccounts = chartAccounts.map(mapChartAccountToDisplay);
+
+  const transactionalAccounts = chartAccounts
+    .filter(a => a.class === 'asset' && ['checking', 'savings', 'credit_card'].includes(a.account_type))
+    .map(mapChartAccountToDisplay);
+
+  const bankAccounts = chartAccounts
+    .filter(a => a.class === 'asset' && ['checking', 'savings'].includes(a.account_type))
+    .map(mapChartAccountToDisplay);
+
+  const creditCards = chartAccounts
+    .filter(a => a.class === 'asset' && a.account_type === 'credit_card')
+    .map(mapChartAccountToDisplay);
+
+  const assets = chartAccounts
+    .filter(a => a.class === 'asset')
+    .map(mapChartAccountToDisplay);
+
+  const liabilities = chartAccounts
+    .filter(a => a.class === 'liability')
+    .map(mapChartAccountToDisplay);
+
+  const equity = chartAccounts
+    .filter(a => a.class === 'equity')
+    .map(mapChartAccountToDisplay);
+
+  const incomeCategories = chartAccounts
+    .filter(c => c.class === 'income')
+    .map(c => ({
+      ...mapChartAccountToDisplay(c),
+      type: 'income'
+    }));
+
+  const expenseCategories = chartAccounts
+    .filter(c => c.class === 'expense')
+    .map(c => ({
+      ...mapChartAccountToDisplay(c),
+      type: 'expense'
+    }));
 
   return {
     allAccounts,
-    bankAccounts: bankAccounts.map(a => ({
-      ...a,
-      account_name: a.account_name || a.name,
-      institution: a.institution_name,
-      entityType: 'BankAccount',
-      typeDetailDisplay: getTypeDetailDisplay(a.account_type, a.account_detail)
-    })),
-    creditCards: creditCards.map(c => ({
-      ...c,
-      account_name: c.account_name || c.name,
-      last_four: c.account_number_last4,
-      institution: c.institution_name,
-      entityType: 'CreditCard',
-      typeDetailDisplay: getTypeDetailDisplay(c.account_type, c.account_detail)
-    })),
+    bankAccounts,
+    creditCards,
+    transactionalAccounts,
     assets,
     liabilities,
     equity,
     chartAccounts,
     categories: chartAccounts,
-    incomeCategories: chartAccounts.filter(c => c.class === 'income').map(c => ({
-      ...c,
-      name: c.display_name || c.account_detail || c.account_name,
-      detail_type: c.account_detail,
-      type: 'income'
-    })),
-    expenseCategories: chartAccounts.filter(c => c.class === 'expense').map(c => ({
-      ...c,
-      name: c.display_name || c.account_detail || c.account_name,
-      detail_type: c.account_detail,
-      type: 'expense'
-    })),
+    incomeCategories,
+    expenseCategories,
     getTypeDetailDisplay,
-    isLoading,
+    isLoading: loadingChartAccounts,
   };
 }
