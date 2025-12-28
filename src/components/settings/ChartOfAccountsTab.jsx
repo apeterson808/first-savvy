@@ -360,8 +360,18 @@ export default function ChartOfAccountsTab() {
   const loadAccounts = async () => {
     try {
       setLoading(true);
-      const hierarchy = await getUserChartOfAccountsHierarchy(user.id, !showInactive);
-      setAccounts(hierarchy);
+      const hierarchy = await getUserChartOfAccountsHierarchy(user.id, null, showInactive);
+
+      const accountsArray = [];
+      Object.entries(hierarchy).forEach(([className, types]) => {
+        Object.entries(types).forEach(([typeName, accounts]) => {
+          accounts.forEach(account => {
+            accountsArray.push(account);
+          });
+        });
+      });
+
+      setAccounts(accountsArray);
     } catch (error) {
       toast.error('Failed to load chart of accounts');
     } finally {
