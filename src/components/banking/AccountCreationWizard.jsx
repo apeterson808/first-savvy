@@ -386,16 +386,21 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
     queryFn: async () => {
       if (!activeProfile?.id) return [];
       const { data, error } = await firstsavvy
-        .from('accounts')
-        .select('id, account_name, account_type, institution_name, account_number_last4')
+        .from('user_chart_of_accounts')
+        .select('id, display_name, account_detail, institution_name, account_number_last4')
         .eq('profile_id', activeProfile.id)
         .eq('is_active', true)
-        .order('account_name');
+        .in('account_detail', ['checking_account', 'savings_account', 'credit_card'])
+        .order('display_name');
       if (error) {
         console.error('Error fetching existing accounts:', error);
         return [];
       }
-      return data || [];
+      return (data || []).map(account => ({
+        ...account,
+        account_name: account.display_name,
+        account_type: account.account_detail
+      }));
     },
     enabled: !!activeProfile?.id && open
   });
@@ -775,7 +780,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             }
 
             await firstsavvy
-              .from('accounts')
+              .from('user_chart_of_accounts')
               .update(updateData)
               .eq('id', config.existing_account_id);
             linkedCount++;

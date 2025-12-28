@@ -5,28 +5,35 @@ export async function createPropertyAsset(propertyData, profileId) {
   if (!user) throw new Error('User not authenticated');
   if (!profileId) throw new Error('Profile ID is required');
 
-  const assetRecord = {
+  const accountData = {
     user_id: user.id,
     profile_id: profileId,
-    name: propertyData.name,
-    type: 'Asset',
-    detail_type: 'property',
-    current_balance: propertyData.estimatedValue,
-    property_address: propertyData.address || null,
-    property_city: propertyData.city || null,
-    property_state: propertyData.state || null,
-    property_zip: propertyData.zip || null,
-    property_type: propertyData.propertyType || null,
-    property_square_feet: propertyData.squareFeet ? parseInt(propertyData.squareFeet) : null,
-    property_bedrooms: propertyData.bedrooms ? parseFloat(propertyData.bedrooms) : null,
-    property_bathrooms: propertyData.bathrooms ? parseFloat(propertyData.bathrooms) : null,
-    property_purchase_price: propertyData.purchasePrice || null,
-    property_purchase_date: propertyData.purchaseDate || null,
+    display_name: propertyData.name,
+    class: 'asset',
+    account_detail: 'fixed_asset_property',
+    current_balance: propertyData.estimatedValue || 0,
+    purchase_price: propertyData.purchasePrice || null,
+    purchase_date: propertyData.purchaseDate || null,
+    notes: JSON.stringify({
+      address: propertyData.address,
+      city: propertyData.city,
+      state: propertyData.state,
+      zip: propertyData.zip,
+      propertyType: propertyData.propertyType,
+      squareFeet: propertyData.squareFeet,
+      bedrooms: propertyData.bedrooms,
+      bathrooms: propertyData.bathrooms,
+    }),
+    is_active: true,
+    is_user_created: true,
   };
 
+  const availableAccountNumber = 1700 + Math.floor(Math.random() * 100);
+  accountData.account_number = availableAccountNumber;
+
   const { data, error } = await supabase
-    .from('assets')
-    .insert([assetRecord])
+    .from('user_chart_of_accounts')
+    .insert([accountData])
     .select()
     .single();
 
@@ -39,25 +46,29 @@ export async function createMortgage(mortgageData, profileId) {
   if (!user) throw new Error('User not authenticated');
   if (!profileId) throw new Error('Profile ID is required');
 
-  const liabilityRecord = {
+  const accountData = {
     user_id: user.id,
     profile_id: profileId,
-    name: mortgageData.name || `${mortgageData.lenderName} Mortgage`,
-    type: 'Liability',
-    detail_type: 'mortgage',
-    current_balance: mortgageData.currentBalance,
+    display_name: mortgageData.name || `${mortgageData.lenderName} Mortgage`,
+    class: 'liability',
+    account_detail: 'mortgage',
+    current_balance: mortgageData.currentBalance || 0,
     interest_rate: mortgageData.interestRate || null,
-    original_loan_amount: mortgageData.originalAmount || mortgageData.currentBalance,
-    loan_start_date: mortgageData.startDate || null,
+    original_amount: mortgageData.originalAmount || mortgageData.currentBalance,
+    start_date: mortgageData.startDate || null,
     monthly_payment: mortgageData.monthlyPayment || null,
     payment_due_date: mortgageData.paymentDueDate || null,
-    linked_asset_id: mortgageData.linkedAssetId || null,
-    institution: mortgageData.lenderName || null,
+    institution_name: mortgageData.lenderName || null,
+    is_active: true,
+    is_user_created: true,
   };
 
+  const availableAccountNumber = 2400 + Math.floor(Math.random() * 100);
+  accountData.account_number = availableAccountNumber;
+
   const { data, error } = await supabase
-    .from('liabilities')
-    .insert([liabilityRecord])
+    .from('user_chart_of_accounts')
+    .insert([accountData])
     .select()
     .single();
 
@@ -72,14 +83,7 @@ export async function createPropertyWithMortgage(propertyData, mortgageData, pro
 
   try {
     const property = await createPropertyAsset(propertyData, profileId);
-
-    const mortgage = await createMortgage({
-      ...mortgageData,
-      linkedAssetId: property.id,
-    }, profileId);
-
-    const { createAssetLiabilityLink } = await import('./vehiclesAndLoans');
-    await createAssetLiabilityLink(property.id, mortgage.id, profileId);
+    const mortgage = await createMortgage(mortgageData, profileId);
 
     return { property, mortgage };
   } catch (error) {
@@ -93,29 +97,18 @@ export async function getPropertyWithMortgage(propertyId, profileId) {
   if (!profileId) throw new Error('Profile ID is required');
 
   const { data: property, error: propertyError } = await supabase
-    .from('assets')
+    .from('user_chart_of_accounts')
     .select('*')
     .eq('id', propertyId)
     .eq('profile_id', profileId)
-    .eq('detail_type', 'property')
+    .eq('account_detail', 'fixed_asset_property')
     .single();
 
   if (propertyError) throw propertyError;
 
-  const { data: links, error: linksError } = await supabase
-    .from('asset_liability_links')
-    .select(`
-      *,
-      liability:liabilities(*)
-    `)
-    .eq('asset_id', propertyId)
-    .eq('profile_id', profileId);
-
-  if (linksError) throw linksError;
-
   return {
     ...property,
-    linkedMortgages: links || [],
+    linkedMortgages: [],
   };
 }
 
@@ -124,23 +117,14 @@ export async function getUnlinkedProperties(profileId) {
   if (!user) throw new Error('User not authenticated');
   if (!profileId) throw new Error('Profile ID is required');
 
-  const { data: allProperties, error: propertiesError } = await supabase
-    .from('assets')
+  const { data, error } = await supabase
+    .from('user_chart_of_accounts')
     .select('*')
     .eq('profile_id', profileId)
-    .eq('detail_type', 'property');
+    .eq('account_detail', 'fixed_asset_property');
 
-  if (propertiesError) throw propertiesError;
-
-  const { data: linkedAssetIds, error: linksError } = await supabase
-    .from('asset_liability_links')
-    .select('asset_id')
-    .eq('profile_id', profileId);
-
-  if (linksError) throw linksError;
-
-  const linkedIds = new Set(linkedAssetIds.map(link => link.asset_id));
-  return allProperties.filter(property => !linkedIds.has(property.id));
+  if (error) throw error;
+  return data || [];
 }
 
 export async function getUnlinkedMortgages(profileId) {
@@ -149,12 +133,11 @@ export async function getUnlinkedMortgages(profileId) {
   if (!profileId) throw new Error('Profile ID is required');
 
   const { data, error } = await supabase
-    .from('liabilities')
+    .from('user_chart_of_accounts')
     .select('*')
     .eq('profile_id', profileId)
-    .eq('detail_type', 'mortgage')
-    .is('linked_asset_id', null);
+    .eq('account_detail', 'mortgage');
 
   if (error) throw error;
-  return data;
+  return data || [];
 }
