@@ -11,10 +11,7 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover";
-import { Check, ChevronsUpDown } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import { toast } from 'sonner';
 
@@ -35,9 +32,7 @@ export default function AddBudgetItemSheet({
   const [selectedColor, setSelectedColor] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('');
   const [selectedCadence, setSelectedCadence] = useState('monthly');
-  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [inputValue, setInputValue] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -46,13 +41,9 @@ export default function AddBudgetItemSheet({
       setSelectedColor(editingBudget.color || '');
       setSelectedIcon(editingBudget.icon || '');
       setSelectedCadence(editingBudget.cadence || 'monthly');
-      const category = availableCategories.find(c => c.id === editingBudget.chart_account_id);
-      setInputValue(category?.display_name || category?.account_detail || '');
     } else if (open && !editingBudget) {
       if (preselectedCategoryId) {
         setSelectedCategoryId(preselectedCategoryId);
-        const category = availableCategories.find(c => c.id === preselectedCategoryId);
-        setInputValue(category?.display_name || category?.account_detail || '');
       }
     }
   }, [editingBudget, open, preselectedCategoryId, availableCategories]);
@@ -97,8 +88,7 @@ export default function AddBudgetItemSheet({
     setSelectedColor('');
     setSelectedIcon('');
     setSelectedCadence('monthly');
-    setInputValue('');
-    setSearchQuery('');
+    setSearchTerm('');
   };
 
   const handleSubmit = async (e) => {
@@ -155,11 +145,6 @@ export default function AddBudgetItemSheet({
 
   const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
 
-  const filteredCategories = availableCategories.filter(cat => {
-    const name = cat.display_name || cat.account_detail || '';
-    return name.toLowerCase().includes(inputValue.toLowerCase());
-  });
-
   return (
     <Sheet open={open} onOpenChange={(isOpen) => {
       if (!isOpen) resetForm();
@@ -173,68 +158,24 @@ export default function AddBudgetItemSheet({
         <form onSubmit={handleSubmit} className="space-y-4 py-4 flex-1 overflow-y-auto">
           <div>
             <Label htmlFor="category">Category*</Label>
-            <Popover open={categoryDropdownOpen} onOpenChange={(open) => {
-              if (!open) {
-                setCategoryDropdownOpen(false);
-              }
-            }}>
-              <PopoverAnchor asChild>
-                <div className="relative">
-                  <Input
-                    placeholder="Search categories..."
-                    value={inputValue}
-                    onChange={(e) => {
-                      setInputValue(e.target.value);
-                      if (!categoryDropdownOpen) {
-                        setCategoryDropdownOpen(true);
-                      }
-                    }}
-                    onFocus={() => setCategoryDropdownOpen(true)}
-                    className="pr-8"
-                  />
-                  <ChevronsUpDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 shrink-0 opacity-50 pointer-events-none" />
-                </div>
-              </PopoverAnchor>
-              <PopoverContent
-                className="w-[var(--radix-popover-trigger-width)] p-0"
-                align="start"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-              >
-                <ScrollArea className="h-[300px]">
-                  {filteredCategories.length === 0 ? (
-                    <div className="py-6 text-center text-sm text-muted-foreground">
-                      No category found.
-                    </div>
-                  ) : (
-                    <div className="p-1">
-                      {filteredCategories.map((cat) => (
-                        <button
-                          key={cat.id}
-                          type="button"
-                          onClick={() => {
-                            setSelectedCategoryId(cat.id);
-                            setInputValue(cat.display_name || cat.account_detail);
-                            setCategoryDropdownOpen(false);
-                          }}
-                          className={cn(
-                            "w-full flex items-center px-2 py-2 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground cursor-pointer",
-                            selectedCategoryId === cat.id && "bg-accent"
-                          )}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedCategoryId === cat.id ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {cat.display_name || cat.account_detail}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
-              </PopoverContent>
-            </Popover>
+            <ClickThroughSelect
+              value={selectedCategoryId}
+              onValueChange={setSelectedCategoryId}
+              onSearchTermChange={setSearchTerm}
+              placeholder="Select a category"
+              triggerClassName="h-10"
+              enableSearch={true}
+            >
+              {availableCategories.map((cat) => (
+                <ClickThroughSelectItem
+                  key={cat.id}
+                  value={cat.id}
+                  data-display={cat.display_name || cat.account_detail}
+                >
+                  {cat.display_name || cat.account_detail}
+                </ClickThroughSelectItem>
+              ))}
+            </ClickThroughSelect>
           </div>
 
           <div>
