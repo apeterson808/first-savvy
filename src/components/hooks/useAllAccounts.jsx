@@ -99,13 +99,17 @@ export default function useAllAccounts() {
       ...c,
       account_name: c.display_name || c.account_detail || c.account_name,
       name: c.display_name || c.account_detail || c.account_name,
-      entityType: 'Income'
+      detail_type: c.account_detail,
+      entityType: 'Income',
+      typeDetailDisplay: getTypeDetailDisplay('Income', c.account_detail)
     })),
     ...chartAccounts.filter(c => c.class === 'expense').map(c => ({
       ...c,
       account_name: c.display_name || c.account_detail || c.account_name,
       name: c.display_name || c.account_detail || c.account_name,
-      entityType: 'Expense'
+      detail_type: c.account_detail,
+      entityType: 'Expense',
+      typeDetailDisplay: getTypeDetailDisplay('Expense', c.account_detail)
     })),
   ];
 
@@ -136,11 +140,13 @@ export default function useAllAccounts() {
     incomeCategories: chartAccounts.filter(c => c.class === 'income').map(c => ({
       ...c,
       name: c.display_name || c.account_detail || c.account_name,
+      detail_type: c.account_detail,
       type: 'income'
     })),
     expenseCategories: chartAccounts.filter(c => c.class === 'expense').map(c => ({
       ...c,
       name: c.display_name || c.account_detail || c.account_name,
+      detail_type: c.account_detail,
       type: 'expense'
     })),
     getTypeDetailDisplay,
