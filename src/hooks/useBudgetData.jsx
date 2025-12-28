@@ -41,7 +41,16 @@ export function useBudgetData() {
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['accounts', profileId],
-    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true }),
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('*')
+        .eq('is_active', true)
+        .in('class', ['asset'])
+        .in('account_type', ['checking', 'savings', 'credit_card']);
+      if (error) throw error;
+      return data || [];
+    },
     enabled: !!activeProfile
   });
 
@@ -72,7 +81,7 @@ export function useBudgetData() {
       if (!t.date) return false;
       const tDate = new Date(t.date);
       if (isNaN(tDate.getTime())) return false;
-      const matchesActiveAccount = activeAccountIds.includes(t.bank_account_id);
+      const matchesActiveAccount = activeAccountIds.includes(t.account_id);
       const isTransfer = t.type === 'transfer';
       return tDate >= monthStart && tDate <= monthEnd && t.status === 'posted' && matchesActiveAccount && !isTransfer;
     });
