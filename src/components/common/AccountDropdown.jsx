@@ -20,13 +20,16 @@ export default function AccountDropdown({
   const { data: fetchedAccounts = [], isLoading } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
+      const allAccounts = await firstsavvy.entities.ChartAccount.filter({ is_active: true });
       return allAccounts.map(acc => ({
         ...acc,
         account_number: acc.account_number_last4,
-        entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount',
-        name: acc.account_name,
-        institution: acc.institution_name
+        entityType: acc.account_detail === 'credit_card' ? 'CreditCard' : 'BankAccount',
+        name: acc.display_name,
+        account_name: acc.display_name,
+        account_type: acc.account_detail,
+        institution: acc.institution_name,
+        institution_name: acc.institution_name
       }));
     },
     enabled: shouldFetchOwnAccounts

@@ -27,11 +27,9 @@ const getActiveProfileId = () => {
 };
 
 const TABLES_WITH_PROFILE_ID = [
-  'accounts', 'transactions', 'budgets', 'budget_groups',
-  'goals', 'bills', 'assets', 'liabilities', 'equity',
-  'contacts', 'user_chart_of_accounts', 'credit_cards',
-  'credit_scores', 'vehicles', 'auto_loans', 'properties',
-  'mortgages', 'plaid_items'
+  'transactions', 'budgets', 'budget_groups',
+  'goals', 'bills', 'contacts', 'user_chart_of_accounts',
+  'credit_scores', 'plaid_items'
 ];
 
 const createEntityAPI = (tableName) => {
@@ -212,17 +210,11 @@ export const createSupabaseClient = () => {
     rpc: (...args) => supabase.rpc(...args),
     storage: supabase.storage,
     entities: {
-      Account: createEntityAPI('accounts'),
-      BankAccount: createEntityAPI('bank_accounts'),
-      CreditCard: createEntityAPI('credit_cards'),
       Transaction: createEntityAPI('transactions'),
       Budget: createEntityAPI('budgets'),
       BudgetGroup: createEntityAPI('budget_groups'),
       Goal: createEntityAPI('goals'),
       Bill: createEntityAPI('bills'),
-      Asset: createEntityAPI('assets'),
-      Liability: createEntityAPI('liabilities'),
-      Equity: createEntityAPI('equity'),
       CreditScore: createEntityAPI('credit_scores'),
       Contact: createEntityAPI('contacts'),
       ChartAccount: createEntityAPI('user_chart_of_accounts'),
