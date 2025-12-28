@@ -200,11 +200,11 @@ export default function AddBudgetItemSheet({
               value={selectedCategoryId}
               onValueChange={(val) => {
                 if (val === '__add_new_expense__') {
-                  handleAddNewCategory(searchTerm, 'expense');
+                  handleAddNewCategory(searchTerm || 'New Expense', 'expense');
                   return;
                 }
                 if (val === '__add_new_income__') {
-                  handleAddNewCategory(searchTerm, 'income');
+                  handleAddNewCategory(searchTerm || 'New Income', 'income');
                   return;
                 }
                 setSelectedCategoryId(val);
@@ -215,26 +215,22 @@ export default function AddBudgetItemSheet({
               enableSearch={true}
               disabled={isCreatingCategory}
             >
-              {searchTerm && (
-                <>
-                  <ClickThroughSelectItem
-                    value="__add_new_expense__"
-                    className="text-blue-600 font-medium whitespace-nowrap"
-                    isAction
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add new expense: "{searchTerm}"
-                  </ClickThroughSelectItem>
-                  <ClickThroughSelectItem
-                    value="__add_new_income__"
-                    className="text-green-600 font-medium whitespace-nowrap"
-                    isAction
-                  >
-                    <Plus className="w-3 h-3 mr-1" />
-                    Add new income: "{searchTerm}"
-                  </ClickThroughSelectItem>
-                </>
-              )}
+              <ClickThroughSelectItem
+                value="__add_new_expense__"
+                className="text-blue-600 font-medium whitespace-nowrap"
+                isAction
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                {searchTerm ? `Add new expense: "${searchTerm}"` : 'Create new expense category'}
+              </ClickThroughSelectItem>
+              <ClickThroughSelectItem
+                value="__add_new_income__"
+                className="text-green-600 font-medium whitespace-nowrap"
+                isAction
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                {searchTerm ? `Add new income: "${searchTerm}"` : 'Create new income category'}
+              </ClickThroughSelectItem>
               {availableCategories.map((cat) => (
                 <ClickThroughSelectItem
                   key={cat.id}
