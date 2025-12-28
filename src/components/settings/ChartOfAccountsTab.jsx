@@ -13,7 +13,6 @@ import {
   getAccountNumberRanges,
   getFullDisplayName
 } from '@/api/chartOfAccounts';
-import { manualProvisionCurrentUser } from '@/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -417,23 +416,6 @@ export default function ChartOfAccountsTab() {
     setAddDialogOpen(true);
   };
 
-  const handleManualProvision = async () => {
-    try {
-      setLoading(true);
-      const result = await manualProvisionCurrentUser();
-      if (result.success) {
-        toast.success(`Provisioned ${result.accounts_provisioned} accounts successfully`);
-        await loadAccounts();
-      } else {
-        toast.error(result.error || 'Failed to provision accounts');
-      }
-    } catch (error) {
-      toast.error(error.message || 'Failed to provision accounts');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
     return <div className="p-4">Loading chart of accounts...</div>;
   }
@@ -488,14 +470,6 @@ export default function ChartOfAccountsTab() {
           {!showInactive && (
             <p className="text-sm mt-2">Try enabling "Show Inactive" to see all accounts.</p>
           )}
-          <div className="mt-4">
-            <Button onClick={handleManualProvision}>
-              Provision Chart of Accounts
-            </Button>
-            <p className="text-xs mt-2 text-gray-400">
-              This will create 81 standard accounts for your use
-            </p>
-          </div>
         </div>
       ) : (
         <div className="space-y-2">
