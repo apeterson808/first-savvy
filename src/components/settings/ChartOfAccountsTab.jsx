@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import {
   getUserChartOfAccountsHierarchy,
   createUserIncomeCategory,
@@ -240,7 +241,7 @@ const EditAccountDialog = ({ account, open, onClose, onSave }) => {
 };
 
 const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
-  const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [name, setName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [icon, setIcon] = useState('');
@@ -260,6 +261,8 @@ const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
   }, [open, accountType]);
 
   const handleSave = async () => {
+    if (!activeProfile?.id) return;
+
     try {
       const categoryData = {
         name,
@@ -269,9 +272,9 @@ const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
       };
 
       if (accountType === 'income') {
-        await createUserIncomeCategory(user.id, categoryData);
+        await createUserIncomeCategory(activeProfile.id, categoryData);
       } else {
-        await createUserExpenseCategory(user.id, categoryData);
+        await createUserExpenseCategory(activeProfile.id, categoryData);
       }
 
       toast.success(`${accountType} category created successfully`);
@@ -349,6 +352,7 @@ const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
 
 export default function ChartOfAccountsTab() {
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -358,21 +362,14 @@ export default function ChartOfAccountsTab() {
   const [showInactive, setShowInactive] = useState(false);
 
   const loadAccounts = async () => {
+    if (!activeProfile?.id) return;
+
     try {
       setLoading(true);
-      const hierarchy = await getUserChartOfAccountsHierarchy(user.id, null, showInactive);
-
-      const accountsArray = [];
-      Object.entries(hierarchy).forEach(([className, types]) => {
-        Object.entries(types).forEach(([typeName, accounts]) => {
-          accounts.forEach(account => {
-            accountsArray.push(account);
-          });
-        });
-      });
-
-      setAccounts(accountsArray);
+      const hierarchy = await getUserChartOfAccountsHierarchy(activeProfile.id, null, showInactive);
+      setAccounts(hierarchy);
     } catch (error) {
+      console.error('Failed to load chart of accounts:', error);
       toast.error('Failed to load chart of accounts');
     } finally {
       setLoading(false);
@@ -380,10 +377,10 @@ export default function ChartOfAccountsTab() {
   };
 
   useEffect(() => {
-    if (user) {
+    if (activeProfile?.id) {
       loadAccounts();
     }
-  }, [user, showInactive]);
+  }, [activeProfile?.id, showInactive]);
 
   const handleEdit = (account) => {
     setSelectedAccount(account);
@@ -467,17 +464,26 @@ export default function ChartOfAccountsTab() {
 
       <Separator />
 
-      <div className="space-y-2">
-        {accounts.map(account => (
-          <AccountNode
-            key={account.id}
-            account={account}
-            onEdit={handleEdit}
-            onToggleActive={handleToggleActive}
-            onDelete={handleDelete}
-          />
-        ))}
-      </div>
+      {accounts.length === 0 ? (
+        <div className="p-8 text-center text-gray-500">
+          <p>No accounts found.</p>
+          {!showInactive && (
+            <p className="text-sm mt-2">Try enabling "Show Inactive" to see all accounts.</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {accounts.map(account => (
+            <AccountNode
+              key={account.id}
+              account={account}
+              onEdit={handleEdit}
+              onToggleActive={handleToggleActive}
+              onDelete={handleDelete}
+            />
+          ))}
+        </div>
+      )}
 
       <EditAccountDialog
         account={selectedAccount}
