@@ -129,15 +129,12 @@ export const ProfileProvider = ({ children }) => {
 
   const ensureCompleteProvisioning = async () => {
     try {
-      const { data, error } = await firstsavvy.rpc('ensure_complete_provisioning');
+      const { data, error } = await firstsavvy.rpc('manual_provision_current_user');
 
       if (error) throw error;
 
       if (data?.success) {
-        const verificationResult = await verifyUserProvisioning();
-        if (verificationResult && !verificationResult.success) {
-          console.warn('Provisioning verification failed:', verificationResult.diagnostics);
-        }
+        console.log('Provisioning successful:', data);
       }
 
       return data;

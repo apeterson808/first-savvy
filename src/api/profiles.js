@@ -121,3 +121,10 @@ export const removeProfileMember = async (membershipId) => {
 
   if (error) throw error;
 };
+
+export const manualProvisionCurrentUser = async () => {
+  const { data, error } = await supabase.rpc('manual_provision_current_user');
+
+  if (error) throw error;
+  return data;
+};
