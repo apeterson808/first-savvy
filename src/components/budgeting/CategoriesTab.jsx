@@ -20,7 +20,6 @@ export default function CategoriesTab() {
   const queryClient = useQueryClient();
   const {
     budgets,
-    budgetGroups,
     budgetedIncomeCategories,
     budgetedExpenseCategories,
     availableIncomeCategories,
@@ -384,14 +383,10 @@ export default function CategoriesTab() {
     );
   }
 
-  const incomeGroup = budgetGroups.find(g => g.type === 'income');
-  const expenseGroup = budgetGroups.find(g => g.type === 'expense');
-
   return (
     <div className="space-y-4">
       <BudgetAllocationBar
         budgets={budgets}
-        budgetGroups={budgetGroups}
       />
 
       <Card className="shadow-sm border-slate-200">
@@ -443,13 +438,9 @@ export default function CategoriesTab() {
       <AddBudgetItemSheet
         open={addBudgetSheetOpen}
         onOpenChange={setAddBudgetSheetOpen}
-        groups={budgetGroups}
-        categories={categories}
+        availableCategories={categories}
         editingBudget={editingBudget}
         preselectedCategoryId={selectedCategory?.id}
-        preselectedGroupId={selectedCategory ? (
-          selectedCategory.class === 'income' ? incomeGroup?.id : expenseGroup?.id
-        ) : null}
       />
     </div>
   );
