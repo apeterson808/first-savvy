@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useProfile } from '@/contexts/ProfileContext';
 import {
   getUserChartOfAccountsHierarchy,
   createUserIncomeCategory,
@@ -13,7 +12,6 @@ import {
   getAccountNumberRanges,
   getFullDisplayName
 } from '@/api/chartOfAccounts';
-import { manualProvisionCurrentUser } from '@/api/profiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -242,7 +240,7 @@ const EditAccountDialog = ({ account, open, onClose, onSave }) => {
 };
 
 const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
-  const { activeProfile } = useProfile();
+  const { user } = useAuth();
   const [name, setName] = useState('');
   const [accountNumber, setAccountNumber] = useState('');
   const [icon, setIcon] = useState('');
@@ -262,8 +260,6 @@ const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
   }, [open, accountType]);
 
   const handleSave = async () => {
-    if (!activeProfile?.id) return;
-
     try {
       const categoryData = {
         name,
@@ -273,9 +269,9 @@ const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
       };
 
       if (accountType === 'income') {
-        await createUserIncomeCategory(activeProfile.id, categoryData);
+        await createUserIncomeCategory(user.id, categoryData);
       } else {
-        await createUserExpenseCategory(activeProfile.id, categoryData);
+        await createUserExpenseCategory(user.id, categoryData);
       }
 
       toast.success(`${accountType} category created successfully`);
@@ -353,7 +349,6 @@ const AddCategoryDialog = ({ accountType, open, onClose, onSave }) => {
 
 export default function ChartOfAccountsTab() {
   const { user } = useAuth();
-  const { activeProfile } = useProfile();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAccount, setSelectedAccount] = useState(null);
@@ -363,14 +358,11 @@ export default function ChartOfAccountsTab() {
   const [showInactive, setShowInactive] = useState(false);
 
   const loadAccounts = async () => {
-    if (!activeProfile?.id) return;
-
     try {
       setLoading(true);
-      const hierarchy = await getUserChartOfAccountsHierarchy(activeProfile.id, null, showInactive);
+      const hierarchy = await getUserChartOfAccountsHierarchy(user.id, !showInactive);
       setAccounts(hierarchy);
     } catch (error) {
-      console.error('Failed to load chart of accounts:', error);
       toast.error('Failed to load chart of accounts');
     } finally {
       setLoading(false);
@@ -378,10 +370,10 @@ export default function ChartOfAccountsTab() {
   };
 
   useEffect(() => {
-    if (activeProfile?.id) {
+    if (user) {
       loadAccounts();
     }
-  }, [activeProfile?.id, showInactive]);
+  }, [user, showInactive]);
 
   const handleEdit = (account) => {
     setSelectedAccount(account);
@@ -415,23 +407,6 @@ export default function ChartOfAccountsTab() {
   const openAddDialog = (type) => {
     setAddDialogType(type);
     setAddDialogOpen(true);
-  };
-
-  const handleManualProvision = async () => {
-    try {
-      setLoading(true);
-      const result = await manualProvisionCurrentUser();
-      if (result.success) {
-        toast.success(`Provisioned ${result.accounts_provisioned} accounts successfully`);
-        await loadAccounts();
-      } else {
-        toast.error(result.error || 'Failed to provision accounts');
-      }
-    } catch (error) {
-      toast.error(error.message || 'Failed to provision accounts');
-    } finally {
-      setLoading(false);
-    }
   };
 
   if (loading) {
@@ -482,34 +457,17 @@ export default function ChartOfAccountsTab() {
 
       <Separator />
 
-      {accounts.length === 0 ? (
-        <div className="p-8 text-center text-gray-500">
-          <p>No accounts found.</p>
-          {!showInactive && (
-            <p className="text-sm mt-2">Try enabling "Show Inactive" to see all accounts.</p>
-          )}
-          <div className="mt-4">
-            <Button onClick={handleManualProvision}>
-              Provision Chart of Accounts
-            </Button>
-            <p className="text-xs mt-2 text-gray-400">
-              This will create 81 standard accounts for your use
-            </p>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {accounts.map(account => (
-            <AccountNode
-              key={account.id}
-              account={account}
-              onEdit={handleEdit}
-              onToggleActive={handleToggleActive}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
-      )}
+      <div className="space-y-2">
+        {accounts.map(account => (
+          <AccountNode
+            key={account.id}
+            account={account}
+            onEdit={handleEdit}
+            onToggleActive={handleToggleActive}
+            onDelete={handleDelete}
+          />
+        ))}
+      </div>
 
       <EditAccountDialog
         account={selectedAccount}

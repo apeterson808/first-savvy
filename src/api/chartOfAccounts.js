@@ -40,27 +40,9 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   return data;
 };
 
-export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null, showInactive = false) => {
-  console.log('getUserChartOfAccountsHierarchy called:', { profileId, classFilter, showInactive });
-
+export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null) => {
   const filters = classFilter ? { class: classFilter } : {};
-
-  if (!showInactive) {
-    filters.isActive = true;
-  }
-
-  console.log('Filters applied:', filters);
   const accounts = await getUserChartOfAccounts(profileId, filters);
-  console.log('Accounts returned:', accounts?.length);
-
-  const classOrder = ['asset', 'liability', 'equity', 'income', 'expense'];
-  const classLabels = {
-    'asset': 'Assets',
-    'liability': 'Liabilities',
-    'equity': 'Equity',
-    'income': 'Income',
-    'expense': 'Expenses'
-  };
 
   const grouped = {};
 
@@ -78,45 +60,11 @@ export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = n
 
     grouped[classKey][typeKey].push({
       ...account,
-      displayName: account.display_name || account.account_detail || 'Unnamed Account',
-      level: 3
+      displayName: account.display_name || account.account_detail || 'Unnamed Account'
     });
   });
 
-  const hierarchyArray = [];
-
-  classOrder.forEach(classKey => {
-    if (!grouped[classKey] || Object.keys(grouped[classKey]).length === 0) {
-      return;
-    }
-
-    const typeChildren = [];
-
-    Object.entries(grouped[classKey])
-      .sort(([a], [b]) => a.localeCompare(b))
-      .forEach(([typeName, accountList]) => {
-        typeChildren.push({
-          id: `${classKey}-${typeName}`,
-          displayName: typeName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '),
-          account_type: typeName,
-          class: classKey,
-          level: 2,
-          is_active: true,
-          children: accountList.sort((a, b) => a.account_number - b.account_number)
-        });
-      });
-
-    hierarchyArray.push({
-      id: classKey,
-      displayName: classLabels[classKey] || classKey,
-      class: classKey,
-      level: 1,
-      is_active: true,
-      children: typeChildren
-    });
-  });
-
-  return hierarchyArray;
+  return grouped;
 };
 
 export const getChartAccountById = async (accountId) => {
