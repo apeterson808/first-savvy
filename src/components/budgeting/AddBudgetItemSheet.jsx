@@ -11,7 +11,7 @@ import {
   SheetTitle,
   SheetFooter,
 } from "@/components/ui/sheet";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger, PopoverAnchor } from "@/components/ui/popover";
 import { Check, ChevronsUpDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -173,8 +173,12 @@ export default function AddBudgetItemSheet({
         <form onSubmit={handleSubmit} className="space-y-4 py-4 flex-1 overflow-y-auto">
           <div>
             <Label htmlFor="category">Category*</Label>
-            <Popover open={categoryDropdownOpen} onOpenChange={setCategoryDropdownOpen}>
-              <PopoverTrigger asChild>
+            <Popover open={categoryDropdownOpen} onOpenChange={(open) => {
+              if (!open) {
+                setCategoryDropdownOpen(false);
+              }
+            }}>
+              <PopoverAnchor asChild>
                 <div className="relative">
                   <Input
                     placeholder="Search categories..."
@@ -188,10 +192,14 @@ export default function AddBudgetItemSheet({
                     onFocus={() => setCategoryDropdownOpen(true)}
                     className="pr-8"
                   />
-                  <ChevronsUpDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 shrink-0 opacity-50" />
+                  <ChevronsUpDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 shrink-0 opacity-50 pointer-events-none" />
                 </div>
-              </PopoverTrigger>
-              <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+              </PopoverAnchor>
+              <PopoverContent
+                className="w-[var(--radix-popover-trigger-width)] p-0"
+                align="start"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
                 <ScrollArea className="h-[300px]">
                   {filteredCategories.length === 0 ? (
                     <div className="py-6 text-center text-sm text-muted-foreground">
