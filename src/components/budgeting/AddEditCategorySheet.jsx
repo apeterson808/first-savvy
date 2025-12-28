@@ -189,6 +189,7 @@ export default function AddEditCategorySheet({
               icon={formData.icon}
               onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
               onIconChange={(icon) => setFormData(prev => ({ ...prev, icon }))}
+              inline={true}
             />
           </div>
 
