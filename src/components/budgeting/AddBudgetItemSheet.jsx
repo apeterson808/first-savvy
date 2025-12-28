@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { useProfile } from '@/contexts/ProfileContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,7 +21,9 @@ import {
 } from "@/components/ui/select";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
+import { Plus } from 'lucide-react';
 import { toast } from 'sonner';
+import { createUserIncomeCategory, createUserExpenseCategory } from '@/api/chartOfAccounts';
 
 const DEFAULT_COLOR = '#52A5CE';
 
@@ -33,6 +36,7 @@ export default function AddBudgetItemSheet({
 }) {
   const isEditMode = !!editingBudget;
   const queryClient = useQueryClient();
+  const { activeProfile } = useProfile();
 
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [limitAmount, setLimitAmount] = useState('');
@@ -40,6 +44,7 @@ export default function AddBudgetItemSheet({
   const [selectedIcon, setSelectedIcon] = useState('');
   const [selectedCadence, setSelectedCadence] = useState('monthly');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isCreatingCategory, setIsCreatingCategory] = useState(false);
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -96,6 +101,32 @@ export default function AddBudgetItemSheet({
     setSelectedIcon('');
     setSelectedCadence('monthly');
     setSearchTerm('');
+    setIsCreatingCategory(false);
+  };
+
+  const handleAddNewCategory = async (categoryName, categoryType) => {
+    if (!categoryName?.trim() || !activeProfile?.id) return;
+
+    setIsCreatingCategory(true);
+    try {
+      const newAccountId = categoryType === 'income'
+        ? await createUserIncomeCategory(activeProfile.id, { name: categoryName.trim() })
+        : await createUserExpenseCategory(activeProfile.id, { name: categoryName.trim() });
+
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+
+      if (newAccountId) {
+        setSelectedCategoryId(newAccountId);
+        toast.success(`${categoryType === 'income' ? 'Income' : 'Expense'} category created successfully`);
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast.error('Failed to create category');
+    } finally {
+      setIsCreatingCategory(false);
+      setSearchTerm('');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -167,12 +198,43 @@ export default function AddBudgetItemSheet({
             <Label htmlFor="category">Category*</Label>
             <ClickThroughSelect
               value={selectedCategoryId}
-              onValueChange={setSelectedCategoryId}
+              onValueChange={(val) => {
+                if (val === '__add_new_expense__') {
+                  handleAddNewCategory(searchTerm, 'expense');
+                  return;
+                }
+                if (val === '__add_new_income__') {
+                  handleAddNewCategory(searchTerm, 'income');
+                  return;
+                }
+                setSelectedCategoryId(val);
+              }}
               onSearchTermChange={setSearchTerm}
               placeholder="Select a category"
               triggerClassName="h-10"
               enableSearch={true}
+              disabled={isCreatingCategory}
             >
+              {searchTerm && (
+                <>
+                  <ClickThroughSelectItem
+                    value="__add_new_expense__"
+                    className="text-blue-600 font-medium whitespace-nowrap"
+                    isAction
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add new expense: "{searchTerm}"
+                  </ClickThroughSelectItem>
+                  <ClickThroughSelectItem
+                    value="__add_new_income__"
+                    className="text-green-600 font-medium whitespace-nowrap"
+                    isAction
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Add new income: "{searchTerm}"
+                  </ClickThroughSelectItem>
+                </>
+              )}
               {availableCategories.map((cat) => (
                 <ClickThroughSelectItem
                   key={cat.id}

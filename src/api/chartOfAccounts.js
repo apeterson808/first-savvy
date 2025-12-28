@@ -92,7 +92,7 @@ export const getChartAccountByNumber = async (profileId, accountNumber) => {
 
 export const createUserIncomeCategory = async (profileId, categoryData) => {
   const { data, error } = await supabase.rpc('add_user_income_category', {
-    p_profile_id: profileId,
+    p_user_id: profileId,
     p_category_name: categoryData.name,
     p_account_number: categoryData.accountNumber || null,
     p_icon: categoryData.icon || null,
@@ -105,7 +105,7 @@ export const createUserIncomeCategory = async (profileId, categoryData) => {
 
 export const createUserExpenseCategory = async (profileId, categoryData) => {
   const { data, error } = await supabase.rpc('add_user_expense_category', {
-    p_profile_id: profileId,
+    p_user_id: profileId,
     p_category_name: categoryData.name,
     p_account_number: categoryData.accountNumber || null,
     p_icon: categoryData.icon || null,
