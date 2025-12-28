@@ -155,7 +155,7 @@ export default function AddBudgetItemSheet({
           <SheetTitle>{isEditMode ? 'Edit Budget Item' : 'Add Budget Item'}</SheetTitle>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4 flex-1 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4 px-1 flex-1 overflow-y-auto">
           <div>
             <Label htmlFor="category">Category*</Label>
             <ClickThroughSelect
