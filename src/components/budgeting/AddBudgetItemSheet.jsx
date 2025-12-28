@@ -253,20 +253,7 @@ export default function AddBudgetItemSheet({
           </div>
 
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              {selectedIcon && selectedColor && (() => {
-                const SelectedIcon = LucideIcons[selectedIcon] || LucideIcons.Circle;
-                return (
-                  <div
-                    className="w-8 h-8 rounded-full flex items-center justify-center shadow-sm"
-                    style={{ backgroundColor: selectedColor }}
-                  >
-                    <SelectedIcon className="w-4 h-4 text-white" />
-                  </div>
-                );
-              })()}
-              <Label>Appearance</Label>
-            </div>
+            <Label>Appearance</Label>
             <AppearancePicker
               color={selectedColor}
               icon={selectedIcon}
