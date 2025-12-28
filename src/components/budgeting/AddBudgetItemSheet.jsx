@@ -219,15 +219,14 @@ export default function AddBudgetItemSheet({
           </div>
 
           <div>
-            <Label>Appearance</Label>
-            <div className="mt-2">
-              <AppearancePicker
-                color={selectedColor}
-                icon={selectedIcon}
-                onColorChange={setSelectedColor}
-                onIconChange={setSelectedIcon}
-              />
-            </div>
+            <Label className="mb-2 block">Appearance</Label>
+            <AppearancePicker
+              color={selectedColor}
+              icon={selectedIcon}
+              onColorChange={setSelectedColor}
+              onIconChange={setSelectedIcon}
+              inline={true}
+            />
           </div>
         </form>
 
