@@ -370,7 +370,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         .from('user_chart_of_accounts')
         .select('*')
         .eq('profile_id', activeProfile.id)
-        .eq('is_active', true)
         .order('account_number');
       if (error) {
         console.error('Error fetching user chart accounts:', error);
@@ -389,7 +388,6 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         .from('user_chart_of_accounts')
         .select('id, display_name, account_detail, institution_name, account_number_last4')
         .eq('profile_id', activeProfile.id)
-        .eq('is_active', true)
         .in('account_detail', ['checking_account', 'savings_account', 'credit_card'])
         .order('display_name');
       if (error) {
