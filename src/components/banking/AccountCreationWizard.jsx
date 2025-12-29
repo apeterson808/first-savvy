@@ -658,9 +658,49 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   };
 
   const createAccountMutation = useMutation({
-    mutationFn: (data) => withRetry(() => firstsavvy.entities.Account.create(data)),
+    mutationFn: async (data) => {
+      const detailMap = {
+        'checking': 'checking_account',
+        'savings': 'savings_account',
+        'credit_card': 'personal_credit_card',
+      };
+      const accountDetail = detailMap[data.account_type] || data.account_type;
+
+      const chartAccount = userChartAccounts.find(a => a.account_detail === accountDetail);
+      if (!chartAccount) {
+        throw new Error(`No chart account found for type: ${accountDetail}`);
+      }
+
+      const accountNumber = parseInt(Date.now().toString().slice(-6));
+
+      const { data: newAccount, error } = await firstsavvy
+        .from('user_chart_of_accounts')
+        .insert({
+          user_id: user.id,
+          profile_id: activeProfile.id,
+          template_account_number: chartAccount.template_account_number,
+          account_number: accountNumber,
+          display_name: data.account_name,
+          class: chartAccount.class,
+          account_detail: chartAccount.account_detail,
+          account_type: chartAccount.account_type,
+          icon: chartAccount.icon,
+          color: chartAccount.color,
+          current_balance: data.current_balance,
+          institution_name: data.institution_name,
+          account_number_last4: data.account_number_last4,
+          is_active: true,
+          is_user_created: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return newAccount;
+    },
     onSuccess: (newAccount) => {
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       toast.success('Account created successfully!');
       onOpenChange(false);
@@ -675,7 +715,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   });
 
   const createAssetMutation = useMutation({
-    mutationFn: (data) => withRetry(() => firstsavvy.entities.Asset.create(data)),
+    mutationFn: async (data) => {
+      throw new Error('Asset creation should use createVehicleAsset or createPropertyAsset');
+    },
     onSuccess: (newAsset) => {
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       onAccountCreated?.({ type: 'asset', account: newAsset });
@@ -696,7 +738,9 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   });
 
   const createLiabilityMutation = useMutation({
-    mutationFn: (data) => withRetry(() => firstsavvy.entities.Liability.create(data)),
+    mutationFn: async (data) => {
+      throw new Error('Liability creation should use createAutoLoan or createMortgage');
+    },
     onSuccess: (newLiability) => {
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       onAccountCreated?.({ type: 'liability', account: newLiability });
@@ -713,9 +757,39 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   });
 
   const createCategoryMutation = useMutation({
-    mutationFn: (data) => withRetry(() => firstsavvy.entities.Category.create(data)),
+    mutationFn: async (data) => {
+      const chartAccount = userChartAccounts.find(a => a.account_detail === data.account_type);
+      if (!chartAccount) {
+        throw new Error(`No chart account found for type: ${data.account_type}`);
+      }
+
+      const accountNumber = parseInt(Date.now().toString().slice(-6));
+
+      const { data: newCategory, error } = await firstsavvy
+        .from('user_chart_of_accounts')
+        .insert({
+          user_id: user.id,
+          profile_id: activeProfile.id,
+          template_account_number: chartAccount.template_account_number,
+          account_number: accountNumber,
+          display_name: data.name,
+          class: chartAccount.class,
+          account_detail: chartAccount.account_detail,
+          account_type: chartAccount.account_type,
+          icon: chartAccount.icon,
+          color: chartAccount.color,
+          is_active: true,
+          is_user_created: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return newCategory;
+    },
     onSuccess: (newCategory) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       onAccountCreated?.({ type: formData.subtype, account: newCategory });
       toast.success('Category created successfully!');
       onOpenChange(false);
@@ -748,33 +822,53 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               continue;
             }
 
-            const accountNumber = Date.now().toString().slice(-6);
-            const finalDisplayName = config.displayName || getChartAccountDisplayName(config.chart_account_id) || mockAccount.name;
-            const newAccount = await firstsavvy.entities.Account.create({
-              account_name: finalDisplayName,
-              account_number: accountNumber,
-              account_type: mockAccount.type,
-              chart_account_id: config.chart_account_id,
-              current_balance: mockAccount.balance,
-              institution_name: mockAccount.institutionName,
-              account_number_last4: mockAccount.last4,
-              external_account_suffix: mockAccount.last4 || null,
-              show_account_suffix: config.show_suffix ?? true,
-              is_active: true
-            });
+            const chartAccount = userChartAccounts.find(a => a.id === config.chart_account_id);
+            if (!chartAccount) {
+              console.warn(`Chart account not found for ID: ${config.chart_account_id}`);
+              continue;
+            }
+
+            const accountNumber = parseInt(Date.now().toString().slice(-6));
+            const finalDisplayName = config.displayName || chartAccount.display_name || mockAccount.name;
+
+            const { data: newAccount, error: createError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .insert({
+                user_id: user.id,
+                profile_id: activeProfile.id,
+                template_account_number: chartAccount.template_account_number,
+                account_number: accountNumber,
+                display_name: finalDisplayName,
+                class: chartAccount.class,
+                account_detail: chartAccount.account_detail,
+                account_type: chartAccount.account_type,
+                icon: chartAccount.icon,
+                color: chartAccount.color,
+                current_balance: mockAccount.balance,
+                institution_name: mockAccount.institutionName,
+                account_number_last4: mockAccount.last4,
+                is_active: true,
+                is_user_created: true
+              })
+              .select()
+              .single();
+
+            if (createError) {
+              console.error('Error creating account:', createError);
+              continue;
+            }
+
             createdAccounts.push({ account: newAccount, config, mockAccount });
             createdCount++;
           } else if (config.import_mode === 'existing' && config.existing_account_id) {
             const existingAccount = existingAccounts.find(acc => acc.id === config.existing_account_id);
             const updateData = {
               current_balance: mockAccount.balance,
-              institution_name: mockAccount.institutionName,
-              show_account_suffix: config.show_suffix ?? true
+              institution_name: mockAccount.institutionName
             };
 
             if (mockAccount.last4) {
               updateData.account_number_last4 = mockAccount.last4;
-              updateData.external_account_suffix = mockAccount.last4;
             }
 
             await firstsavvy
