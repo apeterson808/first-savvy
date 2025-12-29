@@ -427,7 +427,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                   <Settings className="w-4 h-4" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuContent align="end" className="w-60">
                   <DropdownMenuItem onClick={() => setShowInactive(!showInactive)}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${showInactive ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
                       {showInactive && <Check className="w-3 h-3 text-white" />}
