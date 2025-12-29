@@ -25,6 +25,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   generateTransactionsForAccount,
   generateCreditCardPayments,
+  generateSavingsTransfers,
   checkForMatchingTransfers,
   createMatchedTransferTransactions,
   insertTransactionsAndRegistry,
@@ -831,6 +832,37 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 );
                 allTransactions.push(...payments);
                 allRegistryEntries.push(...registryEntries);
+              }
+            }
+
+            const { transfers, registryEntries: savingsRegistryEntries } = await generateSavingsTransfers(
+              user.id,
+              currentProfile.id,
+              createdAccounts[0]?.config.startDate || new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0],
+              createdAccounts[0]?.config.goLiveDate || new Date().toISOString().split('T')[0],
+              createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }))
+            );
+            allTransactions.push(...transfers);
+            allRegistryEntries.push(...savingsRegistryEntries);
+
+            for (const { account, config, mockAccount } of createdAccounts) {
+              if (mockAccount.type === 'savings') {
+                const matchingEntries = await checkForMatchingTransfers(
+                  { id: account.id, type: mockAccount.type, name: account.account_name },
+                  user.id,
+                  currentProfile.id
+                );
+
+                if (matchingEntries.length > 0) {
+                  const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
+                    { id: account.id, type: mockAccount.type, name: account.account_name },
+                    matchingEntries,
+                    user.id,
+                    currentProfile.id
+                  );
+                  allTransactions.push(...matchedTransactions);
+                  await updateTransferRegistry(registryUpdates);
+                }
               }
             }
 

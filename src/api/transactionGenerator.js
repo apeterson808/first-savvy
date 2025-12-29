@@ -182,15 +182,51 @@ function setDayOfMonth(date, day) {
   return result;
 }
 
+async function fetchContacts(profileId) {
+  const { data, error } = await supabase
+    .from('contacts')
+    .select('id, name, type')
+    .eq('profile_id', profileId)
+    .eq('status', 'active');
+
+  if (error) {
+    console.error('Error fetching contacts:', error);
+    return [];
+  }
+
+  return data || [];
+}
+
+function matchContactToDescription(description, contacts) {
+  const normalizedDescription = description.toUpperCase();
+
+  for (const contact of contacts) {
+    const normalizedContactName = contact.name.toUpperCase();
+
+    if (normalizedDescription.includes(normalizedContactName)) {
+      return contact.id;
+    }
+
+    const words = normalizedContactName.split(' ');
+    for (const word of words) {
+      if (word.length > 3 && normalizedDescription.includes(word)) {
+        return contact.id;
+      }
+    }
+  }
+
+  return null;
+}
+
 export function calculateTransactionCounts(startDate, goLiveDate) {
   const start = new Date(startDate);
   const today = new Date();
   const goLive = goLiveDate ? new Date(goLiveDate) : today;
 
   const monthsDiff = Math.ceil((today - start) / (1000 * 60 * 60 * 24 * 30));
-  const totalTransactions = Math.max(monthsDiff * 30, 30);
+  const totalTransactions = Math.max(monthsDiff * 15, 15);
 
-  const postedTransactions = Math.ceil((goLive - start) / (1000 * 60 * 60 * 24 * 30)) * 30;
+  const postedTransactions = Math.ceil((goLive - start) / (1000 * 60 * 60 * 24 * 30)) * 15;
   const pendingTransactions = totalTransactions - postedTransactions;
 
   return {
@@ -207,10 +243,11 @@ export async function generateTransactionsForAccount(accountData, userId, profil
   const goLive = goLiveDate ? new Date(goLiveDate) : today;
 
   const monthsDiff = Math.ceil((today - start) / (1000 * 60 * 60 * 24 * 30));
-  const transactionsPerMonth = 30;
-  const totalTransactions = Math.max(monthsDiff * transactionsPerMonth, 30);
+  const transactionsPerMonth = 15;
+  const totalTransactions = Math.max(monthsDiff * transactionsPerMonth, 15);
 
   const chartOfAccounts = await fetchChartOfAccounts(profileId);
+  const contacts = await fetchContacts(profileId);
 
   for (let i = 0; i < totalTransactions; i++) {
     const daysFromStart = Math.floor(Math.random() * Math.ceil((today - start) / (1000 * 60 * 60 * 24)));
@@ -226,6 +263,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
       const incomeTemplate = getRandomElement(Object.values(INCOME_TEMPLATES));
       const amount = getRandomAmount(incomeTemplate.amountRange[0], incomeTemplate.amountRange[1]);
       const chartAccount = chartOfAccounts.find(ca => ca.account_number === incomeTemplate.accountNumber);
+      const contactId = matchContactToDescription(incomeTemplate.description, contacts.filter(c => c.type === 'customer'));
 
       transactions.push({
         account_id: accountData.id,
@@ -236,7 +274,8 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         description: incomeTemplate.description,
         transaction_type: 'income',
         status: status,
-        chart_account_id: chartAccount?.id || null
+        chart_account_id: chartAccount?.id || null,
+        contact_id: contactId
       });
     } else {
       const shouldCategorize = Math.random() > 0.15;
@@ -247,6 +286,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         const merchant = getRandomElement(template.merchants);
         const amount = getRandomAmount(template.amountRange[0], template.amountRange[1]);
         const chartAccount = chartOfAccounts.find(ca => ca.account_number === template.accountNumber);
+        const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
 
         transactions.push({
           account_id: accountData.id,
@@ -257,13 +297,15 @@ export async function generateTransactionsForAccount(accountData, userId, profil
           description: merchant,
           transaction_type: 'expense',
           status: status,
-          chart_account_id: chartAccount?.id || null
+          chart_account_id: chartAccount?.id || null,
+          contact_id: contactId
         });
       } else {
         const categoryKey = getRandomElement(Object.keys(MERCHANT_TEMPLATES));
         const template = MERCHANT_TEMPLATES[categoryKey];
         const merchant = getRandomElement(template.merchants);
         const amount = getRandomAmount(template.amountRange[0], template.amountRange[1]);
+        const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
 
         transactions.push({
           account_id: accountData.id,
@@ -274,7 +316,8 @@ export async function generateTransactionsForAccount(accountData, userId, profil
           description: merchant,
           transaction_type: 'expense',
           status: status,
-          chart_account_id: null
+          chart_account_id: null,
+          contact_id: contactId
         });
       }
     }
@@ -327,47 +370,118 @@ export async function generateCreditCardPayments(accountData, userId, profileId,
 
   if (checkingOrSavingsAccounts.length === 0) return { payments: [], registryEntries: [] };
 
-  const currentDate = new Date(start);
-  currentDate.setDate(15);
+  const paymentDays = [1, 15];
+  const currentMonth = new Date(start);
+  currentMonth.setDate(1);
 
-  while (currentDate <= today) {
-    if (currentDate >= start) {
-      const status = currentDate <= goLive ? 'posted' : 'pending';
-      const amount = getRandomAmount(300, 2000);
-      const sourceAccount = getRandomElement(checkingOrSavingsAccounts);
+  while (currentMonth <= today) {
+    for (const day of paymentDays) {
+      const paymentDate = new Date(currentMonth);
+      paymentDate.setDate(day);
 
-      const paymentTransaction = {
-        account_id: sourceAccount.id,
-        user_id: userId,
-        profile_id: profileId,
-        date: currentDate.toISOString().split('T')[0],
-        amount: -amount,
-        description: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
-        transaction_type: 'transfer',
-        status: status,
-        chart_account_id: null,
-        transfer_pair_id: null
-      };
+      if (paymentDate >= start && paymentDate <= today) {
+        const status = paymentDate <= goLive ? 'posted' : 'pending';
+        const amount = getRandomAmount(300, 2000);
+        const sourceAccount = getRandomElement(checkingOrSavingsAccounts);
 
-      payments.push(paymentTransaction);
+        const paymentTransaction = {
+          account_id: sourceAccount.id,
+          user_id: userId,
+          profile_id: profileId,
+          date: paymentDate.toISOString().split('T')[0],
+          amount: -amount,
+          description: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
+          transaction_type: 'transfer',
+          status: status,
+          chart_account_id: null,
+          transfer_pair_id: null
+        };
 
-      registryEntries.push({
-        user_id: userId,
-        profile_id: profileId,
-        amount: amount,
-        transaction_date: currentDate.toISOString().split('T')[0],
-        source_account_id: sourceAccount.id,
-        source_account_type: sourceAccount.type,
-        target_account_type: 'credit',
-        description_pattern: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
-        is_matched: false
-      });
+        payments.push(paymentTransaction);
+
+        registryEntries.push({
+          user_id: userId,
+          profile_id: profileId,
+          amount: amount,
+          transaction_date: paymentDate.toISOString().split('T')[0],
+          source_account_id: sourceAccount.id,
+          source_account_type: sourceAccount.type,
+          target_account_type: 'credit',
+          description_pattern: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
+          is_matched: false
+        });
+      }
     }
 
-    currentDate.setMonth(currentDate.getMonth() + 1);
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
   }
 
   return { payments, registryEntries };
+}
+
+export async function generateSavingsTransfers(userId, profileId, startDate, goLiveDate, existingAccounts) {
+  const transfers = [];
+  const registryEntries = [];
+  const start = new Date(startDate);
+  const today = new Date();
+  const goLive = goLiveDate ? new Date(goLiveDate) : today;
+
+  const checkingAccounts = existingAccounts.filter(acc => acc.type === 'checking');
+  const savingsAccounts = existingAccounts.filter(acc => acc.type === 'savings');
+
+  if (checkingAccounts.length === 0 || savingsAccounts.length === 0) {
+    return { transfers: [], registryEntries: [] };
+  }
+
+  const transferDays = [5, 20];
+  const currentMonth = new Date(start);
+  currentMonth.setDate(1);
+
+  while (currentMonth <= today) {
+    for (const day of transferDays) {
+      const transferDate = new Date(currentMonth);
+      transferDate.setDate(day);
+
+      if (transferDate >= start && transferDate <= today) {
+        const status = transferDate <= goLive ? 'posted' : 'pending';
+        const amount = getRandomAmount(200, 1000);
+        const sourceAccount = getRandomElement(checkingAccounts);
+        const targetAccount = getRandomElement(savingsAccounts);
+
+        const transferOutTransaction = {
+          account_id: sourceAccount.id,
+          user_id: userId,
+          profile_id: profileId,
+          date: transferDate.toISOString().split('T')[0],
+          amount: -amount,
+          description: `TRANSFER TO ${targetAccount.name || 'Savings'}`,
+          transaction_type: 'transfer',
+          status: status,
+          chart_account_id: null,
+          transfer_pair_id: null
+        };
+
+        transfers.push(transferOutTransaction);
+
+        registryEntries.push({
+          user_id: userId,
+          profile_id: profileId,
+          amount: amount,
+          transaction_date: transferDate.toISOString().split('T')[0],
+          source_account_id: sourceAccount.id,
+          source_account_type: sourceAccount.type,
+          target_account_id: targetAccount.id,
+          target_account_type: targetAccount.type,
+          description_pattern: `TRANSFER TO ${targetAccount.name || 'Savings'}`,
+          is_matched: false
+        });
+      }
+    }
+
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
+  }
+
+  return { transfers, registryEntries };
 }
 
 export async function checkForMatchingTransfers(accountData, userId, profileId) {
