@@ -6,7 +6,7 @@ import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 export default function useAllAccounts() {
   const { user } = useAuth();
-  const { activeProfile } = useProfile();
+  const { activeProfile, loading: profileLoading } = useProfile();
   const profileId = activeProfile?.id || 'default';
 
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
@@ -19,6 +19,8 @@ export default function useAllAccounts() {
     enabled: !!activeProfile,
     staleTime: 30000,
   });
+
+  const isLoading = profileLoading || loadingChartAccounts;
 
   const getTypeDetailDisplay = (accountType, accountDetail) => {
     if (!accountType) return null;
@@ -95,6 +97,6 @@ export default function useAllAccounts() {
     incomeCategories,
     expenseCategories,
     getTypeDetailDisplay,
-    isLoading: loadingChartAccounts,
+    isLoading,
   };
 }
