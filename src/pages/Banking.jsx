@@ -89,7 +89,7 @@ export default function Banking() {
   return (
     <div className="p-4 md:p-6">
       <PageTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
-      <Tabs value={activeTab} className="w-full">
+      <Tabs value={activeTab} className="w-full mt-4">
 
         <TabsContent value="overview" className="space-y-4">
           {/* Chart and Categories Row */}

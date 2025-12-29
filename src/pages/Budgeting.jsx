@@ -108,7 +108,7 @@ export default function Budgeting() {
           )
         }
       />
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
         <TabsContent value="overview" className="mt-0">
           {!hasSetupStarted ? (
             <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
