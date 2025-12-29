@@ -6,10 +6,9 @@ import { useProfile } from '@/contexts/ProfileContext';
 
 export function useBudgetData() {
   const { activeProfile } = useProfile();
-  const profileId = activeProfile?.id || 'default';
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
-    queryKey: ['budgets', profileId],
+    queryKey: ['budgets', activeProfile?.id],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
         .from('budgets')
@@ -30,17 +29,19 @@ export function useBudgetData() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile
+    enabled: !!activeProfile?.id,
+    refetchOnMount: true
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', profileId],
+    queryKey: ['transactions', activeProfile?.id],
     queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
-    enabled: !!activeProfile
+    enabled: !!activeProfile?.id,
+    refetchOnMount: true
   });
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['accounts', profileId],
+    queryKey: ['accounts', activeProfile?.id],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
@@ -51,11 +52,12 @@ export function useBudgetData() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile
+    enabled: !!activeProfile?.id,
+    refetchOnMount: true
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['user-chart-accounts-income-expense', profileId],
+    queryKey: ['user-chart-accounts-income-expense', activeProfile?.id],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
@@ -65,7 +67,8 @@ export function useBudgetData() {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile
+    enabled: !!activeProfile?.id,
+    refetchOnMount: true
   });
 
   const isLoading = budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;

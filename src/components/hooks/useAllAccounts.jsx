@@ -7,18 +7,17 @@ import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 export default function useAllAccounts() {
   const { user } = useAuth();
   const { activeProfile, loading: profileLoading } = useProfile();
-  const profileId = activeProfile?.id || 'default';
 
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
-    queryKey: ['chart-accounts', profileId],
+    queryKey: ['chart-accounts', activeProfile?.id],
     queryFn: async () => {
-      if (!activeProfile) return [];
       const accounts = await getUserChartOfAccounts(activeProfile.id);
       return accounts;
     },
-    enabled: !!activeProfile,
-    staleTime: 60000,
+    enabled: !!activeProfile?.id,
+    staleTime: 30000,
     gcTime: 300000,
+    refetchOnMount: true,
   });
 
   const isLoading = profileLoading || loadingChartAccounts;

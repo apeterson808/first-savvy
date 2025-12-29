@@ -94,12 +94,12 @@ export default function Dashboard() {
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts', activeProfile?.id],
     queryFn: async () => {
-      if (!activeProfile) return [];
       const accounts = await getUserChartOfAccounts(activeProfile.id);
       return accounts.filter(a => a.level === 3);
     },
-    enabled: !!activeProfile,
-    staleTime: 30000
+    enabled: !!activeProfile?.id,
+    staleTime: 30000,
+    refetchOnMount: true
   });
 
   const latestCreditScore = creditScores[0];

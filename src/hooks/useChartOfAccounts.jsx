@@ -9,8 +9,6 @@ export function useChartOfAccounts(classFilter = null, options = {}) {
   return useQuery({
     queryKey: ['user-chart-of-accounts', activeProfile?.id, classFilter, includeInactive, onlyActive],
     queryFn: async () => {
-      if (!activeProfile?.id) return [];
-
       const filters = {};
 
       if (onlyActive && !includeInactive) {
@@ -24,7 +22,8 @@ export function useChartOfAccounts(classFilter = null, options = {}) {
       return await getUserChartOfAccounts(activeProfile.id, filters);
     },
     enabled: !!activeProfile?.id,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30000,
+    refetchOnMount: true,
   });
 }
 

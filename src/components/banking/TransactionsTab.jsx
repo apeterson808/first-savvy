@@ -218,7 +218,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts-income-expense', activeProfile?.id],
     queryFn: async () => {
-      if (!activeProfile?.id) return [];
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
         .select('*')
@@ -229,7 +228,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile
+    enabled: !!activeProfile?.id,
+    refetchOnMount: true
   });
 
   const { data: categorizationRules = [] } = useQuery({
