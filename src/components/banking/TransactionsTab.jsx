@@ -183,9 +183,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const accounts = fetchedAccounts.map(acc => ({
     ...acc,
-    account_name: acc.account_name,
+    account_name: acc.display_name || acc.account_name,
     institution: acc.institution_name,
-    entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
+    entityType: acc.account_type === 'credit_cards' ? 'CreditCard' : 'BankAccount'
   }));
 
   // Fetch all active accounts for Match tab dropdown (accounts, assets, liabilities)

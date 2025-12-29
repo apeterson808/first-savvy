@@ -218,6 +218,7 @@ export const createSupabaseClient = () => {
       CreditScore: createEntityAPI('credit_scores'),
       Contact: createEntityAPI('contacts'),
       ChartAccount: createEntityAPI('user_chart_of_accounts'),
+      Account: createEntityAPI('user_chart_of_accounts'),
       DetailType: createEntityAPI('detail_types'),
       AuditLog: createEntityAPI('audit_logs'),
       DataRetentionPolicy: createEntityAPI('data_retention_policies'),
