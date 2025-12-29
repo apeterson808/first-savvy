@@ -888,7 +888,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               const transactions = await generateTransactionsForAccount(
                 { id: account.id, type: mockAccount.type, name: account.account_name },
                 user.id,
-                currentProfile.id,
+                activeProfile.id,
                 config.startDate,
                 config.goLiveDate
               );
@@ -898,7 +898,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 const matchingEntries = await checkForMatchingTransfers(
                   { id: account.id, type: mockAccount.type, name: account.account_name },
                   user.id,
-                  currentProfile.id
+                  activeProfile.id
                 );
 
                 if (matchingEntries.length > 0) {
@@ -906,7 +906,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                     { id: account.id, type: mockAccount.type, name: account.account_name },
                     matchingEntries,
                     user.id,
-                    currentProfile.id
+                    activeProfile.id
                   );
                   allTransactions.push(...matchedTransactions);
                   await updateTransferRegistry(registryUpdates);
@@ -919,7 +919,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 const { payments, registryEntries } = await generateCreditCardPayments(
                   { id: account.id, type: mockAccount.type, name: account.account_name },
                   user.id,
-                  currentProfile.id,
+                  activeProfile.id,
                   config.startDate,
                   config.goLiveDate,
                   createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }))
@@ -931,7 +931,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
             const { transfers, registryEntries: savingsRegistryEntries } = await generateSavingsTransfers(
               user.id,
-              currentProfile.id,
+              activeProfile.id,
               createdAccounts[0]?.config.startDate || new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0],
               createdAccounts[0]?.config.goLiveDate || new Date().toISOString().split('T')[0],
               createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }))
@@ -944,7 +944,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 const matchingEntries = await checkForMatchingTransfers(
                   { id: account.id, type: mockAccount.type, name: account.account_name },
                   user.id,
-                  currentProfile.id
+                  activeProfile.id
                 );
 
                 if (matchingEntries.length > 0) {
@@ -952,7 +952,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                     { id: account.id, type: mockAccount.type, name: account.account_name },
                     matchingEntries,
                     user.id,
-                    currentProfile.id
+                    activeProfile.id
                   );
                   allTransactions.push(...matchedTransactions);
                   await updateTransferRegistry(registryUpdates);
