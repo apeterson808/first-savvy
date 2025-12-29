@@ -266,13 +266,12 @@ export async function generateTransactionsForAccount(accountData, userId, profil
       const contactId = matchContactToDescription(incomeTemplate.description, contacts.filter(c => c.type === 'customer'));
 
       transactions.push({
-        account_id: accountData.id,
         user_id: userId,
         profile_id: profileId,
         date: transactionDate.toISOString().split('T')[0],
         amount: amount,
         description: incomeTemplate.description,
-        transaction_type: 'income',
+        type: 'income',
         status: status,
         chart_account_id: chartAccount?.id || null,
         contact_id: contactId
@@ -289,13 +288,12 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
 
         transactions.push({
-          account_id: accountData.id,
           user_id: userId,
           profile_id: profileId,
           date: transactionDate.toISOString().split('T')[0],
           amount: accountData.type === 'credit' ? amount : -amount,
           description: merchant,
-          transaction_type: 'expense',
+          type: 'expense',
           status: status,
           chart_account_id: chartAccount?.id || null,
           contact_id: contactId
@@ -308,13 +306,12 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
 
         transactions.push({
-          account_id: accountData.id,
           user_id: userId,
           profile_id: profileId,
           date: transactionDate.toISOString().split('T')[0],
           amount: accountData.type === 'credit' ? amount : -amount,
           description: merchant,
-          transaction_type: 'expense',
+          type: 'expense',
           status: status,
           chart_account_id: null,
           contact_id: contactId
@@ -385,13 +382,12 @@ export async function generateCreditCardPayments(accountData, userId, profileId,
         const sourceAccount = getRandomElement(checkingOrSavingsAccounts);
 
         const paymentTransaction = {
-          account_id: sourceAccount.id,
           user_id: userId,
           profile_id: profileId,
           date: paymentDate.toISOString().split('T')[0],
           amount: -amount,
           description: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
-          transaction_type: 'transfer',
+          type: 'transfer',
           status: status,
           chart_account_id: null,
           transfer_pair_id: null
@@ -449,13 +445,12 @@ export async function generateSavingsTransfers(userId, profileId, startDate, goL
         const targetAccount = getRandomElement(savingsAccounts);
 
         const transferOutTransaction = {
-          account_id: sourceAccount.id,
           user_id: userId,
           profile_id: profileId,
           date: transferDate.toISOString().split('T')[0],
           amount: -amount,
           description: `TRANSFER TO ${targetAccount.name || 'Savings'}`,
-          transaction_type: 'transfer',
+          type: 'transfer',
           status: status,
           chart_account_id: null,
           transfer_pair_id: null
@@ -507,13 +502,12 @@ export async function createMatchedTransferTransactions(accountData, matchingEnt
 
   for (const entry of matchingEntries) {
     const receivedTransaction = {
-      account_id: accountData.id,
       user_id: userId,
       profile_id: profileId,
       date: entry.transaction_date,
       amount: accountData.type === 'credit' ? -entry.amount : entry.amount,
       description: `PAYMENT RECEIVED - ${entry.description_pattern}`,
-      transaction_type: 'transfer',
+      type: 'transfer',
       status: 'posted',
       chart_account_id: null,
       transfer_pair_id: null
