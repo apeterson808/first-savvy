@@ -26,7 +26,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
   }, [defaultTab]);
 
   return (
-    <div className="flex items-center justify-between mb-0 relative pl-4">
+    <div className="flex items-center justify-between mb-0 relative">
       <div className="flex items-center gap-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
@@ -65,7 +65,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
         })}
       </div>
       {actions && <div className="flex items-center gap-2 ml-auto">{actions}</div>}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-300 z-0"></div>
+      <div className="absolute bottom-0 h-0.5 bg-slate-300 z-0" style={{ left: '-1rem', right: '-1rem' }}></div>
     </div>
   );
 }
