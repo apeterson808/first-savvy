@@ -26,8 +26,8 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
   }, [defaultTab]);
 
   return (
-    <div className="flex items-center justify-between mb-0 relative">
-      <div className="flex items-center gap-1">
+    <div className="flex items-center justify-between mb-4">
+      <div className="inline-flex items-center rounded-lg bg-muted p-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
           const isDisabled = disabledTabs.includes(tab);
@@ -41,31 +41,20 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
                 window.history.pushState({}, '', newUrl);
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              className={`group flex items-center gap-1.5 px-4 py-1.5 cursor-pointer transition-all min-w-[100px] max-w-[180px] relative capitalize text-sm font-medium ${
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
                 isActive
-                  ? 'bg-slate-100 text-slate-900 z-10'
+                  ? 'bg-background text-foreground shadow-sm'
                   : isDisabled
-                  ? 'bg-slate-50 text-slate-400 cursor-not-allowed opacity-60'
-                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  ? 'text-muted-foreground/50 cursor-not-allowed'
+                  : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
-              style={{
-                borderTop: isActive ? '2px solid #cbd5e1' : '2px solid transparent',
-                borderLeft: isActive ? '2px solid #cbd5e1' : '2px solid transparent',
-                borderRight: isActive ? '2px solid #cbd5e1' : '2px solid transparent',
-                borderBottom: isActive ? '2px solid #f1f5f9' : 'none',
-                borderTopLeftRadius: '12px',
-                borderTopRightRadius: '12px',
-                marginBottom: isActive ? '-2px' : '0',
-                paddingBottom: isActive ? 'calc(0.375rem + 2px)' : '0.375rem',
-              }}
             >
               {tab.replace(/_/g, ' ')}
             </button>
           );
         })}
       </div>
-      {actions && <div className="flex items-center gap-2 ml-auto">{actions}</div>}
-      <div className="absolute bottom-0 h-0.5 bg-slate-300 z-0" style={{ left: '-1rem', right: '-1rem' }}></div>
+      {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
   );
 }
