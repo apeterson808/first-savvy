@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package } from 'lucide-react';
-import SimpleAccountCreationDialog from './SimpleAccountCreationDialog';
+import AccountCreationWizard from './AccountCreationWizard';
 import EditAccountDialog from './EditAccountDialog';
 import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
@@ -688,8 +688,8 @@ export default function AccountsTable({ accounts, isLoading }) {
         onSuccess={handleSuccess}
       />
 
-      {/* Account Creation Dialog */}
-      <SimpleAccountCreationDialog
+      {/* Account Creation Wizard */}
+      <AccountCreationWizard
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         onAccountCreated={handleSuccess}
