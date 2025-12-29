@@ -28,6 +28,11 @@ const getDetailTypeDisplayName = (type) => {
   return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 };
 
+const getAccountTypeDisplayName = (type) => {
+  if (!type) return 'Unknown';
+  return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+};
+
 // Editable inline name component
 function EditableAccountName({ account }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -106,6 +111,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     accountNumber: true,
     name: true,
     type: true,
+    accountType: true,
     detail: true,
     balance: true,
     status: true
@@ -221,12 +227,14 @@ export default function AccountsTable({ accounts, isLoading }) {
       setVisibleColumns(v => ({
         ...v,
         type: true,
+        accountType: true,
         detail: true
       }));
     } else {
       setVisibleColumns(v => ({
         ...v,
         type: false,
+        accountType: false,
         detail: true
       }));
     }
@@ -296,11 +304,15 @@ export default function AccountsTable({ accounts, isLoading }) {
           aVal = getAccountDisplayName(a).toLowerCase();
           bVal = getAccountDisplayName(b).toLowerCase();
           break;
-        case 'accountType':
+        case 'type':
           aVal = (a.entityType || '').toLowerCase();
           bVal = (b.entityType || '').toLowerCase();
           break;
-        case 'type':
+        case 'accountType':
+          aVal = getAccountTypeDisplayName(a.account_type).toLowerCase();
+          bVal = getAccountTypeDisplayName(b.account_type).toLowerCase();
+          break;
+        case 'detail':
           aVal = getDetailTypeDisplayName(a.account_detail).toLowerCase();
           bVal = getDetailTypeDisplayName(b.account_detail).toLowerCase();
           break;
@@ -454,11 +466,17 @@ export default function AccountsTable({ accounts, isLoading }) {
                     </div>
                     Class
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, accountType: !v.accountType }))}>
+                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.accountType ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
+                      {visibleColumns.accountType && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    Type
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, detail: !v.detail }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.detail ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
                       {visibleColumns.detail && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    Type
+                    Detail
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, balance: !v.balance }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.balance ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
@@ -551,17 +569,25 @@ export default function AccountsTable({ accounts, isLoading }) {
                   {visibleColumns.type && (
                     <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
+                      onClick={() => handleSort('type')}
+                    >
+                      <div className="flex items-center">Class{getSortIcon('type')}</div>
+                    </th>
+                  )}
+                  {visibleColumns.accountType && (
+                    <th
+                      className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
                       onClick={() => handleSort('accountType')}
                     >
-                      <div className="flex items-center">Class{getSortIcon('accountType')}</div>
+                      <div className="flex items-center">Type{getSortIcon('accountType')}</div>
                     </th>
                   )}
                   {visibleColumns.detail && (
                     <th
                       className="font-semibold text-slate-700 text-left px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
-                      onClick={() => handleSort('type')}
+                      onClick={() => handleSort('detail')}
                     >
-                      <div className="flex items-center">Type{getSortIcon('type')}</div>
+                      <div className="flex items-center">Detail{getSortIcon('detail')}</div>
                     </th>
                   )}
                   {visibleColumns.balance && (
@@ -604,6 +630,13 @@ export default function AccountsTable({ accounts, isLoading }) {
                              <td className="px-4 py-0.5">
                                <span className="text-xs text-slate-600">
                                  {account.entityType}
+                               </span>
+                             </td>
+                            )}
+                            {visibleColumns.accountType && (
+                             <td className="px-4 py-0.5">
+                               <span className="text-xs text-slate-600">
+                                 {getAccountTypeDisplayName(account.account_type)}
                                </span>
                              </td>
                             )}
