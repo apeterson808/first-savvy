@@ -31,42 +31,30 @@ const getDetailTypeDisplayName = (type) => {
 // Editable inline name component
 function EditableAccountName({ account }) {
   const [isEditing, setIsEditing] = useState(false);
-  const [value, setValue] = useState(account.account_name || account.name || '');
+  const displayName = getAccountDisplayName(account);
+  const [value, setValue] = useState(displayName);
   const inputRef = React.useRef(null);
   const queryClient = useQueryClient();
 
   React.useEffect(() => {
-    setValue(account.account_name || account.name || '');
-  }, [account.account_name, account.name]);
+    setValue(getAccountDisplayName(account));
+  }, [account.custom_display_name, account.display_name, account.account_name, account.name]);
 
   const handleSave = async () => {
     setIsEditing(false);
     const trimmed = value.trim();
-    if (!trimmed || trimmed === (account.account_name || account.name)) {
-      setValue(account.account_name || account.name || '');
+    const currentName = getAccountDisplayName(account);
+    if (!trimmed || trimmed === currentName) {
+      setValue(currentName);
       return;
     }
 
-    const entityType = account.entityType || 'BankAccount';
-    const updateData = (entityType === 'BankAccount' || entityType === 'CreditCard')
-      ? { account_name: trimmed }
-      : { name: trimmed };
-
-    if (entityType === 'BankAccount' || entityType === 'CreditCard') {
-      await firstsavvy.entities.Account.update(account.id, updateData);
-    } else if (entityType === 'Asset') {
-      await firstsavvy.entities.Asset.update(account.id, updateData);
-    } else if (entityType === 'Liability') {
-      await firstsavvy.entities.Liability.update(account.id, updateData);
-    } else if (entityType === 'Equity') {
-      await firstsavvy.entities.Equity.update(account.id, updateData);
-    } else if (entityType === 'Income' || entityType === 'Expense') {
-      await firstsavvy.entities.Category.update(account.id, updateData);
-    }
+    await firstsavvy.entities.ChartAccount.update(account.id, {
+      custom_display_name: trimmed
+    });
 
     queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-    queryClient.invalidateQueries({ queryKey: ['accounts'] });
-    queryClient.invalidateQueries({ queryKey: ['categories'] });
+    queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
   };
 
   if (isEditing) {
@@ -80,7 +68,7 @@ function EditableAccountName({ account }) {
         onKeyDown={(e) => {
           if (e.key === 'Enter') handleSave();
           if (e.key === 'Escape') {
-            setValue(account.account_name || account.name || '');
+            setValue(getAccountDisplayName(account));
             setIsEditing(false);
           }
         }}
@@ -95,7 +83,7 @@ function EditableAccountName({ account }) {
       onClick={() => setIsEditing(true)}
       className="font-medium text-slate-900 text-xs cursor-text hover:bg-slate-100 rounded px-1 py-0.5 -mx-1"
     >
-      {account.account_name || account.name}
+      {displayName}
     </div>
   );
 }
@@ -305,8 +293,8 @@ export default function AccountsTable({ accounts, isLoading }) {
           bVal = b.account_number || 0;
           break;
         case 'name':
-          aVal = (a.display_name || a.account_detail || a.account_name || '').toLowerCase();
-          bVal = (b.display_name || b.account_detail || b.account_name || '').toLowerCase();
+          aVal = getAccountDisplayName(a).toLowerCase();
+          bVal = getAccountDisplayName(b).toLowerCase();
           break;
         case 'accountType':
           aVal = (a.entityType || '').toLowerCase();
@@ -328,8 +316,8 @@ export default function AccountsTable({ accounts, isLoading }) {
       if (aVal < bVal) return sortDirection === 'asc' ? -1 : 1;
       if (aVal > bVal) return sortDirection === 'asc' ? 1 : -1;
       // Secondary sort by name (alphabetical) when primary values are equal
-      const aName = (a.account_name || '').toLowerCase();
-      const bName = (b.account_name || '').toLowerCase();
+      const aName = getAccountDisplayName(a).toLowerCase();
+      const bName = getAccountDisplayName(b).toLowerCase();
       return aName.localeCompare(bName);
     });
 
@@ -338,7 +326,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     sortedParents.forEach(parent => {
       result.push(parent);
       const children = childAccounts.filter(c => c.parent_account_id === parent.id);
-      children.sort((a, b) => (a.account_name || '').localeCompare(b.account_name || ''));
+      children.sort((a, b) => getAccountDisplayName(a).localeCompare(getAccountDisplayName(b)));
       children.forEach(child => result.push({ ...child, isSubAccount: true }));
     });
     return result;
@@ -605,7 +593,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                             {visibleColumns.name && (
                               <td className="px-4 py-0.5">
                                 <span className="text-xs text-slate-900 font-medium group-hover:text-blue-700">
-                                  {account.display_name || account.account_detail || account.account_name}
+                                  {getAccountDisplayName(account)}
                                 </span>
                               </td>
                             )}

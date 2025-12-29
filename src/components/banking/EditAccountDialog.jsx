@@ -9,6 +9,7 @@ import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
+import { getAccountDisplayName } from '../utils/constants';
 
 export default function EditAccountDialog({ open, onOpenChange, account, onSuccess }) {
   const [formData, setFormData] = useState({});
@@ -16,10 +17,9 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
 
   useEffect(() => {
     if (account) {
-      const isCategory = account.entityType === 'Income' || account.entityType === 'Expense';
       setFormData({
-        name: isCategory ? account.name : account.account_name,
-        institution: account.institution || '',
+        name: getAccountDisplayName(account),
+        institution: account.institution_name || account.institution || '',
         current_balance: account.current_balance || 0,
         notes: account.notes || '',
         account_type: account.account_type || null,
@@ -32,57 +32,18 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
     mutationFn: async (data) => {
       if (!account) return;
 
-      const entityType = account.entityType || 'BankAccount';
-
-      if (entityType === 'BankAccount' || entityType === 'CreditCard') {
-        return await firstsavvy.entities.Account.update(account.id, {
-          account_name: data.name,
-          institution: data.institution,
-          current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes,
-          account_type: data.account_type || null,
-          account_detail: data.account_detail || null
-        });
-      } else if (entityType === 'Asset') {
-        return await firstsavvy.entities.Asset.update(account.id, {
-          name: data.name,
-          institution: data.institution,
-          current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes,
-          account_type: data.account_type || null,
-          account_detail: data.account_detail || null
-        });
-      } else if (entityType === 'Liability') {
-        return await firstsavvy.entities.Liability.update(account.id, {
-          name: data.name,
-          institution: data.institution,
-          current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes,
-          account_type: data.account_type || null,
-          account_detail: data.account_detail || null
-        });
-      } else if (entityType === 'Equity') {
-        return await firstsavvy.entities.Equity.update(account.id, {
-          name: data.name,
-          current_balance: parseFloat(data.current_balance) || 0,
-          notes: data.notes,
-          account_type: data.account_type || null,
-          account_detail: data.account_detail || null
-        });
-      } else if (entityType === 'Income' || entityType === 'Expense') {
-        return await firstsavvy.entities.Category.update(account.id, {
-          name: data.name,
-          notes: data.notes
-        });
-      }
+      return await firstsavvy.entities.ChartAccount.update(account.id, {
+        custom_display_name: data.name,
+        institution_name: data.institution || null,
+        current_balance: parseFloat(data.current_balance) || 0,
+        notes: data.notes || null,
+        account_type: data.account_type || null,
+        account_detail: data.account_detail || null
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      queryClient.invalidateQueries({ queryKey: ['liabilities'] });
-      queryClient.invalidateQueries({ queryKey: ['equity'] });
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       toast.success('Account updated successfully');
       onSuccess?.();
       onOpenChange(false);
@@ -111,7 +72,7 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Edit {account?.account_name || account?.name}</DialogTitle>
+          <DialogTitle>Edit {getAccountDisplayName(account)}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">

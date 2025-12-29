@@ -23,6 +23,7 @@ import { formatCurrency } from '@/components/utils/formatters';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
 import { getAccountWithLinks } from '@/api/vehiclesAndLoans';
+import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
@@ -55,7 +56,7 @@ export default function AccountDetail() {
         ...chartAccounts.map(c => ({
           ...c,
           entityType: c.class === 'income' ? 'Income' : 'Expense',
-          name: c.display_name || c.account_detail || c.account_name,
+          name: getAccountDisplayName(c),
           type: c.class
         })),
         ...assets.map(a => ({ ...a, entityType: 'Asset' })),

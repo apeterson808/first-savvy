@@ -74,7 +74,7 @@ export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = n
 
     grouped[classKey][typeKey].push({
       ...account,
-      displayName: account.display_name || account.account_detail || 'Unnamed Account',
+      displayName: getDisplayName(account),
       level: 3
     });
   });
@@ -269,7 +269,11 @@ export const getAccountNumberRanges = async (classValue) => {
 };
 
 export const getDisplayName = (account) => {
-  return account.display_name ||
+  if (!account) return 'Unnamed Account';
+
+  return account.custom_display_name ||
+         account.display_name ||
+         account.name ||
          account.account_detail ||
          'Unnamed Account';
 };

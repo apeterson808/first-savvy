@@ -31,5 +31,10 @@ export const CHART_COLORS = [
 
 export function getAccountDisplayName(account) {
   if (!account) return '';
-  return account.account_name || account.name || '';
+  return account.custom_display_name ||
+         account.display_name ||
+         account.account_name ||
+         account.name ||
+         account.account_detail ||
+         '';
 }
