@@ -226,7 +226,7 @@ export function calculateTransactionCounts(startDate, goLiveDate) {
   const monthsDiff = Math.ceil((today - start) / (1000 * 60 * 60 * 24 * 30));
   const totalTransactions = Math.max(monthsDiff * 15, 15);
 
-  const postedTransactions = Math.ceil((goLive - start) / (1000 * 60 * 60 * 24 * 30)) * 15;
+  const postedTransactions = Math.floor((goLive - start) / (1000 * 60 * 60 * 24 * 30)) * 15;
   const pendingTransactions = totalTransactions - postedTransactions;
 
   return {
