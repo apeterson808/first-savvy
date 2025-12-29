@@ -465,7 +465,6 @@ export async function generateSavingsTransfers(userId, profileId, startDate, goL
           transaction_date: transferDate.toISOString().split('T')[0],
           source_account_id: sourceAccount.id,
           source_account_type: sourceAccount.type,
-          target_account_id: targetAccount.id,
           target_account_type: targetAccount.type,
           description_pattern: `TRANSFER TO ${targetAccount.name || 'Savings'}`,
           is_matched: false

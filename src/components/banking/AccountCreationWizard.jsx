@@ -327,6 +327,28 @@ const formatAccountDisplayLabel = (displayName, last4, showSuffix) => {
   return `${displayName} (${last4})`;
 };
 
+const getNextAccountNumber = async (userId, profileId, templateAccountNumber) => {
+  const { data: existingAccounts, error } = await firstsavvy
+    .from('user_chart_of_accounts')
+    .select('account_number')
+    .eq('user_id', userId)
+    .eq('profile_id', profileId)
+    .eq('template_account_number', templateAccountNumber)
+    .order('account_number', { ascending: false })
+    .limit(1);
+
+  if (error) {
+    console.error('Error fetching existing accounts:', error);
+    return templateAccountNumber + 1;
+  }
+
+  if (!existingAccounts || existingAccounts.length === 0) {
+    return templateAccountNumber + 1;
+  }
+
+  return existingAccounts[0].account_number + 1;
+};
+
 export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -671,7 +693,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         throw new Error(`No chart account found for type: ${accountDetail}`);
       }
 
-      const accountNumber = parseInt(Date.now().toString().slice(-6));
+      const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
 
       const { data: newAccount, error } = await firstsavvy
         .from('user_chart_of_accounts')
@@ -763,7 +785,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         throw new Error(`No chart account found for type: ${data.account_type}`);
       }
 
-      const accountNumber = parseInt(Date.now().toString().slice(-6));
+      const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
 
       const { data: newCategory, error } = await firstsavvy
         .from('user_chart_of_accounts')
@@ -828,7 +850,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               continue;
             }
 
-            const accountNumber = parseInt(Date.now().toString().slice(-6));
+            const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
             const finalDisplayName = config.displayName || chartAccount.display_name || mockAccount.name;
 
             const { data: newAccount, error: createError } = await firstsavvy
@@ -1000,10 +1022,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           return;
         }
 
-        const accountNumber = Date.now().toString().slice(-6);
         await createAccountMutation.mutateAsync({
           account_name: formData.name,
-          account_number: accountNumber,
           account_type: selectedSubtype.value,
           current_balance: balanceValidation.value,
           institution_name: formData.institutionName || null,
