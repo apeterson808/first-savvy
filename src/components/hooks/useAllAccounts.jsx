@@ -47,15 +47,16 @@ export default function useAllAccounts() {
   const allAccounts = chartAccounts.map(mapChartAccountToDisplay);
 
   const transactionalAccounts = chartAccounts
-    .filter(a => a.class === 'asset' && ['checking', 'savings', 'credit_card'].includes(a.account_type))
+    .filter(a => a.class === 'asset' && ['checking_account', 'savings_account'].includes(a.account_detail))
+    .concat(chartAccounts.filter(a => a.class === 'liability' && a.account_type === 'credit_cards'))
     .map(mapChartAccountToDisplay);
 
   const bankAccounts = chartAccounts
-    .filter(a => a.class === 'asset' && ['checking', 'savings'].includes(a.account_type))
+    .filter(a => a.class === 'asset' && ['checking_account', 'savings_account'].includes(a.account_detail))
     .map(mapChartAccountToDisplay);
 
   const creditCards = chartAccounts
-    .filter(a => a.class === 'asset' && a.account_type === 'credit_card')
+    .filter(a => a.class === 'liability' && a.account_type === 'credit_cards')
     .map(mapChartAccountToDisplay);
 
   const assets = chartAccounts

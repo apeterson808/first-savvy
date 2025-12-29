@@ -72,7 +72,8 @@ export default function Banking() {
   const { allAccounts, isLoading: accountsLoading } = useAllAccounts();
 
   const accounts = allAccounts.filter(acc =>
-    ['checking', 'savings', 'credit_card'].includes(acc.account_detail)
+    (acc.class === 'asset' && ['checking_account', 'savings_account'].includes(acc.account_detail)) ||
+    (acc.class === 'liability' && acc.account_type === 'credit_cards')
   );
 
   const { data: transactions = [] } = useQuery({
@@ -96,7 +97,7 @@ export default function Banking() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <SpendingChartCard
               transactions={transactions}
-              accounts={accounts.filter(a => ['checking', 'savings', 'credit_card'].includes(a.account_detail))}
+              accounts={accounts}
               selectedMonth={selectedMonth}
               setSelectedMonth={setSelectedMonth}
               selectedAccount={selectedAccount}
