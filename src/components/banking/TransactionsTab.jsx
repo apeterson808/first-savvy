@@ -272,8 +272,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
           if (suggestion && suggestion.category) {
             const matchingCategory = chartAccounts.find(c =>
-              c.name.toLowerCase() === suggestion.category.toLowerCase() &&
-              c.type === suggestion.type
+              c.display_name.toLowerCase() === suggestion.category.toLowerCase() &&
+              c.account_type === suggestion.type
             );
 
             if (matchingCategory) {
@@ -668,8 +668,8 @@ For each transaction, return the chart_account_id that best matches. Consider:
 
             if (suggestion && suggestion.category) {
               const matchingCategory = chartAccounts.find(c =>
-                c.name.toLowerCase() === suggestion.category.toLowerCase() &&
-                c.type === suggestion.type
+                c.display_name.toLowerCase() === suggestion.category.toLowerCase() &&
+                c.account_type === suggestion.type
               );
 
               if (matchingCategory) {
