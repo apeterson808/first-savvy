@@ -26,8 +26,8 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
   }, [defaultTab]);
 
   return (
-    <div className="flex items-center justify-between mb-0 relative">
-      <div className="flex items-center gap-1 overflow-hidden">
+    <div className="flex items-center justify-between mb-0 relative pl-4">
+      <div className="flex items-center gap-1">
         {tabs.map((tab) => {
           const isActive = activeTab === tab;
           const isDisabled = disabledTabs.includes(tab);
