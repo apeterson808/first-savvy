@@ -301,8 +301,8 @@ export default function AccountsTable({ accounts, isLoading }) {
           bVal = (b.entityType || '').toLowerCase();
           break;
         case 'type':
-          aVal = getDetailTypeDisplayName(a.account_type).toLowerCase();
-          bVal = getDetailTypeDisplayName(b.account_type).toLowerCase();
+          aVal = getDetailTypeDisplayName(a.account_detail).toLowerCase();
+          bVal = getDetailTypeDisplayName(b.account_detail).toLowerCase();
           break;
         case 'balance':
           aVal = getAccountBalance(a);
@@ -607,7 +607,7 @@ export default function AccountsTable({ accounts, isLoading }) {
                             {visibleColumns.detail && (
                              <td className="px-4 py-0.5">
                                <span className="text-xs text-slate-600">
-                                 {getDetailTypeDisplayName(account.account_type)}
+                                 {getDetailTypeDisplayName(account.account_detail)}
                                </span>
                              </td>
                             )}
