@@ -40,6 +40,7 @@ import { formatTransactionDescription } from '../utils/formatters';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
+import CategoryDropdown from '../common/CategoryDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
