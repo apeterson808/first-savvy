@@ -42,7 +42,6 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       toast.success('Account updated successfully');
       onSuccess?.();

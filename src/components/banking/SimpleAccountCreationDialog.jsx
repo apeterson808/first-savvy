@@ -87,11 +87,7 @@ export default function SimpleAccountCreationDialog({ open, onOpenChange, onAcco
       });
     },
     onSuccess: (newAccount) => {
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      queryClient.invalidateQueries({ queryKey: ['liabilities'] });
-      queryClient.invalidateQueries({ queryKey: ['equity'] });
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
 
       toast.success('Account created successfully!');
       onAccountCreated?.(newAccount);

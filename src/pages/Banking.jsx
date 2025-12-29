@@ -79,8 +79,8 @@ export default function Banking() {
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
-    staleTime: 0,
-    refetchOnMount: 'always'
+    staleTime: 30000,
+    gcTime: 300000
   });
 
   const totalBalance = accounts

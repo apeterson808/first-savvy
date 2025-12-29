@@ -17,7 +17,8 @@ export default function useAllAccounts() {
       return accounts;
     },
     enabled: !!activeProfile,
-    staleTime: 30000,
+    staleTime: 60000,
+    gcTime: 300000,
   });
 
   const isLoading = profileLoading || loadingChartAccounts;

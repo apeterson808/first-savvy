@@ -124,12 +124,8 @@ export default function RecentTransactionsCard() {
   const recentTransactions = pendingTransactions;
 
   const handleSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
-    queryClient.invalidateQueries({ queryKey: ['activeBankAccounts'] });
-    queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-    queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
   };
 
   useEffect(() => {

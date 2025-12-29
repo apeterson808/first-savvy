@@ -53,7 +53,6 @@ function EditableAccountName({ account }) {
       custom_display_name: trimmed
     });
 
-    queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
     queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
   };
 
@@ -117,7 +116,9 @@ export default function AccountsTable({ accounts, isLoading }) {
   // Fetch transactions to calculate category totals
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
-    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000)
+    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
+    staleTime: 30000,
+    gcTime: 300000
   });
 
   // Calculate current month spending/income by category
@@ -155,9 +156,8 @@ export default function AccountsTable({ accounts, isLoading }) {
 
 
   const handleSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
   };
 
   // Helper function to check if an account is "used" (has transactions or non-zero balance)
@@ -382,7 +382,10 @@ export default function AccountsTable({ accounts, isLoading }) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ['allAccounts'] })}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+                queryClient.invalidateQueries({ queryKey: ['transactions'] });
+              }}
               className="h-6 w-6"
             >
               <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
@@ -664,9 +667,8 @@ export default function AccountsTable({ accounts, isLoading }) {
         open={fileImporterOpen}
         onOpenChange={setFileImporterOpen}
         onImportComplete={(accounts) => {
-          queryClient.invalidateQueries({ queryKey: ['accounts'] });
+          queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
           queryClient.invalidateQueries({ queryKey: ['transactions'] });
-          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
         }}
       />
 
@@ -675,8 +677,8 @@ export default function AccountsTable({ accounts, isLoading }) {
         open={amazonImporterOpen}
         onOpenChange={setAmazonImporterOpen}
         onImportComplete={() => {
+          queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
           queryClient.invalidateQueries({ queryKey: ['transactions'] });
-          queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
         }}
       />
 

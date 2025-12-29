@@ -410,8 +410,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
       onOpenChange(false);
 
       // Refresh accounts data
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
 
       // Navigate to accounts tab
       if (shouldNavigate) {

@@ -659,8 +659,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   const createAccountMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Account.create(data)),
     onSuccess: (newAccount) => {
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       toast.success('Account created successfully!');
       onOpenChange(false);
@@ -841,8 +840,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           }
         }
 
-        queryClient.invalidateQueries({ queryKey: ['accounts'] });
-        queryClient.invalidateQueries({ queryKey: ['allAccounts'] });
+        queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
         queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
         if (createdCount > 0 && linkedCount > 0) {
