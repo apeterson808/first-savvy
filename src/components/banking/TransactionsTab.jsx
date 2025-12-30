@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Sparkles } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import { suggestCategory } from './CategorySuggestion';
@@ -508,88 +508,55 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const getCategoryById = (id) => chartAccounts.find(c => c.id === id);
 
   const autoCategorizeTransactions = async () => {
-    // Get uncategorized pending transactions
-    const uncategorized = filteredTransactions.filter(t => 
-      !t.chart_account_id && (t.status === 'pending' || !t.status)
+    const uncategorized = filteredTransactions.filter(t =>
+      !t.chart_account_id && t.type !== 'transfer' && t.type !== 'credit_card_payment'
     );
-    
+
     if (uncategorized.length === 0) {
-      alert('No uncategorized pending transactions to categorize.');
+      toast.info(`No uncategorized ${statusFilter} transactions to categorize.`);
       return;
     }
 
     setIsAutoCategorizing(true);
-    
+    let successCount = 0;
+    let failCount = 0;
+
     try {
-      // Build category list for LLM
-      const categoryList = chartAccounts.map(c => ({
-        id: c.id,
-        name: c.name,
-        type: c.type
-      }));
+      for (const transaction of uncategorized) {
+        try {
+          const result = await firstsavvy.functions.aiCategorizeTransaction({
+            description: transaction.description,
+            amount: transaction.amount
+          });
 
-      // Process in batches of 10
-      const batchSize = 10;
-      for (let i = 0; i < uncategorized.length; i += batchSize) {
-        const batch = uncategorized.slice(i, i + batchSize);
-        
-        const transactionDescriptions = batch.map(t => ({
-          id: t.id,
-          description: sanitizeForLLM(t.description),
-          amount: t.amount
-        }));
-
-        const result = await firstsavvy.integrations.Core.InvokeLLM({
-          prompt: `You are a financial transaction categorizer. Given these transactions and available categories, assign the most appropriate category to each transaction.
-
-Available Categories:
-${categoryList.map(c => `- ${sanitizeForLLM(c.name)} (${c.type}) [ID: ${c.id}]`).join('\n')}
-
-Transactions to categorize:
-${transactionDescriptions.map(t => `- ID: ${t.id}, Description: "${t.description}", Amount: $${t.amount}`).join('\n')}
-
-For each transaction, return the chart_account_id that best matches. Consider:
-- The description text and what it implies about the transaction
-- Whether it's likely income or expense based on context
-- Common spending patterns (e.g., "Starbucks" = food/dining, "Payroll" = salary)`,
-          response_json_schema: {
-            type: "object",
-            properties: {
-              categorizations: {
-                type: "array",
-                items: {
-                  type: "object",
-                  properties: {
-                    transaction_id: { type: "string" },
-                    chart_account_id: { type: "string" },
-                    type: { type: "string", enum: ["income", "expense"] }
-                  },
-                  required: ["transaction_id", "chart_account_id", "type"]
-                }
-              }
-            },
-            required: ["categorizations"]
-          }
-        });
-
-        // Apply categorizations
-        for (const cat of result.categorizations) {
-          const transaction = batch.find(t => t.id === cat.transaction_id);
-          if (transaction && cat.chart_account_id) {
-            await firstsavvy.entities.Transaction.update(cat.transaction_id, {
-              chart_account_id: cat.chart_account_id,
-              type: cat.type
+          if (result?.chartAccountId) {
+            await firstsavvy.entities.Transaction.update(transaction.id, {
+              chart_account_id: result.chartAccountId,
+              type: result.type
             });
+            successCount++;
+          } else {
+            failCount++;
           }
+        } catch (err) {
+          console.error(`Failed to categorize transaction ${transaction.id}:`, err);
+          failCount++;
         }
       }
 
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
+
+      if (successCount > 0) {
+        toast.success(`Categorized ${successCount} transaction${successCount > 1 ? 's' : ''}`);
+      }
+      if (failCount > 0) {
+        toast.warning(`Could not categorize ${failCount} transaction${failCount > 1 ? 's' : ''}`);
+      }
     } catch (error) {
       console.error('Auto-categorize error:', error);
-      alert('Failed to auto-categorize. Please try again.');
+      toast.error('Failed to auto-categorize. Please try again.');
     } finally {
       setIsAutoCategorizing(false);
     }
@@ -1032,6 +999,25 @@ For each transaction, return the chart_account_id that best matches. Consider:
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1 text-xs"
+                  onClick={autoCategorizeTransactions}
+                  disabled={isAutoCategorizing}
+                >
+                  {isAutoCategorizing ? (
+                    <>
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Categorizing...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3 h-3" />
+                      Auto-Categorize
+                    </>
+                  )}
+                </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
