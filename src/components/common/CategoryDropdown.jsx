@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Sparkles, Plus } from 'lucide-react';
@@ -17,23 +17,23 @@ export default function CategoryDropdown({
   isTransactionTransfer = false,
   transactionAmount = 0
 }) {
-  const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   const accountType = transactionType === 'income' ? 'income' : 'expense';
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts', accountType, user?.id],
+    queryKey: ['chart-accounts', accountType, activeProfile?.id],
     queryFn: async () => {
-      if (!user) return [];
+      if (!activeProfile) return [];
       if (accountType === 'income') {
-        return await getIncomeAccounts(user.id);
+        return await getIncomeAccounts(activeProfile.id);
       } else {
-        return await getExpenseAccounts(user.id);
+        return await getExpenseAccounts(activeProfile.id);
       }
     },
-    enabled: !!user && !isTransactionTransfer
+    enabled: !!activeProfile && !isTransactionTransfer
   });
 
   const level3Accounts = chartAccounts;
@@ -68,12 +68,12 @@ export default function CategoryDropdown({
   };
 
   const handleAddNew = async (categoryName) => {
-    if (!user || !categoryName?.trim()) return;
+    if (!activeProfile || !categoryName?.trim()) return;
 
     try {
       const newAccount = accountType === 'income'
-        ? await createUserIncomeCategory(user.id, { name: categoryName.trim() })
-        : await createUserExpenseCategory(user.id, { name: categoryName.trim() });
+        ? await createUserIncomeCategory(activeProfile.id, { name: categoryName.trim() })
+        : await createUserExpenseCategory(activeProfile.id, { name: categoryName.trim() });
 
       if (onAddNew) {
         onAddNew(categoryName);
