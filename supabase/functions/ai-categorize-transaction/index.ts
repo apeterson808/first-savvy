@@ -14,10 +14,10 @@ const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 interface ChartAccount {
   id: string;
   account_number: number;
-  account_type: 'income' | 'expense' | 'asset' | 'liability' | 'equity';
+  class: string;
+  account_type: string;
   account_detail?: string;
-  category?: string;
-  custom_display_name?: string;
+  display_name?: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -106,8 +106,8 @@ Deno.serve(async (req: Request) => {
         JSON.stringify({
           chartAccountId: fallbackAccount.id,
           accountNumber: fallbackAccount.account_number,
-          category: fallbackAccount.custom_display_name || fallbackAccount.category,
-          type: fallbackAccount.account_type,
+          category: fallbackAccount.display_name,
+          type: fallbackAccount.class,
           confidence: 'pattern',
         }),
         {
@@ -147,38 +147,41 @@ function suggestChartAccountFallback(description: string, amount: number | undef
   const descLower = description.toLowerCase();
 
   const patterns = [
-    { keywords: ['grocery', 'food', 'market', 'safeway', 'whole foods', 'trader', 'costco', 'kroger'], categoryName: 'groceries', accountNumber: 5030 },
-    { keywords: ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'chipotle', 'dining', 'pizza', 'burger'], categoryName: 'dining out', accountNumber: 5031 },
-    { keywords: ['gas', 'fuel', 'shell', 'chevron'], categoryName: 'gas & fuel', accountNumber: 5041 },
-    { keywords: ['uber', 'lyft', 'taxi', 'transit', 'parking'], categoryName: 'transportation', accountNumber: 5040 },
-    { keywords: ['amazon', 'target', 'walmart', 'best buy', 'store', 'retail'], categoryName: 'shopping', accountNumber: 5091 },
-    { keywords: ['netflix', 'spotify', 'hulu', 'apple music', 'youtube premium'], categoryName: 'subscriptions', accountNumber: 5090 },
-    { keywords: ['doctor', 'hospital', 'pharmacy', 'cvs', 'walgreens', 'dental'], categoryName: 'healthcare', accountNumber: 5060 },
-    { keywords: ['electric', 'water', 'gas bill', 'utility'], categoryName: 'utilities', accountNumber: 5020 },
-    { keywords: ['internet', 'phone', 'verizon', 'att', 'comcast'], categoryName: 'internet', accountNumber: 5021 },
-    { keywords: ['rent', 'mortgage', 'lease', 'housing'], categoryName: 'rent / mortgage', accountNumber: 5011 },
-    { keywords: ['insurance', 'premium'], categoryName: 'insurance', accountNumber: 5050 },
-    { keywords: ['paycheck', 'salary', 'direct deposit', 'payroll', 'wages'], categoryName: 'salary', accountNumber: 4011 },
+    { keywords: ['grocery', 'food', 'market', 'safeway', 'whole foods', 'trader', 'costco', 'kroger'], categoryNames: ['groceries'] },
+    { keywords: ['restaurant', 'cafe', 'coffee', 'starbucks', 'mcdonald', 'chipotle', 'dining', 'pizza', 'burger', 'wendys', 'subway', 'taco bell', 'shake shack', 'five guys', 'red lobster', 'olive garden', 'chilis', 'texas roadhouse', 'panera', 'panda express', 'dunkin'], categoryNames: ['dining out'] },
+    { keywords: ['chevron', 'shell', 'exxon', 'mobil', 'bp', '76 gas', 'arco', 'circle k', 'marathon', 'wawa'], categoryNames: ['gas & fuel', 'gas', 'fuel'] },
+    { keywords: ['uber', 'lyft', 'taxi', 'transit', 'parking', 'united airlines', 'airbnb'], categoryNames: ['transportation', 'travel'] },
+    { keywords: ['amazon', 'target', 'walmart', 'best buy', 'ikea', 'home depot', 'bed bath', 'wayfair', 'kohls', 'macys', 'ebay', 'petco'], categoryNames: ['shopping'] },
+    { keywords: ['netflix', 'spotify', 'hulu', 'apple music', 'youtube premium', 'disney plus', 'hbo max'], categoryNames: ['subscriptions'] },
+    { keywords: ['doctor', 'hospital', 'pharmacy', 'cvs', 'walgreens', 'dental', 'urgent care', 'vision center', 'kaiser'], categoryNames: ['healthcare', 'medical'] },
+    { keywords: ['comcast', 'spectrum', 'cox internet', 'verizon', 'att', 't-mobile', 'sprint'], categoryNames: ['utilities', 'internet', 'phone'] },
+    { keywords: ['rent', 'mortgage', 'lease', 'plumber', 'home maintenance'], categoryNames: ['rent / mortgage', 'housing', 'home maintenance'] },
+    { keywords: ['state farm', 'geico', 'insurance', 'premium'], categoryNames: ['insurance'] },
+    { keywords: ['paycheck', 'salary', 'direct deposit', 'payroll', 'wages'], categoryNames: ['salary', 'commission'] },
+    { keywords: ['interest payment', 'interest'], categoryNames: ['interest income'] },
+    { keywords: ['vet clinic', 'chewy.com', 'pet'], categoryNames: ['pets'] },
+    { keywords: ['jiffy lube', 'pep boys', 'oreilly auto', 'tire center'], categoryNames: ['auto maintenance', 'transportation'] },
+    { keywords: ['dave & busters', 'entertainment'], categoryNames: ['entertainment'] },
   ];
 
   for (const pattern of patterns) {
     if (pattern.keywords.some(keyword => descLower.includes(keyword))) {
-      const matchedAccount = chartAccounts.find(c =>
-        c.account_number === pattern.accountNumber ||
-        (c.category && c.category.toLowerCase().includes(pattern.categoryName)) ||
-        (c.custom_display_name && c.custom_display_name.toLowerCase().includes(pattern.categoryName))
-      );
-      if (matchedAccount) {
-        return matchedAccount;
+      for (const categoryName of pattern.categoryNames) {
+        const matchedAccount = chartAccounts.find(c =>
+          c.display_name && c.display_name.toLowerCase().includes(categoryName)
+        );
+        if (matchedAccount) {
+          return matchedAccount;
+        }
       }
     }
   }
 
   if (amount !== undefined && amount > 0) {
-    const expenseAccount = chartAccounts.find(c => c.account_type === 'expense' && c.category);
+    const expenseAccount = chartAccounts.find(c => c.class === 'expense');
     if (expenseAccount) return expenseAccount;
   } else if (amount !== undefined && amount < 0) {
-    const incomeAccount = chartAccounts.find(c => c.account_type === 'income' && c.category);
+    const incomeAccount = chartAccounts.find(c => c.class === 'income');
     if (incomeAccount) return incomeAccount;
   }
 
