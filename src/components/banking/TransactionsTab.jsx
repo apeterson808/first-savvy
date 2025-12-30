@@ -1312,11 +1312,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             // For regular transactions, show editable category dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
                               const category = chartAccounts.find(c => c.id === transaction.chart_account_id);
-                              const displayName = category ? getAccountDisplayName({
-                                account_type: category.type,
-                                detail_type: category.detail_type,
-                                name: category.name
-                              }) : '—';
+                              const displayName = category?.display_name || '—';
                               return <span className="text-xs px-1">{displayName}</span>;
                             }
 
@@ -1738,11 +1734,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <Input
                                                 value={(() => {
                                                   const category = chartAccounts.find(c => c.id === transaction.chart_account_id);
-                                                  return category ? getAccountDisplayName({
-                                                    account_type: category.type,
-                                                    detail_type: category.detail_type,
-                                                    name: category.name
-                                                  }) : '';
+                                                  return category?.display_name || '';
                                                 })()}
                                                 readOnly
                                                 className="h-8 text-xs bg-slate-50"
