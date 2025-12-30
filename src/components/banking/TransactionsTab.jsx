@@ -290,33 +290,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     generateSuggestions();
   }, [fullPendingTransactions.length, chartAccounts.length, fullPostedTransactions.length, categorizationRules.length]);
 
-  // Auto-apply AI-suggested contacts (one-time only, unless manually changed)
-  React.useEffect(() => {
-    const applyContactSuggestions = async () => {
-      if (!fullPendingTransactions.length || !contacts.length) return;
-
-      const transactionsNeedingContactApplication = fullPendingTransactions.filter(
-        t => t.ai_suggested_contact_id && !t.contact_id && !t.contact_manually_set
-      );
-
-      if (transactionsNeedingContactApplication.length === 0) return;
-
-      for (const transaction of transactionsNeedingContactApplication) {
-        try {
-          await firstsavvy.entities.Transaction.update(transaction.id, {
-            contact_id: transaction.ai_suggested_contact_id
-          });
-        } catch (err) {
-          console.error('Failed to apply contact suggestion for transaction:', transaction.id, err);
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-    };
-
-    applyContactSuggestions();
-  }, [fullPendingTransactions.length, contacts.length]);
-
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: () => {
@@ -475,7 +448,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       const newSuggestions = {};
 
       const transactionsNeedingSuggestions = filteredTransactions.filter(
-        t => !t.ai_suggested_contact_id &&
+        t => !contactSuggestions[t.id] &&
              t.description &&
              t.description.length >= 2 &&
              !suggestingContactIds.has(t.id) &&
@@ -500,22 +473,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
           if (suggestion) {
             newSuggestions[transaction.id] = suggestion;
-
-            try {
-              await firstsavvy.entities.Transaction.update(transaction.id, {
-                ai_suggested_contact_id: suggestion.contactId
-              });
-              queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-            } catch (updateErr) {
-              console.error('Failed to update transaction with contact suggestion:', transaction.id, updateErr);
-            }
           }
         } catch (err) {
           console.error('Failed to suggest contact for transaction:', transaction.id, err);
         }
       }
 
-      setContactSuggestions(newSuggestions);
+      setContactSuggestions(prev => ({ ...prev, ...newSuggestions }));
     };
 
     calculateContactSuggestions();
@@ -630,129 +594,6 @@ For each transaction, return the chart_account_id that best matches. Consider:
       setIsAutoCategorizing(false);
     }
   };
-
-  // Auto-categorize uncategorized transactions on load - batched to avoid rate limits
-  React.useEffect(() => {
-    // Find transactions that need AI suggestions (ones without existing ai_suggested_chart_account_id)
-    const needsSuggestion = filteredTransactions.filter(t => 
-      !t.ai_suggested_chart_account_id && 
-      !autoCategorizingIds.has(t.id)
-    );
-    
-    if (needsSuggestion.length === 0 || chartAccounts.length === 0) return;
-    
-    // Limit to first 3 transactions and add delay to avoid rate limits
-    const batch = needsSuggestion.slice(0, 3);
-    
-    // Mark as being processed
-    setAutoCategorizingIds(prev => {
-      const next = new Set(prev);
-      batch.forEach(t => next.add(t.id));
-      return next;
-    });
-    
-    // Add 2 second delay before processing to avoid rate limits
-    const timer = setTimeout(() => {
-      processBatch();
-    }, 2000);
-    
-    const processBatch = async () => {
-      try {
-        for (const transaction of batch) {
-          try {
-            const suggestion = await suggestCategory(
-              transaction.description,
-              transactions,
-              categorizationRules,
-              transaction.amount
-            );
-
-            if (suggestion && suggestion.category) {
-              const matchingCategory = chartAccounts.find(c =>
-                c.display_name.toLowerCase() === suggestion.category.toLowerCase() &&
-                c.account_type === suggestion.type
-              );
-
-              if (matchingCategory) {
-                updateMutation.mutate({
-                  id: transaction.id,
-                  data: {
-                    ai_suggested_chart_account_id: matchingCategory.id
-                  }
-                });
-              }
-            }
-          } catch (err) {
-            console.error(`Failed to categorize transaction ${transaction.id}:`, err);
-          }
-        }
-      } catch (err) {
-        console.error('Auto-categorize batch error:', err);
-      }
-    };
-
-    return () => clearTimeout(timer);
-    }, [filteredTransactions.length, chartAccounts.length]);
-
-    // Auto-suggest contacts for transactions without contact_id
-    React.useEffect(() => {
-    const needsContactSuggestion = filteredTransactions.filter(t => 
-      !t.ai_suggested_contact_id && 
-      !autoContactSuggestionIds.has(t.id)
-    );
-
-    if (needsContactSuggestion.length === 0 || contacts.length === 0) return;
-
-    // Limit to first 3 transactions and add delay to avoid rate limits
-    const batch = needsContactSuggestion.slice(0, 3);
-
-    // Mark as being processed
-    setAutoContactSuggestionIds(prev => {
-      const next = new Set(prev);
-      batch.forEach(t => next.add(t.id));
-      return next;
-    });
-
-    // Add 2 second delay before processing to avoid rate limits
-    const timer = setTimeout(() => {
-      processBatch();
-    }, 2000);
-
-    const processBatch = async () => {
-      try {
-        const activeContacts = contacts.filter(c => c.status === 'active');
-        if (activeContacts.length === 0) return;
-
-        for (const transaction of batch) {
-          try {
-            if (!transaction.description || transaction.type === 'transfer') continue;
-
-            const result = await suggestContact(
-              transaction.description,
-              fullPostedTransactions,
-              contactMatchingRules,
-              activeContacts
-            );
-
-            if (result?.contactId) {
-              updateMutation.mutate({
-                id: transaction.id,
-                data: {
-                  ai_suggested_contact_id: result.contactId
-                }
-              });
-            }
-          } catch (err) {
-            console.error(`Failed to suggest contact for transaction ${transaction.id}:`, err);
-          }
-        }
-      } catch (err) {
-        console.error('Auto-suggest contact batch error:', err);
-      }
-    };
-
-    return () => clearTimeout(timer);
-    }, [filteredTransactions.length, contacts.length]);
 
   const pendingCount = fullPendingTransactions.filter(t => {
     const isFromActiveAccount = activeAccountIds.includes(t.account_id);
@@ -1411,11 +1252,11 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                     if (!activeAccountIds.includes(transaction.account_id)) return;
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { contact_id: value, contact_manually_set: true }
+                                      data: { contact_id: value }
                                     });
                                   }}
                                   transactionDescription={transaction.description}
-                                  aiSuggestionId={transaction.ai_suggested_contact_id}
+                                  aiSuggestionId={contactSuggestions[transaction.id]?.contactId}
                                   disabled={!activeAccountIds.includes(transaction.account_id)}
                                   onAddNew={(searchTerm) => {
                                     setContactSearchTerm(searchTerm);
@@ -1838,8 +1679,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                                     id: transaction.id,
                                                     data: {
                                                       chart_account_id: categoryValue,
-                                                      type: selectedCategory?.type || transaction.type,
-                                                      ai_suggested_chart_account_id: null
+                                                      type: selectedCategory?.type || transaction.type
                                                     }
                                                   });
                                                 }}
@@ -2579,7 +2419,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                                 if (transaction) {
                                   await updateMutation.mutateAsync({
                                     id: transaction.id,
-                                    data: { contact_id: newContact.id, contact_manually_set: true }
+                                    data: { contact_id: newContact.id }
                                   });
                                 }
                               }
