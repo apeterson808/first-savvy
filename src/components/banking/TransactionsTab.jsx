@@ -1361,28 +1361,30 @@ For each transaction, return the chart_account_id that best matches. Consider:
                               const paired = findPairedTransfer(transaction);
                               const pairedAccountId = paired ? paired.account_id : '';
                               return (
-                                <ClickThroughSelect
-                                  value={pairedAccountId}
-                                  onValueChange={(accountId) => {
-                                    if (!activeAccountIds.includes(transaction.account_id)) return;
-                                    // Find or create matching transaction with selected account
-                                    if (paired) {
-                                      updateMutation.mutate({
-                                        id: paired.id,
-                                        data: { ...paired, account_id: accountId }
-                                      });
-                                    }
-                                  }}
-                                  disabled={!activeAccountIds.includes(transaction.account_id)}
-                                  triggerClassName="h-7 border-slate-300 text-xs"
-                                  placeholder="Select account"
-                                >
-                                  {allActiveAccounts.map(acc => (
-                                    <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                                      {getAccountDisplayName(acc)}
-                                    </ClickThroughSelectItem>
-                                  ))}
-                                </ClickThroughSelect>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <ClickThroughSelect
+                                    value={pairedAccountId}
+                                    onValueChange={(accountId) => {
+                                      if (!activeAccountIds.includes(transaction.account_id)) return;
+                                      // Find or create matching transaction with selected account
+                                      if (paired) {
+                                        updateMutation.mutate({
+                                          id: paired.id,
+                                          data: { ...paired, account_id: accountId }
+                                        });
+                                      }
+                                    }}
+                                    disabled={!activeAccountIds.includes(transaction.account_id)}
+                                    triggerClassName="h-7 border-slate-300 text-xs"
+                                    placeholder="Select account"
+                                  >
+                                    {allActiveAccounts.map(acc => (
+                                      <ClickThroughSelectItem key={acc.id} value={acc.id}>
+                                        {getAccountDisplayName(acc)}
+                                      </ClickThroughSelectItem>
+                                    ))}
+                                  </ClickThroughSelect>
+                                </div>
                               );
                             }
 
@@ -1402,7 +1404,7 @@ For each transaction, return the chart_account_id that best matches. Consider:
                             }
 
                             return (
-                              <div>
+                              <div onClick={(e) => e.stopPropagation()}>
                                 <ContactDropdown
                                   value={transaction.contact_id}
                                   onValueChange={(value) => {
@@ -1443,26 +1445,28 @@ For each transaction, return the chart_account_id that best matches. Consider:
 
                             if (isInMatchMode) {
                               return (
-                                <ClickThroughSelect
-                                  value={transaction.type}
-                                  onValueChange={(newType) => {
-                                    if (!activeAccountIds.includes(transaction.account_id)) return;
-                                    updateMutation.mutate({
-                                      id: transaction.id,
-                                      data: { type: newType }
-                                    });
-                                  }}
-                                  disabled={!activeAccountIds.includes(transaction.account_id)}
-                                  triggerClassName="h-7 border-slate-300 text-xs"
-                                  placeholder="Select type"
-                                >
-                                  <ClickThroughSelectItem value="transfer">
-                                    Transfer
-                                  </ClickThroughSelectItem>
-                                  <ClickThroughSelectItem value="credit_card_payment">
-                                    Credit Card Payment
-                                  </ClickThroughSelectItem>
-                                </ClickThroughSelect>
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <ClickThroughSelect
+                                    value={transaction.type}
+                                    onValueChange={(newType) => {
+                                      if (!activeAccountIds.includes(transaction.account_id)) return;
+                                      updateMutation.mutate({
+                                        id: transaction.id,
+                                        data: { type: newType }
+                                      });
+                                    }}
+                                    disabled={!activeAccountIds.includes(transaction.account_id)}
+                                    triggerClassName="h-7 border-slate-300 text-xs"
+                                    placeholder="Select type"
+                                  >
+                                    <ClickThroughSelectItem value="transfer">
+                                      Transfer
+                                    </ClickThroughSelectItem>
+                                    <ClickThroughSelectItem value="credit_card_payment">
+                                      Credit Card Payment
+                                    </ClickThroughSelectItem>
+                                  </ClickThroughSelect>
+                                </div>
                               );
                             }
 
@@ -1490,33 +1494,35 @@ For each transaction, return the chart_account_id that best matches. Consider:
                             }
 
                             return (
-                              <CategoryDropdown
-                                value={transaction.chart_account_id}
-                                onValueChange={(value) => {
-                                  if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                  const categoryValue = value === '' ? null : value;
-                                  const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
-                                  updateMutation.mutate({
-                                    id: transaction.id,
-                                    data: {
-                                      chart_account_id: categoryValue,
-                                      type: selectedCategory ? selectedCategory.type : transaction.type
-                                    }
-                                  });
-                                }}
-                                transactionType={transaction.type}
-                                disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
-                                onAddNew={(searchTerm) => {
-                                  setCategorySearchTerm(searchTerm);
-                                  setTriggeringTransactionId(transaction.id);
-                                  setTriggeringTransactionType(transaction.type);
-                                  setAddAccountSheetOpen(true);
-                                }}
-                                triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                placeholder="Select category"
-                                isTransactionTransfer={transaction.type === 'transfer'}
-                                transactionAmount={transaction.amount}
-                              />
+                              <div onClick={(e) => e.stopPropagation()}>
+                                <CategoryDropdown
+                                  value={transaction.chart_account_id}
+                                  onValueChange={(value) => {
+                                    if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+                                    const categoryValue = value === '' ? null : value;
+                                    const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
+                                    updateMutation.mutate({
+                                      id: transaction.id,
+                                      data: {
+                                        chart_account_id: categoryValue,
+                                        type: selectedCategory ? selectedCategory.type : transaction.type
+                                      }
+                                    });
+                                  }}
+                                  transactionType={transaction.type}
+                                  disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
+                                  onAddNew={(searchTerm) => {
+                                    setCategorySearchTerm(searchTerm);
+                                    setTriggeringTransactionId(transaction.id);
+                                    setTriggeringTransactionType(transaction.type);
+                                    setAddAccountSheetOpen(true);
+                                  }}
+                                  triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                  placeholder="Select category"
+                                  isTransactionTransfer={transaction.type === 'transfer'}
+                                  transactionAmount={transaction.amount}
+                                />
+                              </div>
                             );
                           })()}
                         </td>
