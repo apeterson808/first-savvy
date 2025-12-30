@@ -36,7 +36,7 @@ export default function CategoryDropdown({
     enabled: !!user && !isTransactionTransfer
   });
 
-  const level3Accounts = chartAccounts.filter(a => a.level === 3 && a.is_active);
+  const level3Accounts = chartAccounts;
 
   const transferIncomeAccount = chartAccounts.find(a => a.account_detail === 'Transfer Income');
   const transferExpenseAccount = chartAccounts.find(a => a.account_detail === 'Transfer Expense');

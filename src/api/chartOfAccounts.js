@@ -229,11 +229,11 @@ export const updateAccountIconColor = async (accountId, icon, color) => {
 };
 
 export const getIncomeAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { class: 'income', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'income' });
 };
 
 export const getExpenseAccounts = async (profileId) => {
-  return getUserChartOfAccounts(profileId, { class: 'expense', isActive: true });
+  return getUserChartOfAccounts(profileId, { class: 'expense' });
 };
 
 export const getAssetAccounts = async (profileId) => {
