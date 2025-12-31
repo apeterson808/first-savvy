@@ -908,7 +908,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
             for (const { account, config, mockAccount } of createdAccounts) {
               const transactions = await generateTransactionsForAccount(
-                { id: account.id, type: mockAccount.type, name: account.account_name },
+                { id: account.id, type: mockAccount.type, name: account.display_name },
                 user.id,
                 activeProfile.id,
                 config.startDate,
@@ -918,14 +918,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
               if (mockAccount.type === 'credit_card') {
                 const matchingEntries = await checkForMatchingTransfers(
-                  { id: account.id, type: mockAccount.type, name: account.account_name },
+                  { id: account.id, type: mockAccount.type, name: account.display_name },
                   user.id,
                   activeProfile.id
                 );
 
                 if (matchingEntries.length > 0) {
                   const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
-                    { id: account.id, type: mockAccount.type, name: account.account_name },
+                    { id: account.id, type: mockAccount.type, name: account.display_name },
                     matchingEntries,
                     user.id,
                     activeProfile.id
@@ -936,15 +936,15 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               } else if (mockAccount.type === 'checking' || mockAccount.type === 'savings') {
                 const creditCardAccounts = createdAccounts
                   .filter(acc => acc.mockAccount.type === 'credit_card')
-                  .map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }));
+                  .map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }));
 
                 const { payments, registryEntries } = await generateCreditCardPayments(
-                  { id: account.id, type: mockAccount.type, name: account.account_name },
+                  { id: account.id, type: mockAccount.type, name: account.display_name },
                   user.id,
                   activeProfile.id,
                   config.startDate,
                   config.goLiveDate,
-                  createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }))
+                  createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }))
                 );
                 allTransactions.push(...payments);
                 allRegistryEntries.push(...registryEntries);
@@ -956,7 +956,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               activeProfile.id,
               createdAccounts[0]?.config.startDate || new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0],
               createdAccounts[0]?.config.goLiveDate || new Date().toISOString().split('T')[0],
-              createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.account_name }))
+              createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }))
             );
             allTransactions.push(...transfers);
             allRegistryEntries.push(...savingsRegistryEntries);
@@ -964,14 +964,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             for (const { account, config, mockAccount } of createdAccounts) {
               if (mockAccount.type === 'savings') {
                 const matchingEntries = await checkForMatchingTransfers(
-                  { id: account.id, type: mockAccount.type, name: account.account_name },
+                  { id: account.id, type: mockAccount.type, name: account.display_name },
                   user.id,
                   activeProfile.id
                 );
 
                 if (matchingEntries.length > 0) {
                   const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
-                    { id: account.id, type: mockAccount.type, name: account.account_name },
+                    { id: account.id, type: mockAccount.type, name: account.display_name },
                     matchingEntries,
                     user.id,
                     activeProfile.id

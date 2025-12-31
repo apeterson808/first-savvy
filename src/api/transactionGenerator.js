@@ -8,7 +8,7 @@ const MERCHANT_TEMPLATES = {
       'SAMS CLUB', 'WEGMANS', 'HARRIS TEETER', 'GIANT FOOD', 'FOOD LION'
     ],
     amountRange: [20, 150],
-    accountNumber: 5030,
+    accountNumber: 6200,
     frequency: 8
   },
   dining: {
@@ -19,7 +19,7 @@ const MERCHANT_TEMPLATES = {
       'FIVE GUYS', 'IN-N-OUT BURGER', 'SHAKE SHACK', 'WENDYS', 'DUNKIN'
     ],
     amountRange: [8, 75],
-    accountNumber: 5031,
+    accountNumber: 6220,
     frequency: 10
   },
   gas: {
@@ -28,7 +28,7 @@ const MERCHANT_TEMPLATES = {
       '76 GAS STATION', 'MARATHON', 'CIRCLE K', 'WAWA', 'SPEEDWAY'
     ],
     amountRange: [30, 80],
-    accountNumber: 5041,
+    accountNumber: 6320,
     frequency: 4
   },
   utilities: {
@@ -37,7 +37,7 @@ const MERCHANT_TEMPLATES = {
       'CITY WATER SERVICES', 'WASTE MANAGEMENT', 'REPUBLIC SERVICES'
     ],
     amountRange: [60, 250],
-    accountNumber: 5020,
+    accountNumber: 6100,
     frequency: 1,
     recurring: true,
     day: 15
@@ -45,7 +45,7 @@ const MERCHANT_TEMPLATES = {
   internet: {
     merchants: ['COMCAST XFINITY', 'AT&T INTERNET', 'VERIZON FIOS', 'SPECTRUM', 'COX INTERNET'],
     amountRange: [60, 120],
-    accountNumber: 5021,
+    accountNumber: 6100,
     frequency: 1,
     recurring: true,
     day: 10
@@ -53,7 +53,7 @@ const MERCHANT_TEMPLATES = {
   phone: {
     merchants: ['VERIZON WIRELESS', 'AT&T MOBILITY', 'T-MOBILE', 'SPRINT'],
     amountRange: [50, 150],
-    accountNumber: 5022,
+    accountNumber: 6120,
     frequency: 1,
     recurring: true,
     day: 5
@@ -65,7 +65,7 @@ const MERCHANT_TEMPLATES = {
       'PLANET FITNESS', 'LA FITNESS', 'ADOBE CREATIVE', 'DROPBOX'
     ],
     amountRange: [10, 50],
-    accountNumber: 5090,
+    accountNumber: 6800,
     frequency: 1,
     recurring: true,
     day: 1
@@ -77,7 +77,7 @@ const MERCHANT_TEMPLATES = {
       'IKEA', 'WAYFAIR', 'ETSY', 'EBAY'
     ],
     amountRange: [25, 300],
-    accountNumber: 5091,
+    accountNumber: 6900,
     frequency: 5
   },
   entertainment: {
@@ -86,7 +86,7 @@ const MERCHANT_TEMPLATES = {
       'DAVE & BUSTERS', 'TOP GOLF', 'BOWLING ALLEY', 'MINI GOLF'
     ],
     amountRange: [25, 150],
-    accountNumber: 5094,
+    accountNumber: 7120,
     frequency: 2
   },
   healthcare: {
@@ -95,7 +95,7 @@ const MERCHANT_TEMPLATES = {
       'URGENT CARE', 'DENTAL OFFICE', 'VISION CENTER', 'QUEST DIAGNOSTICS'
     ],
     amountRange: [15, 200],
-    accountNumber: 5061,
+    accountNumber: 6500,
     frequency: 2
   },
   insurance: {
@@ -104,7 +104,7 @@ const MERCHANT_TEMPLATES = {
       'USAA INSURANCE', 'HEALTH INSURANCE CO'
     ],
     amountRange: [100, 400],
-    accountNumber: 5050,
+    accountNumber: 6400,
     frequency: 1,
     recurring: true,
     day: 1
@@ -115,7 +115,7 @@ const MERCHANT_TEMPLATES = {
       'PEST CONTROL', 'HVAC REPAIR', 'PLUMBER', 'ELECTRICIAN'
     ],
     amountRange: [50, 500],
-    accountNumber: 5012,
+    accountNumber: 6020,
     frequency: 1
   },
   vehicle: {
@@ -124,7 +124,7 @@ const MERCHANT_TEMPLATES = {
       'CAR WASH', 'TIRE CENTER', 'OIL CHANGE'
     ],
     amountRange: [30, 200],
-    accountNumber: 5042,
+    accountNumber: 6340,
     frequency: 1
   },
   travel: {
@@ -134,13 +134,13 @@ const MERCHANT_TEMPLATES = {
       'UBER', 'LYFT', 'RENTAL CAR'
     ],
     amountRange: [50, 800],
-    accountNumber: 5092,
+    accountNumber: 7000,
     frequency: 1
   },
   pets: {
     merchants: ['PETSMART', 'PETCO', 'CHEWY.COM', 'VET CLINIC', 'PET GROOMING'],
     amountRange: [30, 150],
-    accountNumber: 5095,
+    accountNumber: 7300,
     frequency: 2
   }
 };
@@ -149,14 +149,14 @@ const INCOME_TEMPLATES = {
   salary: {
     description: 'PAYROLL DEPOSIT',
     amountRange: [2000, 5000],
-    accountNumber: 4011,
+    accountNumber: 4000,
     recurring: true,
     daysOfMonth: [1, 15]
   },
   interest: {
     description: 'INTEREST PAYMENT',
     amountRange: [5, 50],
-    accountNumber: 4051,
+    accountNumber: 4200,
     recurring: true,
     daysOfMonth: [1]
   }
