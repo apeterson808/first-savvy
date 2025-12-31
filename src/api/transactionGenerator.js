@@ -273,7 +273,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         description: incomeTemplate.description,
         type: 'income',
         status: status,
-        chart_account_id: chartAccount?.id || null,
+        category_account_id: chartAccount?.id || null,
         contact_id: contactId
       });
     } else {
@@ -295,7 +295,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
           description: merchant,
           type: 'expense',
           status: status,
-          chart_account_id: chartAccount?.id || null,
+          category_account_id: chartAccount?.id || null,
           contact_id: contactId
         });
       } else {
@@ -313,7 +313,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
           description: merchant,
           type: 'expense',
           status: status,
-          chart_account_id: null,
+          category_account_id: null,
           contact_id: contactId
         });
       }
@@ -389,7 +389,7 @@ export async function generateCreditCardPayments(accountData, userId, profileId,
           description: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
           type: 'transfer',
           status: status,
-          chart_account_id: null,
+          category_account_id: null,
           transfer_pair_id: null
         };
 
@@ -452,7 +452,7 @@ export async function generateSavingsTransfers(userId, profileId, startDate, goL
           description: `TRANSFER TO ${targetAccount.name || 'Savings'}`,
           type: 'transfer',
           status: status,
-          chart_account_id: null,
+          category_account_id: null,
           transfer_pair_id: null
         };
 
@@ -508,7 +508,7 @@ export async function createMatchedTransferTransactions(accountData, matchingEnt
       description: `PAYMENT RECEIVED - ${entry.description_pattern}`,
       type: 'transfer',
       status: 'posted',
-      chart_account_id: null,
+      category_account_id: null,
       transfer_pair_id: null
     };
 

@@ -49,7 +49,7 @@ export default function AddBudgetItemSheet({
 
   useEffect(() => {
     if (editingBudget && open) {
-      setSelectedCategoryId(editingBudget.chart_account_id || '');
+      setSelectedCategoryId(editingBudget.category_account_id || '');
       setLimitAmount(editingBudget.allocated_amount?.toString() || '');
       setSelectedColor(editingBudget.color || '');
       setSelectedIcon(editingBudget.icon || '');

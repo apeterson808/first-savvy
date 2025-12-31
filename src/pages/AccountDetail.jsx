@@ -90,7 +90,7 @@ export default function AccountDetail() {
       const allTransactions = await firstsavvy.entities.Transaction.list('date', 'desc');
 
       if (account.entityType === 'BankAccount') {
-        return allTransactions.filter(t => t.account_id === id);
+        return allTransactions.filter(t => t.bank_account_id === id);
       } else {
         return allTransactions.filter(t => t.chart_account_id === id);
       }

@@ -23,12 +23,12 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
   }, 0);
 
   const totalIncomeActual = incomeBudgets.reduce((sum, b) => {
-    const categoryId = b.chart_account_id;
+    const categoryId = b.category_account_id;
     return sum + (incomeByCategory[categoryId] || 0);
   }, 0);
 
   const totalExpenseActual = expenseBudgets.reduce((sum, b) => {
-    const categoryId = b.chart_account_id;
+    const categoryId = b.category_account_id;
     return sum + (spendingByCategory[categoryId] || 0);
   }, 0);
 
@@ -54,8 +54,8 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
     }
 
     const sortedBudgets = [...budgetsList].sort((a, b) => {
-      const aActual = actualByCategory[a.chart_account_id] || 0;
-      const bActual = actualByCategory[b.chart_account_id] || 0;
+      const aActual = actualByCategory[a.category_account_id] || 0;
+      const bActual = actualByCategory[b.category_account_id] || 0;
       const aBudgeted = convertCadence(parseFloat(a.allocated_amount || 0), a.cadence || 'monthly', 'monthly');
       const bBudgeted = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
       const aPercentage = aBudgeted > 0 ? (aActual / aBudgeted) : 0;
@@ -80,7 +80,7 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
               <BudgetProgressPill
                 key={budget.id}
                 budget={budget}
-                actualAmount={actualByCategory[budget.chart_account_id] || 0}
+                actualAmount={actualByCategory[budget.category_account_id] || 0}
                 isIncome={isIncome}
               />
             ))}

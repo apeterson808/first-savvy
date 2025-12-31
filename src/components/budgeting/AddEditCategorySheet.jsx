@@ -88,7 +88,7 @@ export default function AddEditCategorySheet({
             icon: formData.icon,
             color: formData.color,
           })
-          .eq('chart_account_id', editingCategory.id);
+          .eq('category_account_id', editingCategory.id);
 
         toast.success('Category updated successfully');
       } else {

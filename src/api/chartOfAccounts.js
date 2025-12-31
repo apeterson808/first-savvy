@@ -166,7 +166,7 @@ export const createUserExpenseCategory = async (profileId, categoryData) => {
 
 export const updateAccountDisplayName = async (accountId, newDisplayName) => {
   const { error } = await supabase.rpc('update_account_display_name', {
-    p_account_id: accountId,
+    p_bank_account_id: accountId,
     p_new_display_name: newDisplayName
   });
 
@@ -175,7 +175,7 @@ export const updateAccountDisplayName = async (accountId, newDisplayName) => {
 
 export const updateAccountNumber = async (accountId, newAccountNumber) => {
   const { error } = await supabase.rpc('update_account_number', {
-    p_account_id: accountId,
+    p_bank_account_id: accountId,
     p_new_account_number: newAccountNumber
   });
 

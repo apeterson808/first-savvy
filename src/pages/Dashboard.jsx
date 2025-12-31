@@ -254,8 +254,8 @@ export default function Dashboard() {
           const transactionDateStr = t.date.substring(0, 10);
           const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
           const matchesAccount = selectedAccount === 'all'
-            ? activeAccountIds.includes(t.account_id)
-            : t.account_id === selectedAccount;
+            ? activeAccountIds.includes(t.bank_account_id)
+            : t.bank_account_id === selectedAccount;
           const isTransfer = t.type === 'transfer';
           return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
         });
@@ -296,8 +296,8 @@ export default function Dashboard() {
           if (!t.date || isNaN(new Date(t.date).getTime())) return false;
           const tDateStr = t.date.substring(0, 10);
           const matchesAccount = selectedAccount === 'all'
-            ? activeAccountIds.includes(t.account_id)
-            : t.account_id === selectedAccount;
+            ? activeAccountIds.includes(t.bank_account_id)
+            : t.bank_account_id === selectedAccount;
           const isTransfer = t.type === 'transfer';
           return tDateStr >= monthStartStr && tDateStr <= monthEndStr && t.status === 'posted' && matchesAccount && !isTransfer;
         });
@@ -333,7 +333,7 @@ export default function Dashboard() {
         budget.cadence || 'monthly',
         'monthly'
       );
-      const spent = spendingByCategory[budget.chart_account_id] || 0;
+      const spent = spendingByCategory[budget.category_account_id] || 0;
       const percentage = budgetedAmount > 0 ? (spent / budgetedAmount) * 100 : 0;
 
       const isOverBudget = spent > budgetedAmount;

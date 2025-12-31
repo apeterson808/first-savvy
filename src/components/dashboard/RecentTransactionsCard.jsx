@@ -72,12 +72,12 @@ export default function RecentTransactionsCard() {
   // Get AI suggestions for uncategorized transactions
   const activeAccountIds = accounts.map(a => a.id);
   const pendingTransactions = allPendingTransactions
-    .filter(t => activeAccountIds.includes(t.account_id))
+    .filter(t => activeAccountIds.includes(t.bank_account_id))
     .slice(0, 5);
 
   useEffect(() => {
     const needsSuggestion = allPendingTransactions
-      .filter(t => activeAccountIds.includes(t.account_id))
+      .filter(t => activeAccountIds.includes(t.bank_account_id))
       .filter(t => !t.ai_suggested_chart_account_id && !autoCategorizingIds.has(t.id));
 
     if (needsSuggestion.length === 0 || chartAccounts.length === 0) return;
@@ -233,13 +233,13 @@ export default function RecentTransactionsCard() {
                       {formatTransactionDescription(transaction.description)}
                     </p>
                   )}
-                  <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM d')} · {accounts.find(a => a.id === transaction.account_id)?.account_name || 'N/A'}</p>
+                  <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM d')} · {accounts.find(a => a.id === transaction.bank_account_id)?.account_name || 'N/A'}</p>
                 </div>
                 <span className={`text-xs font-semibold whitespace-nowrap ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
                   {transaction.type === 'expense' ? '-' : '+'}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
                 <CategoryDropdown
-                  value={transaction.chart_account_id}
+                  value={transaction.category_account_id}
                   onValueChange={(value) => {
                     updateMutation.mutate({
                       id: transaction.id,

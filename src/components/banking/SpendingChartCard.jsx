@@ -39,7 +39,7 @@ export default function SpendingChartCard({
         const monthsSet = new Set();
         const filteredTransactions = selectedAccount === 'all' 
           ? transactions 
-          : transactions.filter(t => t.account_id === selectedAccount);
+          : transactions.filter(t => t.bank_account_id === selectedAccount);
         filteredTransactions.forEach(t => {
           if (!t.date) return;
           const tDate = new Date(t.date);
@@ -64,8 +64,8 @@ export default function SpendingChartCard({
       const dayTransactions = transactions.filter(t => {
         if (!t.date) return false;
         const matchesAccount = selectedAccount === 'all' 
-          ? activeAccountIds.includes(t.account_id)
-          : t.account_id === selectedAccount;
+          ? activeAccountIds.includes(t.bank_account_id)
+          : t.bank_account_id === selectedAccount;
         return t.date === expectedDateStr && 
                t.status === 'posted' && 
                t.type === 'expense' &&
@@ -89,8 +89,8 @@ export default function SpendingChartCard({
                   const pastDayTransactions = transactions.filter(t => {
                     if (!t.date) return false;
                     const matchesPastAccount = selectedAccount === 'all'
-                      ? activeAccountIds.includes(t.account_id)
-                      : t.account_id === selectedAccount;
+                      ? activeAccountIds.includes(t.bank_account_id)
+                      : t.bank_account_id === selectedAccount;
                     return t.date === pastDateStr &&
                            t.status === 'posted' &&
                            t.type === 'expense' &&

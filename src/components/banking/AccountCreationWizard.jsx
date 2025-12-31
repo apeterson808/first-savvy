@@ -580,7 +580,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             displayName: account.name,
             classType: classType,
             chart_account_id: defaultChartAccountId,
-            existing_account_id: null,
+            existing_bank_account_id: null,
             startDatePreset: 'last_60',
             startDate: startDate,
             goLiveDate: goLiveDate,
@@ -846,7 +846,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
             const chartAccount = userChartAccounts.find(a => a.id === config.chart_account_id);
             if (!chartAccount) {
-              console.warn(`Chart account not found for ID: ${config.chart_account_id}`);
+              console.warn(`Chart account not found for ID: ${config.category_account_id}`);
               continue;
             }
 
@@ -882,8 +882,8 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
             createdAccounts.push({ account: newAccount, config, mockAccount });
             createdCount++;
-          } else if (config.import_mode === 'existing' && config.existing_account_id) {
-            const existingAccount = existingAccounts.find(acc => acc.id === config.existing_account_id);
+          } else if (config.import_mode === 'existing' && config.existing_bank_account_id) {
+            const existingAccount = existingAccounts.find(acc => acc.id === config.existing_bank_account_id);
             const updateData = {
               current_balance: mockAccount.balance,
               institution_name: mockAccount.institutionName
@@ -896,7 +896,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             await firstsavvy
               .from('user_chart_of_accounts')
               .update(updateData)
-              .eq('id', config.existing_account_id);
+              .eq('id', config.existing_bank_account_id);
             linkedCount++;
           }
         }
@@ -1294,7 +1294,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             return false;
           }
         } else if (config.import_mode === 'existing') {
-          if (!config.existing_account_id) {
+          if (!config.existing_bank_account_id) {
             return false;
           }
         }
@@ -2265,7 +2265,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                                     onValueChange={(value) => {
                                       const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
                                       if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'chart_account_id', matchingAccount.id);
+                                        updateAccountConfiguration(account.id, 'category_account_id', matchingAccount.id);
                                       }
                                     }}
                                   >

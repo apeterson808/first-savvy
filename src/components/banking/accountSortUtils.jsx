@@ -2,8 +2,8 @@
 
 export function sortAccountsForDisplay(allAccounts) {
   // Group by institution or entity type (only top-level accounts, no parent)
-  const topLevelAccounts = allAccounts.filter(a => !a.parent_account_id);
-  const subAccounts = allAccounts.filter(a => a.parent_account_id);
+  const topLevelAccounts = allAccounts.filter(a => !a.parent_bank_account_id);
+  const subAccounts = allAccounts.filter(a => a.parent_bank_account_id);
 
   const groupedByInstitution = topLevelAccounts.reduce((groups, account) => {
     let groupKey;
@@ -46,7 +46,7 @@ export function sortAccountsForDisplay(allAccounts) {
       orderedAccounts.push(parent);
       // Find and add children of this parent
       const children = subAccounts
-        .filter(s => s.parent_account_id === parent.id)
+        .filter(s => s.parent_bank_account_id === parent.id)
         .sort((a, b) => (a.account_name || '').localeCompare(b.account_name || ''));
       children.forEach(child => {
         orderedAccounts.push({ ...child, isSubAccount: true });
@@ -60,8 +60,8 @@ export function sortAccountsForDisplay(allAccounts) {
 // Returns grouped data for table rendering with group headers
 export function getGroupedAccountsForTable(allAccounts) {
   // Separate top-level and sub-accounts
-  const topLevelAccounts = allAccounts.filter(a => !a.parent_account_id);
-  const subAccounts = allAccounts.filter(a => a.parent_account_id);
+  const topLevelAccounts = allAccounts.filter(a => !a.parent_bank_account_id);
+  const subAccounts = allAccounts.filter(a => a.parent_bank_account_id);
 
   // Group by institution or entity type (only top-level)
   const groupedByInstitution = topLevelAccounts.reduce((groups, account) => {
@@ -106,7 +106,7 @@ export function getGroupedAccountsForTable(allAccounts) {
       orderedAccounts.push(parent);
       // Find and add children of this parent
       const children = subAccounts
-        .filter(s => s.parent_account_id === parent.id)
+        .filter(s => s.parent_bank_account_id === parent.id)
         .sort((a, b) => (a.account_name || '').localeCompare(b.account_name || ''));
       children.forEach(child => {
         orderedAccounts.push({ ...child, isSubAccount: true });

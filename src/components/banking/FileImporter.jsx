@@ -381,7 +381,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
             original_description: txn.description,
             amount,
             type,
-            account_id: accountId,
+            bank_account_id: accountId,
             chart_account_id: categoryId,
             status: 'pending',
             payment_method: 'card'

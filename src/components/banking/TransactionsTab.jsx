@@ -78,7 +78,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [contactSuggestions, setContactSuggestions] = useState({});
 
   const getTransactionAccountId = (transaction) => {
-    return transaction.account_id;
+    return transaction.bank_account_id;
   };
 
   const getAccountDetails = (accountId) => {
@@ -453,7 +453,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
              t.description.length >= 2 &&
              !suggestingContactIds.has(t.id) &&
              statusFilter === 'pending' &&
-             activeAccountIds.includes(t.account_id)
+             activeAccountIds.includes(t.bank_account_id)
       ).slice(0, 5);
 
       if (transactionsNeedingSuggestions.length === 0) return;
@@ -509,7 +509,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const autoCategorizeTransactions = async () => {
     const uncategorized = filteredTransactions.filter(t =>
-      !t.chart_account_id && t.type !== 'transfer' && t.type !== 'credit_card_payment'
+      !t.category_account_id && t.type !== 'transfer' && t.type !== 'credit_card_payment'
     );
 
     if (uncategorized.length === 0) {
@@ -563,20 +563,20 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const pendingCount = fullPendingTransactions.filter(t => {
-    const isFromActiveAccount = activeAccountIds.includes(t.account_id);
-    const matchesAccount = selectedAccount === 'all' || t.account_id === selectedAccount;
+    const isFromActiveAccount = activeAccountIds.includes(t.bank_account_id);
+    const matchesAccount = selectedAccount === 'all' || t.bank_account_id === selectedAccount;
     return isFromActiveAccount && matchesAccount;
   }).length;
 
   const postedCount = fullPostedTransactions.filter(t => {
-    const isFromActiveAccount = activeAccountIds.includes(t.account_id);
-    const matchesAccount = selectedAccount === 'all' || t.account_id === selectedAccount;
+    const isFromActiveAccount = activeAccountIds.includes(t.bank_account_id);
+    const matchesAccount = selectedAccount === 'all' || t.bank_account_id === selectedAccount;
     return isFromActiveAccount && matchesAccount;
   }).length;
 
   const excludedCount = fullExcludedTransactions.filter(t => {
-    const isFromActiveAccount = activeAccountIds.includes(t.account_id);
-    const matchesAccount = selectedAccount === 'all' || t.account_id === selectedAccount;
+    const isFromActiveAccount = activeAccountIds.includes(t.bank_account_id);
+    const matchesAccount = selectedAccount === 'all' || t.bank_account_id === selectedAccount;
     return isFromActiveAccount && matchesAccount;
   }).length;
 
@@ -587,7 +587,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return transactions.find(t =>
       t.id !== transaction.id &&
       t.transfer_pair_id === transaction.transfer_pair_id &&
-      activeAccountIds.includes(t.account_id)
+      activeAccountIds.includes(t.bank_account_id)
     );
   };
 
@@ -665,10 +665,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         if (t.id === transaction.id) return false;
         if (t.type !== 'income') return false;
         if (t.status === 'excluded') return false;
-        if (!activeAccountIds.includes(t.account_id)) return false;
+        if (!activeAccountIds.includes(t.bank_account_id)) return false;
         
         // Must be on a credit card account
-        const tAccount = accounts.find(a => a.id === t.account_id);
+        const tAccount = accounts.find(a => a.id === t.bank_account_id);
         if (!tAccount || tAccount.account_type !== 'credit_card') return false;
 
         // Check if amounts match (both should be positive for this comparison)
@@ -690,7 +690,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         if (t.id === transaction.id) return false;
         if (t.type !== 'transfer') return false;
         if (t.status === 'excluded') return false;
-        if (!activeAccountIds.includes(t.account_id)) return false;
+        if (!activeAccountIds.includes(t.bank_account_id)) return false;
 
         // Check if amounts are opposite (one positive, one negative, same magnitude)
         const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
@@ -713,8 +713,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       const transferLikeMatches = transactions.filter(t => {
         if (t.id === transaction.id) return false;
         if (t.status === 'excluded') return false;
-        if (!activeAccountIds.includes(t.account_id)) return false;
-        if (t.account_id === transaction.account_id) return false; // Must be different account
+        if (!activeAccountIds.includes(t.bank_account_id)) return false;
+        if (t.bank_account_id === transaction.bank_account_id) return false; // Must be different account
 
         // Must be income, expense, or transfer
         if (!['transfer', 'income', 'expense'].includes(t.type)) return false;
@@ -1147,7 +1147,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           {statusFilter === 'pending' ? (
                             <Input
                               defaultValue={formatTransactionDescription(transaction.description)}
-                              disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
+                              disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
                               className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
                               onBlur={(e) => {
                                 if (e.target.value !== formatTransactionDescription(transaction.description)) {
@@ -1186,22 +1186,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             if (isInMatchMode) {
                               const paired = findPairedTransfer(transaction);
-                              const pairedAccountId = paired ? paired.account_id : '';
+                              const pairedAccountId = paired ? paired.bank_account_id : '';
                               return (
                                 <div onClick={(e) => e.stopPropagation()}>
                                   <ClickThroughSelect
                                     value={pairedAccountId}
                                     onValueChange={(accountId) => {
-                                      if (!activeAccountIds.includes(transaction.account_id)) return;
+                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                       // Find or create matching transaction with selected account
                                       if (paired) {
                                         updateMutation.mutate({
                                           id: paired.id,
-                                          data: { ...paired, account_id: accountId }
+                                          data: { ...paired, bank_account_id: accountId }
                                         });
                                       }
                                     }}
-                                    disabled={!activeAccountIds.includes(transaction.account_id)}
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     triggerClassName="h-7 border-slate-300 text-xs"
                                     placeholder="Select account"
                                   >
@@ -1219,7 +1219,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && transaction.transfer_pair_id) {
                               const paired = findPairedTransfer(transaction);
                               if (paired) {
-                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.account_id) || accounts.find(a => a.id === paired.account_id);
+                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
                                 return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
                               }
                             }
@@ -1235,7 +1235,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 <ContactDropdown
                                   value={transaction.contact_id}
                                   onValueChange={(value) => {
-                                    if (!activeAccountIds.includes(transaction.account_id)) return;
+                                    if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     updateMutation.mutate({
                                       id: transaction.id,
                                       data: { contact_id: value }
@@ -1243,7 +1243,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   }}
                                   transactionDescription={transaction.description}
                                   aiSuggestionId={contactSuggestions[transaction.id]?.contactId}
-                                  disabled={!activeAccountIds.includes(transaction.account_id)}
+                                  disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                   onAddNew={(searchTerm) => {
                                     setContactSearchTerm(searchTerm);
                                     setTriggeringContactTransactionId(transaction.id);
@@ -1276,13 +1276,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   <ClickThroughSelect
                                     value={transaction.type}
                                     onValueChange={(newType) => {
-                                      if (!activeAccountIds.includes(transaction.account_id)) return;
+                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                       updateMutation.mutate({
                                         id: transaction.id,
                                         data: { type: newType }
                                       });
                                     }}
-                                    disabled={!activeAccountIds.includes(transaction.account_id)}
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     triggerClassName="h-7 border-slate-300 text-xs"
                                     placeholder="Select type"
                                   >
@@ -1319,7 +1319,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             return (
                               <div onClick={(e) => e.stopPropagation()}>
                                 <CategoryDropdown
-                                  value={transaction.chart_account_id}
+                                  value={transaction.category_account_id}
                                   onValueChange={(value) => {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     const categoryValue = value === '' ? null : value;
@@ -1333,7 +1333,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     });
                                   }}
                                   transactionType={transaction.type}
-                                  disabled={!activeAccountIds.includes(transaction.account_id) || isMatched(transaction)}
+                                  disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
                                   onAddNew={(searchTerm) => {
                                     setCategorySearchTerm(searchTerm);
                                     setTriggeringTransactionId(transaction.id);
@@ -1351,7 +1351,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         </td>
                         <td className="py-1 pl-2 pr-1 whitespace-nowrap text-left">
                         {(() => {
-                          const isInactiveAccount = !activeAccountIds.includes(transaction.account_id);
+                          const isInactiveAccount = !activeAccountIds.includes(transaction.bank_account_id);
                           if (isInactiveAccount) {
                             return <span className="text-xs text-slate-400 italic">Inactive</span>;
                           }
@@ -1544,7 +1544,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-t border-slate-100`}>
                             <td colSpan={selectedAccount === 'all' ? 9 : 8} className="p-0">
                               <div className="bg-slate-50 p-4 border-l-4 border-blue-500">
-                                {activeAccountIds.includes(transaction.account_id) ? (
+                                {activeAccountIds.includes(transaction.bank_account_id) ? (
                                   <div className="space-y-3">
                                     {statusFilter === 'pending' && (
                                       <div className="flex items-center gap-2 mb-3">
@@ -1653,7 +1653,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             <div>
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <CategoryDropdown
-                                                value={transaction.chart_account_id || ''}
+                                                value={transaction.category_account_id || ''}
                                                 onValueChange={(value) => {
                                                   const categoryValue = value === '' ? null : value;
                                                   const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
@@ -1679,7 +1679,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <Label className="text-xs mb-1 block">From Account</Label>
                                               <Input
                                                 value={(() => {
-                                                  const fromAccount = accounts.find(a => a.id === transaction.account_id);
+                                                  const fromAccount = accounts.find(a => a.id === transaction.bank_account_id);
                                                   return fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown';
                                                 })()}
                                                 readOnly
@@ -1691,7 +1691,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <AccountDropdown
                                                 value={(() => {
                                                   const paired = findPairedTransfer(transaction);
-                                                  return paired?.account_id || '';
+                                                  return paired?.bank_account_id || '';
                                                 })()}
                                                 onValueChange={(val) => {
                                                   if (val) {
@@ -1700,7 +1700,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                       updateMutation.mutate({
                                                         id: transaction.id,
                                                         data: {
-                                                          transfer_to_account_id: val
+                                                          transfer_to_bank_account_id: val
                                                         }
                                                       });
                                                     }
@@ -1710,7 +1710,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 showPendingCounts={false}
                                                 triggerClassName="h-8 text-xs"
                                                 placeholder="Select account..."
-                                                filterAccounts={(acc) => acc.id !== transaction.account_id}
+                                                filterAccounts={(acc) => acc.id !== transaction.bank_account_id}
                                               />
                                             </div>
                                           </div>
@@ -1728,7 +1728,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     })() && (
                                       <>
                                         <div className="mb-4 space-y-3">
-                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && transaction.chart_account_id && (
+                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && transaction.category_account_id && (
                                             <div>
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <Input
@@ -1747,7 +1747,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 <Label className="text-xs mb-1 block">From Account</Label>
                                                 <Input
                                                   value={(() => {
-                                                    const fromAccount = accounts.find(a => a.id === transaction.account_id);
+                                                    const fromAccount = accounts.find(a => a.id === transaction.bank_account_id);
                                                     return fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown';
                                                   })()}
                                                   readOnly
@@ -1760,7 +1760,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   value={(() => {
                                                     const paired = findPairedTransfer(transaction);
                                                     if (paired) {
-                                                      const toAccount = accounts.find(a => a.id === paired.account_id);
+                                                      const toAccount = accounts.find(a => a.id === paired.bank_account_id);
                                                       return toAccount ? getAccountDisplayName(toAccount) : 'Unknown';
                                                     }
                                                     return '';
@@ -1786,7 +1786,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         const manualMatches = hasFilters ? transactions.filter(t => {
                                           if (t.id === transaction.id) return false;
                                           if (t.status === 'excluded') return false;
-                                          if (!activeAccountIds.includes(t.account_id)) return false;
+                                          if (!activeAccountIds.includes(t.bank_account_id)) return false;
 
                                           // Account filter
                                           if (filters.account && t.bank_account_id !== filters.account) return false;
@@ -1818,7 +1818,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     {currentlyPaired.amount < 0 ? '-' : ''}${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                   </span>
                                                   <span className="text-slate-600 truncate">
-                                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.account_id))}
+                                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
                                                   </span>
                                                   <span className="text-xs text-green-600 font-medium ml-auto">100% match</span>
                                                 </div>
@@ -1991,7 +1991,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     <p className="text-slate-500 text-center py-2">No transactions found matching filters</p>
                                                   ) : (
                                                     matches.map(match => {
-                                                      const matchAccount = allActiveAccounts.find(a => a.id === match.account_id) || accounts.find(a => a.id === match.account_id);
+                                                      const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
                                                       const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
                                                       const isSelected = selectedMatches[transaction.id] === match.id || (currentlyPaired && currentlyPaired.id === match.id);
 

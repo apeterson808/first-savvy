@@ -84,7 +84,7 @@ export function useBudgetData() {
       if (!t.date) return false;
       const tDate = new Date(t.date);
       if (isNaN(tDate.getTime())) return false;
-      const matchesActiveAccount = activeAccountIds.includes(t.account_id);
+      const matchesActiveAccount = activeAccountIds.includes(t.bank_account_id);
       const isTransfer = t.type === 'transfer';
       return tDate >= monthStart && tDate <= monthEnd && t.status === 'posted' && matchesActiveAccount && !isTransfer;
     });
@@ -96,13 +96,13 @@ export function useBudgetData() {
     const regularIncomeTransactions = incomeTransactions.filter(t => t.original_type !== 'expense');
 
     const spendingByCategory = expenseTransactions.reduce((acc, t) => {
-      const key = t.chart_account_id || '__uncategorized__';
+      const key = t.category_account_id || '__uncategorized__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
 
     const incomeByCategory = regularIncomeTransactions.reduce((acc, t) => {
-      const key = t.chart_account_id || '__uncategorized_income__';
+      const key = t.category_account_id || '__uncategorized_income__';
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
@@ -120,17 +120,17 @@ export function useBudgetData() {
       .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
     const categoryUsage = transactions.reduce((acc, t) => {
-      if (t.chart_account_id) {
-        if (!acc[t.chart_account_id]) {
-          acc[t.chart_account_id] = {
+      if (t.category_account_id) {
+        if (!acc[t.category_account_id]) {
+          acc[t.category_account_id] = {
             everUsed: true,
             lastUsed: t.date,
             count: 0
           };
         }
-        acc[t.chart_account_id].count += 1;
-        if (t.date && (!acc[t.chart_account_id].lastUsed || new Date(t.date) > new Date(acc[t.chart_account_id].lastUsed))) {
-          acc[t.chart_account_id].lastUsed = t.date;
+        acc[t.category_account_id].count += 1;
+        if (t.date && (!acc[t.category_account_id].lastUsed || new Date(t.date) > new Date(acc[t.category_account_id].lastUsed))) {
+          acc[t.category_account_id].lastUsed = t.date;
         }
       }
       return acc;

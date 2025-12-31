@@ -139,7 +139,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     })
     .reduce((acc, t) => {
       if (t.chart_account_id) {
-        acc[t.chart_account_id] = (acc[t.chart_account_id] || 0) + t.amount;
+        acc[t.category_account_id] = (acc[t.category_account_id] || 0) + t.amount;
       }
       return acc;
     }, {});
@@ -149,8 +149,8 @@ export default function AccountsTable({ accounts, isLoading }) {
     const countMap = new Map();
 
     transactions.forEach(t => {
-      if (t.account_id) {
-        countMap.set(t.account_id, (countMap.get(t.account_id) || 0) + 1);
+      if (t.bank_account_id) {
+        countMap.set(t.bank_account_id, (countMap.get(t.bank_account_id) || 0) + 1);
       }
       if (t.chart_account_id) {
         countMap.set(t.chart_account_id, (countMap.get(t.chart_account_id) || 0) + 1);
@@ -179,7 +179,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     }
 
     // For parent accounts, recursively check if any child account is used
-    const childAccounts = accounts.filter(a => a.parent_account_id === account.id);
+    const childAccounts = accounts.filter(a => a.parent_bank_account_id === account.id);
     if (childAccounts.length > 0) {
       return childAccounts.some(child => isAccountUsed(child));
     }
@@ -273,7 +273,7 @@ export default function AccountsTable({ accounts, isLoading }) {
       : (account.current_balance || 0);
     
     if (!account.isSubAccount) {
-      const childAccounts = accounts.filter(a => a.parent_account_id === account.id);
+      const childAccounts = accounts.filter(a => a.parent_bank_account_id === account.id);
       childAccounts.forEach(child => {
         if (child.entityType === 'Income' || child.entityType === 'Expense') {
           balance += (categoryTotals[child.id] || 0);
@@ -288,8 +288,8 @@ export default function AccountsTable({ accounts, isLoading }) {
   // Sort filtered accounts - keeping sub-accounts under their parents
   const sortedFilteredAccounts = (() => {
     // Separate parents and children
-    const parentAccounts = filteredAccounts.filter(a => !a.parent_account_id);
-    const childAccounts = filteredAccounts.filter(a => a.parent_account_id);
+    const parentAccounts = filteredAccounts.filter(a => !a.parent_bank_account_id);
+    const childAccounts = filteredAccounts.filter(a => a.parent_bank_account_id);
 
     // Sort parents
     const sortedParents = [...parentAccounts].sort((a, b) => {
@@ -337,7 +337,7 @@ export default function AccountsTable({ accounts, isLoading }) {
     const result = [];
     sortedParents.forEach(parent => {
       result.push(parent);
-      const children = childAccounts.filter(c => c.parent_account_id === parent.id);
+      const children = childAccounts.filter(c => c.parent_bank_account_id === parent.id);
       children.sort((a, b) => getAccountDisplayName(a).localeCompare(getAccountDisplayName(b)));
       children.forEach(child => result.push({ ...child, isSubAccount: true }));
     });

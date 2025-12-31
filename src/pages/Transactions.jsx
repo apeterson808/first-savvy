@@ -103,7 +103,7 @@ export default function Transactions() {
       category: formData.get('category'),
       type: formData.get('type'),
       amount: parseFloat(formData.get('amount')),
-      account_id: formData.get('account_id'),
+      bank_account_id: formData.get('bank_account_id'),
       payment_method: formData.get('payment_method'),
       notes: formData.get('notes'),
     };

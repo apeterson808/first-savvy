@@ -68,15 +68,15 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
   
   // Get active account IDs for filtering
   const activeAccountIds = accounts.filter(a => a.is_active !== false).map(a => a.id);
-  
+
   const categoryTotals = transactions
     .filter(t => {
       if (!t.date) return false;
       const tDate = new Date(t.date);
       if (isNaN(tDate.getTime())) return false;
       const matchesAccount = selectedAccount === 'all'
-        ? activeAccountIds.includes(t.account_id)
-        : t.account_id === selectedAccount;
+        ? activeAccountIds.includes(t.bank_account_id)
+        : t.bank_account_id === selectedAccount;
       const matchesMonth = tDate.getMonth() === targetDate.getMonth() &&
                           tDate.getFullYear() === targetDate.getFullYear();
       // For current month, only include transactions up to today
@@ -84,12 +84,12 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
       return t.type === 'expense' && t.status === 'posted' && matchesAccount && matchesMonth && matchesDay;
     })
     .reduce((acc, t) => {
-      const chartAccount = getChartAccountById(t.chart_account_id);
-      const budget = getBudgetByChartAccountId(t.chart_account_id);
+      const chartAccount = getChartAccountById(t.category_account_id);
+      const budget = getBudgetByChartAccountId(t.category_account_id);
       const categoryName = chartAccount?.display_name || chartAccount?.account_detail || 'uncategorized';
       if (!acc[categoryName]) {
         // Prioritize budget color, then chart account color
-        acc[categoryName] = { amount: 0, color: budget?.color || chartAccount?.color, chartAccountId: t.chart_account_id };
+        acc[categoryName] = { amount: 0, color: budget?.color || chartAccount?.color, chartAccountId: t.category_account_id };
       }
       acc[categoryName].amount += Math.abs(t.amount);
       return acc;

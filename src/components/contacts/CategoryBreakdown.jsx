@@ -24,7 +24,7 @@ export default function CategoryBreakdown({ transactions, categories }) {
     const categoryTotals = {};
 
     transactions.forEach(transaction => {
-      const categoryId = transaction.chart_account_id;
+      const categoryId = transaction.category_account_id;
       const category = categories?.find(c => c.id === categoryId);
       const categoryName = category?.name || 'Uncategorized';
 
