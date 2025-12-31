@@ -200,6 +200,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     });
   };
 
+  const getRemainingAmount = (transaction, currentLineIndex) => {
+    const lines = splitLineItems[transaction.id] || [];
+    const totalAmount = Math.abs(transaction.amount);
+    const allocatedSoFar = lines.reduce((sum, line, idx) => {
+      if (idx < currentLineIndex) {
+        return sum + (parseFloat(line.amount) || 0);
+      }
+      return sum;
+    }, 0);
+    return totalAmount - allocatedSoFar;
+  };
+
   const getSplitValidation = (transaction) => {
     const lines = splitLineItems[transaction.id] || [];
     const totalAmount = Math.abs(transaction.amount);
@@ -1838,7 +1850,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   value={line.amount || ''}
                                                   onChange={(e) => updateSplitLine(transaction.id, lineIndex, 'amount', e.target.value)}
                                                   className="h-8 text-xs"
-                                                  placeholder="0.00"
+                                                  placeholder={(() => {
+                                                    const remaining = getRemainingAmount(transaction, lineIndex);
+                                                    return remaining > 0 ? remaining.toFixed(2) : '0.00';
+                                                  })()}
                                                 />
                                               </div>
                                               <div>
