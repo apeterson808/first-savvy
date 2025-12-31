@@ -7,6 +7,7 @@ import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtil
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
+import QuickAddBudgetDialog from './QuickAddBudgetDialog';
 import BudgetAllocationBar from './BudgetAllocationBar';
 import InlineEditableAmount from './InlineEditableAmount';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +41,7 @@ export default function CategoriesTab() {
   });
 
   const [addBudgetSheetOpen, setAddBudgetSheetOpen] = useState(false);
+  const [quickAddDialogOpen, setQuickAddDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [editingBudget, setEditingBudget] = useState(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
@@ -67,18 +69,6 @@ export default function CategoriesTab() {
     }
   });
 
-  const addBudgetMutation = useMutation({
-    mutationFn: (budgetData) => firstsavvy.entities.Budget.create(budgetData),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      toast.success('Category added to budget');
-    },
-    onError: (error) => {
-      console.error('Error adding budget:', error);
-      toast.error('Failed to add category to budget');
-    }
-  });
-
   const updateBudgetMutation = useMutation({
     mutationFn: ({ id, data }) => firstsavvy.entities.Budget.update(id, data),
     onSuccess: () => {
@@ -94,12 +84,8 @@ export default function CategoriesTab() {
   });
 
   const handleAddBudget = (category) => {
-    const budgetData = {
-      chart_account_id: category.id,
-      allocated_amount: 0,
-      cadence: 'monthly'
-    };
-    addBudgetMutation.mutate(budgetData);
+    setSelectedCategory(category);
+    setQuickAddDialogOpen(true);
   };
 
   const handleEditBudget = (budget) => {
@@ -441,6 +427,14 @@ export default function CategoriesTab() {
         availableCategories={categories}
         editingBudget={editingBudget}
         preselectedCategoryId={selectedCategory?.id}
+      />
+
+      <QuickAddBudgetDialog
+        open={quickAddDialogOpen}
+        onOpenChange={setQuickAddDialogOpen}
+        category={selectedCategory}
+        budgets={budgets}
+        transactions={transactions}
       />
     </div>
   );
