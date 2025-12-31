@@ -268,6 +268,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
       transactions.push({
         user_id: userId,
         profile_id: profileId,
+        bank_account_id: accountData.id,
         date: transactionDate.toISOString().split('T')[0],
         amount: amount,
         description: incomeTemplate.description,
@@ -290,6 +291,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         transactions.push({
           user_id: userId,
           profile_id: profileId,
+          bank_account_id: accountData.id,
           date: transactionDate.toISOString().split('T')[0],
           amount: Math.abs(amount),
           description: merchant,
@@ -308,6 +310,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
         transactions.push({
           user_id: userId,
           profile_id: profileId,
+          bank_account_id: accountData.id,
           date: transactionDate.toISOString().split('T')[0],
           amount: Math.abs(amount),
           description: merchant,
@@ -384,6 +387,7 @@ export async function generateCreditCardPayments(accountData, userId, profileId,
         const paymentTransaction = {
           user_id: userId,
           profile_id: profileId,
+          bank_account_id: accountData.id,
           date: paymentDate.toISOString().split('T')[0],
           amount: Math.abs(amount),
           description: `CREDIT CARD PAYMENT - ${accountData.name || 'Credit Card'}`,
@@ -447,6 +451,7 @@ export async function generateSavingsTransfers(userId, profileId, startDate, goL
         const transferOutTransaction = {
           user_id: userId,
           profile_id: profileId,
+          bank_account_id: sourceAccount.id,
           date: transferDate.toISOString().split('T')[0],
           amount: Math.abs(amount),
           description: `TRANSFER TO ${targetAccount.name || 'Savings'}`,
@@ -503,6 +508,7 @@ export async function createMatchedTransferTransactions(accountData, matchingEnt
     const receivedTransaction = {
       user_id: userId,
       profile_id: profileId,
+      bank_account_id: accountData.id,
       date: entry.transaction_date,
       amount: Math.abs(entry.amount),
       description: `PAYMENT RECEIVED - ${entry.description_pattern}`,
