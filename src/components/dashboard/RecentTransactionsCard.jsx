@@ -8,9 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '../../pages/utils';
 import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
+import ContactDropdown from '../common/ContactDropdown';
 import AccountCreationWizard from '../banking/AccountCreationWizard';
 import { sanitizeForLLM } from '../utils/validation';
 import { suggestCategory } from '../banking/CategorySuggestion';
+import { suggestContact } from '../banking/ContactSuggestion';
 import { formatTransactionDescription } from '../utils/formatters';
 import { Sparkles, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +23,7 @@ export default function RecentTransactionsCard() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
+  const [autoContactIds, setAutoContactIds] = useState(new Set());
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -63,6 +66,16 @@ export default function RecentTransactionsCard() {
   const { data: categorizationRules = [] } = useQuery({
     queryKey: ['categorizationRules'],
     queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
+  });
+
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => firstsavvy.entities.Contact.list('name', 1000)
+  });
+
+  const { data: contactMatchingRules = [] } = useQuery({
+    queryKey: ['contactMatchingRules'],
+    queryFn: () => firstsavvy.entities.ContactMatchingRule.list('-priority')
   });
 
   const updateMutation = useMutation({
@@ -125,6 +138,50 @@ export default function RecentTransactionsCard() {
 
     getSuggestions();
   }, [allPendingTransactions.length, chartAccounts.length]);
+
+  useEffect(() => {
+    const needsContactSuggestion = allPendingTransactions
+      .filter(t => activeAccountIds.includes(t.bank_account_id))
+      .filter(t => !t.ai_suggested_contact_id && !autoContactIds.has(t.id));
+
+    if (needsContactSuggestion.length === 0 || contacts.length === 0) return;
+
+    setAutoContactIds(prev => {
+      const next = new Set(prev);
+      needsContactSuggestion.forEach(t => next.add(t.id));
+      return next;
+    });
+
+    const getSuggestions = async () => {
+      try {
+        for (const transaction of needsContactSuggestion) {
+          try {
+            const suggestion = await suggestContact(
+              transaction.description,
+              transactions,
+              contactMatchingRules,
+              contacts
+            );
+
+            if (suggestion && suggestion.contactId) {
+              updateMutation.mutate({
+                id: transaction.id,
+                data: {
+                  ai_suggested_contact_id: suggestion.contactId
+                }
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to suggest contact for transaction ${transaction.id}:`, err);
+          }
+        }
+      } catch (err) {
+        console.error('Auto-suggest contact error:', err);
+      }
+    };
+
+    getSuggestions();
+  }, [allPendingTransactions.length, contacts.length]);
 
   const recentTransactions = pendingTransactions;
 
@@ -243,6 +300,23 @@ export default function RecentTransactionsCard() {
                 <span className={`text-xs font-semibold whitespace-nowrap ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
                   {transaction.type === 'expense' ? '-' : '+'}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
+                <ContactDropdown
+                  value={transaction.contact_id}
+                  onValueChange={(value) => {
+                    updateMutation.mutate({
+                      id: transaction.id,
+                      data: {
+                        ...transaction,
+                        contact_id: value,
+                        contact_manually_set: true
+                      }
+                    });
+                  }}
+                  transactionDescription={transaction.description}
+                  aiSuggestionId={transaction.ai_suggested_contact_id}
+                  triggerClassName="h-6 text-[10px] w-24 px-1"
+                  placeholder="Contact"
+                />
                 <CategoryDropdown
                   value={transaction.category_account_id}
                   onValueChange={(value) => {
