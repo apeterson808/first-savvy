@@ -1328,6 +1328,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
                           {isSplitMode(transaction.id) ? (
                             <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
+                          ) : transaction.is_split ? (
+                            <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
                           ) : statusFilter === 'pending' ? (
                             <Input
                               defaultValue={formatTransactionDescription(transaction.description)}
@@ -1410,6 +1412,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             // For regular transactions, show editable contact dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
+                              if (transaction.is_split) {
+                                return <span className="text-xs px-1 text-blue-600 font-medium">Split</span>;
+                              }
                               const contact = contacts.find(c => c.id === transaction.contact_id);
                               return <span className="text-xs px-1">{contact?.name || '—'}</span>;
                             }
