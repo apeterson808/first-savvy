@@ -71,24 +71,24 @@ export default function Dashboard() {
     staleTime: 30000
   });
 
-  const { data: bills = [] } = useQuery({
-    queryKey: ['bills'],
-    queryFn: () => firstsavvy.entities.Bill.list('-due_date', 10)
-  });
-
   const { data: assets = [] } = useQuery({
     queryKey: ['assets'],
-    queryFn: () => firstsavvy.entities.Asset.list()
+    queryFn: async () => {
+      if (!activeProfile?.id) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
+      return accounts.filter(acc => acc.class === 'asset' && acc.is_active);
+    },
+    enabled: !!activeProfile?.id
   });
 
   const { data: liabilities = [] } = useQuery({
     queryKey: ['liabilities'],
-    queryFn: () => firstsavvy.entities.Liability.list()
-  });
-
-  const { data: creditScores = [] } = useQuery({
-    queryKey: ['creditScores'],
-    queryFn: () => firstsavvy.entities.CreditScore.list('-last_checked', 1)
+    queryFn: async () => {
+      if (!activeProfile?.id) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
+      return accounts.filter(acc => acc.class === 'liability' && acc.is_active);
+    },
+    enabled: !!activeProfile?.id
   });
 
   const { data: chartAccounts = [] } = useQuery({
@@ -102,7 +102,7 @@ export default function Dashboard() {
     refetchOnMount: true
   });
 
-  const latestCreditScore = creditScores[0];
+  const latestCreditScore = null;
   const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
 
   useEffect(() => {
@@ -367,8 +367,7 @@ export default function Dashboard() {
 
 
 
-  // Upcoming bills
-  const upcomingBills = bills.slice(0, 3);
+  const upcomingBills = [];
 
   return (
     <div className="p-4 md:p-6">
@@ -658,38 +657,6 @@ export default function Dashboard() {
             </Link>
           </div>
 
-          {/* Upcoming Bills */}
-          <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-1 pt-3 px-3">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Upcoming Bills</p>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {upcomingBills.map((bill) => {
-                const isValidDate = bill.due_date && !isNaN(new Date(bill.due_date).getTime());
-                return (
-                  <div key={bill.id} className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3">
-                      <div className={`w-1 h-12 rounded-full ${bill.status === 'overdue' ? 'bg-burgundy' : 'bg-soft-green'}`} />
-                      <div>
-                        <p className="font-medium text-sm">{bill.title}</p>
-                        <p className="text-xs text-slate-500 mt-1">
-                         Due: {isValidDate ? format(new Date(bill.due_date), 'MMM d, yyyy') : 'No date'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold text-sm">${bill.amount.toFixed(2)}</p>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        bill.status === 'overdue' ? 'bg-burgundy/10 text-burgundy' : 'bg-soft-green/30 text-forest-green'
-                      }`}>
-                        {bill.status === 'overdue' ? 'Overdue' : 'Coming'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
         </div>
         </div>
 
