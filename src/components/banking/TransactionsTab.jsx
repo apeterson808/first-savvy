@@ -46,6 +46,9 @@ import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
+import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
+import { Trash2 } from 'lucide-react';
+
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(() => {
@@ -76,6 +79,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
   const [contactSuggestions, setContactSuggestions] = useState({});
+  const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
+  const [splitLineItems, setSplitLineItems] = useState({});
+  const [loadingSplits, setLoadingSplits] = useState(new Set());
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -87,6 +93,178 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const isMatched = (transaction) => {
     return transaction && transaction.transfer_pair_id != null;
+  };
+
+  const isSplitMode = (transactionId) => {
+    return splitModeTransactions.has(transactionId);
+  };
+
+  const initializeSplitMode = async (transaction) => {
+    setSplitModeTransactions(prev => new Set(prev).add(transaction.id));
+
+    if (transaction.is_split) {
+      setLoadingSplits(prev => new Set(prev).add(transaction.id));
+      try {
+        const existingSplits = await getTransactionSplits(transaction.id);
+        setSplitLineItems(prev => ({
+          ...prev,
+          [transaction.id]: existingSplits.map(split => ({
+            id: split.id,
+            description: split.description || transaction.description,
+            amount: Math.abs(split.amount).toFixed(2),
+            category_account_id: split.category_account_id
+          }))
+        }));
+      } catch (error) {
+        console.error('Error loading splits:', error);
+        toast.error('Failed to load split data');
+      } finally {
+        setLoadingSplits(prev => {
+          const next = new Set(prev);
+          next.delete(transaction.id);
+          return next;
+        });
+      }
+    } else {
+      const totalAmount = Math.abs(transaction.amount);
+      setSplitLineItems(prev => ({
+        ...prev,
+        [transaction.id]: [
+          {
+            id: `temp-${Date.now()}-1`,
+            description: transaction.description,
+            amount: '',
+            category_account_id: transaction.category_account_id || null
+          },
+          {
+            id: `temp-${Date.now()}-2`,
+            description: transaction.description,
+            amount: '',
+            category_account_id: null
+          }
+        ]
+      }));
+    }
+  };
+
+  const cancelSplitMode = (transactionId) => {
+    setSplitModeTransactions(prev => {
+      const next = new Set(prev);
+      next.delete(transactionId);
+      return next;
+    });
+    setSplitLineItems(prev => {
+      const next = { ...prev };
+      delete next[transactionId];
+      return next;
+    });
+  };
+
+  const updateSplitLine = (transactionId, lineIndex, field, value) => {
+    setSplitLineItems(prev => {
+      const lines = [...(prev[transactionId] || [])];
+      lines[lineIndex] = { ...lines[lineIndex], [field]: value };
+
+      if (field === 'amount' && lines.length === 2) {
+        const amount1 = parseFloat(lines[0].amount) || 0;
+        const totalAmount = Math.abs(transactions.find(t => t.id === transactionId)?.amount || 0);
+        const remaining = totalAmount - amount1;
+        if (lineIndex === 0 && remaining >= 0) {
+          lines[1] = { ...lines[1], amount: remaining.toFixed(2) };
+        }
+      }
+
+      return { ...prev, [transactionId]: lines };
+    });
+  };
+
+  const addSplitLine = (transactionId, transaction) => {
+    setSplitLineItems(prev => {
+      const lines = [...(prev[transactionId] || [])];
+      lines.push({
+        id: `temp-${Date.now()}-${lines.length + 1}`,
+        description: transaction.description,
+        amount: '',
+        category_account_id: null
+      });
+      return { ...prev, [transactionId]: lines };
+    });
+  };
+
+  const removeSplitLine = (transactionId, lineIndex) => {
+    setSplitLineItems(prev => {
+      const lines = [...(prev[transactionId] || [])];
+      if (lines.length <= 2) return prev;
+      lines.splice(lineIndex, 1);
+      return { ...prev, [transactionId]: lines };
+    });
+  };
+
+  const getSplitValidation = (transaction) => {
+    const lines = splitLineItems[transaction.id] || [];
+    const totalAmount = Math.abs(transaction.amount);
+    const splitTotal = lines.reduce((sum, line) => sum + (parseFloat(line.amount) || 0), 0);
+    const diff = Math.abs(totalAmount - splitTotal);
+
+    const isValid = diff < 0.01 && lines.length >= 2 && lines.every(line =>
+      line.category_account_id && parseFloat(line.amount) > 0
+    );
+
+    return {
+      isValid,
+      totalAmount,
+      splitTotal,
+      difference: totalAmount - splitTotal,
+      hasAllCategories: lines.every(line => line.category_account_id),
+      hasAllAmounts: lines.every(line => parseFloat(line.amount) > 0)
+    };
+  };
+
+  const saveSplit = async (transaction) => {
+    const lines = splitLineItems[transaction.id] || [];
+    const validation = getSplitValidation(transaction);
+
+    if (!validation.isValid) {
+      toast.error('Please ensure all split lines have categories and amounts that sum to the transaction total');
+      return;
+    }
+
+    try {
+      const splits = lines.map(line => ({
+        category_account_id: line.category_account_id,
+        amount: parseFloat(line.amount),
+        description: line.description
+      }));
+
+      if (transaction.is_split) {
+        await updateTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
+      } else {
+        await createTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
+      }
+
+      queryClient.invalidateQueries(['fullPendingTransactions']);
+      queryClient.invalidateQueries(['fullPostedTransactions']);
+      queryClient.invalidateQueries(['fullExcludedTransactions']);
+
+      cancelSplitMode(transaction.id);
+      toast.success('Split saved successfully');
+    } catch (error) {
+      console.error('Error saving split:', error);
+      toast.error('Failed to save split');
+    }
+  };
+
+  const removeSplit = async (transaction) => {
+    try {
+      await deleteTransactionSplits(transaction.id);
+      queryClient.invalidateQueries(['fullPendingTransactions']);
+      queryClient.invalidateQueries(['fullPostedTransactions']);
+      queryClient.invalidateQueries(['fullExcludedTransactions']);
+      toast.success('Split removed successfully');
+    } catch (error) {
+      console.error('Error removing split:', error);
+      toast.error('Failed to remove split');
+    }
   };
 
   // Initialize filters from props (chart click) or URL params
@@ -1262,6 +1440,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-slate-500 opacity-50">Transfer</span>;
                             }
 
+                            if (isSplitMode(transaction.id)) {
+                              return <span className="text-xs px-1 text-blue-600 font-medium">Split</span>;
+                            }
+
+                            if (transaction.is_split && !isSplitMode(transaction.id)) {
+                              return <span className="text-xs px-1 text-blue-600 font-medium">Split</span>;
+                            }
+
                             const isInMatchMode = statusFilter === 'pending' && (
                               manualActionOverrides[transaction.id] === 'match' || (
                                 !manualActionOverrides[transaction.id] &&
@@ -1437,10 +1623,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       <ClickThroughDropdownMenuItem
                                         onClick={(e) => {
                                           e?.stopPropagation();
-                                          // TODO: Implement split functionality
+                                          if (transaction.is_split) {
+                                            initializeSplitMode(transaction);
+                                            setExpandedTransactionId(transaction.id);
+                                          } else {
+                                            initializeSplitMode(transaction);
+                                            setExpandedTransactionId(transaction.id);
+                                          }
                                         }}
+                                        disabled={isMatched(transaction)}
                                       >
-                                        Split
+                                        {transaction.is_split ? 'Edit Split' : 'Split'}
                                       </ClickThroughDropdownMenuItem>
                                       <TooltipProvider>
                                         <Tooltip>
@@ -1609,8 +1802,156 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </div>
                                     )}
 
+                                    {/* Split Mode UI */}
+                                    {isSplitMode(transaction.id) && (
+                                      <div className="space-y-3 border-t border-slate-200 pt-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <Label className="text-sm font-semibold text-slate-700">Split Transaction</Label>
+                                          {loadingSplits.has(transaction.id) && (
+                                            <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                                          )}
+                                        </div>
+
+                                        {splitLineItems[transaction.id]?.map((line, lineIndex) => (
+                                          <div key={line.id} className="bg-white border border-slate-200 rounded-md p-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <span className="text-xs font-medium text-slate-500 w-16">Line {lineIndex + 1}</span>
+                                              {splitLineItems[transaction.id].length > 2 && (
+                                                <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  className="h-6 w-6 p-0 ml-auto text-slate-400 hover:text-red-600"
+                                                  onClick={() => removeSplitLine(transaction.id, lineIndex)}
+                                                >
+                                                  <Trash2 className="w-3 h-3" />
+                                                </Button>
+                                              )}
+                                            </div>
+                                            <div className="grid grid-cols-3 gap-2">
+                                              <div>
+                                                <Label className="text-xs mb-1 block">Description</Label>
+                                                <Input
+                                                  value={line.description || ''}
+                                                  onChange={(e) => updateSplitLine(transaction.id, lineIndex, 'description', e.target.value)}
+                                                  className="h-8 text-xs"
+                                                  placeholder="Description"
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label className="text-xs mb-1 block">Amount</Label>
+                                                <Input
+                                                  type="number"
+                                                  step="0.01"
+                                                  value={line.amount || ''}
+                                                  onChange={(e) => updateSplitLine(transaction.id, lineIndex, 'amount', e.target.value)}
+                                                  className="h-8 text-xs"
+                                                  placeholder="0.00"
+                                                />
+                                              </div>
+                                              <div>
+                                                <Label className="text-xs mb-1 block">Category</Label>
+                                                <CategoryDropdown
+                                                  value={line.category_account_id || ''}
+                                                  onValueChange={(value) => updateSplitLine(transaction.id, lineIndex, 'category_account_id', value)}
+                                                  transactionType={transaction.type}
+                                                  triggerClassName="h-8 text-xs border-slate-300"
+                                                  placeholder="Select category"
+                                                  onAddNew={(searchTerm) => {
+                                                    setCategorySearchTerm(searchTerm);
+                                                    setTriggeringTransactionId(transaction.id);
+                                                    setTriggeringTransactionType(transaction.type);
+                                                    setAddAccountSheetOpen(true);
+                                                  }}
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ))}
+
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="h-8 text-xs w-full"
+                                          onClick={() => addSplitLine(transaction.id, transaction)}
+                                        >
+                                          <Plus className="w-3 h-3 mr-1" />
+                                          Add Split Line
+                                        </Button>
+
+                                        {(() => {
+                                          const validation = getSplitValidation(transaction);
+                                          let statusColor = 'text-slate-600';
+                                          let statusText = 'Enter amounts';
+
+                                          if (validation.splitTotal > 0) {
+                                            if (Math.abs(validation.difference) < 0.01) {
+                                              statusColor = 'text-emerald-600';
+                                              statusText = 'Valid';
+                                            } else if (validation.splitTotal > validation.totalAmount) {
+                                              statusColor = 'text-red-600';
+                                              statusText = `Over by $${Math.abs(validation.difference).toFixed(2)}`;
+                                            } else {
+                                              statusColor = 'text-amber-600';
+                                              statusText = `Remaining: $${validation.difference.toFixed(2)}`;
+                                            }
+                                          }
+
+                                          return (
+                                            <div className="bg-slate-100 rounded-md p-3 space-y-2">
+                                              <div className="flex items-center justify-between text-xs">
+                                                <span className="text-slate-600">Transaction Total:</span>
+                                                <span className="font-semibold">${validation.totalAmount.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex items-center justify-between text-xs">
+                                                <span className="text-slate-600">Split Total:</span>
+                                                <span className="font-semibold">${validation.splitTotal.toFixed(2)}</span>
+                                              </div>
+                                              <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-slate-300">
+                                                <span className={statusColor}>Status:</span>
+                                                <span className={statusColor}>{statusText}</span>
+                                              </div>
+                                            </div>
+                                          );
+                                        })()}
+
+                                        <div className="flex items-center gap-2 pt-2">
+                                          <Button
+                                            size="sm"
+                                            variant="outline"
+                                            className="h-8 text-xs"
+                                            onClick={() => cancelSplitMode(transaction.id)}
+                                          >
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
+                                            onClick={() => saveSplit(transaction)}
+                                            disabled={!getSplitValidation(transaction).isValid}
+                                          >
+                                            Save Split
+                                          </Button>
+                                          {transaction.is_split && (
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-8 text-xs text-red-600 hover:text-red-700 ml-auto"
+                                              onClick={() => {
+                                                if (confirm('Are you sure you want to remove this split and convert back to a single transaction?')) {
+                                                  removeSplit(transaction);
+                                                  cancelSplitMode(transaction.id);
+                                                }
+                                              }}
+                                            >
+                                              Remove Split
+                                            </Button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {/* Categorize Tab Content */}
-                                    {(() => {
+                                    {!isSplitMode(transaction.id) && (() => {
                                       const override = manualActionOverrides[transaction.id];
                                       if (override === 'match') return false;
                                       if (override === 'post') return true;
@@ -1719,7 +2060,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     )}
 
                                     {/* Match Tab Content */}
-                                    {(() => {
+                                    {!isSplitMode(transaction.id) && (() => {
                                       const override = manualActionOverrides[transaction.id];
                                       if (override === 'post') return false;
                                       if (override === 'match') return true;
@@ -2258,10 +2599,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               className="h-7 text-xs"
                                               onClick={(e) => {
                                                 e?.stopPropagation();
-                                                // TODO: Implement split functionality
+                                                initializeSplitMode(transaction);
                                               }}
+                                              disabled={isMatched(transaction)}
                                             >
-                                              Split
+                                              {transaction.is_split ? 'Edit Split' : 'Split'}
                                             </Button>
                                             <Button
                                               size="sm"
