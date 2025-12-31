@@ -179,22 +179,29 @@ export default function BudgetAllocationBar({ budgets }) {
             </div>
 
             {totalIncomeBudgeted > 0 && (
-              <div
-                className="absolute top-full flex flex-col items-center"
-                style={{
-                  left: `${expensePercentage}%`,
-                  transform: expensePercentage < 10 ? 'translateX(0)' : expensePercentage > 90 ? 'translateX(-100%)' : 'translateX(-50%)'
-                }}
-              >
-                <div className="w-px h-3 bg-slate-600" />
-                <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
-                  <span className="font-medium">
-                    ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </span>
-                  {' '}
-                  {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+              <>
+                <div
+                  className="absolute top-full left-0 -translate-x-1/2"
+                  style={{ left: `${expensePercentage}%` }}
+                >
+                  <div className="w-px h-3 bg-slate-600" />
                 </div>
-              </div>
+                <div
+                  className="absolute top-full flex justify-center"
+                  style={{
+                    left: `${expensePercentage}%`,
+                    transform: expensePercentage < 10 ? 'translateX(0)' : expensePercentage > 90 ? 'translateX(-100%)' : 'translateX(-50%)'
+                  }}
+                >
+                  <div className="mt-3 text-[11px] text-slate-500 whitespace-nowrap">
+                    <span className="font-medium">
+                      ${Math.abs(unallocated).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                    {' '}
+                    {unallocated > 0 ? 'Remaining' : unallocated < 0 ? 'Over Budget' : 'Fully Allocated'}
+                  </div>
+                </div>
+              </>
             )}
           </div>
           <div className="h-8" />
