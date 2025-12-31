@@ -114,35 +114,6 @@ export default function CategoriesTab() {
     updateBudgetMutation.mutate({ id: budgetId, data: updateData });
   };
 
-  const groupCategoriesByAccountType = (categories) => {
-    const groups = [];
-    let currentGroup = null;
-
-    categories.forEach((category) => {
-      const accountType = category.account_type || 'Other';
-
-      if (!currentGroup || currentGroup.accountType !== accountType) {
-        currentGroup = {
-          accountType,
-          categories: []
-        };
-        groups.push(currentGroup);
-      }
-
-      currentGroup.categories.push(category);
-    });
-
-    return groups;
-  };
-
-  const formatAccountTypeLabel = (accountType) => {
-    if (!accountType || accountType === 'Other') return 'Other';
-    return accountType
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
   const renderBudgetedCategoryRow = (category, index) => {
     const budget = getBudgetForCategory(category.id);
     if (!budget) return null;
@@ -348,16 +319,7 @@ export default function CategoriesTab() {
                 </thead>
                 {!isCollapsed && (
                   <tbody>
-                    {groupCategoriesByAccountType(categories).map((group, groupIndex) => (
-                      <React.Fragment key={group.accountType}>
-                        <tr className="bg-slate-100/50 border-b border-slate-200">
-                          <td colSpan={isBudgetedSection ? "6" : "4"} className="px-4 py-1.5 text-xs font-medium text-slate-600 uppercase tracking-wide">
-                            {formatAccountTypeLabel(group.accountType)}
-                          </td>
-                        </tr>
-                        {group.categories.map((category, index) => renderRow(category, index))}
-                      </React.Fragment>
-                    ))}
+                    {categories.map((category, index) => renderRow(category, index))}
                   </tbody>
                 )}
                 {totals && (

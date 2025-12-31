@@ -44,35 +44,6 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 
-  const groupBudgetsByAccountType = (budgets) => {
-    const groups = [];
-    let currentGroup = null;
-
-    budgets.forEach((budget) => {
-      const accountType = budget.chartAccount?.account_type || 'Other';
-
-      if (!currentGroup || currentGroup.accountType !== accountType) {
-        currentGroup = {
-          accountType,
-          budgets: []
-        };
-        groups.push(currentGroup);
-      }
-
-      currentGroup.budgets.push(budget);
-    });
-
-    return groups;
-  };
-
-  const formatAccountTypeLabel = (accountType) => {
-    if (!accountType || accountType === 'Other') return 'Other';
-    return accountType
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
-  };
-
   const calculatePeriodAmount = (monthlyAmount, period) => {
     if (!monthlyAmount) return 0;
     const DAYS_PER_YEAR = 365;
@@ -153,55 +124,46 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
 
         {isExpanded && (
           <>
-            {groupBudgetsByAccountType(sectionBudgets).map((group, groupIndex) => (
-              <React.Fragment key={group.accountType}>
-                <div className="px-3 py-1.5 bg-slate-100/50 border-b border-slate-200">
-                  <span className="text-xs font-medium text-slate-600 uppercase tracking-wide">
-                    {formatAccountTypeLabel(group.accountType)}
+            {sectionBudgets.map((budget) => {
+              const Icon = ICON_MAP[budget.icon] || Circle;
+              const monthlyAmount = budget.allocated_amount || 0;
+
+              return (
+                <div
+                  key={budget.id}
+                  className="flex items-center gap-2 py-1.5 px-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
+                  onClick={() => onEditBudget?.(budget)}
+                >
+                  <div className="w-5"></div>
+
+                  <div
+                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: budget.color || '#94a3b8' }}
+                  >
+                    <Icon className="w-4 h-4 text-white" />
+                  </div>
+
+                  <span className="text-sm text-slate-900 min-w-[200px]">
+                    {budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unnamed'}
                   </span>
-                </div>
-                {group.budgets.map((budget) => {
-                  const Icon = ICON_MAP[budget.icon] || Circle;
-                  const monthlyAmount = budget.allocated_amount || 0;
 
-                  return (
-                    <div
-                      key={budget.id}
-                      className="flex items-center gap-2 py-1.5 px-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
-                      onClick={() => onEditBudget?.(budget)}
-                    >
-                      <div className="w-5"></div>
-
-                      <div
-                        className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: budget.color || '#94a3b8' }}
-                      >
-                        <Icon className="w-4 h-4 text-white" />
-                      </div>
-
-                      <span className="text-sm text-slate-900 min-w-[200px]">
-                        {budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unnamed'}
-                      </span>
-
-                      <div className="flex-1 flex items-center justify-end gap-2 text-sm">
-                        <div className="w-24 text-center tabular-nums">
-                          <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'), 'daily')}</span>
-                        </div>
-                        <div className="w-24 text-center tabular-nums">
-                          <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'), 'weekly')}</span>
-                        </div>
-                        <div className="w-28 text-center tabular-nums font-semibold">
-                          <span className="text-slate-500">$</span>{' '}<span className="text-slate-900">{formatAmount(monthlyAmount, 'monthly')}</span>
-                        </div>
-                        <div className="w-28 text-center tabular-nums">
-                          <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'), 'yearly')}</span>
-                        </div>
-                      </div>
+                  <div className="flex-1 flex items-center justify-end gap-2 text-sm">
+                    <div className="w-24 text-center tabular-nums">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'), 'daily')}</span>
                     </div>
-                  );
-                })}
-              </React.Fragment>
-            ))}
+                    <div className="w-24 text-center tabular-nums">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'), 'weekly')}</span>
+                    </div>
+                    <div className="w-28 text-center tabular-nums font-semibold">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-900">{formatAmount(monthlyAmount, 'monthly')}</span>
+                    </div>
+                    <div className="w-28 text-center tabular-nums">
+                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'), 'yearly')}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </>
         )}
 

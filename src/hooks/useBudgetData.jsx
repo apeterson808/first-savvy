@@ -140,21 +140,11 @@ export function useBudgetData() {
 
     const budgetedIncomeCategories = categories
       .filter(c => c.class === 'income' && budgetedCategoryIds.has(c.id))
-      .sort((a, b) => {
-        if (a.account_type !== b.account_type) {
-          return (a.account_type || '').localeCompare(b.account_type || '');
-        }
-        return a.display_name.localeCompare(b.display_name);
-      });
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
 
     const budgetedExpenseCategories = categories
       .filter(c => c.class === 'expense' && budgetedCategoryIds.has(c.id))
-      .sort((a, b) => {
-        if (a.account_type !== b.account_type) {
-          return (a.account_type || '').localeCompare(b.account_type || '');
-        }
-        return a.display_name.localeCompare(b.display_name);
-      });
+      .sort((a, b) => a.display_name.localeCompare(b.display_name));
 
     const availableIncomeCategories = categories
       .filter(c => c.class === 'income' && !budgetedCategoryIds.has(c.id))
