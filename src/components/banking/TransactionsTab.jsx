@@ -82,7 +82,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
-  const [originalCategories, setOriginalCategories] = useState({});
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -102,10 +101,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const initializeSplitMode = async (transaction) => {
     setSplitModeTransactions(prev => new Set(prev).add(transaction.id));
-    setOriginalCategories(prev => ({
-      ...prev,
-      [transaction.id]: transaction.category_account_id
-    }));
 
     if (transaction.is_split) {
       setLoadingSplits(prev => new Set(prev).add(transaction.id));
@@ -153,27 +148,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const cancelSplitMode = (transactionId) => {
-    const originalCategory = originalCategories[transactionId];
-    const currentTransaction = transactions.find(t => t.id === transactionId);
-
-    if (currentTransaction && originalCategory !== undefined && currentTransaction.category_account_id !== originalCategory) {
-      updateMutation.mutate({
-        id: transactionId,
-        data: { category_account_id: originalCategory }
-      });
-    }
-
     setSplitModeTransactions(prev => {
       const next = new Set(prev);
       next.delete(transactionId);
       return next;
     });
     setSplitLineItems(prev => {
-      const next = { ...prev };
-      delete next[transactionId];
-      return next;
-    });
-    setOriginalCategories(prev => {
       const next = { ...prev };
       delete next[transactionId];
       return next;
