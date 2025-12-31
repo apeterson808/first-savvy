@@ -1704,7 +1704,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       }
                                     }
                                     if (transaction.is_split) {
-                                      setExpandedTransactionId(transaction.id);
                                       initializeSplitMode(transaction);
                                     }
                                   }}
@@ -1734,7 +1733,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       }
                                     }
                                     if (transaction.is_split) {
-                                      setExpandedTransactionId(transaction.id);
                                       initializeSplitMode(transaction);
                                     }
                                   }}
