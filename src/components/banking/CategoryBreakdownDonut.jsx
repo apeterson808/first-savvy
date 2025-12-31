@@ -39,14 +39,20 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
 
   const { data: budgets = [] } = useQuery({
     queryKey: ['budgets'],
-    queryFn: () => firstsavvy.entities.Budget.filter({ is_active: true }),
-    staleTime: 0,
-    refetchOnMount: 'always'
-  });
-
-  const { data: budgetGroups = [] } = useQuery({
-    queryKey: ['budgetGroups'],
-    queryFn: () => firstsavvy.entities.BudgetGroup.list(),
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('budgets')
+        .select(`
+          *,
+          chartAccount:user_chart_of_accounts!budgets_chart_account_id_fkey(
+            id,
+            class
+          )
+        `)
+        .eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    },
     staleTime: 0,
     refetchOnMount: 'always'
   });
@@ -133,12 +139,10 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
   const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
   const activePercentage = activeItem ? ((activeItem.value / totalSpending) * 100).toFixed(1) : null;
 
-  // Calculate total budget for expense groups (matching Budgeting page logic)
-  const expenseGroupIds = new Set(budgetGroups.filter(g => g.type === 'expense').map(g => g.id));
   const totalBudget = budgets
-    .filter(b => expenseGroupIds.has(b.group_id))
+    .filter(b => b.chartAccount?.class === 'expense')
     .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
-  
+
   const overallPercentage = totalBudget > 0 ? ((totalSpending / totalBudget) * 100).toFixed(0) : 0;
 
   return (
