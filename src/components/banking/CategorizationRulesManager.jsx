@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { useProfile } from '@/contexts/ProfileContext';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,26 +30,35 @@ import {
 } from "@/components/ui/table";
 import { Plus, Edit, Trash2, Zap } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
-
-const CATEGORIES = [
-  'rent', 'food', 'transportation', 'entertainment', 'shopping',
-  'utilities', 'healthcare', 'education', 'insurance', 'salary',
-  'investment', 'business_income', 'advertising', 'office_supplies',
-  'services', 'other'
-];
+import transactionRulesApi from '@/api/transactionRules';
 
 export default function CategorizationRulesManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingRule, setEditingRule] = useState(null);
   const queryClient = useQueryClient();
+  const { activeProfile } = useProfile();
+
+  const { data: chartOfAccounts = [] } = useQuery({
+    queryKey: ['chartOfAccounts', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.ChartAccount.filter(
+      { class: ['income', 'expense'] },
+      'account_number'
+    ),
+    enabled: !!activeProfile?.id
+  });
+
+  const incomeExpenseAccounts = chartOfAccounts.filter(
+    acc => ['income', 'expense'].includes(acc.class)
+  );
 
   const { data: rules = [] } = useQuery({
-    queryKey: ['categorizationRules'],
-    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
+    queryKey: ['categorizationRules', activeProfile?.id],
+    queryFn: () => transactionRulesApi.getCategorizationRules(activeProfile?.id),
+    enabled: !!activeProfile?.id
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => firstsavvy.entities.CategorizationRule.create(data),
+    mutationFn: (data) => transactionRulesApi.createCategorizationRule(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorizationRules'] });
       setDialogOpen(false);
@@ -57,7 +67,7 @@ export default function CategorizationRulesManager() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => firstsavvy.entities.CategorizationRule.update(id, data),
+    mutationFn: ({ id, data }) => transactionRulesApi.updateCategorizationRule(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categorizationRules'] });
       setDialogOpen(false);
@@ -66,7 +76,7 @@ export default function CategorizationRulesManager() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id) => firstsavvy.entities.CategorizationRule.delete(id),
+    mutationFn: (id) => transactionRulesApi.deleteCategorizationRule(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categorizationRules'] })
   });
 
@@ -77,10 +87,11 @@ export default function CategorizationRulesManager() {
       name: formData.get('name'),
       match_type: formData.get('match_type'),
       match_value: formData.get('match_value'),
-      category: formData.get('category'),
+      category_account_id: formData.get('category_account_id'),
       transaction_type: formData.get('transaction_type'),
       priority: parseInt(formData.get('priority')) || 0,
-      is_active: true
+      is_active: true,
+      profile_id: activeProfile?.id
     };
 
     if (editingRule) {
@@ -133,43 +144,46 @@ export default function CategorizationRulesManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rules.map((rule) => (
-                <TableRow key={rule.id}>
-                  <TableCell className="font-medium">{rule.name}</TableCell>
-                  <TableCell>
-                    <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded mr-1">{rule.match_type}</span>
-                    "{rule.match_value}"
-                  </TableCell>
-                  <TableCell className="capitalize">{rule.category?.replace(/_/g, ' ')}</TableCell>
-                  <TableCell className="capitalize">{rule.transaction_type}</TableCell>
-                  <TableCell>
-                    <Switch 
-                      checked={rule.is_active} 
-                      onCheckedChange={() => toggleActive(rule)}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7"
-                        onClick={() => { setEditingRule(rule); setDialogOpen(true); }}
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className="h-7 w-7 text-red-500 hover:text-red-600"
-                        onClick={() => deleteMutation.mutate(rule.id)}
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {rules.map((rule) => {
+                const categoryAccount = chartOfAccounts.find(acc => acc.id === rule.category_account_id);
+                return (
+                  <TableRow key={rule.id}>
+                    <TableCell className="font-medium">{rule.name}</TableCell>
+                    <TableCell>
+                      <span className="text-xs bg-slate-100 px-1.5 py-0.5 rounded mr-1">{rule.match_type}</span>
+                      "{rule.match_value}"
+                    </TableCell>
+                    <TableCell>{categoryAccount?.display_name || 'Unknown'}</TableCell>
+                    <TableCell className="capitalize">{rule.transaction_type}</TableCell>
+                    <TableCell>
+                      <Switch
+                        checked={rule.is_active}
+                        onCheckedChange={() => toggleActive(rule)}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => { setEditingRule(rule); setDialogOpen(true); }}
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-red-500 hover:text-red-600"
+                          onClick={() => deleteMutation.mutate(rule.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         )}
@@ -221,15 +235,15 @@ export default function CategorizationRulesManager() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="category">Category</Label>
-                <Select name="category" defaultValue={editingRule?.category || 'other'} required>
+                <Label htmlFor="category_account_id">Category</Label>
+                <Select name="category_account_id" defaultValue={editingRule?.category_account_id} required>
                   <SelectTrigger>
-                    <SelectValue />
+                    <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map(cat => (
-                      <SelectItem key={cat} value={cat} className="capitalize">
-                        {cat.replace(/_/g, ' ')}
+                    {incomeExpenseAccounts.map(account => (
+                      <SelectItem key={account.id} value={account.id}>
+                        {account.display_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -237,13 +251,14 @@ export default function CategorizationRulesManager() {
               </div>
               <div>
                 <Label htmlFor="transaction_type">Transaction Type</Label>
-                <Select name="transaction_type" defaultValue={editingRule?.transaction_type || 'expense'} required>
+                <Select name="transaction_type" defaultValue={editingRule?.transaction_type || 'all'} required>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="expense">Expense</SelectItem>
-                    <SelectItem value="income">Income</SelectItem>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="expense">Expense Only</SelectItem>
+                    <SelectItem value="income">Income Only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
