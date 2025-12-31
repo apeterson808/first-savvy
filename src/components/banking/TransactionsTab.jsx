@@ -1617,9 +1617,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       <ClickThroughDropdownMenuItem
                                         onClick={(e) => {
                                           e?.stopPropagation();
-                                          if (transaction.is_split) {
-                                            initializeSplitMode(transaction);
-                                            setExpandedTransactionId(transaction.id);
+                                          if (isSplitMode(transaction.id)) {
+                                            cancelSplitMode(transaction.id);
                                           } else {
                                             initializeSplitMode(transaction);
                                             setExpandedTransactionId(transaction.id);
@@ -1627,7 +1626,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         }}
                                         disabled={isMatched(transaction) || transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                       >
-                                        {transaction.is_split ? 'Edit Split' : 'Split'}
+                                        Split
                                       </ClickThroughDropdownMenuItem>
                                       <TooltipProvider>
                                         <Tooltip>
@@ -1907,20 +1906,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             </div>
                                           );
                                         })()}
-
-                                        <div className="flex items-center justify-between pt-2">
-                                          <Button
-                                            size="sm"
-                                            variant="outline"
-                                            className="h-8 text-xs"
-                                            onClick={() => cancelSplitMode(transaction.id)}
-                                          >
-                                            Cancel Split
-                                          </Button>
-                                          <p className="text-xs text-slate-600">
-                                            Split will be saved when you post this transaction
-                                          </p>
-                                        </div>
                                       </div>
                                     )}
 
@@ -2569,15 +2554,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               })()}
                                             <Button
                                               size="sm"
-                                              variant="outline"
-                                              className="h-7 text-xs"
+                                              variant={isSplitMode(transaction.id) ? "default" : "outline"}
+                                              className={`h-7 text-xs ${isSplitMode(transaction.id) ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}`}
                                               onClick={(e) => {
                                                 e?.stopPropagation();
-                                                initializeSplitMode(transaction);
+                                                if (isSplitMode(transaction.id)) {
+                                                  cancelSplitMode(transaction.id);
+                                                } else {
+                                                  initializeSplitMode(transaction);
+                                                }
                                               }}
                                               disabled={isMatched(transaction) || transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                             >
-                                              {transaction.is_split ? 'Edit Split' : 'Split'}
+                                              Split
                                             </Button>
                                             <Button
                                               size="sm"
