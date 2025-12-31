@@ -193,7 +193,12 @@ export default function AddBudgetItemSheet({
   };
 
   const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
-  const isIncomeCategory = selectedCategory?.class === 'income';
+
+  const categoryClass = isEditMode && editingBudget?.chartAccount?.class
+    ? editingBudget.chartAccount.class
+    : selectedCategory?.class;
+
+  const isIncomeCategory = categoryClass === 'income';
   const buttonText = isEditMode
     ? 'Update'
     : isIncomeCategory
@@ -260,10 +265,10 @@ export default function AddBudgetItemSheet({
                   const value = e.target.value.replace(/[^0-9.]/g, '');
                   setLimitAmount(value);
                 }}
-                onBlur={(e) => {
-                  const value = e.target.value.replace(/[^0-9.]/g, '');
-                  if (value) {
-                    setLimitAmount(formatCurrency(value));
+                onBlur={() => {
+                  const cleanValue = limitAmount.replace(/[^0-9.]/g, '');
+                  if (cleanValue) {
+                    setLimitAmount(formatCurrency(cleanValue));
                   }
                 }}
                 placeholder="0.00"
