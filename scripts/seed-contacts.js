@@ -42,146 +42,58 @@ if (!supabaseUrl || !supabaseKey) {
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const sampleContacts = [
-  {
-    name: "Amazon",
-    type: "vendor",
-    email: "orders@amazon.com",
-    phone: "1-888-280-4331",
-    notes: "Online shopping and retail"
-  },
-  {
-    name: "Starbucks Coffee",
-    type: "vendor",
-    email: "info@starbucks.com",
-    phone: "1-800-782-7282",
-    notes: "Coffee shop chain"
-  },
-  {
-    name: "Whole Foods Market",
-    type: "vendor",
-    email: null,
-    phone: null,
-    notes: "Organic grocery store"
-  },
-  {
-    name: "Shell Gas Station",
-    type: "vendor",
-    email: null,
-    phone: null,
-    notes: "Fuel and convenience store"
-  },
-  {
-    name: "Netflix",
-    type: "vendor",
-    email: "info@netflix.com",
-    phone: "1-866-579-7172",
-    notes: "Streaming service subscription"
-  },
-  {
-    name: "AT&T Wireless",
-    type: "vendor",
-    email: "support@att.com",
-    phone: "1-800-331-0500",
-    notes: "Mobile phone service provider"
-  },
-  {
-    name: "ComEd Electric",
-    type: "vendor",
-    email: "customerservice@comed.com",
-    phone: "1-800-334-7661",
-    notes: "Electric utility company"
-  },
-  {
-    name: "Target Corporation",
-    type: "vendor",
-    email: null,
-    phone: "1-800-440-0680",
-    notes: "Retail department store"
-  },
-  {
-    name: "Uber Technologies",
-    type: "vendor",
-    email: "support@uber.com",
-    phone: null,
-    notes: "Ride sharing service"
-  },
-  {
-    name: "Chevron Gas",
-    type: "vendor",
-    email: null,
-    phone: null,
-    notes: "Gas station and convenience store"
-  },
-  {
-    name: "Apple Inc.",
-    type: "vendor",
-    email: "support@apple.com",
-    phone: "1-800-275-2273",
-    notes: "Technology and iTunes purchases"
-  },
-  {
-    name: "Costco Wholesale",
-    type: "vendor",
-    email: null,
-    phone: "1-800-774-2678",
-    notes: "Warehouse club membership"
-  },
-  {
-    name: "Chipotle Mexican Grill",
-    type: "vendor",
-    email: null,
-    phone: null,
-    notes: "Fast casual restaurant"
-  },
-  {
-    name: "Spotify",
-    type: "vendor",
-    email: "support@spotify.com",
-    phone: null,
-    notes: "Music streaming subscription"
-  },
-  {
-    name: "CVS Pharmacy",
-    type: "vendor",
-    email: null,
-    phone: "1-800-746-7287",
-    notes: "Pharmacy and retail"
-  },
-  {
-    name: "Verizon Wireless",
-    type: "vendor",
-    email: "support@verizon.com",
-    phone: "1-800-922-0204",
-    notes: "Mobile and internet service"
-  },
-  {
-    name: "Trader Joe's",
-    type: "vendor",
-    email: null,
-    phone: null,
-    notes: "Specialty grocery store"
-  },
-  {
-    name: "Adobe Creative Cloud",
-    type: "vendor",
-    email: "support@adobe.com",
-    phone: "1-800-833-6687",
-    notes: "Software subscription"
-  },
-  {
-    name: "ACME Corporation",
-    type: "customer",
-    email: "payroll@acmecorp.com",
-    phone: "1-555-123-4567",
-    notes: "Employer - monthly salary"
-  },
-  {
-    name: "Freelance Client LLC",
-    type: "customer",
-    email: "accounting@freelanceclient.com",
-    phone: "1-555-987-6543",
-    notes: "Consulting income"
-  }
+  { name: "Whole Foods Market", type: "vendor", notes: "Organic grocery store" },
+  { name: "Trader Joes", type: "vendor", notes: "Specialty grocery store" },
+  { name: "Safeway", type: "vendor", notes: "Grocery store" },
+  { name: "Kroger", type: "vendor", notes: "Grocery store" },
+  { name: "Publix", type: "vendor", notes: "Grocery store" },
+  { name: "Walmart", type: "vendor", notes: "Grocery and retail" },
+  { name: "Target", type: "vendor", notes: "Retail department store" },
+  { name: "Sprouts", type: "vendor", notes: "Farmers market grocery" },
+  { name: "Aldi", type: "vendor", notes: "Discount grocery" },
+  { name: "Costco", type: "vendor", notes: "Warehouse club" },
+  { name: "Harris Teeter", type: "vendor", notes: "Grocery store" },
+  { name: "Giant Food", type: "vendor", notes: "Grocery store" },
+  { name: "Food Lion", type: "vendor", notes: "Grocery store" },
+  { name: "Starbucks", type: "vendor", notes: "Coffee shop" },
+  { name: "Chipotle", type: "vendor", notes: "Mexican restaurant" },
+  { name: "Panera Bread", type: "vendor", notes: "Bakery cafe" },
+  { name: "Subway", type: "vendor", notes: "Sandwich shop" },
+  { name: "McDonalds", type: "vendor", notes: "Fast food restaurant" },
+  { name: "Chick-Fil-A", type: "vendor", notes: "Fast food restaurant" },
+  { name: "Olive Garden", type: "vendor", notes: "Italian restaurant" },
+  { name: "Red Lobster", type: "vendor", notes: "Seafood restaurant" },
+  { name: "Applebees", type: "vendor", notes: "Casual dining" },
+  { name: "Chilis", type: "vendor", notes: "Casual dining" },
+  { name: "Texas Roadhouse", type: "vendor", notes: "Steakhouse" },
+  { name: "Outback Steakhouse", type: "vendor", notes: "Steakhouse" },
+  { name: "Panda Express", type: "vendor", notes: "Chinese fast food" },
+  { name: "Taco Bell", type: "vendor", notes: "Mexican fast food" },
+  { name: "Dunkin", type: "vendor", notes: "Coffee and donuts" },
+  { name: "Shell", type: "vendor", notes: "Gas station" },
+  { name: "Chevron", type: "vendor", notes: "Gas station" },
+  { name: "BP", type: "vendor", notes: "Gas station" },
+  { name: "Exxon", type: "vendor", notes: "Gas station" },
+  { name: "Circle K", type: "vendor", notes: "Convenience store" },
+  { name: "PG&E Electric", type: "vendor", notes: "Electric utility" },
+  { name: "Duke Energy", type: "vendor", notes: "Electric utility" },
+  { name: "Comcast Xfinity", type: "vendor", notes: "Internet provider" },
+  { name: "AT&T", type: "vendor", notes: "Internet and phone" },
+  { name: "Verizon", type: "vendor", notes: "Phone service" },
+  { name: "T-Mobile", type: "vendor", notes: "Phone service" },
+  { name: "Netflix", type: "vendor", notes: "Streaming service" },
+  { name: "Hulu", type: "vendor", notes: "Streaming service" },
+  { name: "Spotify", type: "vendor", notes: "Music streaming" },
+  { name: "Amazon", type: "vendor", notes: "Online shopping" },
+  { name: "Best Buy", type: "vendor", notes: "Electronics retailer" },
+  { name: "Home Depot", type: "vendor", notes: "Home improvement" },
+  { name: "Lowes", type: "vendor", notes: "Home improvement" },
+  { name: "CVS Pharmacy", type: "vendor", notes: "Pharmacy" },
+  { name: "Walgreens", type: "vendor", notes: "Pharmacy" },
+  { name: "Vision Center", type: "vendor", notes: "Eye care" },
+  { name: "State Farm Insurance", type: "vendor", notes: "Insurance provider" },
+  { name: "ACME Corporation", type: "customer", email: "payroll@acmecorp.com", notes: "Employer" },
+  { name: "Freelance Client LLC", type: "customer", email: "accounting@freelanceclient.com", notes: "Consulting income" }
 ];
 
 async function seedContacts() {
@@ -198,7 +110,7 @@ async function seedContacts() {
   console.log(`✓ Authenticated as: ${user.email}`);
 
   const { data: profiles, error: profileError } = await supabase
-    .from('user_profiles')
+    .from('profiles')
     .select('id')
     .eq('user_id', user.id)
     .limit(1);
@@ -223,8 +135,8 @@ async function seedContacts() {
       profile_id: profileId,
       name: contact.name,
       type: contact.type,
-      email: contact.email,
-      phone: contact.phone,
+      email: contact.email || null,
+      phone: contact.phone || null,
       notes: contact.notes,
       status: 'active',
       connection_status: 'not_checked'

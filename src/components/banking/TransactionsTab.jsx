@@ -386,7 +386,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const isFromActiveAccount = activeAccountIds.includes(transactionAccountId);
     if (!isFromActiveAccount) return false;
 
-    const category = chartAccounts.find(c => c.id === t.chart_account_id);
+    const category = chartAccounts.find(c => c.id === t.category_account_id);
     const categoryName = category?.name || '';
     const matchesSearch = searchTerm === '' ||
       t.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -418,7 +418,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
     
     // Category filter
-    const matchesCategory = filters.category === 'all' || t.chart_account_id === filters.category;
+    const matchesCategory = filters.category === 'all' || t.category_account_id === filters.category;
     
     // Type filter - handle 'expense_income' for showing both but not transfers
     let matchesType = true;
@@ -531,7 +531,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
           if (result?.chartAccountId) {
             await firstsavvy.entities.Transaction.update(transaction.id, {
-              chart_account_id: result.chartAccountId,
+              category_account_id: result.chartAccountId,
               type: result.type
             });
             successCount++;
@@ -1311,7 +1311,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             // For regular transactions, show editable category dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
-                              const category = chartAccounts.find(c => c.id === transaction.chart_account_id);
+                              const category = chartAccounts.find(c => c.id === transaction.category_account_id);
                               const displayName = category?.display_name || '—';
                               return <span className="text-xs px-1">{displayName}</span>;
                             }
@@ -1327,7 +1327,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     updateMutation.mutate({
                                       id: transaction.id,
                                       data: {
-                                        chart_account_id: categoryValue,
+                                        category_account_id: categoryValue,
                                         type: selectedCategory ? selectedCategory.type : transaction.type
                                       }
                                     });
@@ -1660,7 +1660,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   updateMutation.mutate({
                                                     id: transaction.id,
                                                     data: {
-                                                      chart_account_id: categoryValue,
+                                                      category_account_id: categoryValue,
                                                       type: selectedCategory?.type || transaction.type
                                                     }
                                                   });
@@ -1733,7 +1733,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <Input
                                                 value={(() => {
-                                                  const category = chartAccounts.find(c => c.id === transaction.chart_account_id);
+                                                  const category = chartAccounts.find(c => c.id === transaction.category_account_id);
                                                   return category?.display_name || '';
                                                 })()}
                                                 readOnly
