@@ -147,7 +147,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
-  const cancelSplitMode = (transactionId) => {
+  const cancelSplitMode = async (transactionId, transaction) => {
+    if (transaction && transaction.is_split) {
+      try {
+        await deleteTransactionSplits(transactionId);
+        queryClient.invalidateQueries(['transactions']);
+        toast.success('Split removed');
+      } catch (error) {
+        console.error('Error removing split:', error);
+        toast.error('Failed to remove split');
+        return;
+      }
+    }
     setSplitModeTransactions(prev => {
       const next = new Set(prev);
       next.delete(transactionId);
@@ -255,7 +266,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           await createTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
         }
 
-        cancelSplitMode(transaction.id);
+        cancelSplitMode(transaction.id, transaction);
         return true;
       } catch (error) {
         console.error('Error saving split:', error);
@@ -1632,7 +1643,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         onClick={(e) => {
                                           e?.stopPropagation();
                                           if (isSplitMode(transaction.id)) {
-                                            cancelSplitMode(transaction.id);
+                                            cancelSplitMode(transaction.id, transaction);
                                           } else {
                                             initializeSplitMode(transaction);
                                             setExpandedTransactionId(transaction.id);
@@ -2582,7 +2593,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               onClick={(e) => {
                                                 e?.stopPropagation();
                                                 if (isSplitMode(transaction.id)) {
-                                                  cancelSplitMode(transaction.id);
+                                                  cancelSplitMode(transaction.id, transaction);
                                                 } else {
                                                   initializeSplitMode(transaction);
                                                 }
