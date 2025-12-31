@@ -906,7 +906,10 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
             const allTransactions = [];
             const allRegistryEntries = [];
 
+            console.log('Starting transaction generation for', createdAccounts.length, 'accounts');
+
             for (const { account, config, mockAccount } of createdAccounts) {
+              console.log('Generating transactions for account:', account.id, account.display_name, 'type:', mockAccount.type);
               const transactions = await generateTransactionsForAccount(
                 { id: account.id, type: mockAccount.type, name: account.display_name },
                 user.id,
@@ -914,6 +917,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
                 config.startDate,
                 config.goLiveDate
               );
+              console.log('Generated', transactions.length, 'transactions for', account.display_name);
               allTransactions.push(...transactions);
 
               if (mockAccount.type === 'credit_card') {
@@ -982,9 +986,12 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               }
             }
 
+            console.log('About to insert', allTransactions.length, 'transactions and', allRegistryEntries.length, 'registry entries');
             await insertTransactionsAndRegistry(allTransactions, allRegistryEntries);
+            console.log('Successfully inserted transactions');
           } catch (txError) {
             console.error('Error generating transactions:', txError);
+            toast.error('Failed to generate transactions: ' + txError.message);
           }
         }
 
