@@ -36,16 +36,26 @@ export default function QuickAddBudgetDialog({
     }
   }, [open, category]);
 
+  const formatNumberWithCommas = (value) => {
+    if (!value) return '';
+    const parts = value.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    return parts.join('.');
+  };
+
+  const isIncome = category?.class === 'income';
+  const actionLabel = isIncome ? 'Income' : 'Budget';
+
   const createBudgetMutation = useMutation({
     mutationFn: (data) => firstsavvy.entities.Budget.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      toast.success('Budget created successfully');
+      toast.success(`${actionLabel} created successfully`);
       onOpenChange(false);
     },
     onError: (error) => {
       console.error('Error creating budget:', error);
-      toast.error('Failed to create budget');
+      toast.error(`Failed to create ${actionLabel.toLowerCase()}`);
     }
   });
 
@@ -96,7 +106,7 @@ export default function QuickAddBudgetDialog({
     };
   }, [category, transactions]);
 
-  const currentAmount = parseFloat(amount) || 0;
+  const currentAmount = parseFloat(amount.replace(/,/g, '')) || 0;
   const currentAmountMonthly = convertToMonthly(currentAmount, selectedCadence);
 
   const remainingBeforeAdd = totalBudgetedIncomeMonthly - totalBudgetedExpenseMonthly;
@@ -118,8 +128,23 @@ export default function QuickAddBudgetDialog({
               default: return suggestionInSelectedCadence;
             }
           })();
-      setAmount(convertedAmount.toFixed(2));
+      const formattedValue = formatNumberWithCommas(convertedAmount.toFixed(2));
+      setAmount(formattedValue);
     }
+  };
+
+  const handleAmountChange = (e) => {
+    const input = e.target.value;
+    const cleanValue = input.replace(/[^0-9.]/g, '');
+
+    const decimalCount = (cleanValue.match(/\./g) || []).length;
+    if (decimalCount > 1) return;
+
+    const parts = cleanValue.split('.');
+    if (parts[1] && parts[1].length > 2) return;
+
+    const formatted = formatNumberWithCommas(cleanValue);
+    setAmount(formatted);
   };
 
   const handleSubmit = (e) => {
@@ -157,7 +182,7 @@ export default function QuickAddBudgetDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Add Budget for {category.display_name || category.account_detail}</DialogTitle>
+          <DialogTitle>Add {actionLabel} for {category.display_name || category.account_detail}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 py-4">
@@ -253,14 +278,14 @@ export default function QuickAddBudgetDialog({
           </div>
 
           <div>
-            <Label htmlFor="amount">Budget Amount</Label>
+            <Label htmlFor="amount">{actionLabel} Amount</Label>
             <div className="relative mt-2">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-lg">$</span>
               <Input
                 id="amount"
                 type="text"
                 value={amount}
-                onChange={(e) => setAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                onChange={handleAmountChange}
                 placeholder="0.00"
                 className="pl-8 h-12 text-lg"
                 autoFocus
@@ -312,7 +337,7 @@ export default function QuickAddBudgetDialog({
             disabled={!amount || currentAmount <= 0 || isOverBudget || createBudgetMutation.isPending}
             className="bg-primary hover:bg-primary/90"
           >
-            {createBudgetMutation.isPending ? 'Creating...' : 'Add Budget'}
+            {createBudgetMutation.isPending ? `Adding ${actionLabel}...` : `Add ${actionLabel}`}
           </Button>
         </DialogFooter>
       </DialogContent>
