@@ -180,8 +180,6 @@ export default function AddBudgetItemSheet({
       chart_account_id: selectedCategoryId,
       allocated_amount: newAmount,
       cadence: selectedCadence,
-      color: selectedColor || DEFAULT_COLOR,
-      icon: selectedIcon || selectedAccount?.icon,
       is_active: true
     };
 

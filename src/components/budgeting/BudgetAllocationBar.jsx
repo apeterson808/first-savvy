@@ -74,7 +74,7 @@ export default function BudgetAllocationBar({ budgets }) {
         id: budget.id,
         name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unknown',
         amount: convertedAmount,
-        color: budget.chartAccount?.color || budget.color || '#64748b',
+        color: budget.chartAccount?.color || '#64748b',
         icon: budget.chartAccount?.icon,
         percentage: (convertedAmount / totalForBar) * 100
       };

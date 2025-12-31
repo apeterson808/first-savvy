@@ -99,16 +99,16 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
 
   React.useEffect(() => {
     if (budget && open) {
-      const newColor = budget.color || category?.color || '#64748b';
-      const newIcon = category?.icon || 'Circle';
-      
+      const newColor = budget.chartAccount?.color || category?.color || '#64748b';
+      const newIcon = budget.chartAccount?.icon || category?.icon || 'Circle';
+
       setLocalName(budget.name || category?.name || '');
       setLocalAmount(budget.allocated_amount?.toString() || '');
-      
+
       // Only update color/icon if they're different to avoid overwriting pending changes
       setLocalColor(prev => prev && prev !== '#64748b' ? prev : newColor);
       setLocalIcon(prev => prev && prev !== 'Circle' ? prev : newIcon);
-      
+
       setSelectedGroupId(budget.group_id || '');
       setLimitAmount(budget.allocated_amount?.toString() || '');
       setIsSubAccount(!!budget.parent_budget_id);

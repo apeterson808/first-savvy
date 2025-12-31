@@ -81,7 +81,7 @@ export default function BudgetAllocationGauge({ budgets, groups, totalIncome }) 
   const getChartAccount = (id) => chartAccounts.find(c => c.id === id);
 
   const getBudgetColor = (budget) => {
-    if (budget.color) return budget.color;
+    if (budget.chartAccount?.color) return budget.chartAccount.color;
     const chartAccount = getChartAccount(budget.chart_account_id);
     if (chartAccount?.color) return chartAccount.color;
     return '#64748b';

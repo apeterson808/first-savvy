@@ -164,8 +164,6 @@ export default function QuickAddBudgetDialog({
       chart_account_id: category.id,
       allocated_amount: currentAmount,
       cadence: selectedCadence,
-      color: category.color,
-      icon: category.icon,
       is_active: true
     };
 

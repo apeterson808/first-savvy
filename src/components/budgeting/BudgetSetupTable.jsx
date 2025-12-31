@@ -125,7 +125,7 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
         {isExpanded && (
           <>
             {sectionBudgets.map((budget) => {
-              const Icon = ICON_MAP[budget.icon] || Circle;
+              const Icon = ICON_MAP[budget.chartAccount?.icon] || Circle;
               const monthlyAmount = budget.allocated_amount || 0;
 
               return (
@@ -138,7 +138,7 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
 
                   <div
                     className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: budget.color || '#94a3b8' }}
+                    style={{ backgroundColor: budget.chartAccount?.color || '#94a3b8' }}
                   >
                     <Icon className="w-4 h-4 text-white" />
                   </div>
