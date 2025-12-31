@@ -220,51 +220,38 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     };
   };
 
-  const saveSplit = async (transaction) => {
-    const lines = splitLineItems[transaction.id] || [];
-    const validation = getSplitValidation(transaction);
+  const handlePostWithSplit = async (transaction) => {
+    if (isSplitMode(transaction.id)) {
+      const lines = splitLineItems[transaction.id] || [];
+      const validation = getSplitValidation(transaction);
 
-    if (!validation.isValid) {
-      toast.error('Please ensure all split lines have categories and amounts that sum to the transaction total');
-      return;
-    }
-
-    try {
-      const splits = lines.map(line => ({
-        category_account_id: line.category_account_id,
-        amount: parseFloat(line.amount),
-        description: line.description
-      }));
-
-      if (transaction.is_split) {
-        await updateTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
-      } else {
-        await createTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
+      if (!validation.isValid) {
+        toast.error('Please ensure all split lines have categories and amounts that sum to the transaction total');
+        return false;
       }
 
-      queryClient.invalidateQueries(['fullPendingTransactions']);
-      queryClient.invalidateQueries(['fullPostedTransactions']);
-      queryClient.invalidateQueries(['fullExcludedTransactions']);
+      try {
+        const splits = lines.map(line => ({
+          category_account_id: line.category_account_id,
+          amount: parseFloat(line.amount),
+          description: line.description
+        }));
 
-      cancelSplitMode(transaction.id);
-      toast.success('Split saved successfully');
-    } catch (error) {
-      console.error('Error saving split:', error);
-      toast.error('Failed to save split');
-    }
-  };
+        if (transaction.is_split) {
+          await updateTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
+        } else {
+          await createTransactionSplits(transaction.id, activeProfile.id, transaction.user_id, splits);
+        }
 
-  const removeSplit = async (transaction) => {
-    try {
-      await deleteTransactionSplits(transaction.id);
-      queryClient.invalidateQueries(['fullPendingTransactions']);
-      queryClient.invalidateQueries(['fullPostedTransactions']);
-      queryClient.invalidateQueries(['fullExcludedTransactions']);
-      toast.success('Split removed successfully');
-    } catch (error) {
-      console.error('Error removing split:', error);
-      toast.error('Failed to remove split');
+        cancelSplitMode(transaction.id);
+        return true;
+      } catch (error) {
+        console.error('Error saving split:', error);
+        toast.error('Failed to save split');
+        return false;
+      }
     }
+    return true;
   };
 
   // Initialize filters from props (chart click) or URL params
@@ -951,11 +938,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return Math.min(100, Math.round(confidence));
   };
 
-  const handleTransferMatch = (transaction) => {
+  const handleTransferMatch = async (transaction) => {
     const paired = findPairedTransfer(transaction);
 
     if (!paired) {
-      // No pair found, just post this transaction
+      const canPost = await handlePostWithSplit(transaction);
+      if (!canPost) return;
+
       updateMutation.mutate({
         id: transaction.id,
         data: { status: 'posted' }
@@ -963,8 +952,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return;
     }
 
-    // If paired transaction is already posted, auto-post this one
     if (paired.status === 'posted') {
+      const canPost = await handlePostWithSplit(transaction);
+      if (!canPost) return;
+
       updateMutation.mutate({
         id: transaction.id,
         data: { status: 'posted' }
@@ -973,14 +964,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return;
     }
 
-    // Both pending, show match dialog
     setMatchingTransfer(transaction);
     setPairedTransfer(paired);
     setTransferMatchDialogOpen(true);
   };
 
-  const handleConfirmTransferMatch = (toAccountId) => {
-    // Post both sides of the transfer
+  const handleConfirmTransferMatch = async (toAccountId) => {
+    const canPost = await handlePostWithSplit(matchingTransfer);
+    if (!canPost) return;
+
     updateMutation.mutate({
       id: matchingTransfer.id,
       data: { status: 'posted' }
@@ -994,17 +986,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     toast.success('Transfer matched and confirmed');
   };
 
-  const handleMatchClick = (transaction) => {
+  const handleMatchClick = async (transaction) => {
     const selectedMatch = selectedMatches[transaction.id];
 
     if (selectedMatch) {
-      // User selected a match, confirm it
+      const canPost = await handlePostWithSplit(transaction);
+      if (!canPost) return;
+
       const matchedTransaction = transactions.find(t => t.id === selectedMatch);
 
-      // Ensure both transactions have the same transfer_pair_id
       const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
 
-      // Always post the current transaction with transfer_pair_id
       updateMutation.mutate({
         id: transaction.id,
         data: {
@@ -1013,7 +1005,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         }
       });
 
-      // Only post matched transaction if it's not already posted, with transfer_pair_id
       if (matchedTransaction && matchedTransaction.status !== 'posted') {
         updateMutation.mutate({
           id: selectedMatch,
@@ -1024,7 +1015,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         });
       }
 
-      // Clear selection
       setSelectedMatches(prev => {
         const next = { ...prev };
         delete next[transaction.id];
@@ -1032,9 +1022,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       });
       setExpandedTransactionId(null);
     } else {
-      // No match selected, just post the transaction
       const matches = findPotentialMatches(transaction);
       if (matches.length === 0) {
+        const canPost = await handlePostWithSplit(transaction);
+        if (!canPost) return;
+
         updateMutation.mutate({
           id: transaction.id,
           data: { status: 'posted' }
@@ -1322,7 +1314,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                         </td>
                                                       )}
                         <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
-                          {statusFilter === 'pending' ? (
+                          {isSplitMode(transaction.id) ? (
+                            <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
+                          ) : statusFilter === 'pending' ? (
                             <Input
                               defaultValue={formatTransactionDescription(transaction.description)}
                               disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
@@ -1631,7 +1625,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             setExpandedTransactionId(transaction.id);
                                           }
                                         }}
-                                        disabled={isMatched(transaction)}
+                                        disabled={isMatched(transaction) || transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                       >
                                         {transaction.is_split ? 'Edit Split' : 'Split'}
                                       </ClickThroughDropdownMenuItem>
@@ -1914,38 +1908,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           );
                                         })()}
 
-                                        <div className="flex items-center gap-2 pt-2">
+                                        <div className="flex items-center justify-between pt-2">
                                           <Button
                                             size="sm"
                                             variant="outline"
                                             className="h-8 text-xs"
                                             onClick={() => cancelSplitMode(transaction.id)}
                                           >
-                                            Cancel
+                                            Cancel Split
                                           </Button>
-                                          <Button
-                                            size="sm"
-                                            className="h-8 text-xs bg-blue-600 hover:bg-blue-700"
-                                            onClick={() => saveSplit(transaction)}
-                                            disabled={!getSplitValidation(transaction).isValid}
-                                          >
-                                            Save Split
-                                          </Button>
-                                          {transaction.is_split && (
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-8 text-xs text-red-600 hover:text-red-700 ml-auto"
-                                              onClick={() => {
-                                                if (confirm('Are you sure you want to remove this split and convert back to a single transaction?')) {
-                                                  removeSplit(transaction);
-                                                  cancelSplitMode(transaction.id);
-                                                }
-                                              }}
-                                            >
-                                              Remove Split
-                                            </Button>
-                                          )}
+                                          <p className="text-xs text-slate-600">
+                                            Split will be saved when you post this transaction
+                                          </p>
                                         </div>
                                       </div>
                                     )}
@@ -2601,7 +2575,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 e?.stopPropagation();
                                                 initializeSplitMode(transaction);
                                               }}
-                                              disabled={isMatched(transaction)}
+                                              disabled={isMatched(transaction) || transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                             >
                                               {transaction.is_split ? 'Edit Split' : 'Split'}
                                             </Button>
