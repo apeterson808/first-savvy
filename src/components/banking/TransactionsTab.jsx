@@ -1763,73 +1763,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               <div className="bg-slate-50 p-4 border-l-4 border-blue-500">
                                 {activeAccountIds.includes(transaction.bank_account_id) ? (
                                   <div className="space-y-3">
-                                    {statusFilter === 'pending' && (
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <Tabs
-                                          value={(() => {
-                                            if (isMatched(transaction)) return 'match';
-                                            if (manualActionOverrides[transaction.id]) return manualActionOverrides[transaction.id];
-                                            if (transaction.type === 'transfer') {
-                                              return findPairedTransfer(transaction) ? 'match' : 'post';
-                                            }
-                                            const matches = findPotentialMatches(transaction);
-                                            return matches.length > 0 ? 'match' : 'post';
-                                          })()}
-                                          onValueChange={(val) => {
-                                            if (isMatched(transaction) && val === 'post') {
-                                              const pairedTransaction = findPairedTransfer(transaction);
-                                              if (pairedTransaction) {
-                                                setManualActionOverrides(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: 'post',
-                                                  [pairedTransaction.id]: 'post'
-                                                }));
-                                              } else {
-                                                setManualActionOverrides(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: 'post'
-                                                }));
-                                              }
-                                              handleUnmatch(transaction);
-                                              return;
-                                            }
-                                            setManualActionOverrides(prev => ({
-                                              ...prev,
-                                              [transaction.id]: val
-                                            }));
-                                          }}
-                                          className="h-8"
-                                        >
-                                          <TabsList className="h-8">
-                                            <TooltipProvider>
-                                              <Tooltip>
-                                                <TooltipTrigger asChild>
-                                                  <div>
-                                                    <TabsTrigger
-                                                      value="post"
-                                                      className="h-7 text-xs"
-                                                    >
-                                                      Categorize
-                                                    </TabsTrigger>
-                                                  </div>
-                                                </TooltipTrigger>
-                                                {isMatched(transaction) && (
-                                                  <TooltipContent>
-                                                    <p>Click to unmatch</p>
-                                                  </TooltipContent>
-                                                )}
-                                              </Tooltip>
-                                            </TooltipProvider>
-                                            <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
-                                          </TabsList>
-                                        </Tabs>
-                                      </div>
-                                    )}
-
                                     {/* Split Mode UI */}
-                                    {isSplitMode(transaction.id) && (
-                                      <div className="space-y-3 border-t border-slate-200 pt-3">
-                                        <div className="flex items-center justify-between mb-3">
+                                    {isSplitMode(transaction.id) ? (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center justify-between">
                                           <Label className="text-sm font-semibold text-slate-700">Split Transaction</Label>
                                           {loadingSplits.has(transaction.id) && (
                                             <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
@@ -1938,6 +1875,71 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           </div>
                                         </div>
                                       </div>
+                                    ) : (
+                                      <>
+                                        {statusFilter === 'pending' && (
+                                          <div className="flex items-center gap-2">
+                                            <Tabs
+                                              value={(() => {
+                                                if (isMatched(transaction)) return 'match';
+                                                if (manualActionOverrides[transaction.id]) return manualActionOverrides[transaction.id];
+                                                if (transaction.type === 'transfer') {
+                                                  return findPairedTransfer(transaction) ? 'match' : 'post';
+                                                }
+                                                const matches = findPotentialMatches(transaction);
+                                                return matches.length > 0 ? 'match' : 'post';
+                                              })()}
+                                              onValueChange={(val) => {
+                                                if (isMatched(transaction) && val === 'post') {
+                                                  const pairedTransaction = findPairedTransfer(transaction);
+                                                  if (pairedTransaction) {
+                                                    setManualActionOverrides(prev => ({
+                                                      ...prev,
+                                                      [transaction.id]: 'post',
+                                                      [pairedTransaction.id]: 'post'
+                                                    }));
+                                                  } else {
+                                                    setManualActionOverrides(prev => ({
+                                                      ...prev,
+                                                      [transaction.id]: 'post'
+                                                    }));
+                                                  }
+                                                  handleUnmatch(transaction);
+                                                  return;
+                                                }
+                                                setManualActionOverrides(prev => ({
+                                                  ...prev,
+                                                  [transaction.id]: val
+                                                }));
+                                              }}
+                                              className="h-8"
+                                            >
+                                              <TabsList className="h-8">
+                                                <TooltipProvider>
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <div>
+                                                        <TabsTrigger
+                                                          value="post"
+                                                          className="h-7 text-xs"
+                                                        >
+                                                          Categorize
+                                                        </TabsTrigger>
+                                                      </div>
+                                                    </TooltipTrigger>
+                                                    {isMatched(transaction) && (
+                                                      <TooltipContent>
+                                                        <p>Click to unmatch</p>
+                                                      </TooltipContent>
+                                                    )}
+                                                  </Tooltip>
+                                                </TooltipProvider>
+                                                <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
+                                              </TabsList>
+                                            </Tabs>
+                                          </div>
+                                        )}
+                                      </>
                                     )}
 
                                     {/* Categorize Tab Content */}
