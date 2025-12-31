@@ -102,7 +102,7 @@ export default function QuickAddBudgetDialog({
   const remainingBeforeAdd = totalBudgetedIncomeMonthly - totalBudgetedExpenseMonthly;
   const remainingAfterAdd = remainingBeforeAdd - currentAmountMonthly;
 
-  const isOverBudget = currentAmountMonthly > 0 && remainingAfterAdd < 0;
+  const isOverBudget = category?.class === 'expense' && currentAmountMonthly > 0 && remainingAfterAdd < 0;
   const maxAllowableMonthly = remainingBeforeAdd;
 
   const handleSuggestionClick = () => {
@@ -178,7 +178,7 @@ export default function QuickAddBudgetDialog({
             </div>
           </div>
 
-          {totalBudgetedIncomeMonthly > 0 && (
+          {totalBudgetedIncomeMonthly > 0 && category.class === 'expense' && (
             <div className={`p-4 rounded-lg border ${
               isOverBudget ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
             }`}>
@@ -216,7 +216,7 @@ export default function QuickAddBudgetDialog({
             </div>
           )}
 
-          {totalBudgetedIncomeMonthly === 0 && (
+          {totalBudgetedIncomeMonthly === 0 && category.class === 'expense' && (
             <div className="p-4 rounded-lg border bg-amber-50 border-amber-200">
               <div className="flex items-start gap-3">
                 <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
