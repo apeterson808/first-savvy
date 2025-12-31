@@ -1765,8 +1765,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   <div className="space-y-3">
                                     {/* Split Mode UI */}
                                     {isSplitMode(transaction.id) ? (
-                                      <div className="space-y-2">
-                                        <div className="flex items-center justify-between">
+                                      <div>
+                                        <div className="flex items-center justify-between mb-2">
                                           <Label className="text-sm font-semibold text-slate-700">Split Transaction</Label>
                                           {loadingSplits.has(transaction.id) && (
                                             <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
@@ -1793,7 +1793,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             }
 
                                             return (
-                                              <div className="bg-slate-100 rounded-md p-3 space-y-2 flex-shrink-0 w-48">
+                                              <div className="bg-slate-100 rounded-md p-2 space-y-1 flex-shrink-0 w-48">
                                                 <div className="flex items-center justify-between text-xs">
                                                   <span className="text-slate-600">Transaction Total:</span>
                                                   <span className="font-semibold">${validation.totalAmount.toFixed(2)}</span>
@@ -1810,8 +1810,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             );
                                           })()}
 
-                                          <div className="flex-1 space-y-2">
-                                            <div className="grid grid-cols-[1fr_120px_1fr_40px] gap-2 mb-1">
+                                          <div className="flex-1 space-y-1">
+                                            <div className="grid grid-cols-[1fr_120px_1fr_40px] gap-2">
                                               <Label className="text-xs text-slate-600">Description</Label>
                                               <Label className="text-xs text-slate-600">Amount</Label>
                                               <Label className="text-xs text-slate-600">Category</Label>
