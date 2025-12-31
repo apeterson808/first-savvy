@@ -204,12 +204,14 @@ function matchContactToDescription(description, contacts) {
     const normalizedContactName = contact.name.toUpperCase();
 
     if (normalizedDescription.includes(normalizedContactName)) {
+      console.log(`Matched "${description}" to contact "${contact.name}" (full match)`);
       return contact.id;
     }
 
     const words = normalizedContactName.split(' ');
     for (const word of words) {
       if (word.length > 3 && normalizedDescription.includes(word)) {
+        console.log(`Matched "${description}" to contact "${contact.name}" (word match: ${word})`);
         return contact.id;
       }
     }
@@ -248,6 +250,7 @@ export async function generateTransactionsForAccount(accountData, userId, profil
 
   const chartOfAccounts = await fetchChartOfAccounts(profileId);
   const contacts = await fetchContacts(profileId);
+  console.log('Fetched contacts for matching:', contacts.length, 'contacts');
 
   for (let i = 0; i < totalTransactions; i++) {
     const daysFromStart = Math.floor(Math.random() * Math.ceil((today - start) / (1000 * 60 * 60 * 24)));
