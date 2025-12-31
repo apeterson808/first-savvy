@@ -1412,9 +1412,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             // For regular transactions, show editable contact dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
-                              if (transaction.is_split) {
-                                return <span className="text-xs px-1 text-blue-600 font-medium">Split</span>;
-                              }
                               const contact = contacts.find(c => c.id === transaction.contact_id);
                               return <span className="text-xs px-1">{contact?.name || '—'}</span>;
                             }
