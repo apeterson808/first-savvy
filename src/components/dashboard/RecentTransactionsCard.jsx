@@ -28,12 +28,17 @@ export default function RecentTransactionsCard() {
   const [accountWizardOpen, setAccountWizardOpen] = useState(false);
   const inputRef = useRef(null);
 
-  const { data: bankAccounts = [] } = useQuery({
-    queryKey: ['activeBankAccounts'],
-    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
+  const { data: chartOfAccounts = [] } = useQuery({
+    queryKey: ['activeTransactionalAccounts'],
+    queryFn: async () => {
+      const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
+      return allAccounts.filter(acc =>
+        ['asset_checking', 'asset_savings', 'liability_credit_card'].includes(acc.account_type)
+      );
+    }
   });
 
-  const accounts = bankAccounts;
+  const accounts = chartOfAccounts;
 
   const { data: allPendingTransactions = [] } = useQuery({
     queryKey: ['fullPendingTransactions'],
@@ -243,7 +248,7 @@ export default function RecentTransactionsCard() {
                   onValueChange={(value) => {
                     updateMutation.mutate({
                       id: transaction.id,
-                      data: { ...transaction, chart_account_id: value }
+                      data: { ...transaction, category_account_id: value }
                     });
                   }}
                   transactionType={transaction.type}
