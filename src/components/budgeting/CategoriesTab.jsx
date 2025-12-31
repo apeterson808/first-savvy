@@ -21,6 +21,7 @@ export default function CategoriesTab() {
   const queryClient = useQueryClient();
   const {
     budgets,
+    transactions,
     budgetedIncomeCategories,
     budgetedExpenseCategories,
     availableIncomeCategories,
