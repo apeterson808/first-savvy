@@ -1760,9 +1760,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         {expandedTransactionId === transaction.id && (
                           <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-t border-slate-100`}>
                             <td colSpan={selectedAccount === 'all' ? 9 : 8} className="p-0">
-                              <div className="bg-slate-50 p-4 border-l-4 border-blue-500">
+                              <div className="bg-slate-50 pt-2 px-4 pb-4 border-l-4 border-blue-500">
                                 {activeAccountIds.includes(transaction.bank_account_id) ? (
-                                  <div className="space-y-3">
+                                  <div className="space-y-2">
                                     {/* Split Mode UI */}
                                     {isSplitMode(transaction.id) ? (
                                       <div>
