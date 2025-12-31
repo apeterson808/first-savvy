@@ -33,7 +33,7 @@ export default function RecentTransactionsCard() {
     queryFn: async () => {
       const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
       return allAccounts.filter(acc =>
-        ['asset_checking', 'asset_savings', 'liability_credit_card'].includes(acc.account_type)
+        ['checking_account', 'savings_account', 'credit_card'].includes(acc.account_detail)
       );
     }
   });
@@ -238,7 +238,7 @@ export default function RecentTransactionsCard() {
                       {formatTransactionDescription(transaction.description)}
                     </p>
                   )}
-                  <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM d')} · {accounts.find(a => a.id === transaction.bank_account_id)?.account_name || 'N/A'}</p>
+                  <p className="text-[10px] text-slate-500">{format(parseISO(transaction.date), 'MMM d')} · {accounts.find(a => a.id === transaction.bank_account_id)?.display_name || 'N/A'}</p>
                 </div>
                 <span className={`text-xs font-semibold whitespace-nowrap ${transaction.type === 'expense' ? 'text-red-600' : 'text-green-600'}`}>
                   {transaction.type === 'expense' ? '-' : '+'}${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
