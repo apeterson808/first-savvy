@@ -348,20 +348,16 @@ export default function CategoriesTab() {
                 </thead>
                 {!isCollapsed && (
                   <tbody>
-                    {isBudgetedSection ? (
-                      groupCategoriesByAccountType(categories).map((group, groupIndex) => (
-                        <React.Fragment key={group.accountType}>
-                          <tr className="bg-slate-100/50 border-b border-slate-200">
-                            <td colSpan="6" className="px-4 py-1.5 text-xs font-medium text-slate-600 uppercase tracking-wide">
-                              {formatAccountTypeLabel(group.accountType)}
-                            </td>
-                          </tr>
-                          {group.categories.map((category, index) => renderRow(category, index))}
-                        </React.Fragment>
-                      ))
-                    ) : (
-                      categories.map((category, index) => renderRow(category, index))
-                    )}
+                    {groupCategoriesByAccountType(categories).map((group, groupIndex) => (
+                      <React.Fragment key={group.accountType}>
+                        <tr className="bg-slate-100/50 border-b border-slate-200">
+                          <td colSpan={isBudgetedSection ? "6" : "4"} className="px-4 py-1.5 text-xs font-medium text-slate-600 uppercase tracking-wide">
+                            {formatAccountTypeLabel(group.accountType)}
+                          </td>
+                        </tr>
+                        {group.categories.map((category, index) => renderRow(category, index))}
+                      </React.Fragment>
+                    ))}
                   </tbody>
                 )}
                 {totals && (
