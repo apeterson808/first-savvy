@@ -28,6 +28,20 @@ import * as LucideIcons from 'lucide-react';
 
 const DEFAULT_COLOR = '#52A5CE';
 
+const formatCurrency = (value) => {
+  if (!value) return '';
+  const number = parseFloat(value.replace(/,/g, ''));
+  if (isNaN(number)) return '';
+  return number.toLocaleString('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+};
+
+const parseCurrency = (value) => {
+  return value.replace(/,/g, '');
+};
+
 export default function AddBudgetItemSheet({
   open,
   onOpenChange,
@@ -50,7 +64,8 @@ export default function AddBudgetItemSheet({
   useEffect(() => {
     if (editingBudget && open) {
       setSelectedCategoryId(editingBudget.category_account_id || '');
-      setLimitAmount(editingBudget.allocated_amount?.toString() || '');
+      const amount = editingBudget.allocated_amount?.toString() || '';
+      setLimitAmount(amount ? formatCurrency(amount) : '');
       setSelectedColor(editingBudget.color || '');
       setSelectedIcon(editingBudget.icon || '');
       setSelectedCadence(editingBudget.cadence || 'monthly');
@@ -126,7 +141,7 @@ export default function AddBudgetItemSheet({
     }
 
     const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
-    const newAmount = parseFloat(limitAmount) || 0;
+    const newAmount = parseFloat(parseCurrency(limitAmount)) || 0;
 
     if (newAmount <= 0) {
       toast.error('Amount must be greater than zero');
@@ -178,6 +193,12 @@ export default function AddBudgetItemSheet({
   };
 
   const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
+  const isIncomeCategory = selectedCategory?.class === 'income';
+  const buttonText = isEditMode
+    ? 'Update'
+    : isIncomeCategory
+      ? 'Add Income'
+      : 'Add Budget';
 
   return (
     <>
@@ -190,7 +211,7 @@ export default function AddBudgetItemSheet({
           <SheetTitle>{isEditMode ? 'Edit Budget Item' : 'Add Budget Item'}</SheetTitle>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-4 px-1 flex-1 overflow-y-auto">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4 px-1 flex-1 overflow-y-auto flex flex-col">
           <div>
             <Label htmlFor="category">Category*</Label>
             <ClickThroughSelect
@@ -235,7 +256,16 @@ export default function AddBudgetItemSheet({
                 id="limitAmount"
                 type="text"
                 value={limitAmount}
-                onChange={(e) => setLimitAmount(e.target.value.replace(/[^0-9.]/g, ''))}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, '');
+                  setLimitAmount(value);
+                }}
+                onBlur={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, '');
+                  if (value) {
+                    setLimitAmount(formatCurrency(value));
+                  }
+                }}
                 placeholder="0.00"
                 className="pl-7"
               />
@@ -269,21 +299,20 @@ export default function AddBudgetItemSheet({
               onIconChange={setSelectedIcon}
             />
           </div>
-        </form>
 
-        <SheetFooter className="pt-4 mt-auto">
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            onClick={handleSubmit}
-            className="bg-primary hover:bg-primary/90"
-            disabled={!selectedCategoryId || !limitAmount || createBudgetMutation.isPending || updateBudgetMutation.isPending}
-          >
-            {isEditMode ? 'Update' : 'Create'}
-          </Button>
-        </SheetFooter>
+          <SheetFooter className="pt-4 mt-auto">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="bg-primary hover:bg-primary/90"
+              disabled={!selectedCategoryId || !limitAmount || createBudgetMutation.isPending || updateBudgetMutation.isPending}
+            >
+              {buttonText}
+            </Button>
+          </SheetFooter>
+        </form>
       </SheetContent>
     </Sheet>
 
