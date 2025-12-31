@@ -1703,6 +1703,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         });
                                       }
                                     }
+                                    if (transaction.is_split) {
+                                      setExpandedTransactionId(transaction.id);
+                                      initializeSplitMode(transaction);
+                                    }
                                   }}
                                 >
                                   Undo
@@ -1728,6 +1732,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           data: { status: 'pending' }
                                         });
                                       }
+                                    }
+                                    if (transaction.is_split) {
+                                      setExpandedTransactionId(transaction.id);
+                                      initializeSplitMode(transaction);
                                     }
                                   }}
                                 >
