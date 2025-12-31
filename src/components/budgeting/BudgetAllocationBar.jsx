@@ -180,8 +180,11 @@ export default function BudgetAllocationBar({ budgets }) {
 
             {totalIncomeBudgeted > 0 && (
               <div
-                className="absolute top-full left-0 -translate-x-1/2 flex flex-col items-center"
-                style={{ left: `${expensePercentage}%` }}
+                className="absolute top-full flex flex-col items-center"
+                style={{
+                  left: `${expensePercentage}%`,
+                  transform: expensePercentage < 10 ? 'translateX(0)' : expensePercentage > 90 ? 'translateX(-100%)' : 'translateX(-50%)'
+                }}
               >
                 <div className="w-px h-3 bg-slate-600" />
                 <div className="mt-1 text-[11px] text-slate-500 whitespace-nowrap">
