@@ -1829,40 +1829,66 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     {/* Split Mode UI */}
                                     {isSplitMode(transaction.id) && (
                                       <div className="space-y-3 border-t border-slate-200 pt-3">
-                                        <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center justify-between mb-3">
                                           <Label className="text-sm font-semibold text-slate-700">Split Transaction</Label>
                                           {loadingSplits.has(transaction.id) && (
                                             <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
                                           )}
                                         </div>
 
-                                        {splitLineItems[transaction.id]?.map((line, lineIndex) => (
-                                          <div key={line.id} className="bg-white border border-slate-200 rounded-md p-3">
-                                            <div className="flex items-center gap-2 mb-2">
-                                              <span className="text-xs font-medium text-slate-500 w-16">Line {lineIndex + 1}</span>
-                                              {splitLineItems[transaction.id].length > 2 && (
-                                                <Button
-                                                  size="sm"
-                                                  variant="ghost"
-                                                  className="h-6 w-6 p-0 ml-auto text-slate-400 hover:text-red-600"
-                                                  onClick={() => removeSplitLine(transaction.id, lineIndex)}
-                                                >
-                                                  <Trash2 className="w-3 h-3" />
-                                                </Button>
-                                              )}
+                                        <div className="flex gap-4">
+                                          {(() => {
+                                            const validation = getSplitValidation(transaction);
+                                            let statusColor = 'text-slate-600';
+                                            let statusText = 'Enter amounts';
+
+                                            if (validation.splitTotal > 0) {
+                                              if (Math.abs(validation.difference) < 0.01) {
+                                                statusColor = 'text-emerald-600';
+                                                statusText = 'Valid';
+                                              } else if (validation.splitTotal > validation.totalAmount) {
+                                                statusColor = 'text-red-600';
+                                                statusText = `Over by $${Math.abs(validation.difference).toFixed(2)}`;
+                                              } else {
+                                                statusColor = 'text-amber-600';
+                                                statusText = `Remaining: $${validation.difference.toFixed(2)}`;
+                                              }
+                                            }
+
+                                            return (
+                                              <div className="bg-slate-100 rounded-md p-3 space-y-2 flex-shrink-0 w-48">
+                                                <div className="flex items-center justify-between text-xs">
+                                                  <span className="text-slate-600">Transaction Total:</span>
+                                                  <span className="font-semibold">${validation.totalAmount.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs">
+                                                  <span className="text-slate-600">Split Total:</span>
+                                                  <span className="font-semibold">${validation.splitTotal.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-slate-300">
+                                                  <span className={statusColor}>Status:</span>
+                                                  <span className={statusColor}>{statusText}</span>
+                                                </div>
+                                              </div>
+                                            );
+                                          })()}
+
+                                          <div className="flex-1 space-y-2">
+                                            <div className="grid grid-cols-[1fr_120px_1fr_40px] gap-2 mb-1">
+                                              <Label className="text-xs text-slate-600">Description</Label>
+                                              <Label className="text-xs text-slate-600">Amount</Label>
+                                              <Label className="text-xs text-slate-600">Category</Label>
+                                              <div></div>
                                             </div>
-                                            <div className="grid grid-cols-3 gap-2">
-                                              <div>
-                                                <Label className="text-xs mb-1 block">Description</Label>
+
+                                            {splitLineItems[transaction.id]?.map((line, lineIndex) => (
+                                              <div key={line.id} className="grid grid-cols-[1fr_120px_1fr_40px] gap-2 items-center">
                                                 <Input
                                                   value={line.description || ''}
                                                   onChange={(e) => updateSplitLine(transaction.id, lineIndex, 'description', e.target.value)}
                                                   className="h-8 text-xs"
                                                   placeholder="Description"
                                                 />
-                                              </div>
-                                              <div>
-                                                <Label className="text-xs mb-1 block">Amount</Label>
                                                 <Input
                                                   type="number"
                                                   step="0.01"
@@ -1874,9 +1900,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     return remaining > 0 ? remaining.toFixed(2) : '0.00';
                                                   })()}
                                                 />
-                                              </div>
-                                              <div>
-                                                <Label className="text-xs mb-1 block">Category</Label>
                                                 <CategoryDropdown
                                                   value={line.category_account_id || ''}
                                                   onValueChange={(value) => updateSplitLine(transaction.id, lineIndex, 'category_account_id', value)}
@@ -1890,56 +1913,30 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     setAddAccountSheetOpen(true);
                                                   }}
                                                 />
+                                                {splitLineItems[transaction.id].length > 2 && (
+                                                  <Button
+                                                    size="sm"
+                                                    variant="ghost"
+                                                    className="h-8 w-8 p-0 text-slate-400 hover:text-red-600"
+                                                    onClick={() => removeSplitLine(transaction.id, lineIndex)}
+                                                  >
+                                                    <Trash2 className="w-3 h-3" />
+                                                  </Button>
+                                                )}
                                               </div>
-                                            </div>
+                                            ))}
+
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-8 text-xs"
+                                              onClick={() => addSplitLine(transaction.id, transaction)}
+                                            >
+                                              <Plus className="w-3 h-3 mr-1" />
+                                              Add Split Line
+                                            </Button>
                                           </div>
-                                        ))}
-
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="h-8 text-xs w-full"
-                                          onClick={() => addSplitLine(transaction.id, transaction)}
-                                        >
-                                          <Plus className="w-3 h-3 mr-1" />
-                                          Add Split Line
-                                        </Button>
-
-                                        {(() => {
-                                          const validation = getSplitValidation(transaction);
-                                          let statusColor = 'text-slate-600';
-                                          let statusText = 'Enter amounts';
-
-                                          if (validation.splitTotal > 0) {
-                                            if (Math.abs(validation.difference) < 0.01) {
-                                              statusColor = 'text-emerald-600';
-                                              statusText = 'Valid';
-                                            } else if (validation.splitTotal > validation.totalAmount) {
-                                              statusColor = 'text-red-600';
-                                              statusText = `Over by $${Math.abs(validation.difference).toFixed(2)}`;
-                                            } else {
-                                              statusColor = 'text-amber-600';
-                                              statusText = `Remaining: $${validation.difference.toFixed(2)}`;
-                                            }
-                                          }
-
-                                          return (
-                                            <div className="bg-slate-100 rounded-md p-3 space-y-2">
-                                              <div className="flex items-center justify-between text-xs">
-                                                <span className="text-slate-600">Transaction Total:</span>
-                                                <span className="font-semibold">${validation.totalAmount.toFixed(2)}</span>
-                                              </div>
-                                              <div className="flex items-center justify-between text-xs">
-                                                <span className="text-slate-600">Split Total:</span>
-                                                <span className="font-semibold">${validation.splitTotal.toFixed(2)}</span>
-                                              </div>
-                                              <div className="flex items-center justify-between text-xs font-semibold pt-1 border-t border-slate-300">
-                                                <span className={statusColor}>Status:</span>
-                                                <span className={statusColor}>{statusText}</span>
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
+                                        </div>
                                       </div>
                                     )}
 
