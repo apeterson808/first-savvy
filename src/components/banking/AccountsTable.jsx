@@ -15,7 +15,18 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package, MoreVertical, Trash2 } from 'lucide-react';
+import { toast } from 'sonner';
 import AccountCreationWizard from './AccountCreationWizard';
 import EditAccountDialog from './EditAccountDialog';
 import FileImporter from './FileImporter';
@@ -99,6 +110,8 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [editingAccount, setEditingAccount] = useState(null);
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState(null);
 
   const urlParams = new URLSearchParams(window.location.search);
   const initialFilter = urlParams.get('filter') || 'all';
@@ -114,7 +127,8 @@ export default function AccountsTable({ accounts, isLoading }) {
     accountType: true,
     detail: true,
     balance: true,
-    status: true
+    status: true,
+    actions: true
   });
 
   const queryClient = useQueryClient();
@@ -164,6 +178,39 @@ export default function AccountsTable({ accounts, isLoading }) {
   const handleSuccess = () => {
     queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (accountId) => {
+      const { error } = await firstsavvy
+        .from('user_chart_of_accounts')
+        .delete()
+        .eq('id', accountId);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      handleSuccess();
+      setDeleteDialogOpen(false);
+      setAccountToDelete(null);
+      toast.success('Account deleted successfully');
+    },
+    onError: (error) => {
+      console.error('Error deleting account:', error);
+      toast.error('Failed to delete account. Please try again.');
+    }
+  });
+
+  const handleDeleteClick = (e, account) => {
+    e.stopPropagation();
+    setAccountToDelete(account);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (accountToDelete) {
+      deleteMutation.mutate(accountToDelete.id);
+    }
   };
 
   // Helper function to check if an account is "used" (has transactions or non-zero balance)
@@ -490,6 +537,12 @@ export default function AccountsTable({ accounts, isLoading }) {
                     </div>
                     Status
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, actions: !v.actions }))}>
+                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.actions ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
+                      {visibleColumns.actions && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    Actions
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
@@ -601,6 +654,9 @@ export default function AccountsTable({ accounts, isLoading }) {
                   {visibleColumns.status && (
                     <th className="font-semibold text-slate-700 text-center px-4 py-3">Status</th>
                   )}
+                  {visibleColumns.actions && (
+                    <th className="font-semibold text-slate-700 text-center px-4 py-3">Actions</th>
+                  )}
                 </tr>
               </thead>
               {(() => {
@@ -664,6 +720,30 @@ export default function AccountsTable({ accounts, isLoading }) {
                                 </span>
                               </td>
                             )}
+                            {visibleColumns.actions && (
+                              <td className="px-4 py-0.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-7 w-7"
+                                    >
+                                      <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      className="text-red-600 focus:text-red-600"
+                                      onClick={(e) => handleDeleteClick(e, account)}
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </td>
+                            )}
                           </tr>
                         ))}
                   </tbody>
@@ -714,6 +794,28 @@ export default function AccountsTable({ accounts, isLoading }) {
           queryClient.invalidateQueries({ queryKey: ['transactions'] });
         }}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete {accountToDelete ? getAccountDisplayName(accountToDelete) : 'this account'}?
+              This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
     </>
   );
