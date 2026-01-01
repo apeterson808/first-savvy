@@ -248,9 +248,11 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
         }
       }
 
+      const originalDescription = row[columnMappings.description] || 'Unknown';
       return {
         date: parseDate(row[columnMappings.date]),
-        description: row[columnMappings.description] || 'Unknown',
+        description: originalDescription,
+        original_description: originalDescription,
         amount,
         type,
         category: row[columnMappings.category] || null

@@ -218,6 +218,7 @@ async function generatePostedTransactions(accountMap, userId) {
     transactions.push({
       date: tx.date,
       description: tx.description,
+      original_description: tx.description,
       amount: tx.amount,
       type: tx.amount < 0 ? 'expense' : 'income',
       status: 'posted',
@@ -234,6 +235,7 @@ async function generatePostedTransactions(accountMap, userId) {
     transactions.push({
       date: tx.date,
       description: tx.description,
+      original_description: tx.description,
       amount: tx.amount,
       type: tx.amount < 0 ? 'expense' : 'income',
       status: 'posted',
@@ -250,6 +252,7 @@ async function generatePostedTransactions(accountMap, userId) {
     transactions.push({
       date: tx.date,
       description: tx.description,
+      original_description: tx.description,
       amount: tx.amount,
       type: tx.amount < 0 ? 'expense' : 'income',
       status: 'posted',
@@ -324,6 +327,7 @@ async function generatePendingTransactions(accountMap, userId) {
     transactions.push({
       date: tx.date,
       description: tx.description,
+      original_description: tx.description,
       amount: tx.amount,
       type: tx.amount < 0 ? 'expense' : 'income',
       status: 'pending',
@@ -340,6 +344,7 @@ async function generatePendingTransactions(accountMap, userId) {
     transactions.push({
       date: tx.date,
       description: tx.description,
+      original_description: tx.description,
       amount: tx.amount,
       type: tx.amount < 0 ? 'expense' : 'income',
       status: 'pending',
@@ -356,6 +361,7 @@ async function generatePendingTransactions(accountMap, userId) {
     transactions.push({
       date: tx.date,
       description: tx.description,
+      original_description: tx.description,
       amount: tx.amount,
       type: tx.amount < 0 ? 'expense' : 'income',
       status: 'pending',
