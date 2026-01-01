@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -50,11 +50,17 @@ export default function AddCategoryDialog({
   onSubmit,
   initialName = ''
 }) {
-  const [categoryName, setCategoryName] = useState(initialName);
+  const [categoryName, setCategoryName] = useState('');
   const [accountDetail, setAccountDetail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categoryTypes = transactionType === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
+
+  useEffect(() => {
+    if (open && initialName) {
+      setCategoryName(initialName);
+    }
+  }, [open, initialName]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
