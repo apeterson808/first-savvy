@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/sheet";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
+import ContactMatchDialog from './ContactMatchDialog';
 import { toast } from 'sonner';
 
 function formatPhoneNumber(value) {
@@ -45,11 +46,30 @@ export default function AddContactSheet({
     notes: '',
   });
   const [detectedUser, setDetectedUser] = useState(null);
+  const [matchDialogOpen, setMatchDialogOpen] = useState(false);
+  const [createdContact, setCreatedContact] = useState(null);
+  const [applyingMatches, setApplyingMatches] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: categories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: () => firstsavvy.entities.Category.list('name')
+  });
+
+  const { data: allTransactions = [] } = useQuery({
+    queryKey: ['allTransactionsForMatching'],
+    queryFn: async () => {
+      const [pending, posted] = await Promise.all([
+        firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000),
+        firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
+      ]);
+      return [...pending, ...posted];
+    }
+  });
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['activeAccounts'],
+    queryFn: () => firstsavvy.entities.Account.filter({ is_active: true })
   });
 
   useEffect(() => {
@@ -64,12 +84,8 @@ export default function AddContactSheet({
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact created successfully');
 
-      if (onContactCreated) {
-        onContactCreated(newContact, triggeringTransactionId);
-      }
-
-      resetForm();
-      onOpenChange(false);
+      setCreatedContact(newContact);
+      setMatchDialogOpen(true);
     },
     onError: (error) => {
       console.error('Create failed:', error);
@@ -88,6 +104,52 @@ export default function AddContactSheet({
       notes: '',
     });
     setDetectedUser(null);
+    setCreatedContact(null);
+    setMatchDialogOpen(false);
+  };
+
+  const handleApplyMatches = async (transactionIds) => {
+    setApplyingMatches(true);
+
+    try {
+      await Promise.all(
+        transactionIds.map(id =>
+          firstsavvy.entities.Transaction.update(id, {
+            contact_id: createdContact.id
+          })
+        )
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['allTransactionsForMatching'] });
+
+      toast.success(`Contact applied to ${transactionIds.length} transaction${transactionIds.length !== 1 ? 's' : ''}`);
+
+      if (onContactCreated) {
+        onContactCreated(createdContact, triggeringTransactionId);
+      }
+
+      setMatchDialogOpen(false);
+      resetForm();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to apply contact to transactions:', error);
+      toast.error('Failed to apply contact to some transactions');
+    } finally {
+      setApplyingMatches(false);
+    }
+  };
+
+  const handleMatchDialogClose = () => {
+    setMatchDialogOpen(false);
+
+    if (onContactCreated && createdContact) {
+      onContactCreated(createdContact, triggeringTransactionId);
+    }
+
+    resetForm();
+    onOpenChange(false);
   };
 
   const updateFormField = (field, value) => {
@@ -209,14 +271,15 @@ export default function AddContactSheet({
   };
 
   return (
-    <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle>Add Contact</SheetTitle>
-          <SheetDescription>
-            Add a new vendor or customer to your contacts
-          </SheetDescription>
-        </SheetHeader>
+    <>
+      <Sheet open={open} onOpenChange={handleOpenChange}>
+        <SheetContent className="overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Add Contact</SheetTitle>
+            <SheetDescription>
+              Add a new vendor or customer to your contacts
+            </SheetDescription>
+          </SheetHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
           <div>
             <Label htmlFor="name">Name *</Label>
@@ -332,5 +395,17 @@ export default function AddContactSheet({
         </form>
       </SheetContent>
     </Sheet>
+
+    <ContactMatchDialog
+      isOpen={matchDialogOpen}
+      onClose={handleMatchDialogClose}
+      contact={createdContact}
+      triggeringTransactionId={triggeringTransactionId}
+      allTransactions={allTransactions}
+      accounts={accounts}
+      onApply={handleApplyMatches}
+      isApplying={applyingMatches}
+    />
+  </>
   );
 }
