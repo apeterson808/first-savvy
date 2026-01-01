@@ -23,6 +23,7 @@ export default function CategoryDropdown({
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [dialogInitialName, setDialogInitialName] = useState('');
 
   const accountType = transactionType === 'income' ? 'income' : 'expense';
 
@@ -110,6 +111,7 @@ export default function CategoryDropdown({
         value={currentDisplayValue || ''}
         onValueChange={(val) => {
           if (val === '__add_new__' && onAddNew) {
+            setDialogInitialName(searchTerm);
             setShowAddDialog(true);
             setIsOpen(false);
             return;
@@ -170,10 +172,15 @@ export default function CategoryDropdown({
 
     <AddCategoryDialog
       open={showAddDialog}
-      onOpenChange={setShowAddDialog}
+      onOpenChange={(open) => {
+        setShowAddDialog(open);
+        if (!open) {
+          setDialogInitialName('');
+        }
+      }}
       transactionType={transactionType}
       onSubmit={handleAddNew}
-      initialName={searchTerm}
+      initialName={dialogInitialName}
     />
     </>
   );
