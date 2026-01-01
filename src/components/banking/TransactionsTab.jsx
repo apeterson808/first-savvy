@@ -1360,7 +1360,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     updateMutation.mutate({
                                       id: transaction.id,
-                                      data: { contact_id: value }
+                                      data: {
+                                        contact_id: value,
+                                        contact_manually_set: true
+                                      }
                                     });
                                   }}
                                   transactionDescription={transaction.description}
@@ -2660,7 +2663,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 if (transaction) {
                                   await updateMutation.mutateAsync({
                                     id: transaction.id,
-                                    data: { contact_id: newContact.id }
+                                    data: {
+                                      contact_id: newContact.id,
+                                      contact_manually_set: true
+                                    }
                                   });
                                 }
                               }
