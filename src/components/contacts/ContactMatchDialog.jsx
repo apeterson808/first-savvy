@@ -12,7 +12,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronRight, ArrowLeft } from 'lucide-react';
 import { getAccountDisplayName } from '../utils/constants';
 
 export default function ContactMatchDialog({
@@ -32,8 +32,13 @@ export default function ContactMatchDialog({
 
   useEffect(() => {
     if (isOpen && contact) {
+      setViewMode('compact');
+      setSelectedTransactions(new Set());
       const quickCount = getQuickMatchCount(triggeringTransactionId, allTransactions);
-      setMatchResults({ quickCount });
+      const triggeringTxn = triggeringTransactionId
+        ? allTransactions.find(t => t.id === triggeringTransactionId)
+        : null;
+      setMatchResults({ quickCount, triggeringTransaction: triggeringTxn });
     }
   }, [isOpen, contact, allTransactions, triggeringTransactionId]);
 
@@ -97,7 +102,8 @@ export default function ContactMatchDialog({
       setMatchResults({
         quickCount: unassigned.length + assigned.length,
         unassigned,
-        assigned
+        assigned,
+        triggeringTransaction: triggeringTxn
       });
       setViewMode('expanded');
       setIsSearching(false);
@@ -106,6 +112,11 @@ export default function ContactMatchDialog({
 
   const handleViewAllMatches = () => {
     performFullSearch();
+  };
+
+  const handleBackToSummary = () => {
+    setViewMode('compact');
+    setSelectedTransactions(new Set());
   };
 
   const handleApplyToCurrent = () => {
@@ -176,8 +187,8 @@ export default function ContactMatchDialog({
           )}
         </div>
 
-        <ScrollArea className="h-[300px]">
-          <div className="space-y-1">
+        <ScrollArea className="h-[400px]">
+          <div className="space-y-1 pr-4">
             {transactions.map(txn => {
               const account = accounts.find(a => a.id === txn.bank_account_id);
               const isSelected = selectedTransactions.has(txn.id);
@@ -185,17 +196,21 @@ export default function ContactMatchDialog({
               return (
                 <div
                   key={txn.id}
-                  className={`flex items-center gap-3 p-3 rounded-lg border transition-colors ${
-                    isSelected ? 'bg-blue-50 border-blue-200' : 'bg-white hover:bg-slate-50'
+                  className={`flex items-center gap-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${
+                    isSelected
+                      ? 'bg-blue-50 border-blue-300 shadow-sm'
+                      : 'bg-white hover:bg-slate-50 hover:border-slate-300 hover:shadow-sm'
                   }`}
+                  onClick={() => toggleTransaction(txn.id)}
                 >
                   <Checkbox
                     checked={isSelected}
                     onCheckedChange={() => toggleTransaction(txn.id)}
+                    onClick={(e) => e.stopPropagation()}
                   />
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-slate-900 truncate">
                           {txn.description}
@@ -205,22 +220,21 @@ export default function ContactMatchDialog({
                             Bank: {txn.original_description}
                           </div>
                         )}
-                        <div className="text-xs text-slate-500 mt-0.5">
-                          {account ? getAccountDisplayName(account) : 'Unknown Account'}
+                        <div className="text-xs text-slate-500 mt-1 flex items-center gap-2">
+                          <span>{account ? getAccountDisplayName(account) : 'Unknown Account'}</span>
+                          <span className="text-slate-300">•</span>
+                          <span>{format(new Date(txn.date), 'MMM dd, yyyy')}</span>
                         </div>
                       </div>
 
-                      <div className="text-right">
-                        <div className={`text-sm font-semibold ${
+                      <div className="text-right flex-shrink-0">
+                        <div className={`text-base font-semibold ${
                           txn.amount > 0 ? 'text-green-600' : 'text-slate-900'
                         }`}>
                           {txn.amount > 0 ? '+' : ''}${Math.abs(txn.amount).toLocaleString('en-US', {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2
                           })}
-                        </div>
-                        <div className="text-xs text-slate-500">
-                          {format(new Date(txn.date), 'MMM dd, yyyy')}
                         </div>
                       </div>
                     </div>
@@ -237,70 +251,154 @@ export default function ContactMatchDialog({
   if (!contact || !matchResults) return null;
 
   const hasMatches = matchResults.quickCount > 0;
+  const triggeringTxn = matchResults.triggeringTransaction;
+  const bankDescription = triggeringTxn?.original_description || triggeringTxn?.description;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`${viewMode === 'expanded' ? 'max-w-3xl' : 'max-w-md'}`}>
+      <DialogContent className={`transition-all duration-300 ${viewMode === 'expanded' ? 'max-w-4xl' : 'max-w-2xl'}`}>
         <DialogHeader>
-          <DialogTitle>Matching Transactions Found</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {viewMode === 'expanded' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleBackToSummary}
+                className="mr-2 -ml-2"
+              >
+                <ArrowLeft className="w-4 h-4" />
+              </Button>
+            )}
+            <span>{viewMode === 'compact' ? 'Matching Transactions Found' : 'Select Transactions to Update'}</span>
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
           {viewMode === 'compact' ? (
-            <div className="text-center space-y-4">
-              <div className="bg-blue-50 rounded-lg p-6">
-                <div className="text-4xl font-bold text-blue-600 mb-2">
-                  {matchResults.quickCount === 0 ? 'No' : matchResults.quickCount >= 2 ? '2+' : matchResults.quickCount}
+            <div className="space-y-6">
+              <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl border border-blue-200">
+                <div className="flex-shrink-0">
+                  <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-2xl font-bold text-white">
+                      {matchResults.quickCount === 0 ? '0' : matchResults.quickCount >= 2 ? '2+' : matchResults.quickCount}
+                    </span>
+                  </div>
                 </div>
-                <div className="text-slate-600">
-                  {matchResults.quickCount === 0
-                    ? 'No matching transactions found'
-                    : matchResults.quickCount === 1
-                    ? 'possible match found'
-                    : 'possible matches found'
-                  }
+                <div className="flex-1">
+                  <div className="text-lg font-semibold text-slate-900 mb-1">
+                    {matchResults.quickCount === 0
+                      ? 'No matching transactions found'
+                      : matchResults.quickCount === 1
+                      ? '1 possible match found'
+                      : `${matchResults.quickCount}+ possible matches found`
+                    }
+                  </div>
+                  <div className="text-sm text-slate-600">
+                    {hasMatches ? (
+                      <>Transactions with matching bank descriptions can be updated to <span className="font-semibold">"{contact.name}"</span></>
+                    ) : (
+                      'No other transactions match this description'
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {hasMatches && (
-                <div className="text-sm text-slate-600">
-                  <p>Found transactions with the same bank description.</p>
-                  <p className="mt-1">Would you like to apply "{contact.name}" to these transactions?</p>
+              {hasMatches && bankDescription && (
+                <div className="bg-slate-50 rounded-lg p-4 border">
+                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide mb-2">
+                    Matching Bank Description
+                  </div>
+                  <div className="text-sm font-mono text-slate-900 bg-white px-3 py-2 rounded border">
+                    {bankDescription}
+                  </div>
+                </div>
+              )}
+
+              {hasMatches && triggeringTxn && (
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                    Current Transaction
+                  </div>
+                  <div className="p-4 bg-white rounded-lg border-2 border-blue-200">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-slate-900 mb-1">
+                          {triggeringTxn.description}
+                        </div>
+                        <div className="text-xs text-slate-500">
+                          {accounts.find(a => a.id === triggeringTxn.bank_account_id)
+                            ? getAccountDisplayName(accounts.find(a => a.id === triggeringTxn.bank_account_id))
+                            : 'Unknown Account'}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-base font-semibold ${
+                          triggeringTxn.amount > 0 ? 'text-green-600' : 'text-slate-900'
+                        }`}>
+                          {triggeringTxn.amount > 0 ? '+' : ''}${Math.abs(triggeringTxn.amount).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          })}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-1">
+                          {format(new Date(triggeringTxn.date), 'MMM dd, yyyy')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
           ) : (
-            <div>
+            <div className="space-y-4">
               {isSearching ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                   <span className="ml-2 text-slate-600">Searching transactions...</span>
                 </div>
               ) : (
-                <Tabs defaultValue="unassigned" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="unassigned">
-                      Unassigned ({matchResults.unassigned?.length || 0})
-                    </TabsTrigger>
-                    <TabsTrigger value="assigned">
-                      Already Assigned ({matchResults.assigned?.length || 0})
-                    </TabsTrigger>
-                  </TabsList>
+                <>
+                  <div className="flex items-center justify-between p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div>
+                      <div className="text-sm font-medium text-slate-900">
+                        Applying contact: <span className="font-semibold text-blue-700">"{contact.name}"</span>
+                      </div>
+                      {bankDescription && (
+                        <div className="text-xs text-slate-600 mt-1 font-mono">
+                          Matching: {bankDescription}
+                        </div>
+                      )}
+                    </div>
+                    <Badge variant="secondary" className="text-base px-3 py-1">
+                      {(matchResults.unassigned?.length || 0) + (matchResults.assigned?.length || 0)} total
+                    </Badge>
+                  </div>
 
-                  <TabsContent value="unassigned" className="mt-4">
-                    {renderTransactionList(matchResults.unassigned)}
-                  </TabsContent>
+                  <Tabs defaultValue="unassigned" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="unassigned">
+                        Unassigned ({matchResults.unassigned?.length || 0})
+                      </TabsTrigger>
+                      <TabsTrigger value="assigned">
+                        Already Assigned ({matchResults.assigned?.length || 0})
+                      </TabsTrigger>
+                    </TabsList>
 
-                  <TabsContent value="assigned" className="mt-4">
-                    {renderTransactionList(matchResults.assigned, true)}
-                  </TabsContent>
-                </Tabs>
+                    <TabsContent value="unassigned" className="mt-4">
+                      {renderTransactionList(matchResults.unassigned)}
+                    </TabsContent>
+
+                    <TabsContent value="assigned" className="mt-4">
+                      {renderTransactionList(matchResults.assigned, true)}
+                    </TabsContent>
+                  </Tabs>
+                </>
               )}
             </div>
           )}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2">
           {viewMode === 'compact' ? (
             <>
               <Button variant="outline" onClick={onClose}>
@@ -312,10 +410,10 @@ export default function ContactMatchDialog({
                     <Button
                       onClick={handleApplyToCurrent}
                       disabled={isApplying}
-                      className="bg-slate-600 hover:bg-slate-700"
+                      variant="secondary"
                     >
                       {isApplying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Apply to Current Transaction
+                      Apply to Current Only
                     </Button>
                   )}
                   <Button
@@ -323,6 +421,7 @@ export default function ContactMatchDialog({
                     className="bg-blue-600 hover:bg-blue-700"
                   >
                     View All Matches
+                    <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </>
               )}
@@ -332,13 +431,23 @@ export default function ContactMatchDialog({
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
+              {selectedTransactions.size > 0 && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 rounded-md border border-blue-200 mr-auto">
+                  <Badge variant="default" className="bg-blue-600">
+                    {selectedTransactions.size}
+                  </Badge>
+                  <span className="text-sm text-slate-700">
+                    transaction{selectedTransactions.size !== 1 ? 's' : ''} selected
+                  </span>
+                </div>
+              )}
               <Button
                 onClick={handleApplySelected}
                 disabled={selectedTransactions.size === 0 || isApplying}
                 className="bg-blue-600 hover:bg-blue-700"
               >
                 {isApplying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                Apply to {selectedTransactions.size} Transaction{selectedTransactions.size !== 1 ? 's' : ''}
+                Apply to Selected
               </Button>
             </>
           )}
