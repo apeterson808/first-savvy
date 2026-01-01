@@ -50,8 +50,11 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
   const { data: accounts = [] } = useQuery({
     queryKey: ['activeAccounts'],
     queryFn: async () => {
-      const bankAccounts = await firstsavvy.entities.BankAccount.filter({ is_active: true });
-      return bankAccounts;
+      const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
+      return allAccounts.filter(acc =>
+        (acc.class === 'asset' && ['checking_account', 'savings_account'].includes(acc.account_detail)) ||
+        (acc.class === 'liability' && acc.account_type === 'credit_cards')
+      );
     }
   });
 
@@ -382,7 +385,7 @@ export default function FileImporter({ open, onOpenChange, onImportComplete }) {
             amount,
             type,
             bank_account_id: accountId,
-            chart_account_id: categoryId,
+            category_account_id: categoryId,
             status: 'pending',
             payment_method: 'card'
           };

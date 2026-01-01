@@ -41,7 +41,13 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: () => firstsavvy.entities.BankAccount.filter({ is_active: true })
+    queryFn: async () => {
+      const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
+      return allAccounts.filter(acc =>
+        (acc.class === 'asset' && ['checking_account', 'savings_account'].includes(acc.account_detail)) ||
+        (acc.class === 'liability' && acc.account_type === 'credit_cards')
+      );
+    }
   });
 
   const { data: existingBudgets = [] } = useQuery({

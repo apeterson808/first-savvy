@@ -52,7 +52,7 @@ export default function OnboardingWizard({ open, onComplete }) {
 
   const createAccountMutation = useMutation({
     mutationFn: async (account) => {
-      return await firstsavvy.entities.BankAccount.create(account);
+      return await firstsavvy.entities.Account.create(account);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
