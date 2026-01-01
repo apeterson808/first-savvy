@@ -179,9 +179,6 @@ export default function AddContactSheet({
     if (onContactCreated && createdContact) {
       onContactCreated(createdContact, triggeringTransactionId);
     }
-
-    resetForm();
-    onOpenChange(false);
   };
 
   const updateFormField = (field, value) => {
