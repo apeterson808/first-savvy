@@ -349,7 +349,14 @@ const getNextAccountNumber = async (userId, profileId, templateAccountNumber) =>
   return existingAccounts[0].account_number + 1;
 };
 
-export default function AccountCreationWizard({ open, onOpenChange, onAccountCreated }) {
+export default function AccountCreationWizard({
+  open,
+  onOpenChange,
+  onAccountCreated,
+  initialAccountType = null,
+  initialSubtype = null,
+  initialCategoryName = null
+}) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
   const [currentStep, setCurrentStep] = useState('select-type');
@@ -429,8 +436,24 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
   useEffect(() => {
     if (!open) {
       resetWizard();
+    } else if (open && initialAccountType && accountTypeCards.length > 0) {
+      const card = accountTypeCards.find(c => c.id === initialAccountType);
+      if (card) {
+        setSelectedCard(card);
+        if (initialSubtype && card.subtypes) {
+          const subtype = card.subtypes.find(s => s.value === initialSubtype);
+          if (subtype) {
+            setSelectedSubtype(subtype);
+            setFormData({
+              subtype: subtype.value,
+              name: initialCategoryName || ''
+            });
+            setCurrentStep('details');
+          }
+        }
+      }
     }
-  }, [open]);
+  }, [open, initialAccountType, initialSubtype, initialCategoryName, accountTypeCards]);
 
   const resetWizard = () => {
     setCurrentStep('select-type');
@@ -780,26 +803,26 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
 
   const createCategoryMutation = useMutation({
     mutationFn: async (data) => {
-      const chartAccount = userChartAccounts.find(a => a.account_detail === data.account_type);
-      if (!chartAccount) {
-        throw new Error(`No chart account found for type: ${data.account_type}`);
+      const template = chartAccounts.find(t => t.account_detail === data.accountDetail);
+      if (!template) {
+        throw new Error(`No template found for account detail: ${data.accountDetail}`);
       }
 
-      const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
+      const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
 
       const { data: newCategory, error } = await firstsavvy
         .from('user_chart_of_accounts')
         .insert({
           user_id: user.id,
           profile_id: activeProfile.id,
-          template_account_number: chartAccount.template_account_number,
+          template_account_number: template.account_number,
           account_number: accountNumber,
           display_name: data.name,
-          class: chartAccount.class,
-          account_detail: chartAccount.account_detail,
-          account_type: chartAccount.account_type,
-          icon: chartAccount.icon,
-          color: chartAccount.color,
+          class: template.class,
+          account_detail: template.account_detail,
+          account_type: template.account_type,
+          icon: template.icon,
+          color: template.color,
           is_active: true,
           is_user_created: true
         })
@@ -1195,10 +1218,14 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
           is_active: true
         });
       } else if (selectedCard.id === 'budget') {
+        if (!formData.accountDetail) {
+          toast.error('Please select a category type');
+          return;
+        }
         await createCategoryMutation.mutateAsync({
           name: formData.name,
-          type: selectedSubtype.value,
-          detail_type: selectedSubtype.value
+          accountDetail: formData.accountDetail,
+          type: selectedSubtype.value
         });
       }
     } catch (error) {
@@ -1325,7 +1352,7 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         return formData.name && formData.name.trim() && formData.currentBalance && formData.lenderName;
       }
       if (selectedCard.id === 'budget') {
-        return formData.name && formData.name.trim();
+        return formData.name && formData.name.trim() && formData.accountDetail;
       }
     }
     if (currentStep === 'balance') {
@@ -1849,6 +1876,34 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
         </div>
       );
     } else if (selectedCard.id === 'budget') {
+      const INCOME_TYPES = [
+        { value: 'earned_income', label: 'Earned Income' },
+        { value: 'passive_income', label: 'Passive Income' },
+      ];
+
+      const EXPENSE_TYPES = [
+        { value: 'housing', label: 'Housing' },
+        { value: 'utilities', label: 'Utilities' },
+        { value: 'food_dining', label: 'Food & Dining' },
+        { value: 'transportation', label: 'Transportation' },
+        { value: 'insurance', label: 'Insurance' },
+        { value: 'healthcare', label: 'Healthcare' },
+        { value: 'kids_family', label: 'Kids & Family' },
+        { value: 'education', label: 'Education' },
+        { value: 'subscriptions', label: 'Subscriptions' },
+        { value: 'shopping', label: 'Shopping' },
+        { value: 'travel', label: 'Travel' },
+        { value: 'lifestyle', label: 'Lifestyle' },
+        { value: 'personal_care', label: 'Personal Care' },
+        { value: 'professional_services', label: 'Professional Services' },
+        { value: 'pets', label: 'Pets' },
+        { value: 'financial', label: 'Financial' },
+        { value: 'giving', label: 'Giving' },
+        { value: 'taxes', label: 'Taxes' },
+      ];
+
+      const categoryTypes = formData.subtype === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
+
       return (
         <div className="space-y-5 max-w-lg mx-auto">
           <div>
@@ -1860,6 +1915,25 @@ export default function AccountCreationWizard({ open, onOpenChange, onAccountCre
               placeholder="e.g., Freelance Income, Groceries"
               required
             />
+          </div>
+          <div>
+            <Label htmlFor="accountDetail">Category Type*</Label>
+            <Select
+              value={formData.accountDetail || ''}
+              onValueChange={(value) => updateFormData('accountDetail', value)}
+              required
+            >
+              <SelectTrigger id="accountDetail">
+                <SelectValue placeholder={`Select ${formData.subtype === 'income' ? 'income' : 'expense'} type`} />
+              </SelectTrigger>
+              <SelectContent>
+                {categoryTypes.map((type) => (
+                  <SelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
       );

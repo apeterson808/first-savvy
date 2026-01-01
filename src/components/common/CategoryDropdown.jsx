@@ -3,8 +3,8 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
-import { getIncomeAccounts, getExpenseAccounts, getDisplayName, getFullDisplayName, createUserIncomeCategory, createUserExpenseCategory } from '@/api/chartOfAccounts';
-import AddCategoryDialog from './AddCategoryDialog';
+import { getIncomeAccounts, getExpenseAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 
 export default function CategoryDropdown({
   value,
@@ -22,8 +22,8 @@ export default function CategoryDropdown({
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-  const [showAddDialog, setShowAddDialog] = useState(false);
-  const [dialogInitialName, setDialogInitialName] = useState('');
+  const [showAddWizard, setShowAddWizard] = useState(false);
+  const [wizardInitialName, setWizardInitialName] = useState('');
 
   const accountType = transactionType === 'income' ? 'income' : 'expense';
 
@@ -71,35 +71,6 @@ export default function CategoryDropdown({
     }
   };
 
-  const handleAddNew = async (categoryData) => {
-    if (!activeProfile || !categoryData?.name?.trim() || !categoryData?.accountDetail) return;
-
-    try {
-      const newAccount = accountType === 'income'
-        ? await createUserIncomeCategory(activeProfile.id, {
-            name: categoryData.name.trim(),
-            accountDetail: categoryData.accountDetail
-          })
-        : await createUserExpenseCategory(activeProfile.id, {
-            name: categoryData.name.trim(),
-            accountDetail: categoryData.accountDetail
-          });
-
-      await queryClient.invalidateQueries({
-        queryKey: ['chart-accounts', accountType, activeProfile.id]
-      });
-
-      if (onAddNew) {
-        onAddNew(categoryData.name);
-      }
-      if (onValueChange && newAccount) {
-        onValueChange(newAccount.id);
-      }
-    } catch (error) {
-      console.error('Error creating category:', error);
-    }
-  };
-
   const selectedAccount = availableAccounts.find(a => a.id === currentDisplayValue);
   const displayValue = selectedAccount
     ? getDisplayName(selectedAccount)
@@ -111,8 +82,8 @@ export default function CategoryDropdown({
         value={currentDisplayValue || ''}
         onValueChange={(val) => {
           if (val === '__add_new__' && onAddNew) {
-            setDialogInitialName(searchTerm);
-            setShowAddDialog(true);
+            setWizardInitialName(searchTerm);
+            setShowAddWizard(true);
             setIsOpen(false);
             return;
           }
@@ -170,17 +141,29 @@ export default function CategoryDropdown({
       )}
     </ClickThroughSelect>
 
-    <AddCategoryDialog
-      open={showAddDialog}
+    <AccountCreationWizard
+      open={showAddWizard}
       onOpenChange={(open) => {
-        setShowAddDialog(open);
+        setShowAddWizard(open);
         if (!open) {
-          setDialogInitialName('');
+          setWizardInitialName('');
         }
       }}
-      transactionType={transactionType}
-      onSubmit={handleAddNew}
-      initialName={dialogInitialName}
+      initialAccountType="budget"
+      initialSubtype={transactionType}
+      initialCategoryName={wizardInitialName}
+      onAccountCreated={async (result) => {
+        setWizardInitialName('');
+        await queryClient.invalidateQueries({
+          queryKey: ['chart-accounts', accountType, activeProfile.id]
+        });
+        if (onAddNew && result?.account) {
+          onAddNew(result.account.display_name);
+        }
+        if (onValueChange && result?.account) {
+          onValueChange(result.account.id);
+        }
+      }}
     />
     </>
   );
