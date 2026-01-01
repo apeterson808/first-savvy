@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Sparkles } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import { suggestCategory } from './CategorySuggestion';
@@ -65,8 +65,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [addContactSheetOpen, setAddContactSheetOpen] = useState(false);
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
-  const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
-  const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
   const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
   const [matchingTransfer, setMatchingTransfer] = useState(null);
@@ -695,60 +693,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const getCategoryById = (id) => chartAccounts.find(c => c.id === id);
 
-  const autoCategorizeTransactions = async () => {
-    const uncategorized = filteredTransactions.filter(t =>
-      !t.category_account_id && t.type !== 'transfer' && t.type !== 'credit_card_payment'
-    );
-
-    if (uncategorized.length === 0) {
-      toast.info(`No uncategorized ${statusFilter} transactions to categorize.`);
-      return;
-    }
-
-    setIsAutoCategorizing(true);
-    let successCount = 0;
-    let failCount = 0;
-
-    try {
-      for (const transaction of uncategorized) {
-        try {
-          const result = await firstsavvy.functions.aiCategorizeTransaction({
-            description: transaction.description,
-            amount: transaction.amount
-          });
-
-          if (result?.chartAccountId) {
-            await firstsavvy.entities.Transaction.update(transaction.id, {
-              category_account_id: result.chartAccountId,
-              type: result.type
-            });
-            successCount++;
-          } else {
-            failCount++;
-          }
-        } catch (err) {
-          console.error(`Failed to categorize transaction ${transaction.id}:`, err);
-          failCount++;
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
-
-      if (successCount > 0) {
-        toast.success(`Categorized ${successCount} transaction${successCount > 1 ? 's' : ''}`);
-      }
-      if (failCount > 0) {
-        toast.warning(`Could not categorize ${failCount} transaction${failCount > 1 ? 's' : ''}`);
-      }
-    } catch (error) {
-      console.error('Auto-categorize error:', error);
-      toast.error('Failed to auto-categorize. Please try again.');
-    } finally {
-      setIsAutoCategorizing(false);
-    }
-  };
 
   const pendingCount = fullPendingTransactions.filter(t => {
     const isFromActiveAccount = activeAccountIds.includes(t.bank_account_id);
@@ -1192,25 +1136,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 gap-1 text-xs"
-                  onClick={autoCategorizeTransactions}
-                  disabled={isAutoCategorizing}
-                >
-                  {isAutoCategorizing ? (
-                    <>
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                      Categorizing...
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-3 h-3" />
-                      Auto-Categorize
-                    </>
-                  )}
-                </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
