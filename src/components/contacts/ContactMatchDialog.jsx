@@ -29,11 +29,13 @@ export default function ContactMatchDialog({
   const [selectedTransactions, setSelectedTransactions] = useState(new Set());
   const [matchResults, setMatchResults] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+  const [applyMode, setApplyMode] = useState('current');
 
   useEffect(() => {
     if (isOpen && contact) {
       setViewMode('compact');
       setSelectedTransactions(new Set());
+      setApplyMode('current');
       const quickCount = getQuickMatchCount(triggeringTransactionId, allTransactions);
       const triggeringTxn = triggeringTransactionId
         ? allTransactions.find(t => t.id === triggeringTransactionId)
@@ -66,6 +68,7 @@ export default function ContactMatchDialog({
 
   const performFullSearch = () => {
     setIsSearching(true);
+    setApplyMode('viewAll');
 
     setTimeout(() => {
       if (!triggeringTransactionId) {
@@ -117,6 +120,7 @@ export default function ContactMatchDialog({
   const handleBackToSummary = () => {
     setViewMode('compact');
     setSelectedTransactions(new Set());
+    setApplyMode('current');
   };
 
   const handleApplyToCurrent = () => {
@@ -129,6 +133,23 @@ export default function ContactMatchDialog({
     const selectedIds = Array.from(selectedTransactions);
     if (selectedIds.length > 0) {
       onApply(selectedIds);
+    }
+  };
+
+  const handleToggleChange = (mode) => {
+    setApplyMode(mode);
+    if (mode === 'viewAll' && viewMode === 'compact') {
+      performFullSearch();
+    } else if (mode === 'current' && viewMode === 'expanded') {
+      handleBackToSummary();
+    }
+  };
+
+  const handleApplyClick = () => {
+    if (viewMode === 'compact' && applyMode === 'current') {
+      handleApplyToCurrent();
+    } else if (viewMode === 'compact' && applyMode === 'viewAll') {
+      performFullSearch();
     }
   };
 
@@ -401,29 +422,47 @@ export default function ContactMatchDialog({
         <DialogFooter className="gap-2">
           {viewMode === 'compact' ? (
             <>
-              <Button variant="outline" onClick={onClose}>
-                Skip
-              </Button>
-              {hasMatches && (
-                <>
-                  {triggeringTransactionId && (
-                    <Button
-                      onClick={handleApplyToCurrent}
-                      disabled={isApplying}
-                      variant="secondary"
+              {hasMatches && triggeringTransactionId ? (
+                <div className="flex items-center justify-between w-full gap-4">
+                  <div className="relative bg-slate-100 rounded-full p-1 flex items-center">
+                    <div
+                      className={`absolute top-1 bottom-1 bg-white rounded-full shadow-sm transition-all duration-200 ease-out ${
+                        applyMode === 'current' ? 'left-1 right-[50%]' : 'left-[50%] right-1'
+                      }`}
+                    />
+                    <button
+                      onClick={() => handleToggleChange('current')}
+                      className={`relative z-10 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
+                        applyMode === 'current' ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
+                      }`}
                     >
-                      {isApplying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-                      Apply to Current Only
-                    </Button>
-                  )}
+                      Current Only
+                    </button>
+                    <button
+                      onClick={() => handleToggleChange('viewAll')}
+                      className={`relative z-10 px-4 py-2 text-sm font-medium transition-colors duration-200 rounded-full ${
+                        applyMode === 'viewAll' ? 'text-slate-900' : 'text-slate-500 hover:text-slate-700'
+                      }`}
+                    >
+                      View All Matches
+                    </button>
+                  </div>
+
                   <Button
-                    onClick={handleViewAllMatches}
+                    onClick={handleApplyClick}
+                    disabled={isApplying}
                     className="bg-blue-600 hover:bg-blue-700"
                   >
-                    View All Matches
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    {isApplying && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Apply
                   </Button>
-                </>
+                </div>
+              ) : (
+                <div className="flex justify-end w-full">
+                  <Button variant="outline" onClick={onClose}>
+                    Close
+                  </Button>
+                </div>
               )}
             </>
           ) : (
