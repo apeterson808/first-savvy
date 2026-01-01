@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
 import { getIncomeAccounts, getExpenseAccounts, getDisplayName, getFullDisplayName, createUserIncomeCategory, createUserExpenseCategory } from '@/api/chartOfAccounts';
+import AddCategoryDialog from './AddCategoryDialog';
 
 export default function CategoryDropdown({
   value,
@@ -18,8 +19,10 @@ export default function CategoryDropdown({
   transactionAmount = 0
 }) {
   const { activeProfile } = useProfile();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpen, setIsOpen] = useState(false);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   const accountType = transactionType === 'income' ? 'income' : 'expense';
 
@@ -67,16 +70,26 @@ export default function CategoryDropdown({
     }
   };
 
-  const handleAddNew = async (categoryName) => {
-    if (!activeProfile || !categoryName?.trim()) return;
+  const handleAddNew = async (categoryData) => {
+    if (!activeProfile || !categoryData?.name?.trim() || !categoryData?.accountDetail) return;
 
     try {
       const newAccount = accountType === 'income'
-        ? await createUserIncomeCategory(activeProfile.id, { name: categoryName.trim() })
-        : await createUserExpenseCategory(activeProfile.id, { name: categoryName.trim() });
+        ? await createUserIncomeCategory(activeProfile.id, {
+            name: categoryData.name.trim(),
+            accountDetail: categoryData.accountDetail
+          })
+        : await createUserExpenseCategory(activeProfile.id, {
+            name: categoryData.name.trim(),
+            accountDetail: categoryData.accountDetail
+          });
+
+      await queryClient.invalidateQueries({
+        queryKey: ['chart-accounts', accountType, activeProfile.id]
+      });
 
       if (onAddNew) {
-        onAddNew(categoryName);
+        onAddNew(categoryData.name);
       }
       if (onValueChange && newAccount) {
         onValueChange(newAccount.id);
@@ -92,23 +105,25 @@ export default function CategoryDropdown({
     : placeholder;
 
   return (
-    <ClickThroughSelect
-      value={currentDisplayValue || ''}
-      onValueChange={(val) => {
-        if (val === '__add_new__' && onAddNew) {
-          handleAddNew(searchTerm);
-          return;
-        }
-        onValueChange?.(val);
-      }}
-      onOpenChange={handleOpenChange}
-      onSearchTermChange={setSearchTerm}
-      placeholder={placeholder}
-      triggerClassName={`${triggerClassName} ${disabled || isTransactionTransfer ? 'opacity-50 pointer-events-none' : ''}`}
-      enableSearch={true}
-      disabled={disabled || isTransactionTransfer}
-      displayValue={displayValue}
-    >
+    <>
+      <ClickThroughSelect
+        value={currentDisplayValue || ''}
+        onValueChange={(val) => {
+          if (val === '__add_new__' && onAddNew) {
+            setShowAddDialog(true);
+            setIsOpen(false);
+            return;
+          }
+          onValueChange?.(val);
+        }}
+        onOpenChange={handleOpenChange}
+        onSearchTermChange={setSearchTerm}
+        placeholder={placeholder}
+        triggerClassName={`${triggerClassName} ${disabled || isTransactionTransfer ? 'opacity-50 pointer-events-none' : ''}`}
+        enableSearch={true}
+        disabled={disabled || isTransactionTransfer}
+        displayValue={displayValue}
+      >
       {onAddNew && (
         <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
           + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
@@ -152,5 +167,14 @@ export default function CategoryDropdown({
         </ClickThroughSelectItem>
       )}
     </ClickThroughSelect>
+
+    <AddCategoryDialog
+      open={showAddDialog}
+      onOpenChange={setShowAddDialog}
+      transactionType={transactionType}
+      onSubmit={handleAddNew}
+      initialName={searchTerm}
+    />
+    </>
   );
 }

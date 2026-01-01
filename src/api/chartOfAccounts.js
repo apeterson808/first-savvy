@@ -142,6 +142,7 @@ export const createUserIncomeCategory = async (profileId, categoryData) => {
   const { data, error } = await supabase.rpc('add_user_income_category', {
     p_user_id: profileId,
     p_category_name: categoryData.name,
+    p_account_detail: categoryData.accountDetail || 'earned_income',
     p_account_number: categoryData.accountNumber || null,
     p_icon: categoryData.icon || null,
     p_color: categoryData.color || null
@@ -155,6 +156,7 @@ export const createUserExpenseCategory = async (profileId, categoryData) => {
   const { data, error } = await supabase.rpc('add_user_expense_category', {
     p_user_id: profileId,
     p_category_name: categoryData.name,
+    p_account_detail: categoryData.accountDetail || 'shopping',
     p_account_number: categoryData.accountNumber || null,
     p_icon: categoryData.icon || null,
     p_color: categoryData.color || null
