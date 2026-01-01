@@ -65,7 +65,7 @@ export default function ContactDropdown({
           onAddNew(searchTerm);
           return;
         }
-        onValueChange?.(val);
+        onValueChange?.(val || null);
       }}
       onOpenChange={handleOpenChange}
       onSearchTermChange={setSearchTerm}

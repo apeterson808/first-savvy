@@ -45,8 +45,8 @@ export default function ChartAccountDropdown({
 
   return (
     <ClickThroughSelect
-      value={value || ''}
-      onValueChange={onValueChange}
+      value={value || undefined}
+      onValueChange={(val) => onValueChange(val || null)}
       disabled={disabled}
       open={isOpen}
       onOpenChange={setIsOpen}

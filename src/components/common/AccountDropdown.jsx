@@ -84,7 +84,7 @@ export default function AccountDropdown({
   return (
     <ClickThroughSelect
       value={value}
-      onValueChange={onValueChange}
+      onValueChange={(val) => onValueChange(val || null)}
       triggerClassName={triggerClassName}
       placeholder={placeholder}
       renderValue={showPendingCounts ? renderValue : undefined}
