@@ -78,15 +78,20 @@ export default function AddContactSheet({
     }
   }, [open, initialName]);
 
-  const getQuickMatchCount = (contactName, transactions) => {
-    if (!contactName || !transactions) return 0;
+  const getQuickMatchCount = (triggeringTxnId, transactions) => {
+    if (!triggeringTxnId || !transactions) return 0;
 
-    const searchTerm = contactName.toLowerCase();
+    const triggeringTxn = transactions.find(t => t.id === triggeringTxnId);
+    if (!triggeringTxn || !triggeringTxn.original_description) return 0;
+
+    const bankDescription = triggeringTxn.original_description.toLowerCase().trim();
     let count = 0;
 
     for (const txn of transactions) {
-      if (!txn.description) continue;
-      if (txn.description.toLowerCase().includes(searchTerm)) {
+      if (txn.id === triggeringTxnId) continue;
+      if (!txn.original_description) continue;
+
+      if (txn.original_description.toLowerCase().trim() === bankDescription) {
         count++;
         if (count >= 2) break;
       }
@@ -101,7 +106,7 @@ export default function AddContactSheet({
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact created successfully');
 
-      const matchCount = getQuickMatchCount(newContact.name, allTransactions);
+      const matchCount = getQuickMatchCount(triggeringTransactionId, allTransactions);
 
       if (matchCount > 0) {
         setCreatedContact(newContact);

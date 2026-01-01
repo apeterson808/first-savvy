@@ -32,20 +32,25 @@ export default function ContactMatchDialog({
 
   useEffect(() => {
     if (isOpen && contact) {
-      const quickCount = getQuickMatchCount(contact.name, allTransactions);
+      const quickCount = getQuickMatchCount(triggeringTransactionId, allTransactions);
       setMatchResults({ quickCount });
     }
-  }, [isOpen, contact, allTransactions]);
+  }, [isOpen, contact, allTransactions, triggeringTransactionId]);
 
-  const getQuickMatchCount = (contactName, transactions) => {
-    if (!contactName || !transactions) return 0;
+  const getQuickMatchCount = (triggeringTxnId, transactions) => {
+    if (!triggeringTxnId || !transactions) return 0;
 
-    const searchTerm = contactName.toLowerCase();
+    const triggeringTxn = transactions.find(t => t.id === triggeringTxnId);
+    if (!triggeringTxn || !triggeringTxn.original_description) return 0;
+
+    const bankDescription = triggeringTxn.original_description.toLowerCase().trim();
     let count = 0;
 
     for (const txn of transactions) {
-      if (!txn.description) continue;
-      if (txn.description.toLowerCase().includes(searchTerm)) {
+      if (txn.id === triggeringTxnId) continue;
+      if (!txn.original_description) continue;
+
+      if (txn.original_description.toLowerCase().trim() === bankDescription) {
         count++;
         if (count >= 2) break;
       }
@@ -58,14 +63,26 @@ export default function ContactMatchDialog({
     setIsSearching(true);
 
     setTimeout(() => {
-      const searchTerm = contact.name.toLowerCase();
+      if (!triggeringTransactionId) {
+        setIsSearching(false);
+        return;
+      }
+
+      const triggeringTxn = allTransactions.find(t => t.id === triggeringTransactionId);
+      if (!triggeringTxn || !triggeringTxn.original_description) {
+        setIsSearching(false);
+        return;
+      }
+
+      const bankDescription = triggeringTxn.original_description.toLowerCase().trim();
       const unassigned = [];
       const assigned = [];
 
       allTransactions.forEach(txn => {
-        if (!txn.description) return;
+        if (txn.id === triggeringTransactionId) return;
+        if (!txn.original_description) return;
 
-        if (txn.description.toLowerCase().includes(searchTerm)) {
+        if (txn.original_description.toLowerCase().trim() === bankDescription) {
           if (txn.contact_id) {
             assigned.push(txn);
           } else {
@@ -183,6 +200,11 @@ export default function ContactMatchDialog({
                         <div className="text-sm font-medium text-slate-900 truncate">
                           {txn.description}
                         </div>
+                        {txn.original_description && txn.original_description !== txn.description && (
+                          <div className="text-xs text-slate-400 mt-0.5 truncate">
+                            Bank: {txn.original_description}
+                          </div>
+                        )}
                         <div className="text-xs text-slate-500 mt-0.5">
                           {account ? getAccountDisplayName(account) : 'Unknown Account'}
                         </div>
@@ -220,7 +242,7 @@ export default function ContactMatchDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className={`${viewMode === 'expanded' ? 'max-w-3xl' : 'max-w-md'}`}>
         <DialogHeader>
-          <DialogTitle>Contact Matches Found</DialogTitle>
+          <DialogTitle>Matching Transactions Found</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
@@ -242,7 +264,8 @@ export default function ContactMatchDialog({
 
               {hasMatches && (
                 <div className="text-sm text-slate-600">
-                  Would you like to apply "{contact.name}" to these transactions?
+                  <p>Found transactions with the same bank description.</p>
+                  <p className="mt-1">Would you like to apply "{contact.name}" to these transactions?</p>
                 </div>
               )}
             </div>
