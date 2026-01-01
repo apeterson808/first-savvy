@@ -17,7 +17,7 @@ export const AuthProvider = ({ children }) => {
   const [connectionError, setConnectionError] = useState(null);
 
   useEffect(() => {
-    firstsavvy.auth.getUser()
+    firstsavvy.auth.getSession()
       .then(({ data, error }) => {
         if (error) {
           console.error('Auth error:', error);
@@ -25,7 +25,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
           setConnectionError(error.message || 'Authentication failed');
         } else {
-          setUser(data?.user || null);
+          setUser(data?.session?.user || null);
           setLoading(false);
           setConnectionError(null);
         }
