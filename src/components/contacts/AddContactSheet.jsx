@@ -78,14 +78,41 @@ export default function AddContactSheet({
     }
   }, [open, initialName]);
 
+  const getQuickMatchCount = (contactName, transactions) => {
+    if (!contactName || !transactions) return 0;
+
+    const searchTerm = contactName.toLowerCase();
+    let count = 0;
+
+    for (const txn of transactions) {
+      if (!txn.description) continue;
+      if (txn.description.toLowerCase().includes(searchTerm)) {
+        count++;
+        if (count >= 2) break;
+      }
+    }
+
+    return count;
+  };
+
   const createMutation = useMutation({
     mutationFn: (data) => firstsavvy.entities.Contact.create(data),
     onSuccess: (newContact) => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact created successfully');
 
-      setCreatedContact(newContact);
-      setMatchDialogOpen(true);
+      const matchCount = getQuickMatchCount(newContact.name, allTransactions);
+
+      if (matchCount > 0) {
+        setCreatedContact(newContact);
+        setMatchDialogOpen(true);
+      } else {
+        if (onContactCreated) {
+          onContactCreated(newContact, triggeringTransactionId);
+        }
+        resetForm();
+        onOpenChange(false);
+      }
     },
     onError: (error) => {
       console.error('Create failed:', error);
