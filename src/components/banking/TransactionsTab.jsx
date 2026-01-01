@@ -2555,12 +2555,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           </>
                                         )}
                                       </div>
-                                      {transaction.original_description && (
-                                        <div className="text-xs text-slate-500 bg-white rounded px-2 py-1">
-                                          <strong>Bank Note:</strong> {transaction.original_description}
-                                        </div>
-                                      )}
                                     </div>
+                                    {transaction.original_description && (
+                                      <div className="text-right mt-2">
+                                        <span className="text-xs text-slate-400 italic">
+                                          {transaction.original_description}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
                                 ) : (
                                   <div className="text-xs text-slate-500">
