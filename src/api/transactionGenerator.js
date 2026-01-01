@@ -244,86 +244,114 @@ export async function generateTransactionsForAccount(accountData, userId, profil
   const today = new Date();
   const goLive = goLiveDate ? new Date(goLiveDate) : today;
 
-  const monthsDiff = Math.ceil((today - start) / (1000 * 60 * 60 * 24 * 30));
-  const transactionsPerMonth = 15;
-  const totalTransactions = Math.max(monthsDiff * transactionsPerMonth, 15);
-
   const chartOfAccounts = await fetchChartOfAccounts(profileId);
   const contacts = await fetchContacts(profileId);
   console.log('Fetched contacts for matching:', contacts.length, 'contacts');
 
-  for (let i = 0; i < totalTransactions; i++) {
-    const daysFromStart = Math.floor(Math.random() * Math.ceil((today - start) / (1000 * 60 * 60 * 24)));
-    const transactionDate = addDays(start, daysFromStart);
+  const currentMonth = new Date(start);
+  currentMonth.setDate(1);
+  currentMonth.setHours(0, 0, 0, 0);
 
-    if (transactionDate > today) continue;
+  while (currentMonth <= today) {
+    const monthEnd = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
+    const actualMonthEnd = monthEnd > today ? today : monthEnd;
 
-    const status = transactionDate <= goLive ? 'posted' : 'pending';
+    const daysInMonth = actualMonthEnd.getDate() - (currentMonth.getMonth() === new Date(start).getMonth() && currentMonth.getFullYear() === new Date(start).getFullYear() ? new Date(start).getDate() : 0);
 
-    const isIncome = Math.random() < 0.15;
+    const transactionsThisMonth = Math.floor(Math.random() * 8) + 12;
 
-    if (isIncome && accountData.type !== 'credit') {
-      const incomeTemplate = getRandomElement(Object.values(INCOME_TEMPLATES));
-      const amount = getRandomAmount(incomeTemplate.amountRange[0], incomeTemplate.amountRange[1]);
-      const chartAccount = chartOfAccounts.find(ca => ca.account_number === incomeTemplate.accountNumber);
-      const contactId = matchContactToDescription(incomeTemplate.description, contacts.filter(c => c.type === 'customer'));
+    const usedDates = new Set();
 
-      transactions.push({
-        user_id: userId,
-        profile_id: profileId,
-        bank_account_id: accountData.id,
-        date: transactionDate.toISOString().split('T')[0],
-        amount: amount,
-        description: incomeTemplate.description,
-        type: 'income',
-        status: status,
-        category_account_id: chartAccount?.id || null,
-        contact_id: contactId
-      });
-    } else {
-      const shouldCategorize = Math.random() > 0.15;
+    for (let i = 0; i < transactionsThisMonth; i++) {
+      let transactionDate;
+      let attempts = 0;
 
-      if (shouldCategorize) {
-        const categoryKey = weightedRandomCategory();
-        const template = MERCHANT_TEMPLATES[categoryKey];
-        const merchant = getRandomElement(template.merchants);
-        const amount = getRandomAmount(template.amountRange[0], template.amountRange[1]);
-        const chartAccount = chartOfAccounts.find(ca => ca.account_number === template.accountNumber);
-        const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
+      do {
+        const dayOfMonth = Math.floor(Math.random() * daysInMonth) + 1;
+        transactionDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), dayOfMonth);
+
+        if (currentMonth.getMonth() === new Date(start).getMonth() && currentMonth.getFullYear() === new Date(start).getFullYear()) {
+          if (transactionDate < start) {
+            transactionDate = new Date(start);
+          }
+        }
+
+        attempts++;
+      } while (usedDates.has(transactionDate.toISOString().split('T')[0]) && attempts < 50);
+
+      if (transactionDate > today) continue;
+
+      usedDates.add(transactionDate.toISOString().split('T')[0]);
+
+      const status = transactionDate <= goLive ? 'posted' : 'pending';
+
+      const isIncome = Math.random() < 0.15;
+
+      if (isIncome && accountData.type !== 'credit') {
+        const incomeTemplate = getRandomElement(Object.values(INCOME_TEMPLATES));
+        const amount = getRandomAmount(incomeTemplate.amountRange[0], incomeTemplate.amountRange[1]);
+        const chartAccount = chartOfAccounts.find(ca => ca.account_number === incomeTemplate.accountNumber);
+        const contactId = matchContactToDescription(incomeTemplate.description, contacts.filter(c => c.type === 'customer'));
 
         transactions.push({
           user_id: userId,
           profile_id: profileId,
           bank_account_id: accountData.id,
           date: transactionDate.toISOString().split('T')[0],
-          amount: Math.abs(amount),
-          description: merchant,
-          type: 'expense',
+          amount: amount,
+          description: incomeTemplate.description,
+          type: 'income',
           status: status,
           category_account_id: chartAccount?.id || null,
           contact_id: contactId
         });
       } else {
-        const categoryKey = getRandomElement(Object.keys(MERCHANT_TEMPLATES));
-        const template = MERCHANT_TEMPLATES[categoryKey];
-        const merchant = getRandomElement(template.merchants);
-        const amount = getRandomAmount(template.amountRange[0], template.amountRange[1]);
-        const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
+        const shouldCategorize = Math.random() > 0.15;
 
-        transactions.push({
-          user_id: userId,
-          profile_id: profileId,
-          bank_account_id: accountData.id,
-          date: transactionDate.toISOString().split('T')[0],
-          amount: Math.abs(amount),
-          description: merchant,
-          type: 'expense',
-          status: status,
-          category_account_id: null,
-          contact_id: contactId
-        });
+        if (shouldCategorize) {
+          const categoryKey = weightedRandomCategory();
+          const template = MERCHANT_TEMPLATES[categoryKey];
+          const merchant = getRandomElement(template.merchants);
+          const amount = getRandomAmount(template.amountRange[0], template.amountRange[1]);
+          const chartAccount = chartOfAccounts.find(ca => ca.account_number === template.accountNumber);
+          const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
+
+          transactions.push({
+            user_id: userId,
+            profile_id: profileId,
+            bank_account_id: accountData.id,
+            date: transactionDate.toISOString().split('T')[0],
+            amount: Math.abs(amount),
+            description: merchant,
+            type: 'expense',
+            status: status,
+            category_account_id: chartAccount?.id || null,
+            contact_id: contactId
+          });
+        } else {
+          const categoryKey = getRandomElement(Object.keys(MERCHANT_TEMPLATES));
+          const template = MERCHANT_TEMPLATES[categoryKey];
+          const merchant = getRandomElement(template.merchants);
+          const amount = getRandomAmount(template.amountRange[0], template.amountRange[1]);
+          const contactId = matchContactToDescription(merchant, contacts.filter(c => c.type === 'vendor'));
+
+          transactions.push({
+            user_id: userId,
+            profile_id: profileId,
+            bank_account_id: accountData.id,
+            date: transactionDate.toISOString().split('T')[0],
+            amount: Math.abs(amount),
+            description: merchant,
+            type: 'expense',
+            status: status,
+            category_account_id: null,
+            contact_id: contactId
+          });
+        }
       }
     }
+
+    currentMonth.setMonth(currentMonth.getMonth() + 1);
   }
 
   return transactions;
