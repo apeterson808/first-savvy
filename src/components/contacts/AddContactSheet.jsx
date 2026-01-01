@@ -16,6 +16,7 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
 import ContactMatchDialog from './ContactMatchDialog';
+import ContactMatchConfirmDialog from './ContactMatchConfirmDialog';
 import { toast } from 'sonner';
 
 function formatPhoneNumber(value) {
@@ -46,8 +47,10 @@ export default function AddContactSheet({
     notes: '',
   });
   const [detectedUser, setDetectedUser] = useState(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [createdContact, setCreatedContact] = useState(null);
+  const [matchCount, setMatchCount] = useState(0);
   const [applyingMatches, setApplyingMatches] = useState(false);
   const queryClient = useQueryClient();
 
@@ -106,11 +109,12 @@ export default function AddContactSheet({
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact created successfully');
 
-      const matchCount = getQuickMatchCount(triggeringTransactionId, allTransactions);
+      const count = getQuickMatchCount(triggeringTransactionId, allTransactions);
 
-      if (matchCount > 0) {
+      if (count > 0) {
         setCreatedContact(newContact);
-        setMatchDialogOpen(true);
+        setMatchCount(count);
+        setConfirmDialogOpen(true);
       } else {
         if (onContactCreated) {
           onContactCreated(newContact, triggeringTransactionId);
@@ -137,7 +141,25 @@ export default function AddContactSheet({
     });
     setDetectedUser(null);
     setCreatedContact(null);
+    setMatchCount(0);
+    setConfirmDialogOpen(false);
     setMatchDialogOpen(false);
+  };
+
+  const handleConfirmMatches = () => {
+    setConfirmDialogOpen(false);
+    setMatchDialogOpen(true);
+  };
+
+  const handleCancelMatches = () => {
+    setConfirmDialogOpen(false);
+
+    if (onContactCreated && createdContact) {
+      onContactCreated(createdContact, triggeringTransactionId);
+    }
+
+    resetForm();
+    onOpenChange(false);
   };
 
   const handleApplyMatches = async (transactionIds) => {
@@ -442,6 +464,13 @@ export default function AddContactSheet({
         </form>
       </SheetContent>
     </Sheet>
+
+    <ContactMatchConfirmDialog
+      isOpen={confirmDialogOpen}
+      onConfirm={handleConfirmMatches}
+      onCancel={handleCancelMatches}
+      matchCount={matchCount}
+    />
 
     <ContactMatchDialog
       isOpen={matchDialogOpen}
