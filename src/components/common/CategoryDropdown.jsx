@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Sparkles, Plus } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { getIncomeAccounts, getExpenseAccounts, getDisplayName, getFullDisplayName, createUserIncomeCategory, createUserExpenseCategory } from '@/api/chartOfAccounts';
 
 export default function CategoryDropdown({
@@ -109,10 +109,9 @@ export default function CategoryDropdown({
       disabled={disabled || isTransactionTransfer}
       displayValue={displayValue}
     >
-      {onAddNew && searchTerm && (
+      {onAddNew && (
         <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-          <Plus className="w-3 h-3 mr-1" />
-          Add new category: "{searchTerm}"
+          + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
         </ClickThroughSelectItem>
       )}
       {suggestedAccount && (
