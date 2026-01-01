@@ -176,7 +176,7 @@ export function ClickThroughSelect({
       setTimeout(() => {
         isCancelingRef.current = false;
       }, 200);
-    } else if (e.key === 'Enter') {
+    } else if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
 
       if (searchTerm === '') {
