@@ -1750,75 +1750,66 @@ export default function AccountCreationWizard({
             />
           </div>
 
-          <div>
-            <Label>Bank Statement Upload*</Label>
-            <div
-              onDrop={handleDrop}
-              onDragOver={handleDragOver}
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
-            >
-              {processingStatus === 'processing' || processingStatus === 'uploading' || processingStatus === 'extracting' ? (
-                <div className="space-y-3">
-                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                  <div className="text-sm text-muted-foreground">
-                    {processingStatus === 'uploading' && 'Uploading file...'}
-                    {processingStatus === 'extracting' && 'Extracting transactions...'}
-                    {processingStatus === 'processing' && 'Processing file...'}
-                  </div>
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onClick={() => !uploadedFile && document.getElementById('file-upload-details')?.click()}
+            className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-blue-500 transition-colors cursor-pointer"
+          >
+            {processingStatus === 'processing' || processingStatus === 'uploading' || processingStatus === 'extracting' ? (
+              <div className="space-y-2">
+                <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
+                <div className="text-sm text-muted-foreground">
+                  {processingStatus === 'uploading' && 'Uploading file...'}
+                  {processingStatus === 'extracting' && 'Extracting transactions...'}
+                  {processingStatus === 'processing' && 'Processing file...'}
                 </div>
-              ) : uploadedFile ? (
-                <div className="space-y-2">
-                  <FileUp className="w-8 h-8 text-green-600 mx-auto" />
-                  <div className="text-sm font-medium">{uploadedFile.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {mappedTransactions.length > 0 && `${mappedTransactions.length} transactions found`}
-                  </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setUploadedFile(null);
-                      setProcessingStatus(null);
-                      setProcessedData(null);
-                      setMappedTransactions([]);
-                    }}
-                  >
-                    <X className="w-4 h-4 mr-1" />
-                    Remove
-                  </Button>
+              </div>
+            ) : uploadedFile ? (
+              <div className="space-y-2">
+                <FileUp className="w-6 h-6 text-green-600 mx-auto" />
+                <div className="text-sm font-medium">{uploadedFile.name}</div>
+                <div className="text-xs text-muted-foreground">
+                  {mappedTransactions.length > 0 && `${mappedTransactions.length} transactions found`}
                 </div>
-              ) : (
-                <>
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                  <p className="text-sm font-medium mb-1">Upload Bank Statement</p>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    Drag and drop or click to upload
-                  </p>
-                  <input
-                    type="file"
-                    accept=".csv,.pdf,.ofx"
-                    className="hidden"
-                    id="file-upload-details"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) handleFileUpload(file);
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => document.getElementById('file-upload-details').click()}
-                  >
-                    Choose File
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Supports CSV, PDF, and OFX formats
-                  </p>
-                </>
-              )}
-            </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setUploadedFile(null);
+                    setProcessingStatus(null);
+                    setProcessedData(null);
+                    setMappedTransactions([]);
+                  }}
+                >
+                  <X className="w-4 h-4 mr-1" />
+                  Remove
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Upload className="w-6 h-6 text-gray-400 mx-auto mb-2" />
+                <p className="text-sm font-medium mb-1">Upload Bank Statement</p>
+                <p className="text-xs text-muted-foreground">
+                  Drag and drop or click to upload
+                </p>
+                <input
+                  type="file"
+                  accept=".csv,.pdf,.ofx"
+                  className="hidden"
+                  id="file-upload-details"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Supports CSV, PDF, and OFX formats
+                </p>
+              </>
+            )}
           </div>
         </div>
       );
