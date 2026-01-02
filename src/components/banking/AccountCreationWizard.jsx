@@ -726,12 +726,15 @@ export default function AccountCreationWizard({
       const transactionsToImport = skipDuplicates ? uniqueTransactions : mappedTransactions;
 
       const allTransactions = transactionsToImport.map(txn => ({
-        ...txn,
         user_id: user.id,
         profile_id: activeProfile.id,
         chart_account_id: targetAccountId,
         status: 'posted',
-        original_description: txn.description
+        date: txn.date,
+        description: txn.description,
+        original_description: txn.original_description,
+        amount: txn.amount,
+        type: txn.type
       }));
 
       if (allTransactions.length > 0) {

@@ -163,8 +163,7 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
       description: originalDescription,
       original_description: originalDescription,
       amount,
-      type,
-      category: row[columnMappings.category] || null
+      type
     };
   }).filter(t => t.amount > 0 && t.date !== null);
 
