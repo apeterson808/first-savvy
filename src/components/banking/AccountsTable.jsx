@@ -28,6 +28,7 @@ import {
 import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package, MoreVertical, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import AccountCreationWizard from './AccountCreationWizard';
+import BankAccountSetupFlow from './BankAccountSetupFlow';
 import EditAccountDialog from './EditAccountDialog';
 import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
@@ -107,6 +108,7 @@ export default function AccountsTable({ accounts, isLoading }) {
   const navigate = useNavigate();
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [bankAccountFlowOpen, setBankAccountFlowOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
@@ -472,7 +474,8 @@ export default function AccountsTable({ accounts, isLoading }) {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setWizardOpen(true)}
+              onClick={() => setBankAccountFlowOpen(true)}
+              title="Add Bank Account"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -543,6 +546,11 @@ export default function AccountsTable({ accounts, isLoading }) {
                     </div>
                     Actions
                   </DropdownMenuItem>
+                  <div className="h-px bg-slate-200 my-1" />
+                  <DropdownMenuItem onClick={() => setWizardOpen(true)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Other Account Types
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
@@ -589,10 +597,10 @@ export default function AccountsTable({ accounts, isLoading }) {
                   </div>
                   <div className="mt-4 text-center">
                     <button
-                      onClick={() => setWizardOpen(true)}
+                      onClick={() => setBankAccountFlowOpen(true)}
                       className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                     >
-                      Or add an account manually
+                      Or add a bank account
                     </button>
                   </div>
                 </div>
@@ -766,6 +774,13 @@ export default function AccountsTable({ accounts, isLoading }) {
         }}
         account={editingAccount}
         onSuccess={handleSuccess}
+      />
+
+      {/* Bank Account Setup Flow */}
+      <BankAccountSetupFlow
+        open={bankAccountFlowOpen}
+        onOpenChange={setBankAccountFlowOpen}
+        onAccountCreated={handleSuccess}
       />
 
       {/* Account Creation Wizard */}
