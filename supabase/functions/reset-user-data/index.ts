@@ -46,29 +46,36 @@ Deno.serve(async (req: Request) => {
     }
 
     const userId = user.id;
+    console.log(`Resetting data for user: ${userId}`);
 
-    await supabase.from("transaction_splits").delete().eq("user_id", userId);
-    await supabase.from("transactions").delete().eq("user_id", userId);
-    await supabase.from("categorization_rules").delete().eq("user_id", userId);
-    await supabase.from("contact_matching_rules").delete().eq("user_id", userId);
-    await supabase.from("payment_reminders").delete().eq("user_id", userId);
-    await supabase.from("transfer_registry").delete().eq("user_id", userId);
-    await supabase.from("asset_liability_links").delete().eq("user_id", userId);
-    await supabase.from("budgets").delete().eq("user_id", userId);
-    await supabase.from("budget_groups").delete().eq("user_id", userId);
-    await supabase.from("categories").delete().eq("user_id", userId);
-    await supabase.from("accounts").delete().eq("user_id", userId);
-    await supabase.from("bank_accounts").delete().eq("user_id", userId);
-    await supabase.from("credit_cards").delete().eq("user_id", userId);
-    await supabase.from("assets").delete().eq("user_id", userId);
-    await supabase.from("liabilities").delete().eq("user_id", userId);
-    await supabase.from("equity").delete().eq("user_id", userId);
-    await supabase.from("contacts").delete().eq("user_id", userId);
-    await supabase.from("bills").delete().eq("user_id", userId);
-    await supabase.from("credit_scores").delete().eq("user_id", userId);
-    await supabase.from("plaid_items").delete().eq("user_id", userId);
-    await supabase.from("configuration_change_log").delete().eq("user_id", userId);
-    await supabase.from("user_chart_of_accounts").delete().eq("user_id", userId);
+    const tablesToDelete = [
+      "transaction_splits",
+      "transactions",
+      "categorization_rules",
+      "contact_matching_rules",
+      "transfer_registry",
+      "budgets",
+      "contacts",
+      "plaid_items",
+      "user_chart_of_accounts"
+    ];
+
+    for (const table of tablesToDelete) {
+      console.log(`Attempting to delete from ${table} for user ${userId}...`);
+      const { data, error } = await supabase
+        .from(table)
+        .delete()
+        .eq("user_id", userId)
+        .select();
+
+      if (error) {
+        console.error(`Error deleting from ${table}:`, error);
+        throw new Error(`Failed to delete from ${table}: ${error.message}`);
+      }
+
+      const deletedCount = data ? data.length : 0;
+      console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
+    }
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -81,10 +88,18 @@ Deno.serve(async (req: Request) => {
     const profileId = profile?.id;
 
     if (profileId) {
-      const { data: templates } = await supabase
+      console.log(`Recreating chart of accounts for profile ${profileId}...`);
+      const { data: templates, error: templatesError } = await supabase
         .from("chart_of_accounts_templates")
         .select("*")
         .order("account_number");
+
+      if (templatesError) {
+        console.error("Error fetching templates:", templatesError);
+        throw new Error(`Failed to fetch templates: ${templatesError.message}`);
+      }
+
+      console.log(`Found ${templates?.length || 0} account templates`);
 
       if (templates && templates.length > 0) {
         const userAccounts = templates.map(template => ({
@@ -102,8 +117,20 @@ Deno.serve(async (req: Request) => {
           is_user_created: false,
         }));
 
-        await supabase.from("user_chart_of_accounts").insert(userAccounts);
+        const { error: insertError } = await supabase
+          .from("user_chart_of_accounts")
+          .insert(userAccounts);
+
+        if (insertError) {
+          console.error("Error inserting chart accounts:", insertError);
+          throw new Error(`Failed to recreate chart of accounts: ${insertError.message}`);
+        }
+
+        console.log(`Successfully recreated ${userAccounts.length} chart accounts`);
       }
+    } else {
+      console.error("No profile found for user!");
+      throw new Error("No profile found for user");
     }
 
     return new Response(
