@@ -459,7 +459,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
         try {
           const suggestion = await suggestCategory(
-            transaction.description,
+            transaction.original_description || transaction.description,
             allCategorizedTransactions,
             categorizationRules,
             transaction.amount,

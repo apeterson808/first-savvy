@@ -49,12 +49,12 @@ export async function suggestCategory(description, transactions, rules, amount =
     const accountCount = {};
 
     transactions.forEach(t => {
-      if (!t.description || !t.chart_account_id) return;
+      if (!t.original_description || !t.chart_account_id) return;
 
       const chartAccount = chartAccounts.find(c => c.id === t.chart_account_id);
       if (!chartAccount) return;
 
-      const tDescLower = t.description.toLowerCase();
+      const tDescLower = t.original_description.toLowerCase();
 
       if (tDescLower.includes(descLower) || descLower.includes(tDescLower) ||
           (descLower.length > 4 && tDescLower.includes(descLower.substring(0, 4)))) {
