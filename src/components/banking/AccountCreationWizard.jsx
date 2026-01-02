@@ -1730,7 +1730,8 @@ export default function AccountCreationWizard({
       const existingAccounts = userChartAccounts?.filter(acc =>
         acc.account_detail === (selectedSubtype?.value === 'checking' ? 'checking_account' :
                                 selectedSubtype?.value === 'savings' ? 'savings_account' :
-                                selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' : '')
+                                selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' : '') &&
+        acc.is_active === true
       ) || [];
 
       return (
