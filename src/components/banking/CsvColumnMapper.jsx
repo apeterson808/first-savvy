@@ -40,8 +40,16 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
     });
   };
 
-  const isValid = columnMappings.date && columnMappings.description && 
+  const isValid = columnMappings.date && columnMappings.description &&
     (columnMappings.amount || (debitColumn && creditColumn));
+
+  const formatAmountValue = (value) => {
+    if (!value || value === '-') return '-';
+    const cleaned = value.toString().replace(/[^0-9.-]/g, '');
+    const num = parseFloat(cleaned);
+    if (isNaN(num)) return value;
+    return num.toFixed(2);
+  };
 
   return (
     <div className="space-y-4">
@@ -204,16 +212,18 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
                     {Object.entries(columnMappings).map(([field, column]) => {
                       if (amountType === 'separate_columns' && field === 'amount') return null;
                       if (!column && field !== 'category' && field !== 'type') return null;
+                      const cellValue = row[column] || '-';
+                      const displayValue = field === 'amount' ? formatAmountValue(cellValue) : cellValue;
                       return (
                         <td key={field} className="px-3 py-2 text-slate-900">
-                          {row[column] || '-'}
+                          {displayValue}
                         </td>
                       );
                     })}
                     {amountType === 'separate_columns' && (
                       <>
-                        <td className="px-3 py-2 text-slate-900">{row[debitColumn] || '-'}</td>
-                        <td className="px-3 py-2 text-slate-900">{row[creditColumn] || '-'}</td>
+                        <td className="px-3 py-2 text-slate-900">{formatAmountValue(row[debitColumn])}</td>
+                        <td className="px-3 py-2 text-slate-900">{formatAmountValue(row[creditColumn])}</td>
                       </>
                     )}
                   </tr>
