@@ -26,46 +26,57 @@ export const processStatementFile = async (file, onProgress) => {
     return { type: 'csv', headers, rows };
   }
 
-  onProgress?.('uploading');
-  const uploadResponse = await firstsavvy.integrations.Core.UploadFile({ file });
-  const fileUrl = uploadResponse.file_url;
+  if (fileExt === 'ofx' || fileExt === 'qfx') {
+    onProgress?.('uploading');
 
-  onProgress?.('extracting');
+    const user = await firstsavvy.auth.getUser();
+    if (!user?.data?.user?.id) {
+      throw new Error('You must be logged in to upload files');
+    }
 
-  let extractResponse;
-  if (fileExt === 'ofx') {
-    extractResponse = await firstsavvy.functions.parseOfx({ file_url: fileUrl });
-  } else {
-    extractResponse = await firstsavvy.integrations.Core.ExtractDataFromUploadedFile({
-      file_url: fileUrl,
-      json_schema: {
-        type: "object",
-        properties: {
-          transactions: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                date: { type: "string", description: "Transaction date in YYYY-MM-DD format" },
-                description: { type: "string", description: "Transaction description or merchant name" },
-                amount: { type: "number", description: "Transaction amount (negative for expenses, positive for income)" },
-                category: { type: "string", description: "Transaction category" },
-                account_name: { type: "string", description: "Account name if available" }
-              },
-              required: ["date", "description", "amount"]
-            }
-          }
-        }
-      }
-    });
+    const userId = user.data.user.id;
+    const timestamp = Date.now();
+    const filePath = `${userId}/${timestamp}-${file.name}`;
+
+    const { data: uploadData, error: uploadError } = await firstsavvy.storage
+      .from('statement-files')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Upload error:', uploadError);
+      throw new Error(`Failed to upload file: ${uploadError.message}`);
+    }
+
+    const { data: urlData } = firstsavvy.storage
+      .from('statement-files')
+      .getPublicUrl(filePath);
+
+    const fileUrl = urlData.publicUrl;
+
+    onProgress?.('extracting');
+
+    const extractResponse = await firstsavvy.functions.parseOfx({ file_url: fileUrl });
+
+    await firstsavvy.storage.from('statement-files').remove([filePath]);
+
+    if (extractResponse.status === 'success' && extractResponse.output?.transactions) {
+      return {
+        type: 'transactions',
+        transactions: extractResponse.output.transactions,
+        institutionName: extractResponse.output.institutionName,
+        accountNumber: extractResponse.output.accountNumber,
+        beginningBalance: extractResponse.output.beginningBalance
+      };
+    }
+
+    const errorMsg = extractResponse.details || extractResponse.error || 'Failed to extract data';
+    throw new Error(errorMsg);
   }
 
-  if (extractResponse.status === 'success' && extractResponse.output?.transactions) {
-    return { type: 'transactions', transactions: extractResponse.output.transactions };
-  }
-
-  const errorMsg = extractResponse.details || extractResponse.error || 'Failed to extract data';
-  throw new Error(errorMsg);
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
 };
 
 export const parseDate = (dateStr) => {
