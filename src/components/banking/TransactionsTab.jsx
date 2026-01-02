@@ -492,15 +492,72 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Transaction.update(id, data), { maxRetries: 2 }),
-    onSuccess: () => {
+    onMutate: async ({ id, data }) => {
+      await queryClient.cancelQueries({ queryKey: ['fullPendingTransactions'] });
+      await queryClient.cancelQueries({ queryKey: ['fullPostedTransactions'] });
+      await queryClient.cancelQueries({ queryKey: ['fullExcludedTransactions'] });
+
+      const previousPending = queryClient.getQueryData(['fullPendingTransactions']);
+      const previousPosted = queryClient.getQueryData(['fullPostedTransactions']);
+      const previousExcluded = queryClient.getQueryData(['fullExcludedTransactions']);
+
+      if (data.status) {
+        const findAndUpdate = (transactions) => {
+          if (!transactions) return null;
+          const transaction = transactions.find(t => t.id === id);
+          return transaction ? { ...transaction, ...data } : null;
+        };
+
+        const updatedTransaction = findAndUpdate(previousPending) || findAndUpdate(previousPosted) || findAndUpdate(previousExcluded);
+
+        if (updatedTransaction) {
+          queryClient.setQueryData(['fullPendingTransactions'],
+            data.status === 'pending'
+              ? [...(previousPending || []).filter(t => t.id !== id), updatedTransaction]
+              : (previousPending || []).filter(t => t.id !== id)
+          );
+          queryClient.setQueryData(['fullPostedTransactions'],
+            data.status === 'posted'
+              ? [...(previousPosted || []).filter(t => t.id !== id), updatedTransaction]
+              : (previousPosted || []).filter(t => t.id !== id)
+          );
+          queryClient.setQueryData(['fullExcludedTransactions'],
+            data.status === 'excluded'
+              ? [...(previousExcluded || []).filter(t => t.id !== id), updatedTransaction]
+              : (previousExcluded || []).filter(t => t.id !== id)
+          );
+        }
+      } else {
+        const updateInCache = (transactions) => {
+          if (!transactions) return transactions;
+          return transactions.map(t => t.id === id ? { ...t, ...data } : t);
+        };
+
+        queryClient.setQueryData(['fullPendingTransactions'], updateInCache(previousPending));
+        queryClient.setQueryData(['fullPostedTransactions'], updateInCache(previousPosted));
+        queryClient.setQueryData(['fullExcludedTransactions'], updateInCache(previousExcluded));
+      }
+
+      return { previousPending, previousPosted, previousExcluded };
+    },
+    onError: (error, variables, context) => {
+      if (context?.previousPending) {
+        queryClient.setQueryData(['fullPendingTransactions'], context.previousPending);
+      }
+      if (context?.previousPosted) {
+        queryClient.setQueryData(['fullPostedTransactions'], context.previousPosted);
+      }
+      if (context?.previousExcluded) {
+        queryClient.setQueryData(['fullExcludedTransactions'], context.previousExcluded);
+      }
+      logError(error, { action: 'updateTransaction' });
+      showErrorToast(error);
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
-    },
-    onError: (error) => {
-      logError(error, { action: 'updateTransaction' });
-      showErrorToast(error);
     }
   });
 
