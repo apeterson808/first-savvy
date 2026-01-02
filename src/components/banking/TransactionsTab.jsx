@@ -52,7 +52,7 @@ import { Trash2 } from 'lucide-react';
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(() => {
-    return (initialFilters?.date || initialFilters?.category) ? 'posted' : 'pending';
+    return initialFilters?.status || 'posted';
   });
   const [sortBy, setSortBy] = useState('-date');
   const [selectedTransactions, setSelectedTransactions] = useState([]);
