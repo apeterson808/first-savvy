@@ -2427,16 +2427,6 @@ export default function AccountCreationWizard({
   );
 
   const renderBankSearchStep = () => {
-    const handleDrop = (e) => {
-      e.preventDefault();
-      const file = e.dataTransfer.files[0];
-      if (file) handleFileUpload(file);
-    };
-
-    const handleDragOver = (e) => {
-      e.preventDefault();
-    };
-
     return (
       <div className="space-y-6 max-w-lg mx-auto">
         <div className="space-y-4">
@@ -2463,79 +2453,6 @@ export default function AccountCreationWizard({
             >
               Bank Simulation
             </Button>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
-          >
-            {processingStatus === 'processing' || processingStatus === 'uploading' || processingStatus === 'extracting' ? (
-              <div className="space-y-3">
-                <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
-                <div className="text-sm text-muted-foreground">
-                  {processingStatus === 'uploading' && 'Uploading file...'}
-                  {processingStatus === 'extracting' && 'Extracting transactions...'}
-                  {processingStatus === 'processing' && 'Processing file...'}
-                </div>
-              </div>
-            ) : uploadedFile ? (
-              <div className="space-y-2">
-                <FileUp className="w-8 h-8 text-green-600 mx-auto" />
-                <div className="text-sm font-medium">{uploadedFile.name}</div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setUploadedFile(null);
-                    setProcessingStatus(null);
-                    setProcessedData(null);
-                  }}
-                >
-                  <X className="w-4 h-4 mr-1" />
-                  Remove
-                </Button>
-              </div>
-            ) : (
-              <>
-                <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
-                <p className="text-sm font-medium mb-1">Import Bank Statement</p>
-                <p className="text-xs text-muted-foreground mb-3">
-                  Drag and drop or click to upload
-                </p>
-                <input
-                  type="file"
-                  accept=".csv,.pdf,.ofx"
-                  className="hidden"
-                  id="file-upload"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleFileUpload(file);
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => document.getElementById('file-upload').click()}
-                >
-                  Choose File
-                </Button>
-                <p className="text-xs text-muted-foreground mt-2">
-                  Supports CSV, PDF, and OFX formats
-                </p>
-              </>
-            )}
           </div>
 
           <div className="relative">
