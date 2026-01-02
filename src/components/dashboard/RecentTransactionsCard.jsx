@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -20,6 +20,7 @@ export default function RecentTransactionsCard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -74,14 +75,56 @@ export default function RecentTransactionsCard() {
   });
 
   // Get AI suggestions for uncategorized transactions
-  const activeAccountIds = useMemo(() => accounts.map(a => a.id), [accounts]);
+  const activeAccountIds = accounts.map(a => a.id);
+  const pendingTransactions = allPendingTransactions
+    .filter(t => activeAccountIds.includes(t.bank_account_id))
+    .slice(0, 5);
 
-  const pendingTransactions = useMemo(() => {
-    return allPendingTransactions
+  useEffect(() => {
+    const needsSuggestion = allPendingTransactions
       .filter(t => activeAccountIds.includes(t.bank_account_id))
-      .slice(0, 5);
-  }, [allPendingTransactions, activeAccountIds]);
+      .filter(t => !t.ai_suggested_chart_account_id && !autoCategorizingIds.has(t.id));
 
+    if (needsSuggestion.length === 0 || chartAccounts.length === 0) return;
+
+    // Mark as being processed
+    setAutoCategorizingIds(prev => {
+      const next = new Set(prev);
+      needsSuggestion.forEach(t => next.add(t.id));
+      return next;
+    });
+
+    const getSuggestions = async () => {
+      try {
+        for (const transaction of needsSuggestion) {
+          try {
+            const suggestion = await suggestCategory(
+              transaction.description,
+              transactions,
+              categorizationRules,
+              transaction.amount,
+              chartAccounts
+            );
+
+            if (suggestion && suggestion.chartAccountId) {
+              updateMutation.mutate({
+                id: transaction.id,
+                data: {
+                  ai_suggested_chart_account_id: suggestion.chartAccountId
+                }
+              });
+            }
+          } catch (err) {
+            console.error(`Failed to categorize transaction ${transaction.id}:`, err);
+          }
+        }
+      } catch (err) {
+        console.error('Auto-categorize error:', err);
+      }
+    };
+
+    getSuggestions();
+  }, [allPendingTransactions.length, chartAccounts.length]);
 
   const recentTransactions = pendingTransactions;
 

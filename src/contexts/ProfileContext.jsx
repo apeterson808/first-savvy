@@ -65,10 +65,7 @@ export const ProfileProvider = ({ children }) => {
           role: m.role
         }));
 
-      setProfiles(prev => {
-        const hasChanged = JSON.stringify(prev) !== JSON.stringify(profilesList);
-        return hasChanged ? profilesList : prev;
-      });
+      setProfiles(profilesList);
 
       const { data: activeTabs, error: tabError } = await firstsavvy
         .from('profile_tabs')
@@ -116,10 +113,7 @@ export const ProfileProvider = ({ children }) => {
         }
       }
 
-      setActiveProfile(prev => {
-        const hasChanged = JSON.stringify(prev) !== JSON.stringify(activeProfileToSet);
-        return hasChanged ? activeProfileToSet : prev;
-      });
+      setActiveProfile(activeProfileToSet);
 
       if (activeProfileToSet) {
         localStorage.setItem('activeProfileId', activeProfileToSet.id);
@@ -167,7 +161,7 @@ export const ProfileProvider = ({ children }) => {
     loadProfiles();
   }, [loadProfiles]);
 
-  const switchProfile = useCallback(async (profile) => {
+  const switchProfile = async (profile) => {
     if (!user || !profile) return;
 
     try {
@@ -190,10 +184,7 @@ export const ProfileProvider = ({ children }) => {
         console.error('Error activating tab:', activateError);
       }
 
-      setActiveProfile(prev => {
-        const hasChanged = JSON.stringify(prev) !== JSON.stringify(profile);
-        return hasChanged ? profile : prev;
-      });
+      setActiveProfile(profile);
       localStorage.setItem('activeProfileId', profile.id);
 
       window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
@@ -201,20 +192,20 @@ export const ProfileProvider = ({ children }) => {
       console.error('Error switching profile:', err);
       throw err;
     }
-  }, [user]);
+  };
 
-  const refreshProfiles = useCallback(async () => {
+  const refreshProfiles = async () => {
     await loadProfiles();
-  }, [loadProfiles]);
+  };
 
-  const value = React.useMemo(() => ({
+  const value = {
     profiles,
     activeProfile,
     loading,
     error,
     switchProfile,
     refreshProfiles
-  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles]);
+  };
 
   return (
     <ProfileContext.Provider value={value}>
