@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -20,13 +20,13 @@ export default function RecentTransactionsCard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const [autoCategorizingIds, setAutoCategorizingIds] = useState(new Set());
   const [addCategorySheetOpen, setAddCategorySheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingValue, setEditingValue] = useState('');
   const [accountWizardOpen, setAccountWizardOpen] = useState(false);
   const inputRef = useRef(null);
+  const processedIdsRef = useRef(new Set());
 
   const { data: chartOfAccounts = [] } = useQuery({
     queryKey: ['activeTransactionalAccounts'],
@@ -80,19 +80,23 @@ export default function RecentTransactionsCard() {
     .filter(t => activeAccountIds.includes(t.bank_account_id))
     .slice(0, 5);
 
+  const uncategorizedTransactionIds = useMemo(() => {
+    return allPendingTransactions
+      .filter(t => activeAccountIds.includes(t.bank_account_id))
+      .filter(t => !t.ai_suggested_chart_account_id && !processedIdsRef.current.has(t.id))
+      .map(t => t.id)
+      .sort()
+      .join(',');
+  }, [allPendingTransactions, activeAccountIds]);
+
   useEffect(() => {
+    if (!uncategorizedTransactionIds || chartAccounts.length === 0) return;
+
     const needsSuggestion = allPendingTransactions
       .filter(t => activeAccountIds.includes(t.bank_account_id))
-      .filter(t => !t.ai_suggested_chart_account_id && !autoCategorizingIds.has(t.id));
+      .filter(t => !t.ai_suggested_chart_account_id && !processedIdsRef.current.has(t.id));
 
-    if (needsSuggestion.length === 0 || chartAccounts.length === 0) return;
-
-    // Mark as being processed
-    setAutoCategorizingIds(prev => {
-      const next = new Set(prev);
-      needsSuggestion.forEach(t => next.add(t.id));
-      return next;
-    });
+    needsSuggestion.forEach(t => processedIdsRef.current.add(t.id));
 
     const getSuggestions = async () => {
       try {
@@ -124,7 +128,7 @@ export default function RecentTransactionsCard() {
     };
 
     getSuggestions();
-  }, [allPendingTransactions.length, chartAccounts.length]);
+  }, [uncategorizedTransactionIds, chartAccounts.length]);
 
   const recentTransactions = pendingTransactions;
 
