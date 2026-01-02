@@ -2,6 +2,63 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
 
+export const processClaudeCodeJSON = (jsonString) => {
+  try {
+    const parsed = JSON.parse(jsonString);
+
+    if (!parsed.transactions || !Array.isArray(parsed.transactions)) {
+      throw new Error('Invalid format: "transactions" array is required');
+    }
+
+    if (parsed.transactions.length === 0) {
+      throw new Error('No transactions found in the JSON data');
+    }
+
+    const transactions = parsed.transactions.map((txn, index) => {
+      if (!txn.date || !txn.description || txn.amount === undefined) {
+        throw new Error(`Transaction at index ${index} is missing required fields (date, description, amount)`);
+      }
+
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(txn.date)) {
+        throw new Error(`Transaction at index ${index} has invalid date format. Expected YYYY-MM-DD, got: ${txn.date}`);
+      }
+
+      const amount = parseFloat(txn.amount);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error(`Transaction at index ${index} has invalid amount: ${txn.amount}`);
+      }
+
+      const type = txn.type || 'expense';
+      if (!['expense', 'income', 'transfer'].includes(type)) {
+        throw new Error(`Transaction at index ${index} has invalid type: ${type}. Must be "expense", "income", or "transfer"`);
+      }
+
+      return {
+        date: txn.date,
+        description: txn.description,
+        original_description: txn.description,
+        amount: amount,
+        type: type,
+        confidence: txn.confidence || 100
+      };
+    });
+
+    return {
+      type: 'transactions',
+      transactions: transactions,
+      institutionName: parsed.institutionName || 'Claude Code Import',
+      accountNumber: parsed.accountNumber || '',
+      statementPeriod: parsed.statementPeriod || ''
+    };
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error('Invalid JSON format. Please check the JSON syntax.');
+    }
+    throw error;
+  }
+};
+
 export const processStatementFile = async (file, onProgress) => {
   const fileExt = file.name.split('.').pop().toLowerCase();
 

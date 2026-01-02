@@ -7,7 +7,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -17,114 +16,6 @@ interface Transaction {
   amount: number;
   type?: string;
   confidence?: number;
-}
-
-interface ClaudeVisionResponse {
-  transactions: Transaction[];
-  institutionName?: string;
-  accountNumber?: string;
-  statementPeriod?: string;
-}
-
-async function extractTransactionsWithClaude(
-  text: string,
-  userBankAccounts: any[]
-): Promise<ClaudeVisionResponse | null> {
-  if (!ANTHROPIC_API_KEY) {
-    console.log('No Anthropic API key, skipping AI extraction');
-    return null;
-  }
-
-  const accountsList = userBankAccounts.length > 0
-    ? userBankAccounts.map(acc => `${acc.institution_name || 'Unknown'} - ${acc.account_name} (ending in ${acc.last_four || 'N/A'})`).join('\n')
-    : 'No accounts available';
-
-  const prompt = `You are a financial document analysis expert. Analyze this bank statement text and extract ALL transactions in structured format.
-
-User's Bank Accounts:
-${accountsList}
-
-TEXT FROM BANK STATEMENT:
-${text.substring(0, 15000)}
-
-Instructions:
-1. Extract ALL transaction rows from the statement
-2. For each transaction, identify:
-   - Date (format as YYYY-MM-DD)
-   - Description (merchant name, purpose)
-   - Amount (as a positive number)
-   - Type ("expense" for debits/charges, "income" for deposits/credits)
-3. Also identify:
-   - Institution name (e.g., "Chase", "Bank of America")
-   - Account number (last 4 digits if visible)
-   - Statement period if visible
-4. Return confidence score 0-100 for each transaction
-
-Return ONLY valid JSON with this exact structure:
-{
-  "institutionName": "<bank name>",
-  "accountNumber": "<last 4 digits or partial account>",
-  "statementPeriod": "<date range if visible>",
-  "transactions": [
-    {
-      "date": "YYYY-MM-DD",
-      "description": "<merchant or description>",
-      "amount": <positive number>,
-      "type": "expense" or "income",
-      "confidence": <0-100>
-    }
-  ]
-}
-
-If this is not a bank statement, return: {"transactions": []}`;
-
-  try {
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-haiku-20240307',
-        max_tokens: 4096,
-        temperature: 0.1,
-        messages: [
-          {
-            role: 'user',
-            content: prompt,
-          },
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Anthropic API error:', response.status, errorText);
-      return null;
-    }
-
-    const data = await response.json();
-    const content = data.content?.[0]?.text;
-
-    if (!content) {
-      console.error('No content in Claude response');
-      return null;
-    }
-
-    const jsonMatch = content.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('No JSON found in Claude response:', content);
-      return null;
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-    return parsed;
-  } catch (error) {
-    console.error('Error calling Claude API:', error);
-    return null;
-  }
 }
 
 async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
@@ -405,7 +296,7 @@ Deno.serve(async (req: Request) => {
     let institutionName = 'Unknown Institution';
     let accountNumber = 'PDF Import';
     let suggestedAccountId: string | null = null;
-    let extractionMethod = 'text';
+    let extractionMethod = 'regex';
 
     let pdfBuffer: ArrayBuffer;
     try {
@@ -449,54 +340,28 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    if (ANTHROPIC_API_KEY) {
-      console.log('Attempting Claude AI extraction...');
-      try {
-        const aiResult = await extractTransactionsWithClaude(text, bankAccounts);
-
-        if (aiResult && aiResult.transactions && aiResult.transactions.length > 0) {
-          console.log(`Claude AI extracted ${aiResult.transactions.length} transactions`);
-          transactions = aiResult.transactions;
-          institutionName = aiResult.institutionName || institutionName;
-          accountNumber = aiResult.accountNumber || accountNumber;
-          extractionMethod = 'ai';
-
-          suggestedAccountId = matchBankAccount(institutionName, accountNumber, bankAccounts);
-          console.log(`Matched account: ${suggestedAccountId}`);
-        } else {
-          console.log('AI extraction failed or returned no transactions, falling back to regex parsing');
-        }
-      } catch (aiError) {
-        console.error('AI extraction error, falling back to regex parsing:', aiError);
-      }
-    } else {
-      console.log('No Anthropic API key configured, skipping AI extraction');
-    }
+    console.log('Using regex-based text parsing...');
+    transactions = parseTransactionsFromText(text);
+    console.log('Parsed transactions:', transactions.length);
 
     if (transactions.length === 0) {
-      console.log('Using regex-based text parsing fallback...');
-      transactions = parseTransactionsFromText(text);
-      console.log('Parsed transactions:', transactions.length);
-
-      if (transactions.length === 0) {
-        return new Response(
-          JSON.stringify({
-            status: 'error',
-            error: 'No transactions found in PDF. The PDF format may not be supported. Please try uploading a CSV or OFX file instead.',
-            details: `Extracted ${text.length} characters of text but could not parse transactions`
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const institutionMatch = text.match(/(?:bank|credit\s+card|statement\s+from)\s+(.{3,50})/i);
-      institutionName = institutionMatch
-        ? institutionMatch[1].split(/[\n\r]/)[0].trim()
-        : 'Unknown Institution';
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'No transactions found in PDF. The PDF format may not be supported. For best results, use Claude Code to extract transactions manually.',
+          details: `Extracted ${text.length} characters of text but could not parse transactions`
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
+
+    const institutionMatch = text.match(/(?:bank|credit\s+card|statement\s+from)\s+(.{3,50})/i);
+    institutionName = institutionMatch
+      ? institutionMatch[1].split(/[\n\r]/)[0].trim()
+      : 'Unknown Institution';
 
     return new Response(
       JSON.stringify({
