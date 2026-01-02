@@ -619,13 +619,32 @@ export default function AccountCreationWizard({
 
       setProcessedData(result);
 
-      if (result.type === 'csv') {
-        setCurrentStep('csv-mapping');
+      if (currentStep === 'details' && selectedCard.id === 'banking') {
+        if (result.type === 'csv') {
+          setCurrentStep('csv-mapping');
+        } else {
+          setMappedTransactions(result.transactions);
+          setProcessingStatus('success');
+
+          if (result.institutionName) {
+            updateFormData('institutionName', result.institutionName);
+          }
+          if (result.accountNumber) {
+            updateFormData('last4', result.accountNumber.slice(-4));
+          }
+          if (result.beginningBalance !== undefined) {
+            updateFormData('beginningBalance', result.beginningBalance);
+          }
+        }
       } else {
-        setMappedTransactions(result.transactions);
-        setCurrentStep('account-selection');
+        if (result.type === 'csv') {
+          setCurrentStep('csv-mapping');
+        } else {
+          setMappedTransactions(result.transactions);
+          setCurrentStep('account-selection');
+        }
+        setProcessingStatus('success');
       }
-      setProcessingStatus('success');
     } catch (error) {
       console.error('Error processing file:', error);
       toast.error(error.message || 'Failed to process file');
@@ -644,7 +663,13 @@ export default function AccountCreationWizard({
     );
 
     setMappedTransactions(transactions);
-    setCurrentStep('account-selection');
+    setProcessingStatus('success');
+
+    if (selectedCard.id === 'banking' && (selectedAccountId || selectedAccountName)) {
+      setCurrentStep('details');
+    } else {
+      setCurrentStep('account-selection');
+    }
   };
 
   const handleAccountSelection = (accountId, accountName, isExisting) => {
@@ -676,12 +701,13 @@ export default function AccountCreationWizard({
       let targetAccountId = selectedAccountId;
 
       if (!isExistingAccount) {
+        const accountType = selectedSubtype?.value || formData.accountType || 'checking';
         const newAccountData = {
-          account_type: formData.accountType || 'checking',
+          account_type: accountType,
           account_name: selectedAccountName,
           institution_name: formData.institutionName || '',
           account_number_last4: formData.last4 || '',
-          current_balance: 0
+          current_balance: parseFloat(formData.beginningBalance) || 0
         };
 
         const newAccount = await createAccountMutation.mutateAsync(newAccountData);
@@ -692,7 +718,8 @@ export default function AccountCreationWizard({
         ...txn,
         user_id: user.id,
         profile_id: activeProfile.id,
-        chart_account_id: targetAccountId
+        chart_account_id: targetAccountId,
+        status: txn.date < goLiveDate ? 'posted' : 'pending'
       }));
 
       if (allTransactions.length > 0) {
@@ -708,7 +735,11 @@ export default function AccountCreationWizard({
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
 
-      toast.success(`Successfully imported ${allTransactions.length} transactions${matchedCount > 0 ? ` (${matchedCount} transfers matched)` : ''}`);
+      const message = isExistingAccount
+        ? `Successfully imported ${allTransactions.length} transactions to ${selectedAccountName}`
+        : `Successfully created ${selectedAccountName} and imported ${allTransactions.length} transactions`;
+
+      toast.success(`${message}${matchedCount > 0 ? ` (${matchedCount} transfers matched)` : ''}`);
 
       onOpenChange(false);
       if (targetAccountId) {
@@ -1510,7 +1541,10 @@ export default function AccountCreationWizard({
     }
     if (currentStep === 'details') {
       if (selectedCard.id === 'banking') {
-        return formData.name && formData.name.trim();
+        return (selectedAccountName && selectedAccountName.trim() &&
+                uploadedFile &&
+                mappedTransactions.length > 0 &&
+                processingStatus === 'success');
       }
       if (selectedCard.id === 'vehicle') {
         return formData.displayName && formData.displayName.trim() && formData.currentValue;
@@ -1544,7 +1578,24 @@ export default function AccountCreationWizard({
       } else if (currentStep === 'configure-accounts') {
         await handleSubmit();
       } else if (currentStep === 'details') {
-        setCurrentStep('balance');
+        if (!selectedAccountName || !uploadedFile || mappedTransactions.length === 0) {
+          toast.error('Please select or enter an account name and upload a statement');
+          return;
+        }
+
+        if (isExistingAccount) {
+          const firstOfMonth = new Date();
+          firstOfMonth.setDate(1);
+          setGoLiveDate(firstOfMonth.toISOString().split('T')[0]);
+          await handleImportTransactions();
+        } else {
+          setCurrentStep('bank-info');
+        }
+      } else if (currentStep === 'bank-info') {
+        const firstOfMonth = new Date();
+        firstOfMonth.setDate(1);
+        setGoLiveDate(firstOfMonth.toISOString().split('T')[0]);
+        await handleImportTransactions();
       } else if (currentStep === 'balance') {
         await handleSubmit();
       }
@@ -1666,36 +1717,108 @@ export default function AccountCreationWizard({
 
   const renderDetailsStep = () => {
     if (selectedCard.id === 'banking') {
+      const handleDrop = (e) => {
+        e.preventDefault();
+        const file = e.dataTransfer.files[0];
+        if (file) handleFileUpload(file);
+      };
+
+      const handleDragOver = (e) => {
+        e.preventDefault();
+      };
+
+      const existingAccounts = userChartAccounts?.filter(acc =>
+        acc.account_detail === (selectedSubtype?.value === 'checking' ? 'checking_account' :
+                                selectedSubtype?.value === 'savings' ? 'savings_account' :
+                                selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' : '')
+      ) || [];
+
       return (
         <div className="space-y-5 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="name">Account Nickname*</Label>
-            <Input
-              id="name"
-              value={formData.name || ''}
-              onChange={(e) => updateFormData('name', e.target.value)}
-              placeholder="e.g., Chase Freedom, Main Checking"
-              required
+            <Label htmlFor="displayName">Display Name*</Label>
+            <AccountCombobox
+              accounts={existingAccounts}
+              value={selectedAccountId || selectedAccountName}
+              onValueChange={(accountId, accountName, isExisting) => {
+                setSelectedAccountId(accountId);
+                setSelectedAccountName(accountName);
+                setIsExistingAccount(isExisting);
+                updateFormData('name', accountName);
+              }}
+              placeholder="Select existing or type new account name..."
             />
           </div>
+
           <div>
-            <Label htmlFor="institutionName">Institution Name</Label>
-            <Input
-              id="institutionName"
-              value={formData.institutionName || ''}
-              onChange={(e) => updateFormData('institutionName', e.target.value)}
-              placeholder="e.g., Chase, Bank of America"
-            />
-          </div>
-          <div>
-            <Label htmlFor="last4">Last 4 Digits</Label>
-            <Input
-              id="last4"
-              value={formData.last4 || ''}
-              onChange={(e) => updateFormData('last4', e.target.value)}
-              placeholder="1234"
-              maxLength={4}
-            />
+            <Label>Bank Statement Upload*</Label>
+            <div
+              onDrop={handleDrop}
+              onDragOver={handleDragOver}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
+            >
+              {processingStatus === 'processing' || processingStatus === 'uploading' || processingStatus === 'extracting' ? (
+                <div className="space-y-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto" />
+                  <div className="text-sm text-muted-foreground">
+                    {processingStatus === 'uploading' && 'Uploading file...'}
+                    {processingStatus === 'extracting' && 'Extracting transactions...'}
+                    {processingStatus === 'processing' && 'Processing file...'}
+                  </div>
+                </div>
+              ) : uploadedFile ? (
+                <div className="space-y-2">
+                  <FileUp className="w-8 h-8 text-green-600 mx-auto" />
+                  <div className="text-sm font-medium">{uploadedFile.name}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {mappedTransactions.length > 0 && `${mappedTransactions.length} transactions found`}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setUploadedFile(null);
+                      setProcessingStatus(null);
+                      setProcessedData(null);
+                      setMappedTransactions([]);
+                    }}
+                  >
+                    <X className="w-4 h-4 mr-1" />
+                    Remove
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-3" />
+                  <p className="text-sm font-medium mb-1">Upload Bank Statement</p>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Drag and drop or click to upload
+                  </p>
+                  <input
+                    type="file"
+                    accept=".csv,.pdf,.ofx"
+                    className="hidden"
+                    id="file-upload-details"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleFileUpload(file);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('file-upload-details').click()}
+                  >
+                    Choose File
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Supports CSV, PDF, and OFX formats
+                  </p>
+                </>
+              )}
+            </div>
           </div>
         </div>
       );
@@ -2834,47 +2957,107 @@ export default function AccountCreationWizard({
     </div>
   );
 
-  const renderBankInfoStep = () => (
-    <div className="space-y-5 max-w-lg mx-auto">
-      <div>
-        <Label htmlFor="accountType">Account Type*</Label>
-        <Select
-          value={formData.accountType || 'checking'}
-          onValueChange={(val) => updateFormData('accountType', val)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Select account type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="checking">Checking</SelectItem>
-            <SelectItem value="savings">Savings</SelectItem>
-            <SelectItem value="credit_card">Credit Card</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+  const renderBankInfoStep = () => {
+    const firstOfMonth = new Date();
+    firstOfMonth.setDate(1);
+    const defaultGoLiveDate = firstOfMonth.toISOString().split('T')[0];
 
-      <div>
-        <Label htmlFor="institutionName">Institution Name</Label>
-        <Input
-          id="institutionName"
-          placeholder="e.g., Chase, Bank of America"
-          value={formData.institutionName || ''}
-          onChange={(e) => updateFormData('institutionName', e.target.value)}
-        />
-      </div>
+    if (!goLiveDate) {
+      setGoLiveDate(defaultGoLiveDate);
+    }
 
-      <div>
-        <Label htmlFor="last4">Last 4 Digits</Label>
-        <Input
-          id="last4"
-          placeholder="1234"
-          maxLength={4}
-          value={formData.last4 || ''}
-          onChange={(e) => updateFormData('last4', e.target.value.replace(/\D/g, ''))}
-        />
+    const { posted, pending } = splitTransactionsByGoLiveDate(mappedTransactions, goLiveDate || defaultGoLiveDate);
+
+    return (
+      <div className="space-y-5 max-w-lg mx-auto">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+          <p className="text-sm text-blue-900">
+            Confirm the extracted bank information for <strong>{selectedAccountName}</strong>
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="institutionName">Institution Name</Label>
+          <Input
+            id="institutionName"
+            placeholder="e.g., Chase, Bank of America"
+            value={formData.institutionName || ''}
+            onChange={(e) => updateFormData('institutionName', e.target.value)}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            {formData.institutionName ? 'Auto-detected from statement' : 'Enter the bank or institution name'}
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="last4">Account Number (Last 4 Digits)</Label>
+          <Input
+            id="last4"
+            placeholder="1234"
+            maxLength={4}
+            value={formData.last4 || ''}
+            onChange={(e) => updateFormData('last4', e.target.value.replace(/\D/g, ''))}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            {formData.last4 ? 'Auto-detected from statement' : 'Enter the last 4 digits of your account'}
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="beginningBalance">Beginning Balance</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+            <Input
+              id="beginningBalance"
+              type="text"
+              value={formatAmountField('beginningBalance', formData.beginningBalance, focusedFields.beginningBalance)}
+              onChange={(e) => handleAmountChange('beginningBalance', e.target.value)}
+              onFocus={() => setFocusedFields(prev => ({ ...prev, beginningBalance: true }))}
+              onBlur={(e) => handleAmountBlur('beginningBalance', e.target.value)}
+              placeholder="0.00"
+              className="pl-7"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">
+            {formData.beginningBalance ? 'Auto-detected from statement' : 'Enter the starting balance shown on the statement'}
+          </p>
+        </div>
+
+        <div>
+          <Label>Go-Live Date</Label>
+          <p className="text-xs text-muted-foreground mb-2">
+            Transactions before this date will be imported as Posted. After will be Pending.
+          </p>
+          <Input
+            type="date"
+            value={goLiveDate || defaultGoLiveDate}
+            onChange={(e) => setGoLiveDate(e.target.value)}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{posted.length}</div>
+              <div className="text-sm text-muted-foreground">Posted</div>
+            </div>
+          </Card>
+          <Card className="p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-amber-600">{pending.length}</div>
+              <div className="text-sm text-muted-foreground">Pending</div>
+            </div>
+          </Card>
+        </div>
+
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <p className="text-xs text-muted-foreground">
+            <strong>{mappedTransactions.length}</strong> transactions will be imported to this new account
+          </p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderTransactionPreviewStep = () => {
     const { posted, pending } = splitTransactionsByGoLiveDate(mappedTransactions, goLiveDate);
@@ -3064,10 +3247,20 @@ export default function AccountCreationWizard({
                   <Button
                     type="button"
                     className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                    onClick={handleBankInfoSubmit}
+                    onClick={handleNext}
+                    disabled={isLoading}
                   >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-1" />
+                        Finish
+                      </>
+                    )}
                   </Button>
                 )}
 
@@ -3111,11 +3304,17 @@ export default function AccountCreationWizard({
                   onClick={handleNext}
                   disabled={!canProceed() || isLoading}
                 >
-                  {(selectedCard?.id === 'vehicle' && formData.skipLoanDetails) ||
-                   (selectedCard?.id === 'property' && formData.skipMortgageDetails) ||
-                   selectedCard?.id === 'investments' ||
-                   selectedCard?.id === 'loans' ||
-                   selectedCard?.id === 'budget' ? (
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      {selectedCard?.id === 'banking' && isExistingAccount ? 'Importing...' : 'Processing...'}
+                    </>
+                  ) : (selectedCard?.id === 'banking' && isExistingAccount) ||
+                    (selectedCard?.id === 'vehicle' && formData.skipLoanDetails) ||
+                    (selectedCard?.id === 'property' && formData.skipMortgageDetails) ||
+                    selectedCard?.id === 'investments' ||
+                    selectedCard?.id === 'loans' ||
+                    selectedCard?.id === 'budget' ? (
                     <>
                       <Check className="w-4 h-4 mr-1" />
                       Finish
