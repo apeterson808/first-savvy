@@ -304,7 +304,7 @@ function matchBankAccount(
   return null;
 }
 
-Deno.serve(async (req: Request) => {  
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -345,11 +345,11 @@ Deno.serve(async (req: Request) => {
 
     const requestBody = await req.json();
     console.log('Request body keys:', Object.keys(requestBody));
-    
+
     let file_data: string;
     let file_name = 'unknown.pdf';
     let profile_id = requestBody.profile_id;
-    
+
     if (requestBody.body) {
       console.log('Unwrapping body property');
       file_data = requestBody.body.file_data;
@@ -396,7 +396,7 @@ Deno.serve(async (req: Request) => {
     if (ANTHROPIC_API_KEY) {
       console.log('Attempting Claude Vision extraction...');
       const visionResult = await extractTransactionsWithClaudeVision(file_data, bankAccounts);
-      
+
       if (visionResult && visionResult.transactions && visionResult.transactions.length > 0) {
         console.log(`Claude Vision extracted ${visionResult.transactions.length} transactions`);
         transactions = visionResult.transactions;
