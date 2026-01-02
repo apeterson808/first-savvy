@@ -345,27 +345,32 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
   const queryClient = useQueryClient();
+  const { activeProfile } = useProfile();
 
   const { data: fullPendingTransactions = [] } = useQuery({
-    queryKey: ['fullPendingTransactions'],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000)
+    queryKey: ['fullPendingTransactions', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000),
+    enabled: !!activeProfile?.id
   });
 
   const { data: fullPostedTransactions = [] } = useQuery({
-    queryKey: ['fullPostedTransactions'],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
+    queryKey: ['fullPostedTransactions', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000),
+    enabled: !!activeProfile?.id
   });
 
   const { data: fullExcludedTransactions = [] } = useQuery({
-    queryKey: ['fullExcludedTransactions'],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'excluded' }, '-date', 10000)
+    queryKey: ['fullExcludedTransactions', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'excluded' }, '-date', 10000),
+    enabled: !!activeProfile?.id
   });
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
 
   const { data: fetchedAccounts = [] } = useQuery({
-    queryKey: ['activeAccounts'],
-    queryFn: () => firstsavvy.entities.Account.filter({ is_active: true })
+    queryKey: ['activeAccounts', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Account.filter({ is_active: true }),
+    enabled: !!activeProfile?.id
   });
 
   const accounts = fetchedAccounts.map(acc => ({
@@ -377,7 +382,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   // Fetch all active accounts for Match tab dropdown (accounts, assets, liabilities)
   const { data: allActiveAccounts = [] } = useQuery({
-    queryKey: ['allActiveAccountsForMatch'],
+    queryKey: ['allActiveAccountsForMatch', activeProfile?.id],
     queryFn: async () => {
       const [accounts, assets, liabilities] = await Promise.all([
         firstsavvy.entities.Account.filter({ is_active: true }),
@@ -395,12 +400,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
         ...liabilities.map(a => ({ ...a, account_name: a.name, entityType: 'Liability' }))
       ];
-    }
+    },
+    enabled: !!activeProfile?.id
   });
-
-
-
-  const { activeProfile } = useProfile();
 
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts-income-expense', activeProfile?.id],
@@ -420,18 +422,21 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const { data: categorizationRules = [] } = useQuery({
-    queryKey: ['categorizationRules'],
-    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
+    queryKey: ['categorizationRules', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority'),
+    enabled: !!activeProfile?.id
   });
 
   const { data: contactMatchingRules = [] } = useQuery({
-    queryKey: ['contactMatchingRules'],
-    queryFn: () => firstsavvy.entities.ContactMatchingRule.list('-priority')
+    queryKey: ['contactMatchingRules', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.ContactMatchingRule.list('-priority'),
+    enabled: !!activeProfile?.id
   });
 
   const { data: contacts = [] } = useQuery({
-    queryKey: ['contacts'],
-    queryFn: () => firstsavvy.entities.Contact.list('name', 1000)
+    queryKey: ['contacts', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Contact.list('name', 1000),
+    enabled: !!activeProfile?.id
   });
 
   React.useEffect(() => {
