@@ -3,7 +3,55 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { Card } from '@/components/ui/card';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { AlertCircle, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
+
+const DETECTION_PATTERNS = {
+  date: ['date', 'trans date', 'transaction date', 'posted date', 'post date', 'posting date', 'value date', 'entry date'],
+  description: ['description', 'merchant', 'payee', 'memo', 'details', 'transaction', 'trans desc', 'narrative', 'particulars'],
+  amount: ['amount', 'total', 'transaction amount', 'trans amount', 'value', 'sum', 'balance'],
+  debit: ['debit', 'withdrawal', 'withdrawals', 'payment', 'expense', 'dr', 'out', 'spent', 'paid'],
+  credit: ['credit', 'deposit', 'deposits', 'income', 'receipt', 'cr', 'in', 'received'],
+  type: ['type', 'transaction type', 'trans type', 'txn type', 'category', 'classification'],
+  category: ['category', 'class', 'classification', 'group', 'expense category']
+};
+
+const detectColumn = (headers, patterns) => {
+  for (const header of headers) {
+    const normalized = header.toLowerCase().trim();
+    for (const pattern of patterns) {
+      if (normalized === pattern || normalized.includes(pattern)) {
+        return header;
+      }
+    }
+  }
+  return null;
+};
+
+const autoDetectMappings = (headers) => {
+  const detectedMappings = {
+    date: detectColumn(headers, DETECTION_PATTERNS.date),
+    description: detectColumn(headers, DETECTION_PATTERNS.description),
+    amount: detectColumn(headers, DETECTION_PATTERNS.amount),
+    type: detectColumn(headers, DETECTION_PATTERNS.type),
+    category: detectColumn(headers, DETECTION_PATTERNS.category)
+  };
+
+  const debitColumn = detectColumn(headers, DETECTION_PATTERNS.debit);
+  const creditColumn = detectColumn(headers, DETECTION_PATTERNS.credit);
+
+  let detectedAmountType = 'auto';
+  if (debitColumn && creditColumn) {
+    detectedAmountType = 'separate_columns';
+  }
+
+  return {
+    mappings: detectedMappings,
+    amountType: detectedAmountType,
+    debitColumn: debitColumn || '',
+    creditColumn: creditColumn || ''
+  };
+};
 
 export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
   const [columnMappings, setColumnMappings] = useState({
@@ -13,14 +61,38 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
     type: '',
     category: ''
   });
-  
+
   const [dateFormat, setDateFormat] = useState('auto');
-  const [amountType, setAmountType] = useState('auto'); // auto, always_expense, always_income, separate_columns
+  const [amountType, setAmountType] = useState('auto');
   const [debitColumn, setDebitColumn] = useState('');
   const [creditColumn, setCreditColumn] = useState('');
+  const [autoDetectedFields, setAutoDetectedFields] = useState([]);
+  const [hasAutoDetected, setHasAutoDetected] = useState(false);
 
   const headers = csvData.headers || [];
   const sampleRows = csvData.rows?.slice(0, 3) || [];
+
+  useEffect(() => {
+    if (headers.length > 0 && !hasAutoDetected) {
+      const detected = autoDetectMappings(headers);
+
+      const detectedFieldsList = [];
+      Object.entries(detected.mappings).forEach(([field, value]) => {
+        if (value) detectedFieldsList.push(field);
+      });
+
+      setColumnMappings(detected.mappings);
+      setAmountType(detected.amountType);
+      setDebitColumn(detected.debitColumn);
+      setCreditColumn(detected.creditColumn);
+      setAutoDetectedFields(detectedFieldsList);
+      setHasAutoDetected(true);
+    }
+  }, [headers, hasAutoDetected]);
+
+  const handleResetToAutoDetect = () => {
+    setHasAutoDetected(false);
+  };
 
   const FIELD_LABELS = {
     date: 'Date',
@@ -51,8 +123,36 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
     return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const requiredFieldsMapped = columnMappings.date && columnMappings.description;
+  const optionalFieldsMapped = autoDetectedFields.filter(f => f === 'type' || f === 'category').length;
+
   return (
     <div className="space-y-4">
+      {autoDetectedFields.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+          <div className="flex items-start gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-green-900 font-medium">Auto-detected {autoDetectedFields.length} field{autoDetectedFields.length !== 1 ? 's' : ''}</p>
+              <p className="text-xs text-green-700 mt-1">
+                {requiredFieldsMapped ? 'Required fields mapped successfully. ' : 'Some required fields need attention. '}
+                {optionalFieldsMapped > 0 && `Found ${optionalFieldsMapped} optional field${optionalFieldsMapped !== 1 ? 's' : ''}. `}
+                You can change any mapping if needed.
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleResetToAutoDetect}
+              className="h-7 text-xs flex-shrink-0"
+            >
+              <RotateCcw className="w-3 h-3 mr-1" />
+              Re-detect
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
         <p className="text-sm text-blue-900">
           Map your CSV columns to transaction fields. Preview shows first 3 rows.
@@ -63,7 +163,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
       <div className="space-y-3">
         {/* Date */}
         <div>
-          <Label className="text-xs font-medium mb-1.5 block">Date Column *</Label>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Label className="text-xs font-medium">Date Column *</Label>
+            {autoDetectedFields.includes('date') && (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto-detected
+              </Badge>
+            )}
+          </div>
           <ClickThroughSelect
             value={columnMappings.date}
             onValueChange={(val) => setColumnMappings(prev => ({ ...prev, date: val }))}
@@ -80,7 +188,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
 
         {/* Description */}
         <div>
-          <Label className="text-xs font-medium mb-1.5 block">Description Column *</Label>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Label className="text-xs font-medium">Description Column *</Label>
+            {autoDetectedFields.includes('description') && (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto-detected
+              </Badge>
+            )}
+          </div>
           <ClickThroughSelect
             value={columnMappings.description}
             onValueChange={(val) => setColumnMappings(prev => ({ ...prev, description: val }))}
@@ -114,7 +230,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
         {amountType === 'separate_columns' ? (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label className="text-xs font-medium mb-1.5 block">Debit/Expense Column *</Label>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Label className="text-xs font-medium">Debit/Expense Column *</Label>
+                {debitColumn && amountType === 'separate_columns' && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                    Auto-detected
+                  </Badge>
+                )}
+              </div>
               <ClickThroughSelect
                 value={debitColumn}
                 onValueChange={setDebitColumn}
@@ -129,7 +253,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
               </ClickThroughSelect>
             </div>
             <div>
-              <Label className="text-xs font-medium mb-1.5 block">Credit/Income Column *</Label>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Label className="text-xs font-medium">Credit/Income Column *</Label>
+                {creditColumn && amountType === 'separate_columns' && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                    Auto-detected
+                  </Badge>
+                )}
+              </div>
               <ClickThroughSelect
                 value={creditColumn}
                 onValueChange={setCreditColumn}
@@ -146,7 +278,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
           </div>
         ) : (
           <div>
-            <Label className="text-xs font-medium mb-1.5 block">Amount Column *</Label>
+            <div className="flex items-center gap-2 mb-1.5">
+              <Label className="text-xs font-medium">Amount Column *</Label>
+              {autoDetectedFields.includes('amount') && (
+                <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  Auto-detected
+                </Badge>
+              )}
+            </div>
             <ClickThroughSelect
               value={columnMappings.amount}
               onValueChange={(val) => setColumnMappings(prev => ({ ...prev, amount: val }))}
@@ -164,7 +304,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
 
         {/* Optional: Transaction Type */}
         <div>
-          <Label className="text-xs font-medium mb-1.5 block">Transaction Type Column (Optional)</Label>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Label className="text-xs font-medium">Transaction Type Column (Optional)</Label>
+            {autoDetectedFields.includes('type') && (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto-detected
+              </Badge>
+            )}
+          </div>
           <ClickThroughSelect
             value={columnMappings.type}
             onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
@@ -182,7 +330,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
 
         {/* Optional: Category */}
         <div>
-          <Label className="text-xs font-medium mb-1.5 block">Category Column (Optional)</Label>
+          <div className="flex items-center gap-2 mb-1.5">
+            <Label className="text-xs font-medium">Category Column (Optional)</Label>
+            {autoDetectedFields.includes('category') && (
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto-detected
+              </Badge>
+            )}
+          </div>
           <ClickThroughSelect
             value={columnMappings.category}
             onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
