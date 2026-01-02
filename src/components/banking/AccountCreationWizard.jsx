@@ -612,9 +612,16 @@ export default function AccountCreationWizard({
 
   const handleFileUpload = async (file) => {
     setUploadedFile(file);
-    setProcessingStatus('processing');
 
     const isPDF = file.name.toLowerCase().endsWith('.pdf');
+
+    if (isPDF) {
+      setProcessingStatus('claude-code-needed');
+      setShowClaudeCodeInput(true);
+      return;
+    }
+
+    setProcessingStatus('processing');
 
     try {
       const result = await processStatementFile(file, (status) => {
@@ -652,15 +659,9 @@ export default function AccountCreationWizard({
       }
     } catch (error) {
       console.error('Error processing file:', error);
-
-      if (isPDF && error.message.includes('Claude Code')) {
-        setProcessingStatus('claude-code-needed');
-        setShowClaudeCodeInput(true);
-      } else {
-        toast.error(error.message || 'Failed to process file');
-        setProcessingStatus('error');
-        setUploadedFile(null);
-      }
+      toast.error(error.message || 'Failed to process file');
+      setProcessingStatus('error');
+      setUploadedFile(null);
     }
   };
 
