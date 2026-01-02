@@ -26,12 +26,105 @@ interface ClaudeVisionResponse {
   statementPeriod?: string;
 }
 
-async function extractTransactionsWithClaudeVision(
-  pdfBase64: string,
+async function extractTransactionsWithClaude(
+  text: string,
   userBankAccounts: any[]
 ): Promise<ClaudeVisionResponse | null> {
-  console.log('PDF vision extraction not supported - Claude API does not accept PDF format. Use image files for vision extraction. Skipping to text extraction.');
-  return null;
+  if (!ANTHROPIC_API_KEY) {
+    console.log('No Anthropic API key, skipping AI extraction');
+    return null;
+  }
+
+  const accountsList = userBankAccounts.length > 0
+    ? userBankAccounts.map(acc => `${acc.institution_name || 'Unknown'} - ${acc.account_name} (ending in ${acc.last_four || 'N/A'})`).join('\n')
+    : 'No accounts available';
+
+  const prompt = `You are a financial document analysis expert. Analyze this bank statement text and extract ALL transactions in structured format.
+
+User's Bank Accounts:
+${accountsList}
+
+TEXT FROM BANK STATEMENT:
+${text.substring(0, 15000)}
+
+Instructions:
+1. Extract ALL transaction rows from the statement
+2. For each transaction, identify:
+   - Date (format as YYYY-MM-DD)
+   - Description (merchant name, purpose)
+   - Amount (as a positive number)
+   - Type ("expense" for debits/charges, "income" for deposits/credits)
+3. Also identify:
+   - Institution name (e.g., "Chase", "Bank of America")
+   - Account number (last 4 digits if visible)
+   - Statement period if visible
+4. Return confidence score 0-100 for each transaction
+
+Return ONLY valid JSON with this exact structure:
+{
+  "institutionName": "<bank name>",
+  "accountNumber": "<last 4 digits or partial account>",
+  "statementPeriod": "<date range if visible>",
+  "transactions": [
+    {
+      "date": "YYYY-MM-DD",
+      "description": "<merchant or description>",
+      "amount": <positive number>,
+      "type": "expense" or "income",
+      "confidence": <0-100>
+    }
+  ]
+}
+
+If this is not a bank statement, return: {"transactions": []}`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-haiku-20240307',
+        max_tokens: 4096,
+        temperature: 0.1,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Anthropic API error:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text;
+
+    if (!content) {
+      console.error('No content in Claude response');
+      return null;
+    }
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON found in Claude response:', content);
+      return null;
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+    return parsed;
+  } catch (error) {
+    console.error('Error calling Claude API:', error);
+    return null;
+  }
 }
 
 async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
@@ -252,72 +345,72 @@ Deno.serve(async (req: Request) => {
     let suggestedAccountId: string | null = null;
     let extractionMethod = 'text';
 
-    if (ANTHROPIC_API_KEY) {
-      console.log('Attempting Claude Vision extraction...');
-      try {
-        const visionResult = await extractTransactionsWithClaudeVision(file_data, bankAccounts);
+    let pdfBuffer: ArrayBuffer;
+    try {
+      const binaryString = atob(file_data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      pdfBuffer = bytes.buffer;
+      console.log('Decoded PDF buffer, size:', pdfBuffer.byteLength);
+    } catch (decodeError) {
+      console.error('Error decoding base64:', decodeError);
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Invalid base64 data',
+          details: decodeError.message
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
-        if (visionResult && visionResult.transactions && visionResult.transactions.length > 0) {
-          console.log(`Claude Vision extracted ${visionResult.transactions.length} transactions`);
-          transactions = visionResult.transactions;
-          institutionName = visionResult.institutionName || institutionName;
-          accountNumber = visionResult.accountNumber || accountNumber;
-          extractionMethod = 'vision';
+    const text = await extractTextFromPDF(pdfBuffer);
+    console.log('Extracted text length:', text.length);
+
+    if (!text || text.length < 50) {
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Could not extract text from PDF. The PDF might be image-based, encrypted, or in an unsupported format. Please try uploading a CSV file instead.'
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (ANTHROPIC_API_KEY) {
+      console.log('Attempting Claude AI extraction...');
+      try {
+        const aiResult = await extractTransactionsWithClaude(text, bankAccounts);
+
+        if (aiResult && aiResult.transactions && aiResult.transactions.length > 0) {
+          console.log(`Claude AI extracted ${aiResult.transactions.length} transactions`);
+          transactions = aiResult.transactions;
+          institutionName = aiResult.institutionName || institutionName;
+          accountNumber = aiResult.accountNumber || accountNumber;
+          extractionMethod = 'ai';
 
           suggestedAccountId = matchBankAccount(institutionName, accountNumber, bankAccounts);
           console.log(`Matched account: ${suggestedAccountId}`);
         } else {
-          console.log('Vision extraction failed or returned no transactions, falling back to text extraction');
+          console.log('AI extraction failed or returned no transactions, falling back to regex parsing');
         }
-      } catch (visionError) {
-        console.error('Vision extraction error, falling back to text:', visionError);
+      } catch (aiError) {
+        console.error('AI extraction error, falling back to regex parsing:', aiError);
       }
     } else {
-      console.log('No Anthropic API key configured, skipping vision extraction');
+      console.log('No Anthropic API key configured, skipping AI extraction');
     }
 
     if (transactions.length === 0) {
-      console.log('Using text extraction fallback...');
-      let pdfBuffer: ArrayBuffer;
-      try {
-        const binaryString = atob(file_data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        pdfBuffer = bytes.buffer;
-        console.log('Decoded PDF buffer, size:', pdfBuffer.byteLength);
-      } catch (decodeError) {
-        console.error('Error decoding base64:', decodeError);
-        return new Response(
-          JSON.stringify({
-            status: 'error',
-            error: 'Invalid base64 data',
-            details: decodeError.message
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
-      const text = await extractTextFromPDF(pdfBuffer);
-      console.log('Extracted text length:', text.length);
-
-      if (!text || text.length < 50) {
-        return new Response(
-          JSON.stringify({
-            status: 'error',
-            error: 'Could not extract text from PDF. The PDF might be image-based, encrypted, or in an unsupported format. Please try uploading a CSV file instead.'
-          }),
-          {
-            status: 400,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          }
-        );
-      }
-
+      console.log('Using regex-based text parsing fallback...');
       transactions = parseTransactionsFromText(text);
       console.log('Parsed transactions:', transactions.length);
 
