@@ -162,6 +162,24 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
           </div>
         )}
 
+        {/* Optional: Transaction Type */}
+        <div>
+          <Label className="text-xs font-medium mb-1.5 block">Transaction Type Column (Optional)</Label>
+          <ClickThroughSelect
+            value={columnMappings.type}
+            onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
+            placeholder="Skip if not available"
+            triggerClassName="h-8 text-xs"
+          >
+            <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+            {headers.map((header, idx) => (
+              <ClickThroughSelectItem key={idx} value={header}>
+                {header}
+              </ClickThroughSelectItem>
+            ))}
+          </ClickThroughSelect>
+        </div>
+
         {/* Optional: Category */}
         <div>
           <Label className="text-xs font-medium mb-1.5 block">Category Column (Optional)</Label>
