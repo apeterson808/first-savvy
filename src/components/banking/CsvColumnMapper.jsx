@@ -48,7 +48,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
     const cleaned = value.toString().replace(/[^0-9.-]/g, '');
     const num = parseFloat(cleaned);
     if (isNaN(num)) return value;
-    return num.toFixed(2);
+    return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   return (
