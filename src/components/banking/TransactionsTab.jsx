@@ -31,7 +31,7 @@ import {
 import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
-import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
+import { suggestCategory } from './CategorySuggestion';
 import { suggestContact } from './ContactSuggestion';
 import AccountCreationWizard from './AccountCreationWizard';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
@@ -1519,7 +1519,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
 
                             return (
-                              <div onClick={(e) => e.stopPropagation()} className="space-y-1">
+                              <div onClick={(e) => e.stopPropagation()}>
                                 <CategoryDropdown
                                   value={transaction.category_account_id}
                                   onValueChange={(value) => {
@@ -1546,38 +1546,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     setTriggeringTransactionType(transaction.type);
                                     setAddAccountSheetOpen(true);
                                   }}
+                                  aiSuggestionId={categorySuggestions[transaction.id]?.chartAccountId}
                                   triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                   placeholder="Select category"
                                   isTransactionTransfer={transaction.type === 'transfer'}
                                   transactionAmount={transaction.amount}
                                 />
-                                {!transaction.category_account_id && categorySuggestions[transaction.id] && (
-                                  <CategorySuggestion
-                                    suggestion={categorySuggestions[transaction.id]}
-                                    onApply={(suggestion) => {
-                                      const categoryToApply = suggestion.chartAccountId
-                                        ? chartAccounts.find(c => c.id === suggestion.chartAccountId)
-                                        : chartAccounts.find(c =>
-                                            c.display_name.toLowerCase() === suggestion.category.toLowerCase() &&
-                                            c.account_type === suggestion.type
-                                          );
-
-                                      if (categoryToApply) {
-                                        updateMutation.mutate({
-                                          id: transaction.id,
-                                          data: {
-                                            category_account_id: categoryToApply.id,
-                                            type: categoryToApply.account_type
-                                          }
-                                        });
-                                        setCategorySuggestions(prev => {
-                                          const { [transaction.id]: _, ...rest } = prev;
-                                          return rest;
-                                        });
-                                      }
-                                    }}
-                                  />
-                                )}
                               </div>
                             );
                           })()}
