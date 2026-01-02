@@ -114,6 +114,13 @@ export function StatementUploadDialog({ open, onOpenChange, onUploadSuccess, pro
           const { data: sessionData } = await supabase.auth.getSession();
           const token = sessionData?.session?.access_token;
 
+          console.log('Sending to parse-pdf:', {
+            file_name: file.name,
+            profile_id: profileId,
+            data_length: base64Data?.length,
+            has_token: !!token
+          });
+
           const response = await fetch(
             `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/parse-pdf`,
             {
@@ -131,9 +138,11 @@ export function StatementUploadDialog({ open, onOpenChange, onUploadSuccess, pro
           );
 
           const result = await response.json();
+          console.log('Parse response:', result);
 
           if (!response.ok || result.status === 'error') {
-            throw new Error(result.error || 'Failed to parse file');
+            console.error('Parse error details:', result);
+            throw new Error(result.error || result.details || 'Failed to parse file');
           }
 
           setProcessingStage('Extraction complete!');
