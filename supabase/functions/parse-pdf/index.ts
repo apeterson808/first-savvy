@@ -357,20 +357,26 @@ Deno.serve(async (req: Request) => {
 
     if (ANTHROPIC_API_KEY) {
       console.log('Attempting Claude Vision extraction...');
-      const visionResult = await extractTransactionsWithClaudeVision(file_data, bankAccounts);
+      try {
+        const visionResult = await extractTransactionsWithClaudeVision(file_data, bankAccounts);
 
-      if (visionResult && visionResult.transactions && visionResult.transactions.length > 0) {
-        console.log(`Claude Vision extracted ${visionResult.transactions.length} transactions`);
-        transactions = visionResult.transactions;
-        institutionName = visionResult.institutionName || institutionName;
-        accountNumber = visionResult.accountNumber || accountNumber;
-        extractionMethod = 'vision';
+        if (visionResult && visionResult.transactions && visionResult.transactions.length > 0) {
+          console.log(`Claude Vision extracted ${visionResult.transactions.length} transactions`);
+          transactions = visionResult.transactions;
+          institutionName = visionResult.institutionName || institutionName;
+          accountNumber = visionResult.accountNumber || accountNumber;
+          extractionMethod = 'vision';
 
-        suggestedAccountId = matchBankAccount(institutionName, accountNumber, bankAccounts);
-        console.log(`Matched account: ${suggestedAccountId}`);
-      } else {
-        console.log('Vision extraction failed or returned no transactions, falling back to text extraction');
+          suggestedAccountId = matchBankAccount(institutionName, accountNumber, bankAccounts);
+          console.log(`Matched account: ${suggestedAccountId}`);
+        } else {
+          console.log('Vision extraction failed or returned no transactions, falling back to text extraction');
+        }
+      } catch (visionError) {
+        console.error('Vision extraction error, falling back to text:', visionError);
       }
+    } else {
+      console.log('No Anthropic API key configured, skipping vision extraction');
     }
 
     if (transactions.length === 0) {
