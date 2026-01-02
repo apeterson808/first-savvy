@@ -42,13 +42,9 @@ function parseTransactionsFromText(text: string): Transaction[] {
     if (!line || line.length < 10) continue;
 
     let dateMatch = null;
-    let matchedPattern = null;
     for (const pattern of datePatterns) {
       dateMatch = line.match(pattern);
-      if (dateMatch) {
-        matchedPattern = pattern;
-        break;
-      }
+      if (dateMatch) break;
     }
 
     if (!dateMatch) continue;
@@ -161,13 +157,22 @@ Deno.serve(async (req: Request) => {
 
   try {
     const requestBody = await req.json();
-    console.log('Received request body keys:', Object.keys(requestBody));
-
-    const file_data = requestBody.file_data;
-    const file_name = requestBody.file_name || 'unknown.pdf';
+    console.log('Request body keys:', Object.keys(requestBody));
+    
+    let file_data: string;
+    let file_name = 'unknown.pdf';
+    
+    if (requestBody.body) {
+      console.log('Unwrapping body property');
+      file_data = requestBody.body.file_data;
+      file_name = requestBody.body.file_name || file_name;
+    } else {
+      file_data = requestBody.file_data;
+      file_name = requestBody.file_name || file_name;
+    }
 
     if (!file_data) {
-      console.error('Missing file_data in request. Body keys:', Object.keys(requestBody));
+      console.error('Missing file_data. Request structure:', JSON.stringify(Object.keys(requestBody)));
       return new Response(
         JSON.stringify({
           status: 'error',
@@ -209,7 +214,6 @@ Deno.serve(async (req: Request) => {
 
     const text = await extractTextFromPDF(pdfBuffer);
     console.log('Extracted text length:', text.length);
-    console.log('First 500 chars:', text.substring(0, 500));
 
     if (!text || text.length < 50) {
       return new Response(
@@ -268,8 +272,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         status: 'error',
         error: 'Failed to parse PDF',
-        details: error.message,
-        stack: error.stack
+        details: error.message
       }),
       {
         status: 500,

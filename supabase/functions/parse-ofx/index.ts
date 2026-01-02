@@ -15,7 +15,20 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { file_data } = await req.json();
+    const requestBody = await req.json();
+    console.log('Request body keys:', Object.keys(requestBody));
+    
+    let file_data: string;
+    let file_name = 'unknown.ofx';
+    
+    if (requestBody.body) {
+      console.log('Unwrapping body property');
+      file_data = requestBody.body.file_data;
+      file_name = requestBody.body.file_name || file_name;
+    } else {
+      file_data = requestBody.file_data;
+      file_name = requestBody.file_name || file_name;
+    }
 
     if (!file_data) {
       console.error('Missing file_data in request');
@@ -28,7 +41,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('Received file_data, length:', file_data.length);
+    console.log(`Processing OFX: ${file_name}, data length: ${file_data.length}`);
 
     let ofxContent: string;
     try {
@@ -75,7 +88,6 @@ Deno.serve(async (req: Request) => {
     while ((match = stmtTrnPattern.exec(ofxContent)) !== null) {
       const txnBlock = match[1];
 
-      const trnTypeMatch = txnBlock.match(/<TRNTYPE>([^<]+)/i);
       const dtPostedMatch = txnBlock.match(/<DTPOSTED>(\d{8})/i);
       const trnAmtMatch = txnBlock.match(/<TRNAMT>([^<]+)/i);
       const nameMatch = txnBlock.match(/<NAME>([^<]+)/i);
