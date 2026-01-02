@@ -152,15 +152,10 @@ export default function CategoryDropdown({
       initialAccountType="budget"
       initialSubtype={transactionType}
       initialCategoryName={wizardInitialName}
-      onAccountCreated={async (result) => {
+      onAccountCreated={(result) => {
         setWizardInitialName('');
-        await queryClient.invalidateQueries({
-          queryKey: ['chart-accounts', accountType, activeProfile.id]
-        });
-        if (onAddNew && result?.account) {
-          onAddNew(result.account.display_name);
-        }
-        if (onValueChange && result?.account) {
+
+        if (result?.account && onValueChange) {
           onValueChange(result.account.id);
         }
       }}

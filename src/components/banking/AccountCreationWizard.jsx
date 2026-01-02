@@ -436,24 +436,33 @@ export default function AccountCreationWizard({
   useEffect(() => {
     if (!open) {
       resetWizard();
-    } else if (open && initialAccountType && accountTypeCards.length > 0) {
+      return;
+    }
+
+    if (initialAccountType && accountTypeCards.length > 0) {
       const card = accountTypeCards.find(c => c.id === initialAccountType);
-      if (card) {
-        setSelectedCard(card);
-        if (initialSubtype && card.subtypes) {
-          const subtype = card.subtypes.find(s => s.value === initialSubtype);
-          if (subtype) {
-            setSelectedSubtype(subtype);
-            setFormData({
+      if (!card) return;
+
+      setSelectedCard(card);
+
+      if (initialSubtype && card.subtypes) {
+        const subtype = card.subtypes.find(s => s.value === initialSubtype);
+        if (subtype) {
+          setSelectedSubtype(subtype);
+          setFormData(prev => {
+            if (prev.name === initialCategoryName && prev.subtype === subtype.value) {
+              return prev;
+            }
+            return {
               subtype: subtype.value,
               name: initialCategoryName || ''
-            });
-            setCurrentStep('details');
-          }
+            };
+          });
+          setCurrentStep('details');
         }
       }
     }
-  }, [open, initialAccountType, initialSubtype, initialCategoryName, accountTypeCards]);
+  }, [open, initialAccountType, initialSubtype, initialCategoryName, accountTypeCards.length]);
 
   const resetWizard = () => {
     setCurrentStep('select-type');
@@ -835,12 +844,18 @@ export default function AccountCreationWizard({
     onSuccess: (newCategory) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
-      onAccountCreated?.({ type: formData.subtype, account: newCategory });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       toast.success('Category created successfully!');
       onOpenChange(false);
-      setTimeout(() => {
-        navigate(`/Banking/account/${newCategory.id}`);
-      }, 100);
+
+      const hasCallback = !!onAccountCreated;
+      if (hasCallback) {
+        onAccountCreated({ type: formData.subtype, account: newCategory });
+      } else {
+        setTimeout(() => {
+          navigate(`/Banking/account/${newCategory.id}`);
+        }, 100);
+      }
     },
     onError: (error) => {
       logError(error, { action: 'createCategory' });
