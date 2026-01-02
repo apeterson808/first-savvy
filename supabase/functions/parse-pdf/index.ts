@@ -313,36 +313,6 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Authorization header required' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-      auth: {
-        persistSession: false,
-      },
-    });
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Invalid authentication token' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
     const requestBody = await req.json();
     console.log('Request body keys:', Object.keys(requestBody));
 
@@ -377,15 +347,7 @@ Deno.serve(async (req: Request) => {
 
     console.log(`Processing PDF: ${file_name}, data length: ${file_data.length}`);
 
-    const { data: userBankAccounts } = await supabase
-      .from('user_chart_of_accounts')
-      .select('id, account_name, institution_name, last_four')
-      .eq('user_id', user.id)
-      .eq('class', 'asset')
-      .in('account_type', ['Cash', 'Checking', 'Savings', 'Credit Card'])
-      .eq('is_active', true);
-
-    const bankAccounts = userBankAccounts || [];
+    const bankAccounts: any[] = [];
 
     let transactions: Transaction[] = [];
     let institutionName = 'Unknown Institution';
