@@ -11,6 +11,55 @@ const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
+const aiCache = new Map<string, { result: any; timestamp: number }>();
+const CACHE_TTL_MS = 1000 * 60 * 60 * 24;
+
+function extractMerchantCore(description: string): string {
+  let merchant = description.toUpperCase().trim();
+  merchant = merchant.replace(/\s*#\d+\s*/g, ' ');
+  merchant = merchant.replace(/\s*CARD\s*\d+\s*/g, ' ');
+  merchant = merchant.replace(/\s*X+\d+\s*/g, ' ');
+  merchant = merchant.replace(/\s+\d{2}\/\d{2}\s*/g, ' ');
+  merchant = merchant.replace(/\s*\d{4,}\s*/g, ' ');
+  merchant = merchant.replace(/\s*POS\s*/gi, ' ');
+  merchant = merchant.replace(/\s*DEBIT\s*/gi, ' ');
+  merchant = merchant.replace(/\s*PURCHASE\s*/gi, ' ');
+
+  const commonPrefixes = ['SQ *', 'SQ*', 'TST*', 'AMZN MKTP', 'AMZN', 'PP*', 'PAYPAL *'];
+  for (const prefix of commonPrefixes) {
+    if (merchant.startsWith(prefix)) {
+      merchant = merchant.substring(prefix.length).trim();
+      break;
+    }
+  }
+
+  return merchant.replace(/\s+/g, ' ').trim();
+}
+
+function getCacheKey(description: string, userId: string): string {
+  const merchantCore = extractMerchantCore(description);
+  return `${userId}:${merchantCore}`;
+}
+
+function getCachedResult(cacheKey: string) {
+  const cached = aiCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < CACHE_TTL_MS)) {
+    return cached.result;
+  }
+  if (cached) {
+    aiCache.delete(cacheKey);
+  }
+  return null;
+}
+
+function setCachedResult(cacheKey: string, result: any) {
+  if (aiCache.size > 1000) {
+    const oldestKey = aiCache.keys().next().value;
+    aiCache.delete(oldestKey);
+  }
+  aiCache.set(cacheKey, { result, timestamp: Date.now() });
+}
+
 interface ChartAccount {
   id: string;
   account_number: number;
@@ -18,6 +67,118 @@ interface ChartAccount {
   account_type: string;
   account_detail?: string;
   display_name?: string;
+}
+
+async function categorizeWithClaude(
+  description: string,
+  amount: number | undefined,
+  chartAccounts: ChartAccount[]
+): Promise<{
+  chartAccountId: string;
+  accountNumber: number;
+  category: string;
+  type: string;
+  reasoning: string;
+} | null> {
+  const accountsList = chartAccounts.map(acc => {
+    const name = acc.display_name || acc.account_detail || acc.account_type;
+    return `${acc.account_number} - ${name} (${acc.class})`;
+  }).join('\n');
+
+  const amountInfo = amount !== undefined
+    ? `Transaction Amount: $${Math.abs(amount).toFixed(2)} (${amount >= 0 ? 'positive' : 'negative'})`
+    : '';
+
+  const prompt = `You are a financial transaction categorization expert. Analyze the following bank transaction description and categorize it into one of the provided chart of accounts.
+
+Transaction Description: "${description}"
+${amountInfo}
+
+Available Chart of Accounts:
+${accountsList}
+
+Instructions:
+1. Carefully read the transaction description to identify the merchant or purpose
+2. Match it to the most appropriate category from the chart of accounts above
+3. Consider the transaction amount and typical spending patterns
+4. Return ONLY a valid JSON object with this exact structure:
+
+{
+  "accountNumber": <the account number>,
+  "reasoning": "<brief 1-sentence explanation>"
+}
+
+Examples:
+- "SQ *JOES COFFEE" should map to Dining Out
+- "AMZN MKTP US" should map to Shopping
+- "CHEVRON #1234" should map to Gas & Fuel
+- "PAYCHECK ACME CORP" should map to Salary/Commission
+
+Return only the JSON, no other text.`;
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY!,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-7-sonnet-20250219',
+        max_tokens: 256,
+        temperature: 0.3,
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Anthropic API error:', response.status, errorText);
+      return null;
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text;
+
+    if (!content) {
+      console.error('No content in Claude response');
+      return null;
+    }
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('No JSON found in Claude response:', content);
+      return null;
+    }
+
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    const matchedAccount = chartAccounts.find(
+      acc => acc.account_number === parsed.accountNumber
+    );
+
+    if (!matchedAccount) {
+      console.error('Account number not found:', parsed.accountNumber);
+      return null;
+    }
+
+    return {
+      chartAccountId: matchedAccount.id,
+      accountNumber: matchedAccount.account_number,
+      category: matchedAccount.display_name || matchedAccount.account_detail || matchedAccount.account_type,
+      type: matchedAccount.class,
+      reasoning: parsed.reasoning || 'AI categorization',
+    };
+  } catch (error) {
+    console.error('Error calling Claude API:', error);
+    return null;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -98,6 +259,50 @@ Deno.serve(async (req: Request) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
+    }
+
+    if (ANTHROPIC_API_KEY) {
+      try {
+        const cacheKey = getCacheKey(description, user.id);
+        const cachedResult = getCachedResult(cacheKey);
+
+        if (cachedResult) {
+          return new Response(
+            JSON.stringify({
+              ...cachedResult,
+              confidence: 'ai-cached',
+            }),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+
+        const aiResult = await categorizeWithClaude(description, amount, chartAccounts);
+        if (aiResult) {
+          const responseData = {
+            chartAccountId: aiResult.chartAccountId,
+            accountNumber: aiResult.accountNumber,
+            category: aiResult.category,
+            type: aiResult.type,
+            confidence: 'ai',
+            reasoning: aiResult.reasoning,
+          };
+
+          setCachedResult(cacheKey, responseData);
+
+          return new Response(
+            JSON.stringify(responseData),
+            {
+              status: 200,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            }
+          );
+        }
+      } catch (aiError) {
+        console.error('Claude AI categorization failed:', aiError);
+      }
     }
 
     const fallbackAccount = suggestChartAccountFallback(description, amount, chartAccounts);
