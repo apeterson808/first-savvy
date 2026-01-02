@@ -62,11 +62,15 @@ export const processStatementFile = async (file, onProgress) => {
       throw new Error(`Failed to upload file: ${uploadError.message}`);
     }
 
-    const { data: urlData } = firstsavvy.storage
+    const { data: urlData, error: urlError } = await firstsavvy.storage
       .from('statement-files')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, 300);
 
-    const fileUrl = urlData.publicUrl;
+    if (urlError || !urlData?.signedUrl) {
+      throw new Error('Failed to generate file access URL');
+    }
+
+    const fileUrl = urlData.signedUrl;
 
     onProgress?.('extracting');
 
