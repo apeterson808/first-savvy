@@ -161,7 +161,7 @@ export const ProfileProvider = ({ children }) => {
     loadProfiles();
   }, [loadProfiles]);
 
-  const switchProfile = async (profile) => {
+  const switchProfile = useCallback(async (profile) => {
     if (!user || !profile) return;
 
     try {
@@ -192,20 +192,20 @@ export const ProfileProvider = ({ children }) => {
       console.error('Error switching profile:', err);
       throw err;
     }
-  };
+  }, [user]);
 
-  const refreshProfiles = async () => {
+  const refreshProfiles = useCallback(async () => {
     await loadProfiles();
-  };
+  }, [loadProfiles]);
 
-  const value = {
+  const value = React.useMemo(() => ({
     profiles,
     activeProfile,
     loading,
     error,
     switchProfile,
     refreshProfiles
-  };
+  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles]);
 
   return (
     <ProfileContext.Provider value={value}>
