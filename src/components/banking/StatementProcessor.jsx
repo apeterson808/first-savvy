@@ -38,7 +38,7 @@ export const processStatementFile = async (file, onProgress) => {
     return { type: 'csv', headers, rows };
   }
 
-  if (fileExt === 'ofx' || fileExt === 'qfx') {
+  if (fileExt === 'ofx' || fileExt === 'qfx' || fileExt === 'pdf') {
     onProgress?.('uploading');
 
     const user = await firstsavvy.auth.getUser();
@@ -70,7 +70,9 @@ export const processStatementFile = async (file, onProgress) => {
 
     onProgress?.('extracting');
 
-    const extractResponse = await firstsavvy.functions.parseOfx({ file_url: fileUrl });
+    const extractResponse = fileExt === 'pdf'
+      ? await firstsavvy.functions.parsePdf({ file_url: fileUrl })
+      : await firstsavvy.functions.parseOfx({ file_url: fileUrl });
 
     await firstsavvy.storage.from('statement-files').remove([filePath]);
 
@@ -88,7 +90,7 @@ export const processStatementFile = async (file, onProgress) => {
     throw new Error(errorMsg);
   }
 
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, QFX, or PDF file.`);
 };
 
 export const parseDate = (dateStr) => {

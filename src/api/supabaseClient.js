@@ -327,6 +327,11 @@ export const createSupabaseClient = () => {
         if (error) throw error;
         return data;
       },
+      async parsePdf(body) {
+        const { data, error } = await supabase.functions.invoke('parse-pdf', { body });
+        if (error) throw error;
+        return data;
+      },
       async aiSuggestContact(body) {
         const { data, error } = await supabase.functions.invoke('ai-suggest-contact', { body });
         if (error) throw error;
