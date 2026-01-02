@@ -338,12 +338,6 @@ export default function AddContactSheet({
               id="name"
               value={formData.name}
               onChange={(e) => updateFormField('name', e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
               placeholder="e.g., Starbucks, Employer XYZ"
               required
             />
@@ -381,12 +375,6 @@ export default function AddContactSheet({
               type="email"
               value={formData.email}
               onChange={(e) => updateFormField('email', e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
               placeholder="contact@example.com"
             />
             <p className="text-xs text-slate-500 mt-1">
@@ -407,12 +395,6 @@ export default function AddContactSheet({
               type="tel"
               value={formData.phone}
               onChange={handlePhoneChange}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
               placeholder="(555) 123-4567"
               maxLength={14}
             />
