@@ -31,7 +31,7 @@ import {
 import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
-import { suggestCategory } from './CategorySuggestion';
+import CategorySuggestion, { suggestCategory } from './CategorySuggestion';
 import { suggestContact } from './ContactSuggestion';
 import AccountCreationWizard from './AccountCreationWizard';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
@@ -77,6 +77,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
   const [contactSuggestions, setContactSuggestions] = useState({});
+  const [categorySuggestions, setCategorySuggestions] = useState({});
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
@@ -453,6 +454,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         t => t.chart_account_id
       );
 
+      const newSuggestions = {};
       const batchSize = 5;
       for (let i = 0; i < Math.min(batchSize, transactionsNeedingSuggestions.length); i++) {
         const transaction = transactionsNeedingSuggestions[i];
@@ -466,19 +468,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             chartAccounts
           );
 
-          if (suggestion && suggestion.category) {
-            const matchingCategory = chartAccounts.find(c =>
-              c.display_name.toLowerCase() === suggestion.category.toLowerCase() &&
-              c.account_type === suggestion.type
-            );
-
-            if (matchingCategory) {
-              queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-            }
+          if (suggestion && (suggestion.chartAccountId || suggestion.category)) {
+            newSuggestions[transaction.id] = suggestion;
           }
         } catch (err) {
           console.error('Failed to generate suggestion for transaction:', transaction.id, err);
         }
+      }
+
+      if (Object.keys(newSuggestions).length > 0) {
+        setCategorySuggestions(prev => ({ ...prev, ...newSuggestions }));
       }
     };
 
@@ -1520,7 +1519,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
 
                             return (
-                              <div onClick={(e) => e.stopPropagation()}>
+                              <div onClick={(e) => e.stopPropagation()} className="space-y-1">
                                 <CategoryDropdown
                                   value={transaction.category_account_id}
                                   onValueChange={(value) => {
@@ -1533,6 +1532,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         category_account_id: categoryValue,
                                         type: selectedCategory ? selectedCategory.type : transaction.type
                                       }
+                                    });
+                                    setCategorySuggestions(prev => {
+                                      const { [transaction.id]: _, ...rest } = prev;
+                                      return rest;
                                     });
                                   }}
                                   transactionType={transaction.type}
@@ -1548,6 +1551,33 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   isTransactionTransfer={transaction.type === 'transfer'}
                                   transactionAmount={transaction.amount}
                                 />
+                                {!transaction.category_account_id && categorySuggestions[transaction.id] && (
+                                  <CategorySuggestion
+                                    suggestion={categorySuggestions[transaction.id]}
+                                    onApply={(suggestion) => {
+                                      const categoryToApply = suggestion.chartAccountId
+                                        ? chartAccounts.find(c => c.id === suggestion.chartAccountId)
+                                        : chartAccounts.find(c =>
+                                            c.display_name.toLowerCase() === suggestion.category.toLowerCase() &&
+                                            c.account_type === suggestion.type
+                                          );
+
+                                      if (categoryToApply) {
+                                        updateMutation.mutate({
+                                          id: transaction.id,
+                                          data: {
+                                            category_account_id: categoryToApply.id,
+                                            type: categoryToApply.account_type
+                                          }
+                                        });
+                                        setCategorySuggestions(prev => {
+                                          const { [transaction.id]: _, ...rest } = prev;
+                                          return rest;
+                                        });
+                                      }
+                                    }}
+                                  />
+                                )}
                               </div>
                             );
                           })()}
