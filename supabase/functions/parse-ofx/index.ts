@@ -1,0 +1,113 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
+};
+
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, {
+      status: 200,
+      headers: corsHeaders,
+    });
+  }
+
+  try {
+    const { file_url } = await req.json();
+
+    if (!file_url) {
+      return new Response(
+        JSON.stringify({ error: "file_url is required" }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    const fileResponse = await fetch(file_url);
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
+    }
+
+    const ofxContent = await fileResponse.text();
+
+    const transactions = [];
+    let institutionName = "";
+    let accountNumber = "";
+    let beginningBalance = 0;
+
+    const orgMatch = ofxContent.match(/<ORG>([^<]+)/i);
+    if (orgMatch) institutionName = orgMatch[1].trim();
+
+    const acctIdMatch = ofxContent.match(/<ACCTID>([^<]+)/i);
+    if (acctIdMatch) accountNumber = acctIdMatch[1].trim();
+
+    const balAmtMatch = ofxContent.match(/<BALAMT>([^<]+)/i);
+    if (balAmtMatch) beginningBalance = parseFloat(balAmtMatch[1]);
+
+    const stmtTrnPattern = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
+    let match;
+
+    while ((match = stmtTrnPattern.exec(ofxContent)) !== null) {
+      const txnBlock = match[1];
+
+      const trnTypeMatch = txnBlock.match(/<TRNTYPE>([^<]+)/i);
+      const dtPostedMatch = txnBlock.match(/<DTPOSTED>(\d{8})/i);
+      const trnAmtMatch = txnBlock.match(/<TRNAMT>([^<]+)/i);
+      const nameMatch = txnBlock.match(/<NAME>([^<]+)/i);
+      const memoMatch = txnBlock.match(/<MEMO>([^<]+)/i);
+
+      if (!dtPostedMatch || !trnAmtMatch) continue;
+
+      const dateStr = dtPostedMatch[1];
+      const year = dateStr.substring(0, 4);
+      const month = dateStr.substring(4, 6);
+      const day = dateStr.substring(6, 8);
+      const date = `${year}-${month}-${day}`;
+
+      const amount = Math.abs(parseFloat(trnAmtMatch[1]));
+      const isIncome = parseFloat(trnAmtMatch[1]) > 0;
+
+      const description = (nameMatch?.[1] || memoMatch?.[1] || "Unknown Transaction").trim();
+
+      transactions.push({
+        date,
+        description,
+        original_description: description,
+        amount,
+        type: isIncome ? "income" : "expense",
+      });
+    }
+
+    return new Response(
+      JSON.stringify({
+        status: "success",
+        output: {
+          transactions,
+          institutionName,
+          accountNumber,
+          beginningBalance,
+        },
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("Error parsing OFX:", error);
+    return new Response(
+      JSON.stringify({
+        status: "error",
+        error: error.message,
+        details: "Failed to parse OFX file",
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});
