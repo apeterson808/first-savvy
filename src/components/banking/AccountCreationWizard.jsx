@@ -390,6 +390,7 @@ export default function AccountCreationWizard({
   const [duplicateTransactions, setDuplicateTransactions] = useState([]);
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
+  const [includeLastFour, setIncludeLastFour] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -685,13 +686,17 @@ export default function AccountCreationWizard({
 
         const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, templateAccount.account_number);
 
+        const finalDisplayName = includeLastFour && formData.last4
+          ? `${selectedAccountName} (...${formData.last4})`
+          : selectedAccountName;
+
         const newAccountData = {
           user_id: user.id,
           profile_id: activeProfile.id,
           template_id: templateAccount.id,
           template_account_number: templateAccount.account_number,
           account_number: accountNumber,
-          display_name: selectedAccountName,
+          display_name: finalDisplayName,
           account_detail: accountDetail,
           account_type: templateAccount.account_type,
           class: templateAccount.class,
@@ -2879,17 +2884,43 @@ export default function AccountCreationWizard({
   const renderBankInfoStep = () => {
     const dateRange = getTransactionDateRange(mappedTransactions);
 
+    const displayNameWithLast4 = includeLastFour && formData.last4
+      ? `${selectedAccountName} (...${formData.last4})`
+      : selectedAccountName;
+
+    const handleDisplayNameChange = (e) => {
+      let newValue = e.target.value;
+      if (includeLastFour && formData.last4) {
+        const suffix = ` (...${formData.last4})`;
+        if (newValue.endsWith(suffix)) {
+          newValue = newValue.slice(0, -suffix.length);
+        }
+      }
+      setSelectedAccountName(newValue);
+      updateFormData('name', newValue);
+    };
+
     return (
       <div className="space-y-5 max-w-lg mx-auto">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-          <p className="text-sm text-blue-900">
-            Creating new account: <strong>{selectedAccountName}</strong>
-          </p>
-          <div className="text-xs text-blue-700 mt-2">
-            <div>Importing {mappedTransactions.length} transactions</div>
-            {dateRange.startDate && dateRange.endDate && (
-              <div>Date range: {dateRange.startDate} to {dateRange.endDate}</div>
-            )}
+        <div>
+          <Label htmlFor="displayName">Display Name*</Label>
+          <Input
+            id="displayName"
+            placeholder="e.g., Main Checking"
+            value={displayNameWithLast4}
+            onChange={handleDisplayNameChange}
+            required
+          />
+          <div className="flex items-center space-x-2 mt-2">
+            <Checkbox
+              id="includeLastFour"
+              checked={includeLastFour}
+              onCheckedChange={(checked) => setIncludeLastFour(checked)}
+              disabled={!formData.last4}
+            />
+            <Label htmlFor="includeLastFour" className="cursor-pointer font-normal text-sm text-muted-foreground">
+              Include last 4 digits in name
+            </Label>
           </div>
         </div>
 
@@ -2942,11 +2973,16 @@ export default function AccountCreationWizard({
           </p>
         </div>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <p className="text-xs text-muted-foreground">
-            <strong>{mappedTransactions.length}</strong> transactions will be imported to this new account
-          </p>
-        </div>
+        {dateRange.startDate && dateRange.endDate && (
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+            <p className="text-xs text-muted-foreground">
+              {mappedTransactions.length} transactions will be imported
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Date range: {dateRange.startDate} to {dateRange.endDate}
+            </p>
+          </div>
+        )}
       </div>
     );
   };
