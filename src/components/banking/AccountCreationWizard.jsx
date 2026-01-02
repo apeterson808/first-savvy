@@ -5,7 +5,6 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -58,7 +57,7 @@ import {
   FileUp,
   X
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, processClaudeCodeJSON } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
@@ -384,8 +383,6 @@ export default function AccountCreationWizard({
   const [uploadedFile, setUploadedFile] = useState(null);
   const [processingStatus, setProcessingStatus] = useState(null);
   const [processedData, setProcessedData] = useState(null);
-  const [showClaudeCodeInput, setShowClaudeCodeInput] = useState(false);
-  const [claudeCodeJSON, setClaudeCodeJSON] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedAccountName, setSelectedAccountName] = useState('');
   const [isExistingAccount, setIsExistingAccount] = useState(false);
@@ -665,29 +662,6 @@ export default function AccountCreationWizard({
     }
   };
 
-  const handleClaudeCodeJSONSubmit = () => {
-    try {
-      const result = processClaudeCodeJSON(claudeCodeJSON);
-
-      setProcessedData(result);
-      setMappedTransactions(result.transactions);
-      setProcessingStatus('success');
-      setShowMappingSuccess(true);
-      setShowClaudeCodeInput(false);
-
-      if (result.institutionName) {
-        updateFormData('institutionName', result.institutionName);
-      }
-      if (result.accountNumber) {
-        updateFormData('last4', result.accountNumber.slice(-4));
-      }
-
-      toast.success(`Successfully imported ${result.transactions.length} transactions!`);
-    } catch (error) {
-      console.error('Error processing Claude Code JSON:', error);
-      toast.error(error.message || 'Failed to process JSON');
-    }
-  };
 
   const handleCsvMap = (mappingConfig) => {
     const transactions = mapCsvToTransactions(
@@ -1851,29 +1825,6 @@ export default function AccountCreationWizard({
                     {mappedTransactions.length > 0 && `${mappedTransactions.length} transactions found`}
                   </div>
                 )}
-                {processingStatus === 'claude-code-needed' && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-left space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Info className="w-4 h-4 text-blue-600" />
-                      <span className="text-sm font-medium text-blue-900">Claude Code Extraction Needed</span>
-                    </div>
-                    <p className="text-xs text-blue-700">
-                      The automatic PDF parser couldn't extract transactions. For best results, show this PDF to Claude Code.
-                    </p>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowClaudeCodeInput(!showClaudeCodeInput);
-                      }}
-                      className="w-full"
-                    >
-                      {showClaudeCodeInput ? 'Hide' : 'Show'} Claude Code Input
-                    </Button>
-                  </div>
-                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -1885,8 +1836,6 @@ export default function AccountCreationWizard({
                     setProcessedData(null);
                     setMappedTransactions([]);
                     setShowMappingSuccess(false);
-                    setShowClaudeCodeInput(false);
-                    setClaudeCodeJSON('');
                   }}
                 >
                   <X className="w-4 h-4 mr-1" />
@@ -1916,72 +1865,6 @@ export default function AccountCreationWizard({
               </>
             )}
           </div>
-
-          {showClaudeCodeInput && (
-            <div className="mt-4 space-y-3">
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="text-sm font-semibold mb-2">How to use Claude Code Extraction</h4>
-                <ol className="text-xs text-gray-700 space-y-1 list-decimal list-inside">
-                  <li>Show your PDF file to Claude Code in the chat</li>
-                  <li>Ask Claude Code to extract transactions in JSON format</li>
-                  <li>Copy the JSON response from Claude Code</li>
-                  <li>Paste it into the textarea below and click Process</li>
-                </ol>
-                <div className="mt-3 p-2 bg-white rounded border border-gray-200">
-                  <p className="text-xs font-mono text-gray-600 mb-1">Expected JSON format:</p>
-                  <pre className="text-xs text-gray-500 overflow-x-auto">
-{`{
-  "institutionName": "Bank Name",
-  "accountNumber": "1234",
-  "transactions": [
-    {
-      "date": "2024-01-15",
-      "description": "Merchant Name",
-      "amount": 45.99,
-      "type": "expense"
-    }
-  ]
-}`}
-                  </pre>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="claude-json-input" className="text-sm font-medium">
-                  Paste Claude Code JSON
-                </Label>
-                <Textarea
-                  id="claude-json-input"
-                  value={claudeCodeJSON}
-                  onChange={(e) => setClaudeCodeJSON(e.target.value)}
-                  placeholder='Paste the JSON from Claude Code here...'
-                  className="min-h-[200px] font-mono text-xs"
-                />
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    onClick={handleClaudeCodeJSONSubmit}
-                    disabled={!claudeCodeJSON.trim()}
-                    size="sm"
-                    className="flex-1"
-                  >
-                    Process JSON
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setClaudeCodeJSON('');
-                      setShowClaudeCodeInput(false);
-                    }}
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       );
     } else if (selectedCard.id === 'vehicle') {
