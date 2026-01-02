@@ -39,7 +39,7 @@ Deno.serve(async (req: Request) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-3-5-sonnet-20240620',
         max_tokens: 10,
         messages: [
           {
@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         success: true,
         message: 'Anthropic API key is configured correctly!',
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-3-5-sonnet-20240620',
         response: data.content[0].text,
       }),
       {

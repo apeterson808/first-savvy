@@ -84,7 +84,7 @@ If this is not a bank statement, return: {"transactions": []}`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-7-sonnet-20250219',
+        model: 'claude-3-5-sonnet-20240620',
         max_tokens: 4096,
         temperature: 0.1,
         messages: [
