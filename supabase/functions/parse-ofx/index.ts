@@ -15,11 +15,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { file_url } = await req.json();
+    const { file_data } = await req.json();
 
-    if (!file_url) {
+    if (!file_data) {
       return new Response(
-        JSON.stringify({ error: "file_url is required" }),
+        JSON.stringify({ status: "error", error: "file_data is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -27,12 +27,14 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const fileResponse = await fetch(file_url);
-    if (!fileResponse.ok) {
-      throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
+    const binaryString = atob(file_data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
 
-    const ofxContent = await fileResponse.text();
+    const decoder = new TextDecoder('utf-8');
+    const ofxContent = decoder.decode(bytes);
 
     const transactions = [];
     let institutionName = "";

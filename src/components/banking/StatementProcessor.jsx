@@ -39,46 +39,17 @@ export const processStatementFile = async (file, onProgress) => {
   }
 
   if (fileExt === 'ofx' || fileExt === 'qfx' || fileExt === 'pdf') {
-    onProgress?.('uploading');
-
-    const user = await firstsavvy.auth.getUser();
-    if (!user?.data?.user?.id) {
-      throw new Error('You must be logged in to upload files');
-    }
-
-    const userId = user.data.user.id;
-    const timestamp = Date.now();
-    const filePath = `${userId}/${timestamp}-${file.name}`;
-
-    const { data: uploadData, error: uploadError } = await firstsavvy.storage
-      .from('statement-files')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Failed to upload file: ${uploadError.message}`);
-    }
-
-    const { data: urlData, error: urlError } = await firstsavvy.storage
-      .from('statement-files')
-      .createSignedUrl(filePath, 300);
-
-    if (urlError || !urlData?.signedUrl) {
-      throw new Error('Failed to generate file access URL');
-    }
-
-    const fileUrl = urlData.signedUrl;
-
     onProgress?.('extracting');
 
-    const extractResponse = fileExt === 'pdf'
-      ? await firstsavvy.functions.parsePdf({ file_url: fileUrl })
-      : await firstsavvy.functions.parseOfx({ file_url: fileUrl });
+    const arrayBuffer = await file.arrayBuffer();
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer)
+        .reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
 
-    await firstsavvy.storage.from('statement-files').remove([filePath]);
+    const extractResponse = fileExt === 'pdf'
+      ? await firstsavvy.functions.parsePdf({ file_data: base64Data, file_name: file.name })
+      : await firstsavvy.functions.parseOfx({ file_data: base64Data, file_name: file.name });
 
     if (extractResponse.status === 'success' && extractResponse.output?.transactions) {
       return {

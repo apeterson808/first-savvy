@@ -164,13 +164,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { file_url } = await req.json();
+    const { file_data } = await req.json();
 
-    if (!file_url) {
+    if (!file_data) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'file_url is required'
+          error: 'file_data is required'
         }),
         {
           status: 400,
@@ -210,12 +210,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const pdfResponse = await fetch(file_url);
-    if (!pdfResponse.ok) {
-      throw new Error(`Failed to fetch PDF: ${pdfResponse.statusText}`);
+    const binaryString = atob(file_data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
-
-    const pdfBuffer = await pdfResponse.arrayBuffer();
+    const pdfBuffer = bytes.buffer;
     const text = await extractTextFromPDF(pdfBuffer);
 
     if (!text || text.length < 50) {
