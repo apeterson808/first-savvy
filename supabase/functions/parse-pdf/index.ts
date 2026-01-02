@@ -129,13 +129,58 @@ If this is not a bank statement, return: {"transactions": []}`;
 
 async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
   const uint8Array = new Uint8Array(pdfBuffer);
-  const decoder = new TextDecoder('utf-8', { fatal: false });
-  let text = decoder.decode(uint8Array);
+  const decoder = new TextDecoder('latin1', { fatal: false });
+  let rawText = decoder.decode(uint8Array);
 
-  text = text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, ' ');
+  const textChunks: string[] = [];
+
+  const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g;
+  let match;
+
+  while ((match = streamRegex.exec(rawText)) !== null) {
+    const streamContent = match[1];
+    const cleanedContent = streamContent
+      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
+      .replace(/[^\x20-\x7E\s]/g, ' ');
+
+    if (cleanedContent.trim().length > 0) {
+      textChunks.push(cleanedContent);
+    }
+  }
+
+  const tjRegex = /\[(.*?)\]\s*TJ/g;
+  while ((match = tjRegex.exec(rawText)) !== null) {
+    const tjContent = match[1]
+      .replace(/[()]/g, '')
+      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+
+    if (tjContent.trim().length > 0) {
+      textChunks.push(tjContent);
+    }
+  }
+
+  const tdRegex = /\((.*?)\)\s*Td/g;
+  while ((match = tdRegex.exec(rawText)) !== null) {
+    const tdContent = match[1]
+      .replace(/\\[nrtbf\\]/g, ' ')
+      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+
+    if (tdContent.trim().length > 0) {
+      textChunks.push(tdContent);
+    }
+  }
+
+  let text = textChunks.join(' ');
+
   text = text.replace(/\s+/g, ' ');
+  text = text.replace(/\\(\d{3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)));
+  text = text.replace(/\\[nrtbf\\()]/g, ' ');
 
-  return text;
+  console.log('Extracted text chunks:', textChunks.length);
+  console.log('Final text length:', text.length);
+  console.log('Text sample:', text.substring(0, 500));
+
+  return text.trim();
 }
 
 function parseTransactionsFromText(text: string): Transaction[] {
