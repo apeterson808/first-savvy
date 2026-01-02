@@ -30,7 +30,6 @@ import { toast } from 'sonner';
 import AccountCreationWizard from './AccountCreationWizard';
 import BankAccountSetupFlow from './BankAccountSetupFlow';
 import EditAccountDialog from './EditAccountDialog';
-import FileImporter from './FileImporter';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getAccountDisplayName } from '../utils/constants';
@@ -110,7 +109,6 @@ export default function AccountsTable({ accounts, isLoading }) {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [bankAccountFlowOpen, setBankAccountFlowOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
-  const [fileImporterOpen, setFileImporterOpen] = useState(false);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
@@ -570,37 +568,35 @@ export default function AccountsTable({ accounts, isLoading }) {
                 </div>
 
                 <div className="bg-slate-50 rounded-lg border border-slate-200 p-6">
-                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Import Options</h3>
-                  <div className="grid grid-cols-2 gap-3">
+                  <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Get Started</h3>
+                  <div className="space-y-3">
                     <button
-                      onClick={() => setFileImporterOpen(true)}
-                      className="p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
+                      onClick={() => setBankAccountFlowOpen(true)}
+                      className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center flex-shrink-0">
                           <Upload className="w-6 h-6 text-teal-600" />
                         </div>
-                        <span className="text-sm font-medium text-slate-900">Import from CSV, PDF, or OFX</span>
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">Add Bank Account</div>
+                          <div className="text-xs text-slate-500">Import transactions from statements</div>
+                        </div>
                       </div>
                     </button>
                     <button
                       onClick={() => setAmazonImporterOpen(true)}
-                      className="p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
+                      className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
                     >
                       <div className="flex items-center gap-3">
                         <div className="w-12 h-12 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
                           <Package className="w-6 h-6 text-orange-600" />
                         </div>
-                        <span className="text-sm font-medium text-slate-900">Import Amazon Orders</span>
+                        <div>
+                          <div className="text-sm font-medium text-slate-900">Import Amazon Orders</div>
+                          <div className="text-xs text-slate-500">Match orders to transactions</div>
+                        </div>
                       </div>
-                    </button>
-                  </div>
-                  <div className="mt-4 text-center">
-                    <button
-                      onClick={() => setBankAccountFlowOpen(true)}
-                      className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                    >
-                      Or add a bank account
                     </button>
                   </div>
                 </div>
@@ -788,16 +784,6 @@ export default function AccountsTable({ accounts, isLoading }) {
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         onAccountCreated={handleSuccess}
-      />
-
-      {/* File Importer */}
-      <FileImporter
-        open={fileImporterOpen}
-        onOpenChange={setFileImporterOpen}
-        onImportComplete={(accounts) => {
-          queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-          queryClient.invalidateQueries({ queryKey: ['transactions'] });
-        }}
       />
 
       {/* Amazon Order Importer */}

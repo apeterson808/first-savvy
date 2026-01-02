@@ -3,20 +3,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent } from '@/components/ui/card';
 import { Upload, DollarSign, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import StatementImportWizard from './StatementImportWizard';
 import AccountCreationWizard from './AccountCreationWizard';
 
 export default function BankAccountSetupFlow({ open, onOpenChange, onAccountCreated }) {
   const [step, setStep] = useState('choice');
   const [selectedAccountType, setSelectedAccountType] = useState(null);
-  const [showImportWizard, setShowImportWizard] = useState(false);
-  const [showManualWizard, setShowManualWizard] = useState(false);
+  const [showAccountWizard, setShowAccountWizard] = useState(false);
 
   const resetFlow = () => {
     setStep('choice');
     setSelectedAccountType(null);
-    setShowImportWizard(false);
-    setShowManualWizard(false);
+    setShowAccountWizard(false);
   };
 
   const handleAccountTypeSelect = (type) => {
@@ -25,12 +22,12 @@ export default function BankAccountSetupFlow({ open, onOpenChange, onAccountCrea
   };
 
   const handleImportChoice = () => {
-    setShowImportWizard(true);
+    setShowAccountWizard(true);
     onOpenChange(false);
   };
 
   const handleManualChoice = () => {
-    setShowManualWizard(true);
+    setShowAccountWizard(true);
     onOpenChange(false);
   };
 
@@ -151,7 +148,7 @@ export default function BankAccountSetupFlow({ open, onOpenChange, onAccountCrea
 
   return (
     <>
-      <Dialog open={open && !showImportWizard && !showManualWizard} onOpenChange={handleClose}>
+      <Dialog open={open && !showAccountWizard} onOpenChange={handleClose}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>{getTitle()}</DialogTitle>
@@ -173,27 +170,10 @@ export default function BankAccountSetupFlow({ open, onOpenChange, onAccountCrea
         </DialogContent>
       </Dialog>
 
-      <StatementImportWizard
-        open={showImportWizard}
-        onOpenChange={(newOpen) => {
-          setShowImportWizard(newOpen);
-          if (!newOpen) {
-            resetFlow();
-            onOpenChange(false);
-          }
-        }}
-        accountType={selectedAccountType}
-        onAccountCreated={(result) => {
-          setShowImportWizard(false);
-          resetFlow();
-          onAccountCreated?.(result);
-        }}
-      />
-
       <AccountCreationWizard
-        open={showManualWizard}
+        open={showAccountWizard}
         onOpenChange={(newOpen) => {
-          setShowManualWizard(newOpen);
+          setShowAccountWizard(newOpen);
           if (!newOpen) {
             resetFlow();
             onOpenChange(false);
@@ -202,7 +182,7 @@ export default function BankAccountSetupFlow({ open, onOpenChange, onAccountCrea
         initialAccountType="banking"
         initialSubtype={selectedAccountType}
         onAccountCreated={(result) => {
-          setShowManualWizard(false);
+          setShowAccountWizard(false);
           resetFlow();
           onAccountCreated?.(result);
         }}
