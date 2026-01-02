@@ -449,6 +449,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (transactionsNeedingSuggestions.length === 0) return;
 
+      const allCategorizedTransactions = [...fullPostedTransactions, ...fullPendingTransactions].filter(
+        t => t.chart_account_id
+      );
+
       const batchSize = 5;
       for (let i = 0; i < Math.min(batchSize, transactionsNeedingSuggestions.length); i++) {
         const transaction = transactionsNeedingSuggestions[i];
@@ -456,7 +460,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         try {
           const suggestion = await suggestCategory(
             transaction.description,
-            fullPostedTransactions,
+            allCategorizedTransactions,
             categorizationRules,
             transaction.amount,
             chartAccounts
@@ -706,6 +710,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (transactionsNeedingSuggestions.length === 0) return;
 
+      const allTransactionsWithContacts = [...fullPostedTransactions, ...fullPendingTransactions].filter(
+        t => t.contact_id
+      );
+
       const newSuggestionIds = new Set(suggestingContactIds);
       transactionsNeedingSuggestions.forEach(t => newSuggestionIds.add(t.id));
       setSuggestingContactIds(newSuggestionIds);
@@ -714,7 +722,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         try {
           const suggestion = await suggestContact(
             transaction.description,
-            fullPostedTransactions,
+            allTransactionsWithContacts,
             contactMatchingRules,
             contacts
           );
