@@ -609,15 +609,6 @@ export default function AccountCreationWizard({
 
   const handleFileUpload = async (file) => {
     setUploadedFile(file);
-
-    const isPDF = file.name.toLowerCase().endsWith('.pdf');
-
-    if (isPDF) {
-      setProcessingStatus('claude-code-needed');
-      setShowClaudeCodeInput(true);
-      return;
-    }
-
     setProcessingStatus('processing');
 
     try {
