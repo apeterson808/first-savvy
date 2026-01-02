@@ -1,5 +1,6 @@
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
+import Papa from 'papaparse';
 
 export const processStatementFile = async (file, onProgress) => {
   const fileExt = file.name.split('.').pop().toLowerCase();
@@ -7,15 +8,26 @@ export const processStatementFile = async (file, onProgress) => {
   if (fileExt === 'csv') {
     onProgress?.('parsing');
     const text = await file.text();
-    const lines = text.split('\n').filter(line => line.trim());
 
-    if (lines.length < 2) {
+    const parseResult = Papa.parse(text, {
+      header: false,
+      skipEmptyLines: true,
+      trimHeaders: true,
+      trim: true
+    });
+
+    if (parseResult.errors.length > 0) {
+      console.warn('CSV parsing warnings:', parseResult.errors);
+    }
+
+    const data = parseResult.data;
+
+    if (data.length < 2) {
       throw new Error('CSV file is empty or has no data rows');
     }
 
-    const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-    const rows = lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+    const headers = data[0];
+    const rows = data.slice(1).map(values => {
       const row = {};
       headers.forEach((header, idx) => {
         row[header] = values[idx] || '';
