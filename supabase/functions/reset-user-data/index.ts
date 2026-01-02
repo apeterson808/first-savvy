@@ -47,10 +47,16 @@ Deno.serve(async (req: Request) => {
 
     const userId = user.id;
 
+    await supabase.from("transaction_splits").delete().eq("user_id", userId);
     await supabase.from("transactions").delete().eq("user_id", userId);
+    await supabase.from("categorization_rules").delete().eq("user_id", userId);
+    await supabase.from("contact_matching_rules").delete().eq("user_id", userId);
+    await supabase.from("payment_reminders").delete().eq("user_id", userId);
+    await supabase.from("transfer_registry").delete().eq("user_id", userId);
     await supabase.from("asset_liability_links").delete().eq("user_id", userId);
     await supabase.from("budgets").delete().eq("user_id", userId);
     await supabase.from("budget_groups").delete().eq("user_id", userId);
+    await supabase.from("categories").delete().eq("user_id", userId);
     await supabase.from("accounts").delete().eq("user_id", userId);
     await supabase.from("bank_accounts").delete().eq("user_id", userId);
     await supabase.from("credit_cards").delete().eq("user_id", userId);
@@ -64,28 +70,40 @@ Deno.serve(async (req: Request) => {
     await supabase.from("configuration_change_log").delete().eq("user_id", userId);
     await supabase.from("user_chart_of_accounts").delete().eq("user_id", userId);
 
-    const { data: templates } = await supabase
-      .from("chart_of_accounts_templates")
-      .select("*")
-      .order("account_number");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
 
-    if (templates && templates.length > 0) {
-      const userAccounts = templates.map(template => ({
-        user_id: userId,
-        template_account_number: template.account_number,
-        account_number: template.account_number,
-        account_type: template.account_type,
-        account_detail: template.account_detail,
-        category: template.category,
-        icon: template.icon,
-        color: template.color,
-        is_active: true,
-        is_user_created: false,
-        level: template.level,
-        parent_account_number: template.parent_account_number,
-      }));
+    const profileId = profile?.id;
 
-      await supabase.from("user_chart_of_accounts").insert(userAccounts);
+    if (profileId) {
+      const { data: templates } = await supabase
+        .from("chart_of_accounts_templates")
+        .select("*")
+        .order("account_number");
+
+      if (templates && templates.length > 0) {
+        const userAccounts = templates.map(template => ({
+          user_id: userId,
+          profile_id: profileId,
+          template_account_number: template.account_number,
+          account_number: template.account_number,
+          class: template.class,
+          account_detail: template.account_detail,
+          account_type: template.account_type,
+          display_name: template.display_name,
+          icon: template.icon,
+          color: template.color,
+          is_active: false,
+          is_user_created: false,
+        }));
+
+        await supabase.from("user_chart_of_accounts").insert(userAccounts);
+      }
     }
 
     return new Response(
