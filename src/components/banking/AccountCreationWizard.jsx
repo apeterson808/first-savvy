@@ -728,7 +728,7 @@ export default function AccountCreationWizard({
       const allTransactions = transactionsToImport.map(txn => ({
         user_id: user.id,
         profile_id: activeProfile.id,
-        chart_account_id: targetAccountId,
+        bank_account_id: targetAccountId,
         status: 'posted',
         date: txn.date,
         description: txn.description,

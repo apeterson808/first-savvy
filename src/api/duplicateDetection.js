@@ -9,7 +9,7 @@ export async function detectDuplicateTransactions(accountId, newTransactions) {
     const { data: existingTransactions, error } = await firstsavvy
       .from('transactions')
       .select('id, date, amount, original_description, description')
-      .eq('chart_account_id', accountId)
+      .eq('bank_account_id', accountId)
       .order('date', { ascending: false });
 
     if (error) {
