@@ -26,7 +26,6 @@ export default function RecentTransactionsCard() {
   const [editingValue, setEditingValue] = useState('');
   const [accountWizardOpen, setAccountWizardOpen] = useState(false);
   const inputRef = useRef(null);
-  const processedIdsRef = useRef(new Set());
 
   const { data: chartOfAccounts = [] } = useQuery({
     queryKey: ['activeTransactionalAccounts'],
@@ -75,60 +74,14 @@ export default function RecentTransactionsCard() {
   });
 
   // Get AI suggestions for uncategorized transactions
-  const activeAccountIds = accounts.map(a => a.id);
-  const pendingTransactions = allPendingTransactions
-    .filter(t => activeAccountIds.includes(t.bank_account_id))
-    .slice(0, 5);
+  const activeAccountIds = useMemo(() => accounts.map(a => a.id), [accounts]);
 
-  const uncategorizedTransactionIds = useMemo(() => {
+  const pendingTransactions = useMemo(() => {
     return allPendingTransactions
       .filter(t => activeAccountIds.includes(t.bank_account_id))
-      .filter(t => !t.ai_suggested_chart_account_id && !processedIdsRef.current.has(t.id))
-      .map(t => t.id)
-      .sort()
-      .join(',');
+      .slice(0, 5);
   }, [allPendingTransactions, activeAccountIds]);
 
-  useEffect(() => {
-    if (!uncategorizedTransactionIds || chartAccounts.length === 0) return;
-
-    const needsSuggestion = allPendingTransactions
-      .filter(t => activeAccountIds.includes(t.bank_account_id))
-      .filter(t => !t.ai_suggested_chart_account_id && !processedIdsRef.current.has(t.id));
-
-    needsSuggestion.forEach(t => processedIdsRef.current.add(t.id));
-
-    const getSuggestions = async () => {
-      try {
-        for (const transaction of needsSuggestion) {
-          try {
-            const suggestion = await suggestCategory(
-              transaction.description,
-              transactions,
-              categorizationRules,
-              transaction.amount,
-              chartAccounts
-            );
-
-            if (suggestion && suggestion.chartAccountId) {
-              updateMutation.mutate({
-                id: transaction.id,
-                data: {
-                  ai_suggested_chart_account_id: suggestion.chartAccountId
-                }
-              });
-            }
-          } catch (err) {
-            console.error(`Failed to categorize transaction ${transaction.id}:`, err);
-          }
-        }
-      } catch (err) {
-        console.error('Auto-categorize error:', err);
-      }
-    };
-
-    getSuggestions();
-  }, [uncategorizedTransactionIds, chartAccounts.length]);
 
   const recentTransactions = pendingTransactions;
 
