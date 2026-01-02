@@ -65,7 +65,10 @@ export const ProfileProvider = ({ children }) => {
           role: m.role
         }));
 
-      setProfiles(profilesList);
+      setProfiles(prev => {
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(profilesList);
+        return hasChanged ? profilesList : prev;
+      });
 
       const { data: activeTabs, error: tabError } = await firstsavvy
         .from('profile_tabs')
@@ -113,7 +116,10 @@ export const ProfileProvider = ({ children }) => {
         }
       }
 
-      setActiveProfile(activeProfileToSet);
+      setActiveProfile(prev => {
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(activeProfileToSet);
+        return hasChanged ? activeProfileToSet : prev;
+      });
 
       if (activeProfileToSet) {
         localStorage.setItem('activeProfileId', activeProfileToSet.id);
@@ -184,7 +190,10 @@ export const ProfileProvider = ({ children }) => {
         console.error('Error activating tab:', activateError);
       }
 
-      setActiveProfile(profile);
+      setActiveProfile(prev => {
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(profile);
+        return hasChanged ? profile : prev;
+      });
       localStorage.setItem('activeProfileId', profile.id);
 
       window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
