@@ -151,7 +151,7 @@ function deduplicateTransactions(transactions: Transaction[]): Transaction[] {
   return unique;
 }
 
-Deno.serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {  
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -160,14 +160,19 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { file_data } = await req.json();
+    const requestBody = await req.json();
+    console.log('Received request body keys:', Object.keys(requestBody));
+
+    const file_data = requestBody.file_data;
+    const file_name = requestBody.file_name || 'unknown.pdf';
 
     if (!file_data) {
-      console.error('Missing file_data in request');
+      console.error('Missing file_data in request. Body keys:', Object.keys(requestBody));
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'file_data is required'
+          error: 'file_data is required',
+          received_keys: Object.keys(requestBody)
         }),
         {
           status: 400,
@@ -176,7 +181,7 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log('Received file_data, length:', file_data.length);
+    console.log(`Processing PDF: ${file_name}, data length: ${file_data.length}`);
 
     let pdfBuffer: ArrayBuffer;
     try {
@@ -204,6 +209,7 @@ Deno.serve(async (req: Request) => {
 
     const text = await extractTextFromPDF(pdfBuffer);
     console.log('Extracted text length:', text.length);
+    console.log('First 500 chars:', text.substring(0, 500));
 
     if (!text || text.length < 50) {
       return new Response(
@@ -263,6 +269,7 @@ Deno.serve(async (req: Request) => {
         status: 'error',
         error: 'Failed to parse PDF',
         details: error.message,
+        stack: error.stack
       }),
       {
         status: 500,
