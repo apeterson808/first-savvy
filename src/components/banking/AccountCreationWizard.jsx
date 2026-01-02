@@ -729,7 +729,7 @@ export default function AccountCreationWizard({
         user_id: user.id,
         profile_id: activeProfile.id,
         bank_account_id: targetAccountId,
-        status: 'posted',
+        status: 'pending',
         date: txn.date,
         description: txn.description,
         original_description: txn.original_description,
