@@ -2804,14 +2804,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             open={uploadDialogOpen}
                             onOpenChange={setUploadDialogOpen}
                             onUploadSuccess={handleUploadSuccess}
-                            profileId={selectedProfile?.id}
+                            profileId={activeProfile?.id}
                           />
 
                           <TransactionReviewDialog
                             open={reviewDialogOpen}
                             onOpenChange={setReviewDialogOpen}
                             extractedData={extractedData}
-                            profileId={selectedProfile?.id}
+                            profileId={activeProfile?.id}
                             onImportComplete={handleImportComplete}
                           />
     </>
