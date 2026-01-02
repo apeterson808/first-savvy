@@ -56,9 +56,10 @@ import {
   FileUp,
   X
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, splitTransactionsByGoLiveDate, autoMatchTransfers } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
+import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -385,7 +386,9 @@ export default function AccountCreationWizard({
   const [selectedAccountName, setSelectedAccountName] = useState('');
   const [isExistingAccount, setIsExistingAccount] = useState(false);
   const [mappedTransactions, setMappedTransactions] = useState([]);
-  const [goLiveDate, setGoLiveDate] = useState('');
+  const [duplicateTransactions, setDuplicateTransactions] = useState([]);
+  const [skipDuplicates, setSkipDuplicates] = useState(true);
+  const [showMappingSuccess, setShowMappingSuccess] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -524,26 +527,10 @@ export default function AccountCreationWizard({
       setCurrentStep('select-type');
       setSelectedCard(null);
     } else if (currentStep === 'csv-mapping') {
-      setCurrentStep('bank-search');
-      setUploadedFile(null);
+      setCurrentStep('details');
       setProcessedData(null);
-    } else if (currentStep === 'account-selection') {
-      if (processedData?.type === 'csv') {
-        setCurrentStep('csv-mapping');
-      } else {
-        setCurrentStep('bank-search');
-        setUploadedFile(null);
-        setProcessedData(null);
-        setMappedTransactions([]);
-      }
     } else if (currentStep === 'bank-info') {
-      setCurrentStep('account-selection');
-    } else if (currentStep === 'transaction-preview') {
-      if (isExistingAccount) {
-        setCurrentStep('account-selection');
-      } else {
-        setCurrentStep('bank-info');
-      }
+      setCurrentStep('details');
     } else if (currentStep === 'configure-accounts') {
       setCurrentStep('bank-search');
       setMockBankAccounts([]);
@@ -561,11 +548,19 @@ export default function AccountCreationWizard({
         setCurrentStep('select-subtype');
         setSelectedSubtype(null);
         setFormData({});
+        setUploadedFile(null);
+        setProcessedData(null);
+        setMappedTransactions([]);
+        setShowMappingSuccess(false);
       } else {
         setCurrentStep('select-type');
         setSelectedCard(null);
         setSelectedSubtype(null);
         setFormData({});
+        setUploadedFile(null);
+        setProcessedData(null);
+        setMappedTransactions([]);
+        setShowMappingSuccess(false);
       }
     } else if (currentStep === 'loan-search' || currentStep === 'balance') {
       setCurrentStep('details');
@@ -625,6 +620,7 @@ export default function AccountCreationWizard({
         } else {
           setMappedTransactions(result.transactions);
           setProcessingStatus('success');
+          setShowMappingSuccess(true);
 
           if (result.institutionName) {
             updateFormData('institutionName', result.institutionName);
@@ -641,7 +637,7 @@ export default function AccountCreationWizard({
           setCurrentStep('csv-mapping');
         } else {
           setMappedTransactions(result.transactions);
-          setCurrentStep('account-selection');
+          setShowMappingSuccess(true);
         }
         setProcessingStatus('success');
       }
@@ -664,62 +660,70 @@ export default function AccountCreationWizard({
 
     setMappedTransactions(transactions);
     setProcessingStatus('success');
-
-    if (selectedCard.id === 'banking' && (selectedAccountId || selectedAccountName)) {
-      setCurrentStep('details');
-    } else {
-      setCurrentStep('account-selection');
-    }
-  };
-
-  const handleAccountSelection = (accountId, accountName, isExisting) => {
-    setSelectedAccountId(accountId);
-    setSelectedAccountName(accountName);
-    setIsExistingAccount(isExisting);
-
-    if (!isExisting) {
-      setCurrentStep('bank-info');
-    } else {
-      const firstOfMonth = new Date();
-      firstOfMonth.setDate(1);
-      setGoLiveDate(firstOfMonth.toISOString().split('T')[0]);
-      setCurrentStep('transaction-preview');
-    }
-  };
-
-  const handleBankInfoSubmit = () => {
-    const firstOfMonth = new Date();
-    firstOfMonth.setDate(1);
-    setGoLiveDate(firstOfMonth.toISOString().split('T')[0]);
-    setCurrentStep('transaction-preview');
+    setShowMappingSuccess(true);
+    setCurrentStep('details');
   };
 
   const handleImportTransactions = async () => {
     try {
-      const { posted, pending } = splitTransactionsByGoLiveDate(mappedTransactions, goLiveDate);
-
       let targetAccountId = selectedAccountId;
 
       if (!isExistingAccount) {
-        const accountType = selectedSubtype?.value || formData.accountType || 'checking';
+        const accountDetail = selectedSubtype?.value === 'checking' ? 'checking_account' :
+                             selectedSubtype?.value === 'savings' ? 'savings_account' :
+                             selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' :
+                             'checking_account';
+
+        const templateAccount = chartAccounts.find(t => t.account_detail === accountDetail);
+
+        if (!templateAccount) {
+          throw new Error('Could not find chart of accounts template');
+        }
+
+        const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, templateAccount.account_number);
+
         const newAccountData = {
-          account_type: accountType,
-          account_name: selectedAccountName,
+          user_id: user.id,
+          profile_id: activeProfile.id,
+          template_id: templateAccount.id,
+          template_account_number: templateAccount.account_number,
+          account_number: accountNumber,
+          display_name: selectedAccountName,
+          account_detail: accountDetail,
+          account_type: templateAccount.account_type,
+          class: templateAccount.class,
+          is_active: true,
           institution_name: formData.institutionName || '',
           account_number_last4: formData.last4 || '',
           current_balance: parseFloat(formData.beginningBalance) || 0
         };
 
-        const newAccount = await createAccountMutation.mutateAsync(newAccountData);
+        const { data: newAccount, error: createError } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .insert(newAccountData)
+          .select()
+          .single();
+
+        if (createError) throw createError;
         targetAccountId = newAccount.id;
       }
 
-      const allTransactions = [...posted, ...pending].map(txn => ({
+      const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
+        targetAccountId,
+        mappedTransactions
+      );
+
+      setDuplicateTransactions(duplicates);
+
+      const transactionsToImport = skipDuplicates ? uniqueTransactions : mappedTransactions;
+
+      const allTransactions = transactionsToImport.map(txn => ({
         ...txn,
         user_id: user.id,
         profile_id: activeProfile.id,
         chart_account_id: targetAccountId,
-        status: txn.date < goLiveDate ? 'posted' : 'pending'
+        status: 'posted',
+        original_description: txn.description
       }));
 
       if (allTransactions.length > 0) {
@@ -734,12 +738,14 @@ export default function AccountCreationWizard({
 
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
 
+      const duplicateMsg = duplicates.length > 0 ? ` (${duplicates.length} duplicates skipped)` : '';
       const message = isExistingAccount
-        ? `Successfully imported ${allTransactions.length} transactions to ${selectedAccountName}`
-        : `Successfully created ${selectedAccountName} and imported ${allTransactions.length} transactions`;
+        ? `Successfully imported ${allTransactions.length} transactions to ${selectedAccountName}${duplicateMsg}`
+        : `Successfully created ${selectedAccountName} and imported ${allTransactions.length} transactions${duplicateMsg}`;
 
-      toast.success(`${message}${matchedCount > 0 ? ` (${matchedCount} transfers matched)` : ''}`);
+      toast.success(`${message}${matchedCount > 0 ? ` - ${matchedCount} transfers matched` : ''}`);
 
       onOpenChange(false);
       if (targetAccountId) {
@@ -1584,17 +1590,11 @@ export default function AccountCreationWizard({
         }
 
         if (isExistingAccount) {
-          const firstOfMonth = new Date();
-          firstOfMonth.setDate(1);
-          setGoLiveDate(firstOfMonth.toISOString().split('T')[0]);
           await handleImportTransactions();
         } else {
           setCurrentStep('bank-info');
         }
       } else if (currentStep === 'bank-info') {
-        const firstOfMonth = new Date();
-        firstOfMonth.setDate(1);
-        setGoLiveDate(firstOfMonth.toISOString().split('T')[0]);
         await handleImportTransactions();
       } else if (currentStep === 'balance') {
         await handleSubmit();
@@ -1738,17 +1738,26 @@ export default function AccountCreationWizard({
         <div className="space-y-5 max-w-lg mx-auto">
           <div>
             <Label htmlFor="displayName">Display Name*</Label>
-            <AccountCombobox
-              accounts={existingAccounts}
-              value={selectedAccountId || selectedAccountName}
-              onValueChange={(accountId, accountName, isExisting) => {
-                setSelectedAccountId(accountId);
-                setSelectedAccountName(accountName);
-                setIsExistingAccount(isExisting);
-                updateFormData('name', accountName);
-              }}
-              placeholder="Select existing or type new account name..."
-            />
+            <div className="relative">
+              <AccountCombobox
+                accounts={existingAccounts}
+                value={selectedAccountId || selectedAccountName}
+                onValueChange={(accountId, accountName, isExisting) => {
+                  setSelectedAccountId(accountId);
+                  setSelectedAccountName(accountName);
+                  setIsExistingAccount(isExisting);
+                  updateFormData('name', accountName);
+                }}
+                placeholder="Select existing or type new account name..."
+              />
+              {selectedAccountName && (
+                <div className="mt-2">
+                  <Badge variant={isExistingAccount ? "default" : "secondary"} className="text-xs">
+                    {isExistingAccount ? "Existing Account" : "New Account"}
+                  </Badge>
+                </div>
+              )}
+            </div>
           </div>
 
           <div
@@ -1768,11 +1777,33 @@ export default function AccountCreationWizard({
               </div>
             ) : uploadedFile ? (
               <div className="space-y-2">
-                <FileUp className="w-6 h-6 text-green-600 mx-auto" />
+                {showMappingSuccess ? (
+                  <CheckCircle2 className="w-6 h-6 text-green-600 mx-auto" />
+                ) : (
+                  <FileUp className="w-6 h-6 text-green-600 mx-auto" />
+                )}
                 <div className="text-sm font-medium">{uploadedFile.name}</div>
-                <div className="text-xs text-muted-foreground">
-                  {mappedTransactions.length > 0 && `${mappedTransactions.length} transactions found`}
-                </div>
+                {showMappingSuccess && mappedTransactions.length > 0 && (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-left">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-4 h-4 text-green-600" />
+                      <span className="text-sm font-medium text-green-900">Mapping Complete</span>
+                    </div>
+                    <div className="text-xs text-green-700">
+                      {mappedTransactions.length} transactions ready to import
+                    </div>
+                    {mappedTransactions.length > 0 && (
+                      <div className="mt-2 text-xs text-green-700">
+                        Date range: {getTransactionDateRange(mappedTransactions).startDate} to {getTransactionDateRange(mappedTransactions).endDate}
+                      </div>
+                    )}
+                  </div>
+                )}
+                {!showMappingSuccess && (
+                  <div className="text-xs text-muted-foreground">
+                    {mappedTransactions.length > 0 && `${mappedTransactions.length} transactions found`}
+                  </div>
+                )}
                 <Button
                   type="button"
                   variant="outline"
@@ -1783,6 +1814,7 @@ export default function AccountCreationWizard({
                     setProcessingStatus(null);
                     setProcessedData(null);
                     setMappedTransactions([]);
+                    setShowMappingSuccess(false);
                   }}
                 >
                   <X className="w-4 h-4 mr-1" />
@@ -2841,60 +2873,34 @@ export default function AccountCreationWizard({
     </div>
   );
 
-  const renderAccountSelectionStep = () => (
-    <div className="space-y-6 max-w-lg mx-auto">
-      <div className="space-y-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-900">
-            <strong>{mappedTransactions.length}</strong> transactions found in your statement.
-          </p>
-        </div>
-
-        <div>
-          <Label>Select or Create Account</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Choose an existing account or type a new name to create one
-          </p>
-          <AccountCombobox
-            accounts={existingAccounts}
-            value={selectedAccountId}
-            onValueChange={handleAccountSelection}
-            placeholder="Select or type account name..."
-          />
-        </div>
-      </div>
-    </div>
-  );
-
   const renderBankInfoStep = () => {
-    const firstOfMonth = new Date();
-    firstOfMonth.setDate(1);
-    const defaultGoLiveDate = firstOfMonth.toISOString().split('T')[0];
-
-    if (!goLiveDate) {
-      setGoLiveDate(defaultGoLiveDate);
-    }
-
-    const { posted, pending } = splitTransactionsByGoLiveDate(mappedTransactions, goLiveDate || defaultGoLiveDate);
+    const dateRange = getTransactionDateRange(mappedTransactions);
 
     return (
       <div className="space-y-5 max-w-lg mx-auto">
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
           <p className="text-sm text-blue-900">
-            Confirm the extracted bank information for <strong>{selectedAccountName}</strong>
+            Creating new account: <strong>{selectedAccountName}</strong>
           </p>
+          <div className="text-xs text-blue-700 mt-2">
+            <div>Importing {mappedTransactions.length} transactions</div>
+            {dateRange.startDate && dateRange.endDate && (
+              <div>Date range: {dateRange.startDate} to {dateRange.endDate}</div>
+            )}
+          </div>
         </div>
 
         <div>
-          <Label htmlFor="institutionName">Institution Name</Label>
+          <Label htmlFor="institutionName">Institution Name*</Label>
           <Input
             id="institutionName"
             placeholder="e.g., Chase, Bank of America"
             value={formData.institutionName || ''}
             onChange={(e) => updateFormData('institutionName', e.target.value)}
+            required
           />
           <p className="text-xs text-muted-foreground mt-1">
-            {formData.institutionName ? 'Auto-detected from statement' : 'Enter the bank or institution name'}
+            Enter the bank or financial institution name
           </p>
         </div>
 
@@ -2908,12 +2914,12 @@ export default function AccountCreationWizard({
             onChange={(e) => updateFormData('last4', e.target.value.replace(/\D/g, ''))}
           />
           <p className="text-xs text-muted-foreground mt-1">
-            {formData.last4 ? 'Auto-detected from statement' : 'Enter the last 4 digits of your account'}
+            Enter the last 4 digits of your account number (optional)
           </p>
         </div>
 
         <div>
-          <Label htmlFor="beginningBalance">Beginning Balance</Label>
+          <Label htmlFor="beginningBalance">Beginning Balance*</Label>
           <div className="relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
             <Input
@@ -2925,125 +2931,18 @@ export default function AccountCreationWizard({
               onBlur={(e) => handleAmountBlur('beginningBalance', e.target.value)}
               placeholder="0.00"
               className="pl-7"
+              required
             />
           </div>
           <p className="text-xs text-muted-foreground mt-1">
-            {formData.beginningBalance ? 'Auto-detected from statement' : 'Enter the starting balance shown on the statement'}
+            Enter the starting balance as of {dateRange.startDate || 'the first transaction'}
           </p>
-        </div>
-
-        <div>
-          <Label>Go-Live Date</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Transactions before this date will be imported as Posted. After will be Pending.
-          </p>
-          <Input
-            type="date"
-            value={goLiveDate || defaultGoLiveDate}
-            onChange={(e) => setGoLiveDate(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{posted.length}</div>
-              <div className="text-sm text-muted-foreground">Posted</div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-amber-600">{pending.length}</div>
-              <div className="text-sm text-muted-foreground">Pending</div>
-            </div>
-          </Card>
         </div>
 
         <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
           <p className="text-xs text-muted-foreground">
             <strong>{mappedTransactions.length}</strong> transactions will be imported to this new account
           </p>
-        </div>
-      </div>
-    );
-  };
-
-  const renderTransactionPreviewStep = () => {
-    const { posted, pending } = splitTransactionsByGoLiveDate(mappedTransactions, goLiveDate);
-
-    return (
-      <div className="space-y-5 max-w-2xl mx-auto">
-        <div>
-          <Label>Go-Live Date</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Transactions before this date will be imported as Posted. After will be Pending.
-          </p>
-          <Input
-            type="date"
-            value={goLiveDate}
-            onChange={(e) => setGoLiveDate(e.target.value)}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{posted.length}</div>
-              <div className="text-sm text-muted-foreground">Posted Transactions</div>
-            </div>
-          </Card>
-          <Card className="p-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-amber-600">{pending.length}</div>
-              <div className="text-sm text-muted-foreground">Pending Transactions</div>
-            </div>
-          </Card>
-        </div>
-
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <p className="text-sm text-blue-900">
-            {isExistingAccount ? (
-              <>Importing to: <strong>{selectedAccountName}</strong></>
-            ) : (
-              <>Creating new account: <strong>{selectedAccountName}</strong></>
-            )}
-          </p>
-        </div>
-
-        <div className="max-h-60 overflow-y-auto border rounded-lg">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 sticky top-0">
-              <tr>
-                <th className="px-3 py-2 text-left">Date</th>
-                <th className="px-3 py-2 text-left">Description</th>
-                <th className="px-3 py-2 text-right">Amount</th>
-                <th className="px-3 py-2 text-center">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[...posted, ...pending].slice(0, 10).map((txn, idx) => (
-                <tr key={idx} className="border-t">
-                  <td className="px-3 py-2">{txn.date}</td>
-                  <td className="px-3 py-2">{txn.description}</td>
-                  <td className="px-3 py-2 text-right">
-                    ${txn.amount.toFixed(2)}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    <span className={`text-xs px-2 py-1 rounded ${
-                      txn.status === 'posted' ? 'bg-blue-100 text-blue-700' : 'bg-amber-100 text-amber-700'
-                    }`}>
-                      {txn.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {mappedTransactions.length > 10 && (
-            <div className="text-center py-2 text-xs text-muted-foreground border-t">
-              + {mappedTransactions.length - 10} more transactions
-            </div>
-          )}
         </div>
       </div>
     );
@@ -3057,12 +2956,8 @@ export default function AccountCreationWizard({
         return renderBankSearchStep();
       case 'csv-mapping':
         return renderCsvMappingStep();
-      case 'account-selection':
-        return renderAccountSelectionStep();
       case 'bank-info':
         return renderBankInfoStep();
-      case 'transaction-preview':
-        return renderTransactionPreviewStep();
       case 'configure-accounts':
         return renderConfigureAccountsStep();
       case 'select-subtype':
@@ -3086,9 +2981,7 @@ export default function AccountCreationWizard({
     if (currentStep === 'select-type') return 'Select Account Type';
     if (currentStep === 'bank-search') return 'Connect Bank Account';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
-    if (currentStep === 'account-selection') return 'Select Account';
     if (currentStep === 'bank-info') return 'Bank Account Details';
-    if (currentStep === 'transaction-preview') return 'Review Transactions';
     if (currentStep === 'configure-accounts') return 'Configure Accounts to Import';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
@@ -3112,8 +3005,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' || currentStep === 'transaction-preview' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' || currentStep === 'transaction-preview' ? 'h-[600px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
@@ -3141,54 +3034,22 @@ export default function AccountCreationWizard({
 
                 {currentStep === 'loan-search' && <div />}
 
-                {currentStep === 'account-selection' && (
-                  <Button
-                    type="button"
-                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                    disabled={!selectedAccountId}
-                  >
-                    Next
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                )}
-
                 {currentStep === 'bank-info' && (
                   <Button
                     type="button"
                     className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
                     onClick={handleNext}
-                    disabled={isLoading}
+                    disabled={isLoading || !formData.institutionName || !formData.beginningBalance}
                   >
                     {isLoading ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Creating...
+                        Creating & Importing...
                       </>
                     ) : (
                       <>
                         <Check className="w-4 h-4 mr-1" />
-                        Finish
-                      </>
-                    )}
-                  </Button>
-                )}
-
-                {currentStep === 'transaction-preview' && (
-                  <Button
-                    type="button"
-                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                    onClick={handleImportTransactions}
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Importing...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4 mr-1" />
-                        Import Transactions
+                        Create Account & Import
                       </>
                     )}
                   </Button>
@@ -3218,8 +3079,12 @@ export default function AccountCreationWizard({
                       <Loader2 className="w-4 h-4 mr-1 animate-spin" />
                       {selectedCard?.id === 'banking' && isExistingAccount ? 'Importing...' : 'Processing...'}
                     </>
-                  ) : (selectedCard?.id === 'banking' && isExistingAccount) ||
-                    (selectedCard?.id === 'vehicle' && formData.skipLoanDetails) ||
+                  ) : selectedCard?.id === 'banking' && isExistingAccount ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      {`Import to ${selectedAccountName}`}
+                    </>
+                  ) : (selectedCard?.id === 'vehicle' && formData.skipLoanDetails) ||
                     (selectedCard?.id === 'property' && formData.skipMortgageDetails) ||
                     selectedCard?.id === 'investments' ||
                     selectedCard?.id === 'loans' ||
