@@ -499,7 +499,9 @@ export default function AccountCreationWizard({
     setSelectedAccountName('');
     setIsExistingAccount(false);
     setMappedTransactions([]);
-    setGoLiveDate('');
+    setDuplicateTransactions([]);
+    setSkipDuplicates(true);
+    setShowMappingSuccess(false);
   };
 
   const handleCardSelect = (card) => {
