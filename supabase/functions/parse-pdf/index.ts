@@ -1,14 +1,10 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
-
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface Transaction {
   date: string;
@@ -167,6 +163,7 @@ Deno.serve(async (req: Request) => {
     const { file_data } = await req.json();
 
     if (!file_data) {
+      console.error('Missing file_data in request');
       return new Response(
         JSON.stringify({
           status: 'error',
@@ -179,44 +176,34 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
+    console.log('Received file_data, length:', file_data.length);
+
+    let pdfBuffer: ArrayBuffer;
+    try {
+      const binaryString = atob(file_data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      pdfBuffer = bytes.buffer;
+      console.log('Decoded PDF buffer, size:', pdfBuffer.byteLength);
+    } catch (decodeError) {
+      console.error('Error decoding base64:', decodeError);
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'Authorization header required'
+          error: 'Invalid base64 data',
+          details: decodeError.message
         }),
         {
-          status: 401,
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
-
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({
-          status: 'error',
-          error: 'Invalid authentication token'
-        }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    const binaryString = atob(file_data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    const pdfBuffer = bytes.buffer;
     const text = await extractTextFromPDF(pdfBuffer);
+    console.log('Extracted text length:', text.length);
 
     if (!text || text.length < 50) {
       return new Response(
@@ -232,6 +219,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const transactions = parseTransactionsFromText(text);
+    console.log('Parsed transactions:', transactions.length);
 
     if (transactions.length === 0) {
       return new Response(

@@ -18,6 +18,7 @@ Deno.serve(async (req: Request) => {
     const { file_data } = await req.json();
 
     if (!file_data) {
+      console.error('Missing file_data in request');
       return new Response(
         JSON.stringify({ status: "error", error: "file_data is required" }),
         {
@@ -27,14 +28,32 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const binaryString = atob(file_data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
+    console.log('Received file_data, length:', file_data.length);
 
-    const decoder = new TextDecoder('utf-8');
-    const ofxContent = decoder.decode(bytes);
+    let ofxContent: string;
+    try {
+      const binaryString = atob(file_data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      const decoder = new TextDecoder('utf-8');
+      ofxContent = decoder.decode(bytes);
+      console.log('Decoded OFX content, length:', ofxContent.length);
+    } catch (decodeError) {
+      console.error('Error decoding base64:', decodeError);
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Invalid base64 data',
+          details: decodeError.message
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
 
     const transactions = [];
     let institutionName = "";
@@ -83,6 +102,8 @@ Deno.serve(async (req: Request) => {
         type: isIncome ? "income" : "expense",
       });
     }
+
+    console.log('Parsed transactions:', transactions.length);
 
     return new Response(
       JSON.stringify({
