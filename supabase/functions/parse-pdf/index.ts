@@ -134,71 +134,87 @@ async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
 
   const textChunks: string[] = [];
 
-  const streamRegex = /stream\s*([\s\S]*?)\s*endstream/g;
+  const tjRegex = /\(((?:[^()\\]|\\.)*?)\)\s*Tj/gi;
   let match;
-
-  while ((match = streamRegex.exec(rawText)) !== null) {
-    const streamContent = match[1];
-    const cleanedContent = streamContent
-      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ')
-      .replace(/[^\x20-\x7E\s]/g, ' ');
-
-    if (cleanedContent.trim().length > 0) {
-      textChunks.push(cleanedContent);
-    }
-  }
-
-  const tjRegex = /\[(.*?)\]\s*TJ/g;
   while ((match = tjRegex.exec(rawText)) !== null) {
-    const tjContent = match[1]
-      .replace(/[()]/g, '')
-      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
-
-    if (tjContent.trim().length > 0) {
-      textChunks.push(tjContent);
+    let content = match[1];
+    content = content.replace(/\\([nrtbf\\()])/g, (_, char) => {
+      const map: Record<string, string> = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', '\\': '\\', '(': '(', ')': ')' };
+      return map[char] || char;
+    });
+    content = content.replace(/\\(\d{3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)));
+    if (content.trim().length > 0) {
+      textChunks.push(content.trim());
     }
   }
 
-  const tdRegex = /\((.*?)\)\s*Td/g;
-  while ((match = tdRegex.exec(rawText)) !== null) {
-    const tdContent = match[1]
-      .replace(/\\[nrtbf\\]/g, ' ')
-      .replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+  const tjArrayRegex = /\[((?:[^\[\]]|\[.*?\])*?)\]\s*TJ/gi;
+  while ((match = tjArrayRegex.exec(rawText)) !== null) {
+    const arrayContent = match[1];
+    const stringMatches = arrayContent.match(/\(((?:[^()\\]|\\.)*?)\)/g);
+    if (stringMatches) {
+      for (const strMatch of stringMatches) {
+        let content = strMatch.slice(1, -1);
+        content = content.replace(/\\([nrtbf\\()])/g, (_, char) => {
+          const map: Record<string, string> = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', '\\': '\\', '(': '(', ')': ')' };
+          return map[char] || char;
+        });
+        content = content.replace(/\\(\d{3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)));
+        if (content.trim().length > 0) {
+          textChunks.push(content.trim());
+        }
+      }
+    }
+  }
 
-    if (tdContent.trim().length > 0) {
-      textChunks.push(tdContent);
+  const tdRegex = /\(((?:[^()\\]|\\.)*?)\)\s*TD/gi;
+  while ((match = tdRegex.exec(rawText)) !== null) {
+    let content = match[1];
+    content = content.replace(/\\([nrtbf\\()])/g, (_, char) => {
+      const map: Record<string, string> = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', '\\': '\\', '(': '(', ')': ')' };
+      return map[char] || char;
+    });
+    content = content.replace(/\\(\d{3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)));
+    if (content.trim().length > 0) {
+      textChunks.push(content.trim());
     }
   }
 
   let text = textChunks.join(' ');
-
-  text = text.replace(/\s+/g, ' ');
-  text = text.replace(/\\(\d{3})/g, (_, oct) => String.fromCharCode(parseInt(oct, 8)));
-  text = text.replace(/\\[nrtbf\\()]/g, ' ');
+  text = text.replace(/\s+/g, ' ').trim();
 
   console.log('Extracted text chunks:', textChunks.length);
   console.log('Final text length:', text.length);
-  console.log('Text sample:', text.substring(0, 500));
+  console.log('First 500 chars:', text.substring(0, 500));
+  console.log('Sample chunks:', textChunks.slice(0, 20));
 
-  return text.trim();
+  return text;
 }
 
 function parseTransactionsFromText(text: string): Transaction[] {
   const transactions: Transaction[] = [];
-  const lines = text.split(/[\n\r]+/);
+
+  const words = text.split(/\s+/);
+  const chunkSize = 50;
+  const lines: string[] = [];
+  for (let i = 0; i < words.length; i += chunkSize) {
+    lines.push(words.slice(i, i + chunkSize).join(' '));
+  }
 
   const datePatterns = [
     /(\d{1,2}\/\d{1,2}\/\d{4})/,
     /(\d{1,2}\/\d{1,2}\/\d{2})/,
     /(\d{4}-\d{2}-\d{2})/,
     /(\d{2}\/\d{2})/,
+    /(\d{1,2}-\d{1,2}-\d{4})/,
+    /(\d{1,2}-\d{1,2}-\d{2})/,
   ];
 
-  const amountPattern = /\$?\s*(-?\d{1,3}(?:,\d{3})*(?:\.\d{2}))/g;
+  const amountPattern = /\$?\s*(-?\d{1,3}(?:,\d{3})*(?:\.\d{2})|\d+\.\d{2})/g;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
-    if (!line || line.length < 10) continue;
+    if (!line || line.length < 5) continue;
 
     let dateMatch = null;
     for (const pattern of datePatterns) {
@@ -237,7 +253,7 @@ function parseTransactionsFromText(text: string): Transaction[] {
     description = description.replace(/\$[\d,]+\.?\d*/g, '');
     description = description.trim();
 
-    if (description && description.length > 2) {
+    if (description && description.length > 1) {
       const normalizedDate = normalizeDate(dateStr);
       if (normalizedDate) {
         transactions.push({
@@ -251,6 +267,7 @@ function parseTransactionsFromText(text: string): Transaction[] {
     }
   }
 
+  console.log('Raw transactions found:', transactions.length);
   return deduplicateTransactions(transactions);
 }
 
@@ -416,12 +433,14 @@ Deno.serve(async (req: Request) => {
 
     const text = await extractTextFromPDF(pdfBuffer);
     console.log('Extracted text length:', text.length);
+    console.log('Text preview:', text.substring(0, 1000));
 
-    if (!text || text.length < 50) {
+    if (!text || text.length < 20) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'Could not extract text from PDF. The PDF might be image-based, encrypted, or in an unsupported format. Please try uploading a CSV file instead.'
+          error: 'Could not extract readable text from PDF. This PDF might be image-based (scanned), encrypted, or use an unsupported encoding. Please try uploading a CSV or OFX file instead.',
+          details: `Only extracted ${text?.length || 0} characters`
         }),
         {
           status: 400,
