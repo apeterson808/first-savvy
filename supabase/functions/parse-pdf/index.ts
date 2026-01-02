@@ -9,6 +9,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY');
 
 interface Transaction {
   date: string;
@@ -25,7 +26,7 @@ async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
 
   const textChunks: string[] = [];
 
-  const tjRegex = /\(((?:[^()\\]|\\.)*?)\)\s*Tj/gi;
+  const tjRegex = /\(((?:[^()\\]|\\.)*)\)\s*Tj/gi;
   let match;
   while ((match = tjRegex.exec(rawText)) !== null) {
     let content = match[1];
@@ -39,10 +40,10 @@ async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
     }
   }
 
-  const tjArrayRegex = /\[((?:[^\[\]]|\[.*?\])*?)\]\s*TJ/gi;
+  const tjArrayRegex = /\[((?:[^\[\]]|\[.*?\])*)\]\s*TJ/gi;
   while ((match = tjArrayRegex.exec(rawText)) !== null) {
     const arrayContent = match[1];
-    const stringMatches = arrayContent.match(/\(((?:[^()\\]|\\.)*?)\)/g);
+    const stringMatches = arrayContent.match(/\(((?:[^()\\]|\\.)*)\)/g);
     if (stringMatches) {
       for (const strMatch of stringMatches) {
         let content = strMatch.slice(1, -1);
@@ -58,7 +59,7 @@ async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
     }
   }
 
-  const tdRegex = /\(((?:[^()\\]|\\.)*?)\)\s*TD/gi;
+  const tdRegex = /\(((?:[^()\\]|\\.)*)\)\s*TD/gi;
   while ((match = tdRegex.exec(rawText)) !== null) {
     let content = match[1];
     content = content.replace(/\\([nrtbf\\()])/g, (_, char) => {
@@ -247,6 +248,94 @@ function matchBankAccount(
   return null;
 }
 
+async function extractTransactionsWithAI(pdfBase64: string): Promise<{
+  transactions: Transaction[];
+  institutionName: string;
+  accountNumber: string;
+}> {
+  if (!ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+
+  console.log('Calling Claude AI API for automatic extraction...');
+
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': ANTHROPIC_API_KEY,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 4096,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'document',
+              source: {
+                type: 'base64',
+                media_type: 'application/pdf',
+                data: pdfBase64,
+              },
+            },
+            {
+              type: 'text',
+              text: `Extract all transactions from this bank statement PDF.
+
+Return a JSON object with this exact structure:
+{
+  "institutionName": "Bank Name",
+  "accountNumber": "Last 4 digits or identifier",
+  "transactions": [
+    {
+      "date": "YYYY-MM-DD",
+      "description": "Transaction description",
+      "amount": 123.45,
+      "type": "expense"
+    }
+  ]
+}
+
+Rules:
+- Date must be in YYYY-MM-DD format
+- Amount must be a positive number
+- Type must be "expense" or "income"
+- Return ONLY the JSON, no markdown or explanations`
+            }
+          ]
+        }
+      ]
+    })
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Claude API error:', error);
+    throw new Error(`Claude API failed: ${response.status} ${error}`);
+  }
+
+  const result = await response.json();
+  console.log('Claude API response received');
+
+  const content = result.content?.[0]?.text || '';
+
+  const jsonMatch = content.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) {
+    throw new Error('No JSON found in Claude response');
+  }
+
+  const extracted = JSON.parse(jsonMatch[0]);
+
+  return {
+    transactions: extracted.transactions || [],
+    institutionName: extracted.institutionName || 'Unknown Institution',
+    accountNumber: extracted.accountNumber || 'Unknown Account'
+  };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
@@ -322,46 +411,67 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const text = await extractTextFromPDF(pdfBuffer);
-    console.log('Extracted text length:', text.length);
-    console.log('Text preview:', text.substring(0, 1000));
-
-    if (!text || text.length < 20) {
-      return new Response(
-        JSON.stringify({
-          status: 'error',
-          error: 'Could not extract readable text from PDF. This PDF might be image-based (scanned), encrypted, or use an unsupported encoding. Please try uploading a CSV or OFX file instead.',
-          details: `Only extracted ${text?.length || 0} characters`
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+    if (ANTHROPIC_API_KEY) {
+      try {
+        console.log('Attempting automatic extraction with Claude AI...');
+        const aiResult = await extractTransactionsWithAI(file_data);
+        transactions = aiResult.transactions;
+        institutionName = aiResult.institutionName;
+        accountNumber = aiResult.accountNumber;
+        extractionMethod = 'claude-ai';
+        console.log(`AI extraction successful: ${transactions.length} transactions found`);
+      } catch (aiError) {
+        console.error('AI extraction failed, falling back to regex:', aiError);
+        extractionMethod = 'regex-fallback';
+      }
     }
-
-    console.log('Using regex-based text parsing...');
-    transactions = parseTransactionsFromText(text);
-    console.log('Parsed transactions:', transactions.length);
 
     if (transactions.length === 0) {
-      return new Response(
-        JSON.stringify({
-          status: 'error',
-          error: 'No transactions found in PDF. The PDF format may not be supported. For best results, use Claude Code to extract transactions manually.',
-          details: `Extracted ${text.length} characters of text but could not parse transactions`
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
+      const text = await extractTextFromPDF(pdfBuffer);
+      console.log('Extracted text length:', text.length);
+      console.log('Text preview:', text.substring(0, 1000));
 
-    const institutionMatch = text.match(/(?:bank|credit\s+card|statement\s+from)\s+(.{3,50})/i);
-    institutionName = institutionMatch
-      ? institutionMatch[1].split(/[\n\r]/)[0].trim()
-      : 'Unknown Institution';
+      if (!text || text.length < 20) {
+        return new Response(
+          JSON.stringify({
+            status: 'error',
+            error: 'Could not extract readable text from PDF. This PDF might be image-based (scanned), encrypted, or use an unsupported encoding. Please try uploading a CSV or OFX file instead.',
+            details: `Only extracted ${text?.length || 0} characters`
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      console.log('Using regex-based text parsing...');
+      transactions = parseTransactionsFromText(text);
+      extractionMethod = 'regex';
+      console.log('Parsed transactions:', transactions.length);
+
+      if (transactions.length === 0) {
+        return new Response(
+          JSON.stringify({
+            status: 'error',
+            error: 'No transactions found in PDF. The PDF format may not be supported.',
+            details: `Extracted ${text.length} characters of text but could not parse transactions`,
+            suggestion: ANTHROPIC_API_KEY
+              ? 'Try a different PDF format'
+              : 'Configure ANTHROPIC_API_KEY for better extraction accuracy'
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+
+      const institutionMatch = text.match(/(?:bank|credit\s+card|statement\s+from)\s+(.{3,50})/i);
+      institutionName = institutionMatch
+        ? institutionMatch[1].split(/[\n\r]/)[0].trim()
+        : 'Unknown Institution';
+    }
 
     return new Response(
       JSON.stringify({
