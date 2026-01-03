@@ -1,5 +1,5 @@
-import pdf from 'pdf-parse';
 import { readFileSync } from 'fs';
+import { PDFParse } from 'pdf-parse';
 
 const cleanAmount = (amountStr) => {
   if (!amountStr) return 0;
@@ -168,7 +168,8 @@ const parseICCUStatement = (text) => {
 export const parsePDFStatement = async (pdfPath) => {
   try {
     const dataBuffer = readFileSync(pdfPath);
-    const data = await pdf(dataBuffer);
+    const parser = new PDFParse();
+    const data = await parser.parse(dataBuffer);
     const text = data.text;
 
     if (text.toLowerCase().includes('citi') || text.toLowerCase().includes('citibank')) {

@@ -51,6 +51,8 @@ import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from '
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
+import { BankSelectionStep } from './BankSelectionStep';
+import { BankConnectionSimulator } from './BankConnectionSimulator';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -343,6 +345,9 @@ export default function AccountCreationWizard({
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
+  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [showBankSimulator, setShowBankSimulator] = useState(false);
+  const [simulatedAccountData, setSimulatedAccountData] = useState(null);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -2049,36 +2054,40 @@ export default function AccountCreationWizard({
     </div>
   );
 
+  const handleBankSelect = (institution) => {
+    setSelectedInstitution(institution);
+    setShowBankSimulator(true);
+  };
+
+  const handleSimulationSuccess = (data) => {
+    setSimulatedAccountData(data);
+    setShowBankSimulator(false);
+
+    updateFormData('institutionName', data.institution.name);
+    updateFormData('displayName', data.account.displayName);
+    updateFormData('accountNumberLast4', data.account.accountNumberLast4);
+
+    setMappedTransactions(data.transactions);
+
+    setCurrentStep('bank-info');
+  };
+
   const renderBankSearchStep = () => {
     return (
-      <div className="space-y-6 max-w-lg mx-auto">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bankSearch">Search for your bank</Label>
-            <div className="relative">
-              <Input
-                id="bankSearch"
-                placeholder="Search for Chase, Wells Fargo, Bank of America..."
-                disabled
-                className="pl-3"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Institution integration coming soon.
-            </p>
-          </div>
-
-          <div className="text-center mt-4">
-            <Button
-              type="button"
-              className="w-full"
-              onClick={handleNext}
-            >
-              Continue to Add Account
-            </Button>
-          </div>
-        </div>
-      </div>
+      <>
+        <BankSelectionStep onSelectBank={handleBankSelect} />
+        {selectedInstitution && (
+          <BankConnectionSimulator
+            institution={selectedInstitution}
+            open={showBankSimulator}
+            onClose={() => {
+              setShowBankSimulator(false);
+              setSelectedInstitution(null);
+            }}
+            onSuccess={handleSimulationSuccess}
+          />
+        )}
+      </>
     );
   };
 
