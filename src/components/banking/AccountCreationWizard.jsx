@@ -45,12 +45,16 @@ import {
   Info,
   Upload,
   FileUp,
-  X
+  X,
+  Database
 } from 'lucide-react';
 import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
+import StatementCacheAccountSelector from './StatementCacheAccountSelector';
+import TransactionDateRangeSelector from './TransactionDateRangeSelector';
+import { getTransactionsForAccount } from '@/api/bankSimulation';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -343,6 +347,9 @@ export default function AccountCreationWizard({
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
+  const [selectedCachedAccount, setSelectedCachedAccount] = useState(null);
+  const [selectedStatements, setSelectedStatements] = useState([]);
+  const [cacheImportMode, setCacheImportMode] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -477,8 +484,17 @@ export default function AccountCreationWizard({
     if (currentStep === 'csv-mapping') {
       setCurrentStep('details');
       setProcessedData(null);
-    } else if (currentStep === 'bank-info') {
+    } else if (currentStep === 'statement-cache-import') {
       setCurrentStep('details');
+      setSelectedCachedAccount(null);
+      setSelectedStatements([]);
+      setCacheImportMode(false);
+    } else if (currentStep === 'bank-info') {
+      if (cacheImportMode) {
+        setCurrentStep('statement-cache-import');
+      } else {
+        setCurrentStep('details');
+      }
     } else if (currentStep === 'select-subtype') {
       setCurrentStep('select-type');
       setSelectedCard(null);
@@ -491,6 +507,9 @@ export default function AccountCreationWizard({
         setProcessedData(null);
         setMappedTransactions([]);
         setShowMappingSuccess(false);
+        setSelectedCachedAccount(null);
+        setSelectedStatements([]);
+        setCacheImportMode(false);
       } else {
         setCurrentStep('select-type');
         setSelectedCard(null);
@@ -1434,6 +1453,29 @@ export default function AccountCreationWizard({
               </>
             )}
           </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCacheImportMode(true);
+              setCurrentStep('statement-cache-import');
+            }}
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Import from Statement Cache
+          </Button>
         </div>
       );
     } else if (selectedCard.id === 'vehicle') {
@@ -2147,6 +2189,151 @@ export default function AccountCreationWizard({
     </div>
   );
 
+  const renderStatementCacheImportStep = () => {
+    const [localSelectedAccount, setLocalSelectedAccount] = useState(selectedCachedAccount);
+    const [localSelectedStatements, setLocalSelectedStatements] = useState(selectedStatements);
+
+    const handleAccountSelect = (account) => {
+      setLocalSelectedAccount(account);
+      setSelectedCachedAccount(account);
+      setLocalSelectedStatements(account.statements || []);
+    };
+
+    const handleStatementSelect = (statements) => {
+      setLocalSelectedStatements(statements);
+      setSelectedStatements(statements);
+    };
+
+    const handleImportFromCache = async () => {
+      if (!localSelectedAccount || !localSelectedStatements || localSelectedStatements.length === 0) {
+        toast.error('Please select an account and at least one statement');
+        return;
+      }
+
+      try {
+        setProcessingStatus('processing');
+
+        const result = await getTransactionsForAccount(
+          localSelectedAccount.institutionName,
+          localSelectedAccount.accountType,
+          localSelectedAccount.accountNumberLast4
+        );
+
+        const selectedStatementIds = new Set(localSelectedStatements.map(s => s.id));
+        const filteredTransactions = result.transactions.filter(tx => {
+          const statement = result.statements.find(stmt => {
+            const txDate = new Date(tx.date);
+            const stmtMonth = stmt.statement_month;
+            const stmtYear = stmt.statement_year;
+            const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+            const txMonth = txDate.getMonth();
+            const txYear = txDate.getFullYear();
+            return monthMap[stmtMonth] === txMonth && stmtYear === txYear;
+          });
+          return statement && selectedStatementIds.has(statement.id);
+        });
+
+        setMappedTransactions(filteredTransactions);
+        updateFormData('institutionName', localSelectedAccount.institutionName);
+        updateFormData('last4', localSelectedAccount.accountNumberLast4);
+
+        const suggestedName = `${localSelectedAccount.institutionName} ${
+          localSelectedAccount.accountType === 'credit' ? 'Credit Card' :
+          localSelectedAccount.accountType === 'checking' ? 'Checking' :
+          'Savings'
+        }`;
+
+        setSelectedAccountName(suggestedName);
+        updateFormData('name', suggestedName);
+
+        toast.success(`Loaded ${filteredTransactions.length} transactions from cache`);
+        setProcessingStatus(null);
+        setCurrentStep('bank-info');
+      } catch (error) {
+        console.error('Error importing from cache:', error);
+        toast.error('Failed to import transactions from cache');
+        setProcessingStatus(null);
+      }
+    };
+
+    const canProceed = localSelectedAccount && localSelectedStatements && localSelectedStatements.length > 0;
+
+    return (
+      <div className="space-y-5 max-w-2xl mx-auto">
+        {!localSelectedAccount ? (
+          <>
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              Select a cached account to import statement data
+            </p>
+            <StatementCacheAccountSelector
+              accountSubtype={selectedSubtype?.value}
+              selectedAccount={localSelectedAccount}
+              onSelectAccount={handleAccountSelect}
+            />
+          </>
+        ) : (
+          <>
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Selected Account</p>
+                    <p className="text-sm text-muted-foreground">
+                      {localSelectedAccount.institutionName} ****{localSelectedAccount.accountNumberLast4}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setLocalSelectedAccount(null);
+                      setSelectedCachedAccount(null);
+                      setLocalSelectedStatements([]);
+                      setSelectedStatements([]);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Select which statements to import
+              </p>
+              <TransactionDateRangeSelector
+                statements={localSelectedAccount.statements}
+                selectedStatements={localSelectedStatements}
+                onSelectionChange={handleStatementSelect}
+              />
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleImportFromCache}
+                disabled={!canProceed || processingStatus === 'processing'}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {processingStatus === 'processing' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading Transactions...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
+
   const renderBankInfoStep = () => {
     const dateRange = getTransactionDateRange(mappedTransactions);
 
@@ -2260,6 +2447,8 @@ export default function AccountCreationWizard({
         return renderSelectType();
       case 'csv-mapping':
         return renderCsvMappingStep();
+      case 'statement-cache-import':
+        return renderStatementCacheImportStep();
       case 'bank-info':
         return renderBankInfoStep();
       case 'select-subtype':
@@ -2282,6 +2471,7 @@ export default function AccountCreationWizard({
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
+    if (currentStep === 'statement-cache-import') return 'Import from Statement Cache';
     if (currentStep === 'bank-info') return 'Bank Account Details';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
@@ -2305,8 +2495,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${(currentStep === 'csv-mapping' || currentStep === 'statement-cache-import') ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+          <div className={`relative flex flex-col ${(currentStep === 'csv-mapping' || currentStep === 'statement-cache-import') ? 'h-[600px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
@@ -2315,7 +2505,7 @@ export default function AccountCreationWizard({
               {renderCurrentStep()}
             </div>
 
-            {currentStep !== 'select-type' && currentStep !== 'csv-mapping' && (
+            {currentStep !== 'select-type' && currentStep !== 'csv-mapping' && currentStep !== 'statement-cache-import' && (
               <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
                 <Button
                   type="button"
