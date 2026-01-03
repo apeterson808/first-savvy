@@ -24,16 +24,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
 import {
-  generateTransactionsForAccount,
-  generateCreditCardPayments,
-  generateSavingsTransfers,
-  checkForMatchingTransfers,
-  createMatchedTransferTransactions,
-  insertTransactionsAndRegistry,
-  updateTransferRegistry,
-  calculateTransactionCounts
-} from '@/api/transactionGenerator';
-import {
   Building2,
   Wallet,
   CreditCard,
@@ -55,12 +45,16 @@ import {
   Info,
   Upload,
   FileUp,
-  X
+  X,
+  Database
 } from 'lucide-react';
 import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
+import StatementCacheAccountSelector from './StatementCacheAccountSelector';
+import TransactionDateRangeSelector from './TransactionDateRangeSelector';
+import { getTransactionsForAccount } from '@/api/bankSimulation';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -80,41 +74,6 @@ const PROPERTY_TYPES = [
   'Commercial',
   'Land',
   'Other',
-];
-
-const MOCK_BANK_ACCOUNTS = [
-  {
-    id: 'mock-1',
-    name: 'Chase Freedom Checking',
-    type: 'checking',
-    last4: '1234',
-    balance: 2450.00,
-    institutionName: 'Chase'
-  },
-  {
-    id: 'mock-2',
-    name: 'Chase Sapphire Credit Card',
-    type: 'credit_card',
-    last4: '5678',
-    balance: -1250.00,
-    institutionName: 'Chase'
-  },
-  {
-    id: 'mock-3',
-    name: 'Chase Savings',
-    type: 'savings',
-    last4: '9012',
-    balance: 15000.00,
-    institutionName: 'Chase'
-  },
-  {
-    id: 'mock-4',
-    name: 'Chase Business Checking',
-    type: 'checking',
-    last4: '3456',
-    balance: 8500.00,
-    institutionName: 'Chase'
-  }
 ];
 
 const buildAccountTypeCardsFromTemplates = (templates) => {
@@ -374,9 +333,6 @@ export default function AccountCreationWizard({
   const [focusedFields, setFocusedFields] = useState({});
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
-  const [mockBankAccounts, setMockBankAccounts] = useState([]);
-  const [checkedAccountIds, setCheckedAccountIds] = useState([]);
-  const [accountConfigurations, setAccountConfigurations] = useState({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -391,6 +347,9 @@ export default function AccountCreationWizard({
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
+  const [selectedCachedAccount, setSelectedCachedAccount] = useState(null);
+  const [selectedStatements, setSelectedStatements] = useState([]);
+  const [cacheImportMode, setCacheImportMode] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -491,9 +450,6 @@ export default function AccountCreationWizard({
     setFormData({});
     setShowConnectionModal(false);
     setConnectionStatus('connecting');
-    setMockBankAccounts([]);
-    setCheckedAccountIds([]);
-    setAccountConfigurations({});
     setUploadedFile(null);
     setProcessingStatus(null);
     setProcessedData(null);
@@ -508,9 +464,7 @@ export default function AccountCreationWizard({
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
-    if (card.id === 'banking') {
-      setCurrentStep('bank-search');
-    } else if (card.subtypes && card.subtypes.length > 0) {
+    if (card.subtypes && card.subtypes.length > 0) {
       setCurrentStep('select-subtype');
     } else {
       const subtypeValue = card.id === 'property' ? 'property' : card.id;
@@ -527,26 +481,23 @@ export default function AccountCreationWizard({
   };
 
   const handleBack = () => {
-    if (currentStep === 'bank-search') {
-      setCurrentStep('select-type');
-      setSelectedCard(null);
-    } else if (currentStep === 'csv-mapping') {
+    if (currentStep === 'csv-mapping') {
       setCurrentStep('details');
       setProcessedData(null);
-    } else if (currentStep === 'bank-info') {
+    } else if (currentStep === 'statement-cache-import') {
       setCurrentStep('details');
-    } else if (currentStep === 'configure-accounts') {
-      setCurrentStep('bank-search');
-      setMockBankAccounts([]);
-      setCheckedAccountIds([]);
-      setAccountConfigurations({});
-    } else if (currentStep === 'select-subtype') {
-      if (selectedCard?.id === 'banking') {
-        setCurrentStep('bank-search');
+      setSelectedCachedAccount(null);
+      setSelectedStatements([]);
+      setCacheImportMode(false);
+    } else if (currentStep === 'bank-info') {
+      if (cacheImportMode) {
+        setCurrentStep('statement-cache-import');
       } else {
-        setCurrentStep('select-type');
-        setSelectedCard(null);
+        setCurrentStep('details');
       }
+    } else if (currentStep === 'select-subtype') {
+      setCurrentStep('select-type');
+      setSelectedCard(null);
     } else if (currentStep === 'details') {
       if (selectedCard?.subtypes && selectedCard.subtypes.length > 0) {
         setCurrentStep('select-subtype');
@@ -556,6 +507,9 @@ export default function AccountCreationWizard({
         setProcessedData(null);
         setMappedTransactions([]);
         setShowMappingSuccess(false);
+        setSelectedCachedAccount(null);
+        setSelectedStatements([]);
+        setCacheImportMode(false);
       } else {
         setCurrentStep('select-type');
         setSelectedCard(null);
@@ -587,25 +541,6 @@ export default function AccountCreationWizard({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleBankSimulation = () => {
-    setShowConnectionModal(true);
-    setConnectionStatus('connecting');
-
-    setTimeout(() => {
-      setConnectionStatus('authenticating');
-    }, 1500);
-
-    setTimeout(() => {
-      setConnectionStatus('success');
-      setMockBankAccounts(MOCK_BANK_ACCOUNTS);
-    }, 3000);
-  };
-
-  const handleConnectionContinue = () => {
-    setShowConnectionModal(false);
-    setConnectionStatus('connecting');
-    setCurrentStep('configure-accounts');
-  };
 
   const handleFileUpload = async (file) => {
     setUploadedFile(file);
@@ -652,6 +587,7 @@ export default function AccountCreationWizard({
       setUploadedFile(null);
     }
   };
+
 
   const handleCsvMap = (mappingConfig) => {
     const transactions = mapCsvToTransactions(
@@ -768,130 +704,6 @@ export default function AccountCreationWizard({
       console.error('Error importing transactions:', error);
       toast.error(error.message || 'Failed to import transactions');
     }
-  };
-
-  const getDefaultChartAccountForType = (accountType) => {
-    const detailMap = {
-      'checking': 'checking_account',
-      'savings': 'savings_account',
-      'credit_card': 'personal_credit_card',
-    };
-
-    const detail = detailMap[accountType];
-    if (!detail) return null;
-
-    const matchingAccount = userChartAccounts.find(a =>
-      a.account_detail === detail
-    );
-
-    return matchingAccount?.id || null;
-  };
-
-  const handleToggleAccount = (accountId) => {
-    setCheckedAccountIds(prev => {
-      if (prev.includes(accountId)) {
-        const newChecked = prev.filter(id => id !== accountId);
-        setAccountConfigurations(prevConfig => {
-          const newConfig = { ...prevConfig };
-          delete newConfig[accountId];
-          return newConfig;
-        });
-        return newChecked;
-      } else {
-        const account = mockBankAccounts.find(acc => acc.id === accountId);
-        const today = new Date().toISOString().split('T')[0];
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        const startDate = sixtyDaysAgo.toISOString().split('T')[0];
-
-        const firstOfMonth = new Date();
-        firstOfMonth.setDate(1);
-        const goLiveDate = firstOfMonth.toISOString().split('T')[0];
-
-        const defaultChartAccountId = getDefaultChartAccountForType(account.type);
-        const classType = account.type === 'credit_card' ? 'liability' : 'asset';
-
-        setAccountConfigurations(prevConfig => ({
-          ...prevConfig,
-          [accountId]: {
-            import_mode: 'new',
-            displayName: account.name,
-            classType: classType,
-            chart_account_id: defaultChartAccountId,
-            existing_bank_account_id: null,
-            startDatePreset: 'last_60',
-            startDate: startDate,
-            goLiveDate: goLiveDate,
-            show_suffix: true
-          }
-        }));
-        return [...prev, accountId];
-      }
-    });
-  };
-
-  const getChartAccountDisplayName = (chartAccountId) => {
-    const chartAccount = userChartAccounts.find(a => a.id === chartAccountId);
-    return chartAccount?.display_name || '';
-  };
-
-  const updateAccountConfiguration = (accountId, field, value) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        [field]: value
-      }
-    }));
-
-    if (field === 'startDatePreset' && value !== 'custom') {
-      let dateStr;
-
-      if (value === 'year_to_date') {
-        const yearStart = new Date();
-        yearStart.setMonth(0);
-        yearStart.setDate(1);
-        dateStr = yearStart.toISOString().split('T')[0];
-      } else {
-        const today = new Date();
-        let daysAgo;
-        if (value === 'last_30') daysAgo = 30;
-        else if (value === 'last_60') daysAgo = 60;
-
-        const calculatedDate = new Date();
-        calculatedDate.setDate(today.getDate() - daysAgo);
-        dateStr = calculatedDate.toISOString().split('T')[0];
-      }
-
-      setAccountConfigurations(prev => ({
-        ...prev,
-        [accountId]: {
-          ...prev[accountId],
-          startDate: dateStr
-        }
-      }));
-    }
-  };
-
-  const handleSuffixToggle = (accountId, checked) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        show_suffix: checked
-      }
-    }));
-  };
-
-  const handleStartDateManualChange = (accountId, newDate) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        startDate: newDate,
-        startDatePreset: 'custom'
-      }
-    }));
   };
 
   const formatAmountField = (fieldName, value, isFocused) => {
@@ -1070,196 +882,6 @@ export default function AccountCreationWizard({
   });
 
   const handleSubmit = async () => {
-    if (selectedCard?.id === 'banking' && checkedAccountIds.length > 0) {
-      try {
-        let createdCount = 0;
-        let linkedCount = 0;
-        const createdAccounts = [];
-
-        for (const accountId of checkedAccountIds) {
-          const mockAccount = mockBankAccounts.find(acc => acc.id === accountId);
-          const config = accountConfigurations[accountId];
-
-          if (!mockAccount || !config) continue;
-
-          if (config.import_mode === 'new') {
-            if (!config.chart_account_id) {
-              console.warn(`No chart account ID found for account: ${accountId}`);
-              continue;
-            }
-
-            const chartAccount = userChartAccounts.find(a => a.id === config.chart_account_id);
-            if (!chartAccount) {
-              console.warn(`Chart account not found for ID: ${config.category_account_id}`);
-              continue;
-            }
-
-            const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
-            const finalDisplayName = config.displayName || chartAccount.display_name || mockAccount.name;
-
-            const { data: newAccount, error: createError } = await firstsavvy
-              .from('user_chart_of_accounts')
-              .insert({
-                user_id: user.id,
-                profile_id: activeProfile.id,
-                template_account_number: chartAccount.template_account_number,
-                account_number: accountNumber,
-                display_name: finalDisplayName,
-                class: chartAccount.class,
-                account_detail: chartAccount.account_detail,
-                account_type: chartAccount.account_type,
-                icon: chartAccount.icon,
-                color: chartAccount.color,
-                current_balance: mockAccount.balance,
-                institution_name: mockAccount.institutionName,
-                account_number_last4: mockAccount.last4,
-                is_active: true,
-                is_user_created: true
-              })
-              .select()
-              .single();
-
-            if (createError) {
-              console.error('Error creating account:', createError);
-              continue;
-            }
-
-            createdAccounts.push({ account: newAccount, config, mockAccount });
-            createdCount++;
-          } else if (config.import_mode === 'existing' && config.existing_bank_account_id) {
-            const existingAccount = existingAccounts.find(acc => acc.id === config.existing_bank_account_id);
-            const updateData = {
-              current_balance: mockAccount.balance,
-              institution_name: mockAccount.institutionName
-            };
-
-            if (mockAccount.last4) {
-              updateData.account_number_last4 = mockAccount.last4;
-            }
-
-            await firstsavvy
-              .from('user_chart_of_accounts')
-              .update(updateData)
-              .eq('id', config.existing_bank_account_id);
-            linkedCount++;
-          }
-        }
-
-        if (createdAccounts.length > 0) {
-          try {
-            const allTransactions = [];
-            const allRegistryEntries = [];
-
-            console.log('Starting transaction generation for', createdAccounts.length, 'accounts');
-
-            for (const { account, config, mockAccount } of createdAccounts) {
-              console.log('Generating transactions for account:', account.id, account.display_name, 'type:', mockAccount.type);
-              const transactions = await generateTransactionsForAccount(
-                { id: account.id, type: mockAccount.type, name: account.display_name },
-                user.id,
-                activeProfile.id,
-                config.startDate,
-                config.goLiveDate
-              );
-              console.log('Generated', transactions.length, 'transactions for', account.display_name);
-              allTransactions.push(...transactions);
-
-              if (mockAccount.type === 'credit_card') {
-                const matchingEntries = await checkForMatchingTransfers(
-                  { id: account.id, type: mockAccount.type, name: account.display_name },
-                  user.id,
-                  activeProfile.id
-                );
-
-                if (matchingEntries.length > 0) {
-                  const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
-                    { id: account.id, type: mockAccount.type, name: account.display_name },
-                    matchingEntries,
-                    user.id,
-                    activeProfile.id
-                  );
-                  allTransactions.push(...matchedTransactions);
-                  await updateTransferRegistry(registryUpdates);
-                }
-              } else if (mockAccount.type === 'checking' || mockAccount.type === 'savings') {
-                const creditCardAccounts = createdAccounts
-                  .filter(acc => acc.mockAccount.type === 'credit_card')
-                  .map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }));
-
-                const { payments, registryEntries } = await generateCreditCardPayments(
-                  { id: account.id, type: mockAccount.type, name: account.display_name },
-                  user.id,
-                  activeProfile.id,
-                  config.startDate,
-                  config.goLiveDate,
-                  createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }))
-                );
-                allTransactions.push(...payments);
-                allRegistryEntries.push(...registryEntries);
-              }
-            }
-
-            const { transfers, registryEntries: savingsRegistryEntries } = await generateSavingsTransfers(
-              user.id,
-              activeProfile.id,
-              createdAccounts[0]?.config.startDate || new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0],
-              createdAccounts[0]?.config.goLiveDate || new Date().toISOString().split('T')[0],
-              createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }))
-            );
-            allTransactions.push(...transfers);
-            allRegistryEntries.push(...savingsRegistryEntries);
-
-            for (const { account, config, mockAccount } of createdAccounts) {
-              if (mockAccount.type === 'savings') {
-                const matchingEntries = await checkForMatchingTransfers(
-                  { id: account.id, type: mockAccount.type, name: account.display_name },
-                  user.id,
-                  activeProfile.id
-                );
-
-                if (matchingEntries.length > 0) {
-                  const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
-                    { id: account.id, type: mockAccount.type, name: account.display_name },
-                    matchingEntries,
-                    user.id,
-                    activeProfile.id
-                  );
-                  allTransactions.push(...matchedTransactions);
-                  await updateTransferRegistry(registryUpdates);
-                }
-              }
-            }
-
-            console.log('About to insert', allTransactions.length, 'transactions and', allRegistryEntries.length, 'registry entries');
-            await insertTransactionsAndRegistry(allTransactions, allRegistryEntries);
-            console.log('Successfully inserted transactions');
-          } catch (txError) {
-            console.error('Error generating transactions:', txError);
-            toast.error('Failed to generate transactions: ' + txError.message);
-          }
-        }
-
-        queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-        queryClient.invalidateQueries({ queryKey: ['transactions'] });
-
-        if (createdCount > 0 && linkedCount > 0) {
-          toast.success(`Created ${createdCount} new account${createdCount !== 1 ? 's' : ''} and linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
-        } else if (createdCount > 0) {
-          toast.success(`Successfully created ${createdCount} account${createdCount !== 1 ? 's' : ''}!`);
-        } else if (linkedCount > 0) {
-          toast.success(`Successfully linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
-        }
-
-        onAccountCreated?.({ type: 'banking_batch', count: createdCount + linkedCount });
-        onOpenChange(false);
-        return;
-      } catch (error) {
-        console.error('Error processing accounts:', error);
-        toast.error(error.message || 'Failed to process accounts. Please try again.');
-        return;
-      }
-    }
-
     if (!selectedCard || !selectedSubtype) return;
 
     try {
@@ -1465,7 +1087,6 @@ export default function AccountCreationWizard({
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
     if (currentStep === 'bank-search') return 5;
-    if (currentStep === 'configure-accounts') return 3;
     if (currentStep === 'select-subtype' || !selectedSubtype) {
       return selectedCard.id === 'budget' ? 3 : (selectedCard.id === 'banking' ? 5 : 5);
     }
@@ -1489,7 +1110,6 @@ export default function AccountCreationWizard({
       const bankingStepMap = {
         'select-type': 0,
         'bank-search': 1,
-        'configure-accounts': 2,
         'select-subtype': 2,
         'details': 3,
         'balance': 4,
@@ -1536,26 +1156,6 @@ export default function AccountCreationWizard({
   };
 
   const canProceed = () => {
-    if (currentStep === 'configure-accounts') {
-      if (checkedAccountIds.length === 0) return false;
-
-      for (const accountId of checkedAccountIds) {
-        const config = accountConfigurations[accountId];
-        if (!config || !config.startDate || !config.goLiveDate) {
-          return false;
-        }
-        if (config.import_mode === 'new') {
-          if (!config.displayName || !config.chart_account_id) {
-            return false;
-          }
-        } else if (config.import_mode === 'existing') {
-          if (!config.existing_bank_account_id) {
-            return false;
-          }
-        }
-      }
-      return true;
-    }
     if (currentStep === 'details') {
       if (selectedCard.id === 'banking') {
         return (selectedAccountName && selectedAccountName.trim() &&
@@ -1592,8 +1192,6 @@ export default function AccountCreationWizard({
     if (selectedCard.id === 'banking') {
       if (currentStep === 'bank-search') {
         setCurrentStep('select-subtype');
-      } else if (currentStep === 'configure-accounts') {
-        await handleSubmit();
       } else if (currentStep === 'details') {
         if (!selectedAccountName || !uploadedFile || mappedTransactions.length === 0) {
           toast.error('Please select or enter an account name and upload a statement');
@@ -1841,7 +1439,7 @@ export default function AccountCreationWizard({
                 </p>
                 <input
                   type="file"
-                  accept=".csv,.pdf,.ofx"
+                  accept=".csv,.ofx,.qfx"
                   className="hidden"
                   id="file-upload-details"
                   onChange={(e) => {
@@ -1850,11 +1448,34 @@ export default function AccountCreationWizard({
                   }}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports CSV, PDF, and OFX formats
+                  Supports CSV, OFX, and QFX formats
                 </p>
               </>
             )}
           </div>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={(e) => {
+              e.stopPropagation();
+              setCacheImportMode(true);
+              setCurrentStep('statement-cache-import');
+            }}
+          >
+            <Database className="w-4 h-4 mr-2" />
+            Import from Statement Cache
+          </Button>
         </div>
       );
     } else if (selectedCard.id === 'vehicle') {
@@ -2461,60 +2082,6 @@ export default function AccountCreationWizard({
     </div>
   );
 
-  const renderBankSearchStep = () => {
-    return (
-      <div className="space-y-6 max-w-lg mx-auto">
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="bankSearch">Search for your bank</Label>
-            <div className="relative">
-              <Input
-                id="bankSearch"
-                placeholder="Search for Chase, Wells Fargo, Bank of America..."
-                disabled
-                className="pl-3"
-              />
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Institution integration coming soon.
-            </p>
-          </div>
-
-          <div className="text-center">
-            <Button
-              type="button"
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={handleBankSimulation}
-            >
-              Bank Simulation
-            </Button>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="text-xs"
-              onClick={handleNext}
-            >
-              Add Manually
-            </Button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   const renderLoanSearchStep = () => (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="text-center">
@@ -2608,281 +2175,164 @@ export default function AccountCreationWizard({
     </Dialog>
   );
 
-  const renderConfigureAccountsStep = () => {
-    return (
-      <div className="space-y-4 max-w-2xl mx-auto">
-        <div className="space-y-3">
-          {mockBankAccounts.map(account => {
-            const isChecked = checkedAccountIds.includes(account.id);
-            const config = accountConfigurations[account.id];
-
-            return (
-              <Card key={account.id} className={isChecked ? 'border-blue-500' : ''}>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id={`account-${account.id}`}
-                      checked={isChecked}
-                      onCheckedChange={() => handleToggleAccount(account.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      {!isChecked ? (
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor={`account-${account.id}`}
-                            className="text-base font-medium cursor-pointer"
-                          >
-                            {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
-                          </Label>
-                          <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                            ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      ) : (
-                        config && (
-                          <div className="space-y-3">
-                            {config.import_mode === 'new' ? (
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex gap-2 flex-1">
-                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm flex-1">
-                                      Display Name*
-                                    </Label>
-                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm flex-1">
-                                      Account Detail
-                                    </Label>
-                                  </div>
-                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="flex gap-2 mt-1">
-                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex-1 min-w-0">
-                                    <input
-                                      id={`displayName-${account.id}`}
-                                      value={config.displayName || ''}
-                                      onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                                      onFocus={(e) => e.target.select()}
-                                      placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                      className="bg-transparent outline-none text-sm min-w-0 flex-1"
-                                      style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
-                                    />
-                                    {account.last4 && config.show_suffix && (
-                                      <span className="text-muted-foreground text-sm pointer-events-none whitespace-nowrap">
-                                        ({account.last4})
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Select
-                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
-                                    onValueChange={(value) => {
-                                      const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
-                                      if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'category_account_id', matchingAccount.id);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 flex-1">
-                                      <SelectValue placeholder="Select detail" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {(() => {
-                                        const detailMap = {
-                                          'checking': ['checking_account'],
-                                          'savings': ['savings_account'],
-                                          'credit_card': ['personal_credit_card', 'business_credit_card'],
-                                        };
-                                        const validDetails = detailMap[account.type] || [];
-                                        const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
-                                        return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
-                                          <SelectItem key={detail} value={detail}>
-                                            {formatLabel(detail)}
-                                          </SelectItem>
-                                        ));
-                                      })()}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            ) : (
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                    Select Account*
-                                  </Label>
-                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="mt-1">
-                                  <Select
-                                    value={config.existing_account_id || ''}
-                                    onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
-                                  >
-                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9">
-                                      <SelectValue placeholder="Select account" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {existingAccounts.map((acc) => (
-                                        <SelectItem key={acc.id} value={acc.id}>
-                                          {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <ToggleGroup
-                                type="single"
-                                value={config.import_mode}
-                                onValueChange={(value) => {
-                                  if (value) {
-                                    updateAccountConfiguration(account.id, 'import_mode', value);
-                                  }
-                                }}
-                                className="inline-flex border rounded-full p-0.5 bg-slate-100 h-7"
-                              >
-                                <ToggleGroupItem
-                                  value="new"
-                                  className="px-3 py-0 text-xs h-6 rounded-full data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
-                                >
-                                  New
-                                </ToggleGroupItem>
-                                <ToggleGroupItem
-                                  value="existing"
-                                  className="px-3 py-0 text-xs h-6 rounded-full data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
-                                >
-                                  Existing
-                                </ToggleGroupItem>
-                              </ToggleGroup>
-
-                              {config.import_mode === 'new' && account.last4 && (
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`showSuffix-${account.id}`}
-                                    checked={config.show_suffix}
-                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
-                                  />
-                                  <Label
-                                    htmlFor={`showSuffix-${account.id}`}
-                                    className="text-sm font-normal cursor-pointer whitespace-nowrap"
-                                  >
-                                    Include last 4 digits
-                                  </Label>
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div>
-                                  <Label className="text-sm mb-2 block">Start Date*</Label>
-                                  <Select
-                                    value={config.startDatePreset || 'last_60'}
-                                    onValueChange={(value) => updateAccountConfiguration(account.id, 'startDatePreset', value)}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="last_30">Last 30 days</SelectItem>
-                                      <SelectItem value="last_60">Last 60 days</SelectItem>
-                                      <SelectItem value="year_to_date">Year to date</SelectItem>
-                                      <SelectItem value="custom">Custom</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm mb-2 block opacity-0">Date</Label>
-                                  <Input
-                                    type="date"
-                                    value={config.startDate || ''}
-                                    onChange={(e) => handleStartDateManualChange(account.id, e.target.value)}
-                                    className="h-9"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs">
-                                          <p className="text-xs">
-                                            Transactions before this date will be posted automatically. After this date, transactions will remain pending.
-                                          </p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                  <Input
-                                    id={`goLiveDate-${account.id}`}
-                                    type="date"
-                                    value={config.goLiveDate || ''}
-                                    onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
-                                    className="h-9"
-                                  />
-                                </div>
-                              </div>
-
-                              {config.startDate && config.goLiveDate && (
-                                <div className="mt-2">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="text-xs text-muted-foreground cursor-help inline-flex items-center gap-1">
-                                          <Info className="w-3 h-3" />
-                                          {(() => {
-                                            const counts = calculateTransactionCounts(config.startDate, config.goLiveDate);
-                                            return `${counts.total} transactions (${counts.posted} posted, ${counts.pending} pending)`;
-                                          })()}
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-xs">
-                                        <p className="text-xs">
-                                          Estimated number of transactions based on date range. Transactions before Go Live Date will be posted, after will be pending.
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
-                                </div>
-                              )}
-                            </div>
-                        </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   const renderCsvMappingStep = () => (
     <div className="max-w-2xl mx-auto">
       <CsvColumnMapper
         csvData={processedData}
         onMap={handleCsvMap}
         onCancel={() => {
-          setCurrentStep('bank-search');
+          setCurrentStep('details');
           setUploadedFile(null);
           setProcessedData(null);
         }}
       />
     </div>
   );
+
+  const renderStatementCacheImportStep = () => {
+    const [localSelectedAccount, setLocalSelectedAccount] = useState(selectedCachedAccount);
+    const [localSelectedStatements, setLocalSelectedStatements] = useState(selectedStatements);
+
+    const handleAccountSelect = (account) => {
+      setLocalSelectedAccount(account);
+      setSelectedCachedAccount(account);
+      setLocalSelectedStatements(account.statements || []);
+    };
+
+    const handleStatementSelect = (statements) => {
+      setLocalSelectedStatements(statements);
+      setSelectedStatements(statements);
+    };
+
+    const handleImportFromCache = async () => {
+      if (!localSelectedAccount || !localSelectedStatements || localSelectedStatements.length === 0) {
+        toast.error('Please select an account and at least one statement');
+        return;
+      }
+
+      try {
+        setProcessingStatus('processing');
+
+        const result = await getTransactionsForAccount(
+          localSelectedAccount.institutionName,
+          localSelectedAccount.accountType,
+          localSelectedAccount.accountNumberLast4
+        );
+
+        const selectedStatementIds = new Set(localSelectedStatements.map(s => s.id));
+        const filteredTransactions = result.transactions.filter(tx => {
+          const statement = result.statements.find(stmt => {
+            const txDate = new Date(tx.date);
+            const stmtMonth = stmt.statement_month;
+            const stmtYear = stmt.statement_year;
+            const monthMap = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+            const txMonth = txDate.getMonth();
+            const txYear = txDate.getFullYear();
+            return monthMap[stmtMonth] === txMonth && stmtYear === txYear;
+          });
+          return statement && selectedStatementIds.has(statement.id);
+        });
+
+        setMappedTransactions(filteredTransactions);
+        updateFormData('institutionName', localSelectedAccount.institutionName);
+        updateFormData('last4', localSelectedAccount.accountNumberLast4);
+
+        const suggestedName = `${localSelectedAccount.institutionName} ${
+          localSelectedAccount.accountType === 'credit' ? 'Credit Card' :
+          localSelectedAccount.accountType === 'checking' ? 'Checking' :
+          'Savings'
+        }`;
+
+        setSelectedAccountName(suggestedName);
+        updateFormData('name', suggestedName);
+
+        toast.success(`Loaded ${filteredTransactions.length} transactions from cache`);
+        setProcessingStatus(null);
+        setCurrentStep('bank-info');
+      } catch (error) {
+        console.error('Error importing from cache:', error);
+        toast.error('Failed to import transactions from cache');
+        setProcessingStatus(null);
+      }
+    };
+
+    const canProceed = localSelectedAccount && localSelectedStatements && localSelectedStatements.length > 0;
+
+    return (
+      <div className="space-y-5 max-w-2xl mx-auto">
+        {!localSelectedAccount ? (
+          <>
+            <p className="text-sm text-muted-foreground text-center mb-4">
+              Select a cached account to import statement data
+            </p>
+            <StatementCacheAccountSelector
+              accountSubtype={selectedSubtype?.value}
+              selectedAccount={localSelectedAccount}
+              onSelectAccount={handleAccountSelect}
+            />
+          </>
+        ) : (
+          <>
+            <Card className="bg-blue-50 border-blue-200">
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Selected Account</p>
+                    <p className="text-sm text-muted-foreground">
+                      {localSelectedAccount.institutionName} ****{localSelectedAccount.accountNumberLast4}
+                    </p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setLocalSelectedAccount(null);
+                      setSelectedCachedAccount(null);
+                      setLocalSelectedStatements([]);
+                      setSelectedStatements([]);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div>
+              <p className="text-sm text-muted-foreground mb-3">
+                Select which statements to import
+              </p>
+              <TransactionDateRangeSelector
+                statements={localSelectedAccount.statements}
+                selectedStatements={localSelectedStatements}
+                onSelectionChange={handleStatementSelect}
+              />
+            </div>
+
+            <div className="flex justify-end pt-4">
+              <Button
+                onClick={handleImportFromCache}
+                disabled={!canProceed || processingStatus === 'processing'}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {processingStatus === 'processing' ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Loading Transactions...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+    );
+  };
 
   const renderBankInfoStep = () => {
     const dateRange = getTransactionDateRange(mappedTransactions);
@@ -2905,6 +2355,7 @@ export default function AccountCreationWizard({
 
     return (
       <div className="space-y-5 max-w-lg mx-auto">
+
         <div>
           <Label htmlFor="displayName">Display Name*</Label>
           <Input
@@ -2994,14 +2445,12 @@ export default function AccountCreationWizard({
     switch (currentStep) {
       case 'select-type':
         return renderSelectType();
-      case 'bank-search':
-        return renderBankSearchStep();
       case 'csv-mapping':
         return renderCsvMappingStep();
+      case 'statement-cache-import':
+        return renderStatementCacheImportStep();
       case 'bank-info':
         return renderBankInfoStep();
-      case 'configure-accounts':
-        return renderConfigureAccountsStep();
       case 'select-subtype':
         return renderSelectSubtype();
       case 'details':
@@ -3021,10 +2470,9 @@ export default function AccountCreationWizard({
 
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
-    if (currentStep === 'bank-search') return 'Connect Bank Account';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
+    if (currentStep === 'statement-cache-import') return 'Import from Statement Cache';
     if (currentStep === 'bank-info') return 'Bank Account Details';
-    if (currentStep === 'configure-accounts') return 'Configure Accounts to Import';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') return 'Account Details';
@@ -3047,8 +2495,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${(currentStep === 'csv-mapping' || currentStep === 'statement-cache-import') ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+          <div className={`relative flex flex-col ${(currentStep === 'csv-mapping' || currentStep === 'statement-cache-import') ? 'h-[600px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
@@ -3057,7 +2505,7 @@ export default function AccountCreationWizard({
               {renderCurrentStep()}
             </div>
 
-            {currentStep !== 'select-type' && currentStep !== 'csv-mapping' && (
+            {currentStep !== 'select-type' && currentStep !== 'csv-mapping' && currentStep !== 'statement-cache-import' && (
               <div className="flex justify-between gap-4 pt-4 pb-5 px-5 border-t flex-shrink-0">
                 <Button
                   type="button"

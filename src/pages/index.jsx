@@ -2,7 +2,6 @@ import Layout from "./Layout.jsx";
 import Login from "./Login";
 import AuthCallback from "./AuthCallback";
 import Dashboard from "./Dashboard";
-import Transactions from "./Transactions";
 import Banking from "./Banking";
 import Budgeting from "./Budgeting";
 import NetWorth from "./NetWorth";
@@ -10,8 +9,6 @@ import CreditScore from "./CreditScore";
 import Contacts from "./Contacts";
 import ContactDetail from "./ContactDetail";
 import AccountDetail from "./AccountDetail";
-import Integrations from "./Integrations";
-import Collaboration from "./Collaboration";
 import Settings from "./Settings";
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -19,8 +16,6 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const PAGES = {
 
     Dashboard: Dashboard,
-
-    Transactions: Transactions,
 
     Banking: Banking,
 
@@ -31,10 +26,6 @@ const PAGES = {
     CreditScore: CreditScore,
 
     Contacts: Contacts,
-
-    Integrations: Integrations,
-
-    Collaboration: Collaboration,
 
     Settings: Settings,
 
@@ -75,7 +66,6 @@ function PagesContent() {
                 <Routes>
                     <Route path="/" element={<Dashboard />} />
                     <Route path="/Dashboard" element={<Dashboard />} />
-                    <Route path="/Transactions" element={<Transactions />} />
                     <Route path="/Banking" element={<Banking />} />
                     <Route path="/Banking/account/:id" element={<AccountDetail />} />
                     <Route path="/Budgeting" element={<Budgeting />} />
@@ -83,8 +73,6 @@ function PagesContent() {
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
-                    <Route path="/Integrations" element={<Integrations />} />
-                    <Route path="/Collaboration" element={<Collaboration />} />
                     <Route path="/Settings" element={<Settings />} />
                 </Routes>
             </Layout>

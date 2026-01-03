@@ -38,43 +38,16 @@ export const processStatementFile = async (file, onProgress) => {
     return { type: 'csv', headers, rows };
   }
 
-  if (fileExt === 'ofx' || fileExt === 'qfx' || fileExt === 'pdf') {
-    onProgress?.('uploading');
-
-    const user = await firstsavvy.auth.getUser();
-    if (!user?.data?.user?.id) {
-      throw new Error('You must be logged in to upload files');
-    }
-
-    const userId = user.data.user.id;
-    const timestamp = Date.now();
-    const filePath = `${userId}/${timestamp}-${file.name}`;
-
-    const { data: uploadData, error: uploadError } = await firstsavvy.storage
-      .from('statement-files')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (uploadError) {
-      console.error('Upload error:', uploadError);
-      throw new Error(`Failed to upload file: ${uploadError.message}`);
-    }
-
-    const { data: urlData } = firstsavvy.storage
-      .from('statement-files')
-      .getPublicUrl(filePath);
-
-    const fileUrl = urlData.publicUrl;
-
+  if (fileExt === 'ofx' || fileExt === 'qfx') {
     onProgress?.('extracting');
 
-    const extractResponse = fileExt === 'pdf'
-      ? await firstsavvy.functions.parsePdf({ file_url: fileUrl })
-      : await firstsavvy.functions.parseOfx({ file_url: fileUrl });
+    const arrayBuffer = await file.arrayBuffer();
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer)
+        .reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
 
-    await firstsavvy.storage.from('statement-files').remove([filePath]);
+    const extractResponse = await firstsavvy.functions.parseOfx({ file_data: base64Data, file_name: file.name });
 
     if (extractResponse.status === 'success' && extractResponse.output?.transactions) {
       return {
@@ -90,7 +63,7 @@ export const processStatementFile = async (file, onProgress) => {
     throw new Error(errorMsg);
   }
 
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, QFX, or PDF file.`);
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
 };
 
 export const parseDate = (dateStr) => {

@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Database } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import { suggestCategory } from './CategorySuggestion';
@@ -48,6 +48,8 @@ import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
 import { Trash2 } from 'lucide-react';
+import { TransactionReviewDialog } from './TransactionReviewDialog';
+import StatementCacheBulkImporter from './StatementCacheBulkImporter';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -81,6 +83,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [extractedData, setExtractedData] = useState(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -1022,6 +1027,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     toast.success('Transfer matched and confirmed');
   };
 
+
+  const handleImportComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    toast.success('Transactions imported successfully');
+    setReviewDialogOpen(false);
+    setExtractedData(null);
+  };
+
   const handleMatchClick = async (transaction) => {
     const selectedMatch = selectedMatches[transaction.id];
 
@@ -1205,6 +1219,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => setBulkImportOpen(true)}
+                >
+                  <Database className="w-4 h-4" />
+                </Button>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
@@ -2760,6 +2782,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             pairedTransaction={pairedTransfer}
                             accounts={accounts}
                             onConfirm={handleConfirmTransferMatch}
+                          />
+
+                          <TransactionReviewDialog
+                            open={reviewDialogOpen}
+                            onOpenChange={setReviewDialogOpen}
+                            extractedData={extractedData}
+                            profileId={activeProfile?.id}
+                            onImportComplete={handleImportComplete}
+                          />
+
+                          <StatementCacheBulkImporter
+                            open={bulkImportOpen}
+                            onOpenChange={setBulkImportOpen}
                           />
     </>
   );
