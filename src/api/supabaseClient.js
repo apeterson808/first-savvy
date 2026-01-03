@@ -117,8 +117,7 @@ const createEntityAPI = (tableName) => {
     },
 
     async create(record) {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      let recordToInsert = userId ? { ...record, user_id: userId } : record;
+      let recordToInsert = { ...record };
 
       if (requiresProfileId && !recordToInsert.profile_id) {
         const profileId = getActiveProfileId();
@@ -141,10 +140,7 @@ const createEntityAPI = (tableName) => {
     },
 
     async bulkCreate(records) {
-      const userId = (await supabase.auth.getUser()).data.user?.id;
-      let recordsToInsert = userId
-        ? records.map(record => ({ ...record, user_id: userId }))
-        : records;
+      let recordsToInsert = [...records];
 
       if (requiresProfileId) {
         const profileId = getActiveProfileId();
