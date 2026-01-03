@@ -59,6 +59,19 @@ const parseCitiStatement = (text) => {
     accountNumber = '****' + accountMatch[1];
   }
 
+  let beginningBalance = null;
+  let endingBalance = null;
+
+  const prevBalanceMatch = text.match(/Previous\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
+  if (prevBalanceMatch) {
+    beginningBalance = cleanAmount(prevBalanceMatch[1]);
+  }
+
+  const newBalanceMatch = text.match(/New\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
+  if (newBalanceMatch) {
+    endingBalance = cleanAmount(newBalanceMatch[1]);
+  }
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
@@ -117,7 +130,9 @@ const parseCitiStatement = (text) => {
     institution: 'Citi',
     accountType: 'credit',
     accountNumber,
-    transactions
+    transactions,
+    beginningBalance,
+    endingBalance
   };
 };
 
@@ -129,6 +144,19 @@ const parseAmexStatement = (text) => {
   const accountMatch = text.match(/Account\s+Ending\s+\d+-(\d{5})/i);
   if (accountMatch) {
     accountNumber = '****' + accountMatch[1].slice(-4);
+  }
+
+  let beginningBalance = null;
+  let endingBalance = null;
+
+  const prevBalanceMatch = text.match(/Previous\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
+  if (prevBalanceMatch) {
+    beginningBalance = cleanAmount(prevBalanceMatch[1]);
+  }
+
+  const newBalanceMatch = text.match(/New\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
+  if (newBalanceMatch) {
+    endingBalance = cleanAmount(newBalanceMatch[1]);
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -172,7 +200,9 @@ const parseAmexStatement = (text) => {
     institution: 'American Express',
     accountType: 'credit',
     accountNumber,
-    transactions
+    transactions,
+    beginningBalance,
+    endingBalance
   };
 };
 
@@ -200,6 +230,8 @@ const parseICCUStatement = (text) => {
     }
 
     const transactions = [];
+    let beginningBalance = null;
+    let endingBalance = null;
 
     for (let i = 0; i < sectionLines.length; i++) {
       const line = sectionLines[i];
@@ -212,6 +244,12 @@ const parseICCUStatement = (text) => {
         const descLower = description.toLowerCase().trim();
 
         if (descLower.includes('beginning balance')) {
+          beginningBalance = parseFloat(amount2Str.replace(/,/g, ''));
+          continue;
+        }
+
+        if (descLower.includes('ending balance')) {
+          endingBalance = parseFloat(amount2Str.replace(/,/g, ''));
           continue;
         }
 
@@ -262,7 +300,9 @@ const parseICCUStatement = (text) => {
       institution: 'Idaho Central Credit Union',
       accountType,
       accountNumber,
-      transactions
+      transactions,
+      beginningBalance,
+      endingBalance
     };
   };
 
@@ -292,7 +332,9 @@ const parseICCUStatement = (text) => {
     institution: 'Idaho Central Credit Union',
     accountType: 'checking',
     accountNumber: '',
-    transactions: []
+    transactions: [],
+    beginningBalance: null,
+    endingBalance: null
   }];
 };
 

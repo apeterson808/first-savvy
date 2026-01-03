@@ -19,6 +19,7 @@ import { importFromStatementCache } from '@/api/bankSimulation';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { calculateOpeningBalance, getBalanceSummary } from '@/utils/balanceCalculation';
 
 const STEPS = {
   SELECT_ACCOUNTS: 1,
@@ -63,6 +64,7 @@ export default function StatementCacheBulkImporter({ open, onOpenChange }) {
   const [selectedAccountKeys, setSelectedAccountKeys] = useState(new Set());
   const [accountConfigurations, setAccountConfigurations] = useState({});
   const [dateRangeSelections, setDateRangeSelections] = useState({});
+  const [openingBalanceOverrides, setOpeningBalanceOverrides] = useState({});
   const [importResults, setImportResults] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
 
@@ -92,6 +94,7 @@ export default function StatementCacheBulkImporter({ open, onOpenChange }) {
       setSelectedAccountKeys(new Set());
       setAccountConfigurations({});
       setDateRangeSelections({});
+      setOpeningBalanceOverrides({});
       setImportResults(null);
       loadAvailableAccounts();
     }
@@ -247,6 +250,13 @@ export default function StatementCacheBulkImporter({ open, onOpenChange }) {
           selectedRanges.has(`${stmt.statement_year}-${stmt.statement_month}`)
         );
 
+        const balanceOverride = openingBalanceOverrides[key];
+        const balanceCalc = calculateOpeningBalance(selectedStatements, account.accountType);
+
+        const openingBalance = balanceOverride?.useManual
+          ? balanceOverride.manualValue
+          : balanceCalc.openingBalance;
+
         return {
           key,
           institutionName: account.institutionName,
@@ -255,7 +265,7 @@ export default function StatementCacheBulkImporter({ open, onOpenChange }) {
           action: config.action,
           existingAccountId: config.existingAccountId,
           newAccountName: config.newAccountName,
-          openingBalance: config.openingBalance,
+          openingBalance: openingBalance || 0,
           statements: selectedStatements
         };
       });
@@ -325,7 +335,9 @@ export default function StatementCacheBulkImporter({ open, onOpenChange }) {
             availableAccounts={availableAccounts}
             selectedAccountKeys={selectedAccountKeys}
             dateRangeSelections={dateRangeSelections}
+            openingBalanceOverrides={openingBalanceOverrides}
             onDateRangeChange={setDateRangeSelections}
+            onOpeningBalanceChange={setOpeningBalanceOverrides}
             onNext={handleNextFromDateRanges}
             onBack={() => setCurrentStep(STEPS.CONFIGURE_ACCOUNTS)}
           />
@@ -337,6 +349,7 @@ export default function StatementCacheBulkImporter({ open, onOpenChange }) {
             selectedAccountKeys={selectedAccountKeys}
             accountConfigurations={accountConfigurations}
             dateRangeSelections={dateRangeSelections}
+            openingBalanceOverrides={openingBalanceOverrides}
             onStartImport={handleStartImport}
             onBack={() => setCurrentStep(STEPS.SELECT_DATE_RANGES)}
           />
@@ -558,17 +571,6 @@ function StepConfigureAccounts({
                           className="text-sm"
                         />
                       </div>
-                      <div>
-                        <Label className="text-xs">Opening Balance</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={config.openingBalance}
-                          onChange={(e) => updateConfig(key, 'openingBalance', parseFloat(e.target.value) || 0)}
-                          placeholder="0.00"
-                          className="text-sm"
-                        />
-                      </div>
                     </div>
                   )}
                 </div>
@@ -596,7 +598,9 @@ function StepSelectDateRanges({
   availableAccounts,
   selectedAccountKeys,
   dateRangeSelections,
+  openingBalanceOverrides,
   onDateRangeChange,
+  onOpeningBalanceChange,
   onNext,
   onBack
 }) {
@@ -707,10 +711,80 @@ function StepSelectDateRanges({
                   );
                 })}
                 {selectedRanges.size > 0 && (
-                  <div className="pt-2 border-t">
+                  <div className="pt-2 border-t space-y-3">
                     <p className="text-xs text-muted-foreground">
                       <strong>{selectedRanges.size}</strong> periods selected, <strong>{totalSelectedTxs}</strong> transactions
                     </p>
+                    {(() => {
+                      const selectedStatements = account.statements.filter(stmt =>
+                        selectedRanges.has(`${stmt.statement_year}-${stmt.statement_month}`)
+                      );
+                      const balanceCalc = calculateOpeningBalance(selectedStatements, account.accountType);
+                      const override = openingBalanceOverrides[key] || {};
+
+                      return (
+                        <div className="space-y-2 pt-2">
+                          <Label className="text-xs font-medium">Opening Balance</Label>
+                          {balanceCalc.isAutoCalculated && (
+                            <Alert className="py-2">
+                              <CheckCircle2 className="w-4 h-4" />
+                              <AlertDescription className="text-xs">
+                                <strong>Auto-calculated: ${balanceCalc.openingBalance?.toFixed(2) || '0.00'}</strong>
+                                <br />
+                                {balanceCalc.explanation}
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          {!balanceCalc.isAutoCalculated && balanceCalc.suggestion && (
+                            <Alert className="py-2">
+                              <AlertCircle className="w-4 h-4" />
+                              <AlertDescription className="text-xs">
+                                {balanceCalc.explanation}
+                                <br />
+                                <span className="text-muted-foreground">{balanceCalc.suggestion}</span>
+                              </AlertDescription>
+                            </Alert>
+                          )}
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`manual-${key}`}
+                              checked={override.useManual || false}
+                              onCheckedChange={(checked) => {
+                                onOpeningBalanceChange({
+                                  ...openingBalanceOverrides,
+                                  [key]: {
+                                    ...override,
+                                    useManual: checked,
+                                    manualValue: override.manualValue || balanceCalc.openingBalance || 0
+                                  }
+                                });
+                              }}
+                            />
+                            <Label htmlFor={`manual-${key}`} className="text-xs cursor-pointer">
+                              Use manual override
+                            </Label>
+                          </div>
+                          {override.useManual && (
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={override.manualValue || 0}
+                              onChange={(e) => {
+                                onOpeningBalanceChange({
+                                  ...openingBalanceOverrides,
+                                  [key]: {
+                                    ...override,
+                                    manualValue: parseFloat(e.target.value) || 0
+                                  }
+                                });
+                              }}
+                              placeholder="Enter opening balance"
+                              className="text-sm"
+                            />
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 )}
               </CardContent>
@@ -738,6 +812,7 @@ function StepPreview({
   selectedAccountKeys,
   accountConfigurations,
   dateRangeSelections,
+  openingBalanceOverrides,
   onStartImport,
   onBack
 }) {
@@ -762,11 +837,22 @@ function StepPreview({
       totalNewAccounts++;
     }
 
+    const balanceOverride = openingBalanceOverrides[key] || {};
+    const balanceCalc = calculateOpeningBalance(selectedStatements, account.accountType);
+    const openingBalance = balanceOverride.useManual
+      ? balanceOverride.manualValue
+      : balanceCalc.openingBalance;
+
+    const balanceSummary = getBalanceSummary(selectedStatements, openingBalance);
+
     return {
       account,
       config,
       selectedStatements,
-      txCount
+      txCount,
+      openingBalance,
+      balanceSummary,
+      isManualBalance: balanceOverride.useManual
     };
   }).filter(Boolean);
 
@@ -801,7 +887,7 @@ function StepPreview({
       </div>
 
       <div className="space-y-2 max-h-[300px] overflow-y-auto">
-        {summary.map(({ account, config, selectedStatements, txCount }) => {
+        {summary.map(({ account, config, selectedStatements, txCount, openingBalance, balanceSummary, isManualBalance }) => {
           const AccountIcon = getAccountTypeIcon(account.accountType);
 
           return (
@@ -829,6 +915,28 @@ function StepPreview({
                       <p className="text-xs text-muted-foreground">
                         {selectedStatements.length} statements, {txCount} transactions
                       </p>
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-muted-foreground">Opening Balance:</span>
+                        <span className="font-medium">${openingBalance?.toFixed(2) || '0.00'}</span>
+                        {isManualBalance && <Badge variant="outline" className="text-xs">Manual</Badge>}
+                      </div>
+                      {balanceSummary && balanceSummary.validation && (
+                        <div className="text-xs">
+                          {balanceSummary.validation.hasExpectedBalance && (
+                            balanceSummary.validation.isValid ? (
+                              <div className="flex items-center gap-1 text-green-600">
+                                <CheckCircle2 className="w-3 h-3" />
+                                <span>Balance reconciles: ${balanceSummary.validation.calculatedBalance.toFixed(2)}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-1 text-amber-600">
+                                <AlertCircle className="w-3 h-3" />
+                                <span>Expected: ${balanceSummary.validation.expectedBalance?.toFixed(2)}, Calculated: ${balanceSummary.validation.calculatedBalance.toFixed(2)}</span>
+                              </div>
+                            )
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
