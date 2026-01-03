@@ -329,8 +329,6 @@ export default function AccountCreationWizard({
   const [focusedFields, setFocusedFields] = useState({});
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
-  const [checkedAccountIds, setCheckedAccountIds] = useState([]);
-  const [accountConfigurations, setAccountConfigurations] = useState({});
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
@@ -445,9 +443,6 @@ export default function AccountCreationWizard({
     setFormData({});
     setShowConnectionModal(false);
     setConnectionStatus('connecting');
-    setMockBankAccounts([]);
-    setCheckedAccountIds([]);
-    setAccountConfigurations({});
     setUploadedFile(null);
     setProcessingStatus(null);
     setProcessedData(null);
@@ -489,11 +484,6 @@ export default function AccountCreationWizard({
       setProcessedData(null);
     } else if (currentStep === 'bank-info') {
       setCurrentStep('details');
-    } else if (currentStep === 'configure-accounts') {
-      setCurrentStep('bank-search');
-      setMockBankAccounts([]);
-      setCheckedAccountIds([]);
-      setAccountConfigurations({});
     } else if (currentStep === 'select-subtype') {
       if (selectedCard?.id === 'banking') {
         setCurrentStep('bank-search');
@@ -541,11 +531,6 @@ export default function AccountCreationWizard({
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleConnectionContinue = () => {
-    setShowConnectionModal(false);
-    setConnectionStatus('connecting');
-    setCurrentStep('configure-accounts');
-  };
 
   const handleFileUpload = async (file) => {
     setUploadedFile(file);
@@ -709,130 +694,6 @@ export default function AccountCreationWizard({
       console.error('Error importing transactions:', error);
       toast.error(error.message || 'Failed to import transactions');
     }
-  };
-
-  const getDefaultChartAccountForType = (accountType) => {
-    const detailMap = {
-      'checking': 'checking_account',
-      'savings': 'savings_account',
-      'credit_card': 'personal_credit_card',
-    };
-
-    const detail = detailMap[accountType];
-    if (!detail) return null;
-
-    const matchingAccount = userChartAccounts.find(a =>
-      a.account_detail === detail
-    );
-
-    return matchingAccount?.id || null;
-  };
-
-  const handleToggleAccount = (accountId) => {
-    setCheckedAccountIds(prev => {
-      if (prev.includes(accountId)) {
-        const newChecked = prev.filter(id => id !== accountId);
-        setAccountConfigurations(prevConfig => {
-          const newConfig = { ...prevConfig };
-          delete newConfig[accountId];
-          return newConfig;
-        });
-        return newChecked;
-      } else {
-        const account = mockBankAccounts.find(acc => acc.id === accountId);
-        const today = new Date().toISOString().split('T')[0];
-        const sixtyDaysAgo = new Date();
-        sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
-        const startDate = sixtyDaysAgo.toISOString().split('T')[0];
-
-        const firstOfMonth = new Date();
-        firstOfMonth.setDate(1);
-        const goLiveDate = firstOfMonth.toISOString().split('T')[0];
-
-        const defaultChartAccountId = getDefaultChartAccountForType(account.type);
-        const classType = account.type === 'credit_card' ? 'liability' : 'asset';
-
-        setAccountConfigurations(prevConfig => ({
-          ...prevConfig,
-          [accountId]: {
-            import_mode: 'new',
-            displayName: account.name,
-            classType: classType,
-            chart_account_id: defaultChartAccountId,
-            existing_bank_account_id: null,
-            startDatePreset: 'last_60',
-            startDate: startDate,
-            goLiveDate: goLiveDate,
-            show_suffix: true
-          }
-        }));
-        return [...prev, accountId];
-      }
-    });
-  };
-
-  const getChartAccountDisplayName = (chartAccountId) => {
-    const chartAccount = userChartAccounts.find(a => a.id === chartAccountId);
-    return chartAccount?.display_name || '';
-  };
-
-  const updateAccountConfiguration = (accountId, field, value) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        [field]: value
-      }
-    }));
-
-    if (field === 'startDatePreset' && value !== 'custom') {
-      let dateStr;
-
-      if (value === 'year_to_date') {
-        const yearStart = new Date();
-        yearStart.setMonth(0);
-        yearStart.setDate(1);
-        dateStr = yearStart.toISOString().split('T')[0];
-      } else {
-        const today = new Date();
-        let daysAgo;
-        if (value === 'last_30') daysAgo = 30;
-        else if (value === 'last_60') daysAgo = 60;
-
-        const calculatedDate = new Date();
-        calculatedDate.setDate(today.getDate() - daysAgo);
-        dateStr = calculatedDate.toISOString().split('T')[0];
-      }
-
-      setAccountConfigurations(prev => ({
-        ...prev,
-        [accountId]: {
-          ...prev[accountId],
-          startDate: dateStr
-        }
-      }));
-    }
-  };
-
-  const handleSuffixToggle = (accountId, checked) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        show_suffix: checked
-      }
-    }));
-  };
-
-  const handleStartDateManualChange = (accountId, newDate) => {
-    setAccountConfigurations(prev => ({
-      ...prev,
-      [accountId]: {
-        ...prev[accountId],
-        startDate: newDate,
-        startDatePreset: 'custom'
-      }
-    }));
   };
 
   const formatAmountField = (fieldName, value, isFocused) => {
@@ -1011,102 +872,6 @@ export default function AccountCreationWizard({
   });
 
   const handleSubmit = async () => {
-    if (selectedCard?.id === 'banking' && checkedAccountIds.length > 0) {
-      try {
-        let createdCount = 0;
-        let linkedCount = 0;
-        const createdAccounts = [];
-
-        for (const accountId of checkedAccountIds) {
-          const mockAccount = mockBankAccounts.find(acc => acc.id === accountId);
-          const config = accountConfigurations[accountId];
-
-          if (!mockAccount || !config) continue;
-
-          if (config.import_mode === 'new') {
-            if (!config.chart_account_id) {
-              console.warn(`No chart account ID found for account: ${accountId}`);
-              continue;
-            }
-
-            const chartAccount = userChartAccounts.find(a => a.id === config.chart_account_id);
-            if (!chartAccount) {
-              console.warn(`Chart account not found for ID: ${config.category_account_id}`);
-              continue;
-            }
-
-            const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
-            const finalDisplayName = config.displayName || chartAccount.display_name || mockAccount.name;
-
-            const { data: newAccount, error: createError } = await firstsavvy
-              .from('user_chart_of_accounts')
-              .insert({
-                user_id: user.id,
-                profile_id: activeProfile.id,
-                template_account_number: chartAccount.template_account_number,
-                account_number: accountNumber,
-                display_name: finalDisplayName,
-                class: chartAccount.class,
-                account_detail: chartAccount.account_detail,
-                account_type: chartAccount.account_type,
-                icon: chartAccount.icon,
-                color: chartAccount.color,
-                current_balance: mockAccount.balance,
-                institution_name: mockAccount.institutionName,
-                account_number_last4: mockAccount.last4,
-                is_active: true,
-                is_user_created: true
-              })
-              .select()
-              .single();
-
-            if (createError) {
-              console.error('Error creating account:', createError);
-              continue;
-            }
-
-            createdAccounts.push({ account: newAccount, config, mockAccount });
-            createdCount++;
-          } else if (config.import_mode === 'existing' && config.existing_bank_account_id) {
-            const existingAccount = existingAccounts.find(acc => acc.id === config.existing_bank_account_id);
-            const updateData = {
-              current_balance: mockAccount.balance,
-              institution_name: mockAccount.institutionName
-            };
-
-            if (mockAccount.last4) {
-              updateData.account_number_last4 = mockAccount.last4;
-            }
-
-            await firstsavvy
-              .from('user_chart_of_accounts')
-              .update(updateData)
-              .eq('id', config.existing_bank_account_id);
-            linkedCount++;
-          }
-        }
-
-        queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-        queryClient.invalidateQueries({ queryKey: ['transactions'] });
-
-        if (createdCount > 0 && linkedCount > 0) {
-          toast.success(`Created ${createdCount} new account${createdCount !== 1 ? 's' : ''} and linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
-        } else if (createdCount > 0) {
-          toast.success(`Successfully created ${createdCount} account${createdCount !== 1 ? 's' : ''}!`);
-        } else if (linkedCount > 0) {
-          toast.success(`Successfully linked ${linkedCount} existing account${linkedCount !== 1 ? 's' : ''}!`);
-        }
-
-        onAccountCreated?.({ type: 'banking_batch', count: createdCount + linkedCount });
-        onOpenChange(false);
-        return;
-      } catch (error) {
-        console.error('Error processing accounts:', error);
-        toast.error(error.message || 'Failed to process accounts. Please try again.');
-        return;
-      }
-    }
-
     if (!selectedCard || !selectedSubtype) return;
 
     try {
@@ -1312,7 +1077,6 @@ export default function AccountCreationWizard({
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
     if (currentStep === 'bank-search') return 5;
-    if (currentStep === 'configure-accounts') return 3;
     if (currentStep === 'select-subtype' || !selectedSubtype) {
       return selectedCard.id === 'budget' ? 3 : (selectedCard.id === 'banking' ? 5 : 5);
     }
@@ -1336,7 +1100,6 @@ export default function AccountCreationWizard({
       const bankingStepMap = {
         'select-type': 0,
         'bank-search': 1,
-        'configure-accounts': 2,
         'select-subtype': 2,
         'details': 3,
         'balance': 4,
@@ -1383,26 +1146,6 @@ export default function AccountCreationWizard({
   };
 
   const canProceed = () => {
-    if (currentStep === 'configure-accounts') {
-      if (checkedAccountIds.length === 0) return false;
-
-      for (const accountId of checkedAccountIds) {
-        const config = accountConfigurations[accountId];
-        if (!config || !config.startDate || !config.goLiveDate) {
-          return false;
-        }
-        if (config.import_mode === 'new') {
-          if (!config.displayName || !config.chart_account_id) {
-            return false;
-          }
-        } else if (config.import_mode === 'existing') {
-          if (!config.existing_bank_account_id) {
-            return false;
-          }
-        }
-      }
-      return true;
-    }
     if (currentStep === 'details') {
       if (selectedCard.id === 'banking') {
         return (selectedAccountName && selectedAccountName.trim() &&
@@ -1439,8 +1182,6 @@ export default function AccountCreationWizard({
     if (selectedCard.id === 'banking') {
       if (currentStep === 'bank-search') {
         setCurrentStep('select-subtype');
-      } else if (currentStep === 'configure-accounts') {
-        await handleSubmit();
       } else if (currentStep === 'details') {
         if (!selectedAccountName || !uploadedFile || mappedTransactions.length === 0) {
           toast.error('Please select or enter an account name and upload a statement');
@@ -2455,250 +2196,6 @@ export default function AccountCreationWizard({
     </Dialog>
   );
 
-  const renderConfigureAccountsStep = () => {
-    return (
-      <div className="space-y-4 max-w-2xl mx-auto">
-        <div className="space-y-3">
-          {mockBankAccounts.map(account => {
-            const isChecked = checkedAccountIds.includes(account.id);
-            const config = accountConfigurations[account.id];
-
-            return (
-              <Card key={account.id} className={isChecked ? 'border-blue-500' : ''}>
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-start space-x-3">
-                    <Checkbox
-                      id={`account-${account.id}`}
-                      checked={isChecked}
-                      onCheckedChange={() => handleToggleAccount(account.id)}
-                      className="mt-1"
-                    />
-                    <div className="flex-1">
-                      {!isChecked ? (
-                        <div className="flex items-center justify-between">
-                          <Label
-                            htmlFor={`account-${account.id}`}
-                            className="text-base font-medium cursor-pointer"
-                          >
-                            {formatAccountDisplayLabel(config?.displayName || account.name, account.last4, config?.show_suffix ?? true)}
-                          </Label>
-                          <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                            ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      ) : (
-                        config && (
-                          <div className="space-y-3">
-                            {config.import_mode === 'new' ? (
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <div className="flex gap-2 flex-1">
-                                    <Label htmlFor={`displayName-${account.id}`} className="text-sm flex-1">
-                                      Display Name*
-                                    </Label>
-                                    <Label htmlFor={`account-detail-${account.id}`} className="text-sm flex-1">
-                                      Account Detail
-                                    </Label>
-                                  </div>
-                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="flex gap-2 mt-1">
-                                  <div className="relative flex items-center h-9 px-3 rounded-md border border-input bg-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 flex-1 min-w-0">
-                                    <input
-                                      id={`displayName-${account.id}`}
-                                      value={config.displayName || ''}
-                                      onChange={(e) => updateAccountConfiguration(account.id, 'displayName', e.target.value)}
-                                      onFocus={(e) => e.target.select()}
-                                      placeholder={getChartAccountDisplayName(config.chart_account_id) || "Account name"}
-                                      className="bg-transparent outline-none text-sm min-w-0 flex-1"
-                                      style={{ width: config.displayName ? `${config.displayName.length + 1}ch` : '100%' }}
-                                    />
-                                    {account.last4 && config.show_suffix && (
-                                      <span className="text-muted-foreground text-sm pointer-events-none whitespace-nowrap">
-                                        ({account.last4})
-                                      </span>
-                                    )}
-                                  </div>
-                                  <Select
-                                    value={userChartAccounts.find(a => a.id === config.chart_account_id)?.account_detail || ''}
-                                    onValueChange={(value) => {
-                                      const matchingAccount = userChartAccounts.find(a => a.account_detail === value);
-                                      if (matchingAccount) {
-                                        updateAccountConfiguration(account.id, 'category_account_id', matchingAccount.id);
-                                      }
-                                    }}
-                                  >
-                                    <SelectTrigger id={`account-detail-${account.id}`} className="h-9 flex-1">
-                                      <SelectValue placeholder="Select detail" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {(() => {
-                                        const detailMap = {
-                                          'checking': ['checking_account'],
-                                          'savings': ['savings_account'],
-                                          'credit_card': ['personal_credit_card', 'business_credit_card'],
-                                        };
-                                        const validDetails = detailMap[account.type] || [];
-                                        const filtered = userChartAccounts.filter(a => validDetails.includes(a.account_detail));
-                                        return [...new Set(filtered.map(a => a.account_detail))].filter(Boolean).map((detail) => (
-                                          <SelectItem key={detail} value={detail}>
-                                            {formatLabel(detail)}
-                                          </SelectItem>
-                                        ));
-                                      })()}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            ) : (
-                              <div>
-                                <div className="flex items-center justify-between mb-1">
-                                  <Label htmlFor={`displayName-${account.id}`} className="text-sm">
-                                    Select Account*
-                                  </Label>
-                                  <span className={`text-sm font-medium ${account.balance < 0 ? 'text-red-600' : 'text-gray-900'}`}>
-                                    ${Math.abs(account.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                  </span>
-                                </div>
-                                <div className="mt-1">
-                                  <Select
-                                    value={config.existing_account_id || ''}
-                                    onValueChange={(value) => updateAccountConfiguration(account.id, 'existing_account_id', value)}
-                                  >
-                                    <SelectTrigger id={`displayName-${account.id}`} className="h-9">
-                                      <SelectValue placeholder="Select account" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {existingAccounts.map((acc) => (
-                                        <SelectItem key={acc.id} value={acc.id}>
-                                          {acc.account_name} {acc.account_number_last4 && `(...${acc.account_number_last4})`}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-                              </div>
-                            )}
-
-                            <div className="flex items-center gap-3 flex-wrap">
-                              <ToggleGroup
-                                type="single"
-                                value={config.import_mode}
-                                onValueChange={(value) => {
-                                  if (value) {
-                                    updateAccountConfiguration(account.id, 'import_mode', value);
-                                  }
-                                }}
-                                className="inline-flex border rounded-full p-0.5 bg-slate-100 h-7"
-                              >
-                                <ToggleGroupItem
-                                  value="new"
-                                  className="px-3 py-0 text-xs h-6 rounded-full data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
-                                >
-                                  New
-                                </ToggleGroupItem>
-                                <ToggleGroupItem
-                                  value="existing"
-                                  className="px-3 py-0 text-xs h-6 rounded-full data-[state=on]:bg-white data-[state=on]:shadow-sm data-[state=off]:bg-transparent"
-                                >
-                                  Existing
-                                </ToggleGroupItem>
-                              </ToggleGroup>
-
-                              {config.import_mode === 'new' && account.last4 && (
-                                <div className="flex items-center gap-2">
-                                  <Checkbox
-                                    id={`showSuffix-${account.id}`}
-                                    checked={config.show_suffix}
-                                    onCheckedChange={(checked) => handleSuffixToggle(account.id, checked)}
-                                  />
-                                  <Label
-                                    htmlFor={`showSuffix-${account.id}`}
-                                    className="text-sm font-normal cursor-pointer whitespace-nowrap"
-                                  >
-                                    Include last 4 digits
-                                  </Label>
-                                </div>
-                              )}
-                            </div>
-
-                            <div>
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                                <div>
-                                  <Label className="text-sm mb-2 block">Start Date*</Label>
-                                  <Select
-                                    value={config.startDatePreset || 'last_60'}
-                                    onValueChange={(value) => updateAccountConfiguration(account.id, 'startDatePreset', value)}
-                                  >
-                                    <SelectTrigger className="h-9">
-                                      <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="last_30">Last 30 days</SelectItem>
-                                      <SelectItem value="last_60">Last 60 days</SelectItem>
-                                      <SelectItem value="year_to_date">Year to date</SelectItem>
-                                      <SelectItem value="custom">Custom</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                </div>
-
-                                <div>
-                                  <Label className="text-sm mb-2 block opacity-0">Date</Label>
-                                  <Input
-                                    type="date"
-                                    value={config.startDate || ''}
-                                    onChange={(e) => handleStartDateManualChange(account.id, e.target.value)}
-                                    className="h-9"
-                                  />
-                                </div>
-
-                                <div>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <Label htmlFor={`goLiveDate-${account.id}`} className="text-sm">Go Live Date*</Label>
-                                    <TooltipProvider>
-                                      <Tooltip>
-                                        <TooltipTrigger asChild>
-                                          <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                                        </TooltipTrigger>
-                                        <TooltipContent className="max-w-xs">
-                                          <p className="text-xs">
-                                            Transactions before this date will be posted automatically. After this date, transactions will remain pending.
-                                          </p>
-                                        </TooltipContent>
-                                      </Tooltip>
-                                    </TooltipProvider>
-                                  </div>
-                                  <Input
-                                    id={`goLiveDate-${account.id}`}
-                                    type="date"
-                                    value={config.goLiveDate || ''}
-                                    onChange={(e) => updateAccountConfiguration(account.id, 'goLiveDate', e.target.value)}
-                                    className="h-9"
-                                  />
-                                </div>
-                              </div>
-
-                              {config.startDate && config.goLiveDate && (
-                                <div className="mt-2">
-                                </div>
-                              )}
-                            </div>
-                        </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      </div>
-    );
-  };
-
   const renderCsvMappingStep = () => (
     <div className="max-w-2xl mx-auto">
       <CsvColumnMapper
@@ -2829,8 +2326,6 @@ export default function AccountCreationWizard({
         return renderCsvMappingStep();
       case 'bank-info':
         return renderBankInfoStep();
-      case 'configure-accounts':
-        return renderConfigureAccountsStep();
       case 'select-subtype':
         return renderSelectSubtype();
       case 'details':
@@ -2853,7 +2348,6 @@ export default function AccountCreationWizard({
     if (currentStep === 'bank-search') return 'Connect Bank Account';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'bank-info') return 'Bank Account Details';
-    if (currentStep === 'configure-accounts') return 'Configure Accounts to Import';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') return 'Account Details';
@@ -2876,8 +2370,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'configure-accounts' || currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
