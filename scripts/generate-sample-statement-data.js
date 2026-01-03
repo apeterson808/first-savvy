@@ -125,24 +125,20 @@ async function generateAndCacheStatements() {
     institutionMap[inst.name] = inst.id;
   });
 
-  const months2025 = [
+  const months = [
     { name: 'sep', num: 9 },
     { name: 'oct', num: 10 },
     { name: 'nov', num: 11 },
     { name: 'dec', num: 12 }
   ];
-
-  const months2026 = [
-    { name: 'sep', num: 9 },
-    { name: 'oct', num: 10 }
-  ];
+  const year = 2024;
 
   const statements = [];
 
-  for (const month of months2025) {
-    const citiTransactions = generateCitiTransactions(month.num, 2025);
-    const amexTransactions = generateAmexTransactions(month.num, 2025);
-    const iccuTransactions = generateICCUTransactions(month.num, 2025);
+  for (const month of months) {
+    const citiTransactions = generateCitiTransactions(month.num, year);
+    const amexTransactions = generateAmexTransactions(month.num, year);
+    const iccuTransactions = generateICCUTransactions(month.num, year);
 
     const citiDebits = citiTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
     const citiCredits = citiTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
@@ -159,7 +155,7 @@ async function generateAndCacheStatements() {
       account_type: 'credit',
       account_number_last4: '4532',
       statement_month: month.name,
-      statement_year: 2025,
+      statement_year: year,
       transactions_data: citiTransactions,
       transaction_count: citiTransactions.length,
       total_debits: citiDebits.toFixed(2),
@@ -173,7 +169,7 @@ async function generateAndCacheStatements() {
       account_type: 'credit',
       account_number_last4: '1008',
       statement_month: month.name,
-      statement_year: 2025,
+      statement_year: year,
       transactions_data: amexTransactions,
       transaction_count: amexTransactions.length,
       total_debits: amexDebits.toFixed(2),
@@ -187,69 +183,12 @@ async function generateAndCacheStatements() {
       account_type: 'checking',
       account_number_last4: '7890',
       statement_month: month.name,
-      statement_year: 2025,
+      statement_year: year,
       transactions_data: iccuTransactions,
       transaction_count: iccuTransactions.length,
       total_debits: iccuDebits.toFixed(2),
       total_credits: iccuCredits.toFixed(2),
       file_name: `iccu_${month.name}.pdf`
-    });
-  }
-
-  for (const month of months2026) {
-    const citiTransactions = generateCitiTransactions(month.num, 2026);
-    const amexTransactions = generateAmexTransactions(month.num, 2026);
-    const iccuTransactions = generateICCUTransactions(month.num, 2026);
-
-    const citiDebits = citiTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const citiCredits = citiTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-
-    const amexDebits = amexTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const amexCredits = amexTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-
-    const iccuDebits = iccuTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    const iccuCredits = iccuTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-
-    statements.push({
-      institution_id: institutionMap['Citibank'],
-      institution_name: 'Citibank',
-      account_type: 'credit',
-      account_number_last4: '4532',
-      statement_month: month.name,
-      statement_year: 2026,
-      transactions_data: citiTransactions,
-      transaction_count: citiTransactions.length,
-      total_debits: citiDebits.toFixed(2),
-      total_credits: citiCredits.toFixed(2),
-      file_name: `citi_${month.name}_2026.pdf`
-    });
-
-    statements.push({
-      institution_id: institutionMap['American Express'],
-      institution_name: 'American Express',
-      account_type: 'credit',
-      account_number_last4: '1008',
-      statement_month: month.name,
-      statement_year: 2026,
-      transactions_data: amexTransactions,
-      transaction_count: amexTransactions.length,
-      total_debits: amexDebits.toFixed(2),
-      total_credits: amexCredits.toFixed(2),
-      file_name: `amex_${month.name}_2026.pdf`
-    });
-
-    statements.push({
-      institution_id: institutionMap['Idaho Central Credit Union'],
-      institution_name: 'Idaho Central Credit Union',
-      account_type: 'checking',
-      account_number_last4: '7890',
-      statement_month: month.name,
-      statement_year: 2026,
-      transactions_data: iccuTransactions,
-      transaction_count: iccuTransactions.length,
-      total_debits: iccuDebits.toFixed(2),
-      total_credits: iccuCredits.toFixed(2),
-      file_name: `iccu_${month.name}_2026.pdf`
     });
   }
 
@@ -272,9 +211,9 @@ async function generateAndCacheStatements() {
   console.log('='.repeat(60));
   console.log(`Total statements cached: ${statements.length}`);
   console.log('\nStatements by Institution:');
-  console.log('  Citibank (credit): 4 months (2025) + 2 months (2026)');
-  console.log('  American Express (credit): 4 months (2025) + 2 months (2026)');
-  console.log('  Idaho Central Credit Union (checking): 4 months (2025) + 2 months (2026)');
+  console.log('  Citibank (credit): 4 months');
+  console.log('  American Express (credit): 4 months');
+  console.log('  Idaho Central Credit Union (checking): 4 months');
   console.log('='.repeat(60) + '\n');
   console.log('Bank simulation ready!\n');
 }

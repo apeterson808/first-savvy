@@ -114,7 +114,7 @@ export default function Dashboard() {
 
       try {
         const { data: userProfile } = await firstsavvy
-          .from('user_settings')
+          .from('user_profiles')
           .select('full_name')
           .eq('id', user.id)
           .single();

@@ -101,56 +101,50 @@ async function cacheAllStatements() {
       console.log(`Processing ${file}...`);
       const filePath = join(statementsDir, file);
 
-      let parsedData = await parsePDFStatement(filePath);
+      const statementData = await parsePDFStatement(filePath);
 
-      const statements = Array.isArray(parsedData) ? parsedData : [parsedData];
+      const institutionId = await getInstitutionId(statementData.institution);
+
+      if (!institutionId) {
+        console.error(`  Skipping: Institution not found`);
+        errorCount++;
+        continue;
+      }
 
       const { month, year } = extractMonthYear(file);
 
-      for (const statementData of statements) {
-        const institutionId = await getInstitutionId(statementData.institution);
+      const last4 = statementData.accountNumber.slice(-4);
 
-        if (!institutionId) {
-          console.error(`  Skipping: Institution not found`);
-          errorCount++;
-          continue;
-        }
+      const totalDebits = statementData.transactions
+        .filter(tx => tx.type === 'expense')
+        .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
-        const last4 = statementData.accountNumber.slice(-4);
+      const totalCredits = statementData.transactions
+        .filter(tx => tx.type === 'income')
+        .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
-        const totalDebits = statementData.transactions
-          .filter(tx => tx.type === 'expense')
-          .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
+      const { error } = await supabase
+        .from('statement_cache')
+        .insert({
+          institution_id: institutionId,
+          institution_name: institutionMap[statementData.institution] || statementData.institution,
+          account_type: statementData.accountType,
+          account_number_last4: last4,
+          statement_month: month,
+          statement_year: year,
+          transactions_data: statementData.transactions,
+          transaction_count: statementData.transactions.length,
+          total_debits: totalDebits.toFixed(2),
+          total_credits: totalCredits.toFixed(2),
+          file_name: file
+        });
 
-        const totalCredits = statementData.transactions
-          .filter(tx => tx.type === 'income')
-          .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
-
-        const { error } = await supabase
-          .from('statement_cache')
-          .insert({
-            institution_id: institutionId,
-            institution_name: institutionMap[statementData.institution] || statementData.institution,
-            account_type: statementData.accountType,
-            account_number_last4: last4,
-            statement_month: month,
-            statement_year: year,
-            transactions_data: statementData.transactions,
-            transaction_count: statementData.transactions.length,
-            total_debits: totalDebits.toFixed(2),
-            total_credits: totalCredits.toFixed(2),
-            file_name: file,
-            beginning_balance: statementData.beginningBalance,
-            ending_balance: statementData.endingBalance
-          });
-
-        if (error) {
-          console.error(`  Error caching: ${error.message}`);
-          errorCount++;
-        } else {
-          console.log(`  Cached ${statementData.transactions.length} transactions (${statementData.accountType})`);
-          successCount++;
-        }
+      if (error) {
+        console.error(`  Error caching: ${error.message}`);
+        errorCount++;
+      } else {
+        console.log(`  Cached ${statementData.transactions.length} transactions`);
+        successCount++;
       }
 
     } catch (error) {

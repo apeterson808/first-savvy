@@ -59,19 +59,6 @@ const parseCitiStatement = (text) => {
     accountNumber = '****' + accountMatch[1];
   }
 
-  let beginningBalance = null;
-  let endingBalance = null;
-
-  const prevBalanceMatch = text.match(/Previous\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
-  if (prevBalanceMatch) {
-    beginningBalance = cleanAmount(prevBalanceMatch[1]);
-  }
-
-  const newBalanceMatch = text.match(/New\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
-  if (newBalanceMatch) {
-    endingBalance = cleanAmount(newBalanceMatch[1]);
-  }
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
@@ -130,9 +117,7 @@ const parseCitiStatement = (text) => {
     institution: 'Citi',
     accountType: 'credit',
     accountNumber,
-    transactions,
-    beginningBalance,
-    endingBalance
+    transactions
   };
 };
 
@@ -144,19 +129,6 @@ const parseAmexStatement = (text) => {
   const accountMatch = text.match(/Account\s+Ending\s+\d+-(\d{5})/i);
   if (accountMatch) {
     accountNumber = '****' + accountMatch[1].slice(-4);
-  }
-
-  let beginningBalance = null;
-  let endingBalance = null;
-
-  const prevBalanceMatch = text.match(/Previous\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
-  if (prevBalanceMatch) {
-    beginningBalance = cleanAmount(prevBalanceMatch[1]);
-  }
-
-  const newBalanceMatch = text.match(/New\s+Balance[:\s]+\$?([\d,]+\.\d{2})/i);
-  if (newBalanceMatch) {
-    endingBalance = cleanAmount(newBalanceMatch[1]);
   }
 
   for (let i = 0; i < lines.length; i++) {
@@ -200,142 +172,76 @@ const parseAmexStatement = (text) => {
     institution: 'American Express',
     accountType: 'credit',
     accountNumber,
-    transactions,
-    beginningBalance,
-    endingBalance
+    transactions
   };
 };
 
 const parseICCUStatement = (text) => {
-  const accounts = [];
+  const transactions = [];
   const lines = text.split('\n');
 
-  const savingsHeaderIndex = lines.findIndex(line =>
-    line.includes('SHARE SAVINGS - PERSONAL SAVINGS')
-  );
-  const checkingHeaderIndex = lines.findIndex(line =>
-    line.includes('CENTRAL CHECKING - MAIN CHECKING')
-  );
+  let accountNumber = '';
+  const accountMatch = text.match(/Account\s+No\.\s+\*\*(\d+)/i);
+  if (accountMatch) {
+    accountNumber = '****' + accountMatch[1];
+  }
 
-  const parseAccountSection = (startIndex, endIndex, accountType) => {
-    if (startIndex === -1) return null;
+  const accountType = text.toLowerCase().includes('checking') ? 'checking' :
+                     text.toLowerCase().includes('savings') ? 'savings' : 'checking';
 
-    const sectionLines = lines.slice(startIndex, endIndex !== -1 ? endIndex : lines.length);
-    const sectionText = sectionLines.join('\n');
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
 
-    let accountNumber = '';
-    const accountMatch = sectionText.match(/Account\s+No\.\s+\*\*(\d+)/i);
-    if (accountMatch) {
-      accountNumber = '****' + accountMatch[1];
-    }
+    const transMatch = line.match(/^(\d{2}\/\d{2})\s+(\d{2}\/\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(.+)/);
 
-    const transactions = [];
-    let beginningBalance = null;
-    let endingBalance = null;
+    if (transMatch) {
+      const [_, effDate, postDate, amount1, balance, description] = transMatch;
 
-    for (let i = 0; i < sectionLines.length; i++) {
-      const line = sectionLines[i];
+      const amount = parseFloat(amount1.replace(/,/g, ''));
+      const descLower = description.toLowerCase();
 
-      const transMatch = line.match(/^(\d{2}\/\d{2})\s+(\d{2}\/\d{2})\s+([\d,]+\.\d{2})\s+([\d,]+\.\d{2})\s+(.+)$/);
+      const isWithdrawal = descLower.includes('withdrawal') ||
+                          descLower.includes('ach withdrawal') ||
+                          descLower.includes('check') ||
+                          descLower.includes('fee') ||
+                          descLower.includes('transfer to');
 
-      if (transMatch) {
-        const [_, effDate, postDate, amount1Str, amount2Str, description] = transMatch;
+      const isDeposit = descLower.includes('deposit') ||
+                       descLower.includes('transfer from') ||
+                       descLower.includes('payment deposit');
 
-        const descLower = description.toLowerCase().trim();
+      const date = postDate;
+      const [month, day] = date.split('/');
+      const year = '2024';
+      const fullDate = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
 
-        if (descLower.includes('beginning balance')) {
-          beginningBalance = parseFloat(amount2Str.replace(/,/g, ''));
-          continue;
-        }
+      let type;
+      if (isWithdrawal) {
+        type = 'expense';
+      } else if (isDeposit) {
+        type = 'income';
+      } else {
+        type = 'expense';
+      }
 
-        if (descLower.includes('ending balance')) {
-          endingBalance = parseFloat(amount2Str.replace(/,/g, ''));
-          continue;
-        }
-
-        let amount = 0;
-        let type = 'expense';
-
-        const isWithdrawal = descLower.includes('withdrawal') ||
-                            descLower.includes('ach withdrawal') ||
-                            descLower.includes('check') ||
-                            descLower.includes('fee') ||
-                            descLower.includes('transfer to') ||
-                            descLower.includes('point of sale');
-
-        const isDeposit = descLower.includes('deposit') ||
-                         descLower.includes('transfer from') ||
-                         descLower.includes('payment deposit') ||
-                         descLower.includes('real time payment');
-
-        if (isWithdrawal) {
-          type = 'expense';
-          amount = parseFloat(amount1Str.replace(/,/g, ''));
-        } else if (isDeposit) {
-          type = 'income';
-          amount = parseFloat(amount1Str.replace(/,/g, ''));
-        } else {
-          type = 'expense';
-          amount = parseFloat(amount1Str.replace(/,/g, ''));
-        }
-
-        const date = postDate;
-        const [month, day] = date.split('/');
-        const currentYear = new Date().getFullYear();
-        const fullDate = `${currentYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-
-        if (amount > 0) {
-          transactions.push({
-            date: fullDate,
-            description: description.trim(),
-            amount,
-            type,
-            status: 'posted'
-          });
-        }
+      if (amount > 0 && !descLower.includes('beginning balance')) {
+        transactions.push({
+          date: fullDate,
+          description: description.trim(),
+          amount,
+          type,
+          status: 'posted'
+        });
       }
     }
-
-    return {
-      institution: 'Idaho Central Credit Union',
-      accountType,
-      accountNumber,
-      transactions,
-      beginningBalance,
-      endingBalance
-    };
-  };
-
-  if (savingsHeaderIndex !== -1) {
-    const savingsAccount = parseAccountSection(
-      savingsHeaderIndex,
-      checkingHeaderIndex,
-      'savings'
-    );
-    if (savingsAccount) {
-      accounts.push(savingsAccount);
-    }
   }
 
-  if (checkingHeaderIndex !== -1) {
-    const checkingAccount = parseAccountSection(
-      checkingHeaderIndex,
-      -1,
-      'checking'
-    );
-    if (checkingAccount) {
-      accounts.push(checkingAccount);
-    }
-  }
-
-  return accounts.length > 0 ? accounts : [{
+  return {
     institution: 'Idaho Central Credit Union',
-    accountType: 'checking',
-    accountNumber: '',
-    transactions: [],
-    beginningBalance: null,
-    endingBalance: null
-  }];
+    accountType,
+    accountNumber,
+    transactions
+  };
 };
 
 export const parsePDFStatement = async (pdfPath) => {

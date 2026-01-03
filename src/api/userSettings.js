@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 
 export const getUserProfile = async (userId) => {
   const { data, error } = await supabase
-    .from('user_settings')
+    .from('user_profiles')
     .select('*')
     .eq('id', userId)
     .maybeSingle();
@@ -13,7 +13,7 @@ export const getUserProfile = async (userId) => {
 
 export const createUserProfile = async (userId, profileData) => {
   const { data, error } = await supabase
-    .from('user_settings')
+    .from('user_profiles')
     .insert({
       id: userId,
       ...profileData
@@ -27,7 +27,7 @@ export const createUserProfile = async (userId, profileData) => {
 
 export const updateUserProfile = async (userId, updates) => {
   const { data, error } = await supabase
-    .from('user_settings')
+    .from('user_profiles')
     .update(updates)
     .eq('id', userId)
     .select()
@@ -38,8 +38,8 @@ export const updateUserProfile = async (userId, updates) => {
 };
 
 export const upsertUserProfile = async (userId, profileData) => {
-  const { data, error} = await supabase
-    .from('user_settings')
+  const { data, error } = await supabase
+    .from('user_profiles')
     .upsert({
       id: userId,
       ...profileData

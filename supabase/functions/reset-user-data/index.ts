@@ -48,48 +48,24 @@ Deno.serve(async (req: Request) => {
     const userId = user.id;
     console.log(`Resetting data for user: ${userId}`);
 
-    // Get the user's profile ID
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("user_id", userId)
-      .order("created_at")
-      .limit(1)
-      .maybeSingle();
-
-    if (profileError) {
-      console.error("Error fetching profile:", profileError);
-      throw new Error(`Failed to fetch profile: ${profileError.message}`);
-    }
-
-    if (!profile) {
-      console.error("No profile found for user!");
-      throw new Error("No profile found for user");
-    }
-
-    const profileId = profile.id;
-    console.log(`Found profile ${profileId} for user ${userId}`);
-
-    // Tables to delete - all use profile_id now (no more user_id)
     const tablesToDelete = [
       "transaction_splits",
       "transactions",
       "categorization_rules",
       "contact_matching_rules",
       "transfer_registry",
-      "statement_uploads",
       "budgets",
       "contacts",
+      "plaid_items",
       "user_chart_of_accounts"
     ];
 
-    // Delete all data for this profile
     for (const table of tablesToDelete) {
-      console.log(`Attempting to delete from ${table} for profile ${profileId}...`);
+      console.log(`Attempting to delete from ${table} for user ${userId}...`);
       const { data, error } = await supabase
         .from(table)
         .delete()
-        .eq("profile_id", profileId)
+        .eq("user_id", userId)
         .select();
 
       if (error) {
@@ -101,51 +77,66 @@ Deno.serve(async (req: Request) => {
       console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
     }
 
-    // Recreate chart of accounts
-    console.log(`Recreating chart of accounts for profile ${profileId}...`);
-    const { data: templates, error: templatesError } = await supabase
-      .from("chart_of_accounts_templates")
-      .select("*")
-      .order("account_number");
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", userId)
+      .order("created_at")
+      .limit(1)
+      .maybeSingle();
 
-    if (templatesError) {
-      console.error("Error fetching templates:", templatesError);
-      throw new Error(`Failed to fetch templates: ${templatesError.message}`);
-    }
+    const profileId = profile?.id;
 
-    console.log(`Found ${templates?.length || 0} account templates`);
+    if (profileId) {
+      console.log(`Recreating chart of accounts for profile ${profileId}...`);
+      const { data: templates, error: templatesError } = await supabase
+        .from("chart_of_accounts_templates")
+        .select("*")
+        .order("account_number");
 
-    if (templates && templates.length > 0) {
-      const userAccounts = templates.map(template => ({
-        profile_id: profileId,
-        template_account_number: template.account_number,
-        account_number: template.account_number,
-        class: template.class,
-        account_detail: template.account_detail,
-        account_type: template.account_type,
-        display_name: template.display_name,
-        icon: template.icon,
-        color: template.color,
-        is_active: false,
-        is_user_created: false,
-      }));
-
-      const { error: insertError } = await supabase
-        .from("user_chart_of_accounts")
-        .insert(userAccounts);
-
-      if (insertError) {
-        console.error("Error inserting chart accounts:", insertError);
-        throw new Error(`Failed to recreate chart of accounts: ${insertError.message}`);
+      if (templatesError) {
+        console.error("Error fetching templates:", templatesError);
+        throw new Error(`Failed to fetch templates: ${templatesError.message}`);
       }
 
-      console.log(`Successfully recreated ${userAccounts.length} chart accounts`);
+      console.log(`Found ${templates?.length || 0} account templates`);
+
+      if (templates && templates.length > 0) {
+        const userAccounts = templates.map(template => ({
+          user_id: userId,
+          profile_id: profileId,
+          template_account_number: template.account_number,
+          account_number: template.account_number,
+          class: template.class,
+          account_detail: template.account_detail,
+          account_type: template.account_type,
+          display_name: template.display_name,
+          icon: template.icon,
+          color: template.color,
+          is_active: false,
+          is_user_created: false,
+        }));
+
+        const { error: insertError } = await supabase
+          .from("user_chart_of_accounts")
+          .insert(userAccounts);
+
+        if (insertError) {
+          console.error("Error inserting chart accounts:", insertError);
+          throw new Error(`Failed to recreate chart of accounts: ${insertError.message}`);
+        }
+
+        console.log(`Successfully recreated ${userAccounts.length} chart accounts`);
+      }
+    } else {
+      console.error("No profile found for user!");
+      throw new Error("No profile found for user");
     }
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "All user data has been cleared and reset successfully"
+        message: "All user data has been cleared successfully"
       }),
       {
         status: 200,

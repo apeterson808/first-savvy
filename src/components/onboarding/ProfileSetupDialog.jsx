@@ -23,7 +23,7 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
 
       if (fullName && fullName !== currentFullName) {
         await firstsavvy
-          .from('user_settings')
+          .from('user_profiles')
           .update({ full_name: fullName })
           .eq('id', userId);
       }
