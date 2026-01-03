@@ -24,16 +24,6 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
 import {
-  generateTransactionsForAccount,
-  generateCreditCardPayments,
-  generateSavingsTransfers,
-  checkForMatchingTransfers,
-  createMatchedTransferTransactions,
-  insertTransactionsAndRegistry,
-  updateTransferRegistry,
-  calculateTransactionCounts
-} from '@/api/transactionGenerator';
-import {
   Building2,
   Wallet,
   CreditCard,
@@ -80,41 +70,6 @@ const PROPERTY_TYPES = [
   'Commercial',
   'Land',
   'Other',
-];
-
-const MOCK_BANK_ACCOUNTS = [
-  {
-    id: 'mock-1',
-    name: 'Chase Freedom Checking',
-    type: 'checking',
-    last4: '1234',
-    balance: 2450.00,
-    institutionName: 'Chase'
-  },
-  {
-    id: 'mock-2',
-    name: 'Chase Sapphire Credit Card',
-    type: 'credit_card',
-    last4: '5678',
-    balance: -1250.00,
-    institutionName: 'Chase'
-  },
-  {
-    id: 'mock-3',
-    name: 'Chase Savings',
-    type: 'savings',
-    last4: '9012',
-    balance: 15000.00,
-    institutionName: 'Chase'
-  },
-  {
-    id: 'mock-4',
-    name: 'Chase Business Checking',
-    type: 'checking',
-    last4: '3456',
-    balance: 8500.00,
-    institutionName: 'Chase'
-  }
 ];
 
 const buildAccountTypeCardsFromTemplates = (templates) => {
@@ -374,7 +329,6 @@ export default function AccountCreationWizard({
   const [focusedFields, setFocusedFields] = useState({});
   const [showConnectionModal, setShowConnectionModal] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('connecting');
-  const [mockBankAccounts, setMockBankAccounts] = useState([]);
   const [checkedAccountIds, setCheckedAccountIds] = useState([]);
   const [accountConfigurations, setAccountConfigurations] = useState({});
   const queryClient = useQueryClient();
@@ -585,20 +539,6 @@ export default function AccountCreationWizard({
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBankSimulation = () => {
-    setShowConnectionModal(true);
-    setConnectionStatus('connecting');
-
-    setTimeout(() => {
-      setConnectionStatus('authenticating');
-    }, 1500);
-
-    setTimeout(() => {
-      setConnectionStatus('success');
-      setMockBankAccounts(MOCK_BANK_ACCOUNTS);
-    }, 3000);
   };
 
   const handleConnectionContinue = () => {
@@ -1143,100 +1083,6 @@ export default function AccountCreationWizard({
               .update(updateData)
               .eq('id', config.existing_bank_account_id);
             linkedCount++;
-          }
-        }
-
-        if (createdAccounts.length > 0) {
-          try {
-            const allTransactions = [];
-            const allRegistryEntries = [];
-
-            console.log('Starting transaction generation for', createdAccounts.length, 'accounts');
-
-            for (const { account, config, mockAccount } of createdAccounts) {
-              console.log('Generating transactions for account:', account.id, account.display_name, 'type:', mockAccount.type);
-              const transactions = await generateTransactionsForAccount(
-                { id: account.id, type: mockAccount.type, name: account.display_name },
-                user.id,
-                activeProfile.id,
-                config.startDate,
-                config.goLiveDate
-              );
-              console.log('Generated', transactions.length, 'transactions for', account.display_name);
-              allTransactions.push(...transactions);
-
-              if (mockAccount.type === 'credit_card') {
-                const matchingEntries = await checkForMatchingTransfers(
-                  { id: account.id, type: mockAccount.type, name: account.display_name },
-                  user.id,
-                  activeProfile.id
-                );
-
-                if (matchingEntries.length > 0) {
-                  const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
-                    { id: account.id, type: mockAccount.type, name: account.display_name },
-                    matchingEntries,
-                    user.id,
-                    activeProfile.id
-                  );
-                  allTransactions.push(...matchedTransactions);
-                  await updateTransferRegistry(registryUpdates);
-                }
-              } else if (mockAccount.type === 'checking' || mockAccount.type === 'savings') {
-                const creditCardAccounts = createdAccounts
-                  .filter(acc => acc.mockAccount.type === 'credit_card')
-                  .map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }));
-
-                const { payments, registryEntries } = await generateCreditCardPayments(
-                  { id: account.id, type: mockAccount.type, name: account.display_name },
-                  user.id,
-                  activeProfile.id,
-                  config.startDate,
-                  config.goLiveDate,
-                  createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }))
-                );
-                allTransactions.push(...payments);
-                allRegistryEntries.push(...registryEntries);
-              }
-            }
-
-            const { transfers, registryEntries: savingsRegistryEntries } = await generateSavingsTransfers(
-              user.id,
-              activeProfile.id,
-              createdAccounts[0]?.config.startDate || new Date(new Date().setFullYear(new Date().getFullYear() - 1)).toISOString().split('T')[0],
-              createdAccounts[0]?.config.goLiveDate || new Date().toISOString().split('T')[0],
-              createdAccounts.map(acc => ({ id: acc.account.id, type: acc.mockAccount.type, name: acc.account.display_name }))
-            );
-            allTransactions.push(...transfers);
-            allRegistryEntries.push(...savingsRegistryEntries);
-
-            for (const { account, config, mockAccount } of createdAccounts) {
-              if (mockAccount.type === 'savings') {
-                const matchingEntries = await checkForMatchingTransfers(
-                  { id: account.id, type: mockAccount.type, name: account.display_name },
-                  user.id,
-                  activeProfile.id
-                );
-
-                if (matchingEntries.length > 0) {
-                  const { matchedTransactions, registryUpdates } = await createMatchedTransferTransactions(
-                    { id: account.id, type: mockAccount.type, name: account.display_name },
-                    matchingEntries,
-                    user.id,
-                    activeProfile.id
-                  );
-                  allTransactions.push(...matchedTransactions);
-                  await updateTransferRegistry(registryUpdates);
-                }
-              }
-            }
-
-            console.log('About to insert', allTransactions.length, 'transactions and', allRegistryEntries.length, 'registry entries');
-            await insertTransactionsAndRegistry(allTransactions, allRegistryEntries);
-            console.log('Successfully inserted transactions');
-          } catch (txError) {
-            console.error('Error generating transactions:', txError);
-            toast.error('Failed to generate transactions: ' + txError.message);
           }
         }
 
@@ -2836,24 +2682,6 @@ export default function AccountCreationWizard({
 
                               {config.startDate && config.goLiveDate && (
                                 <div className="mt-2">
-                                  <TooltipProvider>
-                                    <Tooltip>
-                                      <TooltipTrigger asChild>
-                                        <div className="text-xs text-muted-foreground cursor-help inline-flex items-center gap-1">
-                                          <Info className="w-3 h-3" />
-                                          {(() => {
-                                            const counts = calculateTransactionCounts(config.startDate, config.goLiveDate);
-                                            return `${counts.total} transactions (${counts.posted} posted, ${counts.pending} pending)`;
-                                          })()}
-                                        </div>
-                                      </TooltipTrigger>
-                                      <TooltipContent className="max-w-xs">
-                                        <p className="text-xs">
-                                          Estimated number of transactions based on date range. Transactions before Go Live Date will be posted, after will be pending.
-                                        </p>
-                                      </TooltipContent>
-                                    </Tooltip>
-                                  </TooltipProvider>
                                 </div>
                               )}
                             </div>
