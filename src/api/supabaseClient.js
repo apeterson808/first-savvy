@@ -29,7 +29,7 @@ const getActiveProfileId = () => {
 const TABLES_WITH_PROFILE_ID = [
   'transactions', 'budgets', 'budget_groups',
   'goals', 'bills', 'contacts', 'user_chart_of_accounts',
-  'credit_scores', 'categorization_rules',
+  'credit_scores', 'plaid_items', 'categorization_rules',
   'contact_matching_rules', 'transaction_splits'
 ];
 
@@ -307,8 +307,28 @@ export const createSupabaseClient = () => {
         if (error) throw error;
         return data;
       },
+      async plaidCreateLinkToken(body) {
+        const { data, error } = await supabase.functions.invoke('plaid-create-link-token', { body });
+        if (error) throw error;
+        return data;
+      },
+      async plaidExchangeToken(body) {
+        const { data, error } = await supabase.functions.invoke('plaid-exchange-token', { body });
+        if (error) throw error;
+        return data;
+      },
+      async plaidCompleteImport(body) {
+        const { data, error } = await supabase.functions.invoke('plaid-complete-import', { body });
+        if (error) throw error;
+        return data;
+      },
       async aiCategorizeTransaction(body) {
         const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
+        if (error) throw error;
+        return data;
+      },
+      async parsePdf(body) {
+        const { data, error } = await supabase.functions.invoke('parse-pdf', { body });
         if (error) throw error;
         return data;
       },
