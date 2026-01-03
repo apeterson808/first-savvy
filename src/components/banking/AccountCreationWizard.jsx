@@ -2068,34 +2068,13 @@ export default function AccountCreationWizard({
             </p>
           </div>
 
-          <div className="text-center">
+          <div className="text-center mt-4">
             <Button
               type="button"
-              className="bg-blue-600 hover:bg-blue-700"
-              onClick={handleBankSimulation}
-            >
-              Bank Simulation
-            </Button>
-          </div>
-
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">Or</span>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <Button
-              type="button"
-              variant="link"
-              size="sm"
-              className="text-xs"
+              className="w-full"
               onClick={handleNext}
             >
-              Add Manually
+              Continue to Add Account
             </Button>
           </div>
         </div>
