@@ -2063,9 +2063,39 @@ export default function AccountCreationWizard({
     setSimulatedAccountData(data);
     setShowBankSimulator(false);
 
+    const transactions = data.transactions;
+
+    transactions.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+    let calculatedBalance = 0;
+    if (transactions.length > 0) {
+      const accountType = data.account.accountType;
+
+      transactions.forEach(tx => {
+        const amount = Math.abs(parseFloat(tx.amount));
+        if (accountType === 'credit') {
+          if (tx.type === 'expense') {
+            calculatedBalance += amount;
+          } else if (tx.type === 'income') {
+            calculatedBalance -= amount;
+          }
+        } else {
+          if (tx.type === 'income') {
+            calculatedBalance += amount;
+          } else if (tx.type === 'expense') {
+            calculatedBalance -= amount;
+          }
+        }
+      });
+    }
+
+    const accountDisplayName = data.account.displayName.replace(/\s*\*+\d{4}$/, '');
+
     updateFormData('institutionName', data.institution.name);
-    updateFormData('displayName', data.account.displayName);
-    updateFormData('accountNumberLast4', data.account.accountNumberLast4);
+    updateFormData('name', accountDisplayName);
+    updateFormData('last4', data.account.accountNumberLast4);
+    updateFormData('beginningBalance', Math.abs(calculatedBalance).toFixed(2));
+    setSelectedAccountName(accountDisplayName);
 
     setMappedTransactions(data.transactions);
 
@@ -2200,6 +2230,7 @@ export default function AccountCreationWizard({
 
   const renderBankInfoStep = () => {
     const dateRange = getTransactionDateRange(mappedTransactions);
+    const isFromSimulation = !!simulatedAccountData;
 
     const displayNameWithLast4 = includeLastFour && formData.last4
       ? `${selectedAccountName} (...${formData.last4})`
@@ -2219,6 +2250,14 @@ export default function AccountCreationWizard({
 
     return (
       <div className="space-y-5 max-w-lg mx-auto">
+        {isFromSimulation && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-900">
+              Account details automatically imported from {formData.institutionName}
+            </p>
+          </div>
+        )}
+
         <div>
           <Label htmlFor="displayName">Display Name*</Label>
           <Input
@@ -2248,11 +2287,15 @@ export default function AccountCreationWizard({
             placeholder="e.g., Chase, Bank of America"
             value={formData.institutionName || ''}
             onChange={(e) => updateFormData('institutionName', e.target.value)}
+            disabled={isFromSimulation}
             required
+            className={isFromSimulation ? 'bg-gray-50' : ''}
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Enter the bank or financial institution name
-          </p>
+          {!isFromSimulation && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter the bank or financial institution name
+            </p>
+          )}
         </div>
 
         <div>
@@ -2263,10 +2306,14 @@ export default function AccountCreationWizard({
             maxLength={4}
             value={formData.last4 || ''}
             onChange={(e) => updateFormData('last4', e.target.value.replace(/\D/g, ''))}
+            disabled={isFromSimulation}
+            className={isFromSimulation ? 'bg-gray-50' : ''}
           />
-          <p className="text-xs text-muted-foreground mt-1">
-            Enter the last 4 digits of your account number (optional)
-          </p>
+          {!isFromSimulation && (
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter the last 4 digits of your account number (optional)
+            </p>
+          )}
         </div>
 
         <div>
@@ -2281,13 +2328,20 @@ export default function AccountCreationWizard({
               onFocus={() => setFocusedFields(prev => ({ ...prev, beginningBalance: true }))}
               onBlur={(e) => handleAmountBlur('beginningBalance', e.target.value)}
               placeholder="0.00"
-              className="pl-7"
+              className={`pl-7 ${isFromSimulation ? 'bg-gray-50' : ''}`}
+              disabled={isFromSimulation}
               required
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Enter the starting balance as of {dateRange.startDate || 'the first transaction'}
-          </p>
+          {isFromSimulation ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Calculated from transaction history ({dateRange.startDate || 'start date'})
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter the starting balance as of {dateRange.startDate || 'the first transaction'}
+            </p>
+          )}
         </div>
 
         {dateRange.startDate && dateRange.endDate && (
