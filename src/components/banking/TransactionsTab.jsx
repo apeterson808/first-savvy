@@ -47,9 +47,7 @@ import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
-import { Trash2, Upload } from 'lucide-react';
-import { StatementUploadDialog } from './StatementUploadDialog';
-import { TransactionReviewDialog } from './TransactionReviewDialog';
+import { Trash2 } from 'lucide-react';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,9 +81,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
-  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
-  const [extractedData, setExtractedData] = useState(null);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -1027,20 +1022,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     toast.success('Transfer matched and confirmed');
   };
 
-  const handleUploadSuccess = (data) => {
-    setExtractedData(data);
-    setUploadDialogOpen(false);
-    setReviewDialogOpen(true);
-  };
-
-  const handleImportComplete = () => {
-    queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    queryClient.invalidateQueries({ queryKey: ['accounts'] });
-    toast.success('Transactions imported successfully');
-    setReviewDialogOpen(false);
-    setExtractedData(null);
-  };
-
   const handleMatchClick = async (transaction) => {
     const selectedMatch = selectedMatches[transaction.id];
 
@@ -1224,25 +1205,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8"
-                        onClick={() => setUploadDialogOpen(true)}
-                      >
-                        <Upload className="w-4 h-4 mr-2" />
-                        Import Statement
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      Import transactions from PDF, CSV, OFX, or QFX files
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
@@ -2798,21 +2760,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             pairedTransaction={pairedTransfer}
                             accounts={accounts}
                             onConfirm={handleConfirmTransferMatch}
-                          />
-
-                          <StatementUploadDialog
-                            open={uploadDialogOpen}
-                            onOpenChange={setUploadDialogOpen}
-                            onUploadSuccess={handleUploadSuccess}
-                            profileId={selectedProfile?.id}
-                          />
-
-                          <TransactionReviewDialog
-                            open={reviewDialogOpen}
-                            onOpenChange={setReviewDialogOpen}
-                            extractedData={extractedData}
-                            profileId={selectedProfile?.id}
-                            onImportComplete={handleImportComplete}
                           />
     </>
   );
