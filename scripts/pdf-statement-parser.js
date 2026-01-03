@@ -168,8 +168,8 @@ const parseICCUStatement = (text) => {
 export const parsePDFStatement = async (pdfPath) => {
   try {
     const dataBuffer = readFileSync(pdfPath);
-    const parser = new PDFParse();
-    const data = await parser.parse(dataBuffer);
+    const parser = new PDFParse({ data: dataBuffer, verbosity: 0 });
+    const data = await parser.getText();
     const text = data.text;
 
     if (text.toLowerCase().includes('citi') || text.toLowerCase().includes('citibank')) {
