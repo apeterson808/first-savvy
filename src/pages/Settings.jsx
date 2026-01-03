@@ -32,54 +32,36 @@ export default function Settings() {
     };
   }, []);
 
-  const tabs = [
-    { id: 'profile', label: 'Profile' },
-    { id: 'security', label: 'Security' },
-    { id: 'preferences', label: 'Preferences' },
-    { id: 'notifications', label: 'Notifications' },
-    { id: 'chart-of-accounts', label: 'Chart of Accounts' },
-    { id: 'protected', label: 'Protected' },
-  ];
-
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 pb-4">
-        <h1 className="text-3xl font-bold mb-6">Settings</h1>
-      </div>
+    <div className="p-4 md:p-6">
+      <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
-      <Tabs value={activeTab} className="flex-1 flex flex-col">
-        <PageTabs
-          tabs={tabs}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          basePath="/Settings"
-        />
+      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'chart_of_accounts', 'protected']} defaultTab="profile" />
 
-        <div className="flex-1 overflow-auto mt-6">
-          <TabsContent value="profile" className="mt-0">
-            <ProfileTab />
-          </TabsContent>
+      <Tabs value={activeTab} className="w-full">
+        <TabsContent value="profile" className="mt-4">
+          <ProfileTab />
+        </TabsContent>
 
-          <TabsContent value="security" className="mt-0">
-            <SecurityTab />
-          </TabsContent>
+        <TabsContent value="security" className="mt-4">
+          <SecurityTab />
+        </TabsContent>
 
-          <TabsContent value="preferences" className="mt-0">
-            <PreferencesTab />
-          </TabsContent>
+        <TabsContent value="preferences" className="mt-4">
+          <PreferencesTab />
+        </TabsContent>
 
-          <TabsContent value="notifications" className="mt-0">
-            <NotificationsTab />
-          </TabsContent>
+        <TabsContent value="notifications" className="mt-4">
+          <NotificationsTab />
+        </TabsContent>
 
-          <TabsContent value="chart-of-accounts" className="mt-0">
-            <ChartOfAccountsTab />
-          </TabsContent>
+        <TabsContent value="chart_of_accounts" className="mt-4">
+          <ChartOfAccountsTab />
+        </TabsContent>
 
-          <TabsContent value="protected" className="mt-0">
-            <ProtectedConfigurationsTab />
-          </TabsContent>
-        </div>
+        <TabsContent value="protected" className="mt-4">
+          <ProtectedConfigurationsTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
