@@ -28,12 +28,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Download, Calendar, Upload } from 'lucide-react';
+import { Plus, Search, Filter, MoreVertical, Edit, Trash2, Download, Calendar, Upload, Database } from 'lucide-react';
 import { format } from 'date-fns';
+import StatementCacheBulkImporter from '@/components/banking/StatementCacheBulkImporter';
 
 export default function Transactions() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterAccount, setFilterAccount] = useState('all');
   const [filterType, setFilterType] = useState('all');
@@ -220,6 +222,15 @@ export default function Transactions() {
                 </Select>
 
                 <Button
+                  onClick={() => setBulkImportOpen(true)}
+                  variant="outline"
+                  className="border-primary text-primary hover:bg-primary/10"
+                >
+                  <Database className="w-4 h-4 mr-2" />
+                  Import from Cache
+                </Button>
+
+                <Button
                   onClick={() => {
                     setEditingTransaction(null);
                     setDialogOpen(true);
@@ -351,6 +362,12 @@ export default function Transactions() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Bulk Import Dialog */}
+      <StatementCacheBulkImporter
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+      />
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
