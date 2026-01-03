@@ -129,7 +129,7 @@ export async function getTransactionsForAccount(institutionName, accountType, ac
 
 export async function cacheStatementData(statementData) {
   const { institution_id, institution_name, account_type, account_number_last4,
-          statement_month, statement_year, transactions_data, file_name } = statementData;
+          statement_month, statement_year, transactions_data, file_name, profile_id } = statementData;
 
   const totalDebits = transactions_data
     .filter(tx => tx.type === 'expense')
@@ -139,22 +139,28 @@ export async function cacheStatementData(statementData) {
     .filter(tx => tx.type === 'income')
     .reduce((sum, tx) => sum + parseFloat(tx.amount), 0);
 
+  const cacheData = {
+    institution_id,
+    institution_name,
+    account_type,
+    account_number_last4,
+    statement_month,
+    statement_year,
+    transactions_data,
+    transaction_count: transactions_data.length,
+    total_debits: totalDebits,
+    total_credits: totalCredits,
+    file_name,
+    parsed_at: new Date().toISOString()
+  };
+
+  if (profile_id) {
+    cacheData.profile_id = profile_id;
+  }
+
   const { data, error } = await supabase
     .from('statement_cache')
-    .upsert({
-      institution_id,
-      institution_name,
-      account_type,
-      account_number_last4,
-      statement_month,
-      statement_year,
-      transactions_data,
-      transaction_count: transactions_data.length,
-      total_debits: totalDebits,
-      total_credits: totalCredits,
-      file_name,
-      parsed_at: new Date().toISOString()
-    }, {
+    .upsert(cacheData, {
       onConflict: 'file_name',
       ignoreDuplicates: false
     })
@@ -202,11 +208,12 @@ export async function importFromStatementCache(importData) {
             .from('profiles')
             .select('id')
             .eq('user_id', user.user.id)
-            .eq('is_primary', true)
+            .order('created_at', { ascending: true })
+            .limit(1)
             .maybeSingle();
 
           if (!profiles) {
-            throw new Error('No primary profile found');
+            throw new Error('No profile found for user');
           }
 
           const { data: chartAccounts } = await supabase
