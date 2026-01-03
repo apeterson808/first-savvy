@@ -69,18 +69,8 @@ async function cleanupDatabase() {
   await supabase.from('transactions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
   console.log('✓ Deleted transactions');
 
-  const { data: accounts } = await supabase
-    .from('user_chart_of_accounts')
-    .select('id, account_id')
-    .not('account_id', 'is', null);
-
-  if (accounts && accounts.length > 0) {
-    const accountIds = accounts.map(a => a.account_id).filter(Boolean);
-    if (accountIds.length > 0) {
-      await supabase.from('bank_accounts').delete().in('id', accountIds);
-      console.log('✓ Deleted linked bank accounts');
-    }
-  }
+  await supabase.from('user_chart_of_accounts').delete().eq('is_user_created', true);
+  console.log('✓ Deleted user-created accounts');
 
   console.log('\n✅ Database cleanup complete!\n');
 }
@@ -106,58 +96,43 @@ async function processStatements(userId, profileId) {
       const accountKey = `${statementData.institution}-${statementData.accountNumber}`;
 
       if (!accountMap.has(accountKey)) {
-        const accountName = `${statementData.institution} ${statementData.accountType === 'credit' ? 'Credit Card' : 'Checking'} ${statementData.accountNumber}`;
+        const accountName = `${statementData.institution} Credit Card (${statementData.accountNumber})`;
+        const isCredit = statementData.accountType === 'credit';
+        const accountClass = isCredit ? 'liability' : 'asset';
+        const accountDetail = isCredit ? 'credit_card' : 'checking_account';
+        const accountType = isCredit ? 'credit_cards' : 'bank_accounts';
 
-        const chartAccount = await supabase
+        const { data: chartAccount, error: chartError } = await supabase
           .from('user_chart_of_accounts')
-          .select('id, account_number')
-          .eq('profile_id', profileId)
-          .eq('account_type', statementData.accountType === 'credit' ? 'liability' : 'asset')
-          .eq('account_detail', statementData.accountType === 'credit' ? 'credit_card' : 'checking')
-          .limit(1)
-          .maybeSingle();
+          .insert({
+            profile_id: profileId,
+            user_id: userId,
+            display_name: accountName,
+            class: accountClass,
+            account_detail: accountDetail,
+            account_type: accountType,
+            institution_name: statementData.institution,
+            account_number_last4: statementData.accountNumber.slice(-4),
+            current_balance: 0,
+            is_active: true,
+            is_user_created: true,
+            include_in_net_worth: true,
+            display_in_sidebar: true
+          })
+          .select()
+          .single();
 
-        let bankAccountId;
-
-        if (chartAccount && chartAccount.id) {
-          const { data: bankAccount, error: bankError } = await supabase
-            .from('bank_accounts')
-            .insert({
-              user_id: userId,
-              profile_id: profileId,
-              name: accountName,
-              institution: statementData.institution,
-              type: statementData.accountType === 'credit' ? 'credit' : 'checking',
-              account_number: statementData.accountNumber,
-              current_balance: 0,
-              is_active: true
-            })
-            .select()
-            .single();
-
-          if (bankError) {
-            console.error(`    ❌ Error creating bank account: ${bankError.message}`);
-            continue;
-          }
-
-          bankAccountId = bankAccount.id;
-
-          await supabase
-            .from('user_chart_of_accounts')
-            .update({ account_id: bankAccountId })
-            .eq('id', chartAccount.id);
-
-          accountMap.set(accountKey, {
-            id: bankAccountId,
-            chartAccountId: chartAccount.id,
-            ...statementData
-          });
-
-          console.log(`    ✓ Created account: ${accountName}`);
-        } else {
-          console.error(`    ❌ No chart account found for ${statementData.accountType}`);
+        if (chartError) {
+          console.error(`    ❌ Error creating account: ${chartError.message}`);
           continue;
         }
+
+        accountMap.set(accountKey, {
+          id: chartAccount.id,
+          ...statementData
+        });
+
+        console.log(`    ✓ Created account: ${accountName}`);
       }
 
       const account = accountMap.get(accountKey);
@@ -211,7 +186,10 @@ async function printSummary(stats) {
   console.log('📊 REAL STATEMENT IMPORT SUMMARY');
   console.log('='.repeat(60) + '\n');
 
-  const { count: accountCount } = await supabase.from('bank_accounts').select('*', { count: 'exact', head: true });
+  const { count: accountCount } = await supabase
+    .from('user_chart_of_accounts')
+    .select('*', { count: 'exact', head: true })
+    .eq('is_user_created', true);
   const { count: txCount } = await supabase.from('transactions').select('*', { count: 'exact', head: true });
 
   console.log(`🏦 Bank Accounts Created:    ${stats.accountsCreated}`);
