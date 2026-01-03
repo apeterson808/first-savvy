@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Check, Loader2, Building2, CreditCard, Landmark } from 'lucide-react';
+import { Check, Loader2, Building2, CreditCard, Landmark, Lock, ShieldCheck } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -111,92 +111,121 @@ export function BankConnectionSimulator({ institution, open, onClose, onSuccess 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <div className="flex items-center gap-3 mb-2">
+      <DialogContent className="sm:max-w-[480px] p-0 overflow-hidden">
+        <div className="bg-[#000000] px-6 py-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-white" />
+              <span className="text-white text-sm font-medium">Secure connection</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[#00d4b4] text-xs font-semibold tracking-wide">POWERED BY</span>
+              <span className="text-white text-sm font-bold">plaid</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             <div
-              className="flex items-center justify-center w-12 h-12 rounded-lg"
-              style={{ backgroundColor: institution?.primary_color + '20' }}
+              className="flex items-center justify-center w-14 h-14 rounded-xl bg-white"
             >
-              <div style={{ color: institution?.primary_color }}>
+              <div style={{ color: institution?.primary_color || '#000' }}>
                 {getInstitutionIcon(institution?.institution_type)}
               </div>
             </div>
             <div>
-              <DialogTitle>{institution?.name}</DialogTitle>
-              <DialogDescription>
-                {step === 'credentials' && 'Sign in to connect your account'}
-                {step === 'connecting' && 'Connecting to your bank...'}
-                {step === 'select-account' && 'Select an account to import'}
-                {step === 'loading-transactions' && 'Loading transaction history...'}
+              <h2 className="text-white text-xl font-semibold">{institution?.name}</h2>
+              <p className="text-gray-300 text-sm">
+                {step === 'credentials' && 'Sign in to securely connect'}
+                {step === 'connecting' && 'Establishing secure connection'}
+                {step === 'select-account' && 'Select account to link'}
+                {step === 'loading-transactions' && 'Importing transactions'}
                 {step === 'error' && 'Connection failed'}
-              </DialogDescription>
+              </p>
             </div>
           </div>
-        </DialogHeader>
+        </div>
 
         {step === 'credentials' && (
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="off"
-              />
+          <div className="px-6 py-6 space-y-5">
+            <div className="bg-[#f0fdf9] border border-[#00d4b4]/20 rounded-lg p-4">
+              <div className="flex items-start gap-3">
+                <ShieldCheck className="h-5 w-5 text-[#00a58e] flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">Your credentials are encrypted</p>
+                  <p className="text-xs text-gray-600 mt-1">
+                    Plaid uses 256-bit encryption and never shares your credentials with Base44
+                  </p>
+                </div>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="off"
-              />
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="off"
+                  className="h-11"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="off"
+                  className="h-11"
+                />
+              </div>
             </div>
+
             {error && (
-              <div className="text-sm text-red-600 bg-red-50 p-3 rounded-md">
+              <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-lg">
                 {error}
               </div>
             )}
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-              <p className="text-xs text-blue-900">
-                Demo Mode: Enter any credentials to simulate connection
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={handleClose}>
+
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                className="flex-1 h-11 hover:bg-gray-50"
+                onClick={handleClose}
+              >
                 Cancel
               </Button>
-              <Button className="flex-1" onClick={handleConnect}>
-                Connect
+              <Button
+                className="flex-1 h-11 bg-[#00d4b4] hover:bg-[#00a58e] text-white font-medium"
+                onClick={handleConnect}
+              >
+                Continue
               </Button>
             </div>
           </div>
         )}
 
         {step === 'connecting' && (
-          <div className="space-y-6 py-8">
+          <div className="px-6 py-10 space-y-6">
             {SIMULATION_STEPS.map((simStep, index) => (
-              <div key={index} className="flex items-center gap-3">
+              <div key={index} className="flex items-center gap-4">
                 <div className="flex-shrink-0">
                   {index < currentSimulationStep ? (
-                    <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                      <Check className="h-4 w-4 text-white" />
+                    <div className="w-7 h-7 rounded-full bg-[#00d4b4] flex items-center justify-center">
+                      <Check className="h-4 w-4 text-white stroke-[3]" />
                     </div>
                   ) : index === currentSimulationStep ? (
-                    <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+                    <Loader2 className="h-7 w-7 animate-spin text-[#00d4b4]" />
                   ) : (
-                    <div className="w-6 h-6 rounded-full border-2 border-gray-300" />
+                    <div className="w-7 h-7 rounded-full border-2 border-gray-200" />
                   )}
                 </div>
                 <div className="flex-1">
-                  <p className={`text-sm ${index <= currentSimulationStep ? 'text-foreground font-medium' : 'text-muted-foreground'}`}>
+                  <p className={`text-base ${index <= currentSimulationStep ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
                     {simStep.label}
                   </p>
                 </div>
@@ -206,57 +235,67 @@ export function BankConnectionSimulator({ institution, open, onClose, onSuccess 
         )}
 
         {step === 'select-account' && (
-          <div className="space-y-4 py-4">
-            <div className="text-sm text-muted-foreground mb-4">
-              Found {accounts.length} account{accounts.length !== 1 ? 's' : ''}
-            </div>
-            <div className="space-y-2">
+          <div className="px-6 py-6">
+            <p className="text-sm text-gray-600 mb-5">
+              Select which account you'd like to connect
+            </p>
+            <div className="space-y-3">
               {accounts.map((account, index) => (
                 <button
                   key={index}
                   onClick={() => handleSelectAccount(account)}
-                  className="w-full p-4 border rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors text-left"
+                  className="w-full p-4 border-2 border-gray-200 rounded-xl hover:border-[#00d4b4] hover:bg-[#f0fdf9]/50 transition-all text-left group"
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{account.displayName}</p>
-                      <p className="text-sm text-muted-foreground capitalize">
+                    <div className="flex-1">
+                      <p className="font-semibold text-gray-900 text-base mb-0.5">
+                        {account.displayName}
+                      </p>
+                      <p className="text-sm text-gray-500 capitalize">
                         {account.accountType}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-mono text-muted-foreground">
-                        ****{account.accountNumberLast4}
+                      <p className="text-sm font-mono text-gray-600">
+                        ····{account.accountNumberLast4}
                       </p>
                     </div>
                   </div>
                 </button>
               ))}
             </div>
-            <Button variant="outline" className="w-full" onClick={handleClose}>
+            <Button
+              variant="outline"
+              className="w-full mt-6 h-11 hover:bg-gray-50"
+              onClick={handleClose}
+            >
               Cancel
             </Button>
           </div>
         )}
 
         {step === 'loading-transactions' && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-blue-600 mb-4" />
-            <p className="text-sm text-muted-foreground">
-              Loading transaction history...
+          <div className="flex flex-col items-center justify-center px-6 py-16">
+            <Loader2 className="h-14 w-14 animate-spin text-[#00d4b4] mb-5" />
+            <p className="text-base font-medium text-gray-900 mb-1">
+              Importing transactions
             </p>
-            <p className="text-xs text-muted-foreground mt-2">
-              Importing from {selectedAccount?.displayName}
+            <p className="text-sm text-gray-500">
+              This may take a moment
             </p>
           </div>
         )}
 
         {step === 'error' && (
-          <div className="space-y-4 py-4">
-            <div className="bg-red-50 border border-red-200 rounded-md p-4">
-              <p className="text-sm text-red-900">{error}</p>
+          <div className="px-6 py-6 space-y-4">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-900 font-medium">{error}</p>
             </div>
-            <Button variant="outline" className="w-full" onClick={handleClose}>
+            <Button
+              variant="outline"
+              className="w-full h-11 hover:bg-gray-50"
+              onClick={handleClose}
+            >
               Close
             </Button>
           </div>
