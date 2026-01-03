@@ -11,6 +11,7 @@ import ContactDetail from "./ContactDetail";
 import AccountDetail from "./AccountDetail";
 import Integrations from "./Integrations";
 import Collaboration from "./Collaboration";
+import Settings from "./Settings";
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -31,6 +32,8 @@ const PAGES = {
     Integrations: Integrations,
 
     Collaboration: Collaboration,
+
+    Settings: Settings,
 
 }
 
@@ -78,6 +81,7 @@ function PagesContent() {
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
                     <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/Collaboration" element={<Collaboration />} />
+                    <Route path="/Settings" element={<Settings />} />
                 </Routes>
             </Layout>
         </ProtectedRoute>
