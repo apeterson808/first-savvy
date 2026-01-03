@@ -458,7 +458,6 @@ Optimized indexes for common query patterns:
 - Real Amazon OAuth integration
 - Netflix API connection
 - Spotify API for listening data
-- Bank account syncing via Plaid
 - Investment platforms (Robinhood, E*TRADE)
 - Subscription tracking services
 - Bill payment services
