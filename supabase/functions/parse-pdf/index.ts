@@ -1,10 +1,15 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "jsr:@supabase/supabase-js@2";
+import pdfParse from "npm:pdf-parse@1.1.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
+
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
 interface Transaction {
   date: string;
@@ -13,29 +18,16 @@ interface Transaction {
   type?: string;
 }
 
-async function extractTextFromPDF(pdfBuffer: ArrayBuffer): Promise<string> {
-  const uint8Array = new Uint8Array(pdfBuffer);
-  const decoder = new TextDecoder('utf-8', { fatal: false });
-  let text = decoder.decode(uint8Array);
-
-  text = text.replace(/[\x00-\x08\x0B-\x0C\x0E-\x1F]/g, ' ');
-  text = text.replace(/\s+/g, ' ');
-
-  return text;
-}
-
 function parseTransactionsFromText(text: string): Transaction[] {
   const transactions: Transaction[] = [];
-  const lines = text.split(/[\n\r]+/);
+  const lines = text.split('\n');
 
   const datePatterns = [
-    /(\d{1,2}\/\d{1,2}\/\d{4})/,
-    /(\d{1,2}\/\d{1,2}\/\d{2})/,
-    /(\d{4}-\d{2}-\d{2})/,
+    /(\d{1,2}\/\d{1,2}\/\d{4}|\d{1,2}\/\d{1,2}\/\d{2}|\d{4}-\d{2}-\d{2})/,
     /(\d{2}\/\d{2})/,
   ];
 
-  const amountPattern = /\$?\s*(-?\d{1,3}(?:,\d{3})*(?:\.\d{2}))/g;
+  const amountPattern = /\$?(-?\d{1,3}(?:,\d{3})*(?:\.\d{2})?)/;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -49,52 +41,41 @@ function parseTransactionsFromText(text: string): Transaction[] {
 
     if (!dateMatch) continue;
 
-    const amountMatches = Array.from(line.matchAll(amountPattern));
+    const amountMatches = line.match(new RegExp(amountPattern, 'g'));
     if (!amountMatches || amountMatches.length === 0) continue;
 
     const dateStr = dateMatch[1];
-    const lastAmountMatch = amountMatches[amountMatches.length - 1];
-    const lastAmount = lastAmountMatch[1]
-      .replace(/\$/g, '')
-      .replace(/,/g, '')
-      .trim();
+    const lastAmount = amountMatches[amountMatches.length - 1]
+      .replace('$', '')
+      .replace(',', '');
 
     const amount = parseFloat(lastAmount);
     if (isNaN(amount) || amount === 0) continue;
 
-    const dateStartIndex = line.indexOf(dateStr);
-    const amountStartIndex = lastAmountMatch.index || 0;
+    const descStartIndex = line.indexOf(dateStr) + dateStr.length;
+    const amountIndex = line.lastIndexOf(lastAmount);
 
-    let description = '';
-    if (amountStartIndex > dateStartIndex) {
-      const descStartIndex = dateStartIndex + dateStr.length;
-      description = line.substring(descStartIndex, amountStartIndex).trim();
-    } else {
+    let description = line.substring(descStartIndex, amountIndex).trim();
+    description = description.replace(/\s+/g, ' ').trim();
+
+    if (!description || description.length < 2) {
       description = line.replace(dateStr, '').replace(lastAmount, '').trim();
     }
 
-    description = description.replace(/\s+/g, ' ').trim();
-    description = description.replace(/^\s*[-•*]\s*/, '');
-    description = description.replace(/\$[\d,]+\.?\d*/g, '');
-    description = description.trim();
-
     if (description && description.length > 2) {
-      const normalizedDate = normalizeDate(dateStr);
-      if (normalizedDate) {
-        transactions.push({
-          date: normalizedDate,
-          description: description,
-          amount: Math.abs(amount),
-          type: amount < 0 ? 'expense' : 'income'
-        });
-      }
+      transactions.push({
+        date: normalizeDate(dateStr),
+        description: cleanDescription(description),
+        amount: amount,
+        type: amount < 0 ? 'expense' : 'income'
+      });
     }
   }
 
   return deduplicateTransactions(transactions);
 }
 
-function normalizeDate(dateStr: string): string | null {
+function normalizeDate(dateStr: string): string {
   let cleaned = dateStr.trim();
 
   if (/^\d{2}\/\d{2}$/.test(cleaned)) {
@@ -108,28 +89,24 @@ function normalizeDate(dateStr: string): string | null {
     cleaned = `${month}/${day}/${fullYear}`;
   }
 
-  let month: string, day: string, year: string;
-
-  if (cleaned.includes('/')) {
-    [month, day, year] = cleaned.split('/');
-  } else if (cleaned.includes('-')) {
-    [year, month, day] = cleaned.split('-');
-  } else {
-    return null;
-  }
-
+  const [month, day, year] = cleaned.split(/[-\/]/);
   if (month && day && year) {
     const m = month.padStart(2, '0');
     const d = day.padStart(2, '0');
-    const formatted = `${year}-${m}-${d}`;
-
-    const testDate = new Date(formatted);
-    if (!isNaN(testDate.getTime())) {
-      return formatted;
-    }
+    return `${year}-${m}-${d}`;
   }
 
-  return null;
+  return cleaned;
+}
+
+function cleanDescription(desc: string): string {
+  let cleaned = desc.trim();
+
+  cleaned = cleaned.replace(/\s+/g, ' ');
+  cleaned = cleaned.replace(/^\s*[-•*]\s*/, '');
+  cleaned = cleaned.replace(/\$[\d,]+\.?\d*/g, '');
+
+  return cleaned.trim();
 }
 
 function deduplicateTransactions(transactions: Transaction[]): Transaction[] {
@@ -147,7 +124,7 @@ function deduplicateTransactions(transactions: Transaction[]): Transaction[] {
   return unique;
 }
 
-Deno.serve(async (req: Request) => {  
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, {
       status: 200,
@@ -156,28 +133,13 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const requestBody = await req.json();
-    console.log('Request body keys:', Object.keys(requestBody));
-    
-    let file_data: string;
-    let file_name = 'unknown.pdf';
-    
-    if (requestBody.body) {
-      console.log('Unwrapping body property');
-      file_data = requestBody.body.file_data;
-      file_name = requestBody.body.file_name || file_name;
-    } else {
-      file_data = requestBody.file_data;
-      file_name = requestBody.file_name || file_name;
-    }
+    const { file_url } = await req.json();
 
-    if (!file_data) {
-      console.error('Missing file_data. Request structure:', JSON.stringify(Object.keys(requestBody)));
+    if (!file_url) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'file_data is required',
-          received_keys: Object.keys(requestBody)
+          error: 'file_url is required'
         }),
         {
           status: 400,
@@ -186,40 +148,53 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Processing PDF: ${file_name}, data length: ${file_data.length}`);
-
-    let pdfBuffer: ArrayBuffer;
-    try {
-      const binaryString = atob(file_data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      pdfBuffer = bytes.buffer;
-      console.log('Decoded PDF buffer, size:', pdfBuffer.byteLength);
-    } catch (decodeError) {
-      console.error('Error decoding base64:', decodeError);
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'Invalid base64 data',
-          details: decodeError.message
+          error: 'Authorization header required'
         }),
         {
-          status: 400,
+          status: 401,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
 
-    const text = await extractTextFromPDF(pdfBuffer);
-    console.log('Extracted text length:', text.length);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+
+    if (userError || !user) {
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Invalid authentication token'
+        }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const pdfResponse = await fetch(file_url);
+    if (!pdfResponse.ok) {
+      throw new Error(`Failed to fetch PDF: ${pdfResponse.statusText}`);
+    }
+
+    const pdfBuffer = await pdfResponse.arrayBuffer();
+    const uint8Array = new Uint8Array(pdfBuffer);
+
+    const data = await pdfParse(uint8Array);
+    const text = data.text;
 
     if (!text || text.length < 50) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'Could not extract text from PDF. The PDF might be image-based, encrypted, or in an unsupported format. Please try uploading a CSV file instead.'
+          error: 'Could not extract text from PDF. The PDF might be image-based or encrypted.'
         }),
         {
           status: 400,
@@ -229,14 +204,12 @@ Deno.serve(async (req: Request) => {
     }
 
     const transactions = parseTransactionsFromText(text);
-    console.log('Parsed transactions:', transactions.length);
 
     if (transactions.length === 0) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'No transactions found in PDF. The PDF format may not be supported. Please try uploading a CSV or OFX file instead.',
-          details: `Extracted ${text.length} characters of text but could not parse transactions`
+          error: 'No transactions found in PDF. Please make sure this is a valid bank statement.'
         }),
         {
           status: 400,
@@ -247,7 +220,7 @@ Deno.serve(async (req: Request) => {
 
     const institutionMatch = text.match(/(?:bank|credit\s+card|statement\s+from)\s+(.{3,50})/i);
     const institutionName = institutionMatch
-      ? institutionMatch[1].split(/[\n\r]/)[0].trim()
+      ? institutionMatch[1].split('\n')[0].trim()
       : 'Unknown Institution';
 
     return new Response(
@@ -272,7 +245,7 @@ Deno.serve(async (req: Request) => {
       JSON.stringify({
         status: 'error',
         error: 'Failed to parse PDF',
-        details: error.message
+        details: error.message,
       }),
       {
         status: 500,

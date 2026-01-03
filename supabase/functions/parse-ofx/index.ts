@@ -15,25 +15,11 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const requestBody = await req.json();
-    console.log('Request body keys:', Object.keys(requestBody));
-    
-    let file_data: string;
-    let file_name = 'unknown.ofx';
-    
-    if (requestBody.body) {
-      console.log('Unwrapping body property');
-      file_data = requestBody.body.file_data;
-      file_name = requestBody.body.file_name || file_name;
-    } else {
-      file_data = requestBody.file_data;
-      file_name = requestBody.file_name || file_name;
-    }
+    const { file_url } = await req.json();
 
-    if (!file_data) {
-      console.error('Missing file_data in request');
+    if (!file_url) {
       return new Response(
-        JSON.stringify({ status: "error", error: "file_data is required" }),
+        JSON.stringify({ error: "file_url is required" }),
         {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -41,32 +27,12 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    console.log(`Processing OFX: ${file_name}, data length: ${file_data.length}`);
-
-    let ofxContent: string;
-    try {
-      const binaryString = atob(file_data);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const decoder = new TextDecoder('utf-8');
-      ofxContent = decoder.decode(bytes);
-      console.log('Decoded OFX content, length:', ofxContent.length);
-    } catch (decodeError) {
-      console.error('Error decoding base64:', decodeError);
-      return new Response(
-        JSON.stringify({
-          status: 'error',
-          error: 'Invalid base64 data',
-          details: decodeError.message
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
+    const fileResponse = await fetch(file_url);
+    if (!fileResponse.ok) {
+      throw new Error(`Failed to fetch file: ${fileResponse.statusText}`);
     }
+
+    const ofxContent = await fileResponse.text();
 
     const transactions = [];
     let institutionName = "";
@@ -88,6 +54,7 @@ Deno.serve(async (req: Request) => {
     while ((match = stmtTrnPattern.exec(ofxContent)) !== null) {
       const txnBlock = match[1];
 
+      const trnTypeMatch = txnBlock.match(/<TRNTYPE>([^<]+)/i);
       const dtPostedMatch = txnBlock.match(/<DTPOSTED>(\d{8})/i);
       const trnAmtMatch = txnBlock.match(/<TRNAMT>([^<]+)/i);
       const nameMatch = txnBlock.match(/<NAME>([^<]+)/i);
@@ -114,8 +81,6 @@ Deno.serve(async (req: Request) => {
         type: isIncome ? "income" : "expense",
       });
     }
-
-    console.log('Parsed transactions:', transactions.length);
 
     return new Response(
       JSON.stringify({
