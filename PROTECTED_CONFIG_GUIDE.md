@@ -23,44 +23,39 @@ The following files are currently protected:
 - The dialog shows which files will be affected and what's changing
 
 ### 3. Admin Dashboard
-- Navigate to **Settings > Protected** tab
-- View all protected configurations
-- Lock/unlock configurations
-- View change history
-- See configuration details including content hashes
+- The UI for managing protected configurations has been removed
+- Protected configurations are still enforced programmatically
+- Use the API directly to manage configurations (see API Usage section)
 
 ### 4. Integrity Checking
 - The system can verify that the current code matches the protected baseline
-- Integrity status is displayed in the Protected Configurations tab
+- Integrity status can be checked programmatically via the API
 - Warnings appear if differences are detected
 
 ## Using the System
 
-### Viewing Protected Configurations
-1. Go to **Settings** page
-2. Click the **Protected** tab
-3. You'll see a list of all protected configurations with their status
+**Note:** The Settings page and Protected Configurations UI have been removed. Protected configurations are still enforced in the database and must be managed programmatically using the API.
 
-### Unlocking a Configuration
-1. In the Protected Configurations tab, find the configuration you want to modify
-2. Click the **Unlock** button
-3. The configuration is now temporarily unlocked for modifications
+### Managing Configurations via API
 
-### Making Changes to Protected Files
-1. Ensure the configuration is unlocked (see above)
-2. Edit the protected file (e.g., `CategoryDropdown.jsx`)
-3. If the configuration is locked, you'll see a warning dialog
-4. Type the confirmation text exactly: `I CONFIRM CATEGORY CHANGE`
-5. Click **Confirm Change** to proceed
+Use the API to view and manage protected configurations:
 
-### Re-locking a Configuration
-1. After making your changes, return to **Settings > Protected**
-2. Click the **Lock** button on the configuration
-3. The protection is now re-enabled
+```javascript
+import { protectedConfigurationService } from '@/api/protectedConfigurations';
 
-### Viewing Change History
-1. In the Protected Configurations tab, click **History** on any configuration
-2. View all past changes with timestamps, version numbers, and user information
+// Get all configurations
+const configs = await protectedConfigurationService.getAllConfigurations();
+
+// Get specific configuration
+const config = await protectedConfigurationService.getConfiguration('category_dropdown_system');
+
+// Lock/unlock configuration
+await protectedConfigurationService.updateConfiguration(config.id, { is_locked: false });
+await protectedConfigurationService.updateConfiguration(config.id, { is_locked: true });
+
+// View change history
+const history = await protectedConfigurationService.getChangeHistory(config.id);
+```
 
 ## Configuration Details
 
@@ -149,7 +144,7 @@ Tracks all modifications:
 - If missing, the initial migration should have created it automatically.
 
 ### Changes not triggering warning dialog
-- Verify the configuration is locked in Settings > Protected
+- Verify the configuration is locked in the database using the API
 - Check browser console for any errors
 - Ensure the ProtectedChangeWarningDialog is mounted in the Layout component
 
@@ -169,7 +164,7 @@ Tracks all modifications:
 ## Support
 
 For issues or questions about the protected configuration system:
-1. Check the change history for recent modifications
-2. Verify integrity in the Protected Configurations tab
+1. Check the change history for recent modifications using the API
+2. Query the database directly to verify configuration status
 3. Review the configuration details to understand what's protected
 4. Check browser console for error messages
