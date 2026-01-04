@@ -1749,12 +1749,17 @@ export default function AccountCreationWizard({
           }));
 
           if (transactionsToInsert.length > 0) {
-            const { error: txnError } = await firstsavvy
+            console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
+            const { data: insertedTxns, error: txnError } = await firstsavvy
               .from('transactions')
-              .insert(transactionsToInsert);
+              .insert(transactionsToInsert)
+              .select();
 
             if (txnError) {
               console.error('Error inserting transactions:', txnError);
+              toast.error(`Failed to insert transactions for ${config.displayName}: ${txnError.message}`);
+            } else {
+              console.log(`Successfully inserted ${insertedTxns?.length || 0} transactions`);
             }
           }
         }
@@ -3075,12 +3080,17 @@ export default function AccountCreationWizard({
                           }));
 
                           if (transactionsToInsert.length > 0) {
-                            const { error: txnError } = await firstsavvy
+                            console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
+                            const { data: insertedTxns, error: txnError } = await firstsavvy
                               .from('transactions')
-                              .insert(transactionsToInsert);
+                              .insert(transactionsToInsert)
+                              .select();
 
                             if (txnError) {
                               console.error('Error inserting transactions:', txnError);
+                              toast.error(`Failed to insert transactions for ${config.displayName}: ${txnError.message}`);
+                            } else {
+                              console.log(`Successfully inserted ${insertedTxns?.length || 0} transactions`);
                             }
                           }
                         }
