@@ -376,7 +376,7 @@ export default function AccountCreationWizard({
       }
       return data || [];
     },
-    enabled: open
+    enabled: open && !!user
   });
 
   const accountTypeCards = React.useMemo(() => {
