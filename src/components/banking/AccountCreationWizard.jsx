@@ -1780,7 +1780,7 @@ export default function AccountCreationWizard({
               type: txn.type === 'expense' ? 'expense' : 'income',
               original_type: txn.type === 'expense' ? 'expense' : 'income',
               status: 'posted',
-              source: 'bank_connection'
+              source: 'api'
             }));
 
           if (transactionsToInsert.length > 0) {
@@ -3142,7 +3142,7 @@ export default function AccountCreationWizard({
                               type: txn.type === 'expense' ? 'expense' : 'income',
                               original_type: txn.type === 'expense' ? 'expense' : 'income',
                               status: 'posted',
-                              source: 'bank_connection'
+                              source: 'api'
                             }));
 
                           if (transactionsToInsert.length > 0) {
