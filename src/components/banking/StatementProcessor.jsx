@@ -168,11 +168,11 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
       const debit = parseFloat(row[debitColumn]?.replace(/[^0-9.-]/g, '') || 0);
       const credit = parseFloat(row[creditColumn]?.replace(/[^0-9.-]/g, '') || 0);
 
-      if (credit > 0) {
-        amount = credit;
+      if (Math.abs(credit) > 0) {
+        amount = Math.abs(credit);
         type = 'income';
-      } else if (debit > 0) {
-        amount = debit;
+      } else if (Math.abs(debit) > 0) {
+        amount = Math.abs(debit);
         type = 'expense';
       }
     } else {

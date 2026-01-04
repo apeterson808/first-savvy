@@ -39,7 +39,7 @@ export const parseCitiStatement = (text, lines) => {
       const paymentMatch = line.match(/^(\d{1,2}\/\d{1,2}).*?-\$?([\d,]+\.\d{2})$/);
       if (paymentMatch) {
         const [, dateStr, amountStr] = paymentMatch;
-        const amount = parseFloat(amountStr.replace(/,/g, ''));
+        const amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')));
         const description = line.substring(dateStr.length, line.lastIndexOf(amountStr) - 2).trim();
 
         if (amount > 0 && description) {
@@ -58,7 +58,7 @@ export const parseCitiStatement = (text, lines) => {
       const purchaseMatch = line.match(/^(\d{1,2}\/\d{1,2})(?:\s+\d{1,2}\/\d{1,2})?\s+(.+?)\s+\$?([\d,]+\.\d{2})$/);
       if (purchaseMatch) {
         const [, dateStr, description, amountStr] = purchaseMatch;
-        const amount = parseFloat(amountStr.replace(/,/g, ''));
+        const amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')));
 
         if (amount > 0 && description && !description.includes('TOTAL') && description.length > 3) {
           transactions.push({
@@ -162,7 +162,7 @@ export const parseAmexStatement = (text, lines) => {
       const paymentMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\*?\s+(.+?)\s+-\$?([\d,]+\.\d{2})$/);
       if (paymentMatch) {
         const [, dateStr, description, amountStr] = paymentMatch;
-        const amount = parseFloat(amountStr.replace(/,/g, ''));
+        const amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')));
         const date = parseAmexDate(dateStr);
 
         if (amount > 0 && date && description && !description.match(/^(Payments|Credits|Total)/i)) {
@@ -181,7 +181,7 @@ export const parseAmexStatement = (text, lines) => {
       const chargeMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$/);
       if (chargeMatch) {
         const [, dateStr, rawDescription, amountStr] = chargeMatch;
-        const amount = parseFloat(amountStr.replace(/,/g, ''));
+        const amount = Math.abs(parseFloat(amountStr.replace(/,/g, '')));
         const date = parseAmexDate(dateStr);
 
         if (amount > 0 && date && rawDescription &&
