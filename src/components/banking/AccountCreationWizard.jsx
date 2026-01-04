@@ -45,13 +45,22 @@ import {
   Info,
   Upload,
   FileUp,
-  X
+  X,
+  Search,
+  Building,
+  AlertCircle
 } from 'lucide-react';
 import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
 import TransactionDateRangeSelector from './TransactionDateRangeSelector';
+import {
+  getAvailableInstitutions,
+  simulateConnection,
+  getInstitutionAccounts,
+  getAccountTransactions
+} from '@/api/bankSimulation';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -345,6 +354,14 @@ export default function AccountCreationWizard({
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
 
+  const [availableInstitutions, setAvailableInstitutions] = useState([]);
+  const [institutionSearch, setInstitutionSearch] = useState('');
+  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionProgress, setConnectionProgress] = useState('');
+  const [discoveredAccounts, setDiscoveredAccounts] = useState([]);
+  const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
+
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
     queryFn: async () => {
@@ -454,10 +471,33 @@ export default function AccountCreationWizard({
     setDuplicateTransactions([]);
     setSkipDuplicates(true);
     setShowMappingSuccess(false);
+    setInstitutionSearch('');
+    setSelectedInstitution(null);
+    setIsConnecting(false);
+    setConnectionProgress('');
+    setDiscoveredAccounts([]);
+    setSelectedAccountsToImport([]);
   };
+
+  useEffect(() => {
+    if (open && currentStep === 'connect-bank') {
+      getAvailableInstitutions()
+        .then(institutions => setAvailableInstitutions(institutions))
+        .catch(error => {
+          console.error('Error loading institutions:', error);
+          toast.error('Failed to load financial institutions');
+        });
+    }
+  }, [open, currentStep]);
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
+
+    if (card.id === 'banking') {
+      setCurrentStep('connect-bank');
+      return;
+    }
+
     if (card.subtypes && card.subtypes.length > 0) {
       setCurrentStep('select-subtype');
     } else {
@@ -475,7 +515,18 @@ export default function AccountCreationWizard({
   };
 
   const handleBack = () => {
-    if (currentStep === 'csv-mapping') {
+    if (currentStep === 'connect-bank') {
+      setCurrentStep('select-type');
+      setSelectedCard(null);
+      setInstitutionSearch('');
+      setSelectedInstitution(null);
+    } else if (currentStep === 'accounts-discovered') {
+      setCurrentStep('connect-bank');
+      setDiscoveredAccounts([]);
+      setSelectedAccountsToImport([]);
+    } else if (currentStep === 'confirm-import') {
+      setCurrentStep('accounts-discovered');
+    } else if (currentStep === 'csv-mapping') {
       setCurrentStep('details');
       setProcessedData(null);
     } else if (currentStep === 'bank-info') {
@@ -1239,6 +1290,323 @@ export default function AccountCreationWizard({
           className="h-full bg-blue-600 transition-all duration-300 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
         />
+      </div>
+    );
+  };
+
+  const renderConnectBankStep = () => {
+    const filteredInstitutions = availableInstitutions.filter(inst =>
+      inst.name.toLowerCase().includes(institutionSearch.toLowerCase())
+    );
+
+    const handleInstitutionSelect = async (institution) => {
+      setSelectedInstitution(institution);
+      setIsConnecting(true);
+
+      try {
+        setConnectionProgress('Connecting to ' + institution.name + '...');
+        await simulateConnection(institution.id);
+
+        setConnectionProgress('Discovering accounts...');
+        const accounts = await getInstitutionAccounts(institution.id);
+
+        setConnectionProgress('Loading transactions...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const accountsWithData = await Promise.all(
+          accounts.map(async (account) => {
+            const transactions = await getAccountTransactions(account.id, institution.id);
+            return {
+              ...account,
+              transactions,
+              selected: true
+            };
+          })
+        );
+
+        setDiscoveredAccounts(accountsWithData);
+        setSelectedAccountsToImport(accountsWithData.map(a => a.id));
+        setIsConnecting(false);
+        setCurrentStep('accounts-discovered');
+        toast.success(`Connected to ${institution.name}!`);
+      } catch (error) {
+        console.error('Connection error:', error);
+        toast.error(error.message || 'Failed to connect to institution');
+        setIsConnecting(false);
+        setConnectionProgress('');
+      }
+    };
+
+    if (isConnecting) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+          <div className="text-center">
+            <p className="text-lg font-medium text-gray-700">{connectionProgress}</p>
+            <p className="text-sm text-gray-500 mt-2">Please wait...</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Input
+            placeholder="Search for your bank or credit union..."
+            value={institutionSearch}
+            onChange={(e) => setInstitutionSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto min-h-[200px]">
+          {filteredInstitutions.length === 0 ? (
+            <div className="col-span-3 flex flex-col items-center justify-center py-8 text-gray-500">
+              <AlertCircle className="w-8 h-8 mb-2" />
+              <p>No institutions found</p>
+            </div>
+          ) : (
+            filteredInstitutions.map(institution => (
+              <button
+                key={institution.id}
+                onClick={() => handleInstitutionSelect(institution)}
+                className="flex flex-col items-center cursor-pointer transition-all hover:scale-105 p-4 rounded-lg hover:bg-gray-50"
+              >
+                <div
+                  className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                  style={{ backgroundColor: institution.name.toLowerCase().includes('idaho central') ? '#003DA5' : '#52A5CE' }}
+                >
+                  <span className="text-white font-bold text-lg">
+                    {institution.name.split(' ').map(w => w[0]).join('').slice(0, 3)}
+                  </span>
+                </div>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight">{institution.name}</span>
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => {
+              setSelectedCard(null);
+              setCurrentStep('select-type');
+            }}
+            className="text-sm text-gray-600 hover:text-gray-800 underline"
+          >
+            Or add account manually
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAccountsDiscovered = () => {
+    const toggleAccountSelection = (accountId) => {
+      setSelectedAccountsToImport(prev => {
+        if (prev.includes(accountId)) {
+          return prev.filter(id => id !== accountId);
+        } else {
+          return [...prev, accountId];
+        }
+      });
+    };
+
+    const formatDateRange = (dateRange) => {
+      if (!dateRange || !dateRange.start || !dateRange.end) return '';
+      const start = new Date(dateRange.start);
+      const end = new Date(dateRange.end);
+      return `${start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    };
+
+    return (
+      <div className="space-y-4">
+        <p className="text-sm text-gray-600 text-center mb-4">
+          Select the accounts you want to import
+        </p>
+
+        <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+          {discoveredAccounts.map(account => {
+            const isSelected = selectedAccountsToImport.includes(account.id);
+            const accountIcon = account.type === 'savings' ? PiggyBank : account.type === 'checking' ? Wallet : CreditCard;
+            const AccountIcon = accountIcon;
+
+            return (
+              <Card
+                key={account.id}
+                className={`cursor-pointer transition-all ${
+                  isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                }`}
+                onClick={() => toggleAccountSelection(account.id)}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start space-x-3 flex-1">
+                      <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                        <AccountIcon className={`w-5 h-5 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <h4 className="font-semibold text-gray-900">{account.name}</h4>
+                          <Checkbox
+                            checked={isSelected}
+                            className="ml-2"
+                          />
+                        </div>
+                        <p className="text-sm text-gray-600">...{account.last_four}</p>
+                        <p className="text-lg font-semibold text-gray-900 mt-1">
+                          ${account.current_balance?.toFixed(2) || '0.00'}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {account.transaction_count} transactions
+                          {account.date_range && ` • ${formatDateRange(account.date_range)}`}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <Button
+            onClick={() => setCurrentStep('confirm-import')}
+            disabled={selectedAccountsToImport.length === 0}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Continue ({selectedAccountsToImport.length} selected)
+            <ChevronRight className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderConfirmImport = () => {
+    const selectedAccounts = discoveredAccounts.filter(acc =>
+      selectedAccountsToImport.includes(acc.id)
+    );
+    const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + acc.transaction_count, 0);
+
+    const handleImport = async () => {
+      try {
+        toast.loading(`Importing ${selectedAccounts.length} accounts...`);
+
+        for (const account of selectedAccounts) {
+          const template = chartAccounts.find(t =>
+            t.account_detail === (account.type === 'checking' ? 'checking_account' :
+                                  account.type === 'savings' ? 'savings_account' :
+                                  'credit_card')
+          );
+
+          if (!template) {
+            console.error(`No template found for ${account.type}`);
+            continue;
+          }
+
+          const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
+
+          const newAccount = {
+            user_id: user.id,
+            profile_id: activeProfile.id,
+            template_id: template.id,
+            account_number: accountNumber,
+            display_name: account.name,
+            account_number_last4: account.last_four,
+            institution_name: selectedInstitution?.name || '',
+            current_balance: account.current_balance,
+            is_active: true
+          };
+
+          const { data: createdAccount, error: accountError } = await firstsavvy
+            .from('user_chart_of_accounts')
+            .insert(newAccount)
+            .select()
+            .single();
+
+          if (accountError) {
+            console.error('Error creating account:', accountError);
+            continue;
+          }
+
+          const transactionsToInsert = account.transactions.map(txn => ({
+            user_id: user.id,
+            profile_id: activeProfile.id,
+            chart_account_id: createdAccount.id,
+            transaction_date: txn.date,
+            description: txn.description,
+            original_description: txn.description,
+            amount: txn.type === 'expense' ? -txn.amount : txn.amount,
+            transaction_type: txn.type === 'expense' ? 'expense' : 'income',
+            original_type: txn.type === 'expense' ? 'expense' : 'income',
+            status: 'posted',
+            source: 'bank_connection'
+          }));
+
+          if (transactionsToInsert.length > 0) {
+            const { error: txnError } = await firstsavvy
+              .from('transactions')
+              .insert(transactionsToInsert);
+
+            if (txnError) {
+              console.error('Error inserting transactions:', txnError);
+            }
+          }
+        }
+
+        queryClient.invalidateQueries(['user-chart-accounts']);
+        queryClient.invalidateQueries(['transactions']);
+        toast.dismiss();
+        toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Import error:', error);
+        toast.dismiss();
+        toast.error('Failed to import accounts');
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-900 mb-2">Ready to Import</h4>
+          <div className="space-y-1 text-sm text-blue-800">
+            <p>{selectedAccounts.length} accounts</p>
+            <p>{totalTransactions} transactions</p>
+            <p className="text-xs text-blue-600 mt-2">
+              Estimated time: {Math.ceil(totalTransactions / 100)} seconds
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2 max-h-[180px] overflow-y-auto">
+          {selectedAccounts.map(account => (
+            <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div>
+                <p className="font-medium text-gray-900">{account.name}</p>
+                <p className="text-sm text-gray-600">...{account.last_four}</p>
+              </div>
+              <div className="text-right">
+                <p className="font-semibold text-gray-900">${account.current_balance?.toFixed(2)}</p>
+                <p className="text-xs text-gray-500">{account.transaction_count} transactions</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <Button
+            onClick={handleImport}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Import Now
+            <Check className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
       </div>
     );
   };
@@ -2268,6 +2636,12 @@ export default function AccountCreationWizard({
     switch (currentStep) {
       case 'select-type':
         return renderSelectType();
+      case 'connect-bank':
+        return renderConnectBankStep();
+      case 'accounts-discovered':
+        return renderAccountsDiscovered();
+      case 'confirm-import':
+        return renderConfirmImport();
       case 'csv-mapping':
         return renderCsvMappingStep();
       case 'bank-info':
@@ -2291,6 +2665,9 @@ export default function AccountCreationWizard({
 
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
+    if (currentStep === 'connect-bank') return 'Connect Your Bank';
+    if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
+    if (currentStep === 'confirm-import') return 'Confirm Import';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'bank-info') return 'Bank Account Details';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
@@ -2315,8 +2692,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-slate-100' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' || currentStep === 'confirm-import' ? 'w-[600px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' || currentStep === 'confirm-import' ? 'h-[500px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
