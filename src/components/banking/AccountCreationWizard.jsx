@@ -695,16 +695,18 @@ export default function AccountCreationWizard({
 
       const transactionsToImport = skipDuplicates ? uniqueTransactions : mappedTransactions;
 
-      const allTransactions = transactionsToImport.map(txn => ({
-        profile_id: activeProfile.id,
-        bank_account_id: targetAccountId,
-        status: 'pending',
-        date: txn.date,
-        description: txn.description,
-        original_description: txn.original_description,
-        amount: Math.abs(txn.amount),
-        type: txn.type
-      }));
+      const allTransactions = transactionsToImport
+        .filter(txn => txn.amount > 0)
+        .map(txn => ({
+          profile_id: activeProfile.id,
+          bank_account_id: targetAccountId,
+          status: 'pending',
+          date: txn.date,
+          description: txn.description,
+          original_description: txn.original_description,
+          amount: Math.abs(txn.amount),
+          type: txn.type
+        }));
 
       if (allTransactions.length > 0) {
         const { error } = await firstsavvy
@@ -1735,18 +1737,20 @@ export default function AccountCreationWizard({
             });
           }
 
-          const transactionsToInsert = filteredTransactions.map(txn => ({
-            profile_id: activeProfile.id,
-            bank_account_id: chartAccountId,
-            date: txn.date,
-            description: txn.description,
-            original_description: txn.description,
-            amount: Math.abs(txn.amount),
-            type: txn.type === 'expense' ? 'expense' : 'income',
-            original_type: txn.type === 'expense' ? 'expense' : 'income',
-            status: 'posted',
-            source: 'bank_connection'
-          }));
+          const transactionsToInsert = filteredTransactions
+            .filter(txn => txn.amount > 0)
+            .map(txn => ({
+              profile_id: activeProfile.id,
+              bank_account_id: chartAccountId,
+              date: txn.date,
+              description: txn.description,
+              original_description: txn.description,
+              amount: Math.abs(txn.amount),
+              type: txn.type === 'expense' ? 'expense' : 'income',
+              original_type: txn.type === 'expense' ? 'expense' : 'income',
+              status: 'posted',
+              source: 'bank_connection'
+            }));
 
           if (transactionsToInsert.length > 0) {
             console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
@@ -3066,18 +3070,20 @@ export default function AccountCreationWizard({
                             });
                           }
 
-                          const transactionsToInsert = filteredTransactions.map(txn => ({
-                            profile_id: activeProfile.id,
-                            bank_account_id: chartAccountId,
-                            date: txn.date,
-                            description: txn.description,
-                            original_description: txn.description,
-                            amount: Math.abs(txn.amount),
-                            type: txn.type === 'expense' ? 'expense' : 'income',
-                            original_type: txn.type === 'expense' ? 'expense' : 'income',
-                            status: 'posted',
-                            source: 'bank_connection'
-                          }));
+                          const transactionsToInsert = filteredTransactions
+                            .filter(txn => txn.amount > 0)
+                            .map(txn => ({
+                              profile_id: activeProfile.id,
+                              bank_account_id: chartAccountId,
+                              date: txn.date,
+                              description: txn.description,
+                              original_description: txn.description,
+                              amount: Math.abs(txn.amount),
+                              type: txn.type === 'expense' ? 'expense' : 'income',
+                              original_type: txn.type === 'expense' ? 'expense' : 'income',
+                              status: 'posted',
+                              source: 'bank_connection'
+                            }));
 
                           if (transactionsToInsert.length > 0) {
                             console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
