@@ -1422,12 +1422,12 @@ export default function AccountCreationWizard({
     };
 
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-600 text-center mb-4">
+      <div className="space-y-3">
+        <p className="text-sm text-gray-600 text-center">
           Select the accounts you want to import
         </p>
 
-        <div className="space-y-3 max-h-[250px] overflow-y-auto pr-2">
+        <div className="space-y-2">
           {discoveredAccounts.map(account => {
             const isSelected = selectedAccountsToImport.includes(account.id);
             const accountIcon = account.type === 'savings' ? PiggyBank : account.type === 'checking' ? Wallet : CreditCard;
@@ -1441,30 +1441,31 @@ export default function AccountCreationWizard({
                 }`}
                 onClick={() => toggleAccountSelection(account.id)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-start space-x-3 flex-1">
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                        <AccountIcon className={`w-5 h-5 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                        <AccountIcon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-semibold text-gray-900">{account.name}</h4>
-                          <Checkbox
-                            checked={isSelected}
-                            className="ml-2"
-                          />
+                        <div className="flex items-baseline gap-2">
+                          <h4 className="font-semibold text-gray-900 text-sm">{account.name}</h4>
+                          <span className="text-xs text-gray-500">...{account.last_four}</span>
                         </div>
-                        <p className="text-sm text-gray-600">...{account.last_four}</p>
-                        <p className="text-lg font-semibold text-gray-900 mt-1">
-                          ${account.current_balance?.toFixed(2) || '0.00'}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {account.transaction_count} transactions
-                          {account.date_range && ` • ${formatDateRange(account.date_range)}`}
-                        </p>
+                        <div className="flex items-baseline gap-3 mt-0.5">
+                          <p className="text-base font-semibold text-gray-900">
+                            ${account.current_balance?.toFixed(2) || '0.00'}
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {account.transaction_count} transactions • {formatDateRange(account.date_range)}
+                          </p>
+                        </div>
                       </div>
                     </div>
+                    <Checkbox
+                      checked={isSelected}
+                      className="flex-shrink-0"
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -1472,7 +1473,7 @@ export default function AccountCreationWizard({
           })}
         </div>
 
-        <div className="flex justify-end pt-4">
+        <div className="flex justify-end pt-3">
           <Button
             onClick={() => setCurrentStep('confirm-import')}
             disabled={selectedAccountsToImport.length === 0}
