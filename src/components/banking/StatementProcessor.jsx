@@ -1,11 +1,13 @@
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
-import { PDFParse } from 'pdf-parse';
 import * as pdfjsLib from 'pdfjs-dist';
 import { parsePdfStatement } from './pdfParsers';
 
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url
+).href;
 
 export const processStatementFile = async (file, onProgress) => {
   const fileExt = file.name.split('.').pop().toLowerCase();
@@ -72,11 +74,18 @@ export const processStatementFile = async (file, onProgress) => {
     onProgress?.('extracting');
 
     const arrayBuffer = await file.arrayBuffer();
-    const parser = new PDFParse({ data: arrayBuffer, verbosity: 0 });
+    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+    const pdf = await loadingTask.promise;
 
     onProgress?.('parsing');
-    const pdfData = await parser.getText();
-    const text = pdfData.text;
+    let text = '';
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+      const page = await pdf.getPage(pageNum);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      text += pageText + '\n';
+    }
 
     if (!text || text.trim().length === 0) {
       throw new Error('PDF file appears to be empty or could not be read');
