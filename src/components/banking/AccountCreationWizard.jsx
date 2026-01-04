@@ -1737,7 +1737,7 @@ export default function AccountCreationWizard({
 
           const transactionsToInsert = filteredTransactions.map(txn => ({
             profile_id: activeProfile.id,
-            account_id: chartAccountId,
+            bank_account_id: chartAccountId,
             date: txn.date,
             description: txn.description,
             original_description: txn.description,
@@ -3063,7 +3063,7 @@ export default function AccountCreationWizard({
 
                           const transactionsToInsert = filteredTransactions.map(txn => ({
                             profile_id: activeProfile.id,
-                            account_id: chartAccountId,
+                            bank_account_id: chartAccountId,
                             date: txn.date,
                             description: txn.description,
                             original_description: txn.description,
