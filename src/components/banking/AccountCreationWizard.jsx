@@ -361,6 +361,7 @@ export default function AccountCreationWizard({
   const [discoveredAccounts, setDiscoveredAccounts] = useState([]);
   const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
   const [accountConfigurations, setAccountConfigurations] = useState({});
+  const [importAccountMappings, setImportAccountMappings] = useState({});
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -1321,6 +1322,7 @@ export default function AccountCreationWizard({
         setDiscoveredAccounts(accountsWithData);
         setSelectedAccountsToImport([]);
         setAccountConfigurations({});
+        setImportAccountMappings({});
         setIsConnecting(false);
         setCurrentStep('accounts-discovered');
         toast.success(`Connected to ${institution.name}!`);
@@ -1409,6 +1411,11 @@ export default function AccountCreationWizard({
           delete newConfig[accountId];
           return newConfig;
         });
+        setImportAccountMappings(prev => {
+          const newMappings = { ...prev };
+          delete newMappings[accountId];
+          return newMappings;
+        });
       } else {
         setSelectedAccountsToImport(prev => [...prev, accountId]);
 
@@ -1427,6 +1434,14 @@ export default function AccountCreationWizard({
             startDate: account.date_range?.start || ''
           }
         }));
+
+        setImportAccountMappings(prev => ({
+          ...prev,
+          [accountId]: {
+            chartAccountId: null,
+            isExisting: false
+          }
+        }));
       }
     };
 
@@ -1436,6 +1451,28 @@ export default function AccountCreationWizard({
         [accountId]: {
           ...prev[accountId],
           [field]: value
+        }
+      }));
+    };
+
+    const handleDisplayNameChange = (accountId, chartAccountId, displayName, isExisting) => {
+      updateAccountConfig(accountId, 'displayName', displayName);
+      setImportAccountMappings(prev => ({
+        ...prev,
+        [accountId]: {
+          chartAccountId: isExisting ? chartAccountId : null,
+          isExisting
+        }
+      }));
+    };
+
+    const handleAccountDetailChange = (accountId, newAccountDetail) => {
+      updateAccountConfig(accountId, 'accountDetail', newAccountDetail);
+      setImportAccountMappings(prev => ({
+        ...prev,
+        [accountId]: {
+          chartAccountId: null,
+          isExisting: false
         }
       }));
     };
@@ -1505,13 +1542,25 @@ export default function AccountCreationWizard({
                               <Label htmlFor={`display-name-${account.id}`} className="text-xs font-medium">
                                 Display Name
                               </Label>
-                              <Input
-                                id={`display-name-${account.id}`}
-                                value={config.displayName}
-                                onChange={(e) => updateAccountConfig(account.id, 'displayName', e.target.value)}
-                                placeholder="Account name"
-                                className="h-9"
+                              <AccountCombobox
+                                accounts={userChartAccounts?.filter(acc =>
+                                  acc.account_detail === config.accountDetail &&
+                                  acc.is_active === true
+                                ) || []}
+                                value={importAccountMappings[account.id]?.chartAccountId || config.displayName}
+                                onValueChange={(chartAccountId, displayName, isExisting) =>
+                                  handleDisplayNameChange(account.id, chartAccountId, displayName, isExisting)
+                                }
+                                placeholder="Select existing or type new account name..."
                               />
+                              {config.displayName && (
+                                <Badge
+                                  variant={importAccountMappings[account.id]?.isExisting ? "default" : "secondary"}
+                                  className="text-xs mt-1"
+                                >
+                                  {importAccountMappings[account.id]?.isExisting ? "Existing Account" : "New Account"}
+                                </Badge>
+                              )}
                             </div>
 
                             <div className="space-y-2">
@@ -1520,7 +1569,7 @@ export default function AccountCreationWizard({
                               </Label>
                               <Select
                                 value={config.accountDetail}
-                                onValueChange={(value) => updateAccountConfig(account.id, 'accountDetail', value)}
+                                onValueChange={(value) => handleAccountDetailChange(account.id, value)}
                               >
                                 <SelectTrigger id={`account-detail-${account.id}`} className="h-9">
                                   <SelectValue />
@@ -1599,40 +1648,75 @@ export default function AccountCreationWizard({
 
         for (const account of selectedAccounts) {
           const config = accountConfigurations[account.id];
+          const mapping = importAccountMappings[account.id];
+
           if (!config) {
             console.error(`No configuration found for account ${account.id}`);
             continue;
           }
 
-          const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+          let chartAccountId;
 
-          if (!template) {
-            console.error(`No template found for ${config.accountDetail}`);
-            continue;
-          }
+          if (mapping?.isExisting && mapping.chartAccountId) {
+            chartAccountId = mapping.chartAccountId;
 
-          const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+            const { data: existingAccount, error: fetchError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .select('*')
+              .eq('id', chartAccountId)
+              .single();
 
-          const newAccount = {
-            profile_id: activeProfile.id,
-            template_id: template.id,
-            account_number: accountNumber,
-            display_name: config.displayName,
-            account_number_last4: config.last4,
-            institution_name: selectedInstitution?.name || '',
-            current_balance: account.current_balance,
-            is_active: true
-          };
+            if (fetchError || !existingAccount) {
+              console.error('Error fetching existing account:', fetchError);
+              toast.error(`Failed to link to existing account`);
+              continue;
+            }
 
-          const { data: createdAccount, error: accountError } = await firstsavvy
-            .from('user_chart_of_accounts')
-            .insert(newAccount)
-            .select()
-            .single();
+            const { error: updateError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .update({
+                account_number_last4: config.last4,
+                institution_name: selectedInstitution?.name || existingAccount.institution_name,
+                current_balance: account.current_balance
+              })
+              .eq('id', chartAccountId);
 
-          if (accountError) {
-            console.error('Error creating account:', accountError);
-            continue;
+            if (updateError) {
+              console.error('Error updating existing account:', updateError);
+            }
+          } else {
+            const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+
+            if (!template) {
+              console.error(`No template found for ${config.accountDetail}`);
+              continue;
+            }
+
+            const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+
+            const newAccount = {
+              profile_id: activeProfile.id,
+              template_id: template.id,
+              account_number: accountNumber,
+              display_name: config.displayName,
+              account_number_last4: config.last4,
+              institution_name: selectedInstitution?.name || '',
+              current_balance: account.current_balance,
+              is_active: true
+            };
+
+            const { data: createdAccount, error: accountError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .insert(newAccount)
+              .select()
+              .single();
+
+            if (accountError) {
+              console.error('Error creating account:', accountError);
+              continue;
+            }
+
+            chartAccountId = createdAccount.id;
           }
 
           let filteredTransactions = account.transactions;
@@ -1647,7 +1731,7 @@ export default function AccountCreationWizard({
 
           const transactionsToInsert = filteredTransactions.map(txn => ({
             profile_id: activeProfile.id,
-            bank_account_id: createdAccount.id,
+            account_id: chartAccountId,
             date: txn.date,
             description: txn.description,
             original_description: txn.description,
@@ -2884,40 +2968,75 @@ export default function AccountCreationWizard({
 
                         for (const account of selectedAccounts) {
                           const config = accountConfigurations[account.id];
+                          const mapping = importAccountMappings[account.id];
+
                           if (!config) {
                             console.error(`No configuration found for account ${account.id}`);
                             continue;
                           }
 
-                          const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+                          let chartAccountId;
 
-                          if (!template) {
-                            console.error(`No template found for ${config.accountDetail}`);
-                            continue;
-                          }
+                          if (mapping?.isExisting && mapping.chartAccountId) {
+                            chartAccountId = mapping.chartAccountId;
 
-                          const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+                            const { data: existingAccount, error: fetchError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .select('*')
+                              .eq('id', chartAccountId)
+                              .single();
 
-                          const newAccount = {
-                            profile_id: activeProfile.id,
-                            template_id: template.id,
-                            account_number: accountNumber,
-                            display_name: config.displayName,
-                            account_number_last4: config.last4,
-                            institution_name: selectedInstitution?.name || '',
-                            current_balance: account.current_balance,
-                            is_active: true
-                          };
+                            if (fetchError || !existingAccount) {
+                              console.error('Error fetching existing account:', fetchError);
+                              toast.error(`Failed to link to existing account`);
+                              continue;
+                            }
 
-                          const { data: createdAccount, error: accountError } = await firstsavvy
-                            .from('user_chart_of_accounts')
-                            .insert(newAccount)
-                            .select()
-                            .single();
+                            const { error: updateError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .update({
+                                account_number_last4: config.last4,
+                                institution_name: selectedInstitution?.name || existingAccount.institution_name,
+                                current_balance: account.current_balance
+                              })
+                              .eq('id', chartAccountId);
 
-                          if (accountError) {
-                            console.error('Error creating account:', accountError);
-                            continue;
+                            if (updateError) {
+                              console.error('Error updating existing account:', updateError);
+                            }
+                          } else {
+                            const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+
+                            if (!template) {
+                              console.error(`No template found for ${config.accountDetail}`);
+                              continue;
+                            }
+
+                            const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+
+                            const newAccount = {
+                              profile_id: activeProfile.id,
+                              template_id: template.id,
+                              account_number: accountNumber,
+                              display_name: config.displayName,
+                              account_number_last4: config.last4,
+                              institution_name: selectedInstitution?.name || '',
+                              current_balance: account.current_balance,
+                              is_active: true
+                            };
+
+                            const { data: createdAccount, error: accountError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .insert(newAccount)
+                              .select()
+                              .single();
+
+                            if (accountError) {
+                              console.error('Error creating account:', accountError);
+                              continue;
+                            }
+
+                            chartAccountId = createdAccount.id;
                           }
 
                           let filteredTransactions = account.transactions;
@@ -2932,7 +3051,7 @@ export default function AccountCreationWizard({
 
                           const transactionsToInsert = filteredTransactions.map(txn => ({
                             profile_id: activeProfile.id,
-                            bank_account_id: createdAccount.id,
+                            account_id: chartAccountId,
                             date: txn.date,
                             description: txn.description,
                             original_description: txn.description,
