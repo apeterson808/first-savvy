@@ -525,8 +525,6 @@ export default function AccountCreationWizard({
       setCurrentStep('connect-bank');
       setDiscoveredAccounts([]);
       setSelectedAccountsToImport([]);
-    } else if (currentStep === 'confirm-import') {
-      setCurrentStep('accounts-discovered');
     } else if (currentStep === 'csv-mapping') {
       setCurrentStep('details');
       setProcessedData(null);
@@ -1583,12 +1581,118 @@ export default function AccountCreationWizard({
 
         <div className="flex justify-end pt-3">
           <Button
-            onClick={() => setCurrentStep('confirm-import')}
+            onClick={async () => {
+              const selectedAccounts = discoveredAccounts.filter(acc =>
+                selectedAccountsToImport.includes(acc.id)
+              );
+
+              const getFilteredTransactionCount = (account) => {
+                const config = accountConfigurations[account.id];
+                if (!config || !config.startDate) {
+                  return account.transaction_count;
+                }
+
+                const startDate = new Date(config.startDate);
+                return account.transactions.filter(txn => {
+                  const txnDate = new Date(txn.date);
+                  return txnDate >= startDate;
+                }).length;
+              };
+
+              const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + getFilteredTransactionCount(acc), 0);
+
+              try {
+                toast.loading(`Importing ${selectedAccounts.length} accounts...`);
+
+                for (const account of selectedAccounts) {
+                  const config = accountConfigurations[account.id];
+                  if (!config) {
+                    console.error(`No configuration found for account ${account.id}`);
+                    continue;
+                  }
+
+                  const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+
+                  if (!template) {
+                    console.error(`No template found for ${config.accountDetail}`);
+                    continue;
+                  }
+
+                  const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
+
+                  const newAccount = {
+                    user_id: user.id,
+                    profile_id: activeProfile.id,
+                    template_id: template.id,
+                    account_number: accountNumber,
+                    display_name: config.displayName,
+                    account_number_last4: config.last4,
+                    institution_name: selectedInstitution?.name || '',
+                    current_balance: account.current_balance,
+                    is_active: true
+                  };
+
+                  const { data: createdAccount, error: accountError } = await firstsavvy
+                    .from('user_chart_of_accounts')
+                    .insert(newAccount)
+                    .select()
+                    .single();
+
+                  if (accountError) {
+                    console.error('Error creating account:', accountError);
+                    continue;
+                  }
+
+                  let filteredTransactions = account.transactions;
+
+                  if (config.startDate) {
+                    const startDate = new Date(config.startDate);
+                    filteredTransactions = account.transactions.filter(txn => {
+                      const txnDate = new Date(txn.date);
+                      return txnDate >= startDate;
+                    });
+                  }
+
+                  const transactionsToInsert = filteredTransactions.map(txn => ({
+                    user_id: user.id,
+                    profile_id: activeProfile.id,
+                    chart_account_id: createdAccount.id,
+                    transaction_date: txn.date,
+                    description: txn.description,
+                    original_description: txn.description,
+                    amount: txn.type === 'expense' ? -txn.amount : txn.amount,
+                    transaction_type: txn.type === 'expense' ? 'expense' : 'income',
+                    original_type: txn.type === 'expense' ? 'expense' : 'income',
+                    status: 'posted',
+                    source: 'bank_connection'
+                  }));
+
+                  if (transactionsToInsert.length > 0) {
+                    const { error: txnError } = await firstsavvy
+                      .from('transactions')
+                      .insert(transactionsToInsert);
+
+                    if (txnError) {
+                      console.error('Error inserting transactions:', txnError);
+                    }
+                  }
+                }
+
+                queryClient.invalidateQueries(['user-chart-accounts']);
+                queryClient.invalidateQueries(['transactions']);
+                toast.dismiss();
+                toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
+                onOpenChange(false);
+              } catch (error) {
+                console.error('Import error:', error);
+                toast.dismiss();
+                toast.error('Failed to import accounts');
+              }
+            }}
             disabled={selectedAccountsToImport.length === 0}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            Continue ({selectedAccountsToImport.length} selected)
-            <ChevronRight className="w-4 h-4 ml-2" />
+            Import ({selectedAccountsToImport.length} selected)
           </Button>
         </div>
       </div>
@@ -2780,8 +2884,6 @@ export default function AccountCreationWizard({
         return renderConnectBankStep();
       case 'accounts-discovered':
         return renderAccountsDiscovered();
-      case 'confirm-import':
-        return renderConfirmImport();
       case 'csv-mapping':
         return renderCsvMappingStep();
       case 'bank-info':
@@ -2807,7 +2909,6 @@ export default function AccountCreationWizard({
     if (currentStep === 'select-type') return 'Select Account Type';
     if (currentStep === 'connect-bank') return 'Connect Your Bank';
     if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
-    if (currentStep === 'confirm-import') return 'Confirm Import';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'bank-info') return 'Bank Account Details';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
@@ -2832,8 +2933,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' || currentStep === 'confirm-import' ? 'w-[600px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' || currentStep === 'confirm-import' ? 'h-[500px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[600px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
