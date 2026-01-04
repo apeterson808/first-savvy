@@ -1453,10 +1453,6 @@ export default function AccountCreationWizard({
 
     return (
       <div className="space-y-3">
-        <p className="text-sm text-gray-600 text-center">
-          Select the accounts you want to import
-        </p>
-
         <div className="space-y-2">
           {discoveredAccounts.map(account => {
             const isSelected = selectedAccountsToImport.includes(account.id);
@@ -1577,123 +1573,6 @@ export default function AccountCreationWizard({
               </Card>
             );
           })}
-        </div>
-
-        <div className="flex justify-end pt-3">
-          <Button
-            onClick={async () => {
-              const selectedAccounts = discoveredAccounts.filter(acc =>
-                selectedAccountsToImport.includes(acc.id)
-              );
-
-              const getFilteredTransactionCount = (account) => {
-                const config = accountConfigurations[account.id];
-                if (!config || !config.startDate) {
-                  return account.transaction_count;
-                }
-
-                const startDate = new Date(config.startDate);
-                return account.transactions.filter(txn => {
-                  const txnDate = new Date(txn.date);
-                  return txnDate >= startDate;
-                }).length;
-              };
-
-              const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + getFilteredTransactionCount(acc), 0);
-
-              try {
-                toast.loading(`Importing ${selectedAccounts.length} accounts...`);
-
-                for (const account of selectedAccounts) {
-                  const config = accountConfigurations[account.id];
-                  if (!config) {
-                    console.error(`No configuration found for account ${account.id}`);
-                    continue;
-                  }
-
-                  const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
-
-                  if (!template) {
-                    console.error(`No template found for ${config.accountDetail}`);
-                    continue;
-                  }
-
-                  const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
-
-                  const newAccount = {
-                    user_id: user.id,
-                    profile_id: activeProfile.id,
-                    template_id: template.id,
-                    account_number: accountNumber,
-                    display_name: config.displayName,
-                    account_number_last4: config.last4,
-                    institution_name: selectedInstitution?.name || '',
-                    current_balance: account.current_balance,
-                    is_active: true
-                  };
-
-                  const { data: createdAccount, error: accountError } = await firstsavvy
-                    .from('user_chart_of_accounts')
-                    .insert(newAccount)
-                    .select()
-                    .single();
-
-                  if (accountError) {
-                    console.error('Error creating account:', accountError);
-                    continue;
-                  }
-
-                  let filteredTransactions = account.transactions;
-
-                  if (config.startDate) {
-                    const startDate = new Date(config.startDate);
-                    filteredTransactions = account.transactions.filter(txn => {
-                      const txnDate = new Date(txn.date);
-                      return txnDate >= startDate;
-                    });
-                  }
-
-                  const transactionsToInsert = filteredTransactions.map(txn => ({
-                    user_id: user.id,
-                    profile_id: activeProfile.id,
-                    chart_account_id: createdAccount.id,
-                    transaction_date: txn.date,
-                    description: txn.description,
-                    original_description: txn.description,
-                    amount: txn.type === 'expense' ? -txn.amount : txn.amount,
-                    transaction_type: txn.type === 'expense' ? 'expense' : 'income',
-                    original_type: txn.type === 'expense' ? 'expense' : 'income',
-                    status: 'posted',
-                    source: 'bank_connection'
-                  }));
-
-                  if (transactionsToInsert.length > 0) {
-                    const { error: txnError } = await firstsavvy
-                      .from('transactions')
-                      .insert(transactionsToInsert);
-
-                    if (txnError) {
-                      console.error('Error inserting transactions:', txnError);
-                    }
-                  }
-                }
-
-                queryClient.invalidateQueries(['user-chart-accounts']);
-                queryClient.invalidateQueries(['transactions']);
-                toast.dismiss();
-                toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
-                onOpenChange(false);
-              } catch (error) {
-                console.error('Import error:', error);
-                toast.dismiss();
-                toast.error('Failed to import accounts');
-              }
-            }}
-            disabled={selectedAccountsToImport.length === 0}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            Import ({selectedAccountsToImport.length} selected)
-          </Button>
         </div>
       </div>
     );
@@ -2978,6 +2857,133 @@ export default function AccountCreationWizard({
                       <>
                         <Check className="w-4 h-4 mr-1" />
                         Create Account & Import
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {currentStep === 'accounts-discovered' && (
+                  <Button
+                    type="button"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                    onClick={async () => {
+                      const selectedAccounts = discoveredAccounts.filter(acc =>
+                        selectedAccountsToImport.includes(acc.id)
+                      );
+
+                      const getFilteredTransactionCount = (account) => {
+                        const config = accountConfigurations[account.id];
+                        if (!config || !config.startDate) {
+                          return account.transaction_count;
+                        }
+
+                        const startDate = new Date(config.startDate);
+                        return account.transactions.filter(txn => {
+                          const txnDate = new Date(txn.date);
+                          return txnDate >= startDate;
+                        }).length;
+                      };
+
+                      const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + getFilteredTransactionCount(acc), 0);
+
+                      try {
+                        toast.loading(`Importing ${selectedAccounts.length} accounts...`);
+
+                        for (const account of selectedAccounts) {
+                          const config = accountConfigurations[account.id];
+                          if (!config) {
+                            console.error(`No configuration found for account ${account.id}`);
+                            continue;
+                          }
+
+                          const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+
+                          if (!template) {
+                            console.error(`No template found for ${config.accountDetail}`);
+                            continue;
+                          }
+
+                          const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
+
+                          const newAccount = {
+                            user_id: user.id,
+                            profile_id: activeProfile.id,
+                            template_id: template.id,
+                            account_number: accountNumber,
+                            display_name: config.displayName,
+                            account_number_last4: config.last4,
+                            institution_name: selectedInstitution?.name || '',
+                            current_balance: account.current_balance,
+                            is_active: true
+                          };
+
+                          const { data: createdAccount, error: accountError } = await firstsavvy
+                            .from('user_chart_of_accounts')
+                            .insert(newAccount)
+                            .select()
+                            .single();
+
+                          if (accountError) {
+                            console.error('Error creating account:', accountError);
+                            continue;
+                          }
+
+                          let filteredTransactions = account.transactions;
+
+                          if (config.startDate) {
+                            const startDate = new Date(config.startDate);
+                            filteredTransactions = account.transactions.filter(txn => {
+                              const txnDate = new Date(txn.date);
+                              return txnDate >= startDate;
+                            });
+                          }
+
+                          const transactionsToInsert = filteredTransactions.map(txn => ({
+                            user_id: user.id,
+                            profile_id: activeProfile.id,
+                            chart_account_id: createdAccount.id,
+                            transaction_date: txn.date,
+                            description: txn.description,
+                            original_description: txn.description,
+                            amount: txn.type === 'expense' ? -txn.amount : txn.amount,
+                            transaction_type: txn.type === 'expense' ? 'expense' : 'income',
+                            original_type: txn.type === 'expense' ? 'expense' : 'income',
+                            status: 'posted',
+                            source: 'bank_connection'
+                          }));
+
+                          if (transactionsToInsert.length > 0) {
+                            const { error: txnError } = await firstsavvy
+                              .from('transactions')
+                              .insert(transactionsToInsert);
+
+                            if (txnError) {
+                              console.error('Error inserting transactions:', txnError);
+                            }
+                          }
+                        }
+
+                        queryClient.invalidateQueries(['user-chart-accounts']);
+                        queryClient.invalidateQueries(['transactions']);
+                        toast.dismiss();
+                        toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
+                        onOpenChange(false);
+                      } catch (error) {
+                        console.error('Import error:', error);
+                        toast.dismiss();
+                        toast.error('Failed to import accounts');
+                      }
+                    }}
+                    disabled={selectedAccountsToImport.length === 0 || isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        Import ({selectedAccountsToImport.length} selected)
                       </>
                     )}
                   </Button>
