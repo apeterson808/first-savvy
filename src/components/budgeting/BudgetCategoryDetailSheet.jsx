@@ -14,9 +14,11 @@ import AppearancePicker from '@/components/common/AppearancePicker';
 import BudgetConflictDialog from './BudgetConflictDialog';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 
 export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, category, currentSpent }) {
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAmount, setIsEditingAmount] = useState(false);
   const [localName, setLocalName] = useState('');
@@ -82,11 +84,11 @@ export default function BudgetCategoryDetailSheet({ open, onOpenChange, budget, 
 
   const updateCategoryMutation = useMutation({
     mutationFn: ({ id, data }) => {
-      if (!user) throw new Error('User not authenticated');
+      if (!activeProfile) throw new Error('No active profile');
       return firstsavvy.from('user_chart_of_accounts')
         .update(data)
         .eq('id', id)
-        .eq('user_id', user.id);
+        .eq('profile_id', activeProfile.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });

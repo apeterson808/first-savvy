@@ -109,11 +109,11 @@ export default function AccountDetail() {
       } else if (entityType === 'Equity') {
         return firstsavvy.entities.Equity.update(id, data);
       } else if (entityType === 'Income' || entityType === 'Expense') {
-        if (!user) throw new Error('User not authenticated');
+        if (!activeProfile) throw new Error('No active profile');
         return firstsavvy.from('user_chart_of_accounts')
           .update(data)
           .eq('id', id)
-          .eq('user_id', user.id);
+          .eq('profile_id', activeProfile.id);
       } else {
         throw new Error('Unknown entity type');
       }
@@ -177,11 +177,11 @@ export default function AccountDetail() {
       } else if (entityType === 'Equity') {
         return firstsavvy.entities.Equity.update(id, { is_active: !isActive });
       } else if (entityType === 'Income' || entityType === 'Expense') {
-        if (!user) throw new Error('User not authenticated');
+        if (!activeProfile) throw new Error('No active profile');
         return firstsavvy.from('user_chart_of_accounts')
           .update({ is_active: !isActive })
           .eq('id', id)
-          .eq('user_id', user.id);
+          .eq('profile_id', activeProfile.id);
       } else {
         throw new Error('Unknown entity type');
       }

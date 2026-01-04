@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Sector } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { useProfile } from '@/contexts/ProfileContext';
 
 const DEFAULT_COLORS = [
   '#52A5CE',
@@ -20,19 +21,20 @@ const DEFAULT_COLORS = [
 ];
 
 export default function CategoryBreakdownDonut({ transactions, selectedMonth, selectedAccount, accounts = [], onCategoryClick }) {
+  const { activeProfile } = useProfile();
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['userChartOfAccounts'],
+    queryKey: ['userChartOfAccounts', activeProfile?.id],
     queryFn: async () => {
-      const { data: { user } } = await firstsavvy.auth.getUser();
-      if (!user) return [];
+      if (!activeProfile) return [];
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('profile_id', activeProfile.id)
         .eq('is_active', true);
       if (error) throw error;
       return data || [];
     },
+    enabled: !!activeProfile,
     staleTime: 0,
     refetchOnMount: 'always'
   });
