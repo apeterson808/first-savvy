@@ -3,195 +3,233 @@ import { supabase } from './supabaseClient';
 const ICCU_SIMULATION_DATA = {
   "iccu_sep": {
     "statement_month": "sep",
-    "statement_year": 2024,
+    "statement_year": 2025,
     "accounts": [
       {
         "last_four": "1812",
         "account_type": "savings",
         "account_name": "Share Savings",
-        "beginning_balance": 8500.00,
-        "ending_balance": 9200.50,
+        "beginning_balance": 22002.63,
+        "ending_balance": 2726.96,
         "transactions": [
-          { "date": "2024-09-03", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 11000.00 },
-          { "date": "2024-09-05", "description": "Transfer to Checking", "amount": 1500.00, "type": "expense", "balance": 9500.00 },
-          { "date": "2024-09-15", "description": "Interest Earned", "amount": 12.50, "type": "income", "balance": 9512.50 },
-          { "date": "2024-09-20", "description": "Transfer from Checking", "amount": 300.00, "type": "income", "balance": 9812.50 },
-          { "date": "2024-09-25", "description": "ATM Withdrawal", "amount": 200.00, "type": "expense", "balance": 9612.50 },
-          { "date": "2024-09-28", "description": "Wire Transfer Out", "amount": 412.00, "type": "expense", "balance": 9200.50 }
+          { "date": "2025-09-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 22002.63 },
+          { "date": "2025-09-03", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 12000.00, "type": "expense", "balance": 10002.63 },
+          { "date": "2025-09-03", "description": "ACH Withdrawal COINBASE INC. - 791B0906", "amount": 29.99, "type": "expense", "balance": 9972.64 },
+          { "date": "2025-09-05", "description": "Withdrawal #116927385# Transfer To *****9817 Transfer", "amount": 5000.00, "type": "expense", "balance": 4972.64 },
+          { "date": "2025-09-05", "description": "Withdrawal #91670175# Ext Xfer To ******8930 Grandma", "amount": 200.00, "type": "expense", "balance": 4772.64 },
+          { "date": "2025-09-11", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 2000.00, "type": "expense", "balance": 2772.64 },
+          { "date": "2025-09-24", "description": "Real Time Payment Deposit RTP Credit from WEALTHFRONT BROKERAGE LLC", "amount": 5000.00, "type": "income", "balance": 7772.64 },
+          { "date": "2025-09-24", "description": "Withdrawal #117813858# Transfer To *****9529 contribution", "amount": 1800.00, "type": "expense", "balance": 5972.64 },
+          { "date": "2025-09-26", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 2991.68, "type": "expense", "balance": 2980.96 },
+          { "date": "2025-09-30", "description": "ACH Withdrawal Wealthfront EDI - EDI PYMNTS", "amount": 250.00, "type": "expense", "balance": 2730.96 },
+          { "date": "2025-09-30", "description": "Excessive Withdrawal Fee", "amount": 4.00, "type": "expense", "balance": 2726.96 }
         ]
       },
       {
         "last_four": "9817",
         "account_type": "checking",
         "account_name": "Central Checking",
-        "beginning_balance": 1245.80,
-        "ending_balance": 2156.33,
+        "beginning_balance": 8227.16,
+        "ending_balance": 2609.52,
         "transactions": [
-          { "date": "2024-09-01", "description": "Target Store #1234", "amount": 89.42, "type": "expense", "balance": 1156.38 },
-          { "date": "2024-09-02", "description": "Shell Gas Station", "amount": 45.67, "type": "expense", "balance": 1110.71 },
-          { "date": "2024-09-03", "description": "Albertsons Grocery", "amount": 156.78, "type": "expense", "balance": 953.93 },
-          { "date": "2024-09-05", "description": "Transfer from Savings", "amount": 1500.00, "type": "income", "balance": 2453.93 },
-          { "date": "2024-09-06", "description": "Rent Payment", "amount": 1200.00, "type": "expense", "balance": 1253.93 },
-          { "date": "2024-09-08", "description": "Amazon.com", "amount": 67.34, "type": "expense", "balance": 1186.59 },
-          { "date": "2024-09-10", "description": "Idaho Power Company", "amount": 125.50, "type": "expense", "balance": 1061.09 },
-          { "date": "2024-09-12", "description": "Starbucks", "amount": 15.42, "type": "expense", "balance": 1045.67 },
-          { "date": "2024-09-14", "description": "Costco Wholesale", "amount": 234.56, "type": "expense", "balance": 811.11 },
-          { "date": "2024-09-17", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 3311.11 },
-          { "date": "2024-09-18", "description": "Comcast Cable", "amount": 89.99, "type": "expense", "balance": 3221.12 },
-          { "date": "2024-09-19", "description": "Chevron Gas", "amount": 52.30, "type": "expense", "balance": 3168.82 },
-          { "date": "2024-09-20", "description": "Transfer to Savings", "amount": 300.00, "type": "expense", "balance": 2868.82 },
-          { "date": "2024-09-22", "description": "Fred Meyer", "amount": 98.45, "type": "expense", "balance": 2770.37 },
-          { "date": "2024-09-24", "description": "ATM Withdrawal", "amount": 100.00, "type": "expense", "balance": 2670.37 },
-          { "date": "2024-09-26", "description": "Verizon Wireless", "amount": 78.90, "type": "expense", "balance": 2591.47 },
-          { "date": "2024-09-28", "description": "Check #1234", "amount": 450.00, "type": "expense", "balance": 2141.47 },
-          { "date": "2024-09-30", "description": "Interest Earned", "amount": 14.86, "type": "income", "balance": 2156.33 }
+          { "date": "2025-09-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 8227.16 },
+          { "date": "2025-09-02", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 2475.00, "type": "expense", "balance": 5752.16 },
+          { "date": "2025-09-02", "description": "Withdrawal ZELLE QB81WIOLD GAYLE PARKINSON 4400 CENTRAL WAY CHUBBUCK ID", "amount": 500.00, "type": "expense", "balance": 5252.16 },
+          { "date": "2025-09-03", "description": "ACH Withdrawal CHRISTIAN HEALTH - CHMINISTRI", "amount": 861.00, "type": "expense", "balance": 4391.16 },
+          { "date": "2025-09-03", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1905.00, "type": "expense", "balance": 2486.16 },
+          { "date": "2025-09-03", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 1000.00, "type": "expense", "balance": 1486.16 },
+          { "date": "2025-09-05", "description": "Deposit #116927385# Transfer From *****1812 Transfer", "amount": 5000.00, "type": "income", "balance": 6486.16 },
+          { "date": "2025-09-09", "description": "Withdrawal ZELLE ZBT1SIKUD GAYLE PARKINSON 4400 CENTRAL WAY CHUBBUCK ID", "amount": 500.00, "type": "expense", "balance": 5986.16 },
+          { "date": "2025-09-10", "description": "Deposit #117133581# Transfer From *****0685", "amount": 5000.00, "type": "income", "balance": 10986.16 },
+          { "date": "2025-09-10", "description": "Deposit #117133596# Transfer From *****1384 piano", "amount": 250.00, "type": "income", "balance": 11236.16 },
+          { "date": "2025-09-10", "description": "Deposit #117133601# Transfer From *****9425 piano", "amount": 250.00, "type": "income", "balance": 11486.16 },
+          { "date": "2025-09-10", "description": "Deposit #117133792# Transfer From *****1927 furnace leak elite resto", "amount": 787.94, "type": "income", "balance": 12274.10 },
+          { "date": "2025-09-10", "description": "Deposit #117134798# Transfer From *****0685 distribution", "amount": 10000.00, "type": "income", "balance": 22274.10 },
+          { "date": "2025-09-11", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 9657.12, "type": "expense", "balance": 12616.98 },
+          { "date": "2025-09-11", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 2567.58, "type": "expense", "balance": 10049.40 },
+          { "date": "2025-09-12", "description": "Deposit #117242767# Transfer From *****9529 13905 paint", "amount": 52.95, "type": "income", "balance": 10102.35 },
+          { "date": "2025-09-12", "description": "Deposit #117243161# Transfer From *****9529 paint", "amount": 190.53, "type": "income", "balance": 10292.88 },
+          { "date": "2025-09-12", "description": "Deposit #117243239# Transfer From *****9529 cabinets", "amount": 735.64, "type": "income", "balance": 11028.52 },
+          { "date": "2025-09-15", "description": "Check 99", "amount": 4648.00, "type": "expense", "balance": 6380.52 },
+          { "date": "2025-09-15", "description": "Descriptive Deposit Mobile Deposit", "amount": 250.00, "type": "income", "balance": 6630.52 },
+          { "date": "2025-09-18", "description": "Withdrawal ZELLE ABW1O8H1D DAYNELIS 4400 CENTRAL WAY CHUBBUCK ID", "amount": 160.00, "type": "expense", "balance": 6470.52 },
+          { "date": "2025-09-22", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 1400.00, "type": "expense", "balance": 5070.52 },
+          { "date": "2025-09-23", "description": "Withdrawal ZELLE XB11W8P3D GAYLE PARKINSON 4400 CENTRAL WAY CHUBBUCK ID", "amount": 80.00, "type": "expense", "balance": 4990.52 },
+          { "date": "2025-09-26", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 2221.00, "type": "expense", "balance": 2769.52 },
+          { "date": "2025-09-30", "description": "Withdrawal ZELLE NB61Z8DHD DAYNELIS 4400 CENTRAL WAY CHUBBUCK ID", "amount": 160.00, "type": "expense", "balance": 2609.52 }
         ]
       }
     ]
   },
   "iccu_oct": {
     "statement_month": "oct",
-    "statement_year": 2024,
+    "statement_year": 2025,
     "accounts": [
       {
         "last_four": "1812",
         "account_type": "savings",
         "account_name": "Share Savings",
-        "beginning_balance": 9200.50,
-        "ending_balance": 10150.75,
+        "beginning_balance": 2726.96,
+        "ending_balance": 3910.04,
         "transactions": [
-          { "date": "2024-10-02", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 11700.50 },
-          { "date": "2024-10-05", "description": "Transfer to Checking", "amount": 1800.00, "type": "expense", "balance": 9900.50 },
-          { "date": "2024-10-15", "description": "Interest Earned", "amount": 13.25, "type": "income", "balance": 9913.75 },
-          { "date": "2024-10-20", "description": "Transfer from Checking", "amount": 250.00, "type": "income", "balance": 10163.75 },
-          { "date": "2024-10-28", "description": "ATM Withdrawal", "amount": 13.00, "type": "expense", "balance": 10150.75 }
+          { "date": "2025-10-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 2726.96 },
+          { "date": "2025-10-01", "description": "Eff. 09-30 Credit Interest", "amount": 3.41, "type": "income", "balance": 2730.37 },
+          { "date": "2025-10-02", "description": "Deposit #118229364# Transfer From *****0685 distribution", "amount": 1000.00, "type": "income", "balance": 3730.37 },
+          { "date": "2025-10-02", "description": "Withdrawal #118229407# Transfer To *****1927 reimbursable", "amount": 3000.00, "type": "expense", "balance": 730.37 },
+          { "date": "2025-10-03", "description": "ACH Withdrawal COINBASE INC. - 6FCF067F", "amount": 29.99, "type": "expense", "balance": 700.38 },
+          { "date": "2025-10-06", "description": "Withdrawal #96638467# Ext Xfer To ******8930 Grandma", "amount": 200.00, "type": "expense", "balance": 500.38 },
+          { "date": "2025-10-14", "description": "Real Time Payment Deposit RTP Credit from WEALTHFRONT BROKERAGE LLC", "amount": 10000.00, "type": "income", "balance": 10500.38 },
+          { "date": "2025-10-15", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 6340.34, "type": "expense", "balance": 4160.04 },
+          { "date": "2025-10-29", "description": "ACH Withdrawal Wealthfront EDI - EDI PYMNTS", "amount": 250.00, "type": "expense", "balance": 3910.04 },
+          { "date": "2025-10-30", "description": "Deposit #119589715# Transfer From *****0685 distribution", "amount": 5000.00, "type": "income", "balance": 8910.04 },
+          { "date": "2025-10-30", "description": "Withdrawal #119589759# Transfer To *****1927 contribution", "amount": 5000.00, "type": "expense", "balance": 3910.04 }
         ]
       },
       {
         "last_four": "9817",
         "account_type": "checking",
         "account_name": "Central Checking",
-        "beginning_balance": 2156.33,
-        "ending_balance": 1789.45,
+        "beginning_balance": 2609.52,
+        "ending_balance": 4049.18,
         "transactions": [
-          { "date": "2024-10-01", "description": "Netflix Subscription", "amount": 15.99, "type": "expense", "balance": 2140.34 },
-          { "date": "2024-10-02", "description": "Albertsons Grocery", "amount": 143.67, "type": "expense", "balance": 1996.67 },
-          { "date": "2024-10-03", "description": "Shell Gas Station", "amount": 48.90, "type": "expense", "balance": 1947.77 },
-          { "date": "2024-10-05", "description": "Transfer from Savings", "amount": 1800.00, "type": "income", "balance": 3747.77 },
-          { "date": "2024-10-06", "description": "Rent Payment", "amount": 1200.00, "type": "expense", "balance": 2547.77 },
-          { "date": "2024-10-08", "description": "Amazon.com", "amount": 89.23, "type": "expense", "balance": 2458.54 },
-          { "date": "2024-10-10", "description": "Idaho Power Company", "amount": 142.30, "type": "expense", "balance": 2316.24 },
-          { "date": "2024-10-12", "description": "Target Store", "amount": 76.89, "type": "expense", "balance": 2239.35 },
-          { "date": "2024-10-14", "description": "Costco Wholesale", "amount": 198.45, "type": "expense", "balance": 2040.90 },
-          { "date": "2024-10-17", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 4540.90 },
-          { "date": "2024-10-18", "description": "Comcast Cable", "amount": 89.99, "type": "expense", "balance": 4450.91 },
-          { "date": "2024-10-19", "description": "Chevron Gas", "amount": 55.20, "type": "expense", "balance": 4395.71 },
-          { "date": "2024-10-20", "description": "Transfer to Savings", "amount": 250.00, "type": "expense", "balance": 4145.71 },
-          { "date": "2024-10-22", "description": "Fred Meyer", "amount": 112.34, "type": "expense", "balance": 4033.37 },
-          { "date": "2024-10-24", "description": "Credit Card Payment", "amount": 2200.00, "type": "expense", "balance": 1833.37 },
-          { "date": "2024-10-26", "description": "Verizon Wireless", "amount": 78.90, "type": "expense", "balance": 1754.47 },
-          { "date": "2024-10-30", "description": "Starbucks", "amount": 18.45, "type": "expense", "balance": 1736.02 },
-          { "date": "2024-10-31", "description": "Interest Earned", "amount": 53.43, "type": "income", "balance": 1789.45 }
+          { "date": "2025-10-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 2609.52 },
+          { "date": "2025-10-01", "description": "ACH Withdrawal IDAHO POWER CO. 800-488-6151 - POWER BILL", "amount": 86.01, "type": "expense", "balance": 2523.51 },
+          { "date": "2025-10-03", "description": "ACH Withdrawal CHRISTIAN HEALTH - CHMINISTRI", "amount": 861.00, "type": "expense", "balance": 1662.51 },
+          { "date": "2025-10-06", "description": "Deposit #118421972# Transfer From *****1384", "amount": 737.83, "type": "income", "balance": 2400.34 },
+          { "date": "2025-10-14", "description": "Deposit #118800008# Transfer From *****0685 distribution", "amount": 10000.00, "type": "income", "balance": 12400.34 },
+          { "date": "2025-10-15", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 5206.22, "type": "expense", "balance": 7194.12 },
+          { "date": "2025-10-16", "description": "Deposit #118919599# Transfer From *****1927 japio reimbursement", "amount": 1800.00, "type": "income", "balance": 8994.12 },
+          { "date": "2025-10-17", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 1077.03, "type": "expense", "balance": 7917.09 },
+          { "date": "2025-10-17", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 853.74, "type": "expense", "balance": 7063.35 },
+          { "date": "2025-10-21", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 952.10, "type": "expense", "balance": 6111.25 },
+          { "date": "2025-10-28", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1809.72, "type": "expense", "balance": 4301.53 },
+          { "date": "2025-10-29", "description": "ACH Withdrawal IDAHO POWER CO. 800-488-6151 - POWER BILL", "amount": 100.05, "type": "expense", "balance": 4201.48 },
+          { "date": "2025-10-31", "description": "Deposit #119643069# Transfer From *****9529 malheur powder bath ligh", "amount": 549.55, "type": "income", "balance": 4751.03 },
+          { "date": "2025-10-31", "description": "Deposit #119643819# Transfer From *****1384 kids reimbursement", "amount": 509.16, "type": "income", "balance": 5260.19 },
+          { "date": "2025-10-31", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 1211.01, "type": "expense", "balance": 4049.18 }
         ]
       }
     ]
   },
   "iccu_nov": {
     "statement_month": "nov",
-    "statement_year": 2024,
+    "statement_year": 2025,
     "accounts": [
       {
         "last_four": "1812",
         "account_type": "savings",
         "account_name": "Share Savings",
-        "beginning_balance": 10150.75,
-        "ending_balance": 11025.60,
+        "beginning_balance": 3910.04,
+        "ending_balance": 4272.64,
         "transactions": [
-          { "date": "2024-11-01", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 12650.75 },
-          { "date": "2024-11-04", "description": "Transfer to Checking", "amount": 1700.00, "type": "expense", "balance": 10950.75 },
-          { "date": "2024-11-15", "description": "Interest Earned", "amount": 14.85, "type": "income", "balance": 10965.60 },
-          { "date": "2024-11-22", "description": "Transfer from Checking", "amount": 100.00, "type": "income", "balance": 11065.60 },
-          { "date": "2024-11-28", "description": "ATM Withdrawal", "amount": 40.00, "type": "expense", "balance": 11025.60 }
+          { "date": "2025-11-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 3910.04 },
+          { "date": "2025-11-03", "description": "Withdrawal #119802569# Transfer To *****9529 contribution", "amount": 2885.04, "type": "expense", "balance": 1025.00 },
+          { "date": "2025-11-03", "description": "Deposit", "amount": 8500.00, "type": "income", "balance": 9525.00 },
+          { "date": "2025-11-03", "description": "ACH Withdrawal COINBASE INC. - 887C4F4F", "amount": 29.99, "type": "expense", "balance": 9495.01 },
+          { "date": "2025-11-05", "description": "Withdrawal #96638468# Ext Xfer To ******8930 Grandma", "amount": 200.00, "type": "expense", "balance": 9295.01 },
+          { "date": "2025-11-12", "description": "Withdrawal #120290479# Transfer To *****9817", "amount": 2000.00, "type": "expense", "balance": 7295.01 },
+          { "date": "2025-11-17", "description": "Withdrawal #120510921# Transfer To *****9817", "amount": 4000.00, "type": "expense", "balance": 3295.01 },
+          { "date": "2025-11-19", "description": "Descriptive Deposit Mobile Deposit", "amount": 1612.75, "type": "income", "balance": 4907.76 },
+          { "date": "2025-11-25", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 163.32, "type": "expense", "balance": 4744.44 },
+          { "date": "2025-11-28", "description": "Withdrawal #121015297# Transfer To *****1927 japio reimbusement carpet", "amount": 469.80, "type": "expense", "balance": 4274.64 },
+          { "date": "2025-11-30", "description": "Excessive Withdrawal Fee", "amount": 2.00, "type": "expense", "balance": 4272.64 }
         ]
       },
       {
         "last_four": "9817",
         "account_type": "checking",
         "account_name": "Central Checking",
-        "beginning_balance": 1789.45,
-        "ending_balance": 2234.78,
+        "beginning_balance": 4049.18,
+        "ending_balance": 6783.19,
         "transactions": [
-          { "date": "2024-11-01", "description": "Netflix Subscription", "amount": 15.99, "type": "expense", "balance": 1773.46 },
-          { "date": "2024-11-02", "description": "Safeway Grocery", "amount": 167.89, "type": "expense", "balance": 1605.57 },
-          { "date": "2024-11-03", "description": "Shell Gas Station", "amount": 51.20, "type": "expense", "balance": 1554.37 },
-          { "date": "2024-11-04", "description": "Transfer from Savings", "amount": 1700.00, "type": "income", "balance": 3254.37 },
-          { "date": "2024-11-05", "description": "Rent Payment", "amount": 1200.00, "type": "expense", "balance": 2054.37 },
-          { "date": "2024-11-07", "description": "Amazon.com", "amount": 112.45, "type": "expense", "balance": 1941.92 },
-          { "date": "2024-11-10", "description": "Idaho Power Company", "amount": 156.78, "type": "expense", "balance": 1785.14 },
-          { "date": "2024-11-12", "description": "Target Store", "amount": 94.56, "type": "expense", "balance": 1690.58 },
-          { "date": "2024-11-15", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 4190.58 },
-          { "date": "2024-11-17", "description": "Costco Wholesale", "amount": 276.89, "type": "expense", "balance": 3913.69 },
-          { "date": "2024-11-18", "description": "Comcast Cable", "amount": 89.99, "type": "expense", "balance": 3823.70 },
-          { "date": "2024-11-20", "description": "Chevron Gas", "amount": 58.45, "type": "expense", "balance": 3765.25 },
-          { "date": "2024-11-22", "description": "Transfer to Savings", "amount": 100.00, "type": "expense", "balance": 3665.25 },
-          { "date": "2024-11-23", "description": "Black Friday - Best Buy", "amount": 589.99, "type": "expense", "balance": 3075.26 },
-          { "date": "2024-11-25", "description": "Fred Meyer", "amount": 134.67, "type": "expense", "balance": 2940.59 },
-          { "date": "2024-11-26", "description": "Verizon Wireless", "amount": 78.90, "type": "expense", "balance": 2861.69 },
-          { "date": "2024-11-28", "description": "Thanksgiving Dinner Catering", "amount": 345.00, "type": "expense", "balance": 2516.69 },
-          { "date": "2024-11-29", "description": "Check #1245", "amount": 300.00, "type": "expense", "balance": 2216.69 },
-          { "date": "2024-11-30", "description": "Interest Earned", "amount": 18.09, "type": "income", "balance": 2234.78 }
+          { "date": "2025-11-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 4049.18 },
+          { "date": "2025-11-03", "description": "Deposit #119802237# Transfer From *****0685 distribution", "amount": 6000.00, "type": "income", "balance": 10049.18 },
+          { "date": "2025-11-04", "description": "ACH Withdrawal CHRISTIAN HEALTH - CHMINISTRI", "amount": 861.00, "type": "expense", "balance": 9188.18 },
+          { "date": "2025-11-04", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 393.73, "type": "expense", "balance": 8794.45 },
+          { "date": "2025-11-04", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1574.85, "type": "expense", "balance": 7219.60 },
+          { "date": "2025-11-04", "description": "ACH Withdrawal PSN*DRY CREEK WA TER CO. LLC - WATER PAYM", "amount": 75.84, "type": "expense", "balance": 7143.76 },
+          { "date": "2025-11-04", "description": "ACH Withdrawal PSN*DRY CREEK SE WER CO LLC - SEWER PAYM", "amount": 92.25, "type": "expense", "balance": 7051.51 },
+          { "date": "2025-11-10", "description": "ACH Withdrawal ADA COUNTY - BILLINGSER", "amount": 58.69, "type": "expense", "balance": 6992.82 },
+          { "date": "2025-11-10", "description": "Check 91", "amount": 1420.24, "type": "expense", "balance": 5572.58 },
+          { "date": "2025-11-12", "description": "Point Of Sale Withdrawal 554402050098706 EVOLUTION INTEGRATIVE M208-917-2928 IDUS", "amount": 918.00, "type": "expense", "balance": 4654.58 },
+          { "date": "2025-11-12", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 3036.31, "type": "expense", "balance": 1618.27 },
+          { "date": "2025-11-12", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1097.24, "type": "expense", "balance": 521.03 },
+          { "date": "2025-11-12", "description": "Deposit #120290479# Transfer From *****1812", "amount": 2000.00, "type": "income", "balance": 2521.03 },
+          { "date": "2025-11-13", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 895.00, "type": "expense", "balance": 1626.03 },
+          { "date": "2025-11-14", "description": "ACH Withdrawal INTERMOUNTAIN GA - PAYMENTS", "amount": 56.12, "type": "expense", "balance": 1569.91 },
+          { "date": "2025-11-17", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 135.00, "type": "expense", "balance": 1434.91 },
+          { "date": "2025-11-17", "description": "Deposit #120510921# Transfer From *****1812", "amount": 4000.00, "type": "income", "balance": 5434.91 },
+          { "date": "2025-11-17", "description": "Deposit #120511763# Transfer From *****0685 distribution", "amount": 10000.00, "type": "income", "balance": 15434.91 },
+          { "date": "2025-11-18", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 1216.94, "type": "expense", "balance": 14217.97 },
+          { "date": "2025-11-18", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 7919.94, "type": "expense", "balance": 6298.03 },
+          { "date": "2025-11-19", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 60.00, "type": "expense", "balance": 6238.03 },
+          { "date": "2025-11-20", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 22.00, "type": "expense", "balance": 6216.03 },
+          { "date": "2025-11-25", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 2306.28, "type": "expense", "balance": 3909.75 },
+          { "date": "2025-11-25", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1080.94, "type": "expense", "balance": 2828.81 },
+          { "date": "2025-11-26", "description": "Point Of Sale Withdrawal 295618 CASH APP*DAYNELIS HERNAOakland CAUS", "amount": 160.00, "type": "expense", "balance": 2668.81 },
+          { "date": "2025-11-28", "description": "ACH Withdrawal VENMO - PAYMENT", "amount": 200.00, "type": "expense", "balance": 2468.81 },
+          { "date": "2025-11-28", "description": "ACH Withdrawal IDAHO POWER CO. 800-488-6151 - POWER BILL", "amount": 85.62, "type": "expense", "balance": 2383.19 },
+          { "date": "2025-11-30", "description": "Descriptive Deposit Mobile Deposit", "amount": 602.00, "type": "income", "balance": 2985.19 },
+          { "date": "2025-11-30", "description": "Descriptive Deposit Mobile Deposit", "amount": 3798.00, "type": "income", "balance": 6783.19 }
         ]
       }
     ]
   },
   "iccu_dec": {
     "statement_month": "dec",
-    "statement_year": 2024,
+    "statement_year": 2025,
     "accounts": [
       {
         "last_four": "1812",
         "account_type": "savings",
         "account_name": "Share Savings",
-        "beginning_balance": 11025.60,
-        "ending_balance": 11890.40,
+        "beginning_balance": 4272.64,
+        "ending_balance": 6249.11,
         "transactions": [
-          { "date": "2024-12-02", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 13525.60 },
-          { "date": "2024-12-05", "description": "Transfer to Checking", "amount": 1800.00, "type": "expense", "balance": 11725.60 },
-          { "date": "2024-12-15", "description": "Interest Earned", "amount": 15.80, "type": "income", "balance": 11741.40 },
-          { "date": "2024-12-16", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 14241.40 },
-          { "date": "2024-12-20", "description": "Transfer to Checking", "amount": 2000.00, "type": "expense", "balance": 12241.40 },
-          { "date": "2024-12-28", "description": "ATM Withdrawal", "amount": 150.00, "type": "expense", "balance": 12091.40 },
-          { "date": "2024-12-30", "description": "Wire Transfer Out", "amount": 201.00, "type": "expense", "balance": 11890.40 }
+          { "date": "2025-12-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 4272.64 },
+          { "date": "2025-12-01", "description": "ACH Withdrawal Wealthfront EDI - EDI PYMNTS", "amount": 250.00, "type": "expense", "balance": 4022.64 },
+          { "date": "2025-12-02", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 263.34, "type": "expense", "balance": 3759.30 },
+          { "date": "2025-12-03", "description": "ACH Withdrawal COINBASE INC. - D3A5FF22", "amount": 29.99, "type": "expense", "balance": 3729.31 },
+          { "date": "2025-12-05", "description": "Withdrawal #96638469# Ext Xfer To ******8930 Grandma", "amount": 200.00, "type": "expense", "balance": 3529.31 },
+          { "date": "2025-12-09", "description": "Deposit #121608034# Transfer From *****1927 reimbusement capet clean", "amount": 469.80, "type": "income", "balance": 3999.11 },
+          { "date": "2025-12-30", "description": "ACH Withdrawal Wealthfront EDI - EDI PYMNTS", "amount": 250.00, "type": "expense", "balance": 3749.11 },
+          { "date": "2025-12-31", "description": "Deposit #122655731# Transfer From *****0685 Distribution", "amount": 5000.00, "type": "income", "balance": 8749.11 },
+          { "date": "2025-12-31", "description": "Withdrawal #122655755# Transfer To *****1927 Contribution", "amount": 2500.00, "type": "expense", "balance": 6249.11 }
         ]
       },
       {
         "last_four": "9817",
         "account_type": "checking",
         "account_name": "Central Checking",
-        "beginning_balance": 2234.78,
-        "ending_balance": 3145.92,
+        "beginning_balance": 6783.19,
+        "ending_balance": 3774.75,
         "transactions": [
-          { "date": "2024-12-01", "description": "Netflix Subscription", "amount": 15.99, "type": "expense", "balance": 2218.79 },
-          { "date": "2024-12-02", "description": "Albertsons Grocery", "amount": 189.45, "type": "expense", "balance": 2029.34 },
-          { "date": "2024-12-03", "description": "Shell Gas Station", "amount": 62.30, "type": "expense", "balance": 1967.04 },
-          { "date": "2024-12-05", "description": "Transfer from Savings", "amount": 1800.00, "type": "income", "balance": 3767.04 },
-          { "date": "2024-12-06", "description": "Rent Payment", "amount": 1200.00, "type": "expense", "balance": 2567.04 },
-          { "date": "2024-12-08", "description": "Amazon.com - Holiday Shopping", "amount": 345.67, "type": "expense", "balance": 2221.37 },
-          { "date": "2024-12-10", "description": "Idaho Power Company", "amount": 178.90, "type": "expense", "balance": 2042.47 },
-          { "date": "2024-12-12", "description": "Target Store - Gifts", "amount": 234.56, "type": "expense", "balance": 1807.91 },
-          { "date": "2024-12-14", "description": "Costco Wholesale", "amount": 298.45, "type": "expense", "balance": 1509.46 },
-          { "date": "2024-12-16", "description": "Direct Deposit - Payroll", "amount": 2500.00, "type": "income", "balance": 4009.46 },
-          { "date": "2024-12-17", "description": "Christmas Tree Farm", "amount": 85.00, "type": "expense", "balance": 3924.46 },
-          { "date": "2024-12-18", "description": "Comcast Cable", "amount": 89.99, "type": "expense", "balance": 3834.47 },
-          { "date": "2024-12-19", "description": "Chevron Gas", "amount": 67.80, "type": "expense", "balance": 3766.67 },
-          { "date": "2024-12-20", "description": "Transfer from Savings", "amount": 2000.00, "type": "income", "balance": 5766.67 },
-          { "date": "2024-12-21", "description": "Holiday Shopping - Mall", "amount": 456.78, "type": "expense", "balance": 5309.89 },
-          { "date": "2024-12-22", "description": "Restaurant - Holiday Dinner", "amount": 187.45, "type": "expense", "balance": 5122.44 },
-          { "date": "2024-12-23", "description": "Fred Meyer - Groceries", "amount": 234.89, "type": "expense", "balance": 4887.55 },
-          { "date": "2024-12-24", "description": "Christmas Gifts - Various", "amount": 567.90, "type": "expense", "balance": 4319.65 },
-          { "date": "2024-12-26", "description": "Verizon Wireless", "amount": 78.90, "type": "expense", "balance": 4240.75 },
-          { "date": "2024-12-28", "description": "Credit Card Payment", "amount": 1100.00, "type": "expense", "balance": 3140.75 },
-          { "date": "2024-12-31", "description": "Interest Earned", "amount": 5.17, "type": "income", "balance": 3145.92 }
+          { "date": "2025-12-01", "description": "Beginning Balance", "amount": 0, "type": "income", "balance": 6783.19 },
+          { "date": "2025-12-01", "description": "Deposit #121182566# Transfer From *****0685 distribution", "amount": 10000.00, "type": "income", "balance": 16783.19 },
+          { "date": "2025-12-01", "description": "Deposit #119802286# Transfer From *****0685 ditribution", "amount": 6000.00, "type": "income", "balance": 22783.19 },
+          { "date": "2025-12-02", "description": "Deposit #121254980# Transfer From *****0685 christmas cards", "amount": 78.00, "type": "income", "balance": 22861.19 },
+          { "date": "2025-12-02", "description": "Deposit #121255496# Transfer From *****9529 pbc reimbursement", "amount": 240.00, "type": "income", "balance": 23101.19 },
+          { "date": "2025-12-02", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 3180.31, "type": "expense", "balance": 19920.88 },
+          { "date": "2025-12-02", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 2289.16, "type": "expense", "balance": 17631.72 },
+          { "date": "2025-12-02", "description": "ACH Withdrawal PSN*DRY CREEK WA TER CO. LLC - WATER PAYM", "amount": 57.84, "type": "expense", "balance": 17573.88 },
+          { "date": "2025-12-02", "description": "ACH Withdrawal PSN*DRY CREEK SE WER CO LLC - SEWER PAYM", "amount": 92.25, "type": "expense", "balance": 17481.63 },
+          { "date": "2025-12-02", "description": "Point Of Sale Withdrawal 554402050098706 EVOLUTION INTEGRATIVE M208-917-2928 IDUS", "amount": 549.00, "type": "expense", "balance": 16932.63 },
+          { "date": "2025-12-03", "description": "ACH Withdrawal CHRISTIAN HEALTH - CHMINISTRI", "amount": 861.00, "type": "expense", "balance": 16071.63 },
+          { "date": "2025-12-09", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 4287.77, "type": "expense", "balance": 11783.86 },
+          { "date": "2025-12-09", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 4250.94, "type": "expense", "balance": 7532.92 },
+          { "date": "2025-12-10", "description": "Point Of Sale Withdrawal 295618 CASH APP*DAYNELIS HERNAOakland CAUS", "amount": 160.00, "type": "expense", "balance": 7372.92 },
+          { "date": "2025-12-12", "description": "ACH Withdrawal INTERMOUNTAIN GA - PAYMENTS", "amount": 61.12, "type": "expense", "balance": 7311.80 },
+          { "date": "2025-12-16", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 2292.53, "type": "expense", "balance": 5019.27 },
+          { "date": "2025-12-16", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1203.21, "type": "expense", "balance": 3816.06 },
+          { "date": "2025-12-22", "description": "Deposit #122262597# Transfer From *****0685 distribution", "amount": 5000.00, "type": "income", "balance": 8816.06 },
+          { "date": "2025-12-23", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 1255.76, "type": "expense", "balance": 7560.30 },
+          { "date": "2025-12-23", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 1943.69, "type": "expense", "balance": 5616.61 },
+          { "date": "2025-12-24", "description": "Check 90", "amount": 240.00, "type": "expense", "balance": 5376.61 },
+          { "date": "2025-12-29", "description": "ACH Withdrawal IDAHO POWER CO. 800-488-6151 - POWER BILL", "amount": 87.60, "type": "expense", "balance": 5289.01 },
+          { "date": "2025-12-29", "description": "Withdrawal #122520033# Ext Xfer To ******3277 Transfer", "amount": 100.00, "type": "expense", "balance": 5189.01 },
+          { "date": "2025-12-30", "description": "ACH Withdrawal AMEX EPAYMENT ER AM - ACH PMT", "amount": 886.85, "type": "expense", "balance": 4302.16 },
+          { "date": "2025-12-30", "description": "ACH Withdrawal CITI CARD ONLINE - PAYMENT", "amount": 367.41, "type": "expense", "balance": 3934.75 },
+          { "date": "2025-12-30", "description": "Point Of Sale Withdrawal 295618 CASH APP*DAYNELIS HERNAOakland CAUS", "amount": 160.00, "type": "expense", "balance": 3774.75 }
         ]
       }
     ]
@@ -228,7 +266,7 @@ export async function getInstitutionById(institutionId) {
   return data;
 }
 
-export async function simulateConnection(institutionId) {
+export async function simulateConnection(institutionId, profileId = null) {
   await new Promise(resolve => setTimeout(resolve, 1500));
 
   const institution = await getInstitutionById(institutionId);
@@ -238,22 +276,39 @@ export async function simulateConnection(institutionId) {
   }
 
   if (institution.name.toLowerCase().includes('idaho central')) {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user || !profileId) {
+      return {
+        success: true,
+        institutionId,
+        institutionName: institution.name
+      };
+    }
+
     return {
       success: true,
       institutionId,
-      institutionName: institution.name
+      institutionName: institution.name,
+      profileId
     };
   }
 
   throw new Error('Only ICCU is supported in simulation mode');
 }
 
-export async function getInstitutionAccounts(institutionId) {
+export async function getInstitutionAccounts(institutionId, profileId = null) {
   await new Promise(resolve => setTimeout(resolve, 1000));
 
   const institution = await getInstitutionById(institutionId);
 
   if (!institution || !institution.name.toLowerCase().includes('idaho central')) {
+    return [];
+  }
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user || !profileId) {
     return [];
   }
 
