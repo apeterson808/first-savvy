@@ -1305,10 +1305,10 @@ export default function AccountCreationWizard({
 
       try {
         setConnectionProgress('Connecting to ' + institution.name + '...');
-        await simulateConnection(institution.id);
+        await simulateConnection(institution.id, activeProfile?.id);
 
         setConnectionProgress('Discovering accounts...');
-        const accounts = await getInstitutionAccounts(institution.id);
+        const accounts = await getInstitutionAccounts(institution.id, activeProfile?.id);
 
         setConnectionProgress('Loading transactions...');
         await new Promise(resolve => setTimeout(resolve, 500));

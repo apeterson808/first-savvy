@@ -308,7 +308,7 @@ export async function getInstitutionAccounts(institutionId, profileId = null) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user || !profileId) {
+  if (!user) {
     return [];
   }
 
