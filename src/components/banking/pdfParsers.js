@@ -94,41 +94,30 @@ export const parseAmexStatement = (text, lines) => {
   let inPaymentsSection = false;
   let inChargesSection = false;
 
-  console.log('=== AMEX PARSER DEBUG ===');
-  console.log('Total lines:', lines.length);
-  console.log('First 20 lines:', lines.slice(0, 20));
-
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
     if (line.includes('Payments and Credits') || line.match(/^Payments$/)) {
-      console.log('Found Payments section at line', i, ':', line);
       inPaymentsSection = true;
       inChargesSection = false;
       continue;
     }
 
     if (line.includes('New Charges') || line.match(/^Detail$/)) {
-      console.log('Found Charges section at line', i, ':', line);
       inChargesSection = true;
       inPaymentsSection = false;
       continue;
     }
 
     if (line.includes('Fees') || line.includes('Interest Charged') || line.match(/^Total\s/)) {
-      if (inPaymentsSection || inChargesSection) {
-        console.log('Ending section at line', i, ':', line);
-      }
       inPaymentsSection = false;
       inChargesSection = false;
       continue;
     }
 
     if (inPaymentsSection) {
-      console.log('Testing payment line', i, ':', line);
-      const paymentMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\*?\s+(.+?)\s+-\$?([\d,]+\.\d{2})$/);
+      const paymentMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\*?\s+(.+?)\s+-?\$?([\d,]+\.\d{2})$/);
       if (paymentMatch) {
-        console.log('MATCHED payment:', paymentMatch);
         const [, dateStr, description, amountStr] = paymentMatch;
         const amount = parseFloat(amountStr.replace(/,/g, ''));
 
@@ -141,13 +130,33 @@ export const parseAmexStatement = (text, lines) => {
             type: 'income'
           });
         }
+      } else {
+        const dateOnlyMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+)$/);
+        if (dateOnlyMatch && i + 1 < lines.length) {
+          const [, dateStr, description] = dateOnlyMatch;
+          const nextLine = lines[i + 1].trim();
+          const amountMatch = nextLine.match(/^-?\$?([\d,]+\.\d{2})$/);
+
+          if (amountMatch) {
+            const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+            if (amount > 0) {
+              transactions.push({
+                date: parseDate(dateStr),
+                description: description.trim(),
+                original_description: description.trim(),
+                amount,
+                type: 'income'
+              });
+              i++;
+            }
+          }
+        }
       }
     }
 
     if (inChargesSection) {
       const chargeMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$/);
       if (chargeMatch) {
-        console.log('MATCHED charge:', chargeMatch);
         const [, dateStr, description, amountStr] = chargeMatch;
         const amount = parseFloat(amountStr.replace(/,/g, ''));
 
@@ -160,13 +169,34 @@ export const parseAmexStatement = (text, lines) => {
             type: 'expense'
           });
         }
-      } else if (line.match(/^\d{2}\/\d{2}\/\d{2}/)) {
-        console.log('Line starts with date but did not match pattern:', line);
+      } else {
+        const dateOnlyMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+)$/);
+        if (dateOnlyMatch && i + 1 < lines.length) {
+          const [, dateStr, description] = dateOnlyMatch;
+
+          if (description && !description.includes('Total') && description.length > 3) {
+            const nextLine = lines[i + 1].trim();
+            const amountMatch = nextLine.match(/^\$?([\d,]+\.\d{2})$/);
+
+            if (amountMatch) {
+              const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+              if (amount > 0) {
+                transactions.push({
+                  date: parseDate(dateStr),
+                  description: description.trim(),
+                  original_description: description.trim(),
+                  amount,
+                  type: 'expense'
+                });
+                i++;
+              }
+            }
+          }
+        }
       }
     }
   }
 
-  console.log('Total transactions found:', transactions.length);
   return {
     institutionName: 'American Express',
     accountNumber,
