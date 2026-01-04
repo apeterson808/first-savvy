@@ -94,62 +94,85 @@ export const parseAmexStatement = (text, lines) => {
   let inPaymentsSection = false;
   let inChargesSection = false;
 
+  const parseAmexDate = (dateStr) => {
+    const match = dateStr.match(/^(\d{2})\/(\d{2})\/(\d{2})$/);
+    if (!match) return null;
+
+    const [, month, day, year] = match;
+    const fullYear = parseInt(year) >= 50 ? `19${year}` : `20${year}`;
+    const formatted = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+
+    const testDate = new Date(formatted);
+    if (!isNaN(testDate.getTime())) {
+      return formatted;
+    }
+    return null;
+  };
+
+  const cleanMerchantName = (text) => {
+    let cleaned = text;
+
+    cleaned = cleaned.replace(/^AplPay\s+/i, '');
+    cleaned = cleaned.replace(/^SP\s+/i, '');
+    cleaned = cleaned.replace(/^TST\*\s+/i, '');
+    cleaned = cleaned.replace(/^SPO\*\s+/i, '');
+    cleaned = cleaned.replace(/^BT\*\s+/i, '');
+
+    cleaned = cleaned.replace(/\s+\d{3}-\d{3}-\d{4}$/, '');
+    cleaned = cleaned.replace(/\s+\+\d{10,}$/, '');
+    cleaned = cleaned.replace(/\s+\d{10,}$/, '');
+
+    cleaned = cleaned.replace(/\s+[A-Z]{2}$/, '');
+
+    cleaned = cleaned.replace(/\s+\d{5}(-\d{4})?$/, '');
+
+    return cleaned.trim();
+  };
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
 
-    if (line.includes('Payments and Credits') || line.match(/^Payments$/)) {
+    if (line === 'Payments and Credits' || line === 'Payments') {
       inPaymentsSection = true;
       inChargesSection = false;
       continue;
     }
 
-    if (line.includes('New Charges') || line.match(/^Detail$/)) {
+    if (line === 'Credits') {
+      inPaymentsSection = true;
+      inChargesSection = false;
+      continue;
+    }
+
+    if (line === 'New Charges' || (line === 'Detail' && inPaymentsSection === false)) {
       inChargesSection = true;
       inPaymentsSection = false;
       continue;
     }
 
-    if (line.includes('Fees') || line.includes('Interest Charged') || line.match(/^Total\s/)) {
+    if (line.startsWith('Fees') || line.startsWith('Interest Charged') ||
+        line.startsWith('Total Fees') || line.startsWith('Total Interest') ||
+        line === 'Summary' || line === 'Amount') {
       inPaymentsSection = false;
       inChargesSection = false;
       continue;
     }
 
     if (inPaymentsSection) {
-      const paymentMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\*?\s+(.+?)\s+-?\$?([\d,]+\.\d{2})$/);
+      const paymentMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\*?\s+(.+?)\s+-\$?([\d,]+\.\d{2})$/);
       if (paymentMatch) {
         const [, dateStr, description, amountStr] = paymentMatch;
         const amount = parseFloat(amountStr.replace(/,/g, ''));
+        const date = parseAmexDate(dateStr);
 
-        if (amount > 0) {
+        if (amount > 0 && date && description && !description.match(/^(Payments|Credits|Total)/i)) {
           transactions.push({
-            date: parseDate(dateStr),
+            date,
             description: description.trim(),
             original_description: description.trim(),
             amount,
             type: 'income'
           });
-        }
-      } else {
-        const dateOnlyMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+)$/);
-        if (dateOnlyMatch && i + 1 < lines.length) {
-          const [, dateStr, description] = dateOnlyMatch;
-          const nextLine = lines[i + 1].trim();
-          const amountMatch = nextLine.match(/^-?\$?([\d,]+\.\d{2})$/);
-
-          if (amountMatch) {
-            const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-            if (amount > 0) {
-              transactions.push({
-                date: parseDate(dateStr),
-                description: description.trim(),
-                original_description: description.trim(),
-                amount,
-                type: 'income'
-              });
-              i++;
-            }
-          }
         }
       }
     }
@@ -157,41 +180,23 @@ export const parseAmexStatement = (text, lines) => {
     if (inChargesSection) {
       const chargeMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+?)\s+\$?([\d,]+\.\d{2})$/);
       if (chargeMatch) {
-        const [, dateStr, description, amountStr] = chargeMatch;
+        const [, dateStr, rawDescription, amountStr] = chargeMatch;
         const amount = parseFloat(amountStr.replace(/,/g, ''));
+        const date = parseAmexDate(dateStr);
 
-        if (amount > 0 && description && !description.includes('Total') && description.length > 3) {
+        if (amount > 0 && date && rawDescription &&
+            !rawDescription.match(/^(Total|Amount|Card Ending|JENNA)/i) &&
+            rawDescription.length > 3) {
+
+          const description = cleanMerchantName(rawDescription);
+
           transactions.push({
-            date: parseDate(dateStr),
-            description: description.trim(),
-            original_description: description.trim(),
+            date,
+            description,
+            original_description: rawDescription.trim(),
             amount,
             type: 'expense'
           });
-        }
-      } else {
-        const dateOnlyMatch = line.match(/^(\d{2}\/\d{2}\/\d{2})\s+(.+)$/);
-        if (dateOnlyMatch && i + 1 < lines.length) {
-          const [, dateStr, description] = dateOnlyMatch;
-
-          if (description && !description.includes('Total') && description.length > 3) {
-            const nextLine = lines[i + 1].trim();
-            const amountMatch = nextLine.match(/^\$?([\d,]+\.\d{2})$/);
-
-            if (amountMatch) {
-              const amount = parseFloat(amountMatch[1].replace(/,/g, ''));
-              if (amount > 0) {
-                transactions.push({
-                  date: parseDate(dateStr),
-                  description: description.trim(),
-                  original_description: description.trim(),
-                  amount,
-                  type: 'expense'
-                });
-                i++;
-              }
-            }
-          }
         }
       }
     }
