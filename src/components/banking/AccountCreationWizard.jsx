@@ -61,6 +61,10 @@ import {
   getInstitutionAccounts,
   getAccountTransactions
 } from '@/api/bankSimulation';
+import {
+  findOrCreateOpeningBalanceEquityAccount,
+  createOpeningBalanceTransaction
+} from '@/api/statementImport';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -686,14 +690,41 @@ export default function AccountCreationWizard({
         targetAccountId = newAccount.id;
       }
 
+      const transactionsToCheck = mappedTransactions.filter(txn => {
+        const desc = txn.description?.toLowerCase() || '';
+        return !(desc.includes('beginning balance') && txn.amount === 0);
+      });
+
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
         targetAccountId,
-        mappedTransactions
+        transactionsToCheck
       );
 
       setDuplicateTransactions(duplicates);
 
-      const transactionsToImport = skipDuplicates ? uniqueTransactions : mappedTransactions;
+      const transactionsToImport = skipDuplicates ? uniqueTransactions : transactionsToCheck;
+
+      const beginningBalance = processedData?.beginningBalance || formData.beginningBalance;
+
+      if (beginningBalance && parseFloat(beginningBalance) > 0 && transactionsToImport.length > 0) {
+        try {
+          const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
+          const firstTransactionDate = transactionsToImport[0]?.date;
+
+          if (firstTransactionDate) {
+            await createOpeningBalanceTransaction(
+              activeProfile.id,
+              targetAccountId,
+              parseFloat(beginningBalance),
+              firstTransactionDate,
+              equityAccount.id
+            );
+            console.log(`Created opening balance of $${beginningBalance} for account ${targetAccountId}`);
+          }
+        } catch (err) {
+          console.error('Error creating opening balance:', err);
+        }
+      }
 
       const allTransactions = transactionsToImport
         .filter(txn => txn.amount > 0)
@@ -3060,14 +3091,43 @@ export default function AccountCreationWizard({
                             chartAccountId = createdAccount.id;
                           }
 
-                          let filteredTransactions = account.transactions;
+                          let beginningBalance = null;
+                          const firstTxn = account.transactions?.[0];
+                          if (firstTxn?.description?.toLowerCase().includes('beginning balance') && firstTxn.amount === 0) {
+                            beginningBalance = firstTxn.balance || account.beginning_balance || null;
+                          }
+
+                          let filteredTransactions = account.transactions.filter(txn => {
+                            const desc = txn.description?.toLowerCase() || '';
+                            return !(desc.includes('beginning balance') && txn.amount === 0);
+                          });
 
                           if (config.startDate) {
                             const startDate = new Date(config.startDate);
-                            filteredTransactions = account.transactions.filter(txn => {
+                            filteredTransactions = filteredTransactions.filter(txn => {
                               const txnDate = new Date(txn.date);
                               return txnDate >= startDate;
                             });
+                          }
+
+                          if (beginningBalance && beginningBalance > 0 && filteredTransactions.length > 0) {
+                            try {
+                              const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
+                              const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
+
+                              if (firstTransactionDate) {
+                                await createOpeningBalanceTransaction(
+                                  activeProfile.id,
+                                  chartAccountId,
+                                  beginningBalance,
+                                  firstTransactionDate,
+                                  equityAccount.id
+                                );
+                                console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId}`);
+                              }
+                            } catch (err) {
+                              console.error('Error creating opening balance:', err);
+                            }
                           }
 
                           const transactionsToInsert = filteredTransactions

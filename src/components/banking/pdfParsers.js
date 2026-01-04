@@ -222,6 +222,7 @@ export const parseIccuStatement = (text, lines) => {
 
   let inTransactionSection = false;
   let currentAccountType = null;
+  let beginningBalance = null;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
@@ -248,7 +249,16 @@ export const parseIccuStatement = (text, lines) => {
       continue;
     }
 
-    if (line.includes('Beginning Balance') || line.includes('Ending Balance')) {
+    if (line.includes('Beginning Balance')) {
+      inTransactionSection = false;
+      const balanceMatch = line.match(/\$?([\d,]+\.\d{2})/);
+      if (balanceMatch && !beginningBalance) {
+        beginningBalance = parseFloat(balanceMatch[1].replace(/,/g, ''));
+      }
+      continue;
+    }
+
+    if (line.includes('Ending Balance')) {
       inTransactionSection = false;
       continue;
     }
@@ -278,6 +288,7 @@ export const parseIccuStatement = (text, lines) => {
   return {
     institutionName: 'Idaho Central Credit Union',
     accountNumber,
+    beginningBalance,
     transactions: transactions.filter(t => t.date !== null)
   };
 };
