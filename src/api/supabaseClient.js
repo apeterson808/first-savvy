@@ -126,6 +126,8 @@ const createEntityAPI = (tableName) => {
         }
       }
 
+      console.log(`[${tableName}] Creating record:`, recordToInsert);
+
       const { data, error } = await supabase
         .from(tableName)
         .insert(recordToInsert)
@@ -134,6 +136,7 @@ const createEntityAPI = (tableName) => {
 
       if (error) {
         console.error(`[${tableName}] Create error:`, error);
+        console.error(`[${tableName}] Failed record:`, recordToInsert);
         throw error;
       }
       return data;

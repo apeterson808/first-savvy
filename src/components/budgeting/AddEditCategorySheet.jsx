@@ -105,7 +105,7 @@ export default function AddEditCategorySheet({
           ? existingAccounts[0].account_number + 1
           : accountTypePrefix * 1000 + 100;
 
-        const newCategory = await firstsavvy.entities.ChartAccount.create({
+        const categoryData = {
           account_number: nextAccountNumber,
           display_name: formData.name.trim(),
           class: formData.type,
@@ -113,7 +113,12 @@ export default function AddEditCategorySheet({
           color: formData.color,
           is_user_created: true,
           is_active: true,
-        });
+        };
+
+        console.log('Creating category with data:', categoryData);
+        console.log('formData.type:', formData.type);
+
+        const newCategory = await firstsavvy.entities.ChartAccount.create(categoryData);
 
         if (onCategoryCreated) {
           onCategoryCreated(newCategory);
