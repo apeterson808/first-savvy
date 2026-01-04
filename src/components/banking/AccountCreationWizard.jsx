@@ -702,7 +702,7 @@ export default function AccountCreationWizard({
         date: txn.date,
         description: txn.description,
         original_description: txn.original_description,
-        amount: txn.amount,
+        amount: Math.abs(txn.amount),
         type: txn.type
       }));
 
