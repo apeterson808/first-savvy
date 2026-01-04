@@ -1779,7 +1779,7 @@ export default function AccountCreationWizard({
               amount: Math.abs(txn.amount),
               type: txn.type === 'expense' ? 'expense' : 'income',
               original_type: txn.type === 'expense' ? 'expense' : 'income',
-              status: 'posted',
+              status: 'pending',
               source: 'api'
             }));
 
@@ -3141,7 +3141,7 @@ export default function AccountCreationWizard({
                               amount: Math.abs(txn.amount),
                               type: txn.type === 'expense' ? 'expense' : 'income',
                               original_type: txn.type === 'expense' ? 'expense' : 'income',
-                              status: 'posted',
+                              status: 'pending',
                               source: 'api'
                             }));
 
