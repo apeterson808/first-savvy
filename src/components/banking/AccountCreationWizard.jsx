@@ -1424,7 +1424,7 @@ export default function AccountCreationWizard({
                 </p>
                 <input
                   type="file"
-                  accept=".csv,.ofx,.qfx"
+                  accept=".csv,.ofx,.qfx,.pdf"
                   className="hidden"
                   id="file-upload-details"
                   onChange={(e) => {
@@ -1433,7 +1433,7 @@ export default function AccountCreationWizard({
                   }}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports CSV, OFX, and QFX formats
+                  Supports CSV, OFX, QFX, and PDF formats
                 </p>
               </>
             )}

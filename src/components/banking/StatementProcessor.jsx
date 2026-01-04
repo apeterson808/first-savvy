@@ -1,6 +1,8 @@
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
+import { PDFParse } from 'pdf-parse';
+import { parsePdfStatement } from './pdfParsers';
 
 export const processStatementFile = async (file, onProgress) => {
   const fileExt = file.name.split('.').pop().toLowerCase();
@@ -63,7 +65,32 @@ export const processStatementFile = async (file, onProgress) => {
     throw new Error(errorMsg);
   }
 
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
+  if (fileExt === 'pdf') {
+    onProgress?.('extracting');
+
+    const arrayBuffer = await file.arrayBuffer();
+    const parser = new PDFParse({ data: arrayBuffer, verbosity: 0 });
+
+    onProgress?.('parsing');
+    const pdfData = await parser.getText();
+    const text = pdfData.text;
+
+    if (!text || text.trim().length === 0) {
+      throw new Error('PDF file appears to be empty or could not be read');
+    }
+
+    onProgress?.('detecting');
+    const result = parsePdfStatement(text);
+
+    return {
+      type: 'transactions',
+      transactions: result.transactions,
+      institutionName: result.institutionName,
+      accountNumber: result.accountNumber
+    };
+  }
+
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, QFX, or PDF file.`);
 };
 
 export const parseDate = (dateStr) => {
