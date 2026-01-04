@@ -2,7 +2,10 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
 import { PDFParse } from 'pdf-parse';
+import { GlobalWorkerOptions } from 'pdfjs-dist';
 import { parsePdfStatement } from './pdfParsers';
+
+GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.296/build/pdf.worker.min.mjs`;
 
 export const processStatementFile = async (file, onProgress) => {
   const fileExt = file.name.split('.').pop().toLowerCase();
