@@ -310,6 +310,115 @@ const AMEX_SIMULATION_DATA = {
   }
 };
 
+const CITI_SIMULATION_DATA = {
+  "citi_sep": {
+    "statement_month": "sep",
+    "statement_year": 2025,
+    "accounts": [
+      {
+        "last_four": "1733",
+        "account_type": "credit_card",
+        "account_name": "Citi Costco Credit Card",
+        "beginning_balance": -543.21,
+        "ending_balance": -627.50,
+        "transactions": [
+          { "date": "2025-09-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -543.21 },
+          { "date": "2025-09-03", "description": "COSTCO WHSE #1234", "amount": 245.67, "type": "expense", "balance": -788.88 },
+          { "date": "2025-09-05", "description": "SHELL OIL", "amount": 42.15, "type": "expense", "balance": -831.03 },
+          { "date": "2025-09-07", "description": "AMAZON.COM", "amount": 89.99, "type": "expense", "balance": -921.02 },
+          { "date": "2025-09-09", "description": "ONLINE PAYMENT, THANK YOU", "amount": 543.21, "type": "income", "balance": -377.81 },
+          { "date": "2025-09-12", "description": "TARGET", "amount": 67.43, "type": "expense", "balance": -445.24 },
+          { "date": "2025-09-15", "description": "COSTCO GAS", "amount": 58.92, "type": "expense", "balance": -504.16 },
+          { "date": "2025-09-18", "description": "RESTAURANT", "amount": 85.50, "type": "expense", "balance": -589.66 },
+          { "date": "2025-09-20", "description": "WALGREENS", "amount": 23.45, "type": "expense", "balance": -613.11 },
+          { "date": "2025-09-24", "description": "COSTCO WHSE #1234", "amount": 156.89, "type": "expense", "balance": -770.00 },
+          { "date": "2025-09-26", "description": "ONLINE PAYMENT, THANK YOU", "amount": 142.50, "type": "income", "balance": -627.50 }
+        ]
+      }
+    ]
+  },
+  "citi_oct": {
+    "statement_month": "oct",
+    "statement_year": 2025,
+    "accounts": [
+      {
+        "last_four": "1733",
+        "account_type": "credit_card",
+        "account_name": "Citi Costco Credit Card",
+        "beginning_balance": -627.50,
+        "ending_balance": -892.34,
+        "transactions": [
+          { "date": "2025-10-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -627.50 },
+          { "date": "2025-10-03", "description": "COSTCO GAS", "amount": 52.30, "type": "expense", "balance": -679.80 },
+          { "date": "2025-10-05", "description": "AMAZON.COM", "amount": 124.67, "type": "expense", "balance": -804.47 },
+          { "date": "2025-10-08", "description": "ONLINE PAYMENT, THANK YOU", "amount": 627.50, "type": "income", "balance": -176.97 },
+          { "date": "2025-10-10", "description": "GROCERY STORE", "amount": 98.45, "type": "expense", "balance": -275.42 },
+          { "date": "2025-10-13", "description": "COSTCO WHSE #1234", "amount": 312.78, "type": "expense", "balance": -588.20 },
+          { "date": "2025-10-16", "description": "SHELL OIL", "amount": 45.89, "type": "expense", "balance": -634.09 },
+          { "date": "2025-10-19", "description": "RESTAURANT", "amount": 72.15, "type": "expense", "balance": -706.24 },
+          { "date": "2025-10-22", "description": "TARGET", "amount": 89.34, "type": "expense", "balance": -795.58 },
+          { "date": "2025-10-25", "description": "AMAZON PRIME", "amount": 14.99, "type": "expense", "balance": -810.57 },
+          { "date": "2025-10-28", "description": "COSTCO GAS", "amount": 48.77, "type": "expense", "balance": -859.34 },
+          { "date": "2025-10-30", "description": "PHARMACY", "amount": 33.00, "type": "expense", "balance": -892.34 }
+        ]
+      }
+    ]
+  },
+  "citi_nov": {
+    "statement_month": "nov",
+    "statement_year": 2025,
+    "accounts": [
+      {
+        "last_four": "1733",
+        "account_type": "credit_card",
+        "account_name": "Citi Costco Credit Card",
+        "beginning_balance": -892.34,
+        "ending_balance": -1203.45,
+        "transactions": [
+          { "date": "2025-11-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -892.34 },
+          { "date": "2025-11-04", "description": "ONLINE PAYMENT, THANK YOU", "amount": 892.34, "type": "income", "balance": 0.00 },
+          { "date": "2025-11-06", "description": "COSTCO WHSE #1234", "amount": 267.89, "type": "expense", "balance": -267.89 },
+          { "date": "2025-11-09", "description": "COSTCO GAS", "amount": 54.23, "type": "expense", "balance": -322.12 },
+          { "date": "2025-11-12", "description": "AMAZON.COM", "amount": 156.78, "type": "expense", "balance": -478.90 },
+          { "date": "2025-11-15", "description": "RESTAURANT", "amount": 94.32, "type": "expense", "balance": -573.22 },
+          { "date": "2025-11-18", "description": "SHELL OIL", "amount": 47.65, "type": "expense", "balance": -620.87 },
+          { "date": "2025-11-20", "description": "TARGET", "amount": 112.45, "type": "expense", "balance": -733.32 },
+          { "date": "2025-11-23", "description": "COSTCO WHSE #1234", "amount": 198.67, "type": "expense", "balance": -931.99 },
+          { "date": "2025-11-25", "description": "HOLIDAY SHOPPING", "amount": 234.56, "type": "expense", "balance": -1166.55 },
+          { "date": "2025-11-28", "description": "PHARMACY", "amount": 36.90, "type": "expense", "balance": -1203.45 }
+        ]
+      }
+    ]
+  },
+  "citi_dec": {
+    "statement_month": "dec",
+    "statement_year": 2025,
+    "accounts": [
+      {
+        "last_four": "1733",
+        "account_type": "credit_card",
+        "account_name": "Citi Costco Credit Card",
+        "beginning_balance": -1203.45,
+        "ending_balance": -1447.41,
+        "transactions": [
+          { "date": "2025-12-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -1203.45 },
+          { "date": "2025-12-02", "description": "ONLINE PAYMENT, THANK YOU", "amount": 1203.45, "type": "income", "balance": 0.00 },
+          { "date": "2025-12-05", "description": "COSTCO WHSE #1234", "amount": 289.45, "type": "expense", "balance": -289.45 },
+          { "date": "2025-12-07", "description": "COSTCO GAS", "amount": 49.87, "type": "expense", "balance": -339.32 },
+          { "date": "2025-12-10", "description": "AMAZON.COM", "amount": 178.92, "type": "expense", "balance": -518.24 },
+          { "date": "2025-12-12", "description": "HOLIDAY SHOPPING", "amount": 345.67, "type": "expense", "balance": -863.91 },
+          { "date": "2025-12-14", "description": "RESTAURANT", "amount": 87.55, "type": "expense", "balance": -951.46 },
+          { "date": "2025-12-16", "description": "TARGET", "amount": 134.56, "type": "expense", "balance": -1086.02 },
+          { "date": "2025-12-18", "description": "SHELL OIL", "amount": 51.23, "type": "expense", "balance": -1137.25 },
+          { "date": "2025-12-20", "description": "HOLIDAY GIFTS", "amount": 256.78, "type": "expense", "balance": -1394.03 },
+          { "date": "2025-12-23", "description": "PHARMACY", "amount": 38.45, "type": "expense", "balance": -1432.48 },
+          { "date": "2025-12-27", "description": "RESTAURANT", "amount": 14.93, "type": "expense", "balance": -1447.41 }
+        ]
+      }
+    ]
+  }
+};
+
 const ICCU_SIMULATION_DATA = {
   "iccu_sep": {
     "statement_month": "sep",
@@ -586,7 +695,8 @@ export async function simulateConnection(institutionId, profileId = null) {
   }
 
   if (institution.name.toLowerCase().includes('idaho central') ||
-      institution.name.toLowerCase().includes('american express')) {
+      institution.name.toLowerCase().includes('american express') ||
+      institution.name.toLowerCase().includes('citi')) {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user || !profileId) {
@@ -605,7 +715,7 @@ export async function simulateConnection(institutionId, profileId = null) {
     };
   }
 
-  throw new Error('Only ICCU and American Express are supported in simulation mode');
+  throw new Error('Only ICCU, American Express, and Citibank are supported in simulation mode');
 }
 
 export async function getInstitutionAccounts(institutionId, profileId = null) {
@@ -629,6 +739,8 @@ export async function getInstitutionAccounts(institutionId, profileId = null) {
     simulationData = ICCU_SIMULATION_DATA;
   } else if (institution.name.toLowerCase().includes('american express')) {
     simulationData = AMEX_SIMULATION_DATA;
+  } else if (institution.name.toLowerCase().includes('citi')) {
+    simulationData = CITI_SIMULATION_DATA;
   } else {
     return [];
   }
@@ -690,6 +802,8 @@ export async function getAccountTransactions(accountId, institutionId) {
     simulationData = ICCU_SIMULATION_DATA;
   } else if (institution.name.toLowerCase().includes('american express')) {
     simulationData = AMEX_SIMULATION_DATA;
+  } else if (institution.name.toLowerCase().includes('citi')) {
+    simulationData = CITI_SIMULATION_DATA;
   } else {
     return [];
   }
