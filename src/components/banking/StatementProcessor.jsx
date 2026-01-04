@@ -83,9 +83,27 @@ export const processStatementFile = async (file, onProgress) => {
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
-      const pageText = textContent.items.map(item => item.str).join(' ');
-      text += pageText + '\n';
+
+      let lastY = null;
+      const pageText = textContent.items.map((item, idx) => {
+        const currentY = item.transform[5];
+        const needsNewline = lastY !== null && Math.abs(currentY - lastY) > 5;
+        lastY = currentY;
+
+        if (needsNewline) {
+          return '\n' + item.str;
+        }
+        return (idx === 0 ? '' : ' ') + item.str;
+      }).join('');
+
+      text += pageText + '\n\n';
     }
+
+    console.log('=== PDF TEXT DEBUG ===');
+    console.log('Length:', text.length);
+    console.log('First 1000 chars:', text.substring(0, 1000));
+    console.log('Includes "american express":', text.toLowerCase().includes('american express'));
+    console.log('Includes "delta":', text.toLowerCase().includes('delta'));
 
     if (!text || text.trim().length === 0) {
       throw new Error('PDF file appears to be empty or could not be read');
@@ -93,6 +111,7 @@ export const processStatementFile = async (file, onProgress) => {
 
     onProgress?.('detecting');
     const result = parsePdfStatement(text);
+    console.log('Parse result:', result);
 
     return {
       type: 'transactions',
