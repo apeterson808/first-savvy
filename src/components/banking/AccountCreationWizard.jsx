@@ -300,11 +300,10 @@ const formatAccountDisplayLabel = (displayName, last4, showSuffix) => {
   return `${displayName} (${last4})`;
 };
 
-const getNextAccountNumber = async (userId, profileId, templateAccountNumber) => {
+const getNextAccountNumber = async (profileId, templateAccountNumber) => {
   const { data: existingAccounts, error } = await firstsavvy
     .from('user_chart_of_accounts')
     .select('account_number')
-    .eq('user_id', userId)
     .eq('profile_id', profileId)
     .eq('template_account_number', templateAccountNumber)
     .order('account_number', { ascending: false })
@@ -655,14 +654,13 @@ export default function AccountCreationWizard({
           throw new Error('Could not find chart of accounts template');
         }
 
-        const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, templateAccount.account_number);
+        const accountNumber = await getNextAccountNumber(activeProfile.id, templateAccount.account_number);
 
         const finalDisplayName = includeLastFour && formData.last4
           ? `${selectedAccountName} (...${formData.last4})`
           : selectedAccountName;
 
         const newAccountData = {
-          user_id: user.id,
           profile_id: activeProfile.id,
           template_id: templateAccount.id,
           template_account_number: templateAccount.account_number,
@@ -697,7 +695,6 @@ export default function AccountCreationWizard({
       const transactionsToImport = skipDuplicates ? uniqueTransactions : mappedTransactions;
 
       const allTransactions = transactionsToImport.map(txn => ({
-        user_id: user.id,
         profile_id: activeProfile.id,
         bank_account_id: targetAccountId,
         status: 'pending',
@@ -778,12 +775,11 @@ export default function AccountCreationWizard({
         throw new Error(`No chart account found for type: ${accountDetail}`);
       }
 
-      const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, chartAccount.template_account_number);
+      const accountNumber = await getNextAccountNumber(activeProfile.id, chartAccount.template_account_number);
 
       const { data: newAccount, error } = await firstsavvy
         .from('user_chart_of_accounts')
         .insert({
-          user_id: user.id,
           profile_id: activeProfile.id,
           template_account_number: chartAccount.template_account_number,
           account_number: accountNumber,
@@ -870,12 +866,11 @@ export default function AccountCreationWizard({
         throw new Error(`No template found for account detail: ${data.accountDetail}`);
       }
 
-      const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
+      const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
 
       const { data: newCategory, error } = await firstsavvy
         .from('user_chart_of_accounts')
         .insert({
-          user_id: user.id,
           profile_id: activeProfile.id,
           template_account_number: template.account_number,
           account_number: accountNumber,
@@ -1616,10 +1611,9 @@ export default function AccountCreationWizard({
             continue;
           }
 
-          const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
+          const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
 
           const newAccount = {
-            user_id: user.id,
             profile_id: activeProfile.id,
             template_id: template.id,
             account_number: accountNumber,
@@ -1652,14 +1646,13 @@ export default function AccountCreationWizard({
           }
 
           const transactionsToInsert = filteredTransactions.map(txn => ({
-            user_id: user.id,
             profile_id: activeProfile.id,
-            chart_account_id: createdAccount.id,
-            transaction_date: txn.date,
+            bank_account_id: createdAccount.id,
+            date: txn.date,
             description: txn.description,
             original_description: txn.description,
             amount: txn.type === 'expense' ? -txn.amount : txn.amount,
-            transaction_type: txn.type === 'expense' ? 'expense' : 'income',
+            type: txn.type === 'expense' ? 'expense' : 'income',
             original_type: txn.type === 'expense' ? 'expense' : 'income',
             status: 'posted',
             source: 'bank_connection'
@@ -2903,10 +2896,9 @@ export default function AccountCreationWizard({
                             continue;
                           }
 
-                          const accountNumber = await getNextAccountNumber(user.id, activeProfile.id, template.account_number);
+                          const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
 
                           const newAccount = {
-                            user_id: user.id,
                             profile_id: activeProfile.id,
                             template_id: template.id,
                             account_number: accountNumber,
@@ -2939,14 +2931,13 @@ export default function AccountCreationWizard({
                           }
 
                           const transactionsToInsert = filteredTransactions.map(txn => ({
-                            user_id: user.id,
                             profile_id: activeProfile.id,
-                            chart_account_id: createdAccount.id,
-                            transaction_date: txn.date,
+                            bank_account_id: createdAccount.id,
+                            date: txn.date,
                             description: txn.description,
                             original_description: txn.description,
                             amount: txn.type === 'expense' ? -txn.amount : txn.amount,
-                            transaction_type: txn.type === 'expense' ? 'expense' : 'income',
+                            type: txn.type === 'expense' ? 'expense' : 'income',
                             original_type: txn.type === 'expense' ? 'expense' : 'income',
                             status: 'posted',
                             source: 'bank_connection'
