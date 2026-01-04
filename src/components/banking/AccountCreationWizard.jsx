@@ -1431,8 +1431,7 @@ export default function AccountCreationWizard({
             displayName: account.name,
             accountDetail: accountDetailMap[account.type] || 'checking_account',
             last4: account.last_four,
-            startDate: account.date_range?.start || '',
-            endDate: account.date_range?.end || ''
+            startDate: account.date_range?.start || ''
           }
         }));
       }
@@ -1471,7 +1470,7 @@ export default function AccountCreationWizard({
               <Card
                 key={account.id}
                 className={`transition-all ${
-                  isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:border-gray-300'
+                  isSelected ? 'ring-2 ring-blue-500' : 'hover:border-gray-300'
                 }`}
               >
                 <CardContent className="p-4">
@@ -1489,7 +1488,7 @@ export default function AccountCreationWizard({
                         </div>
                         <div className="flex-1">
                           <div className="flex items-baseline gap-2">
-                            <h4 className="font-semibold text-gray-900 text-sm">{account.name}</h4>
+                            <h4 className="font-semibold text-gray-900 text-sm">{config?.displayName || account.name}</h4>
                             <span className="text-xs text-gray-500">...{account.last_four}</span>
                           </div>
                           <div className="flex items-baseline gap-3 mt-0.5">
@@ -1497,7 +1496,14 @@ export default function AccountCreationWizard({
                               ${account.current_balance?.toFixed(2) || '0.00'}
                             </p>
                             <p className="text-xs text-gray-500">
-                              {account.transaction_count} transactions
+                              {(() => {
+                                if (!config?.startDate || !account.transactions) return account.transaction_count;
+                                const startDate = new Date(config.startDate);
+                                return account.transactions.filter(txn => {
+                                  const txnDate = new Date(txn.date);
+                                  return txnDate >= startDate;
+                                }).length;
+                              })()} transactions
                             </p>
                           </div>
                         </div>
@@ -1539,7 +1545,7 @@ export default function AccountCreationWizard({
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-3 gap-4">
+                          <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
                               <Label htmlFor={`last4-${account.id}`} className="text-xs font-medium">
                                 Last 4 Digits
@@ -1561,19 +1567,6 @@ export default function AccountCreationWizard({
                                 type="date"
                                 value={formatDate(config.startDate)}
                                 onChange={(e) => updateAccountConfig(account.id, 'startDate', e.target.value)}
-                                className="h-9"
-                              />
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor={`end-date-${account.id}`} className="text-xs font-medium">
-                                End Date
-                              </Label>
-                              <Input
-                                id={`end-date-${account.id}`}
-                                type="date"
-                                value={formatDate(config.endDate)}
-                                onChange={(e) => updateAccountConfig(account.id, 'endDate', e.target.value)}
                                 className="h-9"
                               />
                             </div>
@@ -1609,15 +1602,14 @@ export default function AccountCreationWizard({
 
     const getFilteredTransactionCount = (account) => {
       const config = accountConfigurations[account.id];
-      if (!config || !config.startDate || !config.endDate) {
+      if (!config || !config.startDate) {
         return account.transaction_count;
       }
 
       const startDate = new Date(config.startDate);
-      const endDate = new Date(config.endDate);
       return account.transactions.filter(txn => {
         const txnDate = new Date(txn.date);
-        return txnDate >= startDate && txnDate <= endDate;
+        return txnDate >= startDate;
       }).length;
     };
 
@@ -1668,12 +1660,11 @@ export default function AccountCreationWizard({
 
           let filteredTransactions = account.transactions;
 
-          if (config.startDate && config.endDate) {
+          if (config.startDate) {
             const startDate = new Date(config.startDate);
-            const endDate = new Date(config.endDate);
             filteredTransactions = account.transactions.filter(txn => {
               const txnDate = new Date(txn.date);
-              return txnDate >= startDate && txnDate <= endDate;
+              return txnDate >= startDate;
             });
           }
 
