@@ -221,6 +221,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
           }
         }}
         editingCategory={editingCategory}
+        accountType={editingCategory?.class || "expense"}
       />
 
       <AlertDialog open={!!deletingCategory} onOpenChange={(open) => !open && setDeletingCategory(null)}>

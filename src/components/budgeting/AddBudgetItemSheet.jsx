@@ -322,6 +322,7 @@ export default function AddBudgetItemSheet({
     <AddEditCategorySheet
       open={showAddCategorySheet}
       onOpenChange={setShowAddCategorySheet}
+      accountType="expense"
       onCategoryCreated={handleCategoryCreated}
     />
   </>
