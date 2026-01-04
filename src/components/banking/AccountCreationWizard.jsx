@@ -361,6 +361,7 @@ export default function AccountCreationWizard({
   const [connectionProgress, setConnectionProgress] = useState('');
   const [discoveredAccounts, setDiscoveredAccounts] = useState([]);
   const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
+  const [accountConfigurations, setAccountConfigurations] = useState({});
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -1319,13 +1320,14 @@ export default function AccountCreationWizard({
             return {
               ...account,
               transactions,
-              selected: true
+              selected: false
             };
           })
         );
 
         setDiscoveredAccounts(accountsWithData);
-        setSelectedAccountsToImport(accountsWithData.map(a => a.id));
+        setSelectedAccountsToImport([]);
+        setAccountConfigurations({});
         setIsConnecting(false);
         setCurrentStep('accounts-discovered');
         toast.success(`Connected to ${institution.name}!`);
@@ -1404,21 +1406,52 @@ export default function AccountCreationWizard({
   };
 
   const renderAccountsDiscovered = () => {
-    const toggleAccountSelection = (accountId) => {
-      setSelectedAccountsToImport(prev => {
-        if (prev.includes(accountId)) {
-          return prev.filter(id => id !== accountId);
-        } else {
-          return [...prev, accountId];
-        }
-      });
+    const toggleAccountSelection = (accountId, account) => {
+      const isCurrentlySelected = selectedAccountsToImport.includes(accountId);
+
+      if (isCurrentlySelected) {
+        setSelectedAccountsToImport(prev => prev.filter(id => id !== accountId));
+        setAccountConfigurations(prev => {
+          const newConfig = { ...prev };
+          delete newConfig[accountId];
+          return newConfig;
+        });
+      } else {
+        setSelectedAccountsToImport(prev => [...prev, accountId]);
+
+        const accountDetailMap = {
+          'checking': 'checking_account',
+          'savings': 'savings_account',
+          'credit_card': 'personal_credit_card'
+        };
+
+        setAccountConfigurations(prev => ({
+          ...prev,
+          [accountId]: {
+            displayName: account.name,
+            accountDetail: accountDetailMap[account.type] || 'checking_account',
+            last4: account.last_four,
+            startDate: account.date_range?.start || '',
+            endDate: account.date_range?.end || ''
+          }
+        }));
+      }
     };
 
-    const formatDateRange = (dateRange) => {
-      if (!dateRange || !dateRange.start || !dateRange.end) return '';
-      const start = new Date(dateRange.start);
-      const end = new Date(dateRange.end);
-      return `${start.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - ${end.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    const updateAccountConfig = (accountId, field, value) => {
+      setAccountConfigurations(prev => ({
+        ...prev,
+        [accountId]: {
+          ...prev[accountId],
+          [field]: value
+        }
+      }));
+    };
+
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
     };
 
     return (
@@ -1430,42 +1463,124 @@ export default function AccountCreationWizard({
         <div className="space-y-2">
           {discoveredAccounts.map(account => {
             const isSelected = selectedAccountsToImport.includes(account.id);
+            const config = accountConfigurations[account.id];
             const accountIcon = account.type === 'savings' ? PiggyBank : account.type === 'checking' ? Wallet : CreditCard;
             const AccountIcon = accountIcon;
 
             return (
               <Card
                 key={account.id}
-                className={`cursor-pointer transition-all ${
-                  isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:bg-gray-50'
+                className={`transition-all ${
+                  isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:border-gray-300'
                 }`}
-                onClick={() => toggleAccountSelection(account.id)}
               >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
-                        <AccountIcon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-2">
-                          <h4 className="font-semibold text-gray-900 text-sm">{account.name}</h4>
-                          <span className="text-xs text-gray-500">...{account.last_four}</span>
-                        </div>
-                        <div className="flex items-baseline gap-3 mt-0.5">
-                          <p className="text-base font-semibold text-gray-900">
-                            ${account.current_balance?.toFixed(2) || '0.00'}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {account.transaction_count} transactions • {formatDateRange(account.date_range)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
                     <Checkbox
                       checked={isSelected}
-                      className="flex-shrink-0"
+                      onCheckedChange={() => toggleAccountSelection(account.id, account)}
+                      className="mt-1 flex-shrink-0"
                     />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                          <AccountIcon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <h4 className="font-semibold text-gray-900 text-sm">{account.name}</h4>
+                            <span className="text-xs text-gray-500">...{account.last_four}</span>
+                          </div>
+                          <div className="flex items-baseline gap-3 mt-0.5">
+                            <p className="text-base font-semibold text-gray-900">
+                              ${account.current_balance?.toFixed(2) || '0.00'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {account.transaction_count} transactions
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isSelected && config && (
+                        <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`display-name-${account.id}`} className="text-xs font-medium">
+                                Display Name
+                              </Label>
+                              <Input
+                                id={`display-name-${account.id}`}
+                                value={config.displayName}
+                                onChange={(e) => updateAccountConfig(account.id, 'displayName', e.target.value)}
+                                placeholder="Account name"
+                                className="h-9"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`account-detail-${account.id}`} className="text-xs font-medium">
+                                Account Detail
+                              </Label>
+                              <Select
+                                value={config.accountDetail}
+                                onValueChange={(value) => updateAccountConfig(account.id, 'accountDetail', value)}
+                              >
+                                <SelectTrigger id={`account-detail-${account.id}`} className="h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="checking_account">Checking Account</SelectItem>
+                                  <SelectItem value="savings_account">Savings Account</SelectItem>
+                                  <SelectItem value="personal_credit_card">Credit Card</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`last4-${account.id}`} className="text-xs font-medium">
+                                Last 4 Digits
+                              </Label>
+                              <Input
+                                id={`last4-${account.id}`}
+                                value={config.last4}
+                                readOnly
+                                className="h-9 bg-gray-50"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`start-date-${account.id}`} className="text-xs font-medium">
+                                Start Date
+                              </Label>
+                              <Input
+                                id={`start-date-${account.id}`}
+                                type="date"
+                                value={formatDate(config.startDate)}
+                                onChange={(e) => updateAccountConfig(account.id, 'startDate', e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`end-date-${account.id}`} className="text-xs font-medium">
+                                End Date
+                              </Label>
+                              <Input
+                                id={`end-date-${account.id}`}
+                                type="date"
+                                value={formatDate(config.endDate)}
+                                onChange={(e) => updateAccountConfig(account.id, 'endDate', e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -1491,21 +1606,38 @@ export default function AccountCreationWizard({
     const selectedAccounts = discoveredAccounts.filter(acc =>
       selectedAccountsToImport.includes(acc.id)
     );
-    const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + acc.transaction_count, 0);
+
+    const getFilteredTransactionCount = (account) => {
+      const config = accountConfigurations[account.id];
+      if (!config || !config.startDate || !config.endDate) {
+        return account.transaction_count;
+      }
+
+      const startDate = new Date(config.startDate);
+      const endDate = new Date(config.endDate);
+      return account.transactions.filter(txn => {
+        const txnDate = new Date(txn.date);
+        return txnDate >= startDate && txnDate <= endDate;
+      }).length;
+    };
+
+    const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + getFilteredTransactionCount(acc), 0);
 
     const handleImport = async () => {
       try {
         toast.loading(`Importing ${selectedAccounts.length} accounts...`);
 
         for (const account of selectedAccounts) {
-          const template = chartAccounts.find(t =>
-            t.account_detail === (account.type === 'checking' ? 'checking_account' :
-                                  account.type === 'savings' ? 'savings_account' :
-                                  'credit_card')
-          );
+          const config = accountConfigurations[account.id];
+          if (!config) {
+            console.error(`No configuration found for account ${account.id}`);
+            continue;
+          }
+
+          const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
 
           if (!template) {
-            console.error(`No template found for ${account.type}`);
+            console.error(`No template found for ${config.accountDetail}`);
             continue;
           }
 
@@ -1516,8 +1648,8 @@ export default function AccountCreationWizard({
             profile_id: activeProfile.id,
             template_id: template.id,
             account_number: accountNumber,
-            display_name: account.name,
-            account_number_last4: account.last_four,
+            display_name: config.displayName,
+            account_number_last4: config.last4,
             institution_name: selectedInstitution?.name || '',
             current_balance: account.current_balance,
             is_active: true
@@ -1534,7 +1666,18 @@ export default function AccountCreationWizard({
             continue;
           }
 
-          const transactionsToInsert = account.transactions.map(txn => ({
+          let filteredTransactions = account.transactions;
+
+          if (config.startDate && config.endDate) {
+            const startDate = new Date(config.startDate);
+            const endDate = new Date(config.endDate);
+            filteredTransactions = account.transactions.filter(txn => {
+              const txnDate = new Date(txn.date);
+              return txnDate >= startDate && txnDate <= endDate;
+            });
+          }
+
+          const transactionsToInsert = filteredTransactions.map(txn => ({
             user_id: user.id,
             profile_id: activeProfile.id,
             chart_account_id: createdAccount.id,
@@ -1585,18 +1728,23 @@ export default function AccountCreationWizard({
         </div>
 
         <div className="space-y-2 max-h-[180px] overflow-y-auto">
-          {selectedAccounts.map(account => (
-            <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <p className="font-medium text-gray-900">{account.name}</p>
-                <p className="text-sm text-gray-600">...{account.last_four}</p>
+          {selectedAccounts.map(account => {
+            const config = accountConfigurations[account.id];
+            const filteredCount = getFilteredTransactionCount(account);
+
+            return (
+              <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">{config?.displayName || account.name}</p>
+                  <p className="text-sm text-gray-600">...{config?.last4 || account.last_four}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-semibold text-gray-900">${account.current_balance?.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">{filteredCount} transactions</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="font-semibold text-gray-900">${account.current_balance?.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">{account.transaction_count} transactions</p>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         <div className="flex justify-end pt-4">
