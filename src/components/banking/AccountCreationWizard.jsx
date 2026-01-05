@@ -1722,9 +1722,12 @@ export default function AccountCreationWizard({
                                 id={`start-date-${account.id}`}
                                 type="date"
                                 value={formatDate(config.startDate)}
-                                onChange={(e) => updateAccountConfig(account.id, 'startDate', e.target.value)}
-                                className="h-9"
+                                readOnly
+                                className="h-9 bg-gray-50"
                               />
+                              <p className="text-xs text-muted-foreground">
+                                From statement
+                              </p>
                             </div>
                           </div>
 
@@ -1739,9 +1742,9 @@ export default function AccountCreationWizard({
                                 type="number"
                                 step="0.01"
                                 value={config.beginningBalance || ''}
-                                onChange={(e) => updateAccountConfig(account.id, 'beginningBalance', e.target.value)}
+                                readOnly
                                 placeholder="0.00"
-                                className="h-9 pl-7"
+                                className="h-9 pl-7 bg-gray-50"
                               />
                             </div>
                             {config.startDate && config.beginningBalance ? (
@@ -1750,7 +1753,7 @@ export default function AccountCreationWizard({
                                 <p>
                                   {account.beginning_balance !== undefined && account.beginning_balance !== null
                                     ? `From statement: Balance as of ${formatDate(config.startDate)}`
-                                    : `Auto-calculated from current balance of ${account.current_balance?.toFixed(2)} minus transactions from ${formatDate(config.startDate)} to now`
+                                    : `Calculated from ending balance minus transactions from ${formatDate(config.startDate)}`
                                   }
                                 </p>
                               </div>
