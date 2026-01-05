@@ -118,7 +118,9 @@ export const processStatementFile = async (file, onProgress) => {
       transactions: result.transactions,
       institutionName: result.institutionName,
       accountNumber: result.accountNumber,
-      beginningBalance: result.beginningBalance
+      beginningBalance: result.beginningBalance,
+      statementStartDate: result.statementStartDate,
+      statementEndDate: result.statementEndDate
     };
   }
 

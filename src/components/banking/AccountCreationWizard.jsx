@@ -50,7 +50,7 @@ import {
   Building,
   AlertCircle
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
@@ -613,6 +613,13 @@ export default function AccountCreationWizard({
           if (result.beginningBalance !== undefined) {
             updateFormData('beginningBalance', result.beginningBalance);
             setOriginalBeginningBalance(result.beginningBalance);
+          }
+          if (result.statementStartDate) {
+            const startDate = parseDate(result.statementStartDate);
+            if (startDate) {
+              updateFormData('startDate', startDate);
+              setCustomStartDate(startDate);
+            }
           }
           if (result.previousBalance !== undefined || result.newBalance !== undefined) {
             setStatementBalances({
