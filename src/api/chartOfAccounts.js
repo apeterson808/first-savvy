@@ -13,7 +13,12 @@ export const getChartOfAccountsTemplates = async () => {
 export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   let query = supabase
     .from('user_chart_of_accounts')
-    .select('*')
+    .select(`
+      *,
+      template:chart_of_accounts_templates!template_account_number (
+        is_editable
+      )
+    `)
     .eq('profile_id', profileId);
 
   if (filters.class) {
@@ -37,7 +42,11 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   const { data, error } = await query;
 
   if (error) throw error;
-  return data;
+
+  return data.map(account => ({
+    ...account,
+    is_editable: account.template?.is_editable ?? true
+  }));
 };
 
 export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null, showInactive = false) => {
@@ -118,12 +127,23 @@ export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = n
 export const getChartAccountById = async (accountId) => {
   const { data, error } = await supabase
     .from('user_chart_of_accounts')
-    .select('*')
+    .select(`
+      *,
+      template:chart_of_accounts_templates!template_account_number (
+        is_editable
+      )
+    `)
     .eq('id', accountId)
     .maybeSingle();
 
   if (error) throw error;
-  return data;
+
+  if (!data) return null;
+
+  return {
+    ...data,
+    is_editable: data.template?.is_editable ?? true
+  };
 };
 
 export const getChartAccountByNumber = async (profileId, accountNumber) => {

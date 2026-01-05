@@ -74,34 +74,18 @@ async function findOrCreateOpeningBalanceEquityAccount(profileId) {
   if (error) throw error;
 
   let openingBalanceEquity = equityAccounts.find(
-    acc => acc.account_detail?.toLowerCase().includes('opening') ||
-           acc.display_name?.toLowerCase().includes('opening balance')
+    acc => acc.account_number === 3000
   );
 
   if (!openingBalanceEquity) {
     openingBalanceEquity = equityAccounts.find(
-      acc => acc.account_number >= 3900 && acc.account_number < 4000
+      acc => acc.account_detail?.toLowerCase().includes('opening') ||
+             acc.display_name?.toLowerCase().includes('opening balance')
     );
   }
 
   if (!openingBalanceEquity) {
-    const { data, error: insertError } = await supabase
-      .from('user_chart_of_accounts')
-      .insert({
-        profile_id: profileId,
-        class: 'equity',
-        account_type: 'equity',
-        account_detail: 'opening_balance_equity',
-        display_name: 'Opening Balance Equity',
-        account_number: 3900,
-        is_active: true,
-        is_user_created: true
-      })
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-    openingBalanceEquity = data;
+    throw new Error('Opening Balance Equity account (3000) not found. This account should be auto-provisioned.');
   }
 
   return openingBalanceEquity;

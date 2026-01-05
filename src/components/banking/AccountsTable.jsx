@@ -52,6 +52,9 @@ function EditableAccountName({ account }) {
   const inputRef = React.useRef(null);
   const queryClient = useQueryClient();
 
+  const isSystemAccount = account.template_account_number === 3000 || account.template_account_number === 3200;
+  const isEditable = account.is_editable !== false && !isSystemAccount;
+
   React.useEffect(() => {
     setValue(getAccountDisplayName(account));
   }, [account.custom_display_name, account.display_name, account.account_name, account.name]);
@@ -72,7 +75,7 @@ function EditableAccountName({ account }) {
     queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
   };
 
-  if (isEditing) {
+  if (isEditing && isEditable) {
     return (
       <input
         ref={inputRef}
@@ -95,8 +98,8 @@ function EditableAccountName({ account }) {
 
   return (
     <div
-      onClick={() => setIsEditing(true)}
-      className="font-medium text-slate-900 text-xs cursor-text hover:bg-slate-100 rounded px-1 py-0.5 -mx-1"
+      onClick={() => isEditable && setIsEditing(true)}
+      className={`font-medium text-slate-900 text-xs rounded px-1 py-0.5 -mx-1 ${isEditable ? 'cursor-text hover:bg-slate-100' : 'cursor-default'}`}
     >
       {displayName}
     </div>
@@ -724,30 +727,39 @@ export default function AccountsTable({ accounts, isLoading }) {
                                 </span>
                               </td>
                             )}
-                            {visibleColumns.actions && (
-                              <td className="px-4 py-0.5 text-center" onClick={(e) => e.stopPropagation()}>
-                                <DropdownMenu>
-                                  <DropdownMenuTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                    >
-                                      <MoreVertical className="w-4 h-4" />
-                                    </Button>
-                                  </DropdownMenuTrigger>
-                                  <DropdownMenuContent align="end">
-                                    <DropdownMenuItem
-                                      className="text-red-600 focus:text-red-600"
-                                      onClick={(e) => handleDeleteClick(e, account)}
-                                    >
-                                      <Trash2 className="w-4 h-4 mr-2" />
-                                      Delete
-                                    </DropdownMenuItem>
-                                  </DropdownMenuContent>
-                                </DropdownMenu>
-                              </td>
-                            )}
+                            {visibleColumns.actions && (() => {
+                              const isSystemAccount = account.template_account_number === 3000 || account.template_account_number === 3200;
+                              const canDelete = account.is_editable !== false && !isSystemAccount;
+
+                              return (
+                                <td className="px-4 py-0.5 text-center" onClick={(e) => e.stopPropagation()}>
+                                  {canDelete ? (
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          className="h-7 w-7"
+                                        >
+                                          <MoreVertical className="w-4 h-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuItem
+                                          className="text-red-600 focus:text-red-600"
+                                          onClick={(e) => handleDeleteClick(e, account)}
+                                        >
+                                          <Trash2 className="w-4 h-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  ) : (
+                                    <div className="h-7 w-7" />
+                                  )}
+                                </td>
+                              );
+                            })()}
                           </tr>
                         ))}
                   </tbody>
