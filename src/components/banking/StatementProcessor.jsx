@@ -1,13 +1,6 @@
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
-import * as pdfjsLib from 'pdfjs-dist';
-import { parsePdfStatement } from './pdfParsers';
-
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url
-).href;
 
 export const processStatementFile = async (file, onProgress) => {
   const fileExt = file.name.split('.').pop().toLowerCase();
@@ -70,61 +63,7 @@ export const processStatementFile = async (file, onProgress) => {
     throw new Error(errorMsg);
   }
 
-  if (fileExt === 'pdf') {
-    onProgress?.('extracting');
-
-    const arrayBuffer = await file.arrayBuffer();
-    const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-    const pdf = await loadingTask.promise;
-
-    onProgress?.('parsing');
-    let text = '';
-
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
-
-      let lastY = null;
-      const pageText = textContent.items.map((item, idx) => {
-        const currentY = item.transform[5];
-        const needsNewline = lastY !== null && Math.abs(currentY - lastY) > 5;
-        lastY = currentY;
-
-        if (needsNewline) {
-          return '\n' + item.str;
-        }
-        return (idx === 0 ? '' : ' ') + item.str;
-      }).join('');
-
-      text += pageText + '\n\n';
-    }
-
-    console.log('=== PDF TEXT DEBUG ===');
-    console.log('Length:', text.length);
-    console.log('First 1000 chars:', text.substring(0, 1000));
-    console.log('Includes "american express":', text.toLowerCase().includes('american express'));
-    console.log('Includes "delta":', text.toLowerCase().includes('delta'));
-
-    if (!text || text.trim().length === 0) {
-      throw new Error('PDF file appears to be empty or could not be read');
-    }
-
-    onProgress?.('detecting');
-    const result = parsePdfStatement(text);
-    console.log('Parse result:', result);
-
-    return {
-      type: 'transactions',
-      transactions: result.transactions,
-      institutionName: result.institutionName,
-      accountNumber: result.accountNumber,
-      beginningBalance: result.beginningBalance,
-      statementStartDate: result.statementStartDate,
-      statementEndDate: result.statementEndDate
-    };
-  }
-
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, QFX, or PDF file.`);
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
 };
 
 export const parseDate = (dateStr) => {
