@@ -1503,7 +1503,8 @@ export default function AccountCreationWizard({
             displayName: account.name,
             accountDetail: accountDetailMap[account.type] || 'checking_account',
             last4: account.last_four,
-            startDate: account.date_range?.start || ''
+            startDate: account.date_range?.start || '',
+            beginningBalance: account.current_balance || 0
           }
         }));
 
@@ -1681,6 +1682,27 @@ export default function AccountCreationWizard({
                               />
                             </div>
                           </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`beginning-balance-${account.id}`} className="text-xs font-medium">
+                              Beginning Balance
+                            </Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                              <Input
+                                id={`beginning-balance-${account.id}`}
+                                type="number"
+                                step="0.01"
+                                value={config.beginningBalance || account.current_balance || ''}
+                                onChange={(e) => updateAccountConfig(account.id, 'beginningBalance', e.target.value)}
+                                placeholder="0.00"
+                                className="h-9 pl-7"
+                              />
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                              Balance as of {formatDate(config.startDate) || 'start date'}
+                            </p>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1749,7 +1771,7 @@ export default function AccountCreationWizard({
               .update({
                 account_number_last4: config.last4,
                 institution_name: selectedInstitution?.name || existingAccount.institution_name,
-                current_balance: account.current_balance
+                current_balance: config.beginningBalance || account.current_balance
               })
               .eq('id', chartAccountId);
 
@@ -1779,7 +1801,7 @@ export default function AccountCreationWizard({
               color: template.color,
               account_number_last4: config.last4,
               institution_name: selectedInstitution?.name || '',
-              current_balance: account.current_balance,
+              current_balance: config.beginningBalance || account.current_balance,
               is_active: true
             };
 
@@ -1805,6 +1827,28 @@ export default function AccountCreationWizard({
               const txnDate = new Date(txn.date);
               return txnDate >= startDate;
             });
+          }
+
+          const beginningBalance = config.beginningBalance || account.current_balance;
+
+          if (beginningBalance && parseFloat(beginningBalance) > 0 && filteredTransactions.length > 0) {
+            try {
+              const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
+              const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
+
+              if (firstTransactionDate) {
+                await createOpeningBalanceTransaction(
+                  activeProfile.id,
+                  chartAccountId,
+                  parseFloat(beginningBalance),
+                  firstTransactionDate,
+                  equityAccount.id
+                );
+                console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
+              }
+            } catch (err) {
+              console.error('Error creating opening balance:', err);
+            }
           }
 
           const transactionsToInsert = filteredTransactions
@@ -1875,7 +1919,7 @@ export default function AccountCreationWizard({
                   <p className="text-sm text-gray-600">...{config?.last4 || account.last_four}</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">${account.current_balance?.toFixed(2)}</p>
+                  <p className="font-semibold text-gray-900">${(config?.beginningBalance || account.current_balance)?.toFixed(2)}</p>
                   <p className="text-xs text-gray-500">{filteredCount} transactions</p>
                 </div>
               </div>
