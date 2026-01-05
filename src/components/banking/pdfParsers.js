@@ -11,6 +11,27 @@ export const parseCitiStatement = (text, lines) => {
   const accountMatch = text.match(/Account.*?ending.*?(\d{4})/i) || text.match(/Account Ending.*?(\d{4})/i);
   const accountNumber = accountMatch ? accountMatch[1] : null;
 
+  let previousBalance = null;
+  let newBalance = null;
+  let statementStartDate = null;
+  let statementEndDate = null;
+
+  const previousBalanceMatch = text.match(/Previous\s+balance\s+\$?([\d,]+\.\d{2})/i);
+  if (previousBalanceMatch) {
+    previousBalance = parseFloat(previousBalanceMatch[1].replace(/,/g, ''));
+  }
+
+  const newBalanceMatch = text.match(/New\s+balance\s+\$?([\d,]+\.\d{2})/i);
+  if (newBalanceMatch) {
+    newBalance = parseFloat(newBalanceMatch[1].replace(/,/g, ''));
+  }
+
+  const billingPeriodMatch = text.match(/Billing\s+Period[:\s]+(\d{2}\/\d{2}\/\d{2,4})\s*-\s*(\d{2}\/\d{2}\/\d{2,4})/i);
+  if (billingPeriodMatch) {
+    statementStartDate = billingPeriodMatch[1];
+    statementEndDate = billingPeriodMatch[2];
+  }
+
   let inPaymentsSection = false;
   let inPurchasesSection = false;
 
@@ -76,6 +97,11 @@ export const parseCitiStatement = (text, lines) => {
   return {
     institutionName: 'Citi',
     accountNumber,
+    previousBalance,
+    newBalance,
+    beginningBalance: previousBalance,
+    statementStartDate,
+    statementEndDate,
     transactions: transactions.filter(t => t.date !== null)
   };
 };

@@ -219,6 +219,38 @@ export const splitTransactionsByGoLiveDate = (transactions, goLiveDate) => {
   return { posted, pending };
 };
 
+export const calculateOpeningBalanceForDate = (previousBalance, transactions, startDate, isLiability = true) => {
+  if (!previousBalance || !transactions || transactions.length === 0 || !startDate) {
+    return previousBalance || 0;
+  }
+
+  const selectedDate = new Date(startDate);
+  let calculatedBalance = previousBalance;
+
+  const transactionsBeforeStartDate = transactions.filter(txn => {
+    const txnDate = new Date(txn.date);
+    return txnDate < selectedDate;
+  });
+
+  transactionsBeforeStartDate.forEach(txn => {
+    if (isLiability) {
+      if (txn.type === 'expense') {
+        calculatedBalance += txn.amount;
+      } else if (txn.type === 'income') {
+        calculatedBalance -= txn.amount;
+      }
+    } else {
+      if (txn.type === 'expense') {
+        calculatedBalance -= txn.amount;
+      } else if (txn.type === 'income') {
+        calculatedBalance += txn.amount;
+      }
+    }
+  });
+
+  return calculatedBalance;
+};
+
 export const autoMatchTransfers = async (newTransactions) => {
   try {
     const allPendingTransactions = await firstsavvy.entities.Transaction.filter({ status: 'pending' });

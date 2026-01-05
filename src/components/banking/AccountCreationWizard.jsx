@@ -50,7 +50,7 @@ import {
   Building,
   AlertCircle
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, autoMatchTransfers } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
@@ -367,6 +367,9 @@ export default function AccountCreationWizard({
   const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
   const [accountConfigurations, setAccountConfigurations] = useState({});
   const [importAccountMappings, setImportAccountMappings] = useState({});
+  const [customStartDate, setCustomStartDate] = useState(null);
+  const [originalBeginningBalance, setOriginalBeginningBalance] = useState(null);
+  const [statementBalances, setStatementBalances] = useState({ previous: null, new: null });
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -609,6 +612,13 @@ export default function AccountCreationWizard({
           }
           if (result.beginningBalance !== undefined) {
             updateFormData('beginningBalance', result.beginningBalance);
+            setOriginalBeginningBalance(result.beginningBalance);
+          }
+          if (result.previousBalance !== undefined || result.newBalance !== undefined) {
+            setStatementBalances({
+              previous: result.previousBalance,
+              new: result.newBalance
+            });
           }
         }
       } else {
@@ -693,7 +703,17 @@ export default function AccountCreationWizard({
 
       const transactionsToCheck = mappedTransactions.filter(txn => {
         const desc = txn.description?.toLowerCase() || '';
-        return !(desc.includes('beginning balance') && txn.amount === 0);
+        const isBeginningBalance = desc.includes('beginning balance') && txn.amount === 0;
+
+        if (isBeginningBalance) return false;
+
+        if (customStartDate) {
+          const txnDate = new Date(txn.date);
+          const startDate = new Date(customStartDate);
+          return txnDate >= startDate;
+        }
+
+        return true;
       });
 
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
@@ -710,7 +730,7 @@ export default function AccountCreationWizard({
       if (beginningBalance && parseFloat(beginningBalance) > 0 && transactionsToImport.length > 0) {
         try {
           const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
-          const firstTransactionDate = transactionsToImport[0]?.date;
+          const firstTransactionDate = customStartDate || transactionsToImport[0]?.date;
 
           if (firstTransactionDate) {
             await createOpeningBalanceTransaction(
@@ -720,7 +740,7 @@ export default function AccountCreationWizard({
               firstTransactionDate,
               equityAccount.id
             );
-            console.log(`Created opening balance of $${beginningBalance} for account ${targetAccountId}`);
+            console.log(`Created opening balance of $${beginningBalance} for account ${targetAccountId} as of ${firstTransactionDate}`);
           }
         } catch (err) {
           console.error('Error creating opening balance:', err);
@@ -2809,6 +2829,23 @@ export default function AccountCreationWizard({
       updateFormData('name', newValue);
     };
 
+    const handleStartDateChange = (newStartDate) => {
+      setCustomStartDate(newStartDate);
+
+      if (originalBeginningBalance !== null && mappedTransactions.length > 0 && newStartDate) {
+        const isLiability = selectedSubtype?.value === 'credit_card';
+        const calculatedBalance = calculateOpeningBalanceForDate(
+          originalBeginningBalance,
+          mappedTransactions,
+          newStartDate,
+          isLiability
+        );
+        updateFormData('beginningBalance', calculatedBalance);
+      }
+    };
+
+    const effectiveStartDate = customStartDate || dateRange.startDate;
+
     return (
       <div className="space-y-5 max-w-lg mx-auto">
 
@@ -2862,6 +2899,23 @@ export default function AccountCreationWizard({
           </p>
         </div>
 
+        {dateRange.startDate && dateRange.endDate && (
+          <div>
+            <Label htmlFor="startDate">Import Start Date</Label>
+            <Input
+              id="startDate"
+              type="date"
+              value={effectiveStartDate || ''}
+              onChange={(e) => handleStartDateChange(e.target.value)}
+              min={dateRange.startDate}
+              max={dateRange.endDate}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Choose which date to start importing transactions from
+            </p>
+          </div>
+        )}
+
         <div>
           <Label htmlFor="beginningBalance">Beginning Balance*</Label>
           <div className="relative">
@@ -2878,19 +2932,36 @@ export default function AccountCreationWizard({
               required
             />
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Enter the starting balance as of {dateRange.startDate || 'the first transaction'}
-          </p>
+          {statementBalances.previous !== null && customStartDate && originalBeginningBalance !== null ? (
+            <div className="text-xs text-muted-foreground mt-1 space-y-1">
+              <p className="flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                Calculated from statement balance of ${statementBalances.previous?.toFixed(2)}
+              </p>
+              <p className="text-xs text-slate-500">
+                Adjusted for transactions before {effectiveStartDate}
+              </p>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">
+              Enter the balance as of {effectiveStartDate || 'the first transaction'}
+            </p>
+          )}
         </div>
 
         {dateRange.startDate && dateRange.endDate && (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
             <p className="text-xs text-muted-foreground">
-              {mappedTransactions.length} transactions will be imported
+              {mappedTransactions.filter(txn => new Date(txn.date) >= new Date(effectiveStartDate)).length} transactions will be imported
             </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Date range: {dateRange.startDate} to {dateRange.endDate}
+            <p className="text-xs text-muted-foreground">
+              Date range: {effectiveStartDate} to {dateRange.endDate}
             </p>
+            {customStartDate && (
+              <p className="text-xs text-blue-600">
+                {mappedTransactions.filter(txn => new Date(txn.date) < new Date(effectiveStartDate)).length} transactions excluded (before start date)
+              </p>
+            )}
           </div>
         )}
       </div>
