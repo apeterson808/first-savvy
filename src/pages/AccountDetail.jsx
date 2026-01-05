@@ -394,11 +394,7 @@ export default function AccountDetail() {
                      'Current Balance'}
                   </p>
                   <p className={`text-3xl font-bold ${
-                    account.entityType === 'Liability' ?
-                      ((account.current_balance || 0) > 0 ? 'text-red-700' :
-                       (account.current_balance || 0) < 0 ? 'text-green-700' : 'text-slate-900') :
-                    account.entityType === 'Asset' ? 'text-forest-green' :
-                    'text-slate-900'
+                    account.entityType === 'Asset' ? 'text-forest-green' : 'text-slate-900'
                   }`}>
                     {formatCurrency(account.current_balance || 0)}
                   </p>
