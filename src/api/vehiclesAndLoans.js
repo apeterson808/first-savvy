@@ -33,6 +33,23 @@ export async function createVehicleAsset(vehicleData, profileId) {
     .single();
 
   if (error) throw error;
+
+  if (data.current_balance && data.current_balance !== 0) {
+    try {
+      await supabase.rpc('create_opening_balance_journal_entry', {
+        p_profile_id: profileId,
+        p_user_id: user.id,
+        p_account_id: data.id,
+        p_opening_balance: data.current_balance,
+        p_opening_date: new Date().toISOString().split('T')[0],
+        p_account_name: data.display_name,
+        p_account_class: data.class
+      });
+    } catch (journalError) {
+      console.error('Failed to create opening balance journal entry:', journalError);
+    }
+  }
+
   return data;
 }
 
@@ -68,6 +85,23 @@ export async function createAutoLoan(loanData, profileId) {
     .single();
 
   if (error) throw error;
+
+  if (data.current_balance && data.current_balance !== 0) {
+    try {
+      await supabase.rpc('create_opening_balance_journal_entry', {
+        p_profile_id: profileId,
+        p_user_id: user.id,
+        p_account_id: data.id,
+        p_opening_balance: data.current_balance,
+        p_opening_date: new Date().toISOString().split('T')[0],
+        p_account_name: data.display_name,
+        p_account_class: data.class
+      });
+    } catch (journalError) {
+      console.error('Failed to create opening balance journal entry:', journalError);
+    }
+  }
+
   return data;
 }
 

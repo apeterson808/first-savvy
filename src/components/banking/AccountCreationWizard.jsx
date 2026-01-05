@@ -65,6 +65,7 @@ import {
   findOrCreateOpeningBalanceEquityAccount,
   createOpeningBalanceTransaction
 } from '@/api/statementImport';
+import { createOpeningBalanceJournalEntry } from '@/api/journalEntries';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -835,9 +836,27 @@ export default function AccountCreationWizard({
       if (error) throw error;
       return newAccount;
     },
-    onSuccess: (newAccount) => {
+    onSuccess: async (newAccount) => {
+      if (newAccount.current_balance && newAccount.current_balance !== 0) {
+        try {
+          await createOpeningBalanceJournalEntry({
+            profileId: activeProfile.id,
+            userId: user?.id,
+            accountId: newAccount.id,
+            openingBalance: newAccount.current_balance,
+            openingDate: new Date().toISOString().split('T')[0],
+            accountName: newAccount.display_name,
+            accountClass: newAccount.class
+          });
+        } catch (error) {
+          console.error('Failed to create opening balance journal entry:', error);
+          toast.error('Account created but failed to create opening balance entry');
+        }
+      }
+
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       toast.success('Account created successfully!');
       onOpenChange(false);
