@@ -50,7 +50,7 @@ import {
   Building,
   AlertCircle
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
@@ -1497,14 +1497,28 @@ export default function AccountCreationWizard({
           'credit_card': 'personal_credit_card'
         };
 
+        const startDate = account.date_range?.start || '';
+        let beginningBalance = '';
+
+        if (startDate && account.current_balance !== undefined && account.transactions) {
+          const isLiability = account.type === 'credit_card';
+          const calculatedBalance = calculateBeginningBalanceFromCurrent(
+            account.current_balance,
+            account.transactions,
+            startDate,
+            isLiability
+          );
+          beginningBalance = calculatedBalance.toString();
+        }
+
         setAccountConfigurations(prev => ({
           ...prev,
           [accountId]: {
             displayName: account.name,
             accountDetail: accountDetailMap[account.type] || 'checking_account',
             last4: account.last_four,
-            startDate: account.date_range?.start || '',
-            beginningBalance: ''
+            startDate: startDate,
+            beginningBalance: beginningBalance
           }
         }));
 
@@ -1519,13 +1533,31 @@ export default function AccountCreationWizard({
     };
 
     const updateAccountConfig = (accountId, field, value) => {
-      setAccountConfigurations(prev => ({
-        ...prev,
-        [accountId]: {
-          ...prev[accountId],
-          [field]: value
+      setAccountConfigurations(prev => {
+        const updatedConfig = {
+          ...prev,
+          [accountId]: {
+            ...prev[accountId],
+            [field]: value
+          }
+        };
+
+        if (field === 'startDate' && value) {
+          const account = discoveredAccounts.find(acc => acc.id === accountId);
+          if (account && account.current_balance !== undefined && account.transactions) {
+            const isLiability = account.type === 'credit_card';
+            const calculatedBalance = calculateBeginningBalanceFromCurrent(
+              account.current_balance,
+              account.transactions,
+              value,
+              isLiability
+            );
+            updatedConfig[accountId].beginningBalance = calculatedBalance.toString();
+          }
         }
-      }));
+
+        return updatedConfig;
+      });
     };
 
     const handleDisplayNameChange = (accountId, chartAccountId, displayName, isExisting) => {
@@ -1699,9 +1731,18 @@ export default function AccountCreationWizard({
                                 className="h-9 pl-7"
                               />
                             </div>
-                            <p className="text-xs text-muted-foreground">
-                              Balance as of {formatDate(config.startDate) || 'start date'}
-                            </p>
+                            {config.startDate && config.beginningBalance ? (
+                              <div className="flex items-start gap-1 text-xs text-blue-600">
+                                <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                <p>
+                                  Auto-calculated from current balance of ${account.current_balance?.toFixed(2)} minus transactions from {formatDate(config.startDate)} to now
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                Balance as of {formatDate(config.startDate) || 'start date'}
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}

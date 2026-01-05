@@ -251,6 +251,40 @@ export const calculateOpeningBalanceForDate = (previousBalance, transactions, st
   return calculatedBalance;
 };
 
+export const calculateBeginningBalanceFromCurrent = (currentBalance, transactions, startDate, isLiability = false) => {
+  if (currentBalance === undefined || currentBalance === null || !transactions || transactions.length === 0 || !startDate) {
+    return currentBalance || 0;
+  }
+
+  const selectedDate = new Date(startDate);
+  selectedDate.setHours(0, 0, 0, 0);
+  let beginningBalance = currentBalance;
+
+  const transactionsOnOrAfterStartDate = transactions.filter(txn => {
+    const txnDate = new Date(txn.date);
+    txnDate.setHours(0, 0, 0, 0);
+    return txnDate >= selectedDate;
+  });
+
+  transactionsOnOrAfterStartDate.forEach(txn => {
+    if (isLiability) {
+      if (txn.type === 'expense') {
+        beginningBalance -= txn.amount;
+      } else if (txn.type === 'income') {
+        beginningBalance += txn.amount;
+      }
+    } else {
+      if (txn.type === 'expense') {
+        beginningBalance += txn.amount;
+      } else if (txn.type === 'income') {
+        beginningBalance -= txn.amount;
+      }
+    }
+  });
+
+  return Math.round(beginningBalance * 100) / 100;
+};
+
 export const autoMatchTransfers = async (newTransactions) => {
   try {
     const allPendingTransactions = await firstsavvy.entities.Transaction.filter({ status: 'pending' });
