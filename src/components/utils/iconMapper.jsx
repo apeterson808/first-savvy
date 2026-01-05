@@ -1,3 +1,39 @@
+import {
+  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
+  Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
+  Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
+  Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
+  Shirt, Watch, Scissors, Paintbrush, Palette,
+  Gift, PartyPopper, Beer, Pizza, IceCream, Cake,
+  Bus, Train, Bike, Fuel, Wrench, Hammer,
+  Lightbulb, Zap, Droplet, Wifi, Phone, Mail,
+  ShoppingBag, Package, Tag, Store, Building, Factory,
+  Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
+  Moon, Star, Sparkles, Crown, Trophy, Award,
+  Film, Camera, Video, Headphones, Mic, Radio,
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
+} from 'lucide-react';
+
+const ICON_MAP = {
+  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
+  Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
+  Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
+  Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
+  Shirt, Watch, Scissors, Paintbrush, Palette,
+  Gift, PartyPopper, Beer, Pizza, IceCream, Cake,
+  Bus, Train, Bike, Fuel, Wrench, Hammer,
+  Lightbulb, Zap, Droplet, Wifi, Phone, Mail,
+  ShoppingBag, Package, Tag, Store, Building, Factory,
+  Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
+  Moon, Star, Sparkles, Crown, Trophy, Award,
+  Film, Camera, Video, Headphones, Mic, Radio,
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
+};
+
+export const getIconComponent = (iconName) => {
+  return ICON_MAP[iconName] || Circle;
+};
+
 // Auto-assign icons based on category/budget names
 export const suggestIconForName = (name) => {
   if (!name) return 'Circle';

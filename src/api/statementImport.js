@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient.js';
 import { getUserChartOfAccounts } from './chartOfAccounts.js';
+import { createOpeningBalanceJournalEntry } from './journalEntries.js';
 
 export const findOrCreateOpeningBalanceEquityAccount = async (profileId) => {
   const equityAccounts = await getUserChartOfAccounts(profileId, { class: 'equity' });
@@ -68,36 +69,27 @@ export const hasExistingTransactions = async (profileId, bankAccountId, beforeDa
   return data && data.length > 0;
 };
 
-export const createOpeningBalanceTransaction = async (profileId, bankAccountId, amount, date, openingBalanceEquityAccountId) => {
+export const createOpeningBalanceTransaction = async (profileId, userId, bankAccount, amount, date) => {
   const openingBalanceDate = new Date(date);
   openingBalanceDate.setDate(openingBalanceDate.getDate() - 1);
   const formattedDate = openingBalanceDate.toISOString().split('T')[0];
 
-  const { data, error } = await supabase
-    .from('transactions')
-    .insert({
-      profile_id: profileId,
-      bank_account_id: bankAccountId,
-      category_account_id: openingBalanceEquityAccountId,
-      date: formattedDate,
-      description: 'Opening Balance',
-      original_description: 'Opening Balance',
-      amount: Math.abs(amount),
-      type: 'income',
-      status: 'posted',
-      source: 'manual',
-      include_in_reports: false
-    })
-    .select()
-    .single();
+  const journalEntry = await createOpeningBalanceJournalEntry({
+    profileId: profileId,
+    userId: userId,
+    accountId: bankAccount.id,
+    openingBalance: amount,
+    openingDate: formattedDate,
+    accountName: bankAccount.display_name || bankAccount.account_name,
+    accountClass: bankAccount.account_class
+  });
 
-  if (error) throw error;
-
-  return data;
+  return journalEntry;
 };
 
 export const importStatementWithBeginningBalance = async (
   profileId,
+  userId,
   accountLastFour,
   institutionName,
   beginningBalance,
@@ -114,29 +106,27 @@ export const importStatementWithBeginningBalance = async (
 
   const results = {
     bankAccountId: bankAccount.id,
-    bankAccountName: bankAccount.display_name || bankAccount.name,
+    bankAccountName: bankAccount.display_name || bankAccount.account_name,
     openingBalanceCreated: false,
-    openingBalanceTransaction: null,
+    openingBalanceJournalEntry: null,
     transactionsImported: 0,
     errors: []
   };
 
-  if (!hasExisting && beginningBalance > 0) {
+  if (!hasExisting && beginningBalance !== 0 && beginningBalance !== null) {
     try {
-      const equityAccount = await findOrCreateOpeningBalanceEquityAccount(profileId);
-
-      const openingBalanceTxn = await createOpeningBalanceTransaction(
+      const journalEntry = await createOpeningBalanceTransaction(
         profileId,
-        bankAccount.id,
+        userId,
+        bankAccount,
         beginningBalance,
-        statementStartDate,
-        equityAccount.id
+        statementStartDate
       );
 
       results.openingBalanceCreated = true;
-      results.openingBalanceTransaction = openingBalanceTxn;
+      results.openingBalanceJournalEntry = journalEntry;
     } catch (err) {
-      console.error('Error creating opening balance:', err);
+      console.error('Error creating opening balance journal entry:', err);
       results.errors.push(`Failed to create opening balance: ${err.message}`);
     }
   }
