@@ -194,7 +194,7 @@ export default function Banking() {
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-4">
-          <AccountsTable accounts={allAccounts} isLoading={accountsLoading} />
+          <AccountsTable />
         </TabsContent>
       </Tabs>
     </div>

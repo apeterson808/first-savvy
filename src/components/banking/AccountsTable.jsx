@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { startOfMonth, endOfMonth } from 'date-fns';
+import { useProfile } from '@/contexts/ProfileContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -106,8 +108,9 @@ function EditableAccountName({ account }) {
   );
 }
 
-export default function AccountsTable({ accounts, isLoading }) {
+export default function AccountsTable() {
   const navigate = useNavigate();
+  const { activeProfile } = useProfile();
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [bankAccountFlowOpen, setBankAccountFlowOpen] = useState(false);
@@ -135,6 +138,31 @@ export default function AccountsTable({ accounts, isLoading }) {
   });
 
   const queryClient = useQueryClient();
+
+  const { data: rawAccounts = [], isLoading } = useQuery({
+    queryKey: ['accounts-table', activeProfile?.id, showInactive],
+    queryFn: async () => {
+      if (!activeProfile?.id) return [];
+      return await getUserChartOfAccounts(activeProfile.id, {
+        isActive: showInactive ? undefined : true
+      });
+    },
+    enabled: !!activeProfile?.id,
+    staleTime: 30000,
+    gcTime: 300000
+  });
+
+  const accounts = rawAccounts.map(account => {
+    const classLabel = account.class ? account.class.charAt(0).toUpperCase() + account.class.slice(1) : 'Unknown';
+    return {
+      ...account,
+      account_name: account.display_name || account.account_detail || `Account ${account.account_number}`,
+      name: account.display_name || account.account_detail || `Account ${account.account_number}`,
+      entityType: classLabel,
+      detail_type: account.account_detail,
+      current_balance: account.current_balance || 0
+    };
+  });
 
   // Fetch transactions to calculate category totals
   const { data: transactions = [] } = useQuery({
@@ -237,20 +265,18 @@ export default function AccountsTable({ accounts, isLoading }) {
     return false;
   }, [accounts, transactionCountMap]);
 
-  // Filter accounts based on selected type and active status
+  // Filter accounts based on selected type
   const filteredAccounts = accounts.filter(acc => {
     const matchesType = accountTypeFilter === 'all' || !accountTypeFilter || acc.entityType === accountTypeFilter;
-    const matchesActive = showInactive || acc.is_active !== false;
-    return matchesType && matchesActive;
+    return matchesType;
   });
 
   const availableEntityTypes = React.useMemo(() => {
     const allTypes = ['Asset', 'Liability', 'Equity', 'Income', 'Expense'];
     return allTypes.filter(type => {
-      const matchesActive = showInactive || accounts.some(acc => acc.entityType === type && acc.is_active !== false);
-      return accounts.some(acc => acc.entityType === type) && matchesActive;
+      return accounts.some(acc => acc.entityType === type);
     });
-  }, [accounts, showInactive]);
+  }, [accounts]);
 
   React.useEffect(() => {
     if (availableEntityTypes.length > 0) {

@@ -19,6 +19,7 @@ import { formatLabel } from '../utils/formatters';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
+import { activateTemplateAccount } from '@/api/chartOfAccounts';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -836,36 +837,58 @@ export default function AccountCreationWizard({
       };
       const accountDetail = detailMap[data.account_type] || data.account_type;
 
-      const chartAccount = userChartAccounts.find(a => a.account_detail === accountDetail);
-      if (!chartAccount) {
-        throw new Error(`No chart account found for type: ${accountDetail}`);
+      const templateAccount = chartAccounts.find(a => a.account_detail === accountDetail);
+      if (!templateAccount) {
+        throw new Error(`No template found for type: ${accountDetail}`);
       }
 
-      const accountNumber = await getNextAccountNumber(activeProfile.id, chartAccount.template_account_number);
+      const existingAccount = userChartAccounts.find(
+        a => a.template_account_number === templateAccount.account_number && a.is_active
+      );
 
-      const { data: newAccount, error } = await firstsavvy
-        .from('user_chart_of_accounts')
-        .insert({
-          profile_id: activeProfile.id,
-          template_account_number: chartAccount.template_account_number,
-          account_number: accountNumber,
-          display_name: data.account_name,
-          class: chartAccount.class,
-          account_detail: chartAccount.account_detail,
-          account_type: chartAccount.account_type,
-          icon: chartAccount.icon,
-          color: chartAccount.color,
-          current_balance: data.current_balance,
-          institution_name: data.institution_name,
-          account_number_last4: data.account_number_last4,
-          is_active: true,
-          is_user_created: true
-        })
-        .select()
-        .single();
+      if (!existingAccount) {
+        const accountId = await activateTemplateAccount(activeProfile.id, templateAccount.account_number, {
+          customDisplayName: data.account_name,
+          initialBalance: data.current_balance,
+          institutionName: data.institution_name,
+          accountNumberLast4: data.account_number_last4
+        });
 
-      if (error) throw error;
-      return newAccount;
+        const { data: newAccount, error } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .select()
+          .eq('id', accountId)
+          .single();
+
+        if (error) throw error;
+        return newAccount;
+      } else {
+        const accountNumber = await getNextAccountNumber(activeProfile.id, templateAccount.account_number);
+
+        const { data: newAccount, error } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .insert({
+            profile_id: activeProfile.id,
+            template_account_number: templateAccount.account_number,
+            account_number: accountNumber,
+            display_name: data.account_name,
+            class: templateAccount.class,
+            account_detail: templateAccount.account_detail,
+            account_type: templateAccount.account_type,
+            icon: templateAccount.icon,
+            color: templateAccount.color,
+            current_balance: data.current_balance,
+            institution_name: data.institution_name,
+            account_number_last4: data.account_number_last4,
+            is_active: true,
+            is_user_created: true
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return newAccount;
+      }
     },
     onSuccess: async (newAccount) => {
       if (newAccount.current_balance && newAccount.current_balance !== 0) {

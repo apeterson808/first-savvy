@@ -31,6 +31,8 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
 
   if (filters.isActive !== undefined) {
     query = query.eq('is_active', filters.isActive);
+  } else {
+    query = query.eq('is_active', true);
   }
 
   if (filters.isUserCreated !== undefined) {
@@ -52,8 +54,8 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
 export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null, showInactive = false) => {
   const filters = classFilter ? { class: classFilter } : {};
 
-  if (!showInactive) {
-    filters.isActive = true;
+  if (showInactive) {
+    filters.isActive = undefined;
   }
 
   const accounts = await getUserChartOfAccounts(profileId, filters);
@@ -303,4 +305,18 @@ export const getDisplayName = (account) => {
 export const getFullDisplayName = (account) => {
   const displayName = getDisplayName(account);
   return `${account.account_number} - ${displayName}`;
+};
+
+export const activateTemplateAccount = async (profileId, templateAccountNumber, options = {}) => {
+  const { data, error } = await supabase.rpc('activate_template_account', {
+    p_profile_id: profileId,
+    p_template_account_number: templateAccountNumber,
+    p_custom_display_name: options.customDisplayName || null,
+    p_initial_balance: options.initialBalance || null,
+    p_institution_name: options.institutionName || null,
+    p_account_number_last4: options.accountNumberLast4 || null
+  });
+
+  if (error) throw error;
+  return data;
 };
