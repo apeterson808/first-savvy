@@ -77,7 +77,6 @@ Deno.serve(async (req: Request) => {
       "categorization_rules",
       "contact_matching_rules",
       "transfer_registry",
-      "statement_uploads",
       "budgets",
       "contacts",
       "user_chart_of_accounts"
