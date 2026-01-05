@@ -48,7 +48,6 @@ Deno.serve(async (req: Request) => {
     const userId = user.id;
     console.log(`Resetting data for user: ${userId}`);
 
-    // Get the user's profile ID
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("id")
@@ -70,9 +69,10 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
-    // Tables to delete - all use profile_id now (no more user_id)
     const tablesToDelete = [
       "transaction_splits",
+      "journal_entry_lines",
+      "journal_entries",
       "transactions",
       "categorization_rules",
       "contact_matching_rules",
@@ -83,7 +83,6 @@ Deno.serve(async (req: Request) => {
       "user_chart_of_accounts"
     ];
 
-    // Delete all data for this profile
     for (const table of tablesToDelete) {
       console.log(`Attempting to delete from ${table} for profile ${profileId}...`);
       const { data, error } = await supabase
@@ -101,7 +100,6 @@ Deno.serve(async (req: Request) => {
       console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
     }
 
-    // Recreate chart of accounts
     console.log(`Recreating chart of accounts for profile ${profileId}...`);
     const { data: templates, error: templatesError } = await supabase
       .from("chart_of_accounts_templates")
