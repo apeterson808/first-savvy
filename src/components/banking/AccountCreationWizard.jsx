@@ -670,6 +670,7 @@ export default function AccountCreationWizard({
   const handleImportTransactions = async () => {
     try {
       let targetAccountId = selectedAccountId;
+      let targetAccountObject;
 
       if (!isExistingAccount) {
         const accountDetail = selectedSubtype?.value === 'checking' ? 'checking_account' :
@@ -712,6 +713,18 @@ export default function AccountCreationWizard({
 
         if (createError) throw createError;
         targetAccountId = newAccount.id;
+        targetAccountObject = newAccount;
+      } else {
+        const { data: existingAccount, error: fetchError } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .select('*')
+          .eq('id', targetAccountId)
+          .single();
+
+        if (fetchError || !existingAccount) {
+          throw new Error('Failed to fetch existing account details');
+        }
+        targetAccountObject = existingAccount;
       }
 
       const transactionsToCheck = mappedTransactions.filter(txn => {
@@ -742,16 +755,15 @@ export default function AccountCreationWizard({
 
       if (beginningBalance && parseFloat(beginningBalance) > 0 && transactionsToImport.length > 0) {
         try {
-          const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
           const firstTransactionDate = customStartDate || transactionsToImport[0]?.date;
 
-          if (firstTransactionDate) {
+          if (firstTransactionDate && targetAccountObject) {
             await createOpeningBalanceTransaction(
               activeProfile.id,
-              targetAccountId,
+              user.id,
+              targetAccountObject,
               parseFloat(beginningBalance),
-              firstTransactionDate,
-              equityAccount.id
+              firstTransactionDate
             );
             console.log(`Created opening balance of $${beginningBalance} for account ${targetAccountId} as of ${firstTransactionDate}`);
           }
@@ -1894,6 +1906,7 @@ export default function AccountCreationWizard({
           }
 
           let chartAccountId;
+          let accountObject;
 
           if (mapping?.isExisting && mapping.chartAccountId) {
             chartAccountId = mapping.chartAccountId;
@@ -1909,6 +1922,8 @@ export default function AccountCreationWizard({
               toast.error(`Failed to link to existing account`);
               continue;
             }
+
+            accountObject = existingAccount;
 
             const { error: updateError } = await firstsavvy
               .from('user_chart_of_accounts')
@@ -1961,6 +1976,7 @@ export default function AccountCreationWizard({
             }
 
             chartAccountId = createdAccount.id;
+            accountObject = createdAccount;
           }
 
           let filteredTransactions = account.transactions;
@@ -1975,16 +1991,15 @@ export default function AccountCreationWizard({
 
           if (config.beginningBalance && parseFloat(config.beginningBalance) !== 0) {
             try {
-              const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
               const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
 
-              if (firstTransactionDate) {
+              if (firstTransactionDate && accountObject) {
                 await createOpeningBalanceTransaction(
                   activeProfile.id,
-                  chartAccountId,
+                  user.id,
+                  accountObject,
                   parseFloat(config.beginningBalance),
-                  firstTransactionDate,
-                  equityAccount.id
+                  firstTransactionDate
                 );
                 console.log(`Created opening balance of $${config.beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
               }
@@ -3302,6 +3317,7 @@ export default function AccountCreationWizard({
                           }
 
                           let chartAccountId;
+                          let accountObject;
 
                           if (mapping?.isExisting && mapping.chartAccountId) {
                             chartAccountId = mapping.chartAccountId;
@@ -3317,6 +3333,8 @@ export default function AccountCreationWizard({
                               toast.error(`Failed to link to existing account`);
                               continue;
                             }
+
+                            accountObject = existingAccount;
 
                             const { error: updateError } = await firstsavvy
                               .from('user_chart_of_accounts')
@@ -3369,6 +3387,7 @@ export default function AccountCreationWizard({
                             }
 
                             chartAccountId = createdAccount.id;
+                            accountObject = createdAccount;
                           }
 
                           let beginningBalance = null;
@@ -3392,16 +3411,15 @@ export default function AccountCreationWizard({
 
                           if (beginningBalance && beginningBalance > 0 && filteredTransactions.length > 0) {
                             try {
-                              const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
                               const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
 
-                              if (firstTransactionDate) {
+                              if (firstTransactionDate && accountObject) {
                                 await createOpeningBalanceTransaction(
                                   activeProfile.id,
-                                  chartAccountId,
+                                  user.id,
+                                  accountObject,
                                   beginningBalance,
-                                  firstTransactionDate,
-                                  equityAccount.id
+                                  firstTransactionDate
                                 );
                                 console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId}`);
                               }
