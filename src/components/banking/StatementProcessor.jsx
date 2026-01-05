@@ -133,10 +133,21 @@ export const parseDate = (dateStr) => {
   let cleanDate = dateStr.trim().split(' ')[0].split('T')[0];
   if (!cleanDate) return null;
 
-  const mdyMatch = cleanDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-  if (mdyMatch) {
-    const [, month, day, year] = mdyMatch;
+  const mdyMatch4 = cleanDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (mdyMatch4) {
+    const [, month, day, year] = mdyMatch4;
     const formatted = `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+    const testDate = new Date(formatted);
+    if (!isNaN(testDate.getTime())) {
+      return formatted;
+    }
+  }
+
+  const mdyMatch2 = cleanDate.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2})$/);
+  if (mdyMatch2) {
+    const [, month, day, year] = mdyMatch2;
+    const fullYear = parseInt(year) >= 50 ? `19${year}` : `20${year}`;
+    const formatted = `${fullYear}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
     const testDate = new Date(formatted);
     if (!isNaN(testDate.getTime())) {
       return formatted;
