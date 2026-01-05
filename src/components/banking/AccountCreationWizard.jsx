@@ -615,11 +615,15 @@ export default function AccountCreationWizard({
             setOriginalBeginningBalance(result.beginningBalance);
           }
           if (result.statementStartDate) {
+            console.log('Statement start date from parser:', result.statementStartDate);
             const startDate = parseDate(result.statementStartDate);
+            console.log('Parsed start date:', startDate);
             if (startDate) {
               updateFormData('startDate', startDate);
               setCustomStartDate(startDate);
             }
+          } else {
+            console.log('No statementStartDate in result');
           }
           if (result.previousBalance !== undefined || result.newBalance !== undefined) {
             setStatementBalances({
