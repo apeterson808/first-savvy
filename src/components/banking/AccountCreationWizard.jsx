@@ -56,6 +56,12 @@ import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
 import TransactionDateRangeSelector from './TransactionDateRangeSelector';
 import {
+  getAvailableInstitutions,
+  simulateConnection,
+  getInstitutionAccounts,
+  getAccountTransactions
+} from '@/api/bankSimulation';
+import {
   findOrCreateOpeningBalanceEquityAccount,
   createOpeningBalanceTransaction
 } from '@/api/statementImport';
@@ -351,6 +357,16 @@ export default function AccountCreationWizard({
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
+
+  const [availableInstitutions, setAvailableInstitutions] = useState([]);
+  const [institutionSearch, setInstitutionSearch] = useState('');
+  const [selectedInstitution, setSelectedInstitution] = useState(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionProgress, setConnectionProgress] = useState('');
+  const [discoveredAccounts, setDiscoveredAccounts] = useState([]);
+  const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
+  const [accountConfigurations, setAccountConfigurations] = useState({});
+  const [importAccountMappings, setImportAccountMappings] = useState({});
   const [customStartDate, setCustomStartDate] = useState(null);
   const [originalBeginningBalance, setOriginalBeginningBalance] = useState(null);
   const [statementBalances, setStatementBalances] = useState({ previous: null, new: null });
@@ -464,10 +480,32 @@ export default function AccountCreationWizard({
     setDuplicateTransactions([]);
     setSkipDuplicates(true);
     setShowMappingSuccess(false);
+    setInstitutionSearch('');
+    setSelectedInstitution(null);
+    setIsConnecting(false);
+    setConnectionProgress('');
+    setDiscoveredAccounts([]);
+    setSelectedAccountsToImport([]);
   };
+
+  useEffect(() => {
+    if (open && currentStep === 'connect-bank') {
+      getAvailableInstitutions()
+        .then(institutions => setAvailableInstitutions(institutions))
+        .catch(error => {
+          console.error('Error loading institutions:', error);
+          toast.error('Failed to load financial institutions');
+        });
+    }
+  }, [open, currentStep]);
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
+
+    if (card.id === 'banking') {
+      setCurrentStep('connect-bank');
+      return;
+    }
 
     if (card.subtypes && card.subtypes.length > 0) {
       setCurrentStep('select-subtype');
@@ -486,7 +524,16 @@ export default function AccountCreationWizard({
   };
 
   const handleBack = () => {
-    if (currentStep === 'csv-mapping') {
+    if (currentStep === 'connect-bank') {
+      setCurrentStep('select-type');
+      setSelectedCard(null);
+      setInstitutionSearch('');
+      setSelectedInstitution(null);
+    } else if (currentStep === 'accounts-discovered') {
+      setCurrentStep('connect-bank');
+      setDiscoveredAccounts([]);
+      setSelectedAccountsToImport([]);
+    } else if (currentStep === 'csv-mapping') {
       setCurrentStep('details');
       setProcessedData(null);
     } else if (currentStep === 'bank-info') {
@@ -1310,6 +1357,633 @@ export default function AccountCreationWizard({
           className="h-full bg-blue-600 transition-all duration-300 ease-in-out"
           style={{ width: `${progressPercentage}%` }}
         />
+      </div>
+    );
+  };
+
+  const renderConnectBankStep = () => {
+    const filteredInstitutions = availableInstitutions.filter(inst =>
+      inst.name.toLowerCase().includes(institutionSearch.toLowerCase())
+    );
+
+    const handleInstitutionSelect = async (institution) => {
+      setSelectedInstitution(institution);
+      setIsConnecting(true);
+
+      try {
+        setConnectionProgress('Connecting to ' + institution.name + '...');
+        await simulateConnection(institution.id, activeProfile?.id);
+
+        setConnectionProgress('Discovering accounts...');
+        const accounts = await getInstitutionAccounts(institution.id, activeProfile?.id);
+
+        setConnectionProgress('Loading transactions...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const accountsWithData = await Promise.all(
+          accounts.map(async (account) => {
+            const transactions = await getAccountTransactions(account.id, institution.id);
+            return {
+              ...account,
+              transactions,
+              selected: false
+            };
+          })
+        );
+
+        setDiscoveredAccounts(accountsWithData);
+        setSelectedAccountsToImport([]);
+        setAccountConfigurations({});
+        setImportAccountMappings({});
+        setIsConnecting(false);
+        setCurrentStep('accounts-discovered');
+        toast.success(`Connected to ${institution.name}!`);
+      } catch (error) {
+        console.error('Connection error:', error);
+        toast.error(error.message || 'Failed to connect to institution');
+        setIsConnecting(false);
+        setConnectionProgress('');
+      }
+    };
+
+    if (isConnecting) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 space-y-4">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
+          <div className="text-center">
+            <p className="text-lg font-medium text-gray-700">{connectionProgress}</p>
+            <p className="text-sm text-gray-500 mt-2">Please wait...</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+          <Input
+            placeholder="Search for your bank or credit union..."
+            value={institutionSearch}
+            onChange={(e) => setInstitutionSearch(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto min-h-[200px]">
+          {filteredInstitutions.length === 0 ? (
+            <div className="col-span-3 flex flex-col items-center justify-center py-8 text-gray-500">
+              <AlertCircle className="w-8 h-8 mb-2" />
+              <p>No institutions found</p>
+            </div>
+          ) : (
+            filteredInstitutions.map(institution => (
+              <button
+                key={institution.id}
+                onClick={() => handleInstitutionSelect(institution)}
+                className="flex flex-col items-center cursor-pointer transition-all hover:scale-105 p-4 rounded-lg hover:bg-gray-50"
+              >
+                <div
+                  className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                  style={{ backgroundColor: institution.name.toLowerCase().includes('idaho central') ? '#003DA5' : '#52A5CE' }}
+                >
+                  <span className="text-white font-bold text-lg">
+                    {institution.name.split(' ').map(w => w[0]).join('').slice(0, 3)}
+                  </span>
+                </div>
+                <span className="text-xs font-medium text-gray-700 text-center leading-tight">{institution.name}</span>
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="text-center mt-6">
+          <button
+            onClick={() => {
+              setSelectedCard(null);
+              setCurrentStep('select-type');
+            }}
+            className="text-sm text-gray-600 hover:text-gray-800 underline"
+          >
+            Or add account manually
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderAccountsDiscovered = () => {
+    const toggleAccountSelection = (accountId, account) => {
+      const isCurrentlySelected = selectedAccountsToImport.includes(accountId);
+
+      if (isCurrentlySelected) {
+        setSelectedAccountsToImport(prev => prev.filter(id => id !== accountId));
+        setAccountConfigurations(prev => {
+          const newConfig = { ...prev };
+          delete newConfig[accountId];
+          return newConfig;
+        });
+        setImportAccountMappings(prev => {
+          const newMappings = { ...prev };
+          delete newMappings[accountId];
+          return newMappings;
+        });
+      } else {
+        setSelectedAccountsToImport(prev => [...prev, accountId]);
+
+        const accountDetailMap = {
+          'checking': 'checking_account',
+          'savings': 'savings_account',
+          'credit_card': 'personal_credit_card'
+        };
+
+        const startDate = account.date_range?.start || '';
+        let beginningBalance = '';
+
+        if (account.beginning_balance !== undefined && account.beginning_balance !== null) {
+          beginningBalance = Math.abs(account.beginning_balance).toString();
+        } else if (startDate && account.current_balance !== undefined && account.transactions) {
+          const isLiability = account.type === 'credit_card';
+          const calculatedBalance = calculateBeginningBalanceFromCurrent(
+            account.current_balance,
+            account.transactions,
+            startDate,
+            isLiability
+          );
+          beginningBalance = calculatedBalance.toString();
+        }
+
+        setAccountConfigurations(prev => ({
+          ...prev,
+          [accountId]: {
+            displayName: account.name,
+            accountDetail: accountDetailMap[account.type] || 'checking_account',
+            last4: account.last_four,
+            startDate: startDate,
+            beginningBalance: beginningBalance
+          }
+        }));
+
+        setImportAccountMappings(prev => ({
+          ...prev,
+          [accountId]: {
+            chartAccountId: null,
+            isExisting: false
+          }
+        }));
+      }
+    };
+
+    const updateAccountConfig = (accountId, field, value) => {
+      setAccountConfigurations(prev => {
+        const updatedConfig = {
+          ...prev,
+          [accountId]: {
+            ...prev[accountId],
+            [field]: value
+          }
+        };
+
+        if (field === 'startDate' && value) {
+          const account = discoveredAccounts.find(acc => acc.id === accountId);
+          if (account && account.current_balance !== undefined && account.transactions) {
+            const isLiability = account.type === 'credit_card';
+            const calculatedBalance = calculateBeginningBalanceFromCurrent(
+              account.current_balance,
+              account.transactions,
+              value,
+              isLiability
+            );
+            updatedConfig[accountId].beginningBalance = calculatedBalance.toString();
+          }
+        }
+
+        return updatedConfig;
+      });
+    };
+
+    const handleDisplayNameChange = (accountId, chartAccountId, displayName, isExisting) => {
+      updateAccountConfig(accountId, 'displayName', displayName);
+      setImportAccountMappings(prev => ({
+        ...prev,
+        [accountId]: {
+          chartAccountId: isExisting ? chartAccountId : null,
+          isExisting
+        }
+      }));
+    };
+
+    const handleAccountDetailChange = (accountId, newAccountDetail) => {
+      updateAccountConfig(accountId, 'accountDetail', newAccountDetail);
+      setImportAccountMappings(prev => ({
+        ...prev,
+        [accountId]: {
+          chartAccountId: null,
+          isExisting: false
+        }
+      }));
+    };
+
+    const formatDate = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toISOString().split('T')[0];
+    };
+
+    return (
+      <div className="space-y-3">
+        <div className="space-y-2">
+          {discoveredAccounts.map(account => {
+            const isSelected = selectedAccountsToImport.includes(account.id);
+            const config = accountConfigurations[account.id];
+            const accountIcon = account.type === 'savings' ? PiggyBank : account.type === 'checking' ? Wallet : CreditCard;
+            const AccountIcon = accountIcon;
+
+            return (
+              <Card
+                key={account.id}
+                className={`transition-all ${
+                  isSelected ? 'ring-2 ring-blue-500' : 'hover:border-gray-300'
+                }`}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={() => toggleAccountSelection(account.id, account)}
+                      className="mt-1 flex-shrink-0"
+                    />
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`p-2 rounded-lg ${isSelected ? 'bg-blue-100' : 'bg-gray-100'}`}>
+                          <AccountIcon className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-gray-600'}`} />
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-baseline gap-2">
+                            <h4 className="font-semibold text-gray-900 text-sm">{config?.displayName || account.name}</h4>
+                            <span className="text-xs text-gray-500">...{account.last_four}</span>
+                          </div>
+                          <div className="flex items-baseline gap-3 mt-0.5">
+                            <p className="text-base font-semibold text-gray-900">
+                              ${account.current_balance?.toFixed(2) || '0.00'}
+                            </p>
+                            <p className="text-xs text-gray-500">
+                              {(() => {
+                                if (!config?.startDate || !account.transactions) return account.transaction_count;
+                                const startDate = new Date(config.startDate);
+                                return account.transactions.filter(txn => {
+                                  const txnDate = new Date(txn.date);
+                                  return txnDate >= startDate;
+                                }).length;
+                              })()} transactions
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {isSelected && config && (
+                        <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`display-name-${account.id}`} className="text-xs font-medium">
+                                Display Name
+                              </Label>
+                              <AccountCombobox
+                                accounts={userChartAccounts?.filter(acc =>
+                                  acc.account_detail === config.accountDetail &&
+                                  acc.is_active === true
+                                ) || []}
+                                value={importAccountMappings[account.id]?.chartAccountId || config.displayName}
+                                onValueChange={(chartAccountId, displayName, isExisting) =>
+                                  handleDisplayNameChange(account.id, chartAccountId, displayName, isExisting)
+                                }
+                                placeholder="Select existing or type new account name..."
+                              />
+                              {config.displayName && (
+                                <Badge
+                                  variant={importAccountMappings[account.id]?.isExisting ? "default" : "secondary"}
+                                  className="text-xs mt-1"
+                                >
+                                  {importAccountMappings[account.id]?.isExisting ? "Existing Account" : "New Account"}
+                                </Badge>
+                              )}
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`account-detail-${account.id}`} className="text-xs font-medium">
+                                Account Detail
+                              </Label>
+                              <Select
+                                value={config.accountDetail}
+                                onValueChange={(value) => handleAccountDetailChange(account.id, value)}
+                              >
+                                <SelectTrigger id={`account-detail-${account.id}`} className="h-9">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="checking_account">Checking Account</SelectItem>
+                                  <SelectItem value="savings_account">Savings Account</SelectItem>
+                                  <SelectItem value="personal_credit_card">Credit Card</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label htmlFor={`last4-${account.id}`} className="text-xs font-medium">
+                                Last 4 Digits
+                              </Label>
+                              <Input
+                                id={`last4-${account.id}`}
+                                value={config.last4}
+                                readOnly
+                                className="h-9 bg-gray-50"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label htmlFor={`start-date-${account.id}`} className="text-xs font-medium">
+                                Start Date
+                              </Label>
+                              <Input
+                                id={`start-date-${account.id}`}
+                                type="date"
+                                value={formatDate(config.startDate)}
+                                onChange={(e) => updateAccountConfig(account.id, 'startDate', e.target.value)}
+                                className="h-9"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor={`beginning-balance-${account.id}`} className="text-xs font-medium">
+                              Beginning Balance
+                            </Label>
+                            <div className="relative">
+                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm">$</span>
+                              <Input
+                                id={`beginning-balance-${account.id}`}
+                                type="number"
+                                step="0.01"
+                                value={config.beginningBalance || ''}
+                                onChange={(e) => updateAccountConfig(account.id, 'beginningBalance', e.target.value)}
+                                placeholder="0.00"
+                                className="h-9 pl-7"
+                              />
+                            </div>
+                            {config.startDate && config.beginningBalance ? (
+                              <div className="flex items-start gap-1 text-xs text-blue-600">
+                                <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                <p>
+                                  {account.beginning_balance !== undefined && account.beginning_balance !== null
+                                    ? `From statement: Balance as of ${formatDate(config.startDate)}`
+                                    : `Auto-calculated from current balance of ${account.current_balance?.toFixed(2)} minus transactions from ${formatDate(config.startDate)} to now`
+                                  }
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-xs text-muted-foreground">
+                                Balance as of {formatDate(config.startDate) || 'start date'}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const renderConfirmImport = () => {
+    const selectedAccounts = discoveredAccounts.filter(acc =>
+      selectedAccountsToImport.includes(acc.id)
+    );
+
+    const getFilteredTransactionCount = (account) => {
+      const config = accountConfigurations[account.id];
+      if (!config || !config.startDate) {
+        return account.transaction_count;
+      }
+
+      const startDate = new Date(config.startDate);
+      return account.transactions.filter(txn => {
+        const txnDate = new Date(txn.date);
+        return txnDate >= startDate;
+      }).length;
+    };
+
+    const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + getFilteredTransactionCount(acc), 0);
+
+    const handleImport = async () => {
+      try {
+        toast.loading(`Importing ${selectedAccounts.length} accounts...`);
+
+        for (const account of selectedAccounts) {
+          const config = accountConfigurations[account.id];
+          const mapping = importAccountMappings[account.id];
+
+          if (!config) {
+            console.error(`No configuration found for account ${account.id}`);
+            continue;
+          }
+
+          let chartAccountId;
+
+          if (mapping?.isExisting && mapping.chartAccountId) {
+            chartAccountId = mapping.chartAccountId;
+
+            const { data: existingAccount, error: fetchError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .select('*')
+              .eq('id', chartAccountId)
+              .single();
+
+            if (fetchError || !existingAccount) {
+              console.error('Error fetching existing account:', fetchError);
+              toast.error(`Failed to link to existing account`);
+              continue;
+            }
+
+            const { error: updateError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .update({
+                account_number_last4: config.last4,
+                institution_name: selectedInstitution?.name || existingAccount.institution_name,
+                current_balance: 0
+              })
+              .eq('id', chartAccountId);
+
+            if (updateError) {
+              console.error('Error updating existing account:', updateError);
+            }
+          } else {
+            const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+
+            if (!template) {
+              console.error(`No template found for ${config.accountDetail}`);
+              continue;
+            }
+
+            const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+
+            const newAccount = {
+              profile_id: activeProfile.id,
+              template_id: template.id,
+              template_account_number: template.account_number,
+              account_number: accountNumber,
+              display_name: config.displayName,
+              class: template.class,
+              account_detail: template.account_detail,
+              account_type: template.account_type,
+              icon: template.icon,
+              color: template.color,
+              account_number_last4: config.last4,
+              institution_name: selectedInstitution?.name || '',
+              current_balance: 0,
+              is_active: true
+            };
+
+            const { data: createdAccount, error: accountError } = await firstsavvy
+              .from('user_chart_of_accounts')
+              .insert(newAccount)
+              .select()
+              .single();
+
+            if (accountError) {
+              console.error('Error creating account:', accountError);
+              continue;
+            }
+
+            chartAccountId = createdAccount.id;
+          }
+
+          let filteredTransactions = account.transactions;
+
+          if (config.startDate) {
+            const startDate = new Date(config.startDate);
+            filteredTransactions = account.transactions.filter(txn => {
+              const txnDate = new Date(txn.date);
+              return txnDate >= startDate;
+            });
+          }
+
+          if (config.beginningBalance && parseFloat(config.beginningBalance) !== 0) {
+            try {
+              const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
+              const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
+
+              if (firstTransactionDate) {
+                await createOpeningBalanceTransaction(
+                  activeProfile.id,
+                  chartAccountId,
+                  parseFloat(config.beginningBalance),
+                  firstTransactionDate,
+                  equityAccount.id
+                );
+                console.log(`Created opening balance of $${config.beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
+              }
+            } catch (err) {
+              console.error('Error creating opening balance:', err);
+            }
+          }
+
+          const transactionsToInsert = filteredTransactions
+            .filter(txn => txn.amount > 0)
+            .map(txn => ({
+              profile_id: activeProfile.id,
+              bank_account_id: chartAccountId,
+              date: txn.date,
+              description: txn.description,
+              original_description: txn.description,
+              amount: Math.abs(txn.amount),
+              type: txn.type === 'expense' ? 'expense' : 'income',
+              original_type: txn.type === 'expense' ? 'expense' : 'income',
+              status: 'pending',
+              source: 'api'
+            }));
+
+          if (transactionsToInsert.length > 0) {
+            console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
+            const { data: insertedTxns, error: txnError } = await firstsavvy
+              .from('transactions')
+              .insert(transactionsToInsert)
+              .select();
+
+            if (txnError) {
+              console.error('Error inserting transactions:', txnError);
+              toast.error(`Failed to insert transactions for ${config.displayName}: ${txnError.message}`);
+            } else {
+              console.log(`Successfully inserted ${insertedTxns?.length || 0} transactions`);
+            }
+          }
+        }
+
+        queryClient.invalidateQueries(['user-chart-accounts']);
+        queryClient.invalidateQueries(['transactions']);
+        toast.dismiss();
+        toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
+        onOpenChange(false);
+      } catch (error) {
+        console.error('Import error:', error);
+        toast.dismiss();
+        toast.error('Failed to import accounts');
+      }
+    };
+
+    return (
+      <div className="space-y-4">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <h4 className="font-semibold text-blue-900 mb-2">Ready to Import</h4>
+          <div className="space-y-1 text-sm text-blue-800">
+            <p>{selectedAccounts.length} accounts</p>
+            <p>{totalTransactions} transactions</p>
+            <p className="text-xs text-blue-600 mt-2">
+              Estimated time: {Math.ceil(totalTransactions / 100)} seconds
+            </p>
+          </div>
+        </div>
+
+        <div className="space-y-2 max-h-[180px] overflow-y-auto">
+          {selectedAccounts.map(account => {
+            const config = accountConfigurations[account.id];
+            const filteredCount = getFilteredTransactionCount(account);
+
+            return (
+              <div key={account.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <p className="font-medium text-gray-900">{config?.displayName || account.name}</p>
+                  <p className="text-sm text-gray-600">...{config?.last4 || account.last_four}</p>
+                </div>
+                <div className="text-right">
+                  {config?.beginningBalance ? (
+                    <p className="font-semibold text-gray-900">${parseFloat(config.beginningBalance).toFixed(2)}</p>
+                  ) : (
+                    <p className="text-sm text-gray-500 italic">No beginning balance</p>
+                  )}
+                  <p className="text-xs text-gray-500">{filteredCount} transactions</p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="flex justify-end pt-4">
+          <Button
+            onClick={handleImport}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            Import Now
+            <Check className="w-4 h-4 ml-2" />
+          </Button>
+        </div>
       </div>
     );
   };
@@ -2390,6 +3064,10 @@ export default function AccountCreationWizard({
     switch (currentStep) {
       case 'select-type':
         return renderSelectType();
+      case 'connect-bank':
+        return renderConnectBankStep();
+      case 'accounts-discovered':
+        return renderAccountsDiscovered();
       case 'csv-mapping':
         return renderCsvMappingStep();
       case 'bank-info':
@@ -2413,6 +3091,8 @@ export default function AccountCreationWizard({
 
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
+    if (currentStep === 'connect-bank') return 'Connect Your Bank';
+    if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'bank-info') return 'Bank Account Details';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
@@ -2437,8 +3117,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[600px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
@@ -2482,6 +3162,208 @@ export default function AccountCreationWizard({
                       <>
                         <Check className="w-4 h-4 mr-1" />
                         Create Account & Import
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                {currentStep === 'accounts-discovered' && (
+                  <Button
+                    type="button"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                    onClick={async () => {
+                      const selectedAccounts = discoveredAccounts.filter(acc =>
+                        selectedAccountsToImport.includes(acc.id)
+                      );
+
+                      const getFilteredTransactionCount = (account) => {
+                        const config = accountConfigurations[account.id];
+                        if (!config || !config.startDate) {
+                          return account.transaction_count;
+                        }
+
+                        const startDate = new Date(config.startDate);
+                        return account.transactions.filter(txn => {
+                          const txnDate = new Date(txn.date);
+                          return txnDate >= startDate;
+                        }).length;
+                      };
+
+                      const totalTransactions = selectedAccounts.reduce((sum, acc) => sum + getFilteredTransactionCount(acc), 0);
+
+                      try {
+                        toast.loading(`Importing ${selectedAccounts.length} accounts...`);
+
+                        for (const account of selectedAccounts) {
+                          const config = accountConfigurations[account.id];
+                          const mapping = importAccountMappings[account.id];
+
+                          if (!config) {
+                            console.error(`No configuration found for account ${account.id}`);
+                            continue;
+                          }
+
+                          let chartAccountId;
+
+                          if (mapping?.isExisting && mapping.chartAccountId) {
+                            chartAccountId = mapping.chartAccountId;
+
+                            const { data: existingAccount, error: fetchError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .select('*')
+                              .eq('id', chartAccountId)
+                              .single();
+
+                            if (fetchError || !existingAccount) {
+                              console.error('Error fetching existing account:', fetchError);
+                              toast.error(`Failed to link to existing account`);
+                              continue;
+                            }
+
+                            const { error: updateError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .update({
+                                account_number_last4: config.last4,
+                                institution_name: selectedInstitution?.name || existingAccount.institution_name,
+                                current_balance: account.current_balance
+                              })
+                              .eq('id', chartAccountId);
+
+                            if (updateError) {
+                              console.error('Error updating existing account:', updateError);
+                            }
+                          } else {
+                            const template = chartAccounts.find(t => t.account_detail === config.accountDetail);
+
+                            if (!template) {
+                              console.error(`No template found for ${config.accountDetail}`);
+                              continue;
+                            }
+
+                            const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+
+                            const newAccount = {
+                              profile_id: activeProfile.id,
+                              template_id: template.id,
+                              template_account_number: template.account_number,
+                              account_number: accountNumber,
+                              display_name: config.displayName,
+                              class: template.class,
+                              account_detail: template.account_detail,
+                              account_type: template.account_type,
+                              icon: template.icon,
+                              color: template.color,
+                              account_number_last4: config.last4,
+                              institution_name: selectedInstitution?.name || '',
+                              current_balance: account.current_balance,
+                              is_active: true
+                            };
+
+                            const { data: createdAccount, error: accountError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .insert(newAccount)
+                              .select()
+                              .single();
+
+                            if (accountError) {
+                              console.error('Error creating account:', accountError);
+                              continue;
+                            }
+
+                            chartAccountId = createdAccount.id;
+                          }
+
+                          let beginningBalance = null;
+                          const firstTxn = account.transactions?.[0];
+                          if (firstTxn?.description?.toLowerCase().includes('beginning balance') && firstTxn.amount === 0) {
+                            beginningBalance = firstTxn.balance || account.beginning_balance || null;
+                          }
+
+                          let filteredTransactions = account.transactions.filter(txn => {
+                            const desc = txn.description?.toLowerCase() || '';
+                            return !(desc.includes('beginning balance') && txn.amount === 0);
+                          });
+
+                          if (config.startDate) {
+                            const startDate = new Date(config.startDate);
+                            filteredTransactions = filteredTransactions.filter(txn => {
+                              const txnDate = new Date(txn.date);
+                              return txnDate >= startDate;
+                            });
+                          }
+
+                          if (beginningBalance && beginningBalance > 0 && filteredTransactions.length > 0) {
+                            try {
+                              const equityAccount = await findOrCreateOpeningBalanceEquityAccount(activeProfile.id);
+                              const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
+
+                              if (firstTransactionDate) {
+                                await createOpeningBalanceTransaction(
+                                  activeProfile.id,
+                                  chartAccountId,
+                                  beginningBalance,
+                                  firstTransactionDate,
+                                  equityAccount.id
+                                );
+                                console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId}`);
+                              }
+                            } catch (err) {
+                              console.error('Error creating opening balance:', err);
+                            }
+                          }
+
+                          const transactionsToInsert = filteredTransactions
+                            .filter(txn => txn.amount > 0)
+                            .map(txn => ({
+                              profile_id: activeProfile.id,
+                              bank_account_id: chartAccountId,
+                              date: txn.date,
+                              description: txn.description,
+                              original_description: txn.description,
+                              amount: Math.abs(txn.amount),
+                              type: txn.type === 'expense' ? 'expense' : 'income',
+                              original_type: txn.type === 'expense' ? 'expense' : 'income',
+                              status: 'pending',
+                              source: 'api'
+                            }));
+
+                          if (transactionsToInsert.length > 0) {
+                            console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
+                            const { data: insertedTxns, error: txnError } = await firstsavvy
+                              .from('transactions')
+                              .insert(transactionsToInsert)
+                              .select();
+
+                            if (txnError) {
+                              console.error('Error inserting transactions:', txnError);
+                              toast.error(`Failed to insert transactions for ${config.displayName}: ${txnError.message}`);
+                            } else {
+                              console.log(`Successfully inserted ${insertedTxns?.length || 0} transactions`);
+                            }
+                          }
+                        }
+
+                        queryClient.invalidateQueries(['user-chart-accounts']);
+                        queryClient.invalidateQueries(['transactions']);
+                        toast.dismiss();
+                        toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
+                        onOpenChange(false);
+                      } catch (error) {
+                        console.error('Import error:', error);
+                        toast.dismiss();
+                        toast.error('Failed to import accounts');
+                      }
+                    }}
+                    disabled={selectedAccountsToImport.length === 0 || isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Importing...
+                      </>
+                    ) : (
+                      <>
+                        Import ({selectedAccountsToImport.length} selected)
                       </>
                     )}
                   </Button>
