@@ -738,7 +738,14 @@ export default function AccountsTable() {
                             )}
                             {visibleColumns.balance && (
                               <td className="px-4 py-0.5 text-right">
-                                <span className="font-semibold text-slate-900 text-xs">
+                                <span className={`font-semibold text-xs ${(() => {
+                                  const balance = getAccountBalance(account);
+                                  const isLiability = account.class === 'liability';
+                                  if (isLiability) {
+                                    return balance > 0 ? 'text-red-700' : balance < 0 ? 'text-green-700' : 'text-slate-900';
+                                  }
+                                  return 'text-slate-900';
+                                })()}`}>
                                   {(() => {
                                     const balance = getAccountBalance(account);
                                     return balance < 0 ? `-$${Math.abs(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;

@@ -147,9 +147,11 @@ export default function Dashboard() {
   }, [queryClient]);
 
   // Calculate net worth (only active accounts)
+  // Assets - Liabilities (liabilities stored as positive = amount owed)
   const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_balance || 0), 0);
   const totalLiabilities = liabilities.filter(l => l.is_active !== false).reduce((sum, liability) => sum + (liability.current_balance || 0), 0);
-  const netWorth = totalAssets - totalLiabilities + accounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
+  const legacyAccountsBalance = accounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
+  const netWorth = totalAssets + legacyAccountsBalance - totalLiabilities;
 
   // Calculate net worth change from last month
   const calculateNetWorthChange = () => {

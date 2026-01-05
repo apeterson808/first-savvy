@@ -388,12 +388,15 @@ export default function AccountDetail() {
                 <div className="text-right">
                   <p className="text-sm text-slate-500">
                     {account.entityType === 'Asset' ? 'Current Value' :
-                     account.entityType === 'Liability' ? 'Amount Owed' :
+                     account.entityType === 'Liability' ?
+                       ((account.current_balance || 0) >= 0 ? 'Amount Owed' : 'Credit Balance') :
                      account.entityType === 'Equity' ? 'Current Value' :
                      'Current Balance'}
                   </p>
                   <p className={`text-3xl font-bold ${
-                    account.entityType === 'Liability' ? 'text-burgundy' :
+                    account.entityType === 'Liability' ?
+                      ((account.current_balance || 0) > 0 ? 'text-red-700' :
+                       (account.current_balance || 0) < 0 ? 'text-green-700' : 'text-slate-900') :
                     account.entityType === 'Asset' ? 'text-forest-green' :
                     'text-slate-900'
                   }`}>

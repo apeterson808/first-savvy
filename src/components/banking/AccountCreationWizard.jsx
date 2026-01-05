@@ -1048,7 +1048,7 @@ export default function AccountCreationWizard({
         await createAccountMutation.mutateAsync({
           account_name: formData.name,
           account_type: selectedSubtype.value,
-          current_balance: balanceValidation.value,
+          current_balance: selectedSubtype.value === 'credit_card' ? Math.abs(balanceValidation.value) : balanceValidation.value,
           institution_name: formData.institutionName || null,
           account_number_last4: formData.last4 || null,
           is_active: true
@@ -1206,7 +1206,7 @@ export default function AccountCreationWizard({
         await createLiabilityMutation.mutateAsync({
           name: formData.name,
           type: selectedSubtype.value,
-          current_balance: balanceValidation.value,
+          current_balance: Math.abs(balanceValidation.value),
           institution: formData.lenderName || null,
           is_active: true
         });
