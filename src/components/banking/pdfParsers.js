@@ -26,10 +26,20 @@ export const parseCitiStatement = (text, lines) => {
     newBalance = parseFloat(newBalanceMatch[1].replace(/,/g, ''));
   }
 
-  const billingPeriodMatch = text.match(/Billing\s+Period[:\s]+(\d{2}\/\d{2}\/\d{2,4})\s*-\s*(\d{2}\/\d{2}\/\d{2,4})/i);
+  const billingPeriodMatch = text.match(/Billing\s+Period[\s:]+(\d{1,2}\/\d{1,2}\/\d{2,4})\s*-\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
   if (billingPeriodMatch) {
     statementStartDate = billingPeriodMatch[1];
     statementEndDate = billingPeriodMatch[2];
+    console.log('Citi: Found billing period:', statementStartDate, '-', statementEndDate);
+  } else {
+    const altMatch = text.match(/(\d{1,2}\/\d{1,2}\/\d{2,4})\s*(?:through|thru|-|to)\s*(\d{1,2}\/\d{1,2}\/\d{2,4})/i);
+    if (altMatch) {
+      statementStartDate = altMatch[1];
+      statementEndDate = altMatch[2];
+      console.log('Citi: Found date range via alternate pattern:', statementStartDate, '-', statementEndDate);
+    } else {
+      console.log('Citi: No billing period found in statement');
+    }
   }
 
   let inPaymentsSection = false;
