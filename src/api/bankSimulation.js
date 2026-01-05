@@ -756,6 +756,7 @@ export async function getInstitutionAccounts(institutionId, profileId = null) {
           type: account.account_type,
           last_four: account.last_four,
           current_balance: account.ending_balance,
+          beginning_balance: null,
           institution_name: institution.name,
           institution_id: institutionId,
           transaction_count: 0,
@@ -765,12 +766,23 @@ export async function getInstitutionAccounts(institutionId, profileId = null) {
     });
   });
 
-  Object.values(simulationData).forEach(monthData => {
+  const sortedMonths = Object.entries(simulationData).sort((a, b) => {
+    const monthOrder = { sep: 9, oct: 10, nov: 11, dec: 12 };
+    const dateA = `${a[1].statement_year}-${String(monthOrder[a[1].statement_month] || 1).padStart(2, '0')}`;
+    const dateB = `${b[1].statement_year}-${String(monthOrder[b[1].statement_month] || 1).padStart(2, '0')}`;
+    return dateA.localeCompare(dateB);
+  });
+
+  sortedMonths.forEach(([key, monthData], index) => {
     monthData.accounts.forEach(account => {
       const acc = accountsByLast4[account.last_four];
       if (acc) {
         acc.transaction_count += account.transactions.length;
         acc.current_balance = account.ending_balance;
+
+        if (index === 0 && account.beginning_balance !== undefined) {
+          acc.beginning_balance = account.beginning_balance;
+        }
 
         account.transactions.forEach(txn => {
           if (!acc.date_range.start || txn.date < acc.date_range.start) {

@@ -1500,7 +1500,9 @@ export default function AccountCreationWizard({
         const startDate = account.date_range?.start || '';
         let beginningBalance = '';
 
-        if (startDate && account.current_balance !== undefined && account.transactions) {
+        if (account.beginning_balance !== undefined && account.beginning_balance !== null) {
+          beginningBalance = Math.abs(account.beginning_balance).toString();
+        } else if (startDate && account.current_balance !== undefined && account.transactions) {
           const isLiability = account.type === 'credit_card';
           const calculatedBalance = calculateBeginningBalanceFromCurrent(
             account.current_balance,
@@ -1735,7 +1737,10 @@ export default function AccountCreationWizard({
                               <div className="flex items-start gap-1 text-xs text-blue-600">
                                 <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                 <p>
-                                  Auto-calculated from current balance of ${account.current_balance?.toFixed(2)} minus transactions from {formatDate(config.startDate)} to now
+                                  {account.beginning_balance !== undefined && account.beginning_balance !== null
+                                    ? `From statement: Balance as of ${formatDate(config.startDate)}`
+                                    : `Auto-calculated from current balance of ${account.current_balance?.toFixed(2)} minus transactions from ${formatDate(config.startDate)} to now`
+                                  }
                                 </p>
                               </div>
                             ) : (
