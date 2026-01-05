@@ -319,10 +319,10 @@ const CITI_SIMULATION_DATA = {
         "last_four": "1733",
         "account_type": "credit_card",
         "account_name": "Citi Costco Credit Card",
-        "beginning_balance": -543.21,
-        "ending_balance": -627.50,
+        "beginning_balance": -817.17,
+        "ending_balance": -850.72,
         "transactions": [
-          { "date": "2025-09-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -543.21 },
+          { "date": "2025-09-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -817.17 },
           { "date": "2025-09-03", "description": "COSTCO WHSE #1234", "amount": 245.67, "type": "expense", "balance": -788.88 },
           { "date": "2025-09-05", "description": "SHELL OIL", "amount": 42.15, "type": "expense", "balance": -831.03 },
           { "date": "2025-09-07", "description": "AMAZON.COM", "amount": 89.99, "type": "expense", "balance": -921.02 },
@@ -332,7 +332,7 @@ const CITI_SIMULATION_DATA = {
           { "date": "2025-09-18", "description": "RESTAURANT", "amount": 85.50, "type": "expense", "balance": -589.66 },
           { "date": "2025-09-20", "description": "WALGREENS", "amount": 23.45, "type": "expense", "balance": -613.11 },
           { "date": "2025-09-24", "description": "COSTCO WHSE #1234", "amount": 156.89, "type": "expense", "balance": -770.00 },
-          { "date": "2025-09-26", "description": "ONLINE PAYMENT, THANK YOU", "amount": 142.50, "type": "income", "balance": -627.50 }
+          { "date": "2025-09-26", "description": "ONLINE PAYMENT, THANK YOU", "amount": 142.50, "type": "income", "balance": -850.72 }
         ]
       }
     ]
@@ -345,10 +345,10 @@ const CITI_SIMULATION_DATA = {
         "last_four": "1733",
         "account_type": "credit_card",
         "account_name": "Citi Costco Credit Card",
-        "beginning_balance": -627.50,
-        "ending_balance": -892.34,
+        "beginning_balance": -850.72,
+        "ending_balance": -37.49,
         "transactions": [
-          { "date": "2025-10-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -627.50 },
+          { "date": "2025-10-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -850.72 },
           { "date": "2025-10-03", "description": "COSTCO GAS", "amount": 52.30, "type": "expense", "balance": -679.80 },
           { "date": "2025-10-05", "description": "AMAZON.COM", "amount": 124.67, "type": "expense", "balance": -804.47 },
           { "date": "2025-10-08", "description": "ONLINE PAYMENT, THANK YOU", "amount": 627.50, "type": "income", "balance": -176.97 },
@@ -359,7 +359,7 @@ const CITI_SIMULATION_DATA = {
           { "date": "2025-10-22", "description": "TARGET", "amount": 89.34, "type": "expense", "balance": -795.58 },
           { "date": "2025-10-25", "description": "AMAZON PRIME", "amount": 14.99, "type": "expense", "balance": -810.57 },
           { "date": "2025-10-28", "description": "COSTCO GAS", "amount": 48.77, "type": "expense", "balance": -859.34 },
-          { "date": "2025-10-30", "description": "PHARMACY", "amount": 33.00, "type": "expense", "balance": -892.34 }
+          { "date": "2025-10-30", "description": "PHARMACY", "amount": 33.00, "type": "expense", "balance": -37.49 }
         ]
       }
     ]
@@ -372,10 +372,10 @@ const CITI_SIMULATION_DATA = {
         "last_four": "1733",
         "account_type": "credit_card",
         "account_name": "Citi Costco Credit Card",
-        "beginning_balance": -892.34,
-        "ending_balance": -1203.45,
+        "beginning_balance": -37.49,
+        "ending_balance": -627.50,
         "transactions": [
-          { "date": "2025-11-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -892.34 },
+          { "date": "2025-11-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -37.49 },
           { "date": "2025-11-04", "description": "ONLINE PAYMENT, THANK YOU", "amount": 892.34, "type": "income", "balance": 0.00 },
           { "date": "2025-11-06", "description": "COSTCO WHSE #1234", "amount": 267.89, "type": "expense", "balance": -267.89 },
           { "date": "2025-11-09", "description": "COSTCO GAS", "amount": 54.23, "type": "expense", "balance": -322.12 },
@@ -385,7 +385,7 @@ const CITI_SIMULATION_DATA = {
           { "date": "2025-11-20", "description": "TARGET", "amount": 112.45, "type": "expense", "balance": -733.32 },
           { "date": "2025-11-23", "description": "COSTCO WHSE #1234", "amount": 198.67, "type": "expense", "balance": -931.99 },
           { "date": "2025-11-25", "description": "HOLIDAY SHOPPING", "amount": 234.56, "type": "expense", "balance": -1166.55 },
-          { "date": "2025-11-28", "description": "PHARMACY", "amount": 36.90, "type": "expense", "balance": -1203.45 }
+          { "date": "2025-11-28", "description": "PHARMACY", "amount": 36.90, "type": "expense", "balance": -627.50 }
         ]
       }
     ]
@@ -398,10 +398,10 @@ const CITI_SIMULATION_DATA = {
         "last_four": "1733",
         "account_type": "credit_card",
         "account_name": "Citi Costco Credit Card",
-        "beginning_balance": -1203.45,
+        "beginning_balance": -627.50,
         "ending_balance": -1447.41,
         "transactions": [
-          { "date": "2025-12-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -1203.45 },
+          { "date": "2025-12-01", "description": "Beginning Balance", "amount": 0, "type": "expense", "balance": -627.50 },
           { "date": "2025-12-02", "description": "ONLINE PAYMENT, THANK YOU", "amount": 1203.45, "type": "income", "balance": 0.00 },
           { "date": "2025-12-05", "description": "COSTCO WHSE #1234", "amount": 289.45, "type": "expense", "balance": -289.45 },
           { "date": "2025-12-07", "description": "COSTCO GAS", "amount": 49.87, "type": "expense", "balance": -339.32 },
