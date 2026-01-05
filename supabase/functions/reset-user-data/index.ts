@@ -99,50 +99,23 @@ Deno.serve(async (req: Request) => {
       console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
     }
 
-    console.log(`Recreating chart of accounts for profile ${profileId}...`);
-    const { data: templates, error: templatesError } = await supabase
-      .from("chart_of_accounts_templates")
-      .select("*")
-      .order("account_number");
+    console.log(`Provisioning fresh chart of accounts for user ${userId}...`);
+    const { error: provisionError } = await supabase.rpc(
+      "provision_chart_of_accounts_for_user",
+      { p_user_id: userId }
+    );
 
-    if (templatesError) {
-      console.error("Error fetching templates:", templatesError);
-      throw new Error(`Failed to fetch templates: ${templatesError.message}`);
+    if (provisionError) {
+      console.error("Error provisioning chart of accounts:", provisionError);
+      throw new Error(`Failed to provision chart of accounts: ${provisionError.message}`);
     }
 
-    console.log(`Found ${templates?.length || 0} account templates`);
-
-    if (templates && templates.length > 0) {
-      const userAccounts = templates.map(template => ({
-        profile_id: profileId,
-        template_account_number: template.account_number,
-        account_number: template.account_number,
-        class: template.class,
-        account_detail: template.account_detail,
-        account_type: template.account_type,
-        display_name: template.display_name,
-        icon: template.icon,
-        color: template.color,
-        is_active: false,
-        is_user_created: false,
-      }));
-
-      const { error: insertError } = await supabase
-        .from("user_chart_of_accounts")
-        .insert(userAccounts);
-
-      if (insertError) {
-        console.error("Error inserting chart accounts:", insertError);
-        throw new Error(`Failed to recreate chart of accounts: ${insertError.message}`);
-      }
-
-      console.log(`Successfully recreated ${userAccounts.length} chart accounts`);
-    }
+    console.log(`Successfully provisioned Income and Expense accounts for new user experience`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "All user data has been cleared and reset successfully"
+        message: "Your account has been reset to a fresh start with Income and Expense categories ready for budgeting"
       }),
       {
         status: 200,

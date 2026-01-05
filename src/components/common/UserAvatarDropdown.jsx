@@ -102,10 +102,9 @@ export function UserAvatarDropdown() {
         throw new Error(result.error || 'Failed to reset data');
       }
 
-      toast.success('All data has been reset successfully');
+      toast.success('Your account has been reset to a fresh start');
       setShowResetDialog(false);
 
-      // Refresh the page to show clean state
       window.location.reload();
     } catch (error) {
       console.error('Error resetting data:', error);
@@ -205,17 +204,26 @@ export function UserAvatarDropdown() {
       <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reset All Data?</AlertDialogTitle>
+            <AlertDialogTitle>Reset to Fresh Start?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete all your financial data including:
-              <ul className="list-disc list-inside mt-2 space-y-1">
-                <li>All transactions</li>
-                <li>All accounts and balances</li>
-                <li>All budgets</li>
-                <li>All contacts</li>
-                <li>All categorization rules</li>
-              </ul>
-              <p className="mt-3 font-semibold">This action cannot be undone.</p>
+              This will reset your account to match the experience of a brand new user signing up for the first time.
+              <div className="mt-3 space-y-2">
+                <p className="font-semibold text-destructive">What will be deleted:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>All transactions and financial history</li>
+                  <li>All accounts and balances</li>
+                  <li>All budgets</li>
+                  <li>All contacts</li>
+                  <li>All categorization rules</li>
+                </ul>
+                <p className="font-semibold text-foreground mt-3">What you'll get:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>8 active Income categories (ready for budgeting)</li>
+                  <li>30 active Expense categories (ready for budgeting)</li>
+                  <li>Clean slate to add accounts when needed</li>
+                </ul>
+              </div>
+              <p className="mt-3 font-semibold text-destructive">This action cannot be undone.</p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -225,7 +233,7 @@ export function UserAvatarDropdown() {
               disabled={resetting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {resetting ? 'Resetting...' : 'Reset All Data'}
+              {resetting ? 'Resetting...' : 'Reset to Fresh Start'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
