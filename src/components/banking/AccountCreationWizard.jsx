@@ -21,6 +21,7 @@ import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import { activateTemplateAccount } from '@/api/chartOfAccounts';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
+import { useTemplateAccountTypesByClass, useTemplateAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
@@ -1507,6 +1508,64 @@ export default function AccountCreationWizard({
   };
 
   const renderAccountsDiscovered = () => {
+    const AccountTypeDetailSelector = ({ accountId, config }) => {
+      const { accountTypes, isLoading: typesLoading } = useTemplateAccountTypesByClass(config.accountClass);
+      const { accountDetails, isLoading: detailsLoading } = useTemplateAccountDetailsByType(
+        config.accountClass,
+        config.accountType
+      );
+
+      return (
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor={`account-type-${accountId}`} className="text-xs font-medium">
+              Account Type
+            </Label>
+            <Select
+              value={config.accountType || ''}
+              onValueChange={(value) => handleAccountTypeChange(accountId, value)}
+              disabled={typesLoading}
+            >
+              <SelectTrigger id={`account-type-${accountId}`} className="h-9">
+                <SelectValue placeholder={typesLoading ? "Loading..." : "Select type"} />
+              </SelectTrigger>
+              <SelectContent>
+                {accountTypes.map((type) => (
+                  <SelectItem key={type} value={type}>
+                    {formatLabel(type)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {config.accountType && accountDetails.length > 0 && (
+            <div className="space-y-2">
+              <Label htmlFor={`account-detail-${accountId}`} className="text-xs font-medium">
+                Account Detail
+              </Label>
+              <Select
+                value={config.accountDetail || ''}
+                onValueChange={(value) => handleAccountDetailChange(accountId, value)}
+                disabled={detailsLoading}
+              >
+                <SelectTrigger id={`account-detail-${accountId}`} className="h-9">
+                  <SelectValue placeholder={detailsLoading ? "Loading..." : "Select detail"} />
+                </SelectTrigger>
+                <SelectContent>
+                  {accountDetails.map((detail) => (
+                    <SelectItem key={detail} value={detail}>
+                      {formatLabel(detail)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </div>
+      );
+    };
+
     const toggleAccountSelection = (accountId, account) => {
       const isCurrentlySelected = selectedAccountsToImport.includes(accountId);
 
@@ -1525,11 +1584,16 @@ export default function AccountCreationWizard({
       } else {
         setSelectedAccountsToImport(prev => [...prev, accountId]);
 
-        const accountDetailMap = {
-          'checking': 'checking_account',
-          'savings': 'savings_account',
-          'credit_card': 'personal_credit_card'
+        const accountTypeMapping = {
+          'checking': { class: 'asset', type: 'bank_accounts', detail: 'checking_account' },
+          'savings': { class: 'asset', type: 'bank_accounts', detail: 'savings_account' },
+          'credit_card': { class: 'liability', type: 'credit_cards', detail: 'personal_credit_card' },
+          'loan': { class: 'liability', type: 'loans', detail: 'personal_loan' },
+          'mortgage': { class: 'liability', type: 'loans', detail: 'mortgage_primary' },
+          'investment': { class: 'asset', type: 'investments', detail: 'brokerage_account' }
         };
+
+        const mapping = accountTypeMapping[account.type] || { class: 'asset', type: 'bank_accounts', detail: 'checking_account' };
 
         const startDate = account.date_range?.start || '';
         let beginningBalance = '';
@@ -1537,7 +1601,7 @@ export default function AccountCreationWizard({
         if (account.beginning_balance !== undefined && account.beginning_balance !== null) {
           beginningBalance = Math.abs(account.beginning_balance).toString();
         } else if (startDate && account.current_balance !== undefined && account.transactions) {
-          const isLiability = account.type === 'credit_card';
+          const isLiability = mapping.class === 'liability';
           const calculatedBalance = calculateBeginningBalanceFromCurrent(
             account.current_balance,
             account.transactions,
@@ -1551,7 +1615,9 @@ export default function AccountCreationWizard({
           ...prev,
           [accountId]: {
             displayName: account.name,
-            accountDetail: accountDetailMap[account.type] || 'checking_account',
+            accountClass: mapping.class,
+            accountType: mapping.type,
+            accountDetail: mapping.detail,
             last4: account.last_four,
             startDate: startDate,
             beginningBalance: beginningBalance
@@ -1603,6 +1669,19 @@ export default function AccountCreationWizard({
         [accountId]: {
           chartAccountId: isExisting ? chartAccountId : null,
           isExisting
+        }
+      }));
+    };
+
+    const handleAccountTypeChange = (accountId, newAccountType) => {
+      updateAccountConfig(accountId, 'accountType', newAccountType);
+      updateAccountConfig(accountId, 'accountDetail', '');
+      updateAccountConfig(accountId, 'displayName', accountConfigurations[accountId]?.displayName || '');
+      setImportAccountMappings(prev => ({
+        ...prev,
+        [accountId]: {
+          chartAccountId: null,
+          isExisting: false
         }
       }));
     };
@@ -1678,51 +1757,33 @@ export default function AccountCreationWizard({
 
                       {isSelected && config && (
                         <div className="mt-4 pt-4 border-t space-y-4 animate-in slide-in-from-top-2">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                              <Label htmlFor={`display-name-${account.id}`} className="text-xs font-medium">
-                                Display Name
-                              </Label>
-                              <AccountCombobox
-                                accounts={userChartAccounts?.filter(acc =>
-                                  acc.account_detail === config.accountDetail &&
-                                  acc.is_active === true
-                                ) || []}
-                                value={importAccountMappings[account.id]?.chartAccountId || config.displayName}
-                                onValueChange={(chartAccountId, displayName, isExisting) =>
-                                  handleDisplayNameChange(account.id, chartAccountId, displayName, isExisting)
-                                }
-                                placeholder="Select existing or type new account name..."
-                              />
-                              {config.displayName && (
-                                <Badge
-                                  variant={importAccountMappings[account.id]?.isExisting ? "default" : "secondary"}
-                                  className="text-xs mt-1"
-                                >
-                                  {importAccountMappings[account.id]?.isExisting ? "Existing Account" : "New Account"}
-                                </Badge>
-                              )}
-                            </div>
-
-                            <div className="space-y-2">
-                              <Label htmlFor={`account-detail-${account.id}`} className="text-xs font-medium">
-                                Account Detail
-                              </Label>
-                              <Select
-                                value={config.accountDetail}
-                                onValueChange={(value) => handleAccountDetailChange(account.id, value)}
+                          <div className="space-y-2">
+                            <Label htmlFor={`display-name-${account.id}`} className="text-xs font-medium">
+                              Display Name
+                            </Label>
+                            <AccountCombobox
+                              accounts={userChartAccounts?.filter(acc =>
+                                acc.account_type === config.accountType &&
+                                acc.account_detail === config.accountDetail &&
+                                acc.is_active === true
+                              ) || []}
+                              value={importAccountMappings[account.id]?.chartAccountId || config.displayName}
+                              onValueChange={(chartAccountId, displayName, isExisting) =>
+                                handleDisplayNameChange(account.id, chartAccountId, displayName, isExisting)
+                              }
+                              placeholder="Select existing or type new account name..."
+                            />
+                            {config.displayName && (
+                              <Badge
+                                variant={importAccountMappings[account.id]?.isExisting ? "default" : "secondary"}
+                                className="text-xs mt-1"
                               >
-                                <SelectTrigger id={`account-detail-${account.id}`} className="h-9">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="checking_account">Checking Account</SelectItem>
-                                  <SelectItem value="savings_account">Savings Account</SelectItem>
-                                  <SelectItem value="personal_credit_card">Credit Card</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
+                                {importAccountMappings[account.id]?.isExisting ? "Existing Account" : "New Account"}
+                              </Badge>
+                            )}
                           </div>
+
+                          <AccountTypeDetailSelector accountId={account.id} config={config} />
 
                           <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">

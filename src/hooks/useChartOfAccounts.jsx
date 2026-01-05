@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useProfile } from '@/contexts/ProfileContext';
-import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
+import { getUserChartOfAccounts, getChartOfAccountsTemplates } from '@/api/chartOfAccounts';
 
 export function useChartOfAccounts(classFilter = null, options = {}) {
   const { activeProfile } = useProfile();
@@ -72,6 +72,57 @@ export function useChartAccountsByTypeAndDetail(classFilter, accountType, accoun
 
   return {
     accounts: matchingAccounts,
+    isLoading,
+    error
+  };
+}
+
+export function useChartOfAccountsTemplates(classFilter = null) {
+  return useQuery({
+    queryKey: ['chart-of-accounts-templates', classFilter],
+    queryFn: async () => {
+      const templates = await getChartOfAccountsTemplates();
+
+      if (classFilter) {
+        return templates.filter(template => template.class === classFilter);
+      }
+
+      return templates;
+    },
+    staleTime: 5 * 60 * 1000,
+    cacheTime: 10 * 60 * 1000,
+  });
+}
+
+export function useTemplateAccountTypesByClass(classFilter) {
+  const { data: templates = [], isLoading, error } = useChartOfAccountsTemplates(classFilter);
+
+  const accountTypes = [...new Set(
+    templates
+      .map(template => template.account_type)
+      .filter(Boolean)
+  )].sort();
+
+  return {
+    accountTypes,
+    isLoading,
+    error,
+    templates
+  };
+}
+
+export function useTemplateAccountDetailsByType(classFilter, accountType) {
+  const { data: templates = [], isLoading, error } = useChartOfAccountsTemplates(classFilter);
+
+  const accountDetails = templates
+    .filter(template => template.account_type === accountType)
+    .map(template => template.account_detail)
+    .filter(Boolean)
+    .filter((detail, index, self) => self.indexOf(detail) === index)
+    .sort();
+
+  return {
+    accountDetails,
     isLoading,
     error
   };
