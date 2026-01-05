@@ -29,9 +29,9 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
     query = query.eq('account_type', filters.accountType);
   }
 
-  if (filters.isActive !== undefined) {
+  if (typeof filters.isActive === 'boolean') {
     query = query.eq('is_active', filters.isActive);
-  } else {
+  } else if (!('isActive' in filters)) {
     query = query.eq('is_active', true);
   }
 
