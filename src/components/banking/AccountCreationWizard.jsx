@@ -3390,7 +3390,22 @@ export default function AccountCreationWizard({
                             accountObject = createdAccount;
                           }
 
-                          let beginningBalance = config.beginningBalance ? parseFloat(config.beginningBalance) : null;
+                          console.log(`[OPENING BALANCE DEBUG] Account: ${account.name}`);
+                          console.log(`[OPENING BALANCE DEBUG] config.beginningBalance RAW:`, config.beginningBalance);
+                          console.log(`[OPENING BALANCE DEBUG] config.startDate:`, config.startDate);
+                          console.log(`[OPENING BALANCE DEBUG] account.type:`, account.type);
+                          console.log(`[OPENING BALANCE DEBUG] config.accountClass:`, config.accountClass);
+
+                          let beginningBalance = null;
+                          if (config.beginningBalance !== undefined && config.beginningBalance !== null && config.beginningBalance !== '') {
+                            beginningBalance = parseFloat(config.beginningBalance);
+                            if (isNaN(beginningBalance)) {
+                              console.warn(`[OPENING BALANCE DEBUG] Failed to parse beginning balance: ${config.beginningBalance}`);
+                              beginningBalance = null;
+                            }
+                          }
+
+                          console.log(`[OPENING BALANCE DEBUG] beginningBalance PARSED:`, beginningBalance);
 
                           let filteredTransactions = account.transactions.filter(txn => {
                             const desc = txn.description?.toLowerCase() || '';
@@ -3405,11 +3420,23 @@ export default function AccountCreationWizard({
                             });
                           }
 
-                          if (beginningBalance && beginningBalance !== 0 && filteredTransactions.length > 0) {
+                          console.log(`[OPENING BALANCE DEBUG] filteredTransactions.length:`, filteredTransactions.length);
+                          console.log(`[OPENING BALANCE DEBUG] Condition check: beginningBalance=${beginningBalance}, !== 0? ${beginningBalance !== 0}, hasTxns? ${filteredTransactions.length > 0}`);
+
+                          if (beginningBalance !== null && beginningBalance !== 0 && filteredTransactions.length > 0) {
+                            console.log(`[OPENING BALANCE DEBUG] CREATING OPENING BALANCE`);
                             try {
                               const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
 
                               if (firstTransactionDate && accountObject) {
+                                console.log(`[OPENING BALANCE DEBUG] Calling createOpeningBalanceTransaction with:`, {
+                                  profileId: activeProfile.id,
+                                  userId: user.id,
+                                  accountId: accountObject.id,
+                                  amount: beginningBalance,
+                                  date: firstTransactionDate
+                                });
+
                                 await createOpeningBalanceTransaction(
                                   activeProfile.id,
                                   user.id,
@@ -3417,11 +3444,18 @@ export default function AccountCreationWizard({
                                   beginningBalance,
                                   firstTransactionDate
                                 );
-                                console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
+                                console.log(`✓ Created opening balance of $${beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
+                              } else {
+                                console.warn(`[OPENING BALANCE DEBUG] Missing required data:`, {
+                                  firstTransactionDate,
+                                  accountObject: !!accountObject
+                                });
                               }
                             } catch (err) {
                               console.error('Error creating opening balance:', err);
                             }
+                          } else {
+                            console.log(`[OPENING BALANCE DEBUG] SKIPPING opening balance creation - condition not met`);
                           }
 
                           const transactionsToInsert = filteredTransactions
