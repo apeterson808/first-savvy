@@ -807,6 +807,28 @@ export default function AccountCreationWizard({
         if (error) throw error;
       }
 
+      if (processedData?.endingBalance !== undefined && processedData?.endingBalance !== null) {
+        const updateData = {
+          bank_balance: processedData.endingBalance,
+          last_synced_at: new Date().toISOString()
+        };
+
+        if (processedData.statementEndDate) {
+          updateData.last_statement_date = processedData.statementEndDate;
+        }
+
+        const { error: balanceError } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .update(updateData)
+          .eq('id', targetAccountId);
+
+        if (balanceError) {
+          console.error('Error updating bank balance:', balanceError);
+        } else {
+          console.log(`Updated bank balance to $${processedData.endingBalance} for account ${targetAccountId}`);
+        }
+      }
+
       const matchedCount = await autoMatchTransfers(allTransactions);
 
       queryClient.invalidateQueries({ queryKey: ['transactions'] });

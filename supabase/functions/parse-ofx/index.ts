@@ -72,6 +72,9 @@ Deno.serve(async (req: Request) => {
     let institutionName = "";
     let accountNumber = "";
     let beginningBalance = 0;
+    let endingBalance = 0;
+    let statementStartDate = null;
+    let statementEndDate = null;
     let accountType = "checking";
 
     const orgMatch = ofxContent.match(/<ORG>([^<]+)/i);
@@ -88,12 +91,25 @@ Deno.serve(async (req: Request) => {
       accountType = "credit_card";
     }
 
+    const dtStartMatch = ofxContent.match(/<DTSTART>(\d{8})/i);
+    if (dtStartMatch) {
+      const dateStr = dtStartMatch[1];
+      statementStartDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+    }
+
+    const dtEndMatch = ofxContent.match(/<DTEND>(\d{8})/i);
+    if (dtEndMatch) {
+      const dateStr = dtEndMatch[1];
+      statementEndDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+    }
+
     const balAmtMatch = ofxContent.match(/<BALAMT>([^<]+)/i);
     if (balAmtMatch) {
-      beginningBalance = parseFloat(balAmtMatch[1]);
-      if (isCreditCard && beginningBalance < 0) {
-        beginningBalance = Math.abs(beginningBalance);
+      endingBalance = parseFloat(balAmtMatch[1]);
+      if (isCreditCard && endingBalance < 0) {
+        endingBalance = Math.abs(endingBalance);
       }
+      beginningBalance = endingBalance;
     }
 
     const stmtTrnPattern = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
@@ -139,6 +155,9 @@ Deno.serve(async (req: Request) => {
           institutionName,
           accountNumber,
           beginningBalance,
+          endingBalance,
+          statementStartDate,
+          statementEndDate,
           accountType,
         },
       }),

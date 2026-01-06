@@ -96,7 +96,9 @@ export const importStatementWithBeginningBalance = async (
   institutionName,
   beginningBalance,
   statementStartDate,
-  transactions
+  transactions,
+  endingBalance = null,
+  statementEndDate = null
 ) => {
   const bankAccount = await findBankAccountByLastFour(profileId, accountLastFour, institutionName);
 
@@ -130,6 +132,32 @@ export const importStatementWithBeginningBalance = async (
     } catch (err) {
       console.error('Error creating opening balance journal entry:', err);
       results.errors.push(`Failed to create opening balance: ${err.message}`);
+    }
+  }
+
+  if (endingBalance !== null) {
+    try {
+      const updateData = {
+        bank_balance: endingBalance,
+        last_synced_at: new Date().toISOString()
+      };
+
+      if (statementEndDate) {
+        updateData.last_statement_date = statementEndDate;
+      }
+
+      const { error: updateError } = await supabase
+        .from('user_chart_of_accounts')
+        .update(updateData)
+        .eq('id', bankAccount.id);
+
+      if (updateError) {
+        console.error('Error updating bank balance:', updateError);
+        results.errors.push(`Failed to update bank balance: ${updateError.message}`);
+      }
+    } catch (err) {
+      console.error('Error updating bank balance:', err);
+      results.errors.push(`Failed to update bank balance: ${err.message}`);
     }
   }
 
