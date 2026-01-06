@@ -1351,7 +1351,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     });
                                   }}
                                   transactionDescription={transaction.description}
-                                  aiSuggestionId={contactSuggestions[transaction.id]?.contactId}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                   onAddNew={(searchTerm) => {
                                     setContactSearchTerm(searchTerm);
