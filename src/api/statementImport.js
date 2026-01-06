@@ -74,6 +74,8 @@ export const createOpeningBalanceTransaction = async (profileId, userId, bankAcc
   openingBalanceDate.setDate(openingBalanceDate.getDate() - 1);
   const formattedDate = openingBalanceDate.toISOString().split('T')[0];
 
+  const accountClass = bankAccount.class ? bankAccount.class.charAt(0).toUpperCase() + bankAccount.class.slice(1).toLowerCase() : null;
+
   const journalEntry = await createOpeningBalanceJournalEntry({
     profileId: profileId,
     userId: userId,
@@ -81,7 +83,7 @@ export const createOpeningBalanceTransaction = async (profileId, userId, bankAcc
     openingBalance: amount,
     openingDate: formattedDate,
     accountName: bankAccount.display_name || bankAccount.account_name,
-    accountClass: bankAccount.account_class
+    accountClass: accountClass
   });
 
   return journalEntry;
