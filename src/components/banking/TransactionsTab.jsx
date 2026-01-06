@@ -31,8 +31,6 @@ import {
 import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
-import { suggestCategory } from './CategorySuggestion';
-import { suggestContact } from './ContactSuggestion';
 import AccountCreationWizard from './AccountCreationWizard';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
@@ -76,9 +74,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchSearch, setManualMatchSearch] = useState({});
   const [manualMatchFilters, setManualMatchFilters] = useState({});
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
-  const [suggestingContactIds, setSuggestingContactIds] = useState(new Set());
-  const [contactSuggestions, setContactSuggestions] = useState({});
-  const [categorySuggestions, setCategorySuggestions] = useState({});
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
@@ -443,50 +438,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     enabled: !!activeProfile?.id
   });
 
-  React.useEffect(() => {
-    const generateSuggestions = async () => {
-      if (!fullPendingTransactions.length || !chartAccounts.length) return;
-
-      const transactionsNeedingSuggestions = fullPendingTransactions.filter(
-        t => t.type !== 'transfer' && t.description
-      );
-
-      if (transactionsNeedingSuggestions.length === 0) return;
-
-      const allCategorizedTransactions = [...fullPostedTransactions, ...fullPendingTransactions].filter(
-        t => t.chart_account_id
-      );
-
-      const newSuggestions = {};
-      const batchSize = 5;
-      for (let i = 0; i < Math.min(batchSize, transactionsNeedingSuggestions.length); i++) {
-        const transaction = transactionsNeedingSuggestions[i];
-
-        try {
-          const suggestion = await suggestCategory(
-            transaction.original_description || transaction.description,
-            allCategorizedTransactions,
-            categorizationRules,
-            transaction.amount,
-            chartAccounts
-          );
-
-          if (suggestion && (suggestion.chartAccountId || suggestion.category)) {
-            newSuggestions[transaction.id] = suggestion;
-          }
-        } catch (err) {
-          console.error('Failed to generate suggestion for transaction:', transaction.id, err);
-        }
-      }
-
-      if (Object.keys(newSuggestions).length > 0) {
-        setCategorySuggestions(prev => ({ ...prev, ...newSuggestions }));
-      }
-    };
-
-    generateSuggestions();
-  }, [fullPendingTransactions.length, chartAccounts.length, fullPostedTransactions.length, categorizationRules.length]);
-
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: () => {
@@ -694,54 +645,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     
     return matchesSearch && matchesAccount && matchesDate && matchesCategory && matchesType && matchesAmount && matchesPaymentMethod;
   });
-
-  React.useEffect(() => {
-    const calculateContactSuggestions = async () => {
-      if (!filteredTransactions.length || !contacts.length || !contactMatchingRules) return;
-
-      const newSuggestions = {};
-
-      const transactionsNeedingSuggestions = filteredTransactions.filter(
-        t => !contactSuggestions[t.id] &&
-             t.description &&
-             t.description.length >= 2 &&
-             !suggestingContactIds.has(t.id) &&
-             statusFilter === 'pending' &&
-             activeAccountIds.includes(t.bank_account_id)
-      ).slice(0, 5);
-
-      if (transactionsNeedingSuggestions.length === 0) return;
-
-      const allTransactionsWithContacts = [...fullPostedTransactions, ...fullPendingTransactions].filter(
-        t => t.contact_id
-      );
-
-      const newSuggestionIds = new Set(suggestingContactIds);
-      transactionsNeedingSuggestions.forEach(t => newSuggestionIds.add(t.id));
-      setSuggestingContactIds(newSuggestionIds);
-
-      for (const transaction of transactionsNeedingSuggestions) {
-        try {
-          const suggestion = await suggestContact(
-            transaction.description,
-            allTransactionsWithContacts,
-            contactMatchingRules,
-            contacts
-          );
-
-          if (suggestion) {
-            newSuggestions[transaction.id] = suggestion;
-          }
-        } catch (err) {
-          console.error('Failed to suggest contact for transaction:', transaction.id, err);
-        }
-      }
-
-      setContactSuggestions(prev => ({ ...prev, ...newSuggestions }));
-    };
-
-    calculateContactSuggestions();
-  }, [filteredTransactions.length, contacts.length, contactMatchingRules.length, fullPostedTransactions.length, statusFilter]);
 
   const toggleSelectAll = () => {
     if (selectedTransactions.length === filteredTransactions.length) {
@@ -1558,7 +1461,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     setTriggeringTransactionType(transaction.type);
                                     setAddAccountSheetOpen(true);
                                   }}
-                                  aiSuggestionId={categorySuggestions[transaction.id]?.chartAccountId}
                                   triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                   placeholder="Select category"
                                   isTransactionTransfer={transaction.type === 'transfer'}

@@ -10,7 +10,6 @@ import { format, parseISO } from 'date-fns';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AccountCreationWizard from '../banking/AccountCreationWizard';
 import { sanitizeForLLM } from '../utils/validation';
-import { suggestCategory } from '../banking/CategorySuggestion';
 import { formatTransactionDescription } from '../utils/formatters';
 import { Sparkles, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
@@ -209,7 +208,6 @@ export default function RecentTransactionsCard() {
                     });
                   }}
                   transactionType={transaction.type}
-                  aiSuggestionId={transaction.ai_suggested_chart_account_id}
                   triggerClassName="h-6 text-[10px] w-24 px-1"
                   placeholder="Category"
                   onAddNew={(searchTerm) => {
