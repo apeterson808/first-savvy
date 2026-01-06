@@ -312,7 +312,8 @@ export const activateTemplateAccount = async (profileId, templateAccountNumber, 
     p_custom_display_name: options.customDisplayName || null,
     p_initial_balance: options.initialBalance || null,
     p_institution_name: options.institutionName || null,
-    p_account_number_last4: options.accountNumberLast4 || null
+    p_account_number_last4: options.accountNumberLast4 || null,
+    p_opening_balance_date: options.openingBalanceDate || null
   });
 
   if (error) throw error;

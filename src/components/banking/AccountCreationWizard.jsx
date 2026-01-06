@@ -63,10 +63,6 @@ import {
   getInstitutionAccounts,
   getAccountTransactions
 } from '@/api/bankSimulation';
-import {
-  findOrCreateOpeningBalanceEquityAccount,
-  createOpeningBalanceTransaction
-} from '@/api/statementImport';
 import { createOpeningBalanceJournalEntry } from '@/api/journalEntries';
 
 const VEHICLE_TYPES = [
@@ -763,27 +759,6 @@ export default function AccountCreationWizard({
       setDuplicateTransactions(duplicates);
 
       const transactionsToImport = skipDuplicates ? uniqueTransactions : transactionsToCheck;
-
-      const beginningBalance = processedData?.beginningBalance || formData.beginningBalance;
-
-      if (beginningBalance && parseFloat(beginningBalance) > 0 && transactionsToImport.length > 0) {
-        try {
-          const firstTransactionDate = customStartDate || transactionsToImport[0]?.date;
-
-          if (firstTransactionDate && targetAccountObject) {
-            await createOpeningBalanceTransaction(
-              activeProfile.id,
-              user.id,
-              targetAccountObject,
-              parseFloat(beginningBalance),
-              firstTransactionDate
-            );
-            console.log(`Created opening balance of $${beginningBalance} for account ${targetAccountId} as of ${firstTransactionDate}`);
-          }
-        } catch (err) {
-          console.error('Error creating opening balance:', err);
-        }
-      }
 
       const allTransactions = transactionsToImport
         .filter(txn => txn.amount > 0)
@@ -1985,37 +1960,27 @@ export default function AccountCreationWizard({
               continue;
             }
 
-            const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+            const openingBalanceDate = config.startDate || account.date_range?.start;
 
-            const newAccount = {
-              profile_id: activeProfile.id,
-              template_id: template.id,
-              template_account_number: template.account_number,
-              account_number: accountNumber,
-              display_name: config.displayName,
-              class: template.class,
-              account_detail: template.account_detail,
-              account_type: template.account_type,
-              icon: template.icon,
-              color: template.color,
-              account_number_last4: config.last4,
-              institution_name: selectedInstitution?.name || '',
-              current_balance: 0,
-              is_active: true
-            };
+            chartAccountId = await activateTemplateAccount(activeProfile.id, template.account_number, {
+              customDisplayName: config.displayName,
+              initialBalance: parseFloat(config.beginningBalance) || 0,
+              institutionName: selectedInstitution?.name || '',
+              accountNumberLast4: config.last4,
+              openingBalanceDate: openingBalanceDate
+            });
 
             const { data: createdAccount, error: accountError } = await firstsavvy
               .from('user_chart_of_accounts')
-              .insert(newAccount)
               .select()
+              .eq('id', chartAccountId)
               .single();
 
             if (accountError) {
-              console.error('Error creating account:', accountError);
+              console.error('Error fetching created account:', accountError);
               continue;
             }
 
-            chartAccountId = createdAccount.id;
             accountObject = createdAccount;
           }
 
@@ -2027,25 +1992,6 @@ export default function AccountCreationWizard({
               const txnDate = new Date(txn.date);
               return txnDate >= startDate;
             });
-          }
-
-          if (config.beginningBalance && parseFloat(config.beginningBalance) !== 0) {
-            try {
-              const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
-
-              if (firstTransactionDate && accountObject) {
-                await createOpeningBalanceTransaction(
-                  activeProfile.id,
-                  user.id,
-                  accountObject,
-                  parseFloat(config.beginningBalance),
-                  firstTransactionDate
-                );
-                console.log(`Created opening balance of $${config.beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
-              }
-            } catch (err) {
-              console.error('Error creating opening balance:', err);
-            }
           }
 
           const transactionsToInsert = filteredTransactions
@@ -3402,60 +3348,39 @@ export default function AccountCreationWizard({
                               continue;
                             }
 
-                            const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
-                            const lastTransactionDate = account.date_range?.end || null;
+                            const openingBalanceDate = config.startDate || account.date_range?.start;
+                            let beginningBalance = null;
+                            if (config.beginningBalance !== undefined && config.beginningBalance !== null && config.beginningBalance !== '') {
+                              beginningBalance = parseFloat(config.beginningBalance);
+                              if (isNaN(beginningBalance)) {
+                                console.warn(`Failed to parse beginning balance: ${config.beginningBalance}`);
+                                beginningBalance = null;
+                              }
+                            }
 
-                            const newAccount = {
-                              profile_id: activeProfile.id,
-                              template_id: template.id,
-                              template_account_number: template.account_number,
-                              account_number: accountNumber,
-                              display_name: config.displayName,
-                              class: template.class,
-                              account_detail: template.account_detail,
-                              account_type: template.account_type,
-                              icon: template.icon,
-                              color: template.color,
-                              account_number_last4: config.last4,
-                              institution_name: selectedInstitution?.name || '',
-                              current_balance: account.current_balance,
-                              bank_balance: account.current_balance,
-                              last_statement_date: lastTransactionDate,
-                              last_synced_at: new Date().toISOString(),
-                              is_active: true
-                            };
+                            chartAccountId = await activateTemplateAccount(activeProfile.id, template.account_number, {
+                              customDisplayName: config.displayName,
+                              initialBalance: beginningBalance || 0,
+                              institutionName: selectedInstitution?.name || '',
+                              accountNumberLast4: config.last4,
+                              openingBalanceDate: openingBalanceDate
+                            });
 
                             const { data: createdAccount, error: accountError } = await firstsavvy
                               .from('user_chart_of_accounts')
-                              .insert(newAccount)
                               .select()
+                              .eq('id', chartAccountId)
                               .single();
 
                             if (accountError) {
-                              console.error('Error creating account:', accountError);
+                              console.error('Error fetching created account:', accountError);
                               continue;
                             }
 
-                            chartAccountId = createdAccount.id;
                             accountObject = createdAccount;
+
+                            console.log(`✓ Created account ${config.displayName} with opening balance ${beginningBalance ? `$${beginningBalance}` : '$0'} as of ${openingBalanceDate}`);
                           }
-
-                          console.log(`[OPENING BALANCE DEBUG] Account: ${account.name}`);
-                          console.log(`[OPENING BALANCE DEBUG] config.beginningBalance RAW:`, config.beginningBalance);
-                          console.log(`[OPENING BALANCE DEBUG] config.startDate:`, config.startDate);
-                          console.log(`[OPENING BALANCE DEBUG] account.type:`, account.type);
-                          console.log(`[OPENING BALANCE DEBUG] config.accountClass:`, config.accountClass);
-
-                          let beginningBalance = null;
-                          if (config.beginningBalance !== undefined && config.beginningBalance !== null && config.beginningBalance !== '') {
-                            beginningBalance = parseFloat(config.beginningBalance);
-                            if (isNaN(beginningBalance)) {
-                              console.warn(`[OPENING BALANCE DEBUG] Failed to parse beginning balance: ${config.beginningBalance}`);
-                              beginningBalance = null;
-                            }
-                          }
-
-                          console.log(`[OPENING BALANCE DEBUG] beginningBalance PARSED:`, beginningBalance);
 
                           let filteredTransactions = account.transactions.filter(txn => {
                             const desc = txn.description?.toLowerCase() || '';
@@ -3468,44 +3393,6 @@ export default function AccountCreationWizard({
                               const txnDate = new Date(txn.date);
                               return txnDate >= startDate;
                             });
-                          }
-
-                          console.log(`[OPENING BALANCE DEBUG] filteredTransactions.length:`, filteredTransactions.length);
-                          console.log(`[OPENING BALANCE DEBUG] Condition check: beginningBalance=${beginningBalance}, !== 0? ${beginningBalance !== 0}, hasTxns? ${filteredTransactions.length > 0}`);
-
-                          if (beginningBalance !== null && beginningBalance !== 0 && filteredTransactions.length > 0) {
-                            console.log(`[OPENING BALANCE DEBUG] CREATING OPENING BALANCE`);
-                            try {
-                              const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
-
-                              if (firstTransactionDate && accountObject) {
-                                console.log(`[OPENING BALANCE DEBUG] Calling createOpeningBalanceTransaction with:`, {
-                                  profileId: activeProfile.id,
-                                  userId: user.id,
-                                  accountId: accountObject.id,
-                                  amount: beginningBalance,
-                                  date: firstTransactionDate
-                                });
-
-                                await createOpeningBalanceTransaction(
-                                  activeProfile.id,
-                                  user.id,
-                                  accountObject,
-                                  beginningBalance,
-                                  firstTransactionDate
-                                );
-                                console.log(`✓ Created opening balance of $${beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
-                              } else {
-                                console.warn(`[OPENING BALANCE DEBUG] Missing required data:`, {
-                                  firstTransactionDate,
-                                  accountObject: !!accountObject
-                                });
-                              }
-                            } catch (err) {
-                              console.error('Error creating opening balance:', err);
-                            }
-                          } else {
-                            console.log(`[OPENING BALANCE DEBUG] SKIPPING opening balance creation - condition not met`);
                           }
 
                           const transactionsToInsert = filteredTransactions
