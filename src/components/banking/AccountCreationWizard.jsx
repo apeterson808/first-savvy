@@ -3390,11 +3390,7 @@ export default function AccountCreationWizard({
                             accountObject = createdAccount;
                           }
 
-                          let beginningBalance = null;
-                          const firstTxn = account.transactions?.[0];
-                          if (firstTxn?.description?.toLowerCase().includes('beginning balance') && firstTxn.amount === 0) {
-                            beginningBalance = firstTxn.balance || account.beginning_balance || null;
-                          }
+                          let beginningBalance = config.beginningBalance ? parseFloat(config.beginningBalance) : null;
 
                           let filteredTransactions = account.transactions.filter(txn => {
                             const desc = txn.description?.toLowerCase() || '';
@@ -3409,7 +3405,7 @@ export default function AccountCreationWizard({
                             });
                           }
 
-                          if (beginningBalance && beginningBalance > 0 && filteredTransactions.length > 0) {
+                          if (beginningBalance && beginningBalance !== 0 && filteredTransactions.length > 0) {
                             try {
                               const firstTransactionDate = config.startDate || filteredTransactions[0]?.date;
 
@@ -3421,7 +3417,7 @@ export default function AccountCreationWizard({
                                   beginningBalance,
                                   firstTransactionDate
                                 );
-                                console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId}`);
+                                console.log(`Created opening balance of $${beginningBalance} for account ${chartAccountId} as of ${firstTransactionDate}`);
                               }
                             } catch (err) {
                               console.error('Error creating opening balance:', err);
