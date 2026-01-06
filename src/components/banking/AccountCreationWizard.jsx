@@ -3377,12 +3377,17 @@ export default function AccountCreationWizard({
 
                             accountObject = existingAccount;
 
+                            const lastTransactionDate = account.date_range?.end || null;
+
                             const { error: updateError } = await firstsavvy
                               .from('user_chart_of_accounts')
                               .update({
                                 account_number_last4: config.last4,
                                 institution_name: selectedInstitution?.name || existingAccount.institution_name,
-                                current_balance: account.current_balance
+                                current_balance: account.current_balance,
+                                bank_balance: account.current_balance,
+                                last_statement_date: lastTransactionDate,
+                                last_synced_at: new Date().toISOString()
                               })
                               .eq('id', chartAccountId);
 
@@ -3398,6 +3403,7 @@ export default function AccountCreationWizard({
                             }
 
                             const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+                            const lastTransactionDate = account.date_range?.end || null;
 
                             const newAccount = {
                               profile_id: activeProfile.id,
@@ -3413,6 +3419,9 @@ export default function AccountCreationWizard({
                               account_number_last4: config.last4,
                               institution_name: selectedInstitution?.name || '',
                               current_balance: account.current_balance,
+                              bank_balance: account.current_balance,
+                              last_statement_date: lastTransactionDate,
+                              last_synced_at: new Date().toISOString(),
                               is_active: true
                             };
 
