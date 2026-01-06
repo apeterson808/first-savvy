@@ -30,7 +30,6 @@ import {
 import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package, MoreVertical, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import AccountCreationWizard from './AccountCreationWizard';
-import BankAccountSetupFlow from './BankAccountSetupFlow';
 import EditAccountDialog from './EditAccountDialog';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
@@ -114,7 +113,6 @@ export default function AccountsTable() {
   const { activeProfile } = useProfile();
   const [editSheetOpen, setEditSheetOpen] = useState(false);
   const [wizardOpen, setWizardOpen] = useState(false);
-  const [bankAccountFlowOpen, setBankAccountFlowOpen] = useState(false);
   const [editingAccount, setEditingAccount] = useState(null);
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -503,8 +501,8 @@ export default function AccountsTable() {
               variant="ghost"
               size="icon"
               className="h-8 w-8"
-              onClick={() => setBankAccountFlowOpen(true)}
-              title="Add Bank Account"
+              onClick={() => setWizardOpen(true)}
+              title="Add Account"
             >
               <Plus className="w-4 h-4" />
             </Button>
@@ -611,7 +609,7 @@ export default function AccountsTable() {
                   <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-4">Get Started</h3>
                   <div className="space-y-3">
                     <button
-                      onClick={() => setBankAccountFlowOpen(true)}
+                      onClick={() => setWizardOpen(true)}
                       className="w-full p-4 bg-white border border-slate-200 rounded-lg hover:border-slate-300 hover:shadow-sm transition-all text-left"
                     >
                       <div className="flex items-center gap-3">
@@ -619,8 +617,8 @@ export default function AccountsTable() {
                           <Upload className="w-6 h-6 text-teal-600" />
                         </div>
                         <div>
-                          <div className="text-sm font-medium text-slate-900">Add Bank Account</div>
-                          <div className="text-xs text-slate-500">Import transactions from statements</div>
+                          <div className="text-sm font-medium text-slate-900">Add Account</div>
+                          <div className="text-xs text-slate-500">Create an account and import transactions</div>
                         </div>
                       </div>
                     </button>
@@ -819,13 +817,6 @@ export default function AccountsTable() {
         }}
         account={editingAccount}
         onSuccess={handleSuccess}
-      />
-
-      {/* Bank Account Setup Flow */}
-      <BankAccountSetupFlow
-        open={bankAccountFlowOpen}
-        onOpenChange={setBankAccountFlowOpen}
-        onAccountCreated={handleSuccess}
       />
 
       {/* Account Creation Wizard */}
