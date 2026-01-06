@@ -132,7 +132,8 @@ export default function AccountsTable() {
     type: true,
     accountType: true,
     detail: true,
-    balance: true,
+    savvyBalance: true,
+    bankBalance: false,
     status: true,
     actions: true
   });
@@ -393,8 +394,13 @@ export default function AccountsTable() {
           bVal = getDetailTypeDisplayName(b.account_detail).toLowerCase();
           break;
         case 'balance':
+        case 'savvyBalance':
           aVal = getAccountBalance(a);
           bVal = getAccountBalance(b);
+          break;
+        case 'bankBalance':
+          aVal = a.bank_balance || 0;
+          bVal = b.bank_balance || 0;
           break;
         default:
           aVal = a.account_number || 0;
@@ -564,11 +570,17 @@ export default function AccountsTable() {
                     </div>
                     Detail
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, balance: !v.balance }))}>
-                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.balance ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
-                      {visibleColumns.balance && <Check className="w-3 h-3 text-white" />}
+                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, savvyBalance: !v.savvyBalance }))}>
+                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.savvyBalance ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
+                      {visibleColumns.savvyBalance && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    Balance
+                    Savvy Balance
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, bankBalance: !v.bankBalance }))}>
+                    <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.bankBalance ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
+                      {visibleColumns.bankBalance && <Check className="w-3 h-3 text-white" />}
+                    </div>
+                    Bank Balance
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setVisibleColumns(v => ({ ...v, status: !v.status }))}>
                     <div className={`w-4 h-4 mr-2 flex items-center justify-center rounded border ${visibleColumns.status ? 'bg-blue-500 border-blue-500' : 'border-slate-300'}`}>
@@ -685,12 +697,20 @@ export default function AccountsTable() {
                       <div className="flex items-center">Detail{getSortIcon('detail')}</div>
                     </th>
                   )}
-                  {visibleColumns.balance && (
+                  {visibleColumns.savvyBalance && (
                     <th
                       className="font-semibold text-slate-700 text-right px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
-                      onClick={() => handleSort('balance')}
+                      onClick={() => handleSort('savvyBalance')}
                     >
-                      <div className="flex items-center justify-end">Balance{getSortIcon('balance')}</div>
+                      <div className="flex items-center justify-end">Savvy Balance{getSortIcon('savvyBalance')}</div>
+                    </th>
+                  )}
+                  {visibleColumns.bankBalance && (
+                    <th
+                      className="font-semibold text-slate-700 text-right px-4 py-3 cursor-pointer hover:bg-slate-100 select-none"
+                      onClick={() => handleSort('bankBalance')}
+                    >
+                      <div className="flex items-center justify-end">Bank Balance{getSortIcon('bankBalance')}</div>
                     </th>
                   )}
                   {visibleColumns.status && (
@@ -745,14 +765,37 @@ export default function AccountsTable() {
                                </span>
                              </td>
                             )}
-                            {visibleColumns.balance && (
+                            {visibleColumns.savvyBalance && (
                               <td className="px-4 py-0.5 text-right">
-                                <span className="font-semibold text-slate-900 text-xs">
-                                  {(() => {
-                                    const balance = getAccountBalance(account);
-                                    return balance < 0 ? `-$${Math.abs(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                                  })()}
-                                </span>
+                                <div className="flex items-center justify-end gap-1">
+                                  <span className="font-semibold text-slate-900 text-xs">
+                                    {(() => {
+                                      const balance = getAccountBalance(account);
+                                      return balance < 0 ? `-$${Math.abs(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                    })()}
+                                  </span>
+                                  {account.bank_balance != null && Math.abs(getAccountBalance(account) - account.bank_balance) > 0.01 && (
+                                    <span className="text-amber-500 text-xs" title={`Bank: $${account.bank_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}>⚠</span>
+                                  )}
+                                </div>
+                              </td>
+                            )}
+                            {visibleColumns.bankBalance && (
+                              <td className="px-4 py-0.5 text-right">
+                                {account.bank_balance != null ? (
+                                  <div className="flex flex-col items-end">
+                                    <span className="font-semibold text-slate-700 text-xs">
+                                      {account.bank_balance < 0 ? `-$${Math.abs(account.bank_balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${account.bank_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                                    </span>
+                                    {account.last_synced_at && (
+                                      <span className="text-[10px] text-slate-400">
+                                        {new Date(account.last_synced_at).toLocaleDateString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="text-xs text-slate-400">Not synced</span>
+                                )}
                               </td>
                             )}
                             {visibleColumns.status && (

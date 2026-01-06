@@ -1228,12 +1228,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           }}
                         >
                           <td className="border-r border-slate-200 py-1 text-center w-8 min-w-8 max-w-8 px-0">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => { e.stopPropagation(); toggleSelect(transaction.id); }}
-                              className="rounded w-3.5 h-3.5"
-                            />
+                            <div className="flex flex-col items-center gap-0.5">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => { e.stopPropagation(); toggleSelect(transaction.id); }}
+                                className="rounded w-3.5 h-3.5"
+                              />
+                              {transaction.cleared_status === 'reconciled' && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" title="Reconciled" />
+                              )}
+                              {transaction.cleared_status === 'cleared' && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" title="Cleared" />
+                              )}
+                              {(!transaction.cleared_status || transaction.cleared_status === 'uncleared') && transaction.status === 'posted' && (
+                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" title="Uncleared" />
+                              )}
+                            </div>
                           </td>
                           <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
                             {transaction.date && !isNaN(new Date(transaction.date).getTime())
