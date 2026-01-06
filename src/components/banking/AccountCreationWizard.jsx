@@ -318,11 +318,11 @@ const getNextAccountNumber = async (profileId, templateAccountNumber) => {
 
   if (error) {
     console.error('Error fetching existing accounts:', error);
-    return templateAccountNumber + 1;
+    return templateAccountNumber;
   }
 
   if (!existingAccounts || existingAccounts.length === 0) {
-    return templateAccountNumber + 1;
+    return templateAccountNumber;
   }
 
   return existingAccounts[0].account_number + 1;
