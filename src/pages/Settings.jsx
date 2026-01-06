@@ -6,7 +6,6 @@ import ProfileTab from '../components/settings/ProfileTab';
 import SecurityTab from '../components/settings/SecurityTab';
 import PreferencesTab from '../components/settings/PreferencesTab';
 import NotificationsTab from '../components/settings/NotificationsTab';
-import ChartOfAccountsTab from '../components/settings/ChartOfAccountsTab';
 import ProtectedConfigurationsTab from '../components/settings/ProtectedConfigurationsTab';
 
 export default function Settings() {
@@ -36,7 +35,7 @@ export default function Settings() {
     <div className="p-4 md:p-6">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
-      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'chart_of_accounts', 'protected']} defaultTab="profile" />
+      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'protected']} defaultTab="profile" />
 
       <Tabs value={activeTab} className="w-full">
         <TabsContent value="profile" className="mt-4">
@@ -53,10 +52,6 @@ export default function Settings() {
 
         <TabsContent value="notifications" className="mt-4">
           <NotificationsTab />
-        </TabsContent>
-
-        <TabsContent value="chart_of_accounts" className="mt-4">
-          <ChartOfAccountsTab />
         </TabsContent>
 
         <TabsContent value="protected" className="mt-4">

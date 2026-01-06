@@ -27,7 +27,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package, MoreVertical, Trash2 } from 'lucide-react';
+import { Wallet, RefreshCw, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings, Check, Upload, Package, MoreVertical, Trash2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import AccountCreationWizard from './AccountCreationWizard';
 import BankAccountSetupFlow from './BankAccountSetupFlow';
@@ -35,6 +35,7 @@ import EditAccountDialog from './EditAccountDialog';
 import AmazonOrderImporter from './AmazonOrderImporter';
 import { getGroupedAccountsForTable } from './accountSortUtils';
 import { getAccountDisplayName } from '../utils/constants';
+import CreateJournalEntry from '../accounting/CreateJournalEntry';
 
 const getDetailTypeDisplayName = (type) => {
   if (!type) return 'Unknown';
@@ -118,6 +119,7 @@ export default function AccountsTable() {
   const [amazonImporterOpen, setAmazonImporterOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
+  const [showCreateJE, setShowCreateJE] = useState(false);
 
   const urlParams = new URLSearchParams(window.location.search);
   const initialFilter = urlParams.get('filter') || 'all';
@@ -578,6 +580,10 @@ export default function AccountsTable() {
                     <Plus className="w-4 h-4 mr-2" />
                     Add Other Account Types
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setShowCreateJE(true)}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Create Journal Entry
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
           </div>
@@ -833,6 +839,11 @@ export default function AccountsTable() {
           queryClient.invalidateQueries({ queryKey: ['transactions'] });
         }}
       />
+
+      {/* Create Journal Entry */}
+      {showCreateJE && (
+        <CreateJournalEntry onClose={() => setShowCreateJE(false)} />
+      )}
 
       {/* Delete Confirmation Dialog */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
