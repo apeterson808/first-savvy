@@ -690,6 +690,19 @@ export default function AccountCreationWizard({
           ? `${selectedAccountName} (...${formData.last4})`
           : selectedAccountName;
 
+        const beginningBalanceForCalc = parseFloat(formData.beginningBalance) || 0;
+        const isLiabilityAccount = templateAccount.class === 'liability';
+        const transactionsSum = mappedTransactions.reduce((sum, txn) => {
+          const amount = parseFloat(txn.amount) || 0;
+          if (txn.type === 'income') {
+            return isLiabilityAccount ? sum - amount : sum + amount;
+          } else {
+            return isLiabilityAccount ? sum + amount : sum - amount;
+          }
+        }, 0);
+
+        const calculatedInitialBalance = beginningBalanceForCalc + transactionsSum;
+
         const newAccountData = {
           profile_id: activeProfile.id,
           template_id: templateAccount.id,
@@ -702,7 +715,7 @@ export default function AccountCreationWizard({
           is_active: true,
           institution_name: formData.institutionName || '',
           account_number_last4: formData.last4 || '',
-          current_balance: parseFloat(formData.beginningBalance) || 0
+          current_balance: calculatedInitialBalance
         };
 
         const { data: newAccount, error: createError } = await firstsavvy
@@ -1609,6 +1622,9 @@ export default function AccountCreationWizard({
 
         const startDate = account.date_range?.start || '';
         let beginningBalance = '';
+        const currentBalance = account.current_balance !== undefined && account.current_balance !== null
+          ? Math.abs(account.current_balance).toString()
+          : '';
 
         if (account.beginning_balance !== undefined && account.beginning_balance !== null) {
           beginningBalance = Math.abs(account.beginning_balance).toString();
@@ -1632,7 +1648,8 @@ export default function AccountCreationWizard({
             accountDetail: mapping.detail,
             last4: account.last_four,
             startDate: startDate,
-            beginningBalance: beginningBalance
+            beginningBalance: beginningBalance,
+            currentBalance: currentBalance
           }
         }));
 
