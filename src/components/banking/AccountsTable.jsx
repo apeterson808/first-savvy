@@ -508,6 +508,15 @@ export default function AccountsTable() {
             >
               <Plus className="w-4 h-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() => setShowCreateJE(true)}
+              title="Create Journal Entry"
+            >
+              <FileText className="w-4 h-4" />
+            </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -579,10 +588,6 @@ export default function AccountsTable() {
                   <DropdownMenuItem onClick={() => setWizardOpen(true)}>
                     <Plus className="w-4 h-4 mr-2" />
                     Add Other Account Types
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setShowCreateJE(true)}>
-                    <FileText className="w-4 h-4 mr-2" />
-                    Create Journal Entry
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
