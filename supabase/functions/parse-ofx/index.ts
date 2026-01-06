@@ -72,6 +72,7 @@ Deno.serve(async (req: Request) => {
     let institutionName = "";
     let accountNumber = "";
     let beginningBalance = 0;
+    let accountType = "checking";
 
     const orgMatch = ofxContent.match(/<ORG>([^<]+)/i);
     if (orgMatch) institutionName = orgMatch[1].trim();
@@ -79,8 +80,21 @@ Deno.serve(async (req: Request) => {
     const acctIdMatch = ofxContent.match(/<ACCTID>([^<]+)/i);
     if (acctIdMatch) accountNumber = acctIdMatch[1].trim();
 
+    const isCreditCard = ofxContent.includes('<CREDITCARDMSGSRSV1>') ||
+                        ofxContent.includes('<CCSTMTTRNRS>') ||
+                        ofxContent.match(/<ACCTTYPE>CREDITLINE/i);
+
+    if (isCreditCard) {
+      accountType = "credit_card";
+    }
+
     const balAmtMatch = ofxContent.match(/<BALAMT>([^<]+)/i);
-    if (balAmtMatch) beginningBalance = parseFloat(balAmtMatch[1]);
+    if (balAmtMatch) {
+      beginningBalance = parseFloat(balAmtMatch[1]);
+      if (isCreditCard && beginningBalance < 0) {
+        beginningBalance = Math.abs(beginningBalance);
+      }
+    }
 
     const stmtTrnPattern = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
     let match;
@@ -125,6 +139,7 @@ Deno.serve(async (req: Request) => {
           institutionName,
           accountNumber,
           beginningBalance,
+          accountType,
         },
       }),
       {
