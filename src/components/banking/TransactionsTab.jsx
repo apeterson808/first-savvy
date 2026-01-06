@@ -65,6 +65,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
+  const [categorySuggestions, setCategorySuggestions] = useState({});
   const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
   const [matchingTransfer, setMatchingTransfer] = useState(null);
   const [pairedTransfer, setPairedTransfer] = useState(null);
@@ -1455,7 +1456,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       id: transaction.id,
                                       data: {
                                         category_account_id: categoryValue,
-                                        type: selectedCategory ? selectedCategory.type : transaction.type
+                                        type: selectedCategory ? selectedCategory.class : transaction.type
                                       }
                                     });
                                     setCategorySuggestions(prev => {
@@ -1920,7 +1921,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     id: transaction.id,
                                                     data: {
                                                       category_account_id: categoryValue,
-                                                      type: selectedCategory?.type || transaction.type
+                                                      type: selectedCategory?.class || transaction.type
                                                     }
                                                   });
                                                 }}
