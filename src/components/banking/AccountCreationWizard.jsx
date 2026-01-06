@@ -3379,6 +3379,22 @@ export default function AccountCreationWizard({
 
                             accountObject = createdAccount;
 
+                            const lastTransactionDate = account.date_range?.end || null;
+
+                            const { error: updateError } = await firstsavvy
+                              .from('user_chart_of_accounts')
+                              .update({
+                                current_balance: account.current_balance,
+                                bank_balance: account.current_balance,
+                                last_statement_date: lastTransactionDate,
+                                last_synced_at: new Date().toISOString()
+                              })
+                              .eq('id', chartAccountId);
+
+                            if (updateError) {
+                              console.error('Error updating new account:', updateError);
+                            }
+
                             console.log(`✓ Created account ${config.displayName} with opening balance ${beginningBalance ? `$${beginningBalance}` : '$0'} as of ${openingBalanceDate}`);
                           }
 
