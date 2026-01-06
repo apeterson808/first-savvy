@@ -144,6 +144,7 @@ export const importStatementWithBeginningBalance = async (
         .from('transactions')
         .insert({
           profile_id: profileId,
+          user_id: userId,
           bank_account_id: bankAccount.id,
           date: txn.date,
           description: txn.description || 'Unknown Transaction',

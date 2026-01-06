@@ -123,16 +123,15 @@ export function TransactionReviewDialog({
       const transactionsToInsert = selectedTransactions.map(txn => ({
         user_id: user.id,
         profile_id: profileId,
-        transaction_date: txn.date,
+        date: txn.date,
         description: txn.description,
         original_description: txn.description,
         amount: Math.abs(parseFloat(txn.amount)),
-        transaction_type: txn.type,
-        chart_account_id: txn.chartAccountId,
+        type: txn.type,
+        bank_account_id: txn.chartAccountId,
         source: 'pdf',
         status: 'posted',
-        is_deleted: false,
-        excluded_status: 'included'
+        include_in_reports: true
       }));
 
       const { error: insertError } = await supabase

@@ -789,6 +789,7 @@ export default function AccountCreationWizard({
         .filter(txn => txn.amount > 0)
         .map(txn => ({
           profile_id: activeProfile.id,
+          user_id: user.id,
           bank_account_id: targetAccountId,
           status: 'pending',
           date: txn.date,
