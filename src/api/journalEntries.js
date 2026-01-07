@@ -6,7 +6,6 @@ export async function createJournalEntry({
   entryDate,
   description,
   entryType = 'adjustment',
-  status = 'posted',
   source = 'manual',
   lines
 }) {
@@ -16,7 +15,6 @@ export async function createJournalEntry({
     p_entry_date: entryDate,
     p_description: description,
     p_entry_type: entryType,
-    p_status: status,
     p_source: source,
     p_lines: lines
   });
@@ -89,10 +87,6 @@ export async function getJournalEntries(profileId, filters = {}) {
     query = query.eq('entry_type', filters.entryType);
   }
 
-  if (filters.status) {
-    query = query.eq('status', filters.status);
-  }
-
   if (filters.search) {
     query = query.or(`description.ilike.%${filters.search}%,entry_number.ilike.%${filters.search}%`);
   }
@@ -145,8 +139,8 @@ export async function deleteJournalEntry(entryId) {
   if (error) throw error;
 }
 
-export async function voidJournalEntry(entryId) {
-  return updateJournalEntry(entryId, { status: 'void' });
+export async function deleteJournalEntryIfUnused(entryId) {
+  return deleteJournalEntry(entryId);
 }
 
 export async function getNextJournalEntryNumber(profileId) {
