@@ -15,7 +15,7 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
     .from('user_chart_of_accounts')
     .select(`
       *,
-      template:chart_of_accounts_templates!template_account_number (
+      template:chart_of_accounts_templates!user_chart_of_accounts_template_account_number_fkey (
         is_editable
       )
     `)
@@ -129,7 +129,7 @@ export const getChartAccountById = async (accountId) => {
     .from('user_chart_of_accounts')
     .select(`
       *,
-      template:chart_of_accounts_templates!template_account_number (
+      template:chart_of_accounts_templates!user_chart_of_accounts_template_account_number_fkey (
         is_editable
       )
     `)
