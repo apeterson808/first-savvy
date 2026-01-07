@@ -71,32 +71,39 @@ Deno.serve(async (req: Request) => {
 
     const tablesToDelete = [
       "transaction_splits",
+      "transaction_rules",
       "journal_entry_lines",
       "journal_entries",
       "transactions",
+      "budgets",
+      "contacts",
       "categorization_rules",
       "contact_matching_rules",
       "transfer_registry",
-      "budgets",
-      "contacts",
+      "profile_tabs",
       "user_chart_of_accounts"
     ];
 
     for (const table of tablesToDelete) {
       console.log(`Attempting to delete from ${table} for profile ${profileId}...`);
-      const { data, error } = await supabase
-        .from(table)
-        .delete()
-        .eq("profile_id", profileId)
-        .select();
+      try {
+        const { data, error } = await supabase
+          .from(table)
+          .delete()
+          .eq("profile_id", profileId)
+          .select();
 
-      if (error) {
-        console.error(`Error deleting from ${table}:`, error);
-        throw new Error(`Failed to delete from ${table}: ${error.message}`);
+        if (error) {
+          console.error(`Error deleting from ${table}:`, error);
+          throw new Error(`Failed to delete from ${table}: ${error.message}`);
+        }
+
+        const deletedCount = data ? data.length : 0;
+        console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
+      } catch (tableError) {
+        console.error(`Exception deleting from ${table}:`, tableError);
+        throw tableError;
       }
-
-      const deletedCount = data ? data.length : 0;
-      console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
     }
 
     console.log(`Provisioning fresh chart of accounts for user ${userId}...`);
