@@ -6,6 +6,7 @@ export async function createJournalEntry({
   entryDate,
   description,
   entryType = 'adjustment',
+  status = 'posted',
   source = 'manual',
   lines
 }) {
@@ -15,6 +16,7 @@ export async function createJournalEntry({
     p_entry_date: entryDate,
     p_description: description,
     p_entry_type: entryType,
+    p_status: status,
     p_source: source,
     p_lines: lines
   });
