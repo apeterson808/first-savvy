@@ -179,7 +179,7 @@ export const importStatementWithBeginningBalance = async (
           original_description: txn.original_description || txn.description || 'Unknown Transaction',
           amount: Math.abs(txn.amount),
           type: txn.type || 'expense',
-          status: 'posted',
+          status: 'pending',
           source: 'pdf',
           include_in_reports: true
         });
