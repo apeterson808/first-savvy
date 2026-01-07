@@ -112,7 +112,7 @@ export default function CreateJournalEntry({ onClose, onSuccess }) {
     return true;
   };
 
-  const handleSave = async (status = 'posted') => {
+  const handleSave = async () => {
     if (!canSave()) {
       toast.error('Please fill in all required fields and ensure entry is balanced');
       return;
@@ -131,7 +131,6 @@ export default function CreateJournalEntry({ onClose, onSuccess }) {
       entryDate: format(entryDate, 'yyyy-MM-dd'),
       description: description,
       entryType: entryType,
-      status: status,
       source: 'manual',
       lines: formattedLines
     });
