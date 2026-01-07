@@ -180,6 +180,8 @@ const createEntityAPI = (tableName) => {
         }
       }
 
+      console.log(`[${tableName}] Updating record:`, { id, updates });
+
       let query = supabase
         .from(tableName)
         .update(updates)
@@ -194,7 +196,11 @@ const createEntityAPI = (tableName) => {
 
       const { data, error } = await query.select().single();
 
-      if (error) throw error;
+      if (error) {
+        console.error(`[${tableName}] Update error:`, error);
+        console.error(`[${tableName}] Failed update data:`, { id, updates });
+        throw error;
+      }
       return data;
     },
 

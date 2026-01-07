@@ -454,8 +454,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }) => withRetry(() => firstsavvy.entities.Transaction.update(id, data), { maxRetries: 2 }),
+    mutationFn: ({ id, data }) => {
+      console.log('Transaction update mutation starting:', { id, data });
+      return withRetry(() => firstsavvy.entities.Transaction.update(id, data), { maxRetries: 2 });
+    },
     onMutate: async ({ id, data }) => {
+      console.log('Transaction update onMutate:', { id, data });
       await queryClient.cancelQueries({ queryKey: ['fullPendingTransactions'] });
       await queryClient.cancelQueries({ queryKey: ['fullPostedTransactions'] });
       await queryClient.cancelQueries({ queryKey: ['fullExcludedTransactions'] });
@@ -504,6 +508,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return { previousPending, previousPosted, previousExcluded };
     },
     onError: (error, variables, context) => {
+      console.error('Transaction update failed:', {
+        error,
+        message: error?.message,
+        details: error?.details,
+        hint: error?.hint,
+        code: error?.code,
+        variables
+      });
       if (context?.previousPending) {
         queryClient.setQueryData(['fullPendingTransactions'], context.previousPending);
       }
@@ -1452,6 +1464,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     const categoryValue = value === '' ? null : value;
                                     const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
+
+                                    console.log('Category selected:', {
+                                      transactionId: transaction.id,
+                                      categoryValue,
+                                      selectedCategory,
+                                      categoryClass: selectedCategory?.class
+                                    });
+
                                     updateMutation.mutate({
                                       id: transaction.id,
                                       data: {
