@@ -133,7 +133,7 @@ export default function AccountsTable() {
     accountType: true,
     detail: true,
     savvyBalance: true,
-    bankBalance: false,
+    bankBalance: true,
     status: true,
     actions: true
   });
