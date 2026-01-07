@@ -71,14 +71,13 @@ Deno.serve(async (req: Request) => {
 
     const tablesToDelete = [
       "transaction_splits",
-      "transaction_rules",
       "journal_entry_lines",
       "journal_entries",
       "transactions",
       "budgets",
-      "contacts",
       "categorization_rules",
       "contact_matching_rules",
+      "contacts",
       "transfer_registry",
       "profile_tabs",
       "user_chart_of_accounts"
