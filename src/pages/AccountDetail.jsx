@@ -51,33 +51,40 @@ export default function AccountDetail() {
   const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
 
   const { data: account, isLoading: accountLoading } = useQuery({
-    queryKey: ['account', id],
+    queryKey: ['account', id, activeProfile?.id],
     queryFn: async () => {
-      const accounts = await firstsavvy.entities.Account.list();
-      const chartAccounts = user ? await getUserChartOfAccounts(user.id) : [];
-      const assets = await firstsavvy.entities.Asset.list();
-      const liabilities = await firstsavvy.entities.Liability.list();
-      const equity = await firstsavvy.entities.Equity.list();
+      if (!activeProfile?.id) return null;
 
-      const allAccounts = [
-        ...accounts.map(a => ({
-          ...a,
-          entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
-        })),
-        ...chartAccounts.map(c => ({
-          ...c,
-          entityType: c.class === 'income' ? 'Income' : 'Expense',
-          name: getAccountDisplayName(c),
-          type: c.class
-        })),
-        ...assets.map(a => ({ ...a, entityType: 'Asset' })),
-        ...liabilities.map(l => ({ ...l, entityType: 'Liability' })),
-        ...equity.map(e => ({ ...e, entityType: 'Equity' }))
-      ];
+      const chartAccounts = await getUserChartOfAccounts(activeProfile.id);
 
-      return allAccounts.find(acc => acc.id === id);
+      const getEntityType = (accountClass) => {
+        const classMap = {
+          'asset': 'Asset',
+          'liability': 'Liability',
+          'equity': 'Equity',
+          'income': 'Income',
+          'expense': 'Expense'
+        };
+        return classMap[accountClass] || accountClass.charAt(0).toUpperCase() + accountClass.slice(1);
+      };
+
+      const allAccounts = chartAccounts.map(c => ({
+        ...c,
+        entityType: getEntityType(c.class),
+        name: getAccountDisplayName(c),
+        type: c.class
+      }));
+
+      const foundAccount = allAccounts.find(acc => acc.id === id);
+
+      if (!foundAccount) {
+        console.log('Account not found. Searching for ID:', id);
+        console.log('Available account IDs:', allAccounts.map(a => a.id));
+      }
+
+      return foundAccount;
     },
-    enabled: !!id
+    enabled: !!id && !!activeProfile
   });
 
   const { data: linkedAccountsData = { linkedAccounts: [] }, isLoading: linkedAccountsLoading } = useQuery({
@@ -170,8 +177,8 @@ export default function AccountDetail() {
       } else if (entityType === 'Equity') {
         return firstsavvy.entities.Equity.delete(id);
       } else if (entityType === 'Income' || entityType === 'Expense') {
-        if (!user) throw new Error('User not authenticated');
-        return deleteUserCreatedAccount(user.id, id);
+        if (!activeProfile) throw new Error('No active profile');
+        return deleteUserCreatedAccount(id);
       } else {
         throw new Error('Unknown entity type');
       }
