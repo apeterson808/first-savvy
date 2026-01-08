@@ -16,29 +16,39 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft, TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet } from 'lucide-react';
-import { format } from 'date-fns';
+import {
+  Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
+  TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
+  Download, Printer, Search, Filter
+} from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
+import DatePresetDropdown from '@/components/common/DatePresetDropdown';
 import { getAccountWithLinks } from '@/api/vehiclesAndLoans';
 import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
 import { getAccountJournalLines } from '@/api/journalEntries';
+import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 
 export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [datePreset, setDatePreset] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
 
   const urlParams = new URLSearchParams(window.location.search);
   const returnUrl = urlParams.get('from') || '?tab=accounts';
+
+  const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
 
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ['account', id],
@@ -100,10 +110,15 @@ export default function AccountDetail() {
   });
 
   const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
-    queryKey: ['journal-lines', 'account', id, activeProfile?.id],
+    queryKey: ['journal-lines', 'account', id, activeProfile?.id, dateRange],
     queryFn: async () => {
       if (!id || !activeProfile) return [];
-      return await getAccountJournalLines(activeProfile.id, id);
+      return await getAccountJournalLines(
+        activeProfile.id,
+        id,
+        formatDateForDb(dateRange.start),
+        formatDateForDb(dateRange.end)
+      );
     },
     enabled: !!id && !!activeProfile
   });
@@ -207,41 +222,7 @@ export default function AccountDetail() {
     }
   });
 
-  const analytics = useMemo(() => {
-    if (!transactions || transactions.length === 0) {
-      return {
-        totalInflow: 0,
-        totalOutflow: 0,
-        transactionCount: 0,
-        avgTransaction: 0,
-        firstTransaction: null,
-        lastTransaction: null
-      };
-    }
-
-    const inflow = transactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-    const outflow = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
-
-    const sortedByDate = [...transactions].sort((a, b) =>
-      new Date(a.date) - new Date(b.date)
-    );
-
-    return {
-      totalInflow: inflow,
-      totalOutflow: outflow,
-      transactionCount: transactions.length,
-      avgTransaction: transactions.length > 0 ? (inflow + outflow) / transactions.length : 0,
-      firstTransaction: sortedByDate[0]?.date,
-      lastTransaction: sortedByDate[sortedByDate.length - 1]?.date
-    };
-  }, [transactions]);
-
-  const allActivity = useMemo(() => {
+  const { allActivity, analytics, beginningBalance, endingBalance } = useMemo(() => {
     const transactionItems = transactions.map(t => ({
       ...t,
       activityType: 'transaction',
@@ -267,14 +248,101 @@ export default function AccountDetail() {
       offsettingAccounts: jl.offsetting_accounts
     }));
 
-    const combined = [...transactionItems, ...journalItems];
+    let combined = [...transactionItems, ...journalItems];
 
-    return combined.sort((a, b) => {
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      combined = combined.filter(item =>
+        item.displayDescription?.toLowerCase().includes(query) ||
+        item.entryNumber?.toLowerCase().includes(query) ||
+        item.offsettingAccounts?.toLowerCase().includes(query)
+      );
+    }
+
+    combined.sort((a, b) => {
       const dateA = new Date(a.displayDate);
       const dateB = new Date(b.displayDate);
-      return dateB - dateA;
+      return dateA - dateB;
     });
-  }, [transactions, journalLines]);
+
+    const accountClass = account?.account_class || account?.class || 'Asset';
+    const isDebitNormal = accountClass === 'Asset' || accountClass === 'Expense';
+
+    let beginningBal = 0;
+    let runningBalance = 0;
+
+    const activitiesWithBalance = combined.map(activity => {
+      let debit = 0;
+      let credit = 0;
+
+      if (activity.activityType === 'journal') {
+        debit = activity.debitAmount || 0;
+        credit = activity.creditAmount || 0;
+      } else {
+        if (activity.type === 'expense' || activity.displayAmount < 0) {
+          if (isDebitNormal) {
+            debit = Math.abs(activity.displayAmount);
+          } else {
+            credit = Math.abs(activity.displayAmount);
+          }
+        } else {
+          if (isDebitNormal) {
+            credit = Math.abs(activity.displayAmount);
+          } else {
+            debit = Math.abs(activity.displayAmount);
+          }
+        }
+      }
+
+      if (isDebitNormal) {
+        runningBalance += debit - credit;
+      } else {
+        runningBalance += credit - debit;
+      }
+
+      return {
+        ...activity,
+        calculatedDebit: debit,
+        calculatedCredit: credit,
+        runningBalance
+      };
+    });
+
+    if (dateRange.start && activitiesWithBalance.length > 0) {
+      beginningBal = account?.current_balance || 0;
+      const totalChange = activitiesWithBalance[activitiesWithBalance.length - 1].runningBalance;
+      beginningBal = beginningBal - totalChange;
+
+      activitiesWithBalance.forEach(activity => {
+        activity.runningBalance += beginningBal;
+      });
+    }
+
+    const endingBal = activitiesWithBalance.length > 0
+      ? activitiesWithBalance[activitiesWithBalance.length - 1].runningBalance
+      : (account?.current_balance || 0);
+
+    const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
+    const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
+    const netChange = isDebitNormal ? (totalDebits - totalCredits) : (totalCredits - totalDebits);
+
+    const analyticsData = {
+      transactionCount: combined.length,
+      totalDebits,
+      totalCredits,
+      netChange,
+      avgTransaction: combined.length > 0 ? Math.abs(totalDebits + totalCredits) / combined.length : 0,
+      firstTransaction: combined.length > 0 ? combined[0].displayDate : null,
+      lastTransaction: combined.length > 0 ? combined[combined.length - 1].displayDate : null
+    };
+
+    return {
+      allActivity: activitiesWithBalance,
+      analytics: analyticsData,
+      beginningBalance: dateRange.start ? beginningBal : null,
+      endingBalance: endingBal
+    };
+  }, [transactions, journalLines, account, searchQuery, dateRange]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -312,6 +380,35 @@ export default function AccountDetail() {
     });
   };
 
+  const handleExport = () => {
+    const csvContent = [
+      ['Date', 'Description', 'Reference', 'Offsetting Account', 'Debit', 'Credit', 'Balance'].join(','),
+      ...allActivity.map(activity => [
+        format(new Date(activity.displayDate), 'yyyy-MM-dd'),
+        `"${activity.displayDescription}"`,
+        activity.entryNumber || '',
+        `"${activity.offsettingAccounts || ''}"`,
+        activity.calculatedDebit || '',
+        activity.calculatedCredit || '',
+        activity.runningBalance
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `account-register-${account.account_number || account.id}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+    toast.success('Register exported to CSV');
+  };
+
+  const handlePrint = () => {
+    window.print();
+    toast.info('Opening print dialog...');
+  };
+
   if (accountLoading) {
     return (
       <div className="p-8">
@@ -339,6 +436,7 @@ export default function AccountDetail() {
 
   const isBankAccount = account.entityType === 'BankAccount';
   const isActive = account.is_active !== false;
+  const accountClass = account.account_class || account.class || 'Asset';
 
   return (
     <div className="p-4 md:p-6">
@@ -352,12 +450,30 @@ export default function AccountDetail() {
               className="gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Accounts
+              Back
             </Button>
           </div>
           <div className="flex items-center gap-2">
             {!isEditMode ? (
               <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExport}
+                  className="gap-2"
+                >
+                  <Download className="w-4 h-4" />
+                  Export
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="gap-2"
+                >
+                  <Printer className="w-4 h-4" />
+                  Print
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
@@ -403,19 +519,10 @@ export default function AccountDetail() {
           <CardHeader className="pb-4">
             <div className="flex items-start justify-between">
               <div>
-                <h1 className="text-3xl font-bold">{account.name}</h1>
-                <div className="flex items-center gap-2 mt-3">
-                  <Badge variant="outline" className="capitalize">
-                    {isBankAccount ? 'Bank Account' :
-                     account.entityType === 'CreditCard' ? 'Credit Card' :
-                     account.entityType === 'Asset' ? 'Asset' :
-                     account.entityType === 'Liability' ? 'Liability' :
-                     account.entityType === 'Equity' ? 'Equity' :
-                     account.type}
-                  </Badge>
-                  {(account.type && account.entityType !== 'Income' && account.entityType !== 'Expense') && (
-                    <Badge variant="secondary" className="capitalize text-xs">
-                      {account.type}
+                <div className="flex items-center gap-3 mb-2">
+                  {account.account_number && (
+                    <Badge variant="secondary" className="font-mono">
+                      {account.account_number}
                     </Badge>
                   )}
                   <Badge
@@ -428,23 +535,28 @@ export default function AccountDetail() {
                     {isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-              </div>
-              {(isBankAccount || account.entityType === 'Asset' || account.entityType === 'Liability' || account.entityType === 'Equity') && (
-                <div className="text-right">
-                  <p className="text-sm text-slate-500">
-                    {account.entityType === 'Asset' ? 'Current Value' :
-                     account.entityType === 'Liability' ?
-                       ((account.current_balance || 0) >= 0 ? 'Amount Owed' : 'Credit Balance') :
-                     account.entityType === 'Equity' ? 'Current Value' :
-                     'Current Balance'}
-                  </p>
-                  <p className={`text-3xl font-bold ${
-                    account.entityType === 'Asset' ? 'text-forest-green' : 'text-slate-900'
-                  }`}>
-                    {formatCurrency(account.current_balance || 0)}
-                  </p>
+                <h1 className="text-3xl font-bold">{account.name}</h1>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline" className="capitalize">
+                    {accountClass}
+                  </Badge>
+                  {account.type && (
+                    <Badge variant="secondary" className="capitalize text-xs">
+                      {account.type}
+                    </Badge>
+                  )}
                 </div>
-              )}
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-slate-500 mb-1">Current Balance</p>
+                <p className={`text-3xl font-bold ${
+                  account.entityType === 'Asset' ? 'text-forest-green' :
+                  account.entityType === 'Liability' ? 'text-burgundy' :
+                  'text-slate-900'
+                }`}>
+                  {formatCurrency(endingBalance)}
+                </p>
+              </div>
             </div>
           </CardHeader>
           <CardContent>
@@ -575,24 +687,6 @@ export default function AccountDetail() {
                               </div>
                             </div>
                           )}
-                          {account.vehicle_type && (
-                            <div className="flex items-start gap-3">
-                              <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-slate-500">Vehicle Type</p>
-                                <p className="text-base capitalize">{account.vehicle_type}</p>
-                              </div>
-                            </div>
-                          )}
-                          {account.vin && (
-                            <div className="flex items-start gap-3">
-                              <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
-                              <div>
-                                <p className="text-sm font-medium text-slate-500">VIN</p>
-                                <p className="text-base font-mono">{account.vin}</p>
-                              </div>
-                            </div>
-                          )}
                         </>
                       )}
                       <div className="flex items-start gap-3">
@@ -621,13 +715,6 @@ export default function AccountDetail() {
                           </div>
                         </div>
                       )}
-                      <div className="flex items-start gap-3">
-                        <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-500">Current Balance</p>
-                          <p className="text-base text-burgundy">{formatCurrency(account.current_balance || 0)}</p>
-                        </div>
-                      </div>
                       {account.interest_rate && (
                         <div className="flex items-start gap-3">
                           <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
@@ -637,50 +724,6 @@ export default function AccountDetail() {
                           </div>
                         </div>
                       )}
-                      {account.monthly_payment && (
-                        <div className="flex items-start gap-3">
-                          <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-slate-500">Monthly Payment</p>
-                            <p className="text-base">{formatCurrency(account.monthly_payment)}</p>
-                          </div>
-                        </div>
-                      )}
-                      {account.payment_due_date && (
-                        <div className="flex items-start gap-3">
-                          <Calendar className="w-5 h-5 text-slate-400 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-slate-500">Payment Due Date</p>
-                            <p className="text-base">Day {account.payment_due_date} of each month</p>
-                          </div>
-                        </div>
-                      )}
-                      {account.original_loan_amount && (
-                        <div className="flex items-start gap-3">
-                          <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
-                          <div>
-                            <p className="text-sm font-medium text-slate-500">Original Loan Amount</p>
-                            <p className="text-base">{formatCurrency(account.original_loan_amount)}</p>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  ) : account.entityType === 'Equity' ? (
-                    <>
-                      <div className="flex items-start gap-3">
-                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-500">Equity Type</p>
-                          <p className="text-base capitalize">{account.type}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-start gap-3">
-                        <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-slate-500">Current Value</p>
-                          <p className="text-base">{formatCurrency(account.current_balance || 0)}</p>
-                        </div>
-                      </div>
                     </>
                   ) : (
                     <>
@@ -699,7 +742,7 @@ export default function AccountDetail() {
           </CardContent>
         </Card>
 
-        {(account.entityType === 'Asset' || account.entityType === 'Liability') && (
+        {(account.entityType === 'Asset' || account.entityType === 'Liability') && linkedAccounts.length > 0 && (
           <Card>
             <CardHeader>
               <div className="flex items-center gap-2">
@@ -710,130 +753,124 @@ export default function AccountDetail() {
               </div>
             </CardHeader>
             <CardContent>
-              {linkedAccountsLoading ? (
-                <div className="text-center py-4 text-slate-500">
-                  Loading linked accounts...
-                </div>
-              ) : linkedAccounts.length === 0 ? (
-                <div className="text-center py-8 text-slate-500">
-                  <Link2 className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p className="font-medium">No linked accounts</p>
-                  <p className="text-sm mt-1">
-                    {account.entityType === 'Asset'
-                      ? 'This asset is not currently linked to any loans or liabilities.'
-                      : 'This liability is not currently secured by any assets.'}
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <div className="space-y-3">
-                    {linkedAccounts.map((linkedAccount) => (
-                      <div
-                        key={linkedAccount.id}
-                        className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                        onClick={() => navigate(`/account/${linkedAccount.id}`)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                            {linkedAccount.entityType === 'Asset' ? (
-                              <Car className="w-5 h-5 text-primary" />
-                            ) : (
-                              <CreditCardIcon className="w-5 h-5 text-primary" />
-                            )}
-                          </div>
-                          <div>
-                            <p className="font-medium">{linkedAccount.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs capitalize">
-                                {linkedAccount.type}
-                              </Badge>
-                              {linkedAccount.institution && (
-                                <span className="text-xs text-slate-500">{linkedAccount.institution}</span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className={`text-lg font-semibold ${linkedAccount.entityType === 'Liability' ? 'text-burgundy' : 'text-forest-green'}`}>
-                            {formatCurrency(linkedAccount.current_balance || 0)}
-                          </p>
-                          {linkedAccount.monthly_payment && (
-                            <p className="text-sm text-slate-500 mt-1">
-                              {formatCurrency(linkedAccount.monthly_payment)}/mo
-                            </p>
-                          )}
+              <div className="space-y-3">
+                {linkedAccounts.map((linkedAccount) => (
+                  <div
+                    key={linkedAccount.id}
+                    className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                    onClick={() => navigate(`/account/${linkedAccount.id}`)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                        {linkedAccount.entityType === 'Asset' ? (
+                          <Car className="w-5 h-5 text-primary" />
+                        ) : (
+                          <CreditCardIcon className="w-5 h-5 text-primary" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium">{linkedAccount.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="text-xs capitalize">
+                            {linkedAccount.type}
+                          </Badge>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  {account.entityType === 'Liability' && (
-                    <div className="mt-4 pt-4 border-t">
-                      <Button
-                        onClick={() => {
-                          toast.info('Payment feature coming soon');
-                        }}
-                        className="w-full gap-2"
-                      >
-                        <Wallet className="w-4 h-4" />
-                        Make Payment
-                      </Button>
                     </div>
-                  )}
-                </>
-              )}
+                    <div className="text-right">
+                      <p className={`text-lg font-semibold ${linkedAccount.entityType === 'Liability' ? 'text-burgundy' : 'text-forest-green'}`}>
+                        {formatCurrency(linkedAccount.current_balance || 0)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
         )}
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Transaction Analytics</h2>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <h2 className="text-xl font-semibold">Period Summary</h2>
+              <div className="flex items-center gap-2">
+                <DatePresetDropdown
+                  value={datePreset}
+                  onValueChange={setDatePreset}
+                  triggerClassName="w-48"
+                />
+              </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-2 text-slate-600 mb-1">
-                  <Hash className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Transactions</p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {beginningBalance !== null && (
+                <div className="p-4 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-2 text-slate-600 mb-1">
+                    <Calendar className="w-4 h-4" />
+                    <p className="text-sm font-medium">Beginning Balance</p>
+                  </div>
+                  <p className="text-2xl font-bold">{formatCurrency(beginningBalance)}</p>
                 </div>
-                <p className="text-2xl font-bold">{analytics.transactionCount}</p>
+              )}
+
+              <div className="p-4 bg-light-blue/20 rounded-lg">
+                <div className="flex items-center gap-2 text-sky-blue mb-1">
+                  <DollarSign className="w-4 h-4" />
+                  <p className="text-sm font-medium">Total Debits</p>
+                </div>
+                <p className="text-2xl font-bold text-sky-blue">{formatCurrency(analytics.totalDebits)}</p>
               </div>
 
               <div className="p-4 bg-soft-green/20 rounded-lg">
                 <div className="flex items-center gap-2 text-forest-green mb-1">
                   <TrendingUp className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Inflow</p>
+                  <p className="text-sm font-medium">Total Credits</p>
                 </div>
-                <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.totalInflow)}</p>
+                <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.totalCredits)}</p>
               </div>
 
               <div className="p-4 bg-burgundy/10 rounded-lg">
                 <div className="flex items-center gap-2 text-burgundy mb-1">
                   <TrendingDown className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Outflow</p>
+                  <p className="text-sm font-medium">Net Change</p>
                 </div>
-                <p className="text-2xl font-bold text-burgundy">{formatCurrency(analytics.totalOutflow)}</p>
+                <p className={`text-2xl font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
+                  {formatCurrency(analytics.netChange)}
+                </p>
               </div>
 
-              <div className="p-4 bg-light-blue/20 rounded-lg">
-                <div className="flex items-center gap-2 text-sky-blue mb-1">
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-2 text-slate-600 mb-1">
+                  <Hash className="w-4 h-4" />
+                  <p className="text-sm font-medium">Transactions</p>
+                </div>
+                <p className="text-2xl font-bold">{analytics.transactionCount}</p>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-2 text-slate-600 mb-1">
                   <DollarSign className="w-4 h-4" />
                   <p className="text-sm font-medium">Avg Transaction</p>
                 </div>
-                <p className="text-2xl font-bold text-sky-blue">{formatCurrency(analytics.avgTransaction)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(analytics.avgTransaction)}</p>
+              </div>
+
+              <div className="p-4 bg-primary/10 rounded-lg col-span-2">
+                <div className="flex items-center gap-2 text-primary mb-1">
+                  <Calendar className="w-4 h-4" />
+                  <p className="text-sm font-medium">Ending Balance</p>
+                </div>
+                <p className="text-2xl font-bold text-primary">{formatCurrency(endingBalance)}</p>
               </div>
             </div>
 
-            {analytics.firstTransaction && (
-              <div className="mb-6 pb-6 border-b text-sm text-slate-600">
+            {analytics.firstTransaction && analytics.lastTransaction && (
+              <div className="mt-4 pt-4 border-t text-sm text-slate-600">
                 <p>
-                  First transaction: <span className="font-medium">{format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}</span>
-                  {analytics.lastTransaction && (
-                    <> • Last transaction: <span className="font-medium">{format(new Date(analytics.lastTransaction), 'MMM d, yyyy')}</span></>
-                  )}
+                  Period: <span className="font-medium">{format(parseISO(analytics.firstTransaction), 'MMM d, yyyy')}</span>
+                  {' '} to {' '}
+                  <span className="font-medium">{format(parseISO(analytics.lastTransaction), 'MMM d, yyyy')}</span>
                 </p>
               </div>
             )}
@@ -842,79 +879,75 @@ export default function AccountDetail() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-xl font-semibold">Account Activity</h2>
+            <div className="flex items-center justify-between flex-wrap gap-4">
+              <h2 className="text-xl font-semibold">Account Register</h2>
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Input
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 w-64"
+                  />
+                </div>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             {(transactionsLoading || journalLinesLoading) ? (
-              <p className="text-center text-slate-500 py-4">Loading activity...</p>
+              <p className="text-center text-slate-500 py-4">Loading register...</p>
             ) : allActivity.length === 0 ? (
-              <p className="text-center text-slate-500 py-4">No activity found for this account</p>
+              <p className="text-center text-slate-500 py-8">No transactions found</p>
             ) : (
-              <div className="rounded-md border">
+              <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
+                      <TableHead>Reference</TableHead>
                       <TableHead>Description</TableHead>
-                      <TableHead>Type</TableHead>
+                      <TableHead>Offsetting Account</TableHead>
                       <TableHead className="text-right">Debit</TableHead>
                       <TableHead className="text-right">Credit</TableHead>
+                      <TableHead className="text-right">Balance</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allActivity.slice(0, 50).map((activity, index) => {
-                      let debitDisplay = '—';
-                      let creditDisplay = '—';
-
-                      if (activity.activityType === 'journal') {
-                        if (activity.debitAmount && activity.debitAmount > 0) {
-                          debitDisplay = formatCurrency(activity.debitAmount);
-                        }
-                        if (activity.creditAmount && activity.creditAmount > 0) {
-                          creditDisplay = formatCurrency(activity.creditAmount);
-                        }
-                      } else {
-                        if (activity.type === 'expense') {
-                          debitDisplay = formatCurrency(Math.abs(activity.displayAmount));
-                        } else {
-                          creditDisplay = formatCurrency(Math.abs(activity.displayAmount));
-                        }
-                      }
-
-                      return (
-                        <TableRow key={`${activity.activityType}-${activity.id || index}`}>
-                          <TableCell className="whitespace-nowrap">
-                            {format(new Date(activity.displayDate), 'MMM d, yyyy')}
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">{activity.displayDescription}</div>
-                            {activity.activityType === 'journal' && (
-                              <div className="text-xs text-slate-500 mt-1">
-                                {activity.entryNumber && `Entry #${activity.entryNumber}`}
-                                {activity.offsettingAccounts && ` • ${activity.offsettingAccounts}`}
-                              </div>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            {activity.activityType === 'transaction' ? (
-                              <Badge variant={activity.type === 'income' ? 'default' : 'secondary'}>
-                                {activity.type === 'income' && activity.original_type === 'expense' ? 'refund' : activity.type}
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="capitalize">
-                                {activity.entryType === 'opening_balance' ? 'Opening Balance' : 'Journal Entry'}
-                              </Badge>
-                            )}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {debitDisplay}
-                          </TableCell>
-                          <TableCell className="text-right font-medium">
-                            {creditDisplay}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
+                    {allActivity.map((activity, index) => (
+                      <TableRow key={`${activity.activityType}-${activity.id || index}`}>
+                        <TableCell className="whitespace-nowrap">
+                          {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                        </TableCell>
+                        <TableCell>
+                          {activity.activityType === 'journal' ? (
+                            <Badge variant="outline" className="font-mono text-xs">
+                              {activity.entryNumber}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-xs">TXN</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{activity.displayDescription}</div>
+                          {activity.entryType === 'opening_balance' && (
+                            <Badge variant="outline" className="text-xs mt-1">Opening Balance</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-slate-600">
+                          {activity.offsettingAccounts || '—'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                        </TableCell>
+                        <TableCell className="text-right font-bold">
+                          {formatCurrency(activity.runningBalance)}
+                        </TableCell>
+                      </TableRow>
+                    ))}
                   </TableBody>
                 </Table>
               </div>
