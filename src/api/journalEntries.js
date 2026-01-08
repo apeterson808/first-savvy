@@ -151,3 +151,20 @@ export async function getNextJournalEntryNumber(profileId) {
   if (error) throw error;
   return data;
 }
+
+export async function updateJournalEntryWithLines({
+  entryId,
+  profileId,
+  description,
+  lines
+}) {
+  const { data, error } = await supabase.rpc('update_journal_entry_with_lines', {
+    p_entry_id: entryId,
+    p_profile_id: profileId,
+    p_description: description,
+    p_lines: lines
+  });
+
+  if (error) throw error;
+  return data;
+}
