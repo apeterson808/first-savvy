@@ -27,6 +27,7 @@ import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
+import { getAccountJournalLines } from '@/api/journalEntries';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -96,6 +97,15 @@ export default function AccountDetail() {
       }
     },
     enabled: !!id && !!account
+  });
+
+  const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
+    queryKey: ['journal-lines', 'account', id, activeProfile?.id],
+    queryFn: async () => {
+      if (!id || !activeProfile) return [];
+      return await getAccountJournalLines(activeProfile.id, id);
+    },
+    enabled: !!id && !!activeProfile
   });
 
   const updateMutation = useMutation({
@@ -230,6 +240,41 @@ export default function AccountDetail() {
       lastTransaction: sortedByDate[sortedByDate.length - 1]?.date
     };
   }, [transactions]);
+
+  const allActivity = useMemo(() => {
+    const transactionItems = transactions.map(t => ({
+      ...t,
+      activityType: 'transaction',
+      displayDate: t.date,
+      displayDescription: t.description,
+      displayAmount: t.amount,
+      debitAmount: null,
+      creditAmount: null
+    }));
+
+    const journalItems = journalLines.map(jl => ({
+      ...jl,
+      id: jl.line_id,
+      activityType: 'journal',
+      displayDate: jl.entry_date,
+      displayDescription: jl.line_description || jl.entry_description,
+      debitAmount: jl.debit_amount,
+      creditAmount: jl.credit_amount,
+      entryNumber: jl.entry_number,
+      entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
+        ? 'opening_balance'
+        : 'adjustment',
+      offsettingAccounts: jl.offsetting_accounts
+    }));
+
+    const combined = [...transactionItems, ...journalItems];
+
+    return combined.sort((a, b) => {
+      const dateA = new Date(a.displayDate);
+      const dateB = new Date(b.displayDate);
+      return dateB - dateA;
+    });
+  }, [transactions, journalLines]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -797,13 +842,13 @@ export default function AccountDetail() {
 
         <Card>
           <CardHeader>
-            <h2 className="text-xl font-semibold">Recent Transactions</h2>
+            <h2 className="text-xl font-semibold">Account Activity</h2>
           </CardHeader>
           <CardContent>
-            {transactionsLoading ? (
-              <p className="text-center text-slate-500 py-4">Loading transactions...</p>
-            ) : transactions.length === 0 ? (
-              <p className="text-center text-slate-500 py-4">No transactions found for this account</p>
+            {(transactionsLoading || journalLinesLoading) ? (
+              <p className="text-center text-slate-500 py-4">Loading activity...</p>
+            ) : allActivity.length === 0 ? (
+              <p className="text-center text-slate-500 py-4">No activity found for this account</p>
             ) : (
               <div className="rounded-md border">
                 <Table>
@@ -812,24 +857,64 @@ export default function AccountDetail() {
                       <TableHead>Date</TableHead>
                       <TableHead>Description</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
+                      <TableHead className="text-right">Debit</TableHead>
+                      <TableHead className="text-right">Credit</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {transactions.slice(0, 20).map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>{format(new Date(transaction.date), 'MMM d, yyyy')}</TableCell>
-                        <TableCell className="font-medium">{transaction.description}</TableCell>
-                        <TableCell className="capitalize">
-                          <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>
-                            {transaction.type === 'income' && transaction.original_type === 'expense' ? 'refund' : transaction.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(transaction.amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {allActivity.slice(0, 50).map((activity, index) => {
+                      let debitDisplay = '—';
+                      let creditDisplay = '—';
+
+                      if (activity.activityType === 'journal') {
+                        if (activity.debitAmount && activity.debitAmount > 0) {
+                          debitDisplay = formatCurrency(activity.debitAmount);
+                        }
+                        if (activity.creditAmount && activity.creditAmount > 0) {
+                          creditDisplay = formatCurrency(activity.creditAmount);
+                        }
+                      } else {
+                        if (activity.type === 'expense') {
+                          debitDisplay = formatCurrency(Math.abs(activity.displayAmount));
+                        } else {
+                          creditDisplay = formatCurrency(Math.abs(activity.displayAmount));
+                        }
+                      }
+
+                      return (
+                        <TableRow key={`${activity.activityType}-${activity.id || index}`}>
+                          <TableCell className="whitespace-nowrap">
+                            {format(new Date(activity.displayDate), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{activity.displayDescription}</div>
+                            {activity.activityType === 'journal' && (
+                              <div className="text-xs text-slate-500 mt-1">
+                                {activity.entryNumber && `Entry #${activity.entryNumber}`}
+                                {activity.offsettingAccounts && ` • ${activity.offsettingAccounts}`}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {activity.activityType === 'transaction' ? (
+                              <Badge variant={activity.type === 'income' ? 'default' : 'secondary'}>
+                                {activity.type === 'income' && activity.original_type === 'expense' ? 'refund' : activity.type}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="capitalize">
+                                {activity.entryType === 'opening_balance' ? 'Opening Balance' : 'Journal Entry'}
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {debitDisplay}
+                          </TableCell>
+                          <TableCell className="text-right font-medium">
+                            {creditDisplay}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
