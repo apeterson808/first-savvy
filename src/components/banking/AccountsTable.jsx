@@ -728,7 +728,7 @@ export default function AccountsTable() {
                           <tr
                             key={account.id}
                             className="group hover:bg-blue-50/50 border-t border-slate-100 cursor-pointer transition-colors"
-                            onClick={() => navigate(`/banking/account/${account.id}?from=${encodeURIComponent(window.location.search)}`)}
+                            onClick={() => navigate(`/Banking/account/${account.id}?from=${encodeURIComponent(window.location.search)}`)}
                           >
                             {visibleColumns.accountNumber && (
                               <td className="px-4 py-0.5">
