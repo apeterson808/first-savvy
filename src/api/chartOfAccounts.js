@@ -14,10 +14,7 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
   let query = supabase
     .from('user_chart_of_accounts')
     .select(`
-      *,
-      template:chart_of_accounts_templates!user_chart_of_accounts_template_account_number_fkey (
-        is_editable
-      )
+      *
     `)
     .eq('profile_id', profileId);
 
@@ -43,10 +40,29 @@ export const getUserChartOfAccounts = async (profileId, filters = {}) => {
 
   if (error) throw error;
 
-  return data.map(account => ({
-    ...account,
-    is_editable: account.template?.is_editable ?? true
-  }));
+  if (!data) return [];
+
+  const templateNumbers = [...new Set(data.map(acc => acc.template_account_number).filter(Boolean))];
+
+  let templates = [];
+  if (templateNumbers.length > 0) {
+    const { data: templateData, error: templateError } = await supabase
+      .from('chart_of_accounts_templates')
+      .select('account_number, is_editable')
+      .in('account_number', templateNumbers);
+
+    if (!templateError && templateData) {
+      templates = templateData;
+    }
+  }
+
+  return data.map(account => {
+    const template = templates.find(t => t.account_number === account.template_account_number);
+    return {
+      ...account,
+      is_editable: template?.is_editable ?? true
+    };
+  });
 };
 
 export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = null, showInactive = false) => {
@@ -127,12 +143,7 @@ export const getUserChartOfAccountsHierarchy = async (profileId, classFilter = n
 export const getChartAccountById = async (accountId) => {
   const { data, error } = await supabase
     .from('user_chart_of_accounts')
-    .select(`
-      *,
-      template:chart_of_accounts_templates!user_chart_of_accounts_template_account_number_fkey (
-        is_editable
-      )
-    `)
+    .select('*')
     .eq('id', accountId)
     .maybeSingle();
 
@@ -140,9 +151,22 @@ export const getChartAccountById = async (accountId) => {
 
   if (!data) return null;
 
+  let is_editable = true;
+  if (data.template_account_number) {
+    const { data: template } = await supabase
+      .from('chart_of_accounts_templates')
+      .select('is_editable')
+      .eq('account_number', data.template_account_number)
+      .maybeSingle();
+
+    if (template) {
+      is_editable = template.is_editable ?? true;
+    }
+  }
+
   return {
     ...data,
-    is_editable: data.template?.is_editable ?? true
+    is_editable
   };
 };
 
