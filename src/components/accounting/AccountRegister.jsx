@@ -23,15 +23,6 @@ export default function AccountRegister({ account, onBack }) {
     enabled: !!activeProfile && !!account
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['account-transactions', account.id],
-    queryFn: async () => {
-      const allTransactions = await firstsavvy.entities.Transaction.list();
-      return allTransactions.filter(t => t.accountId === account.id);
-    },
-    enabled: !!account
-  });
-
   const combinedEntries = useMemo(() => {
     const entries = [];
 
@@ -45,22 +36,8 @@ export default function AccountRegister({ account, onBack }) {
         debit: line.debit_amount,
         credit: line.credit_amount,
         entryId: line.entry_id,
-        entryNumber: line.entry_number
-      });
-    });
-
-    transactions.forEach(txn => {
-      const isDebit = determineIfDebit(account.account_class, txn.amount, txn.type);
-      entries.push({
-        type: 'transaction',
-        date: new Date(txn.date),
-        description: txn.description || txn.merchant,
-        lineDescription: txn.notes,
-        offsettingAccounts: getCategoryName(txn),
-        debit: isDebit ? Math.abs(txn.amount) : null,
-        credit: !isDebit ? Math.abs(txn.amount) : null,
-        transactionId: txn.id,
-        journalEntryId: txn.journalEntryId
+        entryNumber: line.entry_number,
+        transactionStatus: line.transaction_status
       });
     });
 
@@ -77,28 +54,10 @@ export default function AccountRegister({ account, onBack }) {
     });
 
     return entries;
-  }, [journalLines, transactions, account]);
+  }, [journalLines, account]);
 
-  const determineIfDebit = (accountClass, amount, type) => {
-    if (accountClass === 'Asset') {
-      return amount > 0;
-    } else if (accountClass === 'Liability') {
-      return amount < 0;
-    } else if (accountClass === 'Equity') {
-      return amount < 0;
-    } else if (accountClass === 'Income') {
-      return amount < 0;
-    } else if (accountClass === 'Expense') {
-      return amount > 0;
-    }
-    return amount > 0;
-  };
 
-  const getCategoryName = (txn) => {
-    return 'Various';
-  };
-
-  if (journalLoading || transactionsLoading) {
+  if (journalLoading) {
     return <div className="p-4">Loading account register...</div>;
   }
 
@@ -187,24 +146,13 @@ export default function AccountRegister({ account, onBack }) {
                       {formatCurrency(entry.balance)}
                     </TableCell>
                     <TableCell>
-                      {entry.type === 'journal' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedEntryId(entry.entryId)}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {entry.type === 'transaction' && entry.journalEntryId && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setSelectedEntryId(entry.journalEntryId)}
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                      )}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedEntryId(entry.entryId)}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
