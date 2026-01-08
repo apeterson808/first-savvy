@@ -149,7 +149,7 @@ export default function AccountDetail() {
         formatDateForDb(dateRange.end)
       );
     },
-    enabled: !!id && !!activeProfile && !isTransactionBasedAccount
+    enabled: !!id && !!activeProfile
   });
 
   const updateMutation = useMutation({
@@ -255,6 +255,7 @@ export default function AccountDetail() {
     let combined = [];
 
     if (isTransactionBasedAccount) {
+      // For transaction-based accounts, include both transactions AND opening balance journal entries
       const transactionItems = transactions.map(t => ({
         ...t,
         activityType: 'transaction',
@@ -266,8 +267,28 @@ export default function AccountDetail() {
         journalEntryId: t.journal_entry_id,
         offsettingAccounts: t.categoryName || 'Uncategorized'
       }));
-      combined = transactionItems;
+
+      // Filter journal lines to only include opening balance entries for transaction-based accounts
+      const openingBalanceEntries = journalLines
+        .filter(jl => jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance'))
+        .map(jl => ({
+          ...jl,
+          id: jl.line_id,
+          activityType: 'journal',
+          displayDate: jl.entry_date,
+          displayDescription: jl.line_description || jl.entry_description,
+          debitAmount: jl.debit_amount,
+          creditAmount: jl.credit_amount,
+          entryNumber: jl.entry_number,
+          journalEntryId: jl.entry_id,
+          entryType: 'opening_balance',
+          offsettingAccounts: jl.offsetting_accounts
+        }));
+
+      // Merge transactions and opening balance entries
+      combined = [...openingBalanceEntries, ...transactionItems];
     } else {
+      // For GL accounts, show all journal lines
       const journalItems = journalLines.map(jl => ({
         ...jl,
         id: jl.line_id,
@@ -277,6 +298,7 @@ export default function AccountDetail() {
         debitAmount: jl.debit_amount,
         creditAmount: jl.credit_amount,
         entryNumber: jl.entry_number,
+        journalEntryId: jl.entry_id,
         entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
           ? 'opening_balance'
           : 'adjustment',
@@ -297,7 +319,15 @@ export default function AccountDetail() {
     combined.sort((a, b) => {
       const dateA = new Date(a.displayDate);
       const dateB = new Date(b.displayDate);
-      return dateA - dateB;
+      const dateDiff = dateA - dateB;
+
+      // If dates are the same, ensure opening balance entries come first
+      if (dateDiff === 0) {
+        if (a.entryType === 'opening_balance' && b.entryType !== 'opening_balance') return -1;
+        if (a.entryType !== 'opening_balance' && b.entryType === 'opening_balance') return 1;
+      }
+
+      return dateDiff;
     });
 
     const accountClass = account?.account_class || account?.class || 'asset';
@@ -962,13 +992,20 @@ export default function AccountDetail() {
                   </TableHeader>
                   <TableBody>
                     {allActivity.map((activity, index) => (
-                      <TableRow key={`${activity.activityType}-${activity.id || index}`}>
+                      <TableRow
+                        key={`${activity.activityType}-${activity.id || index}`}
+                        className={activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50' : ''}
+                      >
                         <TableCell className="whitespace-nowrap">
                           {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell>
                           {activity.activityType === 'journal' ? (
-                            <Badge variant="outline" className="font-mono text-xs gap-1">
+                            <Badge
+                              variant="outline"
+                              className="font-mono text-xs gap-1 cursor-pointer hover:bg-slate-100 transition-colors"
+                              onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                            >
                               <FileText className="w-3 h-3" />
                               {activity.entryNumber}
                             </Badge>
@@ -979,7 +1016,7 @@ export default function AccountDetail() {
                         <TableCell>
                           <div className="font-medium">{activity.displayDescription}</div>
                           {activity.entryType === 'opening_balance' && (
-                            <Badge variant="outline" className="text-xs mt-1">Opening Balance</Badge>
+                            <Badge variant="secondary" className="text-xs mt-1 bg-blue-100 text-blue-700">Opening Balance</Badge>
                           )}
                         </TableCell>
                         <TableCell className="text-sm text-slate-600">
@@ -995,7 +1032,7 @@ export default function AccountDetail() {
                           {formatCurrency(activity.runningBalance)}
                         </TableCell>
                         <TableCell>
-                          {(activity.activityType === 'transaction' && activity.journalEntryId) && (
+                          {activity.journalEntryId && (
                             <Button
                               variant="ghost"
                               size="sm"
