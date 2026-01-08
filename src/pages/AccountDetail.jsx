@@ -19,7 +19,7 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
-  Download, Printer, Search, Filter
+  Download, Printer, Search, Filter, ExternalLink, FileText
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -34,6 +34,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
 import { getAccountJournalLines } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
+import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -41,6 +42,7 @@ export default function AccountDetail() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [datePreset, setDatePreset] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -101,19 +103,39 @@ export default function AccountDetail() {
 
   const linkedAccounts = linkedAccountsData?.linkedAccounts || [];
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'account', id],
-    queryFn: async () => {
-      if (!id || !account) return [];
-      const allTransactions = await firstsavvy.entities.Transaction.list('date', 'desc');
+  const isTransactionBasedAccount = useMemo(() => {
+    if (!account) return true;
+    const accountClass = account.account_class || account.class || 'asset';
+    return accountClass === 'asset' || accountClass === 'liability';
+  }, [account]);
 
-      if (account.entityType === 'BankAccount') {
-        return allTransactions.filter(t => t.bank_account_id === id);
-      } else {
-        return allTransactions.filter(t => t.chart_account_id === id);
-      }
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ['transactions', 'account', id, activeProfile?.id],
+    queryFn: async () => {
+      if (!id || !account || !activeProfile) return [];
+
+      const { data: txns, error } = await firstsavvy
+        .from('transactions')
+        .select(`
+          *,
+          category:user_chart_of_accounts!transactions_chart_account_id_fkey(
+            id,
+            account_number,
+            account_name
+          )
+        `)
+        .eq('profile_id', activeProfile.id)
+        .or(`bank_account_id.eq.${id},chart_account_id.eq.${id}`)
+        .order('date', { ascending: true });
+
+      if (error) throw error;
+
+      return txns.map(t => ({
+        ...t,
+        categoryName: t.category ? `${t.category.account_number} - ${t.category.account_name}` : 'Uncategorized'
+      }));
     },
-    enabled: !!id && !!account
+    enabled: !!id && !!account && !!activeProfile && isTransactionBasedAccount
   });
 
   const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
@@ -127,7 +149,7 @@ export default function AccountDetail() {
         formatDateForDb(dateRange.end)
       );
     },
-    enabled: !!id && !!activeProfile
+    enabled: !!id && !!activeProfile && !isTransactionBasedAccount
   });
 
   const updateMutation = useMutation({
@@ -230,32 +252,38 @@ export default function AccountDetail() {
   });
 
   const { allActivity, analytics, beginningBalance, endingBalance } = useMemo(() => {
-    const transactionItems = transactions.map(t => ({
-      ...t,
-      activityType: 'transaction',
-      displayDate: t.date,
-      displayDescription: t.description,
-      displayAmount: t.amount,
-      debitAmount: null,
-      creditAmount: null
-    }));
+    let combined = [];
 
-    const journalItems = journalLines.map(jl => ({
-      ...jl,
-      id: jl.line_id,
-      activityType: 'journal',
-      displayDate: jl.entry_date,
-      displayDescription: jl.line_description || jl.entry_description,
-      debitAmount: jl.debit_amount,
-      creditAmount: jl.credit_amount,
-      entryNumber: jl.entry_number,
-      entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
-        ? 'opening_balance'
-        : 'adjustment',
-      offsettingAccounts: jl.offsetting_accounts
-    }));
-
-    let combined = [...transactionItems, ...journalItems];
+    if (isTransactionBasedAccount) {
+      const transactionItems = transactions.map(t => ({
+        ...t,
+        activityType: 'transaction',
+        displayDate: t.date,
+        displayDescription: t.description,
+        displayAmount: t.amount,
+        debitAmount: null,
+        creditAmount: null,
+        journalEntryId: t.journal_entry_id,
+        offsettingAccounts: t.categoryName || 'Uncategorized'
+      }));
+      combined = transactionItems;
+    } else {
+      const journalItems = journalLines.map(jl => ({
+        ...jl,
+        id: jl.line_id,
+        activityType: 'journal',
+        displayDate: jl.entry_date,
+        displayDescription: jl.line_description || jl.entry_description,
+        debitAmount: jl.debit_amount,
+        creditAmount: jl.credit_amount,
+        entryNumber: jl.entry_number,
+        entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
+          ? 'opening_balance'
+          : 'adjustment',
+        offsettingAccounts: jl.offsetting_accounts
+      }));
+      combined = journalItems;
+    }
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -272,8 +300,8 @@ export default function AccountDetail() {
       return dateA - dateB;
     });
 
-    const accountClass = account?.account_class || account?.class || 'Asset';
-    const isDebitNormal = accountClass === 'Asset' || accountClass === 'Expense';
+    const accountClass = account?.account_class || account?.class || 'asset';
+    const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
 
     let beginningBal = 0;
     let runningBalance = 0;
@@ -286,17 +314,18 @@ export default function AccountDetail() {
         debit = activity.debitAmount || 0;
         credit = activity.creditAmount || 0;
       } else {
-        if (activity.type === 'expense' || activity.displayAmount < 0) {
+        const amount = activity.displayAmount || 0;
+        if (amount < 0) {
           if (isDebitNormal) {
-            debit = Math.abs(activity.displayAmount);
+            credit = Math.abs(amount);
           } else {
-            credit = Math.abs(activity.displayAmount);
+            debit = Math.abs(amount);
           }
         } else {
           if (isDebitNormal) {
-            credit = Math.abs(activity.displayAmount);
+            debit = Math.abs(amount);
           } else {
-            debit = Math.abs(activity.displayAmount);
+            credit = Math.abs(amount);
           }
         }
       }
@@ -349,7 +378,7 @@ export default function AccountDetail() {
       beginningBalance: dateRange.start ? beginningBal : null,
       endingBalance: endingBal
     };
-  }, [transactions, journalLines, account, searchQuery, dateRange]);
+  }, [transactions, journalLines, account, searchQuery, dateRange, isTransactionBasedAccount]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -887,7 +916,17 @@ export default function AccountDetail() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-4">
-              <h2 className="text-xl font-semibold">Account Register</h2>
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {isTransactionBasedAccount ? 'Transaction Register' : 'General Ledger Activity'}
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">
+                  {isTransactionBasedAccount
+                    ? 'Showing source transactions (checkbook-style register)'
+                    : 'Showing journal entry lines (accounting activity)'
+                  }
+                </p>
+              </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -905,7 +944,7 @@ export default function AccountDetail() {
             {(transactionsLoading || journalLinesLoading) ? (
               <p className="text-center text-slate-500 py-4">Loading register...</p>
             ) : allActivity.length === 0 ? (
-              <p className="text-center text-slate-500 py-8">No transactions found</p>
+              <p className="text-center text-slate-500 py-8">No activity found</p>
             ) : (
               <div className="rounded-md border overflow-x-auto">
                 <Table>
@@ -914,10 +953,11 @@ export default function AccountDetail() {
                       <TableHead>Date</TableHead>
                       <TableHead>Reference</TableHead>
                       <TableHead>Description</TableHead>
-                      <TableHead>Offsetting Account</TableHead>
+                      <TableHead>{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
                       <TableHead className="text-right">Debit</TableHead>
                       <TableHead className="text-right">Credit</TableHead>
                       <TableHead className="text-right">Balance</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -928,7 +968,8 @@ export default function AccountDetail() {
                         </TableCell>
                         <TableCell>
                           {activity.activityType === 'journal' ? (
-                            <Badge variant="outline" className="font-mono text-xs">
+                            <Badge variant="outline" className="font-mono text-xs gap-1">
+                              <FileText className="w-3 h-3" />
                               {activity.entryNumber}
                             </Badge>
                           ) : (
@@ -953,6 +994,19 @@ export default function AccountDetail() {
                         <TableCell className="text-right font-bold">
                           {formatCurrency(activity.runningBalance)}
                         </TableCell>
+                        <TableCell>
+                          {(activity.activityType === 'transaction' && activity.journalEntryId) && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                              className="h-8 w-8 p-0"
+                              title="View Journal Entry"
+                            >
+                              <ExternalLink className="w-4 h-4 text-slate-400" />
+                            </Button>
+                          )}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -961,6 +1015,14 @@ export default function AccountDetail() {
             )}
           </CardContent>
         </Card>
+
+        {selectedJournalEntryId && (
+          <JournalEntryDialog
+            entryId={selectedJournalEntryId}
+            open={!!selectedJournalEntryId}
+            onClose={() => setSelectedJournalEntryId(null)}
+          />
+        )}
       </div>
     </div>
   );
