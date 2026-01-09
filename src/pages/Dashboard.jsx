@@ -52,8 +52,9 @@ export default function Dashboard() {
   };
 
   const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions'],
-    queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
+    queryKey: ['transactions', 'posted', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date,id', 10000),
+    enabled: !!activeProfile?.id,
     staleTime: 30000
   });
 
@@ -150,8 +151,8 @@ export default function Dashboard() {
     const lastMonthEndStr = format(lastMonthEnd, 'yyyy-MM-dd');
     
     // Get all transactions up to end of last month
-    const transactionsUpToLastMonth = transactions.filter(t => 
-      t.date <= lastMonthEndStr && t.status === 'posted'
+    const transactionsUpToLastMonth = transactions.filter(t =>
+      t.date <= lastMonthEndStr
     );
     
     // Calculate net worth at end of last month
@@ -159,8 +160,8 @@ export default function Dashboard() {
     const thisMonthStart = startOfMonth(today);
     const thisMonthStartStr = format(thisMonthStart, 'yyyy-MM-dd');
     
-    const thisMonthTransactions = transactions.filter(t => 
-      t.date >= thisMonthStartStr && t.status === 'posted'
+    const thisMonthTransactions = transactions.filter(t =>
+      t.date >= thisMonthStartStr
     );
     
     let lastMonthNetWorth = netWorth;
@@ -248,7 +249,7 @@ export default function Dashboard() {
             ? activeAccountIds.includes(t.bank_account_id)
             : t.bank_account_id === selectedAccount;
           const isTransfer = t.type === 'transfer';
-          return transactionDateStr === currentDayStr && t.status === 'posted' && t.type === 'expense' && matchesAccount && !isTransfer;
+          return transactionDateStr === currentDayStr && t.type === 'expense' && matchesAccount && !isTransfer;
         });
 
         const dailySpending = dayTransactions.reduce((sum, t) => sum + Math.abs(t.amount), 0);
@@ -290,7 +291,7 @@ export default function Dashboard() {
             ? activeAccountIds.includes(t.bank_account_id)
             : t.bank_account_id === selectedAccount;
           const isTransfer = t.type === 'transfer';
-          return tDateStr >= monthStartStr && tDateStr <= monthEndStr && t.status === 'posted' && matchesAccount && !isTransfer;
+          return tDateStr >= monthStartStr && tDateStr <= monthEndStr && matchesAccount && !isTransfer;
         });
 
         const spending = monthTransactions
