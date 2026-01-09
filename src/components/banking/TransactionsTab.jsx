@@ -398,19 +398,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const { data: fullPendingTransactions = [] } = useQuery({
     queryKey: ['fullPendingTransactions', activeProfile?.id],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000),
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date,id', 10000),
     enabled: !!activeProfile?.id
   });
 
   const { data: fullPostedTransactions = [] } = useQuery({
     queryKey: ['fullPostedTransactions', activeProfile?.id],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000),
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date,id', 10000),
     enabled: !!activeProfile?.id
   });
 
   const { data: fullExcludedTransactions = [] } = useQuery({
     queryKey: ['fullExcludedTransactions', activeProfile?.id],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'excluded' }, '-date', 10000),
+    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'excluded' }, '-date,id', 10000),
     enabled: !!activeProfile?.id
   });
 
@@ -545,7 +545,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         const updateInCache = (transactions) => {
           if (!transactions) return transactions;
           const updated = transactions.map(t => t.id === id ? { ...t, ...data } : t);
-          return updated.sort((a, b) => new Date(b.date) - new Date(a.date));
+          return updated.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            if (dateB.getTime() !== dateA.getTime()) {
+              return dateB - dateA;
+            }
+            return a.id.localeCompare(b.id);
+          });
         };
 
         queryClient.setQueryData(['fullPendingTransactions'], updateInCache(previousPending));
