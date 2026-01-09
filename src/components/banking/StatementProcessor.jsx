@@ -285,7 +285,7 @@ export const autoMatchTransfers = async (newTransactions) => {
               transfer_pair_id: pairId,
               type: txnType,
               original_type: txn.original_type || txn.type,
-              chart_account_id: null
+              category_account_id: null
             })
           );
 
@@ -294,7 +294,7 @@ export const autoMatchTransfers = async (newTransactions) => {
               transfer_pair_id: pairId,
               type: candidateType,
               original_type: candidate.original_type || candidate.type,
-              chart_account_id: null
+              category_account_id: null
             })
           );
 

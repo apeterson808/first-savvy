@@ -429,26 +429,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     entityType: acc.account_type === 'credit_cards' ? 'CreditCard' : 'BankAccount'
   }));
 
-  // Fetch all active accounts for Match tab dropdown (accounts, assets, liabilities)
+  // Fetch all active accounts for Match tab dropdown (from unified chart of accounts)
   const { data: allActiveAccounts = [] } = useQuery({
     queryKey: ['allActiveAccountsForMatch', activeProfile?.id],
     queryFn: async () => {
-      const [accounts, assets, liabilities] = await Promise.all([
-        firstsavvy.entities.Account.filter({ is_active: true }),
-        firstsavvy.entities.Asset.filter({ is_active: true }),
-        firstsavvy.entities.Liability.filter({ is_active: true })
-      ]);
+      if (!activeProfile?.id) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
 
-      return [
-        ...accounts.map(a => ({
+      return accounts
+        .filter(a => a.is_active && ['asset', 'liability'].includes(a.class))
+        .map(a => ({
           ...a,
-          account_name: a.account_name,
+          account_name: a.display_name || a.account_name,
           institution: a.institution_name,
-          entityType: a.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
-        })),
-        ...assets.map(a => ({ ...a, account_name: a.name, entityType: 'Asset' })),
-        ...liabilities.map(a => ({ ...a, account_name: a.name, entityType: 'Liability' }))
-      ];
+          entityType: a.account_type === 'credit_card' ? 'CreditCard' :
+                      a.class === 'asset' ? 'Asset' :
+                      a.class === 'liability' ? 'Liability' : 'BankAccount'
+        }));
     },
     enabled: !!activeProfile?.id
   });
@@ -2373,7 +2370,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                   transfer_pair_id: pairId,
                                                                   type: transactionType,
                                                                   original_type: transaction.original_type || transaction.type,
-                                                                  chart_account_id: null
+                                                                  category_account_id: null
                                                                 }
                                                               });
                                                               updateMutation.mutate({
@@ -2382,7 +2379,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                   transfer_pair_id: pairId,
                                                                   type: matchType,
                                                                   original_type: match.original_type || match.type,
-                                                                  chart_account_id: null
+                                                                  category_account_id: null
                                                                 }
                                                               });
                                                               setSelectedMatches(prev => ({
@@ -2719,7 +2716,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 if (transaction) {
                                                   updateMutation.mutate({
                                                     id: transaction.id,
-                                                    data: { chart_account_id: newCategory.id, type: newCategory.type }
+                                                    data: { category_account_id: newCategory.id, type: newCategory.type }
                                                   });
                                                 }
                                               }

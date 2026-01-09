@@ -118,14 +118,14 @@ export default function AccountDetail() {
         .from('transactions')
         .select(`
           *,
-          category:user_chart_of_accounts!transactions_chart_account_id_fkey(
+          category:user_chart_of_accounts!transactions_category_account_id_fkey(
             id,
             account_number,
             account_name
           )
         `)
         .eq('profile_id', activeProfile.id)
-        .or(`bank_account_id.eq.${id},chart_account_id.eq.${id}`)
+        .eq('bank_account_id', id)
         .order('date', { ascending: true });
 
       if (error) throw error;
@@ -153,24 +153,12 @@ export default function AccountDetail() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data, entityType }) => {
-      if (entityType === 'BankAccount' || entityType === 'CreditCard' || entityType === 'Account') {
-        return firstsavvy.entities.Account.update(id, data);
-      } else if (entityType === 'Asset') {
-        return firstsavvy.entities.Asset.update(id, data);
-      } else if (entityType === 'Liability') {
-        return firstsavvy.entities.Liability.update(id, data);
-      } else if (entityType === 'Equity') {
-        return firstsavvy.entities.Equity.update(id, data);
-      } else if (entityType === 'Income' || entityType === 'Expense') {
-        if (!activeProfile) throw new Error('No active profile');
-        return firstsavvy.from('user_chart_of_accounts')
-          .update(data)
-          .eq('id', id)
-          .eq('profile_id', activeProfile.id);
-      } else {
-        throw new Error('Unknown entity type');
-      }
+    mutationFn: async ({ id, data }) => {
+      if (!activeProfile) throw new Error('No active profile');
+      return firstsavvy.from('user_chart_of_accounts')
+        .update(data)
+        .eq('id', id)
+        .eq('profile_id', activeProfile.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
@@ -189,21 +177,9 @@ export default function AccountDetail() {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: async ({ id, entityType }) => {
-      if (entityType === 'BankAccount' || entityType === 'CreditCard' || entityType === 'Account') {
-        return firstsavvy.entities.Account.delete(id);
-      } else if (entityType === 'Asset') {
-        return firstsavvy.entities.Asset.delete(id);
-      } else if (entityType === 'Liability') {
-        return firstsavvy.entities.Liability.delete(id);
-      } else if (entityType === 'Equity') {
-        return firstsavvy.entities.Equity.delete(id);
-      } else if (entityType === 'Income' || entityType === 'Expense') {
-        if (!activeProfile) throw new Error('No active profile');
-        return deleteUserCreatedAccount(id);
-      } else {
-        throw new Error('Unknown entity type');
-      }
+    mutationFn: async ({ id }) => {
+      if (!activeProfile) throw new Error('No active profile');
+      return deleteUserCreatedAccount(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
@@ -221,24 +197,12 @@ export default function AccountDetail() {
   });
 
   const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, entityType, isActive }) => {
-      if (entityType === 'BankAccount' || entityType === 'CreditCard' || entityType === 'Account') {
-        return firstsavvy.entities.Account.update(id, { is_active: !isActive });
-      } else if (entityType === 'Asset') {
-        return firstsavvy.entities.Asset.update(id, { is_active: !isActive });
-      } else if (entityType === 'Liability') {
-        return firstsavvy.entities.Liability.update(id, { is_active: !isActive });
-      } else if (entityType === 'Equity') {
-        return firstsavvy.entities.Equity.update(id, { is_active: !isActive });
-      } else if (entityType === 'Income' || entityType === 'Expense') {
-        if (!activeProfile) throw new Error('No active profile');
-        return firstsavvy.from('user_chart_of_accounts')
-          .update({ is_active: !isActive })
-          .eq('id', id)
-          .eq('profile_id', activeProfile.id);
-      } else {
-        throw new Error('Unknown entity type');
-      }
+    mutationFn: async ({ id, isActive }) => {
+      if (!activeProfile) throw new Error('No active profile');
+      return firstsavvy.from('user_chart_of_accounts')
+        .update({ is_active: !isActive })
+        .eq('id', id)
+        .eq('profile_id', activeProfile.id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
@@ -429,19 +393,18 @@ export default function AccountDetail() {
       data.type = formData.get('type') || undefined;
     }
 
-    updateMutation.mutate({ id: account.id, data, entityType: account.entityType });
+    updateMutation.mutate({ id: account.id, data });
   };
 
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this account? This action cannot be undone.')) {
-      deleteMutation.mutate({ id: account.id, entityType: account.entityType });
+      deleteMutation.mutate({ id: account.id });
     }
   };
 
   const handleToggleActive = () => {
     toggleActiveMutation.mutate({
       id: account.id,
-      entityType: account.entityType,
       isActive: account.is_active !== false
     });
   };

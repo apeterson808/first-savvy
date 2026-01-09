@@ -668,7 +668,7 @@ export default function ContactDetail() {
                         <TableCell>{format(new Date(transaction.date), 'MMM d, yyyy')}</TableCell>
                         <TableCell className="font-medium">{transaction.description}</TableCell>
                         <TableCell>
-                          {chartAccounts.find(c => c.id === transaction.chart_account_id) ? getDisplayName(chartAccounts.find(c => c.id === transaction.chart_account_id)) : '-'}
+                          {chartAccounts.find(c => c.id === transaction.category_account_id) ? getDisplayName(chartAccounts.find(c => c.id === transaction.category_account_id)) : '-'}
                         </TableCell>
                         <TableCell className="capitalize">
                           <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>

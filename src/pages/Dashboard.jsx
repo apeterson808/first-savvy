@@ -51,20 +51,6 @@ export default function Dashboard() {
     }
   };
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['activeAccounts'],
-    queryFn: async () => {
-      const accounts = await firstsavvy.entities.Account.filter({
-        is_active: true,
-        account_type: ['checking', 'savings', 'credit_card']
-      });
-      return accounts.map(acc => ({
-        ...acc,
-        current_balance: acc.balance,
-      }));
-    }
-  });
-
   const { data: transactions = [] } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => firstsavvy.entities.Transaction.list('-date', 1000),
@@ -104,6 +90,10 @@ export default function Dashboard() {
 
   const latestCreditScore = null;
   const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
+
+  const bankAccounts = assets.filter(acc =>
+    acc.account_type && ['checking', 'savings', 'credit_card'].includes(acc.account_type)
+  );
 
   useEffect(() => {
     const checkProfileSetup = async () => {
@@ -150,8 +140,7 @@ export default function Dashboard() {
   // Assets - Liabilities (liabilities stored as positive = amount owed)
   const totalAssets = assets.filter(a => a.is_active !== false).reduce((sum, asset) => sum + (asset.current_balance || 0), 0);
   const totalLiabilities = liabilities.filter(l => l.is_active !== false).reduce((sum, liability) => sum + (liability.current_balance || 0), 0);
-  const legacyAccountsBalance = accounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
-  const netWorth = totalAssets + legacyAccountsBalance - totalLiabilities;
+  const netWorth = totalAssets - totalLiabilities;
 
   // Calculate net worth change from last month
   const calculateNetWorthChange = () => {
@@ -245,7 +234,7 @@ export default function Dashboard() {
         const days = eachDayOfInterval({ start: finalStartDate, end: today });
 
       // Get active account IDs for filtering
-      const activeAccountIds = accounts.map(a => a.id);
+      const activeAccountIds = bankAccounts.map(a => a.id);
       
       days.forEach(currentDayDate => {
         const dayStart = startOfDay(currentDayDate);
@@ -292,7 +281,7 @@ export default function Dashboard() {
         const monthEndStr = i === 0 ? format(today, 'yyyy-MM-dd') : format(endOfMonth(date), 'yyyy-MM-dd');
 
         // Get active account IDs for filtering
-        const activeAccountIds = accounts.map(a => a.id);
+        const activeAccountIds = bankAccounts.map(a => a.id);
         
         const monthTransactions = transactions.filter(t => {
           if (!t.date || isNaN(new Date(t.date).getTime())) return false;
@@ -666,8 +655,7 @@ export default function Dashboard() {
         open={wizardOpen}
         onOpenChange={setWizardOpen}
         onAccountCreated={() => {
-          queryClient.invalidateQueries({ queryKey: ['accounts'] });
-          queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
+          queryClient.invalidateQueries({ queryKey: ['assets'] });
         }}
         />
 

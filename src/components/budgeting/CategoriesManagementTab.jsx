@@ -36,7 +36,7 @@ export default function CategoriesManagementTab({ categories, transactions }) {
   const [deletingCategory, setDeletingCategory] = useState(null);
 
   const getCategoryUsageCount = (categoryId) => {
-    return transactions.filter(t => t.chart_account_id === categoryId).length;
+    return transactions.filter(t => t.category_account_id === categoryId).length;
   };
 
   const filteredCategories = useMemo(() => {

@@ -184,7 +184,7 @@ export default function AccountsTable() {
       return tDate >= monthStart && tDate <= monthEnd && t.status === 'posted';
     })
     .reduce((acc, t) => {
-      if (t.chart_account_id) {
+      if (t.category_account_id) {
         acc[t.category_account_id] = (acc[t.category_account_id] || 0) + t.amount;
       }
       return acc;
@@ -198,8 +198,8 @@ export default function AccountsTable() {
       if (t.bank_account_id) {
         countMap.set(t.bank_account_id, (countMap.get(t.bank_account_id) || 0) + 1);
       }
-      if (t.chart_account_id) {
-        countMap.set(t.chart_account_id, (countMap.get(t.chart_account_id) || 0) + 1);
+      if (t.category_account_id) {
+        countMap.set(t.category_account_id, (countMap.get(t.category_account_id) || 0) + 1);
       }
     });
 
