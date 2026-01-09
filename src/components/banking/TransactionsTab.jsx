@@ -495,6 +495,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
     onError: (error) => {
       logError(error, { action: 'createTransaction' });
@@ -582,6 +583,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     }
   });
 
@@ -592,6 +594,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     },
     onError: (error) => {
       logError(error, { action: 'deleteTransaction' });
