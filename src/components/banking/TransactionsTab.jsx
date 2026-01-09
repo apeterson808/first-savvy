@@ -47,15 +47,31 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
 import { Trash2 } from 'lucide-react';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
+import { usePersistedViewState } from '@/hooks/usePersistedViewState';
+import { deleteViewPreferences } from '@/api/viewPreferences';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
+  const { activeProfile } = useProfile();
+
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState(() => {
-    return initialFilters?.status || 'pending';
-  });
-  const [sortBy, setSortBy] = useState('-date');
+  const [statusFilter, setStatusFilter] = usePersistedViewState(
+    'transactions_status',
+    'pending',
+    activeProfile?.id,
+    initialFilters?.status
+  );
+  const [sortBy, setSortBy] = usePersistedViewState(
+    'transactions_sort',
+    '-date',
+    activeProfile?.id
+  );
   const [selectedTransactions, setSelectedTransactions] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState(initialFilters?.account || 'all');
+  const [selectedAccount, setSelectedAccount] = usePersistedViewState(
+    'transactions_account',
+    'all',
+    activeProfile?.id,
+    initialFilters?.account
+  );
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [addAccountSheetOpen, setAddAccountSheetOpen] = useState(false);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
@@ -241,6 +257,29 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     };
   };
 
+  const handleResetViewSettings = async () => {
+    if (!activeProfile?.id) return;
+
+    try {
+      await Promise.all([
+        deleteViewPreferences(activeProfile.id, 'transactions_filters'),
+        deleteViewPreferences(activeProfile.id, 'transactions_status'),
+        deleteViewPreferences(activeProfile.id, 'transactions_sort'),
+        deleteViewPreferences(activeProfile.id, 'transactions_account')
+      ]);
+
+      setFilters(defaultFilters);
+      setStatusFilter('pending');
+      setSortBy('-date');
+      setSelectedAccount('all');
+
+      toast.success('View settings reset to defaults');
+    } catch (error) {
+      console.error('Error resetting view settings:', error);
+      toast.error('Failed to reset view settings');
+    }
+  };
+
   const handlePostWithSplit = async (transaction) => {
     if (isSplitMode(transaction.id)) {
       const lines = splitLineItems[transaction.id] || [];
@@ -275,11 +314,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return true;
   };
 
-  // Initialize filters from props (chart click) or URL params
-  const [filters, setFilters] = useState(() => {
+  // Compute filter override from initialFilters (chart click) or URL params
+  const computeFilterOverride = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const urlCategory = urlParams.get('category');
-    
+
     if (initialFilters?.date) {
       return {
         datePreset: 'custom',
@@ -294,13 +333,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       };
     }
     if (initialFilters?.category) {
-      // Calculate month range based on the month offset (0 = current, 1 = last month, etc.)
       const monthOffset = parseInt(initialFilters.month || '0');
       const today = new Date();
       const targetDate = new Date(today.getFullYear(), today.getMonth() - monthOffset, 1);
       const monthStart = format(startOfMonth(targetDate), 'yyyy-MM-dd');
       const monthEnd = format(endOfMonth(targetDate), 'yyyy-MM-dd');
-      
+
       return {
         datePreset: 'custom',
         dateFrom: monthStart,
@@ -313,18 +351,30 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         paymentMethod: 'all'
       };
     }
-    return {
-      datePreset: 'all',
-      dateFrom: '',
-      dateTo: '',
-      account: 'all',
-      category: urlCategory || 'all',
-      type: 'all',
-      amountMin: '',
-      amountMax: '',
-      paymentMethod: 'all'
-    };
-  });
+    return null;
+  };
+
+  const defaultFilters = {
+    datePreset: 'all',
+    dateFrom: '',
+    dateTo: '',
+    account: 'all',
+    category: (() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('category') || 'all';
+    })(),
+    type: 'all',
+    amountMin: '',
+    amountMax: '',
+    paymentMethod: 'all'
+  };
+
+  const [filters, setFilters] = usePersistedViewState(
+    'transactions_filters',
+    defaultFilters,
+    activeProfile?.id,
+    computeFilterOverride()
+  );
 
   // Clear parent's transactionFilters after initial load
   React.useEffect(() => {
@@ -345,7 +395,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
   const queryClient = useQueryClient();
-  const { activeProfile } = useProfile();
 
   const { data: fullPendingTransactions = [] } = useQuery({
     queryKey: ['fullPendingTransactions', activeProfile?.id],
@@ -1139,9 +1188,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Download className="w-4 h-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Settings className="w-4 h-4" />
-                </Button>
+                <ClickThroughDropdownMenu>
+                  <ClickThroughDropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Settings className="w-4 h-4" />
+                    </Button>
+                  </ClickThroughDropdownMenuTrigger>
+                  <ClickThroughDropdownMenuContent align="end">
+                    <ClickThroughDropdownMenuItem onClick={handleResetViewSettings}>
+                      Reset View Settings
+                    </ClickThroughDropdownMenuItem>
+                  </ClickThroughDropdownMenuContent>
+                </ClickThroughDropdownMenu>
               </div>
             </div>
           </div>
