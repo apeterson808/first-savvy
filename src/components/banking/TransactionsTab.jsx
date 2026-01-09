@@ -544,7 +544,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       } else {
         const updateInCache = (transactions) => {
           if (!transactions) return transactions;
-          return transactions.map(t => t.id === id ? { ...t, ...data } : t);
+          const updated = transactions.map(t => t.id === id ? { ...t, ...data } : t);
+          return updated.sort((a, b) => new Date(b.date) - new Date(a.date));
         };
 
         queryClient.setQueryData(['fullPendingTransactions'], updateInCache(previousPending));
