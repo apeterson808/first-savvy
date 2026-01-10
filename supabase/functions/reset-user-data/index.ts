@@ -156,8 +156,9 @@ Deno.serve(async (req: Request) => {
     const { error: tabError } = await supabase
       .from("profile_tabs")
       .insert({
+        owner_user_id: userId,
         profile_id: profileId,
-        tab_name: "Personal",
+        display_name: "Personal",
         is_active: true,
       });
 
