@@ -110,11 +110,11 @@ export default function AccountDetail() {
   }, [account]);
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'account', id, activeProfile?.id],
+    queryKey: ['transactions', 'account', id, activeProfile?.id, dateRange],
     queryFn: async () => {
       if (!id || !account || !activeProfile) return [];
 
-      const { data: txns, error } = await firstsavvy
+      let query = firstsavvy
         .from('transactions')
         .select(`
           *,
@@ -126,7 +126,18 @@ export default function AccountDetail() {
         `)
         .eq('profile_id', activeProfile.id)
         .eq('chart_account_id', id)
-        .order('date', { ascending: true });
+        .eq('status', 'pending');
+
+      if (dateRange.start) {
+        query = query.gte('date', formatDateForDb(dateRange.start));
+      }
+      if (dateRange.end) {
+        query = query.lte('date', formatDateForDb(dateRange.end));
+      }
+
+      query = query.order('date', { ascending: true });
+
+      const { data: txns, error } = await query;
 
       if (error) throw error;
 
