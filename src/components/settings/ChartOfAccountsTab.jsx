@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +10,11 @@ import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getIconComponent } from '@/components/utils/iconMapper';
 import { formatCurrency } from '@/components/utils/formatters';
-import AccountRegister from '@/components/accounting/AccountRegister';
 import CreateJournalEntry from '@/components/accounting/CreateJournalEntry';
 
 export default function ChartOfAccountsTab() {
+  const navigate = useNavigate();
   const { activeProfile } = useProfile();
-  const [selectedAccount, setSelectedAccount] = useState(null);
   const [showCreateJE, setShowCreateJE] = useState(false);
 
   const { data: accounts = [], isLoading } = useQuery({
@@ -22,10 +22,6 @@ export default function ChartOfAccountsTab() {
     queryFn: () => getUserChartOfAccounts(activeProfile.id),
     enabled: !!activeProfile
   });
-
-  if (selectedAccount) {
-    return <AccountRegister account={selectedAccount} onBack={() => setSelectedAccount(null)} />;
-  }
 
   if (showCreateJE) {
     return <CreateJournalEntry onClose={() => setShowCreateJE(false)} />;
@@ -87,7 +83,7 @@ export default function ChartOfAccountsTab() {
                         <TableRow
                           key={account.id}
                           className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => setSelectedAccount(account)}
+                          onClick={() => navigate(`/account/${account.id}?from=${encodeURIComponent(window.location.pathname)}`)}
                         >
                           <TableCell className="font-mono">{account.account_number}</TableCell>
                           <TableCell>
