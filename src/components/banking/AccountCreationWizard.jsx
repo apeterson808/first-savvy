@@ -701,7 +701,6 @@ export default function AccountCreationWizard({
 
         const newAccountData = {
           profile_id: activeProfile.id,
-          template_id: templateAccount.id,
           template_account_number: templateAccount.account_number,
           account_number: accountNumber,
           display_name: finalDisplayName,
