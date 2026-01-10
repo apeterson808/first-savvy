@@ -71,8 +71,7 @@ Deno.serve(async (req: Request) => {
 
     // Delete financial data only - preserving contacts and contact_matching_rules
     const tablesToDelete = [
-      // Delete journal-related data first (depends on transactions and accounts)
-      "journal_entry_lines",
+      // Delete journal entries first (CASCADE will delete journal_entry_lines automatically)
       "journal_entries",
       "journal_entry_counters",
 
@@ -85,7 +84,7 @@ Deno.serve(async (req: Request) => {
       "categorization_rules",
       "budgets",
 
-      // Delete accounts
+      // Delete accounts last (after all references are gone)
       "user_chart_of_accounts",
 
       // Delete profile-specific preferences

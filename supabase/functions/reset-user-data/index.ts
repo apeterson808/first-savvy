@@ -71,27 +71,26 @@ Deno.serve(async (req: Request) => {
 
     // Delete in correct order respecting foreign key constraints
     const tablesToDelete = [
-      // Delete journal-related data first (depends on transactions and accounts)
-      "journal_entry_lines",
+      // Delete journal entries first (CASCADE will delete journal_entry_lines automatically)
       "journal_entries",
       "journal_entry_counters",
-      
+
       // Delete transaction-related data (depends on accounts and contacts)
       "transaction_splits",
       "transactions",
       "transfer_registry",
-      
+
       // Delete rules and budgets (depends on accounts and contacts)
       "categorization_rules",
       "contact_matching_rules",
       "budgets",
-      
+
       // Delete contacts
       "contacts",
-      
-      // Delete accounts
+
+      // Delete accounts last (after all references are gone)
       "user_chart_of_accounts",
-      
+
       // Delete profile-specific preferences
       "profile_view_preferences",
       "profile_tabs",
