@@ -69,22 +69,39 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
+    // Delete in correct order respecting foreign key constraints
     const tablesToDelete = [
-      "transaction_splits",
+      // Delete journal-related data first (depends on transactions and accounts)
       "journal_entry_lines",
       "journal_entries",
+      "journal_entry_counters",
+      
+      // Delete transaction-related data (depends on accounts and contacts)
+      "transaction_splits",
       "transactions",
-      "budgets",
+      "transfer_registry",
+      
+      // Delete rules and budgets (depends on accounts and contacts)
       "categorization_rules",
       "contact_matching_rules",
+      "budgets",
+      
+      // Delete contacts
       "contacts",
-      "transfer_registry",
+      
+      // Delete accounts
+      "user_chart_of_accounts",
+      
+      // Delete profile-specific preferences
+      "profile_view_preferences",
       "profile_tabs",
-      "user_chart_of_accounts"
+      "profile_memberships",
     ];
 
+    let totalDeleted = 0;
+
     for (const table of tablesToDelete) {
-      console.log(`Attempting to delete from ${table} for profile ${profileId}...`);
+      console.log(`Deleting from ${table} for profile ${profileId}...`);
       try {
         const { data, error } = await supabase
           .from(table)
@@ -98,30 +115,37 @@ Deno.serve(async (req: Request) => {
         }
 
         const deletedCount = data ? data.length : 0;
-        console.log(`Successfully deleted ${deletedCount} rows from ${table}`);
+        totalDeleted += deletedCount;
+        console.log(`Deleted ${deletedCount} rows from ${table}`);
       } catch (tableError) {
         console.error(`Exception deleting from ${table}:`, tableError);
         throw tableError;
       }
     }
 
-    console.log(`Provisioning fresh chart of accounts for user ${userId}...`);
+    console.log(`Total rows deleted: ${totalDeleted}`);
+
+    // Provision fresh chart of accounts using the signup trigger
+    console.log(`Provisioning fresh data for user ${userId}...`);
+    
+    // Call the provisioning function that gets triggered on signup
     const { error: provisionError } = await supabase.rpc(
-      "provision_chart_of_accounts_for_user",
+      "provision_minimal_onboarding_data",
       { p_user_id: userId }
     );
 
     if (provisionError) {
-      console.error("Error provisioning chart of accounts:", provisionError);
-      throw new Error(`Failed to provision chart of accounts: ${provisionError.message}`);
+      console.error("Error provisioning data:", provisionError);
+      throw new Error(`Failed to provision data: ${provisionError.message}`);
     }
 
-    console.log(`Successfully provisioned Income and Expense accounts for new user experience`);
+    console.log(`Successfully reset and reprovisioned account for user ${userId}`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Your account has been reset to a fresh start with Income and Expense categories ready for budgeting"
+        message: "Your account has been reset successfully. All data deleted and fresh accounts created.",
+        deleted_rows: totalDeleted
       }),
       {
         status: 200,
