@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, User, Moon, Sun, Monitor, RotateCcw } from 'lucide-react';
+import { Settings, LogOut, User, Moon, Sun, Monitor, RotateCcw, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
   DropdownMenu,
@@ -34,7 +34,8 @@ export function UserAvatarDropdown() {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [showFinancialResetDialog, setShowFinancialResetDialog] = useState(false);
+  const [showFullResetDialog, setShowFullResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
 
   useEffect(() => {
@@ -75,7 +76,46 @@ export function UserAvatarDropdown() {
     }
   };
 
-  const handleResetData = async () => {
+  const handleFinancialReset = async () => {
+    setResetting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error('Not authenticated');
+        return;
+      }
+
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/reset-financial-data`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reset financial data');
+      }
+
+      toast.success('Your financial data has been reset. Contacts preserved.');
+      setShowFinancialResetDialog(false);
+
+      window.location.reload();
+    } catch (error) {
+      console.error('Error resetting financial data:', error);
+      toast.error(error.message || 'Failed to reset financial data');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const handleFullReset = async () => {
     setResetting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
@@ -102,8 +142,8 @@ export function UserAvatarDropdown() {
         throw new Error(result.error || 'Failed to reset data');
       }
 
-      toast.success('Your account has been reset to a fresh start');
-      setShowResetDialog(false);
+      toast.success('Your account has been completely reset');
+      setShowFullResetDialog(false);
 
       window.location.reload();
     } catch (error) {
@@ -188,11 +228,18 @@ export function UserAvatarDropdown() {
           </DropdownMenuSub>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            onClick={() => setShowResetDialog(true)}
-            className="text-destructive focus:text-destructive"
+            onClick={() => setShowFinancialResetDialog(true)}
+            className="text-orange-600 dark:text-orange-500 focus:text-orange-600 dark:focus:text-orange-500"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
-            <span>Reset All Data</span>
+            <span>Reset Financial Data</span>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => setShowFullResetDialog(true)}
+            className="text-destructive focus:text-destructive"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            <span>Reset Everything</span>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={handleSignOut}>
             <LogOut className="mr-2 h-4 w-4" />
@@ -201,26 +248,30 @@ export function UserAvatarDropdown() {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+      <AlertDialog open={showFinancialResetDialog} onOpenChange={setShowFinancialResetDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Reset to Fresh Start?</AlertDialogTitle>
+            <AlertDialogTitle>Reset Financial Data?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will reset your account to match the experience of a brand new user signing up for the first time.
+              This will delete all your financial data while preserving your contacts.
               <div className="mt-3 space-y-2">
                 <p className="font-semibold text-destructive">What will be deleted:</p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>All transactions and financial history</li>
                   <li>All accounts and balances</li>
-                  <li>All budgets</li>
+                  <li>All budgets and categorization rules</li>
+                  <li>All journal entries</li>
+                </ul>
+                <p className="font-semibold text-green-600 dark:text-green-500 mt-3">What will be preserved:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>All contacts</li>
-                  <li>All categorization rules</li>
+                  <li>Contact matching rules</li>
                 </ul>
                 <p className="font-semibold text-foreground mt-3">What you'll get:</p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>8 active Income categories (ready for budgeting)</li>
                   <li>30 active Expense categories (ready for budgeting)</li>
-                  <li>Clean slate to add accounts when needed</li>
+                  <li>Clean financial slate</li>
                 </ul>
               </div>
               <p className="mt-3 font-semibold text-destructive">This action cannot be undone.</p>
@@ -229,11 +280,50 @@ export function UserAvatarDropdown() {
           <AlertDialogFooter>
             <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleResetData}
+              onClick={handleFinancialReset}
+              disabled={resetting}
+              className="bg-orange-600 text-white hover:bg-orange-700"
+            >
+              {resetting ? 'Resetting...' : 'Reset Financial Data'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showFullResetDialog} onOpenChange={setShowFullResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Everything to Fresh Start?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset your account to match the experience of a brand new user signing up for the first time.
+              <div className="mt-3 space-y-2">
+                <p className="font-semibold text-destructive">What will be deleted:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>All transactions and financial history</li>
+                  <li>All accounts and balances</li>
+                  <li>All budgets</li>
+                  <li>All contacts and contact matching rules</li>
+                  <li>All categorization rules</li>
+                  <li>All journal entries</li>
+                </ul>
+                <p className="font-semibold text-foreground mt-3">What you'll get:</p>
+                <ul className="list-disc list-inside ml-2 space-y-1">
+                  <li>8 active Income categories (ready for budgeting)</li>
+                  <li>30 active Expense categories (ready for budgeting)</li>
+                  <li>Complete clean slate</li>
+                </ul>
+              </div>
+              <p className="mt-3 font-semibold text-destructive">This action cannot be undone.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleFullReset}
               disabled={resetting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {resetting ? 'Resetting...' : 'Reset to Fresh Start'}
+              {resetting ? 'Resetting...' : 'Reset Everything'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

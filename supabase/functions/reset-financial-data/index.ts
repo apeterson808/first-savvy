@@ -46,7 +46,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const userId = user.id;
-    console.log(`Resetting data for user: ${userId}`);
+    console.log(`Resetting financial data for user: ${userId}`);
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
@@ -69,29 +69,25 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
-    // Delete in correct order respecting foreign key constraints
+    // Delete financial data only - preserving contacts and contact_matching_rules
     const tablesToDelete = [
       // Delete journal-related data first (depends on transactions and accounts)
       "journal_entry_lines",
       "journal_entries",
       "journal_entry_counters",
-      
-      // Delete transaction-related data (depends on accounts and contacts)
+
+      // Delete transaction-related data (contact_id will be SET NULL automatically)
       "transaction_splits",
       "transactions",
       "transfer_registry",
-      
-      // Delete rules and budgets (depends on accounts and contacts)
+
+      // Delete categorization rules (but NOT contact_matching_rules - those are preserved)
       "categorization_rules",
-      "contact_matching_rules",
       "budgets",
-      
-      // Delete contacts
-      "contacts",
-      
+
       // Delete accounts
       "user_chart_of_accounts",
-      
+
       // Delete profile-specific preferences
       "profile_view_preferences",
       "profile_tabs",
@@ -126,7 +122,7 @@ Deno.serve(async (req: Request) => {
     console.log(`Total rows deleted: ${totalDeleted}`);
 
     // Provision fresh chart of accounts and profile essentials
-    console.log(`Provisioning fresh data for user ${userId}...`);
+    console.log(`Provisioning fresh financial data for user ${userId}...`);
 
     // Provision chart of accounts
     const { error: provisionError } = await supabase.rpc(
@@ -167,12 +163,12 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create profile tab: ${tabError.message}`);
     }
 
-    console.log(`Successfully reset and reprovisioned account for user ${userId}`);
+    console.log(`Successfully reset financial data for user ${userId}. Contacts preserved.`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Your account has been reset successfully. All data deleted and fresh accounts created.",
+        message: "Your financial data has been reset. All contacts have been preserved.",
         deleted_rows: totalDeleted
       }),
       {
@@ -181,7 +177,7 @@ Deno.serve(async (req: Request) => {
       }
     );
   } catch (error) {
-    console.error("Error resetting user data:", error);
+    console.error("Error resetting financial data:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
       {
