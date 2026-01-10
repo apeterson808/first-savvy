@@ -4,13 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { getAccountDisplayName } from '../utils/constants';
 
-export default function AccountDropdown({ 
-  value, 
-  onValueChange, 
+export default function AccountDropdown({
+  value,
+  onValueChange,
   showAllOption = true,
   showPendingCounts = false,
   transactions = [],
-  excludeInvestment = true,
   triggerClassName = "w-64 h-9 hover:bg-slate-50",
   placeholder = "Select account",
   accounts: propAccounts = null
@@ -37,9 +36,17 @@ export default function AccountDropdown({
 
   const accounts = (propAccounts && propAccounts.length > 0) ? propAccounts : fetchedAccounts;
 
-  const filteredAccounts = excludeInvestment
-    ? accounts.filter(acc => acc.account_type !== 'investment' && acc.is_active !== false)
-    : accounts.filter(acc => acc.is_active !== false);
+  const filteredAccounts = accounts.filter(acc => {
+    if (acc.is_active === false) return false;
+
+    // Only show bank accounts (checking, savings) and credit cards
+    const isCheckingOrSavings = acc.class === 'asset' &&
+      ['checking_account', 'savings_account'].includes(acc.account_detail);
+    const isCreditCard = acc.class === 'liability' &&
+      (acc.account_detail === 'credit_card' || acc.account_type === 'credit_cards');
+
+    return isCheckingOrSavings || isCreditCard;
+  });
 
   const activeAccountIds = accounts.map(a => a.id);
 
