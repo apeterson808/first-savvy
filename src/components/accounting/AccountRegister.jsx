@@ -4,18 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, FileText, ExternalLink } from 'lucide-react';
+import { ArrowLeft, FileText, ExternalLink, Calendar, AlertCircle, CheckCircle2, Circle } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/components/utils/formatters';
 import { getAccountJournalLines } from '@/api/journalEntries';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import JournalEntryDialog from './JournalEntryDialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 
 export default function AccountRegister({ account, onBack }) {
   const { activeProfile } = useProfile();
   const [selectedEntryId, setSelectedEntryId] = useState(null);
   const [dateRange, setDateRange] = useState({ start: null, end: null });
+  const [startDateOpen, setStartDateOpen] = useState(false);
+  const [endDateOpen, setEndDateOpen] = useState(false);
 
   const { data: journalLines = [], isLoading: journalLoading } = useQuery({
     queryKey: ['account-journal-lines', activeProfile?.id, account.id, dateRange],
@@ -37,7 +41,8 @@ export default function AccountRegister({ account, onBack }) {
         credit: line.credit_amount,
         entryId: line.entry_id,
         entryNumber: line.entry_number,
-        transactionStatus: line.transaction_status
+        transactionStatus: line.transaction_status,
+        clearedStatus: line.cleared_status
       });
     });
 
@@ -56,6 +61,35 @@ export default function AccountRegister({ account, onBack }) {
     return entries;
   }, [journalLines, account]);
 
+  const getClearedStatusIcon = (status) => {
+    switch (status) {
+      case 'reconciled':
+        return <CheckCircle2 className="h-4 w-4 text-green-600" />;
+      case 'cleared':
+        return <Circle className="h-4 w-4 text-blue-600 fill-current" />;
+      case 'uncleared':
+      default:
+        return <Circle className="h-4 w-4 text-muted-foreground" />;
+    }
+  };
+
+  const getClearedStatusLabel = (status) => {
+    switch (status) {
+      case 'reconciled':
+        return 'Reconciled';
+      case 'cleared':
+        return 'Cleared';
+      case 'uncleared':
+      default:
+        return 'Uncleared';
+    }
+  };
+
+  const balanceDifference = account.bank_balance
+    ? Math.abs((account.current_balance || 0) - account.bank_balance)
+    : null;
+  const hasDifference = balanceDifference && balanceDifference > 0.01;
+
 
   if (journalLoading) {
     return <div className="p-4">Loading account register...</div>;
@@ -70,18 +104,95 @@ export default function AccountRegister({ account, onBack }) {
           </Button>
           <div>
             <h2 className="text-2xl font-bold">
-              {account.account_number} - {account.account_name}
+              {account.account_number} - {account.display_name || account.account_name}
             </h2>
             <p className="text-sm text-muted-foreground">
               {account.account_class} Account Register
             </p>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-sm text-muted-foreground">Current Balance</div>
-          <div className="text-2xl font-bold">
-            {formatCurrency(combinedEntries[combinedEntries.length - 1]?.balance || 0)}
+        <div className="flex gap-6 items-start">
+          {account.bank_balance != null && (
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Bank Balance</div>
+              <div className="text-xl font-semibold">
+                {formatCurrency(account.bank_balance)}
+              </div>
+              {account.last_synced_at && (
+                <div className="text-xs text-muted-foreground">
+                  As of {format(new Date(account.last_synced_at), 'MMM d, yyyy')}
+                </div>
+              )}
+            </div>
+          )}
+          <div className="text-right">
+            <div className="text-sm text-muted-foreground flex items-center gap-1 justify-end">
+              Savvy Balance
+              {hasDifference && (
+                <AlertCircle className="h-3 w-3 text-amber-500" title="Differs from bank balance" />
+              )}
+            </div>
+            <div className="text-xl font-semibold">
+              {formatCurrency(account.current_balance || 0)}
+            </div>
+            {hasDifference && (
+              <div className="text-xs text-amber-600">
+                Diff: {formatCurrency(balanceDifference)}
+              </div>
+            )}
           </div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Date Range:</span>
+          <Popover open={startDateOpen} onOpenChange={setStartDateOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                {dateRange.start ? format(new Date(dateRange.start), 'MMM d, yyyy') : 'Start Date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={dateRange.start ? new Date(dateRange.start) : undefined}
+                onSelect={(date) => {
+                  setDateRange(prev => ({ ...prev, start: date ? format(date, 'yyyy-MM-dd') : null }));
+                  setStartDateOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          <span className="text-muted-foreground">to</span>
+          <Popover open={endDateOpen} onOpenChange={setEndDateOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                {dateRange.end ? format(new Date(dateRange.end), 'MMM d, yyyy') : 'End Date'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <CalendarComponent
+                mode="single"
+                selected={dateRange.end ? new Date(dateRange.end) : undefined}
+                onSelect={(date) => {
+                  setDateRange(prev => ({ ...prev, end: date ? format(date, 'yyyy-MM-dd') : null }));
+                  setEndDateOpen(false);
+                }}
+              />
+            </PopoverContent>
+          </Popover>
+          {(dateRange.start || dateRange.end) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setDateRange({ start: null, end: null })}
+            >
+              Clear
+            </Button>
+          )}
         </div>
       </div>
 
@@ -93,6 +204,7 @@ export default function AccountRegister({ account, onBack }) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[30px]"></TableHead>
                 <TableHead>Date</TableHead>
                 <TableHead>Description</TableHead>
                 <TableHead>Offsetting Account</TableHead>
@@ -105,13 +217,18 @@ export default function AccountRegister({ account, onBack }) {
             <TableBody>
               {combinedEntries.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No transactions or journal entries
                   </TableCell>
                 </TableRow>
               ) : (
                 combinedEntries.map((entry, index) => (
                   <TableRow key={`${entry.type}-${index}`}>
+                    <TableCell>
+                      <div title={getClearedStatusLabel(entry.clearedStatus)}>
+                        {getClearedStatusIcon(entry.clearedStatus)}
+                      </div>
+                    </TableCell>
                     <TableCell className="whitespace-nowrap">
                       {format(entry.date, 'MMM d, yyyy')}
                     </TableCell>
