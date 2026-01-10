@@ -125,7 +125,7 @@ export default function AccountDetail() {
           )
         `)
         .eq('profile_id', activeProfile.id)
-        .eq('bank_account_id', id)
+        .eq('chart_account_id', id)
         .order('date', { ascending: true });
 
       if (error) throw error;
@@ -232,25 +232,25 @@ export default function AccountDetail() {
         offsettingAccounts: t.categoryName || 'Uncategorized'
       }));
 
-      // Filter journal lines to only include opening balance entries for transaction-based accounts
-      const openingBalanceEntries = journalLines
-        .filter(jl => jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance'))
-        .map(jl => ({
-          ...jl,
-          id: jl.line_id,
-          activityType: 'journal',
-          displayDate: jl.entry_date,
-          displayDescription: jl.line_description || jl.entry_description,
-          debitAmount: jl.debit_amount,
-          creditAmount: jl.credit_amount,
-          entryNumber: jl.entry_number,
-          journalEntryId: jl.entry_id,
-          entryType: 'opening_balance',
-          offsettingAccounts: jl.offsetting_accounts
-        }));
+      // Include all journal lines for transaction-based accounts
+      const journalItems = journalLines.map(jl => ({
+        ...jl,
+        id: jl.line_id,
+        activityType: 'journal',
+        displayDate: jl.entry_date,
+        displayDescription: jl.line_description || jl.entry_description,
+        debitAmount: jl.debit_amount,
+        creditAmount: jl.credit_amount,
+        entryNumber: jl.entry_number,
+        journalEntryId: jl.entry_id,
+        entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
+          ? 'opening_balance'
+          : 'transaction',
+        offsettingAccounts: jl.offsetting_accounts
+      }));
 
-      // Merge transactions and opening balance entries
-      combined = [...openingBalanceEntries, ...transactionItems];
+      // Merge transactions and journal entries
+      combined = [...journalItems, ...transactionItems];
     } else {
       // For GL accounts, show all journal lines
       const journalItems = journalLines.map(jl => ({
