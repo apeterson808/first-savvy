@@ -68,7 +68,7 @@ BEGIN
   -- Handle DELETE
   IF TG_OP = 'DELETE' THEN
     UPDATE public.user_chart_of_accounts
-    SET current_balance = recalculate_account_balance(OLD.account_id)
+    SET current_balance = public.recalculate_account_balance(OLD.account_id)
     WHERE id = OLD.account_id;
 
     RETURN OLD;
@@ -78,13 +78,13 @@ BEGIN
     -- Update old account if it changed
     IF OLD.account_id != NEW.account_id THEN
       UPDATE public.user_chart_of_accounts
-      SET current_balance = recalculate_account_balance(OLD.account_id)
+      SET current_balance = public.recalculate_account_balance(OLD.account_id)
       WHERE id = OLD.account_id;
     END IF;
 
     -- Update new account
     UPDATE public.user_chart_of_accounts
-    SET current_balance = recalculate_account_balance(NEW.account_id)
+    SET current_balance = public.recalculate_account_balance(NEW.account_id)
     WHERE id = NEW.account_id;
 
     RETURN NEW;
@@ -92,7 +92,7 @@ BEGIN
   -- Handle INSERT
   ELSIF TG_OP = 'INSERT' THEN
     UPDATE public.user_chart_of_accounts
-    SET current_balance = recalculate_account_balance(NEW.account_id)
+    SET current_balance = public.recalculate_account_balance(NEW.account_id)
     WHERE id = NEW.account_id;
 
     RETURN NEW;
