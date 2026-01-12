@@ -48,9 +48,13 @@ const createEntityAPI = (tableName) => {
       }
 
       if (orderBy) {
-        const isDescending = orderBy.startsWith('-');
-        const column = isDescending ? orderBy.substring(1) : orderBy;
-        query = query.order(column, { ascending: !isDescending });
+        // Handle multiple order columns separated by comma
+        const columns = orderBy.split(',').map(col => col.trim());
+        columns.forEach(col => {
+          const isDescending = col.startsWith('-');
+          const column = isDescending ? col.substring(1) : col;
+          query = query.order(column, { ascending: !isDescending });
+        });
       }
 
       if (limit) {
@@ -83,9 +87,13 @@ const createEntityAPI = (tableName) => {
       }
 
       if (orderBy) {
-        const isDescending = orderBy.startsWith('-');
-        const column = isDescending ? orderBy.substring(1) : orderBy;
-        query = query.order(column, { ascending: !isDescending });
+        // Handle multiple order columns separated by comma
+        const columns = orderBy.split(',').map(col => col.trim());
+        columns.forEach(col => {
+          const isDescending = col.startsWith('-');
+          const column = isDescending ? col.substring(1) : col;
+          query = query.order(column, { ascending: !isDescending });
+        });
       }
 
       if (limit) {
