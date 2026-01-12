@@ -277,14 +277,37 @@ export default function Dashboard() {
             : 12)
         : monthsToShow;
 
+      // Get active account IDs for filtering
+      const activeAccountIds = bankAccounts.map(a => a.id);
+
+      // Calculate current total balance (for cash balance chart)
+      let currentBalance = 0;
+      if (chartView === 'balance') {
+        if (selectedAccount === 'all') {
+          currentBalance = bankAccounts.reduce((sum, acc) => {
+            const balance = acc.current_balance || 0;
+            if (acc.class === 'liability') {
+              return sum - balance;
+            }
+            return sum + balance;
+          }, 0);
+        } else {
+          const selectedAcc = bankAccounts.find(a => a.id === selectedAccount);
+          if (selectedAcc) {
+            currentBalance = selectedAcc.class === 'liability'
+              ? -(selectedAcc.current_balance || 0)
+              : (selectedAcc.current_balance || 0);
+          }
+        }
+      }
+
+      // Build array of monthly data
+      const monthlyData = [];
       for (let i = finalMonthsToShow - 1; i >= 0; i--) {
         const date = subMonths(new Date(), i);
         const monthStartStr = format(startOfMonth(date), 'yyyy-MM-dd');
         const monthEndStr = i === 0 ? format(today, 'yyyy-MM-dd') : format(endOfMonth(date), 'yyyy-MM-dd');
 
-        // Get active account IDs for filtering
-        const activeAccountIds = bankAccounts.map(a => a.id);
-        
         const monthTransactions = transactions.filter(t => {
           if (!t.date || isNaN(new Date(t.date).getTime())) return false;
           const tDateStr = t.date.substring(0, 10);
@@ -303,12 +326,38 @@ export default function Dashboard() {
           .filter(t => t.type === 'income')
           .reduce((sum, t) => sum + t.amount, 0);
 
-        data.push({
+        monthlyData.push({
           date: format(date, 'MMM'),
           spending,
           income,
-          balance: income - spending
+          monthTransactions
         });
+      }
+
+      // For balance chart: work backwards from current balance to calculate historical balances
+      if (chartView === 'balance') {
+        let runningBalance = currentBalance;
+
+        for (let i = monthlyData.length - 1; i >= 0; i--) {
+          const monthData = monthlyData[i];
+          data.unshift({
+            date: monthData.date,
+            spending: monthData.spending,
+            income: monthData.income,
+            balance: runningBalance
+          });
+
+          runningBalance = runningBalance - monthData.income + monthData.spending;
+        }
+      } else {
+        for (const monthData of monthlyData) {
+          data.push({
+            date: monthData.date,
+            spending: monthData.spending,
+            income: monthData.income,
+            balance: monthData.income - monthData.spending
+          });
+        }
       }
     }
     
@@ -462,13 +511,42 @@ export default function Dashboard() {
                             </div>
                           );
                         }
-                        
-                        // Default for balance view
+
+                        if (chartView === 'balance') {
+                          return (
+                            <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
+                              <div className="flex justify-between gap-4 mb-1">
+                                <span className="text-slate-600">Cash Balance</span>
+                                <span className="font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
+                                <span className="text-slate-500">Income</span>
+                                <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 text-[10px]">
+                                <span className="text-slate-500">Spending</span>
+                                <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Default for income view
                         return (
                           <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
+                            <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
                             <div className="flex justify-between gap-4">
-                              <span className="text-slate-600">{data.date}</span>
+                              <span className="text-slate-600">Net Flow</span>
                               <span className="font-medium text-sky-blue">${data.balance?.toFixed(2) || '0.00'}</span>
+                            </div>
+                            <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
+                              <span className="text-slate-500">Income</span>
+                              <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
+                            </div>
+                            <div className="flex justify-between gap-4 text-[10px]">
+                              <span className="text-slate-500">Spending</span>
+                              <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
                             </div>
                           </div>
                         );
