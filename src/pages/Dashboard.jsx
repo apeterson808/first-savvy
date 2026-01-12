@@ -92,9 +92,10 @@ export default function Dashboard() {
   const latestCreditScore = null;
   const getChartAccountById = (id) => chartAccounts.find(c => c.id === id);
 
-  const bankAccounts = assets.filter(acc =>
-    acc.account_type && ['checking', 'savings', 'credit_card'].includes(acc.account_type)
-  );
+  const bankAccounts = [
+    ...assets.filter(acc => ['checking_account', 'savings_account'].includes(acc.account_detail)),
+    ...liabilities.filter(acc => acc.account_type === 'credit_cards')
+  ];
 
   useEffect(() => {
     const checkProfileSetup = async () => {
