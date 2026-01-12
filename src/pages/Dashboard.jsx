@@ -334,131 +334,36 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: show transaction-by-transaction changes with monthly anchors
+      // For balance chart: work backwards from current balance to calculate historical balances
       if (chartView === 'balance') {
-        // Get all transactions in the time range, sorted chronologically
-        const filteredTransactions = transactions
-          .filter(t => {
-            if (!t.date || isNaN(new Date(t.date).getTime())) return false;
-            const matchesAccount = selectedAccount === 'all'
-              ? activeAccountIds.includes(t.bank_account_id)
-              : t.bank_account_id === selectedAccount;
-            const isTransfer = t.type === 'transfer';
-            return matchesAccount && !isTransfer;
-          })
-          .sort((a, b) => new Date(a.date) - new Date(b.date));
+        let runningBalance = currentBalance;
 
-        // Calculate opening balance by working backward from current balance
-        let openingBalance = currentBalance;
-        filteredTransactions.forEach(t => {
-          if (t.type === 'income') {
-            openingBalance -= t.amount;
-          } else if (t.type === 'expense') {
-            openingBalance += Math.abs(t.amount);
+        // Find the first month with any transaction activity
+        let firstMonthWithData = -1;
+        for (let i = 0; i < monthlyData.length; i++) {
+          if (monthlyData[i].monthTransactions.length > 0) {
+            firstMonthWithData = i;
+            break;
           }
-        });
-
-        // Create array of all month starts in the time range
-        const monthAnchors = [];
-        for (let i = finalMonthsToShow - 1; i >= 0; i--) {
-          const monthDate = subMonths(today, i);
-          monthAnchors.push(startOfMonth(monthDate));
         }
 
-        // Build complete timeline with monthly anchors and transactions
-        let runningBalance = openingBalance;
-        let transactionIndex = 0;
+        // Only show data from the first month with transactions onward
+        for (let i = monthlyData.length - 1; i >= 0; i--) {
+          const monthData = monthlyData[i];
 
-        monthAnchors.forEach((monthStart, monthIndex) => {
-          const nextMonthStart = monthIndex < monthAnchors.length - 1
-            ? monthAnchors[monthIndex + 1]
-            : addDays(today, 1); // Use tomorrow as upper bound for last month
-
-          // Add monthly anchor point
-          data.push({
-            date: format(monthStart, 'MMM'),
-            fullDate: monthStart,
-            spending: 0,
-            income: 0,
-            balance: runningBalance,
-            isMonthAnchor: true
-          });
-
-          // Add all transactions within this month
-          while (transactionIndex < filteredTransactions.length) {
-            const transaction = filteredTransactions[transactionIndex];
-            const transactionDate = new Date(transaction.date);
-
-            // Stop if transaction is in next month or beyond
-            if (transactionDate >= nextMonthStart) {
-              break;
-            }
-
-            // Only add transaction if it's after the month start (avoid duplicating the anchor date)
-            if (transactionDate > monthStart) {
-              // Update running balance
-              if (transaction.type === 'income') {
-                runningBalance += transaction.amount;
-              } else if (transaction.type === 'expense') {
-                runningBalance -= Math.abs(transaction.amount);
-              }
-
-              data.push({
-                date: format(transactionDate, 'MMM d'),
-                fullDate: transactionDate,
-                spending: transaction.type === 'expense' ? Math.abs(transaction.amount) : 0,
-                income: transaction.type === 'income' ? transaction.amount : 0,
-                balance: runningBalance,
-                transactionDescription: transaction.description,
-                isMonthAnchor: false
-              });
-            } else if (transactionDate.getTime() === monthStart.getTime()) {
-              // Transaction is exactly on month start - update the balance but keep the anchor
-              if (transaction.type === 'income') {
-                runningBalance += transaction.amount;
-              } else if (transaction.type === 'expense') {
-                runningBalance -= Math.abs(transaction.amount);
-              }
-              // Update the last added anchor with the new balance
-              if (data.length > 0) {
-                data[data.length - 1].balance = runningBalance;
-                data[data.length - 1].spending = transaction.type === 'expense' ? Math.abs(transaction.amount) : 0;
-                data[data.length - 1].income = transaction.type === 'income' ? transaction.amount : 0;
-                data[data.length - 1].transactionDescription = transaction.description;
-              }
-            }
-
-            transactionIndex++;
-          }
-        });
-
-        // Add final data point for today if it's not already included
-        const lastDataPoint = data[data.length - 1];
-        const todayStart = startOfDay(today);
-        if (!lastDataPoint || lastDataPoint.fullDate.getTime() !== todayStart.getTime()) {
-          // Process any remaining transactions up to today
-          while (transactionIndex < filteredTransactions.length) {
-            const transaction = filteredTransactions[transactionIndex];
-            const transactionDate = new Date(transaction.date);
-
-            if (transactionDate <= today) {
-              if (transaction.type === 'income') {
-                runningBalance += transaction.amount;
-              } else if (transaction.type === 'expense') {
-                runningBalance -= Math.abs(transaction.amount);
-              }
-            }
-            transactionIndex++;
+          // Skip months before we have any data
+          if (i < firstMonthWithData) {
+            continue;
           }
 
-          data.push({
-            date: format(today, 'MMM d'),
-            fullDate: today,
-            spending: 0,
-            income: 0,
-            balance: runningBalance,
-            isToday: true
+          data.unshift({
+            date: monthData.date,
+            spending: monthData.spending,
+            income: monthData.income,
+            balance: runningBalance
           });
+
+          runningBalance = runningBalance - monthData.income + monthData.spending;
         }
       } else {
         for (const monthData of monthlyData) {
@@ -590,19 +495,13 @@ export default function Dashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                    <XAxis
-                      dataKey="date"
-                      stroke="#64748b"
-                      tick={{ fontSize: 11 }}
-                      axisLine={false}
+                    <XAxis 
+                      dataKey="date" 
+                      stroke="#64748b" 
+                      tick={{ fontSize: 11 }} 
+                      axisLine={false} 
                       tickLine={false}
-                      ticks={
-                        chartView === 'spending'
-                          ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date)
-                          : chartView === 'balance'
-                          ? chartData.filter(d => d.isMonthAnchor || d.isToday).map(d => d.date)
-                          : undefined
-                      }
+                      ticks={chartView === 'spending' ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
                       padding={{ left: 10, right: 10 }}
                     />
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
@@ -630,37 +529,21 @@ export default function Dashboard() {
                         }
 
                         if (chartView === 'balance') {
-                          const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d, yyyy') : data.date;
-                          const hasTransaction = data.income > 0 || data.spending > 0;
-
                           return (
                             <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{dateLabel}</div>
-                              {hasTransaction && data.transactionDescription && (
-                                <div className="text-[10px] text-slate-600 mb-1 italic truncate max-w-[200px]">
-                                  {data.transactionDescription}
-                                </div>
-                              )}
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
                               <div className="flex justify-between gap-4 mb-1">
                                 <span className="text-slate-600">Cash Balance</span>
                                 <span className="font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</span>
                               </div>
-                              {hasTransaction && (
-                                <>
-                                  {data.income > 0 && (
-                                    <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
-                                      <span className="text-slate-500">Income</span>
-                                      <span className="text-soft-green">+${data.income?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                  )}
-                                  {data.spending > 0 && (
-                                    <div className="flex justify-between gap-4 text-[10px]">
-                                      <span className="text-slate-500">Spending</span>
-                                      <span className="text-orange">-${data.spending?.toFixed(2) || '0.00'}</span>
-                                    </div>
-                                  )}
-                                </>
-                              )}
+                              <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
+                                <span className="text-slate-500">Income</span>
+                                <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
+                              </div>
+                              <div className="flex justify-between gap-4 text-[10px]">
+                                <span className="text-slate-500">Spending</span>
+                                <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
+                              </div>
                             </div>
                           );
                         }
