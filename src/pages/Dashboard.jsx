@@ -334,10 +334,8 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: work backwards from current balance to calculate historical balances
+      // For balance chart: work forward from first transaction month
       if (chartView === 'balance') {
-        let runningBalance = currentBalance;
-
         // Find the first month with any transaction activity
         let firstMonthWithData = -1;
         for (let i = 0; i < monthlyData.length; i++) {
@@ -347,23 +345,39 @@ export default function Dashboard() {
           }
         }
 
-        // Only show data from the first month with transactions onward
-        for (let i = monthlyData.length - 1; i >= 0; i--) {
-          const monthData = monthlyData[i];
+        // If no data found, show empty chart
+        if (firstMonthWithData === -1) {
+          return data;
+        }
 
-          // Skip months before we have any data
-          if (i < firstMonthWithData) {
+        // Calculate the opening balance at the start of the first month with data
+        // Work backward from current balance to find what the balance was at start of first data month
+        let openingBalance = currentBalance;
+        for (let i = monthlyData.length - 1; i >= firstMonthWithData; i--) {
+          if (i === monthlyData.length - 1) {
+            // For the current month, don't adjust yet
             continue;
           }
+          // Work backward: subtract income, add spending
+          openingBalance = openingBalance - monthlyData[i + 1].income + monthlyData[i + 1].spending;
+        }
+        // One more adjustment for the first month to get to its starting point
+        openingBalance = openingBalance - monthlyData[firstMonthWithData].income + monthlyData[firstMonthWithData].spending;
 
-          data.unshift({
+        // Now work forward from the first month with data
+        let runningBalance = openingBalance;
+        for (let i = firstMonthWithData; i < monthlyData.length; i++) {
+          const monthData = monthlyData[i];
+
+          // Add income and subtract spending to move forward
+          runningBalance = runningBalance + monthData.income - monthData.spending;
+
+          data.push({
             date: monthData.date,
             spending: monthData.spending,
             income: monthData.income,
             balance: runningBalance
           });
-
-          runningBalance = runningBalance - monthData.income + monthData.spending;
         }
       } else {
         for (const monthData of monthlyData) {
