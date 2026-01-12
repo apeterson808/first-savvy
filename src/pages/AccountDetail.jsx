@@ -109,6 +109,7 @@ export default function AccountDetail() {
     return accountClass === 'asset' || accountClass === 'liability';
   }, [account]);
 
+  // STAGING AREA: Query pending transactions only (not yet posted to journal)
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', 'account', id, activeProfile?.id, dateRange],
     queryFn: async () => {
@@ -121,11 +122,11 @@ export default function AccountDetail() {
           category:user_chart_of_accounts!transactions_category_account_id_fkey(
             id,
             account_number,
-            account_name
+            display_name
           )
         `)
         .eq('profile_id', activeProfile.id)
-        .eq('chart_account_id', id)
+        .eq('bank_account_id', id)
         .eq('status', 'pending');
 
       if (dateRange.start) {
@@ -143,12 +144,13 @@ export default function AccountDetail() {
 
       return txns.map(t => ({
         ...t,
-        categoryName: t.category ? `${t.category.account_number} - ${t.category.account_name}` : 'Uncategorized'
+        categoryName: t.category ? `${t.category.account_number} - ${t.category.display_name}` : 'Uncategorized'
       }));
     },
     enabled: !!id && !!account && !!activeProfile && isTransactionBasedAccount
   });
 
+  // SOURCE OF TRUTH: Query ALL posted journal entry lines (all posted financial activity)
   const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
     queryKey: ['journal-lines', 'account', id, activeProfile?.id, dateRange],
     queryFn: async () => {
@@ -230,10 +232,15 @@ export default function AccountDetail() {
     let combined = [];
 
     if (isTransactionBasedAccount) {
-      // For transaction-based accounts, include both transactions AND opening balance journal entries
+      // SINGLE SOURCE OF TRUTH ARCHITECTURE:
+      // 1. journalItems = Posted transactions (from journal_entry_lines) - THE SOURCE OF TRUTH
+      // 2. transactionItems = Pending transactions (from transactions table) - STAGING AREA
+      // Once a transaction is posted, it exists ONLY in journal_entry_lines
+
+      // PENDING ITEMS: Show transactions that haven't been posted yet (staging area)
       const transactionItems = transactions.map(t => ({
         ...t,
-        activityType: 'transaction',
+        activityType: 'pending',
         displayDate: t.date,
         displayDescription: t.description,
         displayAmount: t.amount,
@@ -243,40 +250,36 @@ export default function AccountDetail() {
         offsettingAccounts: t.categoryName || 'Uncategorized'
       }));
 
-      // Include all journal lines for transaction-based accounts
+      // POSTED ITEMS: All posted journal lines (source of truth for posted transactions)
       const journalItems = journalLines.map(jl => ({
         ...jl,
         id: jl.line_id,
-        activityType: 'journal',
+        activityType: 'posted',
         displayDate: jl.entry_date,
         displayDescription: jl.line_description || jl.entry_description,
         debitAmount: jl.debit_amount,
         creditAmount: jl.credit_amount,
         entryNumber: jl.entry_number,
         journalEntryId: jl.entry_id,
-        entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
-          ? 'opening_balance'
-          : 'transaction',
+        entryType: jl.entry_type || 'adjustment',
         offsettingAccounts: jl.offsetting_accounts
       }));
 
-      // Merge transactions and journal entries
+      // Combine posted (from journal) + pending (from transactions staging table)
       combined = [...journalItems, ...transactionItems];
     } else {
-      // For GL accounts, show all journal lines
+      // For GL accounts (Income/Expense), ALL activity comes from journal lines only
       const journalItems = journalLines.map(jl => ({
         ...jl,
         id: jl.line_id,
-        activityType: 'journal',
+        activityType: 'posted',
         displayDate: jl.entry_date,
         displayDescription: jl.line_description || jl.entry_description,
         debitAmount: jl.debit_amount,
         creditAmount: jl.credit_amount,
         entryNumber: jl.entry_number,
         journalEntryId: jl.entry_id,
-        entryType: jl.entry_description && jl.entry_description.toLowerCase().includes('opening balance')
-          ? 'opening_balance'
-          : 'adjustment',
+        entryType: jl.entry_type || 'adjustment',
         offsettingAccounts: jl.offsetting_accounts
       }));
       combined = journalItems;
@@ -315,10 +318,12 @@ export default function AccountDetail() {
       let debit = 0;
       let credit = 0;
 
-      if (activity.activityType === 'journal') {
+      if (activity.activityType === 'posted') {
+        // Posted items: Use actual debit/credit from journal_entry_lines (source of truth)
         debit = activity.debitAmount || 0;
         credit = activity.creditAmount || 0;
-      } else {
+      } else if (activity.activityType === 'pending') {
+        // Pending items: Convert amount to debit/credit for display consistency
         const amount = activity.displayAmount || 0;
         if (amount < 0) {
           if (isDebitNormal) {
@@ -922,12 +927,12 @@ export default function AccountDetail() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div>
                 <h2 className="text-xl font-semibold">
-                  {isTransactionBasedAccount ? 'Transaction Register' : 'General Ledger Activity'}
+                  {isTransactionBasedAccount ? 'Account Register' : 'General Ledger Activity'}
                 </h2>
                 <p className="text-sm text-slate-500 mt-1">
                   {isTransactionBasedAccount
-                    ? 'Showing source transactions (checkbook-style register)'
-                    : 'Showing journal entry lines (accounting activity)'
+                    ? 'Posted transactions from journal entries + pending items (checkbook-style register)'
+                    : 'All journal entry lines for this account (complete accounting activity)'
                   }
                 </p>
               </div>
@@ -968,13 +973,16 @@ export default function AccountDetail() {
                     {allActivity.map((activity, index) => (
                       <TableRow
                         key={`${activity.activityType}-${activity.id || index}`}
-                        className={activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50' : ''}
+                        className={
+                          activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50' :
+                          activity.activityType === 'pending' ? 'bg-amber-50/30 hover:bg-amber-50/50' : ''
+                        }
                       >
                         <TableCell className="whitespace-nowrap">
                           {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell>
-                          {activity.activityType === 'journal' ? (
+                          {activity.activityType === 'posted' ? (
                             <Badge
                               variant="outline"
                               className="font-mono text-xs gap-1 cursor-pointer hover:bg-slate-100 transition-colors"
@@ -984,7 +992,7 @@ export default function AccountDetail() {
                               {activity.entryNumber}
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs">TXN</Badge>
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">PENDING</Badge>
                           )}
                         </TableCell>
                         <TableCell>
