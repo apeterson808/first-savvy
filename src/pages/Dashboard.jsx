@@ -334,51 +334,93 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: work forward from first transaction month
+      // For balance chart: show transaction-by-transaction changes
       if (chartView === 'balance') {
-        // Find the first month with any transaction activity
-        let firstMonthWithData = -1;
-        for (let i = 0; i < monthlyData.length; i++) {
-          if (monthlyData[i].monthTransactions.length > 0) {
-            firstMonthWithData = i;
-            break;
-          }
-        }
+        // Get all transactions in the time range, sorted chronologically
+        const filteredTransactions = transactions
+          .filter(t => {
+            if (!t.date || isNaN(new Date(t.date).getTime())) return false;
+            const matchesAccount = selectedAccount === 'all'
+              ? activeAccountIds.includes(t.bank_account_id)
+              : t.bank_account_id === selectedAccount;
+            const isTransfer = t.type === 'transfer';
+            return matchesAccount && !isTransfer;
+          })
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // If no data found, show empty chart
-        if (firstMonthWithData === -1) {
+        // If no transactions, show empty chart
+        if (filteredTransactions.length === 0) {
           return data;
         }
 
-        // Calculate the opening balance at the start of the first month with data
-        // Work backward from current balance to find what the balance was at start of first data month
+        // Find the date of the first transaction
+        const firstTransactionDate = new Date(filteredTransactions[0].date);
+
+        // Calculate opening balance at the first transaction
+        // Work backward from current balance
         let openingBalance = currentBalance;
-        for (let i = monthlyData.length - 1; i >= firstMonthWithData; i--) {
-          if (i === monthlyData.length - 1) {
-            // For the current month, don't adjust yet
-            continue;
+        filteredTransactions.forEach(t => {
+          if (t.type === 'income') {
+            openingBalance -= t.amount;
+          } else if (t.type === 'expense') {
+            openingBalance += Math.abs(t.amount);
           }
-          // Work backward: subtract income, add spending
-          openingBalance = openingBalance - monthlyData[i + 1].income + monthlyData[i + 1].spending;
+        });
+
+        // Add zero balance points for all months before the first transaction
+        for (let i = finalMonthsToShow - 1; i >= 0; i--) {
+          const monthDate = subMonths(today, i);
+          const monthStart = startOfMonth(monthDate);
+
+          // Only add if this month is before the first transaction month
+          if (monthStart < startOfMonth(firstTransactionDate)) {
+            data.push({
+              date: format(monthDate, 'MMM'),
+              fullDate: monthStart,
+              spending: 0,
+              income: 0,
+              balance: 0
+            });
+          }
         }
-        // One more adjustment for the first month to get to its starting point
-        openingBalance = openingBalance - monthlyData[firstMonthWithData].income + monthlyData[firstMonthWithData].spending;
 
-        // Now work forward from the first month with data
+        // Add data point at start of first transaction month with opening balance
+        const firstTransactionMonthStart = startOfMonth(firstTransactionDate);
+        data.push({
+          date: format(firstTransactionMonthStart, 'MMM'),
+          fullDate: firstTransactionMonthStart,
+          spending: 0,
+          income: 0,
+          balance: openingBalance
+        });
+
+        // Now add a data point for each transaction
         let runningBalance = openingBalance;
-        for (let i = firstMonthWithData; i < monthlyData.length; i++) {
-          const monthData = monthlyData[i];
+        filteredTransactions.forEach((t, index) => {
+          const transactionDate = new Date(t.date);
 
-          // Add income and subtract spending to move forward
-          runningBalance = runningBalance + monthData.income - monthData.spending;
+          // Update running balance
+          if (t.type === 'income') {
+            runningBalance += t.amount;
+          } else if (t.type === 'expense') {
+            runningBalance -= Math.abs(t.amount);
+          }
+
+          // Determine label: show month name on first of month, otherwise show date
+          const isFirstOfMonth = transactionDate.getDate() === 1;
+          const dateLabel = isFirstOfMonth
+            ? format(transactionDate, 'MMM')
+            : format(transactionDate, 'MMM d');
 
           data.push({
-            date: monthData.date,
-            spending: monthData.spending,
-            income: monthData.income,
-            balance: runningBalance
+            date: dateLabel,
+            fullDate: transactionDate,
+            spending: t.type === 'expense' ? Math.abs(t.amount) : 0,
+            income: t.type === 'income' ? t.amount : 0,
+            balance: runningBalance,
+            transactionDescription: t.description
           });
-        }
+        });
       } else {
         for (const monthData of monthlyData) {
           data.push({
@@ -509,13 +551,17 @@ export default function Dashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#64748b" 
-                      tick={{ fontSize: 11 }} 
-                      axisLine={false} 
+                    <XAxis
+                      dataKey="date"
+                      stroke="#64748b"
+                      tick={{ fontSize: 11 }}
+                      axisLine={false}
                       tickLine={false}
-                      ticks={chartView === 'spending' ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
+                      ticks={
+                        chartView === 'spending' || chartView === 'balance'
+                          ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date)
+                          : undefined
+                      }
                       padding={{ left: 10, right: 10 }}
                     />
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
@@ -543,21 +589,37 @@ export default function Dashboard() {
                         }
 
                         if (chartView === 'balance') {
+                          const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d, yyyy') : data.date;
+                          const hasTransaction = data.income > 0 || data.spending > 0;
+
                           return (
                             <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{dateLabel}</div>
+                              {hasTransaction && data.transactionDescription && (
+                                <div className="text-[10px] text-slate-600 mb-1 italic truncate max-w-[200px]">
+                                  {data.transactionDescription}
+                                </div>
+                              )}
                               <div className="flex justify-between gap-4 mb-1">
                                 <span className="text-slate-600">Cash Balance</span>
                                 <span className="font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</span>
                               </div>
-                              <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
-                                <span className="text-slate-500">Income</span>
-                                <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between gap-4 text-[10px]">
-                                <span className="text-slate-500">Spending</span>
-                                <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
-                              </div>
+                              {hasTransaction && (
+                                <>
+                                  {data.income > 0 && (
+                                    <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
+                                      <span className="text-slate-500">Income</span>
+                                      <span className="text-soft-green">+${data.income?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                  )}
+                                  {data.spending > 0 && (
+                                    <div className="flex justify-between gap-4 text-[10px]">
+                                      <span className="text-slate-500">Spending</span>
+                                      <span className="text-orange">-${data.spending?.toFixed(2) || '0.00'}</span>
+                                    </div>
+                                  )}
+                                </>
+                              )}
                             </div>
                           );
                         }
