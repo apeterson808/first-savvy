@@ -334,20 +334,51 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: work backwards from current balance to calculate historical balances
+      // For balance chart: calculate forward from first transaction
       if (chartView === 'balance') {
-        let runningBalance = currentBalance;
+        // Find the earliest transaction date for the selected account(s)
+        const relevantTransactions = transactions.filter(t => {
+          if (!t.date || isNaN(new Date(t.date).getTime())) return false;
+          const matchesAccount = selectedAccount === 'all'
+            ? activeAccountIds.includes(t.bank_account_id)
+            : t.bank_account_id === selectedAccount;
+          return matchesAccount;
+        });
 
-        for (let i = monthlyData.length - 1; i >= 0; i--) {
+        const earliestTransactionDate = relevantTransactions.length > 0
+          ? new Date(Math.min(...relevantTransactions.map(t => new Date(t.date).getTime())))
+          : null;
+
+        // Calculate balance forward from the first transaction
+        let runningBalance = 0;
+
+        for (let i = 0; i < monthlyData.length; i++) {
           const monthData = monthlyData[i];
-          data.unshift({
-            date: monthData.date,
-            spending: monthData.spending,
-            income: monthData.income,
-            balance: runningBalance
-          });
+          const monthDate = subMonths(new Date(), finalMonthsToShow - 1 - i);
+          const monthEndDate = i === monthlyData.length - 1 ? today : endOfMonth(monthDate);
 
-          runningBalance = runningBalance - monthData.income + monthData.spending;
+          // Check if this month is before the earliest transaction
+          const isBeforeFirstTransaction = earliestTransactionDate && monthEndDate < earliestTransactionDate;
+
+          if (isBeforeFirstTransaction) {
+            // Show 0 balance for months before first transaction
+            data.push({
+              date: monthData.date,
+              spending: monthData.spending,
+              income: monthData.income,
+              balance: 0
+            });
+          } else {
+            // Calculate balance from transactions
+            runningBalance = runningBalance + monthData.income - monthData.spending;
+
+            data.push({
+              date: monthData.date,
+              spending: monthData.spending,
+              income: monthData.income,
+              balance: runningBalance
+            });
+          }
         }
       } else {
         for (const monthData of monthlyData) {
