@@ -1623,8 +1623,17 @@ export default function AccountCreationWizard({
           ? Math.abs(account.current_balance).toString()
           : '';
 
+        console.log(`Processing account selection for ${account.name}:`, {
+          accountId: account.id,
+          beginning_balance: account.beginning_balance,
+          current_balance: account.current_balance,
+          startDate: startDate,
+          hasTransactions: !!account.transactions
+        });
+
         if (account.beginning_balance !== undefined && account.beginning_balance !== null) {
           beginningBalance = Math.abs(account.beginning_balance).toString();
+          console.log(`Using beginning_balance from account: ${beginningBalance}`);
         } else if (startDate && account.current_balance !== undefined && account.transactions) {
           const isLiability = mapping.class === 'liability';
           const calculatedBalance = calculateBeginningBalanceFromCurrent(
@@ -1634,6 +1643,7 @@ export default function AccountCreationWizard({
             isLiability
           );
           beginningBalance = calculatedBalance.toString();
+          console.log(`Calculated beginning_balance: ${beginningBalance}`);
         }
 
         setAccountConfigurations(prev => ({
@@ -1961,9 +1971,20 @@ export default function AccountCreationWizard({
 
             const openingBalanceDate = config.startDate || account.date_range?.start;
 
+            const initialBalance = config.beginningBalance && config.beginningBalance !== ''
+              ? parseFloat(config.beginningBalance)
+              : null;
+
+            console.log(`Activating account ${config.displayName}:`, {
+              beginningBalance: config.beginningBalance,
+              parsedInitialBalance: initialBalance,
+              openingBalanceDate: openingBalanceDate,
+              accountClass: template.class
+            });
+
             chartAccountId = await activateTemplateAccount(activeProfile.id, template.account_number, {
               customDisplayName: config.displayName,
-              initialBalance: parseFloat(config.beginningBalance) || 0,
+              initialBalance: initialBalance,
               institutionName: selectedInstitution?.name || '',
               accountNumberLast4: config.last4,
               openingBalanceDate: openingBalanceDate
