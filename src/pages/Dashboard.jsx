@@ -338,24 +338,8 @@ export default function Dashboard() {
       if (chartView === 'balance') {
         let runningBalance = currentBalance;
 
-        // Find the first month with any transaction activity
-        let firstMonthWithData = -1;
-        for (let i = 0; i < monthlyData.length; i++) {
-          if (monthlyData[i].monthTransactions.length > 0) {
-            firstMonthWithData = i;
-            break;
-          }
-        }
-
-        // Only show data from the first month with transactions onward
         for (let i = monthlyData.length - 1; i >= 0; i--) {
           const monthData = monthlyData[i];
-
-          // Skip months before we have any data
-          if (i < firstMonthWithData) {
-            continue;
-          }
-
           data.unshift({
             date: monthData.date,
             spending: monthData.spending,
