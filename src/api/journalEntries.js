@@ -202,3 +202,12 @@ export async function updateJournalEntryWithLines({
   if (error) throw error;
   return data;
 }
+
+export async function diagnoseAccountJournalLines(accountId) {
+  const { data, error } = await supabase.rpc('diagnose_account_journal_lines', {
+    p_account_id: accountId
+  });
+
+  if (error) throw error;
+  return data || [];
+}
