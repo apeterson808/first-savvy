@@ -318,12 +318,12 @@ export default function AccountDetail() {
     combined.sort((a, b) => {
       const dateA = new Date(a.displayDate);
       const dateB = new Date(b.displayDate);
-      const dateDiff = dateA - dateB;
+      const dateDiff = dateB - dateA; // Reversed: newest first
 
-      // If dates are the same, ensure opening balance entries come first
+      // If dates are the same, ensure opening balance entries come last (when showing newest first)
       if (dateDiff === 0) {
-        if (a.entryType === 'opening_balance' && b.entryType !== 'opening_balance') return -1;
-        if (a.entryType !== 'opening_balance' && b.entryType === 'opening_balance') return 1;
+        if (a.entryType === 'opening_balance' && b.entryType !== 'opening_balance') return 1;
+        if (a.entryType !== 'opening_balance' && b.entryType === 'opening_balance') return -1;
       }
 
       return dateDiff;
