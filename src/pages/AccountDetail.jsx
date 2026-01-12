@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,8 +31,8 @@ import { getAccountWithLinks } from '@/api/vehiclesAndLoans';
 import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
-import { getUserChartOfAccounts, deleteUserCreatedAccount } from '@/api/chartOfAccounts';
-import { getAccountJournalLines } from '@/api/journalEntries';
+import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById } from '@/api/chartOfAccounts';
+import { getAccountJournalLinesPaginated } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 
@@ -53,11 +53,16 @@ export default function AccountDetail() {
   const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
 
   const { data: account, isLoading: accountLoading } = useQuery({
-    queryKey: ['account', id, activeProfile?.id],
+    queryKey: ['account', id],
     queryFn: async () => {
-      if (!activeProfile?.id) return null;
+      if (!id) return null;
 
-      const chartAccounts = await getUserChartOfAccounts(activeProfile.id);
+      const accountData = await getChartAccountById(id);
+
+      if (!accountData) {
+        console.log('Account not found. ID:', id);
+        return null;
+      }
 
       const getEntityType = (accountClass) => {
         const classMap = {
@@ -70,23 +75,14 @@ export default function AccountDetail() {
         return classMap[accountClass] || accountClass.charAt(0).toUpperCase() + accountClass.slice(1);
       };
 
-      const allAccounts = chartAccounts.map(c => ({
-        ...c,
-        entityType: getEntityType(c.class),
-        name: getAccountDisplayName(c),
-        type: c.class
-      }));
-
-      const foundAccount = allAccounts.find(acc => acc.id === id);
-
-      if (!foundAccount) {
-        console.log('Account not found. Searching for ID:', id);
-        console.log('Available account IDs:', allAccounts.map(a => a.id));
-      }
-
-      return foundAccount;
+      return {
+        ...accountData,
+        entityType: getEntityType(accountData.class),
+        name: getAccountDisplayName(accountData),
+        type: accountData.class
+      };
     },
-    enabled: !!id && !!activeProfile
+    enabled: !!id
   });
 
   const { data: linkedAccountsData = { linkedAccounts: [] }, isLoading: linkedAccountsLoading } = useQuery({
@@ -150,20 +146,40 @@ export default function AccountDetail() {
     enabled: !!id && !!account && !!activeProfile && isTransactionBasedAccount
   });
 
-  // SOURCE OF TRUTH: Query ALL posted journal entry lines (all posted financial activity)
-  const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
-    queryKey: ['journal-lines', 'account', id, activeProfile?.id, dateRange],
-    queryFn: async () => {
-      if (!id || !activeProfile) return [];
-      return await getAccountJournalLines(
-        activeProfile.id,
-        id,
-        formatDateForDb(dateRange.start),
-        formatDateForDb(dateRange.end)
-      );
+  // SOURCE OF TRUTH: Query posted journal entry lines with pagination
+  const {
+    data: journalLinesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: journalLinesLoading,
+    error: journalLinesError
+  } = useInfiniteQuery({
+    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, dateRange],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
+      return await getAccountJournalLinesPaginated({
+        profileId: activeProfile.id,
+        accountId: id,
+        startDate: formatDateForDb(dateRange.start),
+        endDate: formatDateForDb(dateRange.end),
+        limit: 100,
+        offset: pageParam
+      });
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
+      return lastPage.hasMore ? loadedCount : undefined;
     },
     enabled: !!id && !!activeProfile
   });
+
+  const journalLines = useMemo(() => {
+    if (!journalLinesData?.pages) return [];
+    return journalLinesData.pages.flatMap(page => page.lines);
+  }, [journalLinesData]);
+
+  const totalJournalLines = journalLinesData?.pages?.[0]?.totalCount || 0;
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
@@ -231,6 +247,9 @@ export default function AccountDetail() {
   const { allActivity, analytics, beginningBalance, endingBalance } = useMemo(() => {
     let combined = [];
 
+    const accountClass = account?.account_class || account?.class || 'asset';
+    const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
+
     if (isTransactionBasedAccount) {
       // SINGLE SOURCE OF TRUTH ARCHITECTURE:
       // 1. journalItems = Posted transactions (from journal_entry_lines) - THE SOURCE OF TRUTH
@@ -250,7 +269,7 @@ export default function AccountDetail() {
         offsettingAccounts: t.categoryName || 'Uncategorized'
       }));
 
-      // POSTED ITEMS: All posted journal lines (source of truth for posted transactions)
+      // POSTED ITEMS: All posted journal lines (source of truth) with pre-calculated balance
       const journalItems = journalLines.map(jl => ({
         ...jl,
         id: jl.line_id,
@@ -262,7 +281,8 @@ export default function AccountDetail() {
         entryNumber: jl.entry_number,
         journalEntryId: jl.entry_id,
         entryType: jl.entry_type || 'adjustment',
-        offsettingAccounts: jl.offsetting_accounts
+        offsettingAccounts: jl.offsetting_accounts,
+        runningBalance: parseFloat(jl.running_balance || 0)
       }));
 
       // Combine posted (from journal) + pending (from transactions staging table)
@@ -280,7 +300,8 @@ export default function AccountDetail() {
         entryNumber: jl.entry_number,
         journalEntryId: jl.entry_id,
         entryType: jl.entry_type || 'adjustment',
-        offsettingAccounts: jl.offsetting_accounts
+        offsettingAccounts: jl.offsetting_accounts,
+        runningBalance: parseFloat(jl.running_balance || 0)
       }));
       combined = journalItems;
     }
@@ -308,22 +329,23 @@ export default function AccountDetail() {
       return dateDiff;
     });
 
-    const accountClass = account?.account_class || account?.class || 'asset';
-    const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
-
-    let beginningBal = 0;
-    let runningBalance = 0;
-
-    const activitiesWithBalance = combined.map(activity => {
+    // Calculate balance for pending items only
+    let activitiesWithBalance = combined.map((activity, index) => {
       let debit = 0;
       let credit = 0;
 
       if (activity.activityType === 'posted') {
-        // Posted items: Use actual debit/credit from journal_entry_lines (source of truth)
+        // Posted items: Use actual debit/credit and pre-calculated running balance
         debit = activity.debitAmount || 0;
         credit = activity.creditAmount || 0;
-      } else if (activity.activityType === 'pending') {
-        // Pending items: Convert amount to debit/credit for display consistency
+        // Balance already calculated in database
+        return {
+          ...activity,
+          calculatedDebit: debit,
+          calculatedCredit: credit
+        };
+      } else {
+        // Pending items: Calculate debit/credit for display and overlay on last known balance
         const amount = activity.displayAmount || 0;
         if (amount < 0) {
           if (isDebitNormal) {
@@ -338,20 +360,25 @@ export default function AccountDetail() {
             credit = Math.abs(amount);
           }
         }
-      }
 
-      if (isDebitNormal) {
-        runningBalance += debit - credit;
-      } else {
-        runningBalance += credit - debit;
-      }
+        // Find the last posted item before this pending item to get base balance
+        let baseBalance = 0;
+        for (let i = index - 1; i >= 0; i--) {
+          if (combined[i].activityType === 'posted') {
+            baseBalance = combined[i].runningBalance;
+            break;
+          }
+        }
 
-      return {
-        ...activity,
-        calculatedDebit: debit,
-        calculatedCredit: credit,
-        runningBalance
-      };
+        const netChange = isDebitNormal ? (debit - credit) : (credit - debit);
+
+        return {
+          ...activity,
+          calculatedDebit: debit,
+          calculatedCredit: credit,
+          runningBalance: baseBalance + netChange
+        };
+      }
     });
 
     if (dateRange.start && activitiesWithBalance.length > 0) {
@@ -389,6 +416,34 @@ export default function AccountDetail() {
       endingBalance: endingBal
     };
   }, [transactions, journalLines, account, searchQuery, dateRange, isTransactionBasedAccount]);
+
+  // Infinite scroll observer
+  const loadMoreRef = useRef();
+  const observerCallback = useCallback((entries) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(observerCallback, {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [observerCallback]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1028,8 +1083,25 @@ export default function AccountDetail() {
                         </TableCell>
                       </TableRow>
                     ))}
+                    {isFetchingNextPage && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="text-center py-4 text-slate-500">
+                          Loading more transactions...
+                        </TableCell>
+                      </TableRow>
+                    )}
+                    {hasNextPage && !isFetchingNextPage && (
+                      <TableRow ref={loadMoreRef}>
+                        <TableCell colSpan={8} className="h-4"></TableCell>
+                      </TableRow>
+                    )}
                   </TableBody>
                 </Table>
+                {totalJournalLines > 0 && (
+                  <div className="text-sm text-slate-500 text-center py-2 border-t">
+                    Showing {allActivity.length} of {totalJournalLines} transactions
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
