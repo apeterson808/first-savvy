@@ -334,7 +334,7 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: show transaction-by-transaction changes
+      // For balance chart: show transaction-by-transaction changes with monthly anchors
       if (chartView === 'balance') {
         // Get all transactions in the time range, sorted chronologically
         const filteredTransactions = transactions
@@ -348,16 +348,7 @@ export default function Dashboard() {
           })
           .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-        // If no transactions, show empty chart
-        if (filteredTransactions.length === 0) {
-          return data;
-        }
-
-        // Find the date of the first transaction
-        const firstTransactionDate = new Date(filteredTransactions[0].date);
-
-        // Calculate opening balance at the first transaction
-        // Work backward from current balance
+        // Calculate opening balance by working backward from current balance
         let openingBalance = currentBalance;
         filteredTransactions.forEach(t => {
           if (t.type === 'income') {
@@ -367,60 +358,108 @@ export default function Dashboard() {
           }
         });
 
-        // Add zero balance points for all months before the first transaction
+        // Create array of all month starts in the time range
+        const monthAnchors = [];
         for (let i = finalMonthsToShow - 1; i >= 0; i--) {
           const monthDate = subMonths(today, i);
-          const monthStart = startOfMonth(monthDate);
-
-          // Only add if this month is before the first transaction month
-          if (monthStart < startOfMonth(firstTransactionDate)) {
-            data.push({
-              date: format(monthDate, 'MMM'),
-              fullDate: monthStart,
-              spending: 0,
-              income: 0,
-              balance: 0
-            });
-          }
+          monthAnchors.push(startOfMonth(monthDate));
         }
 
-        // Add data point at start of first transaction month with opening balance
-        const firstTransactionMonthStart = startOfMonth(firstTransactionDate);
-        data.push({
-          date: format(firstTransactionMonthStart, 'MMM'),
-          fullDate: firstTransactionMonthStart,
-          spending: 0,
-          income: 0,
-          balance: openingBalance
+        // Build complete timeline with monthly anchors and transactions
+        let runningBalance = openingBalance;
+        let transactionIndex = 0;
+
+        monthAnchors.forEach((monthStart, monthIndex) => {
+          const nextMonthStart = monthIndex < monthAnchors.length - 1
+            ? monthAnchors[monthIndex + 1]
+            : addDays(today, 1); // Use tomorrow as upper bound for last month
+
+          // Add monthly anchor point
+          data.push({
+            date: format(monthStart, 'MMM'),
+            fullDate: monthStart,
+            spending: 0,
+            income: 0,
+            balance: runningBalance,
+            isMonthAnchor: true
+          });
+
+          // Add all transactions within this month
+          while (transactionIndex < filteredTransactions.length) {
+            const transaction = filteredTransactions[transactionIndex];
+            const transactionDate = new Date(transaction.date);
+
+            // Stop if transaction is in next month or beyond
+            if (transactionDate >= nextMonthStart) {
+              break;
+            }
+
+            // Only add transaction if it's after the month start (avoid duplicating the anchor date)
+            if (transactionDate > monthStart) {
+              // Update running balance
+              if (transaction.type === 'income') {
+                runningBalance += transaction.amount;
+              } else if (transaction.type === 'expense') {
+                runningBalance -= Math.abs(transaction.amount);
+              }
+
+              data.push({
+                date: format(transactionDate, 'MMM d'),
+                fullDate: transactionDate,
+                spending: transaction.type === 'expense' ? Math.abs(transaction.amount) : 0,
+                income: transaction.type === 'income' ? transaction.amount : 0,
+                balance: runningBalance,
+                transactionDescription: transaction.description,
+                isMonthAnchor: false
+              });
+            } else if (transactionDate.getTime() === monthStart.getTime()) {
+              // Transaction is exactly on month start - update the balance but keep the anchor
+              if (transaction.type === 'income') {
+                runningBalance += transaction.amount;
+              } else if (transaction.type === 'expense') {
+                runningBalance -= Math.abs(transaction.amount);
+              }
+              // Update the last added anchor with the new balance
+              if (data.length > 0) {
+                data[data.length - 1].balance = runningBalance;
+                data[data.length - 1].spending = transaction.type === 'expense' ? Math.abs(transaction.amount) : 0;
+                data[data.length - 1].income = transaction.type === 'income' ? transaction.amount : 0;
+                data[data.length - 1].transactionDescription = transaction.description;
+              }
+            }
+
+            transactionIndex++;
+          }
         });
 
-        // Now add a data point for each transaction
-        let runningBalance = openingBalance;
-        filteredTransactions.forEach((t, index) => {
-          const transactionDate = new Date(t.date);
+        // Add final data point for today if it's not already included
+        const lastDataPoint = data[data.length - 1];
+        const todayStart = startOfDay(today);
+        if (!lastDataPoint || lastDataPoint.fullDate.getTime() !== todayStart.getTime()) {
+          // Process any remaining transactions up to today
+          while (transactionIndex < filteredTransactions.length) {
+            const transaction = filteredTransactions[transactionIndex];
+            const transactionDate = new Date(transaction.date);
 
-          // Update running balance
-          if (t.type === 'income') {
-            runningBalance += t.amount;
-          } else if (t.type === 'expense') {
-            runningBalance -= Math.abs(t.amount);
+            if (transactionDate <= today) {
+              if (transaction.type === 'income') {
+                runningBalance += transaction.amount;
+              } else if (transaction.type === 'expense') {
+                runningBalance -= Math.abs(transaction.amount);
+              }
+            }
+            transactionIndex++;
           }
 
-          // Determine label: show month name on first of month, otherwise show date
-          const isFirstOfMonth = transactionDate.getDate() === 1;
-          const dateLabel = isFirstOfMonth
-            ? format(transactionDate, 'MMM')
-            : format(transactionDate, 'MMM d');
-
           data.push({
-            date: dateLabel,
-            fullDate: transactionDate,
-            spending: t.type === 'expense' ? Math.abs(t.amount) : 0,
-            income: t.type === 'income' ? t.amount : 0,
+            date: format(today, 'MMM d'),
+            fullDate: today,
+            spending: 0,
+            income: 0,
             balance: runningBalance,
-            transactionDescription: t.description
+            isToday: true
           });
-        });
+        }
       } else {
         for (const monthData of monthlyData) {
           data.push({
@@ -558,8 +597,10 @@ export default function Dashboard() {
                       axisLine={false}
                       tickLine={false}
                       ticks={
-                        chartView === 'spending' || chartView === 'balance'
+                        chartView === 'spending'
                           ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date)
+                          : chartView === 'balance'
+                          ? chartData.filter(d => d.isMonthAnchor || d.isToday).map(d => d.date)
                           : undefined
                       }
                       padding={{ left: 10, right: 10 }}
