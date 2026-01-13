@@ -2154,11 +2154,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                       return (
                                         <div className="bg-blue-50/50">
-                                          <table className="w-full">
+                                          <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                            <colgroup>
+                                              <col style={{ width: 32, minWidth: 32 }} />
+                                              <col style={{ width: 70, minWidth: 70 }} />
+                                              {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                              <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                              <col style={{ width: 1 }} />
+                                              <col style={{ width: 1 }} />
+                                              <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                              <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                              <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
+                                            </colgroup>
                                             <tbody>
                                               <tr>
                                                 {/* Checkbox */}
-                                                <td className="border-r border-blue-200 text-center w-10">
+                                                <td className="border-r border-blue-200 text-center">
                                                   <input
                                                     type="checkbox"
                                                     checked={true}
@@ -2211,31 +2222,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* Date */}
-                                                <td className="text-sm border-r border-blue-200 pl-2 pr-1">
+                                                <td className="border-r border-blue-200 py-1 pl-2 pr-1 text-xs">
                                                   {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
                                                 </td>
 
                                                 {/* Account (if showing all) */}
                                                 {selectedAccount === 'all' && (
-                                                  <td className="text-sm border-r border-blue-200 px-4 pl-2 truncate">
+                                                  <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
                                                     {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
                                                   </td>
                                                 )}
 
                                                 {/* Description */}
-                                                <td className="text-sm border-r border-blue-200 px-4 pl-2">
-                                                  <Input
-                                                    value={currentlyPaired.description || ''}
-                                                    onChange={(e) => {
-                                                      handleUpdateField(currentlyPaired.id, 'description', e.target.value);
-                                                    }}
-                                                    className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-0"
-                                                    placeholder="Description"
-                                                  />
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 text-xs">
+                                                  {currentlyPaired.description || ''}
                                                 </td>
 
                                                 {/* Spent */}
-                                                <td className="text-sm border-r border-blue-200 pl-2 py-2 text-left whitespace-nowrap">
+                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
                                                   {currentlyPaired.amount < 0 && (
                                                     <span className="text-red-600 font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2244,7 +2248,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* Received */}
-                                                <td className="text-sm border-r border-blue-200 pl-2 py-2 text-left whitespace-nowrap">
+                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
                                                   {currentlyPaired.amount >= 0 && (
                                                     <span className="text-green-600 font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2253,7 +2257,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* From/To */}
-                                                <td className="text-sm border-r border-blue-200 px-4 pl-2 truncate">
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
                                                   {(() => {
                                                     if (currentlyPaired.type === 'transfer') {
                                                       const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
@@ -2265,7 +2269,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* Category */}
-                                                <td className="text-sm border-r border-blue-200 px-4 pl-2 truncate">
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
                                                   {(() => {
                                                     if (currentlyPaired.type === 'transfer') return 'Transfer';
                                                     if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
@@ -2275,8 +2279,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* Matched Badge */}
-                                                <td className="px-2 text-xs text-blue-600 font-medium whitespace-nowrap">
-                                                  Matched ✓
+                                                <td className="py-1 text-xs text-blue-600 font-medium whitespace-nowrap text-center">
+                                                  ✓
                                                 </td>
                                               </tr>
                                             </tbody>
