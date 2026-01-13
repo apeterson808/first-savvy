@@ -2388,14 +2388,34 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                         checked={true}
                                                         onChange={(e) => {
                                                           e.stopPropagation();
+
+                                                          const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                          const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
+
                                                           // Unmatch the transaction
                                                           updateMutation.mutate({
                                                             id: transaction.id,
-                                                            data: { transfer_pair_id: null, type: transaction.original_type || transaction.type }
+                                                            data: {
+                                                              transfer_pair_id: null,
+                                                              type: originalType1,
+                                                              original_type: null
+                                                            }
                                                           });
                                                           updateMutation.mutate({
                                                             id: currentlyPaired.id,
-                                                            data: { transfer_pair_id: null, type: currentlyPaired.original_type || currentlyPaired.type }
+                                                            data: {
+                                                              transfer_pair_id: null,
+                                                              type: originalType2,
+                                                              original_type: null
+                                                            }
+                                                          });
+
+                                                          // Clear from selected matches immediately
+                                                          setSelectedMatches(prev => {
+                                                            const next = { ...prev };
+                                                            delete next[transaction.id];
+                                                            delete next[currentlyPaired.id];
+                                                            return next;
                                                           });
 
                                                           // Set this as suggested match for easy re-matching
@@ -2640,10 +2660,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   {matches.length === 0 && hasFilters ? (
                                                     <p className="text-slate-500 text-center py-2">No transactions found matching filters</p>
                                                   ) : (
-                                                    matches.map(match => {
+                                                    matches.filter(match => !currentlyPaired || match.id !== currentlyPaired.id).map(match => {
                                                       const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
                                                       const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
-                                                      const isSelected = selectedMatches[transaction.id] === match.id || (currentlyPaired && currentlyPaired.id === match.id);
+                                                      // Only use selectedMatches for checkbox state, not currentlyPaired
+                                                      // This ensures immediate UI update when unchecking
+                                                      const isSelected = selectedMatches[transaction.id] === match.id;
                                                       const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
 
                                                       return (
@@ -2728,10 +2750,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                   original_type: null
                                                                 }
                                                               });
-                                                              setSelectedMatches(prev => ({
-                                                                ...prev,
-                                                                [transaction.id]: undefined
-                                                              }));
+
+                                                              // Clear from selected matches immediately
+                                                              setSelectedMatches(prev => {
+                                                                const next = { ...prev };
+                                                                delete next[transaction.id];
+                                                                delete next[match.id];
+                                                                return next;
+                                                              });
                                                             }
                                                           }}
                                                         >
