@@ -2371,49 +2371,49 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     </div>
 
                                                     {/* Date Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2" style={{ width: 70, minWidth: 70, maxWidth: 70 }}>
+                                                    <div className="text-sm border-r border-green-200 pl-2 pr-1" style={{ width: 70, minWidth: 70, maxWidth: 70 }}>
                                                       {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
                                                     </div>
 
                                                     {/* Account Column (if showing all accounts) */}
                                                     {selectedAccount === 'all' && (
-                                                      <div className="text-sm border-r border-green-200 px-2 truncate" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
+                                                      <div className="text-sm border-r border-green-200 px-4 pl-2 truncate" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
                                                         {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
                                                       </div>
                                                     )}
 
                                                     {/* Description Column */}
-                                                    <div className="text-sm border-r border-green-200 px-1" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
+                                                    <div className="text-sm border-r border-green-200 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
                                                       <Input
                                                         value={currentlyPaired.description || ''}
                                                         onChange={(e) => {
                                                           handleUpdateField(currentlyPaired.id, 'description', e.target.value);
                                                         }}
-                                                        className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-1"
+                                                        className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-0"
                                                         placeholder="Description"
                                                       />
                                                     </div>
 
                                                     {/* Spent Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 text-right" style={{ width: columnWidths.spent, minWidth: columnWidths.spent, maxWidth: columnWidths.spent }}>
+                                                    <div className="text-sm border-r border-green-200 px-2 pl-2 text-right" style={{ flex: '0 0 auto' }}>
                                                       {currentlyPaired.amount < 0 && (
-                                                        <span className="text-red-600 font-medium">
+                                                        <span className="text-red-600 font-medium whitespace-nowrap">
                                                           ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                       )}
                                                     </div>
 
                                                     {/* Received Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 text-right" style={{ width: columnWidths.received, minWidth: columnWidths.received, maxWidth: columnWidths.received }}>
+                                                    <div className="text-sm border-r border-green-200 px-2 pl-2 text-right" style={{ flex: '0 0 auto' }}>
                                                       {currentlyPaired.amount >= 0 && (
-                                                        <span className="text-green-600 font-medium">
+                                                        <span className="text-green-600 font-medium whitespace-nowrap">
                                                           ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                       )}
                                                     </div>
 
                                                     {/* From/To Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 truncate" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
+                                                    <div className="text-sm border-r border-green-200 px-4 pl-2 truncate" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
                                                       {(() => {
                                                         if (currentlyPaired.type === 'transfer') {
                                                           // For transfers, show the other account in the pair
@@ -2427,7 +2427,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     </div>
 
                                                     {/* Category Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 truncate" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
+                                                    <div className="text-sm border-r border-green-200 px-4 pl-2 truncate" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
                                                       {(() => {
                                                         if (currentlyPaired.type === 'transfer') return 'Transfer';
                                                         if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
