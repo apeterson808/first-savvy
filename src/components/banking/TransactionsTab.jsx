@@ -2629,16 +2629,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             {/* Always show heading and results section in Match mode */}
                                             <div className="mb-2">
                                               <p className="text-xs font-semibold text-slate-700 mb-2">
-                                                {hasFilters ? 'Filtered Results:' : autoMatches.length > 0 ? 'Suggested Matches:' : 'No Matches Found'}
+                                                {hasFilters ? 'Filtered Results:' : (autoMatches.length > 0 || suggestedMatch) ? 'Suggested Matches:' : 'No Matches Found'}
                                               </p>
-                                              {autoMatches.length === 0 && !hasFilters && (
+                                              {autoMatches.length === 0 && !hasFilters && !suggestedMatch && (
                                                 <p className="text-xs text-slate-500">
                                                   Use the filters above to search for matching transactions, or check browser console for debugging info.
                                                 </p>
                                               )}
                                             </div>
 
-                                            {(autoMatches.length > 0 || hasFilters) && (
+                                            {(autoMatches.length > 0 || hasFilters || suggestedMatch) && (
                                               <>
                                                 <div className="space-y-2 max-h-64 overflow-y-auto">
                                                   {matches.length === 0 && hasFilters ? (
