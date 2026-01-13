@@ -191,5 +191,46 @@ export const transferAutoDetectionAPI = {
       console.error('Error unmatching transfer:', error);
       return { error };
     }
+  },
+
+  async linkTransferPair(transactionId1, transactionId2, profileId) {
+    try {
+      const { data, error } = await supabase.rpc('link_transfer_pair', {
+        p_transaction_id_1: transactionId1,
+        p_transaction_id_2: transactionId2,
+        p_profile_id: profileId
+      });
+
+      if (error) throw error;
+
+      if (data && !data.success) {
+        return { data: null, error: new Error(data.error) };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error linking transfer pair:', error);
+      return { data: null, error };
+    }
+  },
+
+  async unlinkTransferPair(transactionId, profileId) {
+    try {
+      const { data, error } = await supabase.rpc('unlink_transfer_pair', {
+        p_transaction_id: transactionId,
+        p_profile_id: profileId
+      });
+
+      if (error) throw error;
+
+      if (data && !data.success) {
+        return { data: null, error: new Error(data.error) };
+      }
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error unlinking transfer pair:', error);
+      return { data: null, error };
+    }
   }
 };

@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -1122,6 +1122,97 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
+  const handleMatchSelectedAsTransfer = async () => {
+    if (selectedTransactions.length !== 2) {
+      toast.error('Please select exactly 2 transactions to match');
+      return;
+    }
+
+    const txn1 = transactions.find(t => t.id === selectedTransactions[0]);
+    const txn2 = transactions.find(t => t.id === selectedTransactions[1]);
+
+    if (!txn1 || !txn2) {
+      toast.error('Selected transactions not found');
+      return;
+    }
+
+    if (txn1.bank_account_id === txn2.bank_account_id) {
+      toast.error('Cannot match transactions from the same account');
+      return;
+    }
+
+    if (Math.abs(txn1.amount) !== Math.abs(txn2.amount)) {
+      toast.error('Transaction amounts must be equal');
+      return;
+    }
+
+    if (Math.sign(txn1.amount) === Math.sign(txn2.amount)) {
+      toast.error('Transaction amounts must have opposite signs (one positive, one negative)');
+      return;
+    }
+
+    if (txn1.transfer_pair_id || txn2.transfer_pair_id) {
+      toast.error('One or both transactions are already paired');
+      return;
+    }
+
+    try {
+      const { data, error } = await transferAutoDetectionAPI.linkTransferPair(
+        selectedTransactions[0],
+        selectedTransactions[1],
+        activeProfile?.id
+      );
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setSelectedTransactions([]);
+      toast.success('Transactions matched as transfer pair');
+    } catch (error) {
+      console.error('Error matching transactions:', error);
+      toast.error(error.message || 'Failed to match transactions');
+    }
+  };
+
+  const handleUnmatchSelectedTransfer = async () => {
+    if (selectedTransactions.length === 0) {
+      toast.error('Please select a transaction to unmatch');
+      return;
+    }
+
+    const txn = transactions.find(t => t.id === selectedTransactions[0]);
+
+    if (!txn) {
+      toast.error('Selected transaction not found');
+      return;
+    }
+
+    if (!txn.transfer_pair_id) {
+      toast.error('Transaction is not part of a transfer pair');
+      return;
+    }
+
+    try {
+      const { error } = await transferAutoDetectionAPI.unlinkTransferPair(
+        selectedTransactions[0],
+        activeProfile?.id
+      );
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setSelectedTransactions([]);
+      toast.success('Transfer pair unmatched');
+    } catch (error) {
+      console.error('Error unmatching transfer:', error);
+      toast.error(error.message || 'Failed to unmatch transfer');
+    }
+  };
+
   const startResize = (column, e) => {
     e.preventDefault();
     setResizing({ column, startX: e.clientX, startWidth: columnWidths[column] });
@@ -1229,6 +1320,44 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                   <TabsTrigger value="excluded">Excluded</TabsTrigger>
                 </TabsList>
               </Tabs>
+
+              {selectedTransactions.length > 0 && (
+                <div className="flex items-center gap-2 ml-2">
+                  <span className="text-sm text-slate-600">
+                    {selectedTransactions.length} selected
+                  </span>
+                  {selectedTransactions.length === 2 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleMatchSelectedAsTransfer}
+                      className="gap-1.5"
+                    >
+                      <Link2 className="h-4 w-4" />
+                      Match as Transfer
+                    </Button>
+                  )}
+                  {selectedTransactions.length === 1 &&
+                   transactions.find(t => t.id === selectedTransactions[0])?.transfer_pair_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUnmatchSelectedTransfer}
+                      className="gap-1.5"
+                    >
+                      <Unlink className="h-4 w-4" />
+                      Unmatch Transfer
+                    </Button>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedTransactions([])}
+                  >
+                    Clear Selection
+                  </Button>
+                </div>
+              )}
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
