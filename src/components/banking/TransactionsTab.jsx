@@ -2307,46 +2307,53 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                       <input
                                                         type="checkbox"
                                                         checked={true}
-                                                        onChange={(e) => {
+                                                        onChange={async (e) => {
                                                           e.stopPropagation();
 
                                                           const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
                                                           const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
 
-                                                          // Unmatch the transaction
-                                                          updateMutation.mutate({
-                                                            id: transaction.id,
-                                                            data: {
-                                                              transfer_pair_id: null,
-                                                              type: originalType1,
-                                                              original_type: null
-                                                            }
-                                                          });
-                                                          updateMutation.mutate({
-                                                            id: currentlyPaired.id,
-                                                            data: {
-                                                              transfer_pair_id: null,
-                                                              type: originalType2,
-                                                              original_type: null
-                                                            }
-                                                          });
+                                                          try {
+                                                            // Unmatch the transaction
+                                                            await Promise.all([
+                                                              updateMutation.mutateAsync({
+                                                                id: transaction.id,
+                                                                data: {
+                                                                  transfer_pair_id: null,
+                                                                  type: originalType1,
+                                                                  original_type: null
+                                                                }
+                                                              }),
+                                                              updateMutation.mutateAsync({
+                                                                id: currentlyPaired.id,
+                                                                data: {
+                                                                  transfer_pair_id: null,
+                                                                  type: originalType2,
+                                                                  original_type: null
+                                                                }
+                                                              })
+                                                            ]);
 
-                                                          // Clear from selected matches immediately
-                                                          setSelectedMatches(prev => {
-                                                            const next = { ...prev };
-                                                            delete next[transaction.id];
-                                                            delete next[currentlyPaired.id];
-                                                            return next;
-                                                          });
+                                                            // Only update state if both mutations succeeded
+                                                            setSelectedMatches(prev => {
+                                                              const next = { ...prev };
+                                                              delete next[transaction.id];
+                                                              delete next[currentlyPaired.id];
+                                                              return next;
+                                                            });
 
-                                                          // Set this as suggested match for easy re-matching
-                                                          setSuggestedMatches(prev => ({
-                                                            ...prev,
-                                                            [transaction.id]: currentlyPaired.id,
-                                                            [currentlyPaired.id]: transaction.id
-                                                          }));
+                                                            // Set this as suggested match for easy re-matching
+                                                            setSuggestedMatches(prev => ({
+                                                              ...prev,
+                                                              [transaction.id]: currentlyPaired.id,
+                                                              [currentlyPaired.id]: transaction.id
+                                                            }));
 
-                                                          toast.success('Transfer unmatched');
+                                                            toast.success('Transfer unmatched');
+                                                          } catch (error) {
+                                                            console.error('Failed to unmatch transfer:', error);
+                                                            // State updates are skipped on error
+                                                          }
                                                         }}
                                                         className="rounded w-3.5 h-3.5"
                                                       />
@@ -2595,7 +2602,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           className={`p-2 border rounded flex items-center gap-2 cursor-pointer transition-colors ${
                                                             isSelected ? 'bg-blue-50 border-blue-400' : 'bg-white hover:bg-slate-50'
                                                           }`}
-                                                          onClick={() => {
+                                                          onClick={async () => {
                                                             const willBeSelected = !isSelected;
 
                                                             if (willBeSelected) {
@@ -2620,65 +2627,81 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                 matchType = 'transfer';
                                                               }
 
-                                                              updateMutation.mutate({
-                                                                id: transaction.id,
-                                                                data: {
-                                                                  transfer_pair_id: pairId,
-                                                                  type: transactionType,
-                                                                  original_type: transaction.original_type || transaction.type,
-                                                                  category_account_id: null
-                                                                }
-                                                              });
-                                                              updateMutation.mutate({
-                                                                id: match.id,
-                                                                data: {
-                                                                  transfer_pair_id: pairId,
-                                                                  type: matchType,
-                                                                  original_type: match.original_type || match.type,
-                                                                  category_account_id: null
-                                                                }
-                                                              });
-                                                              setSelectedMatches(prev => ({
-                                                                ...prev,
-                                                                [transaction.id]: match.id
-                                                              }));
+                                                              try {
+                                                                await Promise.all([
+                                                                  updateMutation.mutateAsync({
+                                                                    id: transaction.id,
+                                                                    data: {
+                                                                      transfer_pair_id: pairId,
+                                                                      type: transactionType,
+                                                                      original_type: transaction.original_type || transaction.type,
+                                                                      category_account_id: null
+                                                                    }
+                                                                  }),
+                                                                  updateMutation.mutateAsync({
+                                                                    id: match.id,
+                                                                    data: {
+                                                                      transfer_pair_id: pairId,
+                                                                      type: matchType,
+                                                                      original_type: match.original_type || match.type,
+                                                                      category_account_id: null
+                                                                    }
+                                                                  })
+                                                                ]);
 
-                                                              // Clear suggested match since a new match was selected
-                                                              setSuggestedMatches(prev => {
-                                                                const next = { ...prev };
-                                                                delete next[transaction.id];
-                                                                delete next[match.id];
-                                                                return next;
-                                                              });
+                                                                // Only update state if both mutations succeeded
+                                                                setSelectedMatches(prev => ({
+                                                                  ...prev,
+                                                                  [transaction.id]: match.id
+                                                                }));
+
+                                                                // Clear suggested match since a new match was selected
+                                                                setSuggestedMatches(prev => {
+                                                                  const next = { ...prev };
+                                                                  delete next[transaction.id];
+                                                                  delete next[match.id];
+                                                                  return next;
+                                                                });
+                                                              } catch (error) {
+                                                                console.error('Failed to match transactions:', error);
+                                                                // State updates are skipped on error, so suggested match remains
+                                                              }
                                                             } else {
                                                               // Remove relationship - restore original types
                                                               const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
                                                               const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
 
-                                                              updateMutation.mutate({
-                                                                id: transaction.id,
-                                                                data: {
-                                                                  transfer_pair_id: null,
-                                                                  type: originalType1,
-                                                                  original_type: null
-                                                                }
-                                                              });
-                                                              updateMutation.mutate({
-                                                                id: match.id,
-                                                                data: {
-                                                                  transfer_pair_id: null,
-                                                                  type: originalType2,
-                                                                  original_type: null
-                                                                }
-                                                              });
+                                                              try {
+                                                                await Promise.all([
+                                                                  updateMutation.mutateAsync({
+                                                                    id: transaction.id,
+                                                                    data: {
+                                                                      transfer_pair_id: null,
+                                                                      type: originalType1,
+                                                                      original_type: null
+                                                                    }
+                                                                  }),
+                                                                  updateMutation.mutateAsync({
+                                                                    id: match.id,
+                                                                    data: {
+                                                                      transfer_pair_id: null,
+                                                                      type: originalType2,
+                                                                      original_type: null
+                                                                    }
+                                                                  })
+                                                                ]);
 
-                                                              // Clear from selected matches immediately
-                                                              setSelectedMatches(prev => {
-                                                                const next = { ...prev };
-                                                                delete next[transaction.id];
-                                                                delete next[match.id];
-                                                                return next;
-                                                              });
+                                                                // Only clear from selected matches if both mutations succeeded
+                                                                setSelectedMatches(prev => {
+                                                                  const next = { ...prev };
+                                                                  delete next[transaction.id];
+                                                                  delete next[match.id];
+                                                                  return next;
+                                                                });
+                                                              } catch (error) {
+                                                                console.error('Failed to unmatch transactions:', error);
+                                                                // State updates are skipped on error
+                                                              }
                                                             }
                                                           }}
                                                         >
