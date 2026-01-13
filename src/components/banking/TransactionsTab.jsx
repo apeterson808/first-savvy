@@ -2440,9 +2440,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               </div>
                                             )}
 
-                                            <div className="mb-3">
-                                              <p className="text-xs text-slate-600 mb-2">{currentlyPaired ? 'Find a different match:' : 'Filter transactions to find a match:'}</p>
-                                              <div className="flex gap-2">
+                                            {!currentlyPaired && (
+                                              <>
+                                                <div className="mb-3">
+                                                  <p className="text-xs text-slate-600 mb-2">Filter transactions to find a match:</p>
+                                                  <div className="flex gap-2">
                                                 <div className="flex-1">
                                                   <Label className="text-xs mb-1 block">Account</Label>
                                                   <AccountDropdown
@@ -2715,6 +2717,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     })
                                                   )}
                                                 </div>
+                                              </>
+                                            )}
                                               </>
                                             )}
                                           </div>
