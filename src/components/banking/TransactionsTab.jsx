@@ -1437,11 +1437,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     const transactionAccountId = getTransactionAccountId(transaction);
                     const account = accounts.find(a => a.id === transactionAccountId);
                     const isSelected = selectedTransactions.includes(transaction.id);
-                    const matchedHighlight = isMatched(transaction) ? 'border-l-4 border-l-blue-400 bg-blue-50' : '';
                     return (
                       <React.Fragment key={transaction.id}>
                         <tr
-                          className={`${index % 2 === 0 && !isMatched(transaction) ? 'bg-white' : ''} ${index % 2 !== 0 && !isMatched(transaction) ? 'bg-slate-50' : ''} ${matchedHighlight} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100' : ''}`}
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100' : ''}`}
                           onClick={(e) => {
                             if (statusFilter !== 'pending') return;
                             const targetNode = e.target;
@@ -1726,9 +1725,30 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 {(() => {
                                   if (isMatched(transaction)) {
                                     return (
-                                      <span className="text-xs text-green-600 font-medium">
-                                        Matched ✓
-                                      </span>
+                                      <button
+                                        className="text-xs text-blue-600 hover:underline"
+                                        onClick={(e) => {
+                                          e?.stopPropagation();
+                                          // Post both sides of the transfer
+                                          const pairedTransaction = findPairedTransfer(transaction);
+
+                                          if (pairedTransaction && pairedTransaction.status !== 'posted') {
+                                            updateMutation.mutate({
+                                              id: pairedTransaction.id,
+                                              data: { status: 'posted' }
+                                            });
+                                          }
+
+                                          updateMutation.mutate({
+                                            id: transaction.id,
+                                            data: { status: 'posted' }
+                                          });
+
+                                          toast.success('Transfer posted (both sides)');
+                                        }}
+                                      >
+                                        Match
+                                      </button>
                                     );
                                   }
 
