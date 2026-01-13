@@ -2312,135 +2312,150 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <div className="mb-4">
                                                 <p className="text-xs font-semibold text-slate-600 mb-2">Currently Matched With:</p>
                                                 <div className="border-l-4 border-l-green-500 bg-green-50/50 rounded overflow-hidden">
-                                                  <div className="flex items-center h-8 border border-green-200">
-                                                    {/* Checkbox Column */}
-                                                    <div className="flex items-center justify-center border-r border-green-200 px-2" style={{ width: 32, minWidth: 32, maxWidth: 32 }}>
-                                                      <input
-                                                        type="checkbox"
-                                                        checked={true}
-                                                        onChange={async (e) => {
-                                                          e.stopPropagation();
+                                                  <table className="w-full" style={{ tableLayout: 'auto' }}>
+                                                    <colgroup>
+                                                      <col style={{ width: 32, minWidth: 32 }} />
+                                                      <col style={{ width: 70, minWidth: 70 }} />
+                                                      {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                                      <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                                      <col style={{ width: 1 }} />
+                                                      <col style={{ width: 1 }} />
+                                                      <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                                      <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                                      <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
+                                                    </colgroup>
+                                                    <tbody>
+                                                      <tr className="h-8 border border-green-200">
+                                                        {/* Checkbox Column */}
+                                                        <td className="border-r border-green-200 text-center">
+                                                          <input
+                                                            type="checkbox"
+                                                            checked={true}
+                                                            onChange={async (e) => {
+                                                              e.stopPropagation();
 
-                                                          const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-                                                          const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
+                                                              const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                              const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
 
-                                                          try {
-                                                            // Unmatch the transaction
-                                                            await Promise.all([
-                                                              updateMutation.mutateAsync({
-                                                                id: transaction.id,
-                                                                data: {
-                                                                  transfer_pair_id: null,
-                                                                  type: originalType1,
-                                                                  original_type: null
-                                                                }
-                                                              }),
-                                                              updateMutation.mutateAsync({
-                                                                id: currentlyPaired.id,
-                                                                data: {
-                                                                  transfer_pair_id: null,
-                                                                  type: originalType2,
-                                                                  original_type: null
-                                                                }
-                                                              })
-                                                            ]);
+                                                              try {
+                                                                // Unmatch the transaction
+                                                                await Promise.all([
+                                                                  updateMutation.mutateAsync({
+                                                                    id: transaction.id,
+                                                                    data: {
+                                                                      transfer_pair_id: null,
+                                                                      type: originalType1,
+                                                                      original_type: null
+                                                                    }
+                                                                  }),
+                                                                  updateMutation.mutateAsync({
+                                                                    id: currentlyPaired.id,
+                                                                    data: {
+                                                                      transfer_pair_id: null,
+                                                                      type: originalType2,
+                                                                      original_type: null
+                                                                    }
+                                                                  })
+                                                                ]);
 
-                                                            // Only update state if both mutations succeeded
-                                                            setSelectedMatches(prev => {
-                                                              const next = { ...prev };
-                                                              delete next[transaction.id];
-                                                              delete next[currentlyPaired.id];
-                                                              return next;
-                                                            });
+                                                                // Only update state if both mutations succeeded
+                                                                setSelectedMatches(prev => {
+                                                                  const next = { ...prev };
+                                                                  delete next[transaction.id];
+                                                                  delete next[currentlyPaired.id];
+                                                                  return next;
+                                                                });
 
-                                                            // Set this as suggested match for easy re-matching
-                                                            setSuggestedMatches(prev => ({
-                                                              ...prev,
-                                                              [transaction.id]: currentlyPaired.id,
-                                                              [currentlyPaired.id]: transaction.id
-                                                            }));
+                                                                // Set this as suggested match for easy re-matching
+                                                                setSuggestedMatches(prev => ({
+                                                                  ...prev,
+                                                                  [transaction.id]: currentlyPaired.id,
+                                                                  [currentlyPaired.id]: transaction.id
+                                                                }));
 
-                                                            toast.success('Transfer unmatched');
-                                                          } catch (error) {
-                                                            console.error('Failed to unmatch transfer:', error);
-                                                            // State updates are skipped on error
-                                                          }
-                                                        }}
-                                                        className="rounded w-3.5 h-3.5"
-                                                      />
-                                                    </div>
+                                                                toast.success('Transfer unmatched');
+                                                              } catch (error) {
+                                                                console.error('Failed to unmatch transfer:', error);
+                                                                // State updates are skipped on error
+                                                              }
+                                                            }}
+                                                            className="rounded w-3.5 h-3.5"
+                                                          />
+                                                        </td>
 
-                                                    {/* Date Column */}
-                                                    <div className="text-sm border-r border-green-200 pl-2 pr-1" style={{ width: 70, minWidth: 70, maxWidth: 70 }}>
-                                                      {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
-                                                    </div>
+                                                        {/* Date Column */}
+                                                        <td className="text-sm border-r border-green-200 pl-2 pr-1">
+                                                          {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
+                                                        </td>
 
-                                                    {/* Account Column (if showing all accounts) */}
-                                                    {selectedAccount === 'all' && (
-                                                      <div className="text-sm border-r border-green-200 px-4 pl-2 truncate" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
-                                                        {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
-                                                      </div>
-                                                    )}
+                                                        {/* Account Column (if showing all accounts) */}
+                                                        {selectedAccount === 'all' && (
+                                                          <td className="text-sm border-r border-green-200 px-4 pl-2 truncate">
+                                                            {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                          </td>
+                                                        )}
 
-                                                    {/* Description Column */}
-                                                    <div className="text-sm border-r border-green-200 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
-                                                      <Input
-                                                        value={currentlyPaired.description || ''}
-                                                        onChange={(e) => {
-                                                          handleUpdateField(currentlyPaired.id, 'description', e.target.value);
-                                                        }}
-                                                        className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-0"
-                                                        placeholder="Description"
-                                                      />
-                                                    </div>
+                                                        {/* Description Column */}
+                                                        <td className="text-sm border-r border-green-200 px-4 pl-2">
+                                                          <Input
+                                                            value={currentlyPaired.description || ''}
+                                                            onChange={(e) => {
+                                                              handleUpdateField(currentlyPaired.id, 'description', e.target.value);
+                                                            }}
+                                                            className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-0"
+                                                            placeholder="Description"
+                                                          />
+                                                        </td>
 
-                                                    {/* Spent Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 pl-2 text-right" style={{ flex: '0 0 auto' }}>
-                                                      {currentlyPaired.amount < 0 && (
-                                                        <span className="text-red-600 font-medium whitespace-nowrap">
-                                                          ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </span>
-                                                      )}
-                                                    </div>
+                                                        {/* Spent Column */}
+                                                        <td className="text-sm border-r border-green-200 pl-2 py-2 text-left whitespace-nowrap">
+                                                          {currentlyPaired.amount < 0 && (
+                                                            <span className="text-red-600 font-medium">
+                                                              ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                          )}
+                                                        </td>
 
-                                                    {/* Received Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 pl-2 text-right" style={{ flex: '0 0 auto' }}>
-                                                      {currentlyPaired.amount >= 0 && (
-                                                        <span className="text-green-600 font-medium whitespace-nowrap">
-                                                          ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                        </span>
-                                                      )}
-                                                    </div>
+                                                        {/* Received Column */}
+                                                        <td className="text-sm border-r border-green-200 pl-2 py-2 text-left whitespace-nowrap">
+                                                          {currentlyPaired.amount >= 0 && (
+                                                            <span className="text-green-600 font-medium">
+                                                              ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                            </span>
+                                                          )}
+                                                        </td>
 
-                                                    {/* From/To Column */}
-                                                    <div className="text-sm border-r border-green-200 px-4 pl-2 truncate" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
-                                                      {(() => {
-                                                        if (currentlyPaired.type === 'transfer') {
-                                                          // For transfers, show the other account in the pair
-                                                          const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
-                                                          return otherAccount ? getAccountDisplayName(otherAccount) : '—';
-                                                        }
-                                                        // For other types, show contact if available
-                                                        const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
-                                                        return contact ? contact.display_name : '—';
-                                                      })()}
-                                                    </div>
+                                                        {/* From/To Column */}
+                                                        <td className="text-sm border-r border-green-200 px-4 pl-2 truncate">
+                                                          {(() => {
+                                                            if (currentlyPaired.type === 'transfer') {
+                                                              // For transfers, show the other account in the pair
+                                                              const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
+                                                              return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                            }
+                                                            // For other types, show contact if available
+                                                            const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
+                                                            return contact ? contact.display_name : '—';
+                                                          })()}
+                                                        </td>
 
-                                                    {/* Category Column */}
-                                                    <div className="text-sm border-r border-green-200 px-4 pl-2 truncate" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
-                                                      {(() => {
-                                                        if (currentlyPaired.type === 'transfer') return 'Transfer';
-                                                        if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
-                                                        const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
-                                                        return category?.display_name || '—';
-                                                      })()}
-                                                    </div>
+                                                        {/* Category Column */}
+                                                        <td className="text-sm border-r border-green-200 px-4 pl-2 truncate">
+                                                          {(() => {
+                                                            if (currentlyPaired.type === 'transfer') return 'Transfer';
+                                                            if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
+                                                            const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
+                                                            return category?.display_name || '—';
+                                                          })()}
+                                                        </td>
 
-                                                    {/* Matched Badge */}
-                                                    <div className="px-2 text-xs text-green-600 font-medium whitespace-nowrap">
-                                                      Matched ✓
-                                                    </div>
-                                                  </div>
+                                                        {/* Matched Badge */}
+                                                        <td className="px-2 text-xs text-green-600 font-medium whitespace-nowrap">
+                                                          Matched ✓
+                                                        </td>
+                                                      </tr>
+                                                    </tbody>
+                                                  </table>
                                                 </div>
                                               </div>
                                             )}
