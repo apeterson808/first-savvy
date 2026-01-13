@@ -537,17 +537,21 @@ export default function Dashboard() {
                       padding={{ left: 10, right: 10 }}
                     />
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
-                    <Tooltip 
+                    <Tooltip
+                      position={{ y: 0 }}
+                      offset={20}
+                      cursor={{ stroke: 'hsl(var(--sky-blue))', strokeWidth: 1, strokeDasharray: '3 3' }}
+                      wrapperStyle={{ pointerEvents: 'none' }}
                       contentStyle={{ fontSize: 12, borderRadius: '8px', border: '1px solid #e2e8f0' }}
                       content={({ active, payload }) => {
                         if (!active || !payload || !payload.length) return null;
                         const data = payload[0]?.payload;
                         if (!data) return null;
-                        
+
                         if (chartView === 'spending') {
                           const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d') : data.date;
                           return (
-                            <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
+                            <div className="bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg text-xs">
                               <div className="grid grid-cols-2 gap-4 text-center">
                                 <div className="text-[10px] text-slate-400 uppercase tracking-wide">{dateLabel}</div>
                                 <div className="text-[10px] text-slate-400 uppercase tracking-wide">Cumulative</div>
@@ -563,7 +567,7 @@ export default function Dashboard() {
                         if (chartView === 'balance') {
                           const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d') : data.date;
                           return (
-                            <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
+                            <div className="bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg text-xs">
                               <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{dateLabel}</div>
                               <div className="flex justify-between gap-4 mb-1">
                                 <span className="text-slate-600">Cash Balance</span>
@@ -583,7 +587,7 @@ export default function Dashboard() {
 
                         // Default for income view
                         return (
-                          <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
+                          <div className="bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg text-xs">
                             <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
                             <div className="flex justify-between gap-4">
                               <span className="text-slate-600">Net Flow</span>
