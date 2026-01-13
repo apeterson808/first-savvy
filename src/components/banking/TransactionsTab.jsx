@@ -953,49 +953,49 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const handleTransferMatch = async (transaction) => {
     const paired = findPairedTransfer(transaction);
 
+    // If no paired transfer exists, this is a regular post action
     if (!paired) {
       const canPost = await handlePostWithSplit(transaction);
       if (!canPost) return;
 
+      // Post this transaction, and if it has a transfer_pair_id, post the pair too
+      if (transaction.transfer_pair_id) {
+        const pairedTransaction = transactions.find(
+          t => t.transfer_pair_id === transaction.transfer_pair_id && t.id !== transaction.id
+        );
+
+        if (pairedTransaction && pairedTransaction.status !== 'posted') {
+          updateMutation.mutate({
+            id: pairedTransaction.id,
+            data: { status: 'posted' }
+          });
+        }
+      }
+
       updateMutation.mutate({
         id: transaction.id,
         data: { status: 'posted' }
       });
+
+      if (transaction.transfer_pair_id) {
+        toast.success('Transfer posted (both sides)');
+      } else {
+        toast.success('Transaction posted');
+      }
       return;
     }
 
-    if (paired.status === 'posted') {
-      const canPost = await handlePostWithSplit(transaction);
-      if (!canPost) return;
-
-      updateMutation.mutate({
-        id: transaction.id,
-        data: { status: 'posted' }
-      });
-      toast.success(transaction.type === 'transfer' ? 'Transfer matched and confirmed' : 'Credit card payment matched and confirmed');
-      return;
-    }
-
+    // If paired transfer exists, open the match dialog (don't post)
     setMatchingTransfer(transaction);
     setPairedTransfer(paired);
     setTransferMatchDialogOpen(true);
   };
 
   const handleConfirmTransferMatch = async (toAccountId) => {
-    const canPost = await handlePostWithSplit(matchingTransfer);
-    if (!canPost) return;
-
-    updateMutation.mutate({
-      id: matchingTransfer.id,
-      data: { status: 'posted' }
-    });
-    if (pairedTransfer) {
-      updateMutation.mutate({
-        id: pairedTransfer.id,
-        data: { status: 'posted' }
-      });
-    }
-    toast.success('Transfer matched and confirmed');
+    // Link transfers without posting - user will post when ready
+    // No status changes, just confirming the link
+    setTransferMatchDialogOpen(false);
+    toast.success('Transfer linked - ready to post');
   };
 
 
@@ -1011,9 +1011,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const selectedMatch = selectedMatches[transaction.id];
 
     if (selectedMatch) {
-      const canPost = await handlePostWithSplit(transaction);
-      if (!canPost) return;
-
       const matchedTransaction = transactions.find(t => t.id === selectedMatch);
 
       const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
@@ -1021,17 +1018,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       updateMutation.mutate({
         id: transaction.id,
         data: {
-          status: 'posted',
-          transfer_pair_id: pairId
+          transfer_pair_id: pairId,
+          type: 'transfer'
         }
       });
 
-      if (matchedTransaction && matchedTransaction.status !== 'posted') {
+      if (matchedTransaction) {
         updateMutation.mutate({
           id: selectedMatch,
           data: {
-            status: 'posted',
-            transfer_pair_id: pairId
+            transfer_pair_id: pairId,
+            type: 'transfer'
           }
         });
       }
@@ -1042,6 +1039,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         return next;
       });
       setExpandedTransactionId(null);
+      toast.success('Transfer linked - ready to post');
     } else {
       const matches = findPotentialMatches(transaction);
       if (matches.length === 0) {
@@ -1052,6 +1050,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           id: transaction.id,
           data: { status: 'posted' }
         });
+        toast.success('Transaction posted');
       }
     }
   };
@@ -1593,10 +1592,32 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   if (manualAction === 'post') {
                                     actionText = 'Post';
                                     actionHandler = () => {
-                                      updateMutation.mutate({
-                                        id: transaction.id,
-                                        data: { status: 'posted' }
-                                      });
+                                      // If transaction has a transfer_pair_id, post both sides
+                                      if (transaction.transfer_pair_id) {
+                                        const pairedTransaction = transactions.find(
+                                          t => t.transfer_pair_id === transaction.transfer_pair_id && t.id !== transaction.id
+                                        );
+
+                                        if (pairedTransaction && pairedTransaction.status !== 'posted') {
+                                          updateMutation.mutate({
+                                            id: pairedTransaction.id,
+                                            data: { status: 'posted' }
+                                          });
+                                        }
+
+                                        updateMutation.mutate({
+                                          id: transaction.id,
+                                          data: { status: 'posted' }
+                                        });
+
+                                        toast.success('Transfer posted (both sides)');
+                                      } else {
+                                        updateMutation.mutate({
+                                          id: transaction.id,
+                                          data: { status: 'posted' }
+                                        });
+                                        toast.success('Transaction posted');
+                                      }
                                     };
                                   } else if (manualAction === 'match') {
                                     actionText = 'Match';
