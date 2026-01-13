@@ -49,9 +49,7 @@ import { Trash2 } from 'lucide-react';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
-import TransfersToReview from './TransfersToReview';
 import TransferRecognitionBadge from './TransferRecognitionBadge';
-import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -493,18 +491,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryKey: ['contacts', activeProfile?.id],
     queryFn: () => firstsavvy.entities.Contact.list('name', 1000),
     enabled: !!activeProfile?.id
-  });
-
-  const { data: unreviewedTransfers = [], isLoading: isLoadingTransfers } = useQuery({
-    queryKey: ['unreviewedTransfers', activeProfile?.id],
-    queryFn: async () => {
-      if (!activeProfile?.id) return [];
-      const { data, error } = await transferAutoDetectionAPI.getUnreviewedTransfers(activeProfile.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!activeProfile?.id && statusFilter === 'pending',
-    refetchInterval: 30000
   });
 
   const createMutation = useMutation({
@@ -1087,48 +1073,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
-  const handleAcceptTransfer = async (transferPairId) => {
-    try {
-      const { error } = await transferAutoDetectionAPI.acceptTransfer(transferPairId);
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['unreviewedTransfers'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      toast.success('Transfer match accepted');
-    } catch (error) {
-      console.error('Error accepting transfer:', error);
-      toast.error('Failed to accept transfer');
-    }
-  };
-
-  const handleRejectTransfer = async (transferPairId) => {
-    try {
-      const { error } = await transferAutoDetectionAPI.rejectTransfer(transferPairId);
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['unreviewedTransfers'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      toast.success('Transfer match rejected');
-    } catch (error) {
-      console.error('Error rejecting transfer:', error);
-      toast.error('Failed to reject transfer');
-    }
-  };
-
-  const handleAcceptAllTransfers = async () => {
-    try {
-      const { error, count } = await transferAutoDetectionAPI.acceptAllTransfers(activeProfile?.id);
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['unreviewedTransfers'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      toast.success(`${count} transfer${count !== 1 ? 's' : ''} accepted`);
-    } catch (error) {
-      console.error('Error accepting all transfers:', error);
-      toast.error('Failed to accept all transfers');
-    }
-  };
-
   const handleMatchSelectedAsTransfer = async () => {
     if (selectedTransactions.length !== 2) {
       toast.error('Please select exactly 2 transactions to match');
@@ -1413,20 +1357,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               </div>
             </div>
           </div>
-
-          {/* Transfers to Review Section */}
-          {statusFilter === 'pending' && unreviewedTransfers.length > 0 && (
-            <div className="px-4 pt-4">
-              <TransfersToReview
-                transferPairs={unreviewedTransfers}
-                accounts={allActiveAccounts}
-                onAccept={handleAcceptTransfer}
-                onReject={handleRejectTransfer}
-                onAcceptAll={handleAcceptAllTransfers}
-                isLoading={isLoadingTransfers}
-              />
-            </div>
-          )}
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">

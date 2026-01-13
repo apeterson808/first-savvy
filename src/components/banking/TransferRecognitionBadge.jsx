@@ -72,11 +72,6 @@ export default function TransferRecognitionBadge({
                 {transaction.amount < 0 ? 'To' : 'From'}: {getAccountDisplayName(otherAccount)}
               </p>
             )}
-            {!isReviewed && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Review this match in the "Transfers to Review" section above
-              </p>
-            )}
           </div>
         </TooltipContent>
       </Tooltip>
