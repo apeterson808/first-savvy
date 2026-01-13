@@ -2149,8 +2149,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       if (!currentlyPaired) return null;
 
                                       return (
-                                        <div className="-mx-4 -mt-2 mb-3">
-                                          <table className="w-full border-l-4 border-l-green-500 bg-green-50/50" style={{ tableLayout: 'auto' }}>
+                                        <div className="-mx-4 -mt-2 mb-3 border-l-4 border-l-emerald-500 bg-emerald-50/30">
+                                          <table className="w-full" style={{ tableLayout: 'auto' }}>
                                             <colgroup>
                                               <col style={{ width: 32, minWidth: 32 }} />
                                               <col style={{ width: 70, minWidth: 70 }} />
@@ -2163,8 +2163,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
                                             </colgroup>
                                             <tbody>
-                                              <tr className="h-8 border-y border-slate-200">
-                                                <td className="border-r border-slate-200 text-center py-1 px-0">
+                                              <tr className="h-8">
+                                                <td className="text-center px-0">
                                                   <input
                                                     type="checkbox"
                                                     checked={true}
@@ -2215,57 +2215,57 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     className="rounded w-3.5 h-3.5"
                                                   />
                                                 </td>
-                                                <td className="text-sm border-r border-slate-200 pl-2 pr-1 py-1">
+                                                <td className="text-xs pl-2 pr-1">
                                                   {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
                                                 </td>
                                                 {selectedAccount === 'all' && (
-                                                  <td className="text-sm border-r border-slate-200 px-4 pl-2 py-1 truncate">
+                                                  <td className="text-xs px-2 truncate">
                                                     {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
                                                   </td>
                                                 )}
-                                                <td className="border-r border-slate-200 px-4 pl-2 py-1">
+                                                <td className="px-2">
                                                   <Input
                                                     value={currentlyPaired.description || ''}
                                                     onChange={(e) => {
                                                       handleUpdateField(currentlyPaired.id, 'description', e.target.value);
                                                     }}
-                                                    className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-0"
+                                                    className="h-6 text-xs border-0 bg-transparent hover:bg-white/80 focus:bg-white px-1"
                                                     placeholder="Description"
                                                   />
                                                 </td>
-                                                <td className="border-r border-slate-200 pl-2 py-1 text-left whitespace-nowrap">
+                                                <td className="pl-2 text-left whitespace-nowrap">
                                                   {currentlyPaired.amount < 0 && (
                                                     <span className="text-xs text-red-600 font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                   )}
                                                 </td>
-                                                <td className="border-r border-slate-200 pl-2 py-1 text-left whitespace-nowrap">
+                                                <td className="pl-2 text-left whitespace-nowrap">
                                                   {currentlyPaired.amount >= 0 && (
-                                                    <span className="text-xs text-green-600 font-medium">
+                                                    <span className="text-xs text-emerald-600 font-semibold">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
                                                   )}
                                                 </td>
-                                                <td className="border-r border-slate-200 px-4 pl-2 py-1 truncate">
+                                                <td className="text-xs px-2 truncate">
                                                   {(() => {
                                                     if (currentlyPaired.type === 'transfer') {
                                                       const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
-                                                      return <span className="text-xs px-1">{otherAccount ? getAccountDisplayName(otherAccount) : '—'}</span>;
+                                                      return otherAccount ? getAccountDisplayName(otherAccount) : '—';
                                                     }
                                                     const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
-                                                    return <span className="text-xs px-1">{contact ? contact.display_name : '—'}</span>;
+                                                    return contact ? contact.display_name : '—';
                                                   })()}
                                                 </td>
-                                                <td className="border-r border-slate-200 py-1 px-4 pl-2 truncate">
+                                                <td className="text-xs px-2 truncate text-slate-500">
                                                   {(() => {
-                                                    if (currentlyPaired.type === 'transfer') return <span className="text-xs px-1 text-slate-500 opacity-50">Transfer</span>;
-                                                    if (currentlyPaired.type === 'credit_card_payment') return <span className="text-xs px-1">Credit Card Payment</span>;
+                                                    if (currentlyPaired.type === 'transfer') return 'Transfer';
+                                                    if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
                                                     const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
-                                                    return <span className="text-xs px-1">{category?.display_name || '—'}</span>;
+                                                    return category?.display_name || '—';
                                                   })()}
                                                 </td>
-                                                <td className="px-2 py-1 text-xs text-green-600 font-medium whitespace-nowrap">
+                                                <td className="px-2 text-xs text-emerald-600 font-semibold whitespace-nowrap">
                                                   Matched ✓
                                                 </td>
                                               </tr>
