@@ -22,7 +22,7 @@ export const transferAutoDetectionAPI = {
         .from('transactions')
         .select(`
           *,
-          account:account_id (
+          account:bank_account_id (
             id,
             account_name,
             account_number
@@ -86,7 +86,7 @@ export const transferAutoDetectionAPI = {
 
       const { data: transactions, error: fetchError } = await supabase
         .from('transactions')
-        .select('profile_id, account_id, transfer_pattern_id')
+        .select('profile_id, bank_account_id, transfer_pattern_id')
         .eq('transfer_pair_id', transferPairId)
         .limit(2);
 
@@ -110,7 +110,7 @@ export const transferAutoDetectionAPI = {
     try {
       const { data: transactions, error: fetchError } = await supabase
         .from('transactions')
-        .select('profile_id, account_id, transfer_pattern_id')
+        .select('profile_id, bank_account_id, transfer_pattern_id')
         .eq('transfer_pair_id', transferPairId)
         .limit(2);
 
