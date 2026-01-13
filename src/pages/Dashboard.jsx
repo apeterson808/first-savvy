@@ -45,7 +45,7 @@ export default function Dashboard() {
   const { budgets: budgetData, spendingByCategory } = useBudgetData();
 
   const handleChartPointClick = (data) => {
-    if (chartView === 'spending' && data?.fullDate) {
+    if ((chartView === 'spending' || chartView === 'balance') && data?.fullDate) {
       const clickedDate = format(data.fullDate, 'yyyy-MM-dd');
       navigate(`${createPageUrl('Banking')}?tab=transactions&date=${clickedDate}&account=${selectedAccount}`);
     }
@@ -334,7 +334,7 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: calculate forward from first transaction
+      // For balance chart: calculate daily balances
       if (chartView === 'balance') {
         // Find the earliest transaction date for the selected account(s)
         const relevantTransactions = transactions.filter(t => {
@@ -347,39 +347,56 @@ export default function Dashboard() {
 
         const earliestTransactionDate = relevantTransactions.length > 0
           ? new Date(Math.min(...relevantTransactions.map(t => new Date(t.date).getTime())))
-          : null;
+          : subMonths(today, finalMonthsToShow);
 
-        // Calculate balance forward from the first transaction
+        // Calculate start date for daily data
+        const finalStartDate = timeRange === 'all'
+          ? earliestTransactionDate
+          : subMonths(today, finalMonthsToShow);
+
+        // Generate daily balance data
+        const days = eachDayOfInterval({ start: finalStartDate, end: today });
         let runningBalance = 0;
 
-        for (let i = 0; i < monthlyData.length; i++) {
-          const monthData = monthlyData[i];
-          const monthDate = subMonths(new Date(), finalMonthsToShow - 1 - i);
-          const monthEndDate = i === monthlyData.length - 1 ? today : endOfMonth(monthDate);
+        days.forEach(currentDayDate => {
+          const dayStart = startOfDay(currentDayDate);
+          const dayEnd = endOfDay(currentDayDate);
 
-          // Check if this month is before the earliest transaction
-          const isBeforeFirstTransaction = earliestTransactionDate && monthEndDate < earliestTransactionDate;
+          // Get transactions for this day
+          const dayTransactions = transactions.filter(t => {
+            if (!t.date || isNaN(new Date(t.date).getTime())) return false;
+            const transactionDateStr = t.date.substring(0, 10);
+            const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
+            const matchesAccount = selectedAccount === 'all'
+              ? activeAccountIds.includes(t.bank_account_id)
+              : t.bank_account_id === selectedAccount;
+            const isTransfer = t.type === 'transfer';
+            return transactionDateStr === currentDayStr && matchesAccount && !isTransfer;
+          });
 
-          if (isBeforeFirstTransaction) {
-            // Show 0 balance for months before first transaction
-            data.push({
-              date: monthData.date,
-              spending: monthData.spending,
-              income: monthData.income,
-              balance: 0
-            });
-          } else {
-            // Calculate balance from transactions
-            runningBalance = runningBalance + monthData.income - monthData.spending;
+          // Calculate income and spending for the day
+          const dayIncome = dayTransactions
+            .filter(t => t.type === 'income')
+            .reduce((sum, t) => sum + t.amount, 0);
 
-            data.push({
-              date: monthData.date,
-              spending: monthData.spending,
-              income: monthData.income,
-              balance: runningBalance
-            });
-          }
-        }
+          const daySpending = dayTransactions
+            .filter(t => t.type === 'expense')
+            .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+
+          // Update running balance
+          runningBalance = runningBalance + dayIncome - daySpending;
+
+          // Check if this is the first day of the month for labeling
+          const isFirstDayOfMonth = currentDayDate.getDate() === 1;
+
+          data.push({
+            date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
+            fullDate: currentDayDate,
+            spending: daySpending,
+            income: dayIncome,
+            balance: runningBalance
+          });
+        });
       } else {
         for (const monthData of monthlyData) {
           data.push({
@@ -510,13 +527,13 @@ export default function Dashboard() {
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                    <XAxis 
-                      dataKey="date" 
-                      stroke="#64748b" 
-                      tick={{ fontSize: 11 }} 
-                      axisLine={false} 
+                    <XAxis
+                      dataKey="date"
+                      stroke="#64748b"
+                      tick={{ fontSize: 11 }}
+                      axisLine={false}
                       tickLine={false}
-                      ticks={chartView === 'spending' ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
+                      ticks={(chartView === 'spending' || chartView === 'balance') ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
                       padding={{ left: 10, right: 10 }}
                     />
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
@@ -544,9 +561,10 @@ export default function Dashboard() {
                         }
 
                         if (chartView === 'balance') {
+                          const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d') : data.date;
                           return (
                             <div className="bg-white p-2 rounded-lg border border-slate-200 shadow-sm text-xs">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{data.date}</div>
+                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{dateLabel}</div>
                               <div className="flex justify-between gap-4 mb-1">
                                 <span className="text-slate-600">Cash Balance</span>
                                 <span className="font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</span>
@@ -600,7 +618,7 @@ export default function Dashboard() {
                             fill="hsl(var(--sky-blue))"
                             stroke="#fff"
                             strokeWidth={2}
-                            style={{ cursor: chartView === 'spending' ? 'pointer' : 'default' }}
+                            style={{ cursor: (chartView === 'spending' || chartView === 'balance') ? 'pointer' : 'default' }}
                             onClick={() => handleChartPointClick(payload)}
                           />
                         );
