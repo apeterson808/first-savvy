@@ -24,7 +24,7 @@ export const transferAutoDetectionAPI = {
           *,
           account:bank_account_id (
             id,
-            account_name,
+            display_name,
             account_number
           )
         `)

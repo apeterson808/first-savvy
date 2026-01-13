@@ -2679,7 +2679,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                             if (willBeSelected) {
                                                               // Establish relationship - set transfer_pair_id on both transactions
-                                                              const pairId = `transfer_${Date.now()}`;
+                                                              const pairId = crypto.randomUUID();
 
                                                               // Ensure correct types for credit card payments
                                                               let transactionType = transaction.type;
