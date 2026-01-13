@@ -2316,52 +2316,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       return !!findPairedTransfer(transaction) || findPotentialMatches(transaction).length > 0;
                                     })() && (
                                       <>
-                                        <div className="mb-4 space-y-3">
-                                          {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && transaction.category_account_id && (
-                                            <div>
-                                              <Label className="text-xs mb-1 block">Category</Label>
-                                              <Input
-                                                value={(() => {
-                                                  const category = chartAccounts.find(c => c.id === transaction.category_account_id);
-                                                  return category?.display_name || '';
-                                                })()}
-                                                readOnly
-                                                className="h-8 text-xs bg-slate-50"
-                                              />
-                                            </div>
-                                          )}
-                                          {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
-                                            <div className="grid grid-cols-2 gap-3">
-                                              <div>
-                                                <Label className="text-xs mb-1 block">From Account</Label>
-                                                <Input
-                                                  value={(() => {
-                                                    const fromAccount = accounts.find(a => a.id === transaction.bank_account_id);
-                                                    return fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown';
-                                                  })()}
-                                                  readOnly
-                                                  className="h-8 text-xs bg-slate-50"
-                                                />
-                                              </div>
-                                              <div>
-                                                <Label className="text-xs mb-1 block">To Account</Label>
-                                                <Input
-                                                  value={(() => {
-                                                    const paired = findPairedTransfer(transaction);
-                                                    if (paired) {
-                                                      const toAccount = accounts.find(a => a.id === paired.bank_account_id);
-                                                      return toAccount ? getAccountDisplayName(toAccount) : 'Unknown';
-                                                    }
-                                                    return '';
-                                                  })()}
-                                                  readOnly
-                                                  className="h-8 text-xs bg-slate-50"
-                                                  placeholder="No match selected"
-                                                />
-                                              </div>
-                                            </div>
-                                          )}
-                                        </div>
 
                                         {/* Potential Matches */}
                                         {(() => {
@@ -2398,18 +2352,90 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         return (
                                           <div className="text-xs">
                                             {currentlyPaired && (
-                                              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded">
-                                                <p className="text-xs font-semibold text-green-800 mb-2">Currently Matched With:</p>
-                                                <div className="flex items-center gap-2 text-xs">
-                                                  <span className="text-slate-600 whitespace-nowrap">{format(parseISO(currentlyPaired.date), 'MM/dd/yy')}</span>
-                                                  <span className="font-medium text-slate-900 truncate">{formatTransactionDescription(currentlyPaired.description)}</span>
-                                                  <span className="font-semibold text-slate-900 whitespace-nowrap">
-                                                    {currentlyPaired.amount < 0 ? '-' : ''}${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                  </span>
-                                                  <span className="text-slate-600 truncate">
-                                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
-                                                  </span>
-                                                  <span className="text-xs text-green-600 font-medium ml-auto">100% match</span>
+                                              <div className="mb-4">
+                                                <p className="text-xs font-semibold text-slate-600 mb-2">Currently Matched With:</p>
+                                                <div className="border-l-4 border-l-green-500 bg-green-50/50 rounded overflow-hidden">
+                                                  <div className="flex items-center h-8 border border-green-200">
+                                                    {/* Checkbox Column */}
+                                                    <div className="flex items-center justify-center border-r border-green-200 px-2" style={{ width: 32, minWidth: 32 }}>
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={true}
+                                                        onChange={(e) => {
+                                                          e.stopPropagation();
+                                                          // Unmatch the transaction
+                                                          updateMutation.mutate({
+                                                            id: transaction.id,
+                                                            data: { transfer_pair_id: null, type: transaction.original_type || transaction.type }
+                                                          });
+                                                          updateMutation.mutate({
+                                                            id: currentlyPaired.id,
+                                                            data: { transfer_pair_id: null, type: currentlyPaired.original_type || currentlyPaired.type }
+                                                          });
+                                                          toast.success('Transfer unmatched');
+                                                        }}
+                                                        className="rounded w-3.5 h-3.5"
+                                                      />
+                                                    </div>
+
+                                                    {/* Date Column */}
+                                                    <div className="text-sm border-r border-green-200 px-2" style={{ width: 70, minWidth: 70 }}>
+                                                      {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
+                                                    </div>
+
+                                                    {/* Account Column (if showing all accounts) */}
+                                                    {selectedAccount === 'all' && (
+                                                      <div className="text-sm border-r border-green-200 px-2 truncate" style={{ width: columnWidths.account, minWidth: 50 }}>
+                                                        {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                      </div>
+                                                    )}
+
+                                                    {/* Description Column */}
+                                                    <div className="text-sm border-r border-green-200 px-2 flex-1 truncate" style={{ minWidth: 100 }}>
+                                                      {formatTransactionDescription(currentlyPaired.description)}
+                                                    </div>
+
+                                                    {/* Spent Column */}
+                                                    <div className="text-sm border-r border-green-200 px-2 text-right" style={{ width: 80, minWidth: 80 }}>
+                                                      {currentlyPaired.amount < 0 && (
+                                                        <span className="text-red-600 font-medium">
+                                                          ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                      )}
+                                                    </div>
+
+                                                    {/* Received Column */}
+                                                    <div className="text-sm border-r border-green-200 px-2 text-right" style={{ width: 80, minWidth: 80 }}>
+                                                      {currentlyPaired.amount >= 0 && (
+                                                        <span className="text-green-600 font-medium">
+                                                          ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                      )}
+                                                    </div>
+
+                                                    {/* From/To Column */}
+                                                    <div className="text-sm border-r border-green-200 px-2 truncate" style={{ minWidth: 100 }}>
+                                                      {(() => {
+                                                        const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
+                                                        return contact ? contact.display_name : '—';
+                                                      })()}
+                                                    </div>
+
+                                                    {/* Category Column */}
+                                                    <div className="text-sm border-r border-green-200 px-2 truncate" style={{ minWidth: 100 }}>
+                                                      {(() => {
+                                                        if (currentlyPaired.type === 'transfer') return 'Transfer';
+                                                        if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
+                                                        const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
+                                                        return category?.display_name || '—';
+                                                      })()}
+                                                    </div>
+
+                                                    {/* Matched Badge */}
+                                                    <div className="px-2 text-xs text-green-600 font-medium whitespace-nowrap">
+                                                      Matched ✓
+                                                    </div>
+                                                  </div>
                                                 </div>
                                               </div>
                                             )}
