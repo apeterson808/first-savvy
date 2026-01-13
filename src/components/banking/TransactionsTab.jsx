@@ -1451,15 +1451,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
                             const newExpandedId = expandedTransactionId === transaction.id ? null : transaction.id;
                             setExpandedTransactionId(newExpandedId);
-
-                            // Clear suggested match when collapsing the row
-                            if (newExpandedId === null) {
-                              setSuggestedMatches(prev => {
-                                const next = { ...prev };
-                                delete next[transaction.id];
-                                return next;
-                              });
-                            }
                           }}
                         >
                           <td className="border-r border-slate-200 py-1 text-center w-8 min-w-8 max-w-8 px-0">
