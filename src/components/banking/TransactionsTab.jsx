@@ -2609,31 +2609,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                               // Establish relationship - set transfer_pair_id on both transactions
                                                               const pairId = crypto.randomUUID();
 
-                                                              // Ensure correct types for credit card payments
-                                                              let transactionType = transaction.type;
-                                                              let matchType = match.type;
-
-                                                              if (transaction.type === 'credit_card_payment' || match.type === 'income') {
-                                                                // Transaction is paying credit card, match is receiving on credit card
-                                                                transactionType = 'credit_card_payment';
-                                                                matchType = 'income';
-                                                              } else if (transaction.type === 'income' || match.type === 'credit_card_payment') {
-                                                                // Transaction is receiving on credit card, match is paying credit card
-                                                                transactionType = 'income';
-                                                                matchType = 'credit_card_payment';
-                                                              } else {
-                                                                // Regular transfer
-                                                                transactionType = 'transfer';
-                                                                matchType = 'transfer';
-                                                              }
-
                                                               try {
                                                                 await Promise.all([
                                                                   updateMutation.mutateAsync({
                                                                     id: transaction.id,
                                                                     data: {
                                                                       transfer_pair_id: pairId,
-                                                                      type: transactionType,
+                                                                      type: 'transfer',
                                                                       original_type: transaction.original_type || transaction.type,
                                                                       category_account_id: null
                                                                     }
@@ -2642,7 +2624,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                     id: match.id,
                                                                     data: {
                                                                       transfer_pair_id: pairId,
-                                                                      type: matchType,
+                                                                      type: 'transfer',
                                                                       original_type: match.original_type || match.type,
                                                                       category_account_id: null
                                                                     }
