@@ -1490,7 +1490,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               ) : statusFilter === 'pending' ? (
                                 <Input
                                   defaultValue={formatTransactionDescription(transaction.description)}
-                                  disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
+                                  disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                   className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
                                   onBlur={(e) => {
                                     if (e.target.value !== formatTransactionDescription(transaction.description)) {
