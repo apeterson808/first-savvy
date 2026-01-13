@@ -2154,7 +2154,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                       return (
                                         <div className="bg-blue-50/50 py-2">
-                                          <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                          <table className="w-max min-w-full -ml-4" style={{ tableLayout: 'auto' }}>
                                             <colgroup>
                                               <col style={{ width: 32, minWidth: 32 }} />
                                               <col style={{ width: 70, minWidth: 70 }} />
@@ -2169,7 +2169,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             <tbody>
                                               <tr>
                                                 {/* Checkbox */}
-                                                <td className="border-r border-blue-200 text-center">
+                                                <td className="border-r border-blue-200 py-1 text-center w-8 min-w-8 max-w-8 px-0 pl-4">
                                                   <input
                                                     type="checkbox"
                                                     checked={true}
