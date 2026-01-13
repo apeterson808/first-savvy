@@ -64,6 +64,7 @@ import {
   getAccountTransactions
 } from '@/api/bankSimulation';
 import { createOpeningBalanceJournalEntry } from '@/api/journalEntries';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 const VEHICLE_TYPES = [
   'Car',
@@ -3314,6 +3315,8 @@ export default function AccountCreationWizard({
                       try {
                         toast.loading(`Importing ${selectedAccounts.length} accounts...`);
 
+                        const allInsertedTransactionIds = [];
+
                         for (const account of selectedAccounts) {
                           const config = accountConfigurations[account.id];
                           const mapping = importAccountMappings[account.id];
@@ -3451,14 +3454,35 @@ export default function AccountCreationWizard({
                             const { data: insertedTxns, error: txnError } = await firstsavvy
                               .from('transactions')
                               .insert(transactionsToInsert)
-                              .select();
+                              .select('id');
 
                             if (txnError) {
                               console.error('Error inserting transactions:', txnError);
                               toast.error(`Failed to insert transactions for ${config.displayName}: ${txnError.message}`);
                             } else {
                               console.log(`Successfully inserted ${insertedTxns?.length || 0} transactions`);
+                              if (insertedTxns && insertedTxns.length > 0) {
+                                const transactionIds = insertedTxns.map(t => t.id);
+                                allInsertedTransactionIds.push(...transactionIds);
+                              }
                             }
+                          }
+                        }
+
+                        if (allInsertedTransactionIds.length > 0) {
+                          console.log(`Running transfer auto-detection on ${allInsertedTransactionIds.length} transactions...`);
+                          try {
+                            const { data: detectionResult } = await transferAutoDetectionAPI.detectTransfers(
+                              activeProfile.id,
+                              allInsertedTransactionIds
+                            );
+
+                            if (detectionResult && Array.isArray(detectionResult) && detectionResult.length > 0) {
+                              const autoMatched = detectionResult.filter(r => r.auto_matched).length;
+                              console.log(`✓ Transfer detection found ${detectionResult.length} potential transfer pairs (${autoMatched} auto-matched)`);
+                            }
+                          } catch (err) {
+                            console.warn('Transfer auto-detection failed after import:', err);
                           }
                         }
 
