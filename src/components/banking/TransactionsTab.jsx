@@ -100,6 +100,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [loadingSplits, setLoadingSplits] = useState(new Set());
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
+  const [suggestedMatches, setSuggestedMatches] = useState({});
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -850,6 +851,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         return next;
       });
 
+      setSuggestedMatches(prev => ({
+        ...prev,
+        [transaction.id]: pairedTransaction.id,
+        [pairedTransaction.id]: transaction.id
+      }));
+
       toast.success('Transactions unmatched');
     } catch (err) {
       console.error('Error unmatching transactions:', err);
@@ -1512,7 +1519,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             if (targetNode.closest('input') || targetNode.closest('button') || targetNode.closest('[role="combobox"]') || targetNode.closest('[data-dropdown-menu]')) {
                               return;
                             }
-                            setExpandedTransactionId(expandedTransactionId === transaction.id ? null : transaction.id);
+                            const newExpandedId = expandedTransactionId === transaction.id ? null : transaction.id;
+                            setExpandedTransactionId(newExpandedId);
+
+                            // Clear suggested match when collapsing the row
+                            if (newExpandedId === null) {
+                              setSuggestedMatches(prev => {
+                                const next = { ...prev };
+                                delete next[transaction.id];
+                                return next;
+                              });
+                            }
                           }}
                         >
                           <td className="border-r border-slate-200 py-1 text-center w-8 min-w-8 max-w-8 px-0">
@@ -2345,7 +2362,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           return true;
                                         }) : [];
 
-                                        const matches = hasFilters ? manualMatches : autoMatches;
+                                        let matches = hasFilters ? manualMatches : autoMatches;
+
+                                        // Check if there's a suggested match (previously unmatched transaction)
+                                        const suggestedMatchId = suggestedMatches[transaction.id];
+                                        const suggestedMatch = suggestedMatchId ? transactions.find(t => t.id === suggestedMatchId) : null;
+
+                                        // If there's a suggested match, prioritize it at the top
+                                        if (suggestedMatch && !hasFilters) {
+                                          // Remove from matches if it's already there
+                                          matches = matches.filter(m => m.id !== suggestedMatch.id);
+                                          // Add to the beginning
+                                          matches = [suggestedMatch, ...matches];
+                                        }
 
                                         const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
 
@@ -2372,6 +2401,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                             id: currentlyPaired.id,
                                                             data: { transfer_pair_id: null, type: currentlyPaired.original_type || currentlyPaired.type }
                                                           });
+
+                                                          // Set this as suggested match for easy re-matching
+                                                          setSuggestedMatches(prev => ({
+                                                            ...prev,
+                                                            [transaction.id]: currentlyPaired.id,
+                                                            [currentlyPaired.id]: transaction.id
+                                                          }));
+
                                                           toast.success('Transfer unmatched');
                                                         }}
                                                         className="rounded w-3.5 h-3.5"
@@ -2611,6 +2648,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                       const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
                                                       const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
                                                       const isSelected = selectedMatches[transaction.id] === match.id || (currentlyPaired && currentlyPaired.id === match.id);
+                                                      const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
 
                                                       return (
                                                         <div
@@ -2665,6 +2703,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                 ...prev,
                                                                 [transaction.id]: match.id
                                                               }));
+
+                                                              // Clear suggested match since a new match was selected
+                                                              setSuggestedMatches(prev => {
+                                                                const next = { ...prev };
+                                                                delete next[transaction.id];
+                                                                delete next[match.id];
+                                                                return next;
+                                                              });
                                                             } else {
                                                               // Remove relationship - restore original types
                                                               const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
@@ -2706,7 +2752,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                               {match.amount < 0 ? '-' : ''}${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                             </span>
                                                             <span className="text-xs text-slate-600 truncate">{getAccountDisplayName(matchAccount)}</span>
-                                                            {!hasFilters && (
+                                                            {isSuggestedMatch && (
+                                                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium whitespace-nowrap">
+                                                                Suggested match
+                                                              </span>
+                                                            )}
+                                                            {!hasFilters && !isSuggestedMatch && (
                                                               <span className="text-xs text-blue-600 font-medium whitespace-nowrap">
                                                                 {confidence}% match
                                                               </span>
