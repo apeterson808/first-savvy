@@ -2153,7 +2153,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       if (!currentlyPaired) return null;
 
                                       return (
-                                        <div className="bg-blue-50/50">
+                                        <div className="bg-blue-50/50 py-2">
                                           <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
                                             <colgroup>
                                               <col style={{ width: 32, minWidth: 32 }} />
