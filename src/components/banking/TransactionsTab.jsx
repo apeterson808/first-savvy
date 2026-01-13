@@ -49,6 +49,9 @@ import { Trash2 } from 'lucide-react';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
+import TransfersToReview from './TransfersToReview';
+import TransferRecognitionBadge from './TransferRecognitionBadge';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -483,6 +486,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryKey: ['contacts', activeProfile?.id],
     queryFn: () => firstsavvy.entities.Contact.list('name', 1000),
     enabled: !!activeProfile?.id
+  });
+
+  const { data: unreviewedTransfers = [], isLoading: isLoadingTransfers } = useQuery({
+    queryKey: ['unreviewedTransfers', activeProfile?.id],
+    queryFn: async () => {
+      if (!activeProfile?.id) return [];
+      const { data, error } = await transferAutoDetectionAPI.getUnreviewedTransfers(activeProfile.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeProfile?.id && statusFilter === 'pending',
+    refetchInterval: 30000
   });
 
   const createMutation = useMutation({
@@ -1055,6 +1070,48 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
+  const handleAcceptTransfer = async (transferPairId) => {
+    try {
+      const { error } = await transferAutoDetectionAPI.acceptTransfer(transferPairId);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['unreviewedTransfers'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      toast.success('Transfer match accepted');
+    } catch (error) {
+      console.error('Error accepting transfer:', error);
+      toast.error('Failed to accept transfer');
+    }
+  };
+
+  const handleRejectTransfer = async (transferPairId) => {
+    try {
+      const { error } = await transferAutoDetectionAPI.rejectTransfer(transferPairId);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['unreviewedTransfers'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      toast.success('Transfer match rejected');
+    } catch (error) {
+      console.error('Error rejecting transfer:', error);
+      toast.error('Failed to reject transfer');
+    }
+  };
+
+  const handleAcceptAllTransfers = async () => {
+    try {
+      const { error, count } = await transferAutoDetectionAPI.acceptAllTransfers(activeProfile?.id);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['unreviewedTransfers'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      toast.success(`${count} transfer${count !== 1 ? 's' : ''} accepted`);
+    } catch (error) {
+      console.error('Error accepting all transfers:', error);
+      toast.error('Failed to accept all transfers');
+    }
+  };
+
   const startResize = (column, e) => {
     e.preventDefault();
     setResizing({ column, startX: e.clientX, startWidth: columnWidths[column] });
@@ -1211,6 +1268,20 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             </div>
           </div>
 
+          {/* Transfers to Review Section */}
+          {statusFilter === 'pending' && unreviewedTransfers.length > 0 && (
+            <div className="px-4 pt-4">
+              <TransfersToReview
+                transferPairs={unreviewedTransfers}
+                accounts={allActiveAccounts}
+                onAccept={handleAcceptTransfer}
+                onReject={handleRejectTransfer}
+                onAcceptAll={handleAcceptAllTransfers}
+                isLoading={isLoadingTransfers}
+              />
+            </div>
+          )}
+
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
             <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
@@ -1335,32 +1406,44 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                         </td>
                                                       )}
                         <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
-                          {isSplitMode(transaction.id) ? (
-                            <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
-                          ) : transaction.is_split ? (
-                            <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
-                          ) : statusFilter === 'pending' ? (
-                            <Input
-                              defaultValue={formatTransactionDescription(transaction.description)}
-                              disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
-                              className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                              onBlur={(e) => {
-                                if (e.target.value !== formatTransactionDescription(transaction.description)) {
-                                  updateMutation.mutate({
-                                    id: transaction.id,
-                                    data: { description: e.target.value }
-                                  });
-                                }
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.target.blur();
-                                }
-                              }}
-                            />
-                          ) : (
-                            <span className="text-xs px-1">{formatTransactionDescription(transaction.description)}</span>
-                          )}
+                          <div className="flex items-center gap-2">
+                            <div className="flex-1 min-w-0">
+                              {isSplitMode(transaction.id) ? (
+                                <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
+                              ) : transaction.is_split ? (
+                                <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
+                              ) : statusFilter === 'pending' ? (
+                                <Input
+                                  defaultValue={formatTransactionDescription(transaction.description)}
+                                  disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
+                                  className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  onBlur={(e) => {
+                                    if (e.target.value !== formatTransactionDescription(transaction.description)) {
+                                      updateMutation.mutate({
+                                        id: transaction.id,
+                                        data: { description: e.target.value }
+                                      });
+                                    }
+                                  }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.target.blur();
+                                    }
+                                  }}
+                                />
+                              ) : (
+                                <span className="text-xs px-1">{formatTransactionDescription(transaction.description)}</span>
+                              )}
+                            </div>
+                            {statusFilter === 'pending' && (
+                              <TransferRecognitionBadge
+                                transaction={transaction}
+                                pairedTransaction={findPairedTransfer(transaction)}
+                                accounts={allActiveAccounts}
+                                getAccountDisplayName={getAccountDisplayName}
+                              />
+                            )}
+                          </div>
                         </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                                                                                                                                                                {(transaction.type === 'expense' || transaction.type === 'credit_card_payment' || (transaction.type === 'transfer' && transaction.amount < 0)) && `$${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}

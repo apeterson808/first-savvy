@@ -1,6 +1,7 @@
 import { supabase } from './supabaseClient.js';
 import { getUserChartOfAccounts } from './chartOfAccounts.js';
 import { createOpeningBalanceJournalEntry } from './journalEntries.js';
+import { transferAutoDetectionAPI } from './transferAutoDetection.js';
 
 export const findOrCreateOpeningBalanceEquityAccount = async (profileId) => {
   const equityAccounts = await getUserChartOfAccounts(profileId, { class: 'equity' });
@@ -166,9 +167,11 @@ export const importStatementWithBeginningBalance = async (
     return !desc.includes('beginning balance') && txn.amount > 0;
   });
 
+  const insertedTransactionIds = [];
+
   for (const txn of transactionsToImport) {
     try {
-      const { error } = await supabase
+      const { data: insertedTransaction, error } = await supabase
         .from('transactions')
         .insert({
           profile_id: profileId,
@@ -182,15 +185,28 @@ export const importStatementWithBeginningBalance = async (
           status: 'pending',
           source: 'pdf',
           include_in_reports: true
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) {
         results.errors.push(`Failed to import transaction: ${txn.description} - ${error.message}`);
       } else {
         results.transactionsImported++;
+        if (insertedTransaction?.id) {
+          insertedTransactionIds.push(insertedTransaction.id);
+        }
       }
     } catch (err) {
       results.errors.push(`Error importing transaction: ${txn.description} - ${err.message}`);
+    }
+  }
+
+  if (insertedTransactionIds.length > 0) {
+    try {
+      await transferAutoDetectionAPI.detectTransfers(profileId, insertedTransactionIds);
+    } catch (err) {
+      console.warn('Transfer auto-detection failed after import:', err);
     }
   }
 

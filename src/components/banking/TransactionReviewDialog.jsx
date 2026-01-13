@@ -11,6 +11,7 @@ import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
 import { format } from 'date-fns';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 export function TransactionReviewDialog({
   open,
@@ -134,11 +135,19 @@ export function TransactionReviewDialog({
         include_in_reports: true
       }));
 
-      const { error: insertError } = await supabase
+      const { data: insertedTransactions, error: insertError } = await supabase
         .from('transactions')
-        .insert(transactionsToInsert);
+        .insert(transactionsToInsert)
+        .select('id');
 
       if (insertError) throw insertError;
+
+      if (insertedTransactions && insertedTransactions.length > 0) {
+        const transactionIds = insertedTransactions.map(t => t.id);
+        await transferAutoDetectionAPI.detectTransfers(profileId, transactionIds).catch(err => {
+          console.warn('Transfer auto-detection failed:', err);
+        });
+      }
 
       setImporting(false);
       onImportComplete?.();
