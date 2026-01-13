@@ -52,6 +52,7 @@ import { deleteViewPreferences } from '@/api/viewPreferences';
 import TransfersToReview from './TransfersToReview';
 import TransferRecognitionBadge from './TransferRecognitionBadge';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
+import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -432,6 +433,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     entityType: acc.account_type === 'credit_cards' ? 'CreditCard' : 'BankAccount'
   }));
 
+  const { detectNewTransactions } = useAutomaticTransferDetection(
+    activeProfile?.id,
+    fullPendingTransactions
+  );
+
   // Fetch all active accounts for Match tab dropdown (from unified chart of accounts)
   const { data: allActiveAccounts = [] } = useQuery({
     queryKey: ['allActiveAccountsForMatch', activeProfile?.id],
@@ -502,12 +508,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
-    onSuccess: () => {
+    onSuccess: (createdTransaction) => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+      if (createdTransaction?.id) {
+        detectNewTransactions([createdTransaction.id]);
+      }
     },
     onError: (error) => {
       logError(error, { action: 'createTransaction' });
