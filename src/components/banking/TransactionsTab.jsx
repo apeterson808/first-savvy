@@ -1623,7 +1623,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               const pairedAccountId = paired ? paired.bank_account_id : '';
                               return (
                                 <div onClick={(e) => e.stopPropagation()}>
-                                  <ClickThroughSelect
+                                  <AccountDropdown
                                     value={pairedAccountId}
                                     onValueChange={(accountId) => {
                                       if (!activeAccountIds.includes(transaction.bank_account_id)) return;
@@ -1638,13 +1638,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     triggerClassName="h-7 border-slate-300 text-xs"
                                     placeholder="Select account"
-                                  >
-                                    {allActiveAccounts.map(acc => (
-                                      <ClickThroughSelectItem key={acc.id} value={acc.id}>
-                                        {getAccountDisplayName(acc)}
-                                      </ClickThroughSelectItem>
-                                    ))}
-                                  </ClickThroughSelect>
+                                    showAllOption={false}
+                                    showPendingCounts={false}
+                                  />
                                 </div>
                               );
                             }
