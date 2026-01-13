@@ -2275,7 +2275,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           )}
                                         </div>
 
-                                        {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                                        {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment' || isMatched(transaction)) && (
                                           <div className="grid grid-cols-2 gap-3">
                                             <div>
                                               <Label className="text-xs mb-1 block">From Account</Label>
