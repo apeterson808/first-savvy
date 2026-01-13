@@ -1729,6 +1729,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     <ClickThroughSelectItem value="transfer">
                                       Transfer
                                     </ClickThroughSelectItem>
+                                    <ClickThroughSelectItem value="credit_card_payment">
+                                      Credit Card Payment
+                                    </ClickThroughSelectItem>
                                   </ClickThroughSelect>
                                 </div>
                               );
@@ -2678,12 +2681,29 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                               // Establish relationship - set transfer_pair_id on both transactions
                                                               const pairId = crypto.randomUUID();
 
-                                                              // All matched transactions are transfers
+                                                              // Ensure correct types for credit card payments
+                                                              let transactionType = transaction.type;
+                                                              let matchType = match.type;
+
+                                                              if (transaction.type === 'credit_card_payment' || match.type === 'income') {
+                                                                // Transaction is paying credit card, match is receiving on credit card
+                                                                transactionType = 'credit_card_payment';
+                                                                matchType = 'income';
+                                                              } else if (transaction.type === 'income' || match.type === 'credit_card_payment') {
+                                                                // Transaction is receiving on credit card, match is paying credit card
+                                                                transactionType = 'income';
+                                                                matchType = 'credit_card_payment';
+                                                              } else {
+                                                                // Regular transfer
+                                                                transactionType = 'transfer';
+                                                                matchType = 'transfer';
+                                                              }
+
                                                               updateMutation.mutate({
                                                                 id: transaction.id,
                                                                 data: {
                                                                   transfer_pair_id: pairId,
-                                                                  type: 'transfer',
+                                                                  type: transactionType,
                                                                   original_type: transaction.original_type || transaction.type,
                                                                   category_account_id: null
                                                                 }
@@ -2692,7 +2712,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                 id: match.id,
                                                                 data: {
                                                                   transfer_pair_id: pairId,
-                                                                  type: 'transfer',
+                                                                  type: matchType,
                                                                   original_type: match.original_type || match.type,
                                                                   category_account_id: null
                                                                 }
