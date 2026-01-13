@@ -787,10 +787,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const findPairedTransfer = (transaction) => {
     if (!transaction || !transaction.transfer_pair_id) return null;
 
+    // Don't filter by activeAccountIds - we want to find the pair even if it's from an inactive account
     return transactions.find(t =>
       t.id !== transaction.id &&
-      t.transfer_pair_id === transaction.transfer_pair_id &&
-      activeAccountIds.includes(t.bank_account_id)
+      t.transfer_pair_id === transaction.transfer_pair_id
     );
   };
 
