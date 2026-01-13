@@ -49,7 +49,6 @@ import { Trash2 } from 'lucide-react';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
-import TransferRecognitionBadge from './TransferRecognitionBadge';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -1512,14 +1511,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 <span className="text-xs px-1">{formatTransactionDescription(transaction.description)}</span>
                               )}
                             </div>
-                            {statusFilter === 'pending' && (
-                              <TransferRecognitionBadge
-                                transaction={transaction}
-                                pairedTransaction={findPairedTransfer(transaction)}
-                                accounts={allActiveAccounts}
-                                getAccountDisplayName={getAccountDisplayName}
-                              />
-                            )}
                           </div>
                         </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
