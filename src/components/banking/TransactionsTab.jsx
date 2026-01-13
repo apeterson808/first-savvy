@@ -2383,8 +2383,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     )}
 
                                                     {/* Description Column */}
-                                                    <div className="text-sm border-r border-green-200 px-2 flex-1 truncate" style={{ minWidth: 100 }}>
-                                                      {formatTransactionDescription(currentlyPaired.description)}
+                                                    <div className="text-sm border-r border-green-200 px-1 flex-1" style={{ minWidth: 100 }}>
+                                                      <Input
+                                                        value={currentlyPaired.description || ''}
+                                                        onChange={(e) => {
+                                                          handleUpdateField(currentlyPaired.id, 'description', e.target.value);
+                                                        }}
+                                                        className="h-6 text-xs border-0 bg-transparent hover:bg-white focus:bg-white px-1"
+                                                        placeholder="Description"
+                                                      />
                                                     </div>
 
                                                     {/* Spent Column */}
@@ -2408,6 +2415,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     {/* From/To Column */}
                                                     <div className="text-sm border-r border-green-200 px-2 truncate" style={{ minWidth: 100 }}>
                                                       {(() => {
+                                                        if (currentlyPaired.type === 'transfer') {
+                                                          // For transfers, show the other account in the pair
+                                                          const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
+                                                          return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                        }
+                                                        // For other types, show contact if available
                                                         const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
                                                         return contact ? contact.display_name : '—';
                                                       })()}
