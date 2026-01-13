@@ -33,7 +33,7 @@ export const transferAutoDetectionAPI = {
         .eq('transfer_auto_detected', true)
         .eq('transfer_reviewed', false)
         .not('transfer_pair_id', 'is', null)
-        .order('transaction_date', { ascending: false });
+        .order('date', { ascending: false });
 
       if (error) throw error;
 
@@ -57,7 +57,7 @@ export const transferAutoDetectionAPI = {
             source: sourceTransaction,
             destination: destTransaction,
             confidence: transaction.transfer_match_confidence,
-            date: transaction.transaction_date
+            date: transaction.date
           });
 
           processedIds.add(transaction.id);
