@@ -2153,8 +2153,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       if (!currentlyPaired) return null;
 
                                       return (
-                                        <div className="bg-blue-50/50 py-2">
-                                          <table className="w-max min-w-full -ml-4" style={{ tableLayout: 'auto' }}>
+                                        <div className="bg-blue-50/50 -mx-4 px-4 py-2">
+                                          <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
                                             <colgroup>
                                               <col style={{ width: 32, minWidth: 32 }} />
                                               <col style={{ width: 70, minWidth: 70 }} />
@@ -2169,7 +2169,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             <tbody>
                                               <tr>
                                                 {/* Checkbox */}
-                                                <td className="border-r border-blue-200 py-1 text-center w-8 min-w-8 max-w-8 px-0 pl-4">
+                                                <td className="border-r border-blue-200 py-1 text-center w-8 min-w-8 max-w-8 px-0">
                                                   <input
                                                     type="checkbox"
                                                     checked={true}
@@ -2222,24 +2222,29 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* Date */}
-                                                <td className="border-r border-blue-200 py-1 pl-2 pr-1 text-xs">
+                                                <td className="text-sm border-r border-blue-200 py-1 pl-2 pr-1">
                                                   {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
                                                 </td>
 
                                                 {/* Account (if showing all) */}
                                                 {selectedAccount === 'all' && (
-                                                  <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
-                                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                  <td className="text-sm border-r border-blue-200 py-1 px-4 pl-2 whitespace-nowrap overflow-hidden text-ellipsis" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
+                                                    {(() => {
+                                                      const account = accounts.find(a => a.id === currentlyPaired.bank_account_id);
+                                                      return account ? `${getAccountDisplayName(account)}${account.account_number ? ` (${account.account_number})` : ''}` : 'N/A';
+                                                    })()}
                                                   </td>
                                                 )}
 
                                                 {/* Description */}
-                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 text-xs">
-                                                  {currentlyPaired.description || ''}
+                                                <td className="text-sm border-r border-blue-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
+                                                  <div className="truncate">
+                                                    {currentlyPaired.description || ''}
+                                                  </div>
                                                 </td>
 
                                                 {/* Spent */}
-                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                <td className="text-sm border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap">
                                                   {currentlyPaired.amount < 0 && (
                                                     <span className="text-red-600 font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2248,7 +2253,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* Received */}
-                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                <td className="text-sm border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap">
                                                   {currentlyPaired.amount >= 0 && (
                                                     <span className="text-green-600 font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -2257,29 +2262,33 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </td>
 
                                                 {/* From/To */}
-                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
-                                                  {(() => {
-                                                    if (currentlyPaired.type === 'transfer') {
-                                                      const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
-                                                      return otherAccount ? getAccountDisplayName(otherAccount) : '—';
-                                                    }
-                                                    const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
-                                                    return contact ? contact.display_name : '—';
-                                                  })()}
+                                                <td className="text-sm border-r border-blue-200 py-1 px-4 pl-2" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
+                                                  <div className="truncate">
+                                                    {(() => {
+                                                      if (currentlyPaired.type === 'transfer') {
+                                                        const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
+                                                        return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                      }
+                                                      const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
+                                                      return contact ? contact.display_name : '—';
+                                                    })()}
+                                                  </div>
                                                 </td>
 
                                                 {/* Category */}
-                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
-                                                  {(() => {
-                                                    if (currentlyPaired.type === 'transfer') return 'Transfer';
-                                                    if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
-                                                    const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
-                                                    return category?.display_name || '—';
-                                                  })()}
+                                                <td className="text-sm border-r border-blue-200 py-1 px-4 pl-2" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
+                                                  <div className="truncate">
+                                                    {(() => {
+                                                      if (currentlyPaired.type === 'transfer') return 'Transfer';
+                                                      if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
+                                                      const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
+                                                      return category?.display_name || '—';
+                                                    })()}
+                                                  </div>
                                                 </td>
 
                                                 {/* Matched Badge */}
-                                                <td className="py-1 text-xs text-blue-600 font-medium whitespace-nowrap text-center">
+                                                <td className="text-sm py-1 text-blue-600 font-medium whitespace-nowrap text-center">
                                                   ✓
                                                 </td>
                                               </tr>
