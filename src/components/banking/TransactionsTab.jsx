@@ -40,6 +40,7 @@ import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
+import TransferPostPreviewDialog from './TransferPostPreviewDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
@@ -84,8 +85,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
   const [categorySuggestions, setCategorySuggestions] = useState({});
   const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
+  const [transferPostPreviewOpen, setTransferPostPreviewOpen] = useState(false);
   const [matchingTransfer, setMatchingTransfer] = useState(null);
   const [pairedTransfer, setPairedTransfer] = useState(null);
+  const [isPostingTransfer, setIsPostingTransfer] = useState(false);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [manualActionOverrides, setManualActionOverrides] = useState({});
   const [selectedMatches, setSelectedMatches] = useState({});
@@ -1044,8 +1047,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       const paired = findPairedTransfer(transaction);
 
       if (paired) {
-        // Already matched - POST both sides atomically
-        await postTransaction(transaction);
+        // Already matched - OPEN PREVIEW instead of immediately posting
+        setMatchingTransfer(transaction);
+        setPairedTransfer(paired);
+        setTransferPostPreviewOpen(true);
         return;
       }
     }
@@ -1070,6 +1075,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     // No status changes, just confirming the link
     setTransferMatchDialogOpen(false);
     toast.success('Transfer linked - ready to post');
+  };
+
+  const handlePostTransferFromPreview = async () => {
+    if (!matchingTransfer) return;
+
+    setIsPostingTransfer(true);
+    try {
+      await postTransaction(matchingTransfer);
+      setTransferPostPreviewOpen(false);
+      setMatchingTransfer(null);
+      setPairedTransfer(null);
+      toast.success('Transfer posted successfully');
+    } catch (error) {
+      console.error('Error posting transfer:', error);
+      toast.error('Failed to post transfer');
+    } finally {
+      setIsPostingTransfer(false);
+    }
   };
 
 
@@ -3201,6 +3224,21 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             pairedTransaction={pairedTransfer}
                             accounts={accounts}
                             onConfirm={handleConfirmTransferMatch}
+                          />
+
+                          <TransferPostPreviewDialog
+                            isOpen={transferPostPreviewOpen}
+                            onClose={() => {
+                              setTransferPostPreviewOpen(false);
+                              setMatchingTransfer(null);
+                              setPairedTransfer(null);
+                            }}
+                            transaction={matchingTransfer}
+                            pairedTransaction={pairedTransfer}
+                            fromAccount={matchingTransfer ? accounts.find(a => a.id === matchingTransfer.bank_account_id) : null}
+                            toAccount={pairedTransfer ? accounts.find(a => a.id === pairedTransfer.bank_account_id) : null}
+                            onPost={handlePostTransferFromPreview}
+                            isPosting={isPostingTransfer}
                           />
 
                           <TransactionReviewDialog
