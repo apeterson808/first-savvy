@@ -2153,90 +2153,106 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       if (!currentlyPaired) return null;
 
                                       return (
-                                        <div className="bg-blue-50/50">
-                                          <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
-                                            <colgroup>
-                                              <col style={{ width: 32, minWidth: 32 }} />
-                                              <col style={{ width: 70, minWidth: 70 }} />
-                                              {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
-                                              <col style={{ width: columnWidths.description, minWidth: 100 }} />
-                                              <col style={{ width: 1 }} />
-                                              <col style={{ width: 1 }} />
-                                              <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
-                                              <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
-                                              <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
-                                            </colgroup>
-                                            <tbody>
-                                              <tr>
-                                                {/* Checkbox */}
-                                                <td className="border-r border-blue-200 text-center">
-                                                  <input
-                                                    type="checkbox"
-                                                    checked={true}
-                                                    onChange={async (e) => {
-                                                      e.stopPropagation();
+                                        <>
+                                          <div className="pt-2 pb-1 px-4">
+                                            <p className="text-xs text-slate-600">Suggested Match</p>
+                                          </div>
+                                          <div className="bg-blue-50/50">
+                                            <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                              <colgroup>
+                                                <col style={{ width: 32, minWidth: 32 }} />
+                                                <col style={{ width: 70, minWidth: 70 }} />
+                                                {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                                <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                                <col style={{ width: 1 }} />
+                                                <col style={{ width: 1 }} />
+                                                <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                                <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                                <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
+                                              </colgroup>
+                                              <tbody>
+                                                <tr>
+                                                  {/* Checkbox */}
+                                                  <td className="border-r border-blue-200 text-center">
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={true}
+                                                      onChange={async (e) => {
+                                                        e.stopPropagation();
 
-                                                      const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-                                                      const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
+                                                        const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                        const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
 
-                                                      try {
-                                                        await Promise.all([
-                                                          updateMutation.mutateAsync({
-                                                            id: transaction.id,
-                                                            data: {
-                                                              transfer_pair_id: null,
-                                                              type: originalType1,
-                                                              original_type: null
-                                                            }
-                                                          }),
-                                                          updateMutation.mutateAsync({
-                                                            id: currentlyPaired.id,
-                                                            data: {
-                                                              transfer_pair_id: null,
-                                                              type: originalType2,
-                                                              original_type: null
-                                                            }
-                                                          })
-                                                        ]);
+                                                        try {
+                                                          await Promise.all([
+                                                            updateMutation.mutateAsync({
+                                                              id: transaction.id,
+                                                              data: {
+                                                                transfer_pair_id: null,
+                                                                type: originalType1,
+                                                                original_type: null
+                                                              }
+                                                            }),
+                                                            updateMutation.mutateAsync({
+                                                              id: currentlyPaired.id,
+                                                              data: {
+                                                                transfer_pair_id: null,
+                                                                type: originalType2,
+                                                                original_type: null
+                                                              }
+                                                            })
+                                                          ]);
 
-                                                        setSelectedMatches(prev => {
-                                                          const next = { ...prev };
-                                                          delete next[transaction.id];
-                                                          delete next[currentlyPaired.id];
-                                                          return next;
-                                                        });
+                                                          setSelectedMatches(prev => {
+                                                            const next = { ...prev };
+                                                            delete next[transaction.id];
+                                                            delete next[currentlyPaired.id];
+                                                            return next;
+                                                          });
 
-                                                        setSuggestedMatches(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: currentlyPaired.id,
-                                                          [currentlyPaired.id]: transaction.id
-                                                        }));
+                                                          setSuggestedMatches(prev => ({
+                                                            ...prev,
+                                                            [transaction.id]: currentlyPaired.id,
+                                                            [currentlyPaired.id]: transaction.id
+                                                          }));
 
-                                                        toast.success('Transfer unmatched');
-                                                      } catch (error) {
-                                                        console.error('Failed to unmatch transfer:', error);
-                                                      }
-                                                    }}
-                                                    className="rounded w-3.5 h-3.5"
-                                                  />
-                                                </td>
-
-                                                {/* Date */}
-                                                <td className="border-r border-blue-200 py-1 pl-2 pr-1 text-xs">
-                                                  {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
-                                                </td>
-
-                                                {/* Account (if showing all) */}
-                                                {selectedAccount === 'all' && (
-                                                  <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
-                                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                          toast.success('Transfer unmatched');
+                                                        } catch (error) {
+                                                          console.error('Failed to unmatch transfer:', error);
+                                                        }
+                                                      }}
+                                                      className="rounded w-3.5 h-3.5"
+                                                    />
                                                   </td>
-                                                )}
 
-                                                {/* Description */}
-                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 text-xs">
-                                                  {currentlyPaired.description || ''}
-                                                </td>
+                                                  {/* Date */}
+                                                  <td className="border-r border-blue-200 py-1 pl-2 pr-1 text-xs">
+                                                    {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
+                                                  </td>
+
+                                                  {/* Account (if showing all) */}
+                                                  {selectedAccount === 'all' && (
+                                                    <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                      {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                    </td>
+                                                  )}
+
+                                                  {/* Description - Editable */}
+                                                  <td className="border-r border-blue-200 py-1 px-4 pl-2 text-xs" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
+                                                    <Input
+                                                      defaultValue={currentlyPaired.description || ''}
+                                                      className="h-6 text-xs border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                                      onBlur={(e) => {
+                                                        if (e.target.value !== (currentlyPaired.description || '')) {
+                                                          updateMutation.mutate({
+                                                            id: currentlyPaired.id,
+                                                            data: { description: e.target.value }
+                                                          });
+                                                        }
+                                                      }}
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                  </td>
 
                                                 {/* Spent */}
                                                 <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
@@ -2286,6 +2302,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             </tbody>
                                           </table>
                                         </div>
+                                        </>
                                       );
                                     })()}
 
@@ -2619,136 +2636,195 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                             {(autoMatches.length > 0 || hasFilters || suggestedMatch) && (
                                               <>
-                                                <div className="space-y-2 max-h-64 overflow-y-auto">
+                                                <div className="max-h-64 overflow-y-auto">
                                                   {matches.length === 0 && hasFilters ? (
                                                     <p className="text-slate-500 text-center py-2">No transactions found matching filters</p>
                                                   ) : (
-                                                    matches.filter(match => !currentlyPaired || match.id !== currentlyPaired.id).map(match => {
-                                                      const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
-                                                      const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
-                                                      // Only use selectedMatches for checkbox state, not currentlyPaired
-                                                      // This ensures immediate UI update when unchecking
-                                                      const isSelected = selectedMatches[transaction.id] === match.id;
-                                                      const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
+                                                    <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                                      <colgroup>
+                                                        <col style={{ width: 32, minWidth: 32 }} />
+                                                        <col style={{ width: 70, minWidth: 70 }} />
+                                                        {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                                        <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                                        <col style={{ width: 1 }} />
+                                                        <col style={{ width: 1 }} />
+                                                        <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                                        <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                                        <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
+                                                      </colgroup>
+                                                      <tbody>
+                                                        {matches.filter(match => !currentlyPaired || match.id !== currentlyPaired.id).map(match => {
+                                                          const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
+                                                          const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
+                                                          const isSelected = selectedMatches[transaction.id] === match.id;
+                                                          const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
+                                                          const matchCategory = chartAccounts.find(c => c.id === match.category_account_id);
 
-                                                      return (
-                                                        <div
-                                                          key={match.id}
-                                                          className={`p-2 border rounded flex items-center gap-2 cursor-pointer transition-colors ${
-                                                            isSelected ? 'bg-blue-50 border-blue-400' : 'bg-white hover:bg-slate-50'
-                                                          }`}
-                                                          onClick={async () => {
-                                                            const willBeSelected = !isSelected;
+                                                          return (
+                                                            <tr
+                                                              key={match.id}
+                                                              className={`cursor-pointer transition-colors ${
+                                                                isSelected ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'
+                                                              }`}
+                                                              onClick={async () => {
+                                                                const willBeSelected = !isSelected;
 
-                                                            if (willBeSelected) {
-                                                              // Establish relationship - set transfer_pair_id on both transactions
-                                                              const pairId = crypto.randomUUID();
+                                                                if (willBeSelected) {
+                                                                  const pairId = crypto.randomUUID();
 
-                                                              try {
-                                                                await Promise.all([
-                                                                  updateMutation.mutateAsync({
-                                                                    id: transaction.id,
-                                                                    data: {
-                                                                      transfer_pair_id: pairId,
-                                                                      type: 'transfer',
-                                                                      original_type: transaction.original_type || transaction.type,
-                                                                      category_account_id: null
-                                                                    }
-                                                                  }),
-                                                                  updateMutation.mutateAsync({
-                                                                    id: match.id,
-                                                                    data: {
-                                                                      transfer_pair_id: pairId,
-                                                                      type: 'transfer',
-                                                                      original_type: match.original_type || match.type,
-                                                                      category_account_id: null
-                                                                    }
-                                                                  })
-                                                                ]);
+                                                                  try {
+                                                                    await Promise.all([
+                                                                      updateMutation.mutateAsync({
+                                                                        id: transaction.id,
+                                                                        data: {
+                                                                          transfer_pair_id: pairId,
+                                                                          type: 'transfer',
+                                                                          original_type: transaction.original_type || transaction.type,
+                                                                          category_account_id: null
+                                                                        }
+                                                                      }),
+                                                                      updateMutation.mutateAsync({
+                                                                        id: match.id,
+                                                                        data: {
+                                                                          transfer_pair_id: pairId,
+                                                                          type: 'transfer',
+                                                                          original_type: match.original_type || match.type,
+                                                                          category_account_id: null
+                                                                        }
+                                                                      })
+                                                                    ]);
 
-                                                                // Only update state if both mutations succeeded
-                                                                setSelectedMatches(prev => ({
-                                                                  ...prev,
-                                                                  [transaction.id]: match.id
-                                                                }));
+                                                                    setSelectedMatches(prev => ({
+                                                                      ...prev,
+                                                                      [transaction.id]: match.id
+                                                                    }));
 
-                                                                // Clear suggested match since a new match was selected
-                                                                setSuggestedMatches(prev => {
-                                                                  const next = { ...prev };
-                                                                  delete next[transaction.id];
-                                                                  delete next[match.id];
-                                                                  return next;
-                                                                });
-                                                              } catch (error) {
-                                                                console.error('Failed to match transactions:', error);
-                                                                // State updates are skipped on error, so suggested match remains
-                                                              }
-                                                            } else {
-                                                              // Remove relationship - restore original types
-                                                              const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-                                                              const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
+                                                                    setSuggestedMatches(prev => {
+                                                                      const next = { ...prev };
+                                                                      delete next[transaction.id];
+                                                                      delete next[match.id];
+                                                                      return next;
+                                                                    });
+                                                                  } catch (error) {
+                                                                    console.error('Failed to match transactions:', error);
+                                                                  }
+                                                                } else {
+                                                                  const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                                  const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
 
-                                                              try {
-                                                                await Promise.all([
-                                                                  updateMutation.mutateAsync({
-                                                                    id: transaction.id,
-                                                                    data: {
-                                                                      transfer_pair_id: null,
-                                                                      type: originalType1,
-                                                                      original_type: null
-                                                                    }
-                                                                  }),
-                                                                  updateMutation.mutateAsync({
-                                                                    id: match.id,
-                                                                    data: {
-                                                                      transfer_pair_id: null,
-                                                                      type: originalType2,
-                                                                      original_type: null
-                                                                    }
-                                                                  })
-                                                                ]);
+                                                                  try {
+                                                                    await Promise.all([
+                                                                      updateMutation.mutateAsync({
+                                                                        id: transaction.id,
+                                                                        data: {
+                                                                          transfer_pair_id: null,
+                                                                          type: originalType1,
+                                                                          original_type: null
+                                                                        }
+                                                                      }),
+                                                                      updateMutation.mutateAsync({
+                                                                        id: match.id,
+                                                                        data: {
+                                                                          transfer_pair_id: null,
+                                                                          type: originalType2,
+                                                                          original_type: null
+                                                                        }
+                                                                      })
+                                                                    ]);
 
-                                                                // Only clear from selected matches if both mutations succeeded
-                                                                setSelectedMatches(prev => {
-                                                                  const next = { ...prev };
-                                                                  delete next[transaction.id];
-                                                                  delete next[match.id];
-                                                                  return next;
-                                                                });
-                                                              } catch (error) {
-                                                                console.error('Failed to unmatch transactions:', error);
-                                                                // State updates are skipped on error
-                                                              }
-                                                            }
-                                                          }}
-                                                        >
-                                                          <input
-                                                            type="checkbox"
-                                                            checked={isSelected}
-                                                            onChange={() => {}}
-                                                            className="rounded w-3.5 h-3.5 flex-shrink-0"
-                                                          />
-                                                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                                                            <span className="text-xs text-slate-600 whitespace-nowrap">{format(parseISO(match.date), 'MM/dd/yy')}</span>
-                                                            <span className="font-medium text-slate-900 truncate">{formatTransactionDescription(match.description)}</span>
-                                                            <span className="font-semibold text-slate-900 whitespace-nowrap">
-                                                              {match.amount < 0 ? '-' : ''}${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                                                            </span>
-                                                            <span className="text-xs text-slate-600 truncate">{getAccountDisplayName(matchAccount)}</span>
-                                                            {isSuggestedMatch && (
-                                                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded font-medium whitespace-nowrap">
-                                                                Suggested match
-                                                              </span>
-                                                            )}
-                                                            {!hasFilters && !isSuggestedMatch && (
-                                                              <span className="text-xs text-blue-600 font-medium whitespace-nowrap">
-                                                                {confidence}% match
-                                                              </span>
-                                                            )}
-                                                          </div>
-                                                        </div>
-                                                      );
-                                                    })
+                                                                    setSelectedMatches(prev => {
+                                                                      const next = { ...prev };
+                                                                      delete next[transaction.id];
+                                                                      delete next[match.id];
+                                                                      return next;
+                                                                    });
+                                                                  } catch (error) {
+                                                                    console.error('Failed to unmatch transactions:', error);
+                                                                  }
+                                                                }
+                                                              }}
+                                                            >
+                                                              {/* Checkbox */}
+                                                              <td className="border-r border-slate-200 text-center">
+                                                                <input
+                                                                  type="checkbox"
+                                                                  checked={isSelected}
+                                                                  onChange={() => {}}
+                                                                  className="rounded w-3.5 h-3.5"
+                                                                />
+                                                              </td>
+
+                                                              {/* Date */}
+                                                              <td className="border-r border-slate-200 py-1 pl-2 pr-1 text-xs">
+                                                                {format(parseISO(match.date), 'MM/dd/yy')}
+                                                              </td>
+
+                                                              {/* Account (if showing all) */}
+                                                              {selectedAccount === 'all' && (
+                                                                <td className="border-r border-slate-200 py-1 px-4 pl-2 truncate text-xs">
+                                                                  {getAccountDisplayName(matchAccount)}
+                                                                </td>
+                                                              )}
+
+                                                              {/* Description */}
+                                                              <td className="border-r border-slate-200 py-1 px-4 pl-2 text-xs">
+                                                                {formatTransactionDescription(match.description)}
+                                                              </td>
+
+                                                              {/* Spent */}
+                                                              <td className="border-r border-slate-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                                {match.amount < 0 && (
+                                                                  <span className="text-red-600 font-medium">
+                                                                    ${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                  </span>
+                                                                )}
+                                                              </td>
+
+                                                              {/* Received */}
+                                                              <td className="border-r border-slate-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                                {match.amount >= 0 && (
+                                                                  <span className="text-green-600 font-medium">
+                                                                    ${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                                  </span>
+                                                                )}
+                                                              </td>
+
+                                                              {/* From/To */}
+                                                              <td className="border-r border-slate-200 py-1 px-4 pl-2 truncate text-xs">
+                                                                {(() => {
+                                                                  if (match.type === 'transfer') {
+                                                                    const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
+                                                                    return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                                  }
+                                                                  const contact = contacts.find(c => c.id === match.contact_id);
+                                                                  return contact ? contact.display_name : '—';
+                                                                })()}
+                                                              </td>
+
+                                                              {/* Category */}
+                                                              <td className="border-r border-slate-200 py-1 px-4 pl-2 truncate text-xs">
+                                                                {(() => {
+                                                                  if (match.type === 'transfer') return 'Transfer';
+                                                                  if (match.type === 'credit_card_payment') return 'Credit Card Payment';
+                                                                  return matchCategory?.display_name || '—';
+                                                                })()}
+                                                              </td>
+
+                                                              {/* Match Badge */}
+                                                              <td className="py-1 text-xs text-center">
+                                                                {isSuggestedMatch ? (
+                                                                  <span className="text-blue-600 font-medium">✓</span>
+                                                                ) : (
+                                                                  !hasFilters && (
+                                                                    <span className="text-blue-600 font-medium">{confidence}%</span>
+                                                                  )
+                                                                )}
+                                                              </td>
+                                                            </tr>
+                                                          );
+                                                        })}
+                                                      </tbody>
+                                                    </table>
                                                   )}
                                                 </div>
                                               </>
