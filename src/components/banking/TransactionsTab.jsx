@@ -51,6 +51,7 @@ import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -1072,18 +1073,41 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const handleConfirmTransferMatch = async (toAccountId) => {
-    // Link transfers without posting - user will post when ready
-    // No status changes, just confirming the link
-    setTransferMatchDialogOpen(false);
-    toast.success('Transfer linked - ready to post');
+    if (!matchingTransfer || !pairedTransfer) return;
+
+    try {
+      // Link the two transactions as a transfer pair
+      const result = await transferAutoDetectionAPI.linkTransferPair(
+        matchingTransfer.id,
+        pairedTransfer.id,
+        activeProfile.id
+      );
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // Refresh transactions to show the linked pair
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+      setTransferMatchDialogOpen(false);
+      setMatchingTransfer(null);
+      setPairedTransfer(null);
+      toast.success('Transfer linked - ready to post');
+    } catch (error) {
+      console.error('Error linking transfers:', error);
+      toast.error('Failed to link transfers');
+    }
   };
 
   const handlePostTransferFromPreview = async () => {
-    if (!matchingTransfer) return;
+    if (!matchingTransfer || !pairedTransfer) return;
 
     setIsPostingTransfer(true);
     try {
+      // Post both sides of the transfer
       await postTransaction(matchingTransfer);
+      await postTransaction(pairedTransfer);
       setTransferPostPreviewOpen(false);
       setMatchingTransfer(null);
       setPairedTransfer(null);
