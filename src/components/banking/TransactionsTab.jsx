@@ -1088,12 +1088,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       }
 
       // Refresh transactions to show the linked pair
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
+      // Close match dialog and open preview dialog
       setTransferMatchDialogOpen(false);
-      setMatchingTransfer(null);
-      setPairedTransfer(null);
-      toast.success('Transfer linked - ready to post');
+      setTransferPostPreviewOpen(true);
+      toast.success('Transfer linked - review before posting');
     } catch (error) {
       console.error('Error linking transfers:', error);
       toast.error('Failed to link transfers');
