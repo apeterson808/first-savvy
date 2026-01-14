@@ -51,6 +51,7 @@ import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -1072,22 +1073,45 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const handleConfirmTransferMatch = async (toAccountId) => {
-    // Link transfers without posting - user will post when ready
-    // No status changes, just confirming the link
-    setTransferMatchDialogOpen(false);
-    toast.success('Transfer linked - ready to post');
+    if (!matchingTransfer || !pairedTransfer) return;
+
+    try {
+      // Link the two transactions as a transfer pair
+      const result = await transferAutoDetectionAPI.linkTransferPair(
+        matchingTransfer.id,
+        pairedTransfer.id,
+        activeProfile.id
+      );
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // Close match dialog and open preview dialog (state already set)
+      setTransferMatchDialogOpen(false);
+      setTransferPostPreviewOpen(true);
+      toast.success('Transfer linked - review before posting');
+
+      // Refresh transactions in the background
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    } catch (error) {
+      console.error('Error linking transfers:', error);
+      toast.error('Failed to link transfers');
+    }
   };
 
   const handlePostTransferFromPreview = async () => {
-    if (!matchingTransfer) return;
+    if (!matchingTransfer || !pairedTransfer) return;
 
     setIsPostingTransfer(true);
     try {
-      await postTransaction(matchingTransfer);
-      setTransferPostPreviewOpen(false);
-      setMatchingTransfer(null);
-      setPairedTransfer(null);
-      toast.success('Transfer posted successfully');
+      // postTransaction handles posting both sides internally
+      const success = await postTransaction(matchingTransfer);
+      if (success) {
+        setTransferPostPreviewOpen(false);
+        setMatchingTransfer(null);
+        setPairedTransfer(null);
+      }
     } catch (error) {
       console.error('Error posting transfer:', error);
       toast.error('Failed to post transfer');
@@ -1117,6 +1141,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       }
 
       const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
+      const txn1Id = transaction.id;
+      const txn2Id = matchedTransaction.id;
 
       try {
         // Link both transactions first
@@ -1137,16 +1163,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           })
         ]);
 
-        // Then post both transactions sequentially
-        await updateMutation.mutateAsync({
-          id: transaction.id,
-          data: { status: 'posted' }
-        });
-
-        await updateMutation.mutateAsync({
-          id: matchedTransaction.id,
-          data: { status: 'posted' }
-        });
+        // Set state BEFORE invalidating queries to open preview dialog
+        setMatchingTransfer(transaction);
+        setPairedTransfer(matchedTransaction);
+        setTransferPostPreviewOpen(true);
 
         setSelectedMatches(prev => {
           const next = { ...prev };
@@ -1154,10 +1174,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           return next;
         });
         setExpandedTransactionId(null);
-        toast.success('Transfer matched and posted');
+        toast.success('Transfer linked - review before posting');
+
+        // Refresh in the background (don't await)
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
       } catch (error) {
-        console.error('Failed to match and post transfer:', error);
-        toast.error('Failed to match and post transfer. Please try again.');
+        console.error('Failed to link transfer:', error);
+        toast.error('Failed to link transfer. Please try again.');
       }
     } else {
       const matches = findPotentialMatches(transaction);
@@ -1211,25 +1234,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (error) throw error;
 
-      // Post both transactions sequentially after linking
-      await updateMutation.mutateAsync({
-        id: selectedTransactions[0],
-        data: { status: 'posted' }
-      });
+      // Set state BEFORE invalidating queries to open preview dialog
+      setMatchingTransfer(txn1);
+      setPairedTransfer(txn2);
+      setTransferPostPreviewOpen(true);
 
-      await updateMutation.mutateAsync({
-        id: selectedTransactions[1],
-        data: { status: 'posted' }
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelectedTransactions([]);
-      toast.success('Transfer matched and posted');
+      toast.success('Transfer linked - review before posting');
+
+      // Refresh in the background (don't await)
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     } catch (error) {
-      console.error('Error matching transactions:', error);
-      toast.error(error.message || 'Failed to match and post transfer');
+      console.error('Error linking transactions:', error);
+      toast.error(error.message || 'Failed to link transfer');
     }
   };
 
