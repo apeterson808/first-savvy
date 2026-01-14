@@ -8,10 +8,10 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ArrowRight, CheckCircle2, FileText, Calendar } from 'lucide-react';
 import { getAccountDisplayName } from '../utils/constants';
 import { formatCurrency } from '../utils/formatters';
 import { getIconComponent } from '../utils/iconMapper';
@@ -37,144 +37,111 @@ export default function TransferPostPreviewDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl">
         <DialogHeader>
-          <DialogTitle className="text-xl">Preview Transfer Journal Entry</DialogTitle>
+          <div className="flex items-start justify-between">
+            <div className="flex items-center gap-3">
+              <FileText className="h-6 w-6 text-muted-foreground" />
+              <div>
+                <DialogTitle className="text-2xl">Post Transfer</DialogTitle>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline">Transfer</Badge>
+                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                    <Calendar className="h-3 w-3" />
+                    {date}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Transfer Summary */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">Transfer Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="text-xs text-slate-500 mb-1">Amount</div>
-                  <div className="text-lg font-semibold text-slate-900">
-                    {formatCurrency(amount)}
-                  </div>
-                </div>
-                <div>
-                  <div className="text-xs text-slate-500 mb-1">Date</div>
-                  <div className="text-lg font-semibold text-slate-900">{date}</div>
-                </div>
-              </div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-3">
+              {FromIcon && <FromIcon className="h-5 w-5" style={{ color: fromAccount.color }} />}
+              <span className="font-medium">{fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown'}</span>
+            </div>
+            <ArrowRight className="w-4 h-4 text-muted-foreground" />
+            <div className="flex items-center gap-3">
+              {ToIcon && <ToIcon className="h-5 w-5" style={{ color: toAccount.color }} />}
+              <span className="font-medium">{toAccount ? getAccountDisplayName(toAccount) : 'Unknown'}</span>
+            </div>
+            <div className="font-semibold text-lg">{formatCurrency(amount)}</div>
+          </div>
 
-              <div className="bg-slate-50 rounded-lg p-4 space-y-3">
-                <div className="flex items-center gap-3">
-                  {FromIcon && <FromIcon className="h-5 w-5" style={{ color: fromAccount.color }} />}
-                  <div className="flex-1">
-                    <div className="text-xs text-slate-500">From Account</div>
-                    <div className="text-sm font-medium text-slate-900">
-                      {fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown'}
-                    </div>
-                  </div>
-                </div>
+          {memo && (
+            <div>
+              <div className="text-sm font-medium mb-1">Description</div>
+              <div className="text-muted-foreground">{memo}</div>
+            </div>
+          )}
 
-                <div className="flex items-center justify-center">
-                  <ArrowRight className="w-5 h-5 text-slate-400" />
-                </div>
+          <Separator />
 
-                <div className="flex items-center gap-3">
-                  {ToIcon && <ToIcon className="h-5 w-5" style={{ color: toAccount.color }} />}
-                  <div className="flex-1">
-                    <div className="text-xs text-slate-500">To Account</div>
-                    <div className="text-sm font-medium text-slate-900">
-                      {toAccount ? getAccountDisplayName(toAccount) : 'Unknown'}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {memo && (
-                <div>
-                  <div className="text-xs text-slate-500 mb-1">Memo</div>
-                  <div className="text-sm text-slate-700">{memo}</div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Journal Entry Preview */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium text-slate-600">Journal Entry</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {/* Debit Line */}
-                <div className="flex items-start justify-between p-3 bg-green-50 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-3 flex-1">
-                    {ToIcon && <ToIcon className="h-5 w-5" style={{ color: toAccount.color }} />}
-                    <div>
-                      <div className="text-xs font-medium text-green-700 mb-0.5">DEBIT</div>
-                      <div className="text-sm font-medium text-slate-900">
+          <div>
+            <div className="text-sm font-medium mb-3">Journal Entry Lines</div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-12">#</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead className="text-right">Debit</TableHead>
+                  <TableHead className="text-right">Credit</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell className="text-muted-foreground">1</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {ToIcon && <ToIcon className="h-4 w-4" style={{ color: toAccount.color }} />}
+                      <div className="font-medium">
                         {toAccount ? getAccountDisplayName(toAccount) : 'Unknown'}
                       </div>
-                      <div className="text-xs text-slate-500">{memo}</div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-green-700">
-                      {formatCurrency(amount)}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Credit Line */}
-                <div className="flex items-start justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
-                  <div className="flex items-center gap-3 flex-1">
-                    {FromIcon && <FromIcon className="h-5 w-5" style={{ color: fromAccount.color }} />}
-                    <div>
-                      <div className="text-xs font-medium text-orange-700 mb-0.5">CREDIT</div>
-                      <div className="text-sm font-medium text-slate-900">
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{memo || '—'}</TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(amount)}</TableCell>
+                  <TableCell className="text-right"></TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell className="text-muted-foreground">2</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      {FromIcon && <FromIcon className="h-4 w-4" style={{ color: fromAccount.color }} />}
+                      <div className="font-medium">
                         {fromAccount ? getAccountDisplayName(fromAccount) : 'Unknown'}
                       </div>
-                      <div className="text-xs text-slate-500">{memo}</div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm font-semibold text-orange-700">
-                      {formatCurrency(amount)}
-                    </div>
-                  </div>
-                </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{memo || '—'}</TableCell>
+                  <TableCell className="text-right"></TableCell>
+                  <TableCell className="text-right font-mono">{formatCurrency(amount)}</TableCell>
+                </TableRow>
+                <TableRow className="font-bold border-t-2">
+                  <TableCell colSpan={3} className="text-right">
+                    Totals
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatCurrency(amount)}
+                  </TableCell>
+                  <TableCell className="text-right font-mono">
+                    {formatCurrency(amount)}
+                  </TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </div>
 
-                <Separator />
-
-                {/* Balance Check */}
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="text-sm font-medium text-slate-900">Entry is balanced</span>
-                  </div>
-                  <div className="text-sm text-slate-500">
-                    Debits = Credits = {formatCurrency(amount)}
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Transaction Info */}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                <CheckCircle2 className="h-5 w-5 text-blue-600" />
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-medium text-blue-900 mb-1">
-                  What happens when you post
-                </div>
-                <div className="text-xs text-blue-700 space-y-1">
-                  <div>• Both transactions will move to the Posted tab</div>
-                  <div>• A journal entry will be created linking both sides</div>
-                  <div>• The journal entry will appear in each account's register</div>
-                  <div>• Account balances will be updated automatically</div>
-                </div>
-              </div>
+          <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+              <span className="font-medium">Entry is balanced</span>
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Debits = Credits = {formatCurrency(amount)}
             </div>
           </div>
         </div>
@@ -189,7 +156,6 @@ export default function TransferPostPreviewDialog({
           </Button>
           <Button
             onClick={onPost}
-            className="bg-blue-600 hover:bg-blue-700"
             disabled={isPosting}
           >
             {isPosting ? 'Posting...' : 'Post Transfer'}
