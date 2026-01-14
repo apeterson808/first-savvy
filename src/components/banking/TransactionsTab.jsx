@@ -988,17 +988,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
         if (pairedTransaction.status !== 'posted') {
           try {
-            // CRITICAL: Use Promise.all with mutateAsync for atomic posting
-            await Promise.all([
-              updateMutation.mutateAsync({
-                id: pairedTransaction.id,
-                data: { status: 'posted' }
-              }),
-              updateMutation.mutateAsync({
-                id: transaction.id,
-                data: { status: 'posted' }
-              })
-            ]);
+            // CRITICAL: Post SEQUENTIALLY to avoid race condition
+            // First transaction posts -> trigger skips (paired not posted yet)
+            await updateMutation.mutateAsync({
+              id: pairedTransaction.id,
+              data: { status: 'posted' }
+            });
+
+            // Second transaction posts -> trigger creates journal entry (paired is now posted)
+            await updateMutation.mutateAsync({
+              id: transaction.id,
+              data: { status: 'posted' }
+            });
+
             toast.success('Transfer posted (both sides)');
             return true;
           } catch (error) {
@@ -1085,33 +1087,54 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     if (selectedMatch) {
       const matchedTransaction = transactions.find(t => t.id === selectedMatch);
 
-      const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
-
-      updateMutation.mutate({
-        id: transaction.id,
-        data: {
-          transfer_pair_id: pairId,
-          type: 'transfer'
-        }
-      });
-
-      if (matchedTransaction) {
-        updateMutation.mutate({
-          id: selectedMatch,
-          data: {
-            transfer_pair_id: pairId,
-            type: 'transfer'
-          }
-        });
+      if (!matchedTransaction) {
+        toast.error('Matched transaction not found');
+        return;
       }
 
-      setSelectedMatches(prev => {
-        const next = { ...prev };
-        delete next[transaction.id];
-        return next;
-      });
-      setExpandedTransactionId(null);
-      toast.success('Transfer linked - ready to post');
+      const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
+
+      try {
+        // Link both transactions first
+        await Promise.all([
+          updateMutation.mutateAsync({
+            id: transaction.id,
+            data: {
+              transfer_pair_id: pairId,
+              type: 'transfer'
+            }
+          }),
+          updateMutation.mutateAsync({
+            id: matchedTransaction.id,
+            data: {
+              transfer_pair_id: pairId,
+              type: 'transfer'
+            }
+          })
+        ]);
+
+        // Then post both transactions sequentially
+        await updateMutation.mutateAsync({
+          id: transaction.id,
+          data: { status: 'posted' }
+        });
+
+        await updateMutation.mutateAsync({
+          id: matchedTransaction.id,
+          data: { status: 'posted' }
+        });
+
+        setSelectedMatches(prev => {
+          const next = { ...prev };
+          delete next[transaction.id];
+          return next;
+        });
+        setExpandedTransactionId(null);
+        toast.success('Transfer matched and posted');
+      } catch (error) {
+        console.error('Failed to match and post transfer:', error);
+        toast.error('Failed to match and post transfer. Please try again.');
+      }
     } else {
       const matches = findPotentialMatches(transaction);
       if (matches.length === 0) {
@@ -1164,14 +1187,25 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (error) throw error;
 
+      // Post both transactions sequentially after linking
+      await updateMutation.mutateAsync({
+        id: selectedTransactions[0],
+        data: { status: 'posted' }
+      });
+
+      await updateMutation.mutateAsync({
+        id: selectedTransactions[1],
+        data: { status: 'posted' }
+      });
+
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelectedTransactions([]);
-      toast.success('Transactions matched as transfer pair');
+      toast.success('Transfer matched and posted');
     } catch (error) {
       console.error('Error matching transactions:', error);
-      toast.error(error.message || 'Failed to match transactions');
+      toast.error(error.message || 'Failed to match and post transfer');
     }
   };
 
