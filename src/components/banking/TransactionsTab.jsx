@@ -28,7 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink, Wand2 } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -52,6 +52,7 @@ import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
+import transactionRulesApi from '@/api/transactionRules';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -102,6 +103,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [extractedData, setExtractedData] = useState(null);
   const [suggestedMatches, setSuggestedMatches] = useState({});
+  const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -627,6 +629,41 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       showErrorToast(error);
     }
   });
+
+  const handleAutoCategorize = async () => {
+    if (!activeProfile?.id) return;
+
+    const uncategorizedTransactions = fullPendingTransactions.filter(
+      txn => !txn.category_account_id && txn.type !== 'transfer'
+    );
+
+    if (uncategorizedTransactions.length === 0) {
+      toast.info('No uncategorized transactions to process');
+      return;
+    }
+
+    setIsAutoCategorizing(true);
+    try {
+      const updates = await transactionRulesApi.applyAllRules(
+        uncategorizedTransactions,
+        activeProfile.id
+      );
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+      if (updates.length > 0) {
+        toast.success(`Successfully categorized ${updates.length} transaction${updates.length !== 1 ? 's' : ''}`);
+      } else {
+        toast.info('No matching rules found for pending transactions');
+      }
+    } catch (error) {
+      logError(error, { action: 'autoCategorize' });
+      toast.error('Failed to auto-categorize transactions');
+    } finally {
+      setIsAutoCategorizing(false);
+    }
+  };
 
   const getDateRange = () => {
     const today = new Date();
@@ -1465,6 +1502,40 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
+                {statusFilter === 'pending' && (() => {
+                  const uncategorizedCount = fullPendingTransactions.filter(
+                    txn => !txn.category_account_id && txn.type !== 'transfer'
+                  ).length;
+
+                  return uncategorizedCount > 0 ? (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1.5 px-2"
+                            onClick={handleAutoCategorize}
+                            disabled={isAutoCategorizing}
+                          >
+                            {isAutoCategorizing ? (
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <Wand2 className="w-4 h-4" />
+                            )}
+                            <span className="text-xs">
+                              {isAutoCategorizing ? 'Categorizing...' : `Auto (${uncategorizedCount})`}
+                            </span>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Automatically categorize {uncategorizedCount} uncategorized transaction{uncategorizedCount !== 1 ? 's' : ''} using rules</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  ) : null;
+                })()}
+
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>

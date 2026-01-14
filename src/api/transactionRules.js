@@ -1,4 +1,4 @@
-import firstsavvy from './firstsavvyClient';
+import { firstsavvy } from './firstsavvyClient';
 
 export const transactionRulesApi = {
   async getCategorizationRules(profileId) {
