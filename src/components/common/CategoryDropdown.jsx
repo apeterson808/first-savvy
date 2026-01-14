@@ -125,7 +125,6 @@ export default function CategoryDropdown({
             data-display={displayName}
             className="flex items-center justify-between whitespace-nowrap"
           >
-            <span className="text-xs text-gray-500 font-mono mr-2">{acc.account_number}</span>
             <span className="truncate flex-1">{displayName}</span>
           </ClickThroughSelectItem>
         );
