@@ -264,19 +264,6 @@ export default function AddContactSheet({
 
       const invitation = await firstsavvy.entities.Invitation.create(invitationData);
 
-      try {
-        await firstsavvy.functions.sendInvitationNotification({
-          invitationId: invitation.id,
-          inviterName: currentUser.email || 'A user',
-          inviteeEmail: type === 'email' ? value : undefined,
-          inviteePhone: type === 'phone' ? value : undefined,
-          invitationType: 'user_connection',
-          invitationToken: invitation.token
-        });
-      } catch (notifError) {
-        console.error('Failed to send notification:', notifError);
-      }
-
       toast.success(`Invitation sent to ${value}!`);
       return invitation;
     } catch (error) {

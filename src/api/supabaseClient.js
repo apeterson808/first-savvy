@@ -345,16 +345,6 @@ export const createSupabaseClient = () => {
         if (error) throw error;
         return data;
       },
-      async parseCsv(body) {
-        const { data, error } = await supabase.functions.invoke('parse-csv', { body });
-        if (error) throw error;
-        return data;
-      },
-      async fixImportedTransactions(body) {
-        const { data, error } = await supabase.functions.invoke('fix-imported-transactions', { body });
-        if (error) throw error;
-        return data;
-      },
       async aiCategorizeTransaction(body) {
         const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
         if (error) throw error;
@@ -362,11 +352,6 @@ export const createSupabaseClient = () => {
       },
       async aiSuggestContact(body) {
         const { data, error } = await supabase.functions.invoke('ai-suggest-contact', { body });
-        if (error) throw error;
-        return data;
-      },
-      async sendInvitationNotification(body) {
-        const { data, error } = await supabase.functions.invoke('send-invitation-notification', { body });
         if (error) throw error;
         return data;
       },
