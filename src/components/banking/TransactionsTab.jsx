@@ -1959,156 +1959,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         </td>
                         </tr>
 
-                        {/* Matched Transaction Row */}
-                        {(() => {
-                          const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
-                          if (!currentlyPaired) return null;
-
-                          return (
-                            <>
-                              {/* Suggested Match Label Row */}
-                              <tr className="bg-slate-50">
-                                <td colSpan={selectedAccount === 'all' ? 9 : 8} className="pt-2 pb-1 px-4 border-t border-slate-200">
-                                  <p className="text-xs text-slate-600">Suggested Match</p>
-                                </td>
-                              </tr>
-                              {/* Matched Transaction Data Row */}
-                              <tr className="bg-blue-50/50">
-                                {/* Checkbox */}
-                                <td className="border-r border-slate-200 text-center py-1">
-                                  <input
-                                    type="checkbox"
-                                    checked={true}
-                                    onChange={async (e) => {
-                                      e.stopPropagation();
-
-                                      const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-                                      const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
-
-                                      try {
-                                        await Promise.all([
-                                          updateMutation.mutateAsync({
-                                            id: transaction.id,
-                                            data: {
-                                              transfer_pair_id: null,
-                                              type: originalType1,
-                                              original_type: null
-                                            }
-                                          }),
-                                          updateMutation.mutateAsync({
-                                            id: currentlyPaired.id,
-                                            data: {
-                                              transfer_pair_id: null,
-                                              type: originalType2,
-                                              original_type: null
-                                            }
-                                          })
-                                        ]);
-
-                                        setSelectedMatches(prev => {
-                                          const next = { ...prev };
-                                          delete next[transaction.id];
-                                          delete next[currentlyPaired.id];
-                                          return next;
-                                        });
-
-                                        setSuggestedMatches(prev => ({
-                                          ...prev,
-                                          [transaction.id]: currentlyPaired.id,
-                                          [currentlyPaired.id]: transaction.id
-                                        }));
-
-                                        toast.success('Transfer unmatched');
-                                      } catch (error) {
-                                        console.error('Failed to unmatch transfer:', error);
-                                      }
-                                    }}
-                                    className="rounded w-3.5 h-3.5"
-                                  />
-                                </td>
-
-                                {/* Date */}
-                                <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
-                                  {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
-                                </td>
-
-                                {/* Account (if showing all) */}
-                                {selectedAccount === 'all' && (
-                                  <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 whitespace-nowrap overflow-hidden text-ellipsis" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
-                                    {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
-                                  </td>
-                                )}
-
-                                {/* Description - Editable */}
-                                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
-                                  <Input
-                                    defaultValue={currentlyPaired.description || ''}
-                                    className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1"
-                                    onBlur={(e) => {
-                                      if (e.target.value !== (currentlyPaired.description || '')) {
-                                        updateMutation.mutate({
-                                          id: currentlyPaired.id,
-                                          data: { description: e.target.value }
-                                        });
-                                      }
-                                    }}
-                                    onClick={(e) => e.stopPropagation()}
-                                  />
-                                </td>
-
-                                {/* Spent */}
-                                <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                  {currentlyPaired.amount < 0 && (
-                                    <span className="text-red-600 font-medium">
-                                      ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                  )}
-                                </td>
-
-                                {/* Received */}
-                                <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                  {currentlyPaired.amount >= 0 && (
-                                    <span className="text-green-600 font-medium">
-                                      ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                    </span>
-                                  )}
-                                </td>
-
-                                {/* From/To */}
-                                <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
-                                  <span className="text-xs">
-                                    {(() => {
-                                      if (currentlyPaired.type === 'transfer') {
-                                        const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
-                                        return otherAccount ? getAccountDisplayName(otherAccount) : '—';
-                                      }
-                                      const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
-                                      return contact ? contact.display_name : '—';
-                                    })()}
-                                  </span>
-                                </td>
-
-                                {/* Category */}
-                                <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
-                                  <span className="text-xs">
-                                    {(() => {
-                                      if (currentlyPaired.type === 'transfer') return 'Transfer';
-                                      if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
-                                      const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
-                                      return category?.display_name || '—';
-                                    })()}
-                                  </span>
-                                </td>
-
-                                {/* Matched Badge */}
-                                <td className="py-1 pl-2 pr-1 text-center">
-                                  <span className="text-xs text-blue-600 font-medium">✓</span>
-                                </td>
-                              </tr>
-                            </>
-                          );
-                        })()}
-
                         {expandedTransactionId === transaction.id && (
                           <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-t border-slate-100`}>
                             <td colSpan={selectedAccount === 'all' ? 9 : 8} className="p-0">
@@ -2296,6 +2146,165 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </>
                                     )}
                                     </div>
+
+                                    {/* Matched Transaction Row */}
+                                    {(() => {
+                                      const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
+                                      if (!currentlyPaired) return null;
+
+                                      return (
+                                        <>
+                                          <div className="pt-2 pb-1 px-4">
+                                            <p className="text-xs text-slate-600">Suggested Match</p>
+                                          </div>
+                                          <div className="bg-blue-50/50">
+                                            <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                              <colgroup>
+                                                <col style={{ width: 32, minWidth: 32 }} />
+                                                <col style={{ width: 70, minWidth: 70 }} />
+                                                {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                                <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                                <col style={{ width: 1 }} />
+                                                <col style={{ width: 1 }} />
+                                                <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                                <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                                <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
+                                              </colgroup>
+                                              <tbody>
+                                                <tr>
+                                                  {/* Checkbox */}
+                                                  <td className="border-r border-blue-200 text-center">
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={true}
+                                                      onChange={async (e) => {
+                                                        e.stopPropagation();
+
+                                                        const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                        const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
+
+                                                        try {
+                                                          await Promise.all([
+                                                            updateMutation.mutateAsync({
+                                                              id: transaction.id,
+                                                              data: {
+                                                                transfer_pair_id: null,
+                                                                type: originalType1,
+                                                                original_type: null
+                                                              }
+                                                            }),
+                                                            updateMutation.mutateAsync({
+                                                              id: currentlyPaired.id,
+                                                              data: {
+                                                                transfer_pair_id: null,
+                                                                type: originalType2,
+                                                                original_type: null
+                                                              }
+                                                            })
+                                                          ]);
+
+                                                          setSelectedMatches(prev => {
+                                                            const next = { ...prev };
+                                                            delete next[transaction.id];
+                                                            delete next[currentlyPaired.id];
+                                                            return next;
+                                                          });
+
+                                                          setSuggestedMatches(prev => ({
+                                                            ...prev,
+                                                            [transaction.id]: currentlyPaired.id,
+                                                            [currentlyPaired.id]: transaction.id
+                                                          }));
+
+                                                          toast.success('Transfer unmatched');
+                                                        } catch (error) {
+                                                          console.error('Failed to unmatch transfer:', error);
+                                                        }
+                                                      }}
+                                                      className="rounded w-3.5 h-3.5"
+                                                    />
+                                                  </td>
+
+                                                  {/* Date */}
+                                                  <td className="border-r border-blue-200 py-1 pl-2 pr-1 text-xs">
+                                                    {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
+                                                  </td>
+
+                                                  {/* Account (if showing all) */}
+                                                  {selectedAccount === 'all' && (
+                                                    <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                      {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                    </td>
+                                                  )}
+
+                                                  {/* Description - Editable */}
+                                                  <td className="border-r border-blue-200 py-1 px-4 pl-2 text-xs" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
+                                                    <Input
+                                                      defaultValue={currentlyPaired.description || ''}
+                                                      className="h-6 text-xs border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                                      onBlur={(e) => {
+                                                        if (e.target.value !== (currentlyPaired.description || '')) {
+                                                          updateMutation.mutate({
+                                                            id: currentlyPaired.id,
+                                                            data: { description: e.target.value }
+                                                          });
+                                                        }
+                                                      }}
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                  </td>
+
+                                                {/* Spent */}
+                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                  {currentlyPaired.amount < 0 && (
+                                                    <span className="text-red-600 font-medium">
+                                                      ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                  )}
+                                                </td>
+
+                                                {/* Received */}
+                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                  {currentlyPaired.amount >= 0 && (
+                                                    <span className="text-green-600 font-medium">
+                                                      ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                  )}
+                                                </td>
+
+                                                {/* From/To */}
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                  {(() => {
+                                                    if (currentlyPaired.type === 'transfer') {
+                                                      const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
+                                                      return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                    }
+                                                    const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
+                                                    return contact ? contact.display_name : '—';
+                                                  })()}
+                                                </td>
+
+                                                {/* Category */}
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                  {(() => {
+                                                    if (currentlyPaired.type === 'transfer') return 'Transfer';
+                                                    if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
+                                                    const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
+                                                    return category?.display_name || '—';
+                                                  })()}
+                                                </td>
+
+                                                {/* Matched Badge */}
+                                                <td className="py-1 text-xs text-blue-600 font-medium whitespace-nowrap text-center">
+                                                  ✓
+                                                </td>
+                                              </tr>
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                        </>
+                                      );
+                                    })()}
 
                                     {/* Tab Content Section */}
                                     <div className="px-4 pb-4 space-y-2">
