@@ -123,6 +123,16 @@ export function ClickThroughSelect({
 
     updatePosition();
 
+    let scrollRafId = null;
+    const handleScroll = () => {
+      if (scrollRafId) {
+        cancelAnimationFrame(scrollRafId);
+      }
+      scrollRafId = requestAnimationFrame(() => {
+        updatePosition();
+      });
+    };
+
     const handleClickOutside = (e) => {
       if (
         containerRef.current &&
@@ -134,12 +144,20 @@ export function ClickThroughSelect({
       }
     };
 
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
+
     setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
     }, 0);
 
     return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
       document.removeEventListener('mousedown', handleClickOutside);
+      if (scrollRafId) {
+        cancelAnimationFrame(scrollRafId);
+      }
     };
   }, [isOpen]);
 

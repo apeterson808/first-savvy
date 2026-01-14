@@ -11,6 +11,28 @@ export function ClickThroughDropdownMenu({ children }) {
   useEffect(() => {
     if (!isOpen) return;
 
+    const updatePosition = () => {
+      if (triggerRef.current) {
+        const rect = triggerRef.current.getBoundingClientRect();
+        setDropdownPosition({
+          top: rect.bottom + 4,
+          left: rect.right - 150
+        });
+      }
+    };
+
+    updatePosition();
+
+    let scrollRafId = null;
+    const handleScroll = () => {
+      if (scrollRafId) {
+        cancelAnimationFrame(scrollRafId);
+      }
+      scrollRafId = requestAnimationFrame(() => {
+        updatePosition();
+      });
+    };
+
     const handleClickOutside = (e) => {
       if (dropdownRef.current && dropdownRef.current.contains(e.target)) {
         return;
@@ -20,18 +42,18 @@ export function ClickThroughDropdownMenu({ children }) {
       }
     };
 
+    window.addEventListener('scroll', handleScroll, true);
+    window.addEventListener('resize', handleScroll);
     document.addEventListener('mouseup', handleClickOutside, true);
-    return () => document.removeEventListener('mouseup', handleClickOutside, true);
-  }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 4,
-        left: rect.right - 150 // Align to right edge
-      });
-    }
+    return () => {
+      window.removeEventListener('scroll', handleScroll, true);
+      window.removeEventListener('resize', handleScroll);
+      document.removeEventListener('mouseup', handleClickOutside, true);
+      if (scrollRafId) {
+        cancelAnimationFrame(scrollRafId);
+      }
+    };
   }, [isOpen]);
 
   // Find trigger and content from children
