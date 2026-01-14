@@ -1037,15 +1037,27 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const handleTransferMatch = async (transaction) => {
+    // Check if transaction is already matched (has transfer_pair_id)
+    if (transaction.transfer_pair_id) {
+      const paired = findPairedTransfer(transaction);
+
+      if (paired) {
+        // Already matched - POST both sides atomically
+        await postTransaction(transaction);
+        return;
+      }
+    }
+
+    // Not matched yet - check if we can find potential matches
     const paired = findPairedTransfer(transaction);
 
-    // If no paired transfer exists, this is a regular post action
     if (!paired) {
+      // No potential match found - this might be a regular transaction or unmatched transfer
       await postTransaction(transaction);
       return;
     }
 
-    // If paired transfer exists, open the match dialog (don't post)
+    // Found potential match but not yet linked - open match dialog to confirm
     setMatchingTransfer(transaction);
     setPairedTransfer(paired);
     setTransferMatchDialogOpen(true);
