@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
-    // Delete financial data only - preserving contacts and contact_matching_rules
+    // Delete financial data only - preserving contacts, contact_matching_rules, and custom categories
     const tablesToDelete = [
       // Delete journal entries first (CASCADE will delete journal_entry_lines automatically)
       "journal_entries",
@@ -83,9 +83,6 @@ Deno.serve(async (req: Request) => {
       // Delete categorization rules (but NOT contact_matching_rules - those are preserved)
       "categorization_rules",
       "budgets",
-
-      // Delete accounts last (after all references are gone)
-      "user_chart_of_accounts",
 
       // Delete profile-specific preferences
       "profile_view_preferences",
@@ -117,6 +114,33 @@ Deno.serve(async (req: Request) => {
         throw tableError;
       }
     }
+
+    // Delete ONLY template-based categories (preserve custom user-created categories)
+    console.log(`Deleting template categories for profile ${profileId}...`);
+    const { data: templateAccounts, error: templateError } = await supabase
+      .from("user_chart_of_accounts")
+      .delete()
+      .eq("profile_id", profileId)
+      .eq("is_user_created", false)
+      .select();
+
+    if (templateError) {
+      console.error("Error deleting template accounts:", templateError);
+      throw new Error(`Failed to delete template accounts: ${templateError.message}`);
+    }
+
+    const templateDeletedCount = templateAccounts ? templateAccounts.length : 0;
+    totalDeleted += templateDeletedCount;
+    console.log(`Deleted ${templateDeletedCount} template categories (custom categories preserved)`);
+
+    // Count preserved custom categories
+    const { count: customCount } = await supabase
+      .from("user_chart_of_accounts")
+      .select("*", { count: "exact", head: true })
+      .eq("profile_id", profileId)
+      .eq("is_user_created", true);
+
+    console.log(`Preserved ${customCount || 0} custom categories`);
 
     console.log(`Total rows deleted: ${totalDeleted}`);
 
@@ -163,13 +187,14 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create profile tab: ${tabError.message}`);
     }
 
-    console.log(`Successfully reset financial data for user ${userId}. Contacts preserved.`);
+    console.log(`Successfully reset financial data for user ${userId}. Contacts and custom categories preserved.`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Your financial data has been reset. All contacts have been preserved.",
-        deleted_rows: totalDeleted
+        message: `Your financial data has been reset. Contacts and ${customCount || 0} custom categories have been preserved.`,
+        deleted_rows: totalDeleted,
+        preserved_custom_categories: customCount || 0
       }),
       {
         status: 200,
