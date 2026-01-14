@@ -1895,10 +1895,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               <div onClick={(e) => e.stopPropagation()}>
                                 <CategoryDropdown
                                   value={transaction.category_account_id}
-                                  onValueChange={(value) => {
+                                  onValueChange={async (value) => {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     const categoryValue = value === '' ? null : value;
-                                    const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
+
+                                    await queryClient.refetchQueries({ queryKey: ['user-chart-accounts'] });
+                                    await queryClient.refetchQueries({ queryKey: ['chart-accounts'] });
+
+                                    const updatedChartAccounts = queryClient.getQueryData(['chart-accounts', 'expense', activeProfile?.id]) ||
+                                                                queryClient.getQueryData(['chart-accounts', 'income', activeProfile?.id]) ||
+                                                                chartAccounts;
+                                    const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
 
                                     console.log('Category selected:', {
                                       transactionId: transaction.id,
@@ -2563,9 +2570,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               <Label className="text-xs mb-1 block">Category</Label>
                                               <CategoryDropdown
                                                 value={transaction.category_account_id || ''}
-                                                onValueChange={(value) => {
+                                                onValueChange={async (value) => {
                                                   const categoryValue = value === '' ? null : value;
-                                                  const selectedCategory = categoryValue ? chartAccounts.find(c => c.id === categoryValue) : null;
+
+                                                  await queryClient.refetchQueries({ queryKey: ['user-chart-accounts'] });
+                                                  await queryClient.refetchQueries({ queryKey: ['chart-accounts'] });
+
+                                                  const updatedChartAccounts = queryClient.getQueryData(['chart-accounts', 'expense', activeProfile?.id]) ||
+                                                                              queryClient.getQueryData(['chart-accounts', 'income', activeProfile?.id]) ||
+                                                                              chartAccounts;
+                                                  const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
+
                                                   updateMutation.mutate({
                                                     id: transaction.id,
                                                     data: {
