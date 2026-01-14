@@ -214,19 +214,18 @@ export function ClickThroughSelect({
         return displayText.toLowerCase() === searchTerm.toLowerCase();
       });
 
+      const actionItems = flatChildren.filter(child =>
+        isSelectItem(child) && child.props.isAction
+      );
+
       if (exactMatch) {
         handleSelect(exactMatch.props.value, false);
       } else if (visibleItems.length === 1) {
         handleSelect(visibleItems[0].props.value, false);
-      } else {
-        const actionItems = flatChildren.filter(child =>
-          isSelectItem(child) && child.props.isAction
-        );
-        if (actionItems.length > 0 && searchTerm) {
-          handleSelect(actionItems[0].props.value, true);
-        } else if (visibleItems.length > 0) {
-          handleSelect(visibleItems[0].props.value, false);
-        }
+      } else if (searchTerm && actionItems.length > 0) {
+        handleSelect(actionItems[0].props.value, true);
+      } else if (visibleItems.length > 0) {
+        handleSelect(visibleItems[0].props.value, false);
       }
     } else if (e.key === 'Backspace' || e.key === 'Delete') {
       if (searchTerm === '') {
