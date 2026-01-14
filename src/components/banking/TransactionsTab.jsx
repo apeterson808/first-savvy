@@ -1087,13 +1087,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         throw result.error;
       }
 
-      // Refresh transactions to show the linked pair
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-
-      // Close match dialog and open preview dialog
+      // Close match dialog and open preview dialog (state already set)
       setTransferMatchDialogOpen(false);
       setTransferPostPreviewOpen(true);
       toast.success('Transfer linked - review before posting');
+
+      // Refresh transactions in the background
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     } catch (error) {
       console.error('Error linking transfers:', error);
       toast.error('Failed to link transfers');
@@ -1141,6 +1141,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       }
 
       const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
+      const txn1Id = transaction.id;
+      const txn2Id = matchedTransaction.id;
 
       try {
         // Link both transactions first
@@ -1161,10 +1163,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           })
         ]);
 
-        // Refresh to get the updated transactions
-        await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-
-        // Set state to open preview dialog
+        // Set state BEFORE invalidating queries to open preview dialog
         setMatchingTransfer(transaction);
         setPairedTransfer(matchedTransaction);
         setTransferPostPreviewOpen(true);
@@ -1176,6 +1175,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         });
         setExpandedTransactionId(null);
         toast.success('Transfer linked - review before posting');
+
+        // Refresh in the background (don't await)
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
       } catch (error) {
         console.error('Failed to link transfer:', error);
         toast.error('Failed to link transfer. Please try again.');
@@ -1232,16 +1234,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (error) throw error;
 
-      // Refresh to get the updated transactions
-      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
-
-      // Set state to open preview dialog
+      // Set state BEFORE invalidating queries to open preview dialog
       setMatchingTransfer(txn1);
       setPairedTransfer(txn2);
       setTransferPostPreviewOpen(true);
 
       setSelectedTransactions([]);
       toast.success('Transfer linked - review before posting');
+
+      // Refresh in the background (don't await)
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
     } catch (error) {
       console.error('Error linking transactions:', error);
       toast.error(error.message || 'Failed to link transfer');
