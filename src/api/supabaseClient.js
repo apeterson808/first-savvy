@@ -202,7 +202,7 @@ const createEntityAPI = (tableName) => {
         }
       }
 
-      const { data, error } = await query.select().single();
+      const { data, error } = await query.select('*').single();
 
       if (error) {
         console.error(`[${tableName}] Update error:`, error);
