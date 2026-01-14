@@ -50,6 +50,8 @@ import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
+import TransfersToReview from './TransfersToReview';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -492,6 +494,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     enabled: !!activeProfile?.id
   });
 
+  const { data: unreviewedTransfers = [], refetch: refetchUnreviewedTransfers } = useQuery({
+    queryKey: ['unreviewed-transfers', activeProfile?.id],
+    queryFn: async () => {
+      const { data } = await transferAutoDetectionAPI.getUnreviewedTransfers(activeProfile?.id);
+      return data || [];
+    },
+    enabled: !!activeProfile?.id && statusFilter === 'pending'
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: (createdTransaction) => {
@@ -615,6 +626,45 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     onError: (error) => {
       logError(error, { action: 'deleteTransaction' });
       showErrorToast(error);
+    }
+  });
+
+  const acceptTransferMutation = useMutation({
+    mutationFn: (transferPairId) => transferAutoDetectionAPI.acceptTransfer(transferPairId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unreviewed-transfers'] });
+      toast.success('Transfer accepted');
+    },
+    onError: (error) => {
+      console.error('Error accepting transfer:', error);
+      toast.error('Failed to accept transfer');
+    }
+  });
+
+  const rejectTransferMutation = useMutation({
+    mutationFn: (transferPairId) => transferAutoDetectionAPI.rejectTransfer(transferPairId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unreviewed-transfers'] });
+      toast.success('Transfer rejected');
+    },
+    onError: (error) => {
+      console.error('Error rejecting transfer:', error);
+      toast.error('Failed to reject transfer');
+    }
+  });
+
+  const acceptAllTransfersMutation = useMutation({
+    mutationFn: () => transferAutoDetectionAPI.acceptAllTransfers(activeProfile?.id),
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['unreviewed-transfers'] });
+      toast.success(`Accepted ${result.count} transfer${result.count !== 1 ? 's' : ''}`);
+    },
+    onError: (error) => {
+      console.error('Error accepting all transfers:', error);
+      toast.error('Failed to accept all transfers');
     }
   });
 
@@ -1237,6 +1287,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   return (
       <>
+        {statusFilter === 'pending' && unreviewedTransfers.length > 0 && (
+          <div className="mb-4">
+            <TransfersToReview
+              transferPairs={unreviewedTransfers}
+              accounts={accounts}
+              onAccept={(pairId) => acceptTransferMutation.mutate(pairId)}
+              onReject={(pairId) => rejectTransferMutation.mutate(pairId)}
+              onAcceptAll={() => acceptAllTransfersMutation.mutate()}
+              isLoading={acceptTransferMutation.isPending || rejectTransferMutation.isPending || acceptAllTransfersMutation.isPending}
+            />
+          </div>
+        )}
         <Card className="shadow-sm border-slate-200">
         <CardContent className="p-0">
           {/* Tabs & Top Actions */}
