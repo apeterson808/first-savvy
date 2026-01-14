@@ -9,7 +9,8 @@ export const aiCategorizationApi = {
     try {
       const result = await firstsavvy.functions.aiCategorizeTransaction({
         description: transaction.description,
-        amount: transaction.amount
+        amount: transaction.amount,
+        profileId: transaction.profile_id
       });
 
       if (result.chartAccountId) {

@@ -28,11 +28,21 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { description, amount } = await req.json();
+    const { description, amount, profileId } = await req.json();
 
     if (!description) {
       return new Response(
         JSON.stringify({ error: 'Description is required' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    if (!profileId) {
+      return new Response(
+        JSON.stringify({ error: 'Profile ID is required' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -73,7 +83,7 @@ Deno.serve(async (req: Request) => {
     const { data: chartAccounts, error: chartAccountsError } = await supabase
       .from('user_chart_of_accounts')
       .select('id, account_number, class, account_type, account_detail, display_name')
-      .eq('user_id', user.id)
+      .eq('profile_id', profileId)
       .eq('is_active', true)
       .in('class', ['income', 'expense'])
       .order('account_number');
