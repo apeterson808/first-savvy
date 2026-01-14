@@ -1105,13 +1105,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
     setIsPostingTransfer(true);
     try {
-      // Post both sides of the transfer
-      await postTransaction(matchingTransfer);
-      await postTransaction(pairedTransfer);
-      setTransferPostPreviewOpen(false);
-      setMatchingTransfer(null);
-      setPairedTransfer(null);
-      toast.success('Transfer posted successfully');
+      // postTransaction handles posting both sides internally
+      const success = await postTransaction(matchingTransfer);
+      if (success) {
+        setTransferPostPreviewOpen(false);
+        setMatchingTransfer(null);
+        setPairedTransfer(null);
+      }
     } catch (error) {
       console.error('Error posting transfer:', error);
       toast.error('Failed to post transfer');
