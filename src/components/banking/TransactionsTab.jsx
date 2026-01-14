@@ -1161,16 +1161,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           })
         ]);
 
-        // Then post both transactions sequentially
-        await updateMutation.mutateAsync({
-          id: transaction.id,
-          data: { status: 'posted' }
-        });
+        // Refresh to get the updated transactions
+        await queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
-        await updateMutation.mutateAsync({
-          id: matchedTransaction.id,
-          data: { status: 'posted' }
-        });
+        // Set state to open preview dialog
+        setMatchingTransfer(transaction);
+        setPairedTransfer(matchedTransaction);
+        setTransferPostPreviewOpen(true);
 
         setSelectedMatches(prev => {
           const next = { ...prev };
@@ -1178,10 +1175,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           return next;
         });
         setExpandedTransactionId(null);
-        toast.success('Transfer matched and posted');
+        toast.success('Transfer linked - review before posting');
       } catch (error) {
-        console.error('Failed to match and post transfer:', error);
-        toast.error('Failed to match and post transfer. Please try again.');
+        console.error('Failed to link transfer:', error);
+        toast.error('Failed to link transfer. Please try again.');
       }
     } else {
       const matches = findPotentialMatches(transaction);
@@ -1235,25 +1232,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (error) throw error;
 
-      // Post both transactions sequentially after linking
-      await updateMutation.mutateAsync({
-        id: selectedTransactions[0],
-        data: { status: 'posted' }
-      });
+      // Refresh to get the updated transactions
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
-      await updateMutation.mutateAsync({
-        id: selectedTransactions[1],
-        data: { status: 'posted' }
-      });
+      // Set state to open preview dialog
+      setMatchingTransfer(txn1);
+      setPairedTransfer(txn2);
+      setTransferPostPreviewOpen(true);
 
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       setSelectedTransactions([]);
-      toast.success('Transfer matched and posted');
+      toast.success('Transfer linked - review before posting');
     } catch (error) {
-      console.error('Error matching transactions:', error);
-      toast.error(error.message || 'Failed to match and post transfer');
+      console.error('Error linking transactions:', error);
+      toast.error(error.message || 'Failed to link transfer');
     }
   };
 
