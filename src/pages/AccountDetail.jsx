@@ -115,7 +115,7 @@ export default function AccountDetail() {
         .from('transactions')
         .select(`
           *,
-          category:user_chart_of_accounts!transactions_category_account_id_fkey(
+          category:user_chart_of_accounts!category_account_id(
             id,
             account_number,
             display_name
