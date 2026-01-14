@@ -504,6 +504,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
 
       if (createdTransaction?.id) {
         detectNewTransactions([createdTransaction.id]);
@@ -604,6 +606,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
     }
   });
 
@@ -615,6 +619,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
     },
     onError: (error) => {
       logError(error, { action: 'deleteTransaction' });
