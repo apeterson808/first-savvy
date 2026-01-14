@@ -53,9 +53,12 @@ import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import transactionRulesApi from '@/api/transactionRules';
+import aiCategorizationApi from '@/api/aiCategorization';
+import { useAuth } from '@/contexts/AuthContext';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
+  const { user } = useAuth();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = usePersistedViewState(
@@ -423,6 +426,26 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
+
+  React.useEffect(() => {
+    const fetchAISuggestions = async () => {
+      if (!activeProfile?.id || transactions.length === 0) return;
+
+      const uncategorizedTransactions = transactions
+        .filter(txn => !txn.category_account_id && txn.type !== 'transfer')
+        .slice(0, 20);
+
+      if (uncategorizedTransactions.length === 0) return;
+
+      const suggestions = await aiCategorizationApi.getSuggestionsForTransactions(
+        uncategorizedTransactions
+      );
+
+      setCategorySuggestions(suggestions);
+    };
+
+    fetchAISuggestions();
+  }, [transactions.length, activeProfile?.id]);
 
   const { data: fetchedAccounts = [] } = useQuery({
     queryKey: ['activeAccounts', activeProfile?.id],
@@ -1895,6 +1918,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       const { [transaction.id]: _, ...rest } = prev;
                                       return rest;
                                     });
+
+                                    if (categoryValue && activeProfile?.id && user?.id) {
+                                      aiCategorizationApi.learnFromCategorization(
+                                        transaction,
+                                        categoryValue,
+                                        activeProfile.id,
+                                        user.id
+                                      ).then(result => {
+                                        if (result?.ruleCreated) {
+                                          toast.success('Created automatic rule for similar transactions', {
+                                            description: result.rule.name
+                                          });
+                                        }
+                                      }).catch(error => {
+                                        console.error('Failed to learn from categorization:', error);
+                                      });
+                                    }
                                   }}
                                   transactionType={transaction.type}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
@@ -1908,6 +1948,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   placeholder="Select category"
                                   isTransactionTransfer={transaction.type === 'transfer'}
                                   transactionAmount={transaction.amount}
+                                  aiSuggestionId={categorySuggestions[transaction.id]}
                                 />
                               </div>
                             );
