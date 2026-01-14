@@ -982,10 +982,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         );
 
         if (pairedTransaction && pairedTransaction.status !== 'posted') {
-          updateMutation.mutate({
-            id: pairedTransaction.id,
-            data: { status: 'posted' }
-          });
+          try {
+            // CRITICAL FIX: Use Promise.all with mutateAsync for atomic posting
+            await Promise.all([
+              updateMutation.mutateAsync({
+                id: pairedTransaction.id,
+                data: { status: 'posted' }
+              }),
+              updateMutation.mutateAsync({
+                id: transaction.id,
+                data: { status: 'posted' }
+              })
+            ]);
+            toast.success('Transfer posted (both sides)');
+          } catch (error) {
+            console.error('Failed to post transfer:', error);
+            toast.error('Failed to post transfer. Please try again.');
+          }
+          return;
         }
       }
 
@@ -993,12 +1007,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         id: transaction.id,
         data: { status: 'posted' }
       });
-
-      if (transaction.transfer_pair_id) {
-        toast.success('Transfer posted (both sides)');
-      } else {
-        toast.success('Transaction posted');
-      }
+      toast.success('Transaction posted');
       return;
     }
 
@@ -1727,24 +1736,36 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     return (
                                       <button
                                         className="text-xs text-blue-600 hover:underline"
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                           e?.stopPropagation();
                                           // Post both sides of the transfer
                                           const pairedTransaction = findPairedTransfer(transaction);
 
                                           if (pairedTransaction && pairedTransaction.status !== 'posted') {
+                                            try {
+                                              // CRITICAL FIX: Use Promise.all with mutateAsync for atomic posting
+                                              await Promise.all([
+                                                updateMutation.mutateAsync({
+                                                  id: pairedTransaction.id,
+                                                  data: { status: 'posted' }
+                                                }),
+                                                updateMutation.mutateAsync({
+                                                  id: transaction.id,
+                                                  data: { status: 'posted' }
+                                                })
+                                              ]);
+                                              toast.success('Transfer posted (both sides)');
+                                            } catch (error) {
+                                              console.error('Failed to post transfer:', error);
+                                              toast.error('Failed to post transfer. Please try again.');
+                                            }
+                                          } else {
                                             updateMutation.mutate({
-                                              id: pairedTransaction.id,
+                                              id: transaction.id,
                                               data: { status: 'posted' }
                                             });
+                                            toast.success('Transaction posted');
                                           }
-
-                                          updateMutation.mutate({
-                                            id: transaction.id,
-                                            data: { status: 'posted' }
-                                          });
-
-                                          toast.success('Transfer posted (both sides)');
                                         }}
                                       >
                                         Match
@@ -1758,7 +1779,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                   if (manualAction === 'post') {
                                     actionText = 'Post';
-                                    actionHandler = () => {
+                                    actionHandler = async () => {
                                       // If transaction has a transfer_pair_id, post both sides
                                       if (transaction.transfer_pair_id) {
                                         const pairedTransaction = transactions.find(
@@ -1766,18 +1787,30 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         );
 
                                         if (pairedTransaction && pairedTransaction.status !== 'posted') {
+                                          try {
+                                            // CRITICAL FIX: Use Promise.all with mutateAsync for atomic posting
+                                            await Promise.all([
+                                              updateMutation.mutateAsync({
+                                                id: pairedTransaction.id,
+                                                data: { status: 'posted' }
+                                              }),
+                                              updateMutation.mutateAsync({
+                                                id: transaction.id,
+                                                data: { status: 'posted' }
+                                              })
+                                            ]);
+                                            toast.success('Transfer posted (both sides)');
+                                          } catch (error) {
+                                            console.error('Failed to post transfer:', error);
+                                            toast.error('Failed to post transfer. Please try again.');
+                                          }
+                                        } else {
                                           updateMutation.mutate({
-                                            id: pairedTransaction.id,
+                                            id: transaction.id,
                                             data: { status: 'posted' }
                                           });
+                                          toast.success('Transaction posted');
                                         }
-
-                                        updateMutation.mutate({
-                                          id: transaction.id,
-                                          data: { status: 'posted' }
-                                        });
-
-                                        toast.success('Transfer posted (both sides)');
                                       } else {
                                         updateMutation.mutate({
                                           id: transaction.id,
@@ -2219,6 +2252,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           toast.success('Transfer unmatched');
                                                         } catch (error) {
                                                           console.error('Failed to unmatch transfer:', error);
+                                                          toast.error('Failed to unmatch transfer. Please try again.');
                                                         }
                                                       }}
                                                       className="rounded w-3.5 h-3.5"
@@ -2707,6 +2741,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                     });
                                                                   } catch (error) {
                                                                     console.error('Failed to match transactions:', error);
+                                                                    toast.error('Failed to match transactions. Please try again.');
                                                                   }
                                                                 } else {
                                                                   const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
@@ -2740,6 +2775,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                     });
                                                                   } catch (error) {
                                                                     console.error('Failed to unmatch transactions:', error);
+                                                                    toast.error('Failed to unmatch transactions. Please try again.');
                                                                   }
                                                                 }
                                                               }}
