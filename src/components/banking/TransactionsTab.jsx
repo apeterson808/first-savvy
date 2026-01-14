@@ -1851,10 +1851,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     return (
                                       <button
                                         className="text-xs text-blue-600 hover:underline"
-                                        onClick={async (e) => {
+                                        onClick={(e) => {
                                           e?.stopPropagation();
-                                          // Use unified postTransaction function to handle transfer pairs atomically
-                                          await postTransaction(transaction);
+                                          // Transaction is already matched - open preview dialog
+                                          const paired = findPairedTransfer(transaction);
+                                          if (paired) {
+                                            setMatchingTransfer(transaction);
+                                            setPairedTransfer(paired);
+                                            setTransferPostPreviewOpen(true);
+                                          }
                                         }}
                                       >
                                         Match
