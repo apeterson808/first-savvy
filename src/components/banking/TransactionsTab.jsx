@@ -1055,8 +1055,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       }
     }
 
-    // Not matched yet - check if we can find potential matches
-    const paired = findPairedTransfer(transaction);
+    // Not matched yet - check if we can find potential matches using findPotentialMatches
+    const potentialMatches = findPotentialMatches(transaction);
+    const paired = potentialMatches.length > 0 ? potentialMatches[0] : null;
 
     if (!paired) {
       // No potential match found - this might be a regular transaction or unmatched transfer
