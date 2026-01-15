@@ -539,21 +539,21 @@ export default function AccountDetail() {
   const accountClass = account.account_class || account.class || 'Asset';
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="max-w-6xl mx-auto space-y-4">
+    <div className="p-3 md:p-4">
+      <div className="max-w-6xl mx-auto space-y-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate(`/Banking${returnUrl}`)}
-              className="gap-2"
+              className="gap-1.5 h-8"
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </Button>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {!isEditMode ? (
               <>
                 <Button
@@ -568,7 +568,7 @@ export default function AccountDetail() {
                     console.log('Total Journal Lines:', totalJournalLines);
                     toast.info(`Diagnostic: Found ${diagnostic.length} journal lines. Check console for details.`);
                   }}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-2.5"
                 >
                   Debug
                 </Button>
@@ -576,25 +576,25 @@ export default function AccountDetail() {
                   variant="outline"
                   size="sm"
                   onClick={handleExport}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-2.5"
                 >
-                  <Download className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5" />
                   Export
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handlePrint}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-2.5"
                 >
-                  <Printer className="w-4 h-4" />
+                  <Printer className="w-3.5 h-3.5" />
                   Print
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleToggleActive}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-2.5"
                 >
                   {isActive ? 'Deactivate' : 'Activate'}
                 </Button>
@@ -602,18 +602,18 @@ export default function AccountDetail() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsEditMode(true)}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-2.5"
                 >
-                  <Edit2 className="w-4 h-4" />
+                  <Edit2 className="w-3.5 h-3.5" />
                   Edit
                 </Button>
                 <Button
                   variant="destructive"
                   size="sm"
                   onClick={handleDelete}
-                  className="gap-2"
+                  className="gap-1.5 h-8 px-2.5"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                   Delete
                 </Button>
               </>
@@ -622,9 +622,9 @@ export default function AccountDetail() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setIsEditMode(false)}
-                className="gap-2"
+                className="gap-1.5 h-8 px-2.5"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
                 Cancel
               </Button>
             )}
@@ -632,40 +632,40 @@ export default function AccountDetail() {
         </div>
 
         <Card>
-          <CardHeader className="pb-4">
+          <CardHeader className="pb-3 pt-4">
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-3 mb-2">
+                <div className="flex items-center gap-2 mb-1.5">
                   {account.account_number && (
-                    <Badge variant="secondary" className="font-mono">
+                    <Badge variant="secondary" className="font-mono text-xs h-5">
                       {account.account_number}
                     </Badge>
                   )}
                   <Badge
                     className={
                       isActive
-                        ? 'bg-soft-green/30 text-forest-green'
-                        : 'bg-gray-100 text-gray-800'
+                        ? 'bg-soft-green/30 text-forest-green h-5 text-xs'
+                        : 'bg-gray-100 text-gray-800 h-5 text-xs'
                     }
                   >
                     {isActive ? 'Active' : 'Inactive'}
                   </Badge>
                 </div>
-                <h1 className="text-3xl font-bold">{account.name}</h1>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="capitalize">
+                <h1 className="text-xl font-bold">{account.name}</h1>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  <Badge variant="outline" className="capitalize text-xs h-5">
                     {accountClass}
                   </Badge>
                   {account.type && (
-                    <Badge variant="secondary" className="capitalize text-xs">
+                    <Badge variant="secondary" className="capitalize text-xs h-5">
                       {account.type}
                     </Badge>
                   )}
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-slate-500 mb-1">Current Balance</p>
-                <p className={`text-3xl font-bold ${
+                <p className="text-xs text-slate-500 mb-0.5">Current Balance</p>
+                <p className={`text-2xl font-bold ${
                   account.entityType === 'Asset' ? 'text-forest-green' :
                   account.entityType === 'Liability' ? 'text-burgundy' :
                   'text-slate-900'
@@ -760,94 +760,94 @@ export default function AccountDetail() {
                 </div>
               </form>
             ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {isBankAccount ? (
                     <>
                       {(account.bank_name || account.institution || account.institution_name) && (
-                        <div className="flex items-start gap-3">
-                          <Building2 className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div className="flex items-start gap-2.5">
+                          <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-500">Institution</p>
-                            <p className="text-base">{account.bank_name || account.institution || account.institution_name}</p>
+                            <p className="text-xs font-medium text-slate-500">Institution</p>
+                            <p className="text-sm">{account.bank_name || account.institution || account.institution_name}</p>
                           </div>
                         </div>
                       )}
                       {account.account_type && (
-                        <div className="flex items-start gap-3">
-                          <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div className="flex items-start gap-2.5">
+                          <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-500">Account Type</p>
-                            <p className="text-base capitalize">{account.account_type}</p>
+                            <p className="text-xs font-medium text-slate-500">Account Type</p>
+                            <p className="text-sm capitalize">{account.account_type}</p>
                           </div>
                         </div>
                       )}
                     </>
                   ) : account.entityType === 'Asset' ? (
                     <>
-                      <div className="flex items-start gap-3">
-                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                      <div className="flex items-start gap-2.5">
+                        <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-slate-500">Asset Type</p>
-                          <p className="text-base capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
+                          <p className="text-xs font-medium text-slate-500">Asset Type</p>
+                          <p className="text-sm capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
                         </div>
                       </div>
                       {account.detail_type === 'vehicle' && (
                         <>
                           {account.vehicle_make && (
-                            <div className="flex items-start gap-3">
-                              <Car className="w-5 h-5 text-slate-400 mt-0.5" />
+                            <div className="flex items-start gap-2.5">
+                              <Car className="w-4 h-4 text-slate-400 mt-0.5" />
                               <div>
-                                <p className="text-sm font-medium text-slate-500">Make & Model</p>
-                                <p className="text-base">{account.vehicle_year} {account.vehicle_make} {account.vehicle_model}</p>
+                                <p className="text-xs font-medium text-slate-500">Make & Model</p>
+                                <p className="text-sm">{account.vehicle_year} {account.vehicle_make} {account.vehicle_model}</p>
                               </div>
                             </div>
                           )}
                         </>
                       )}
-                      <div className="flex items-start gap-3">
-                        <DollarSign className="w-5 h-5 text-slate-400 mt-0.5" />
+                      <div className="flex items-start gap-2.5">
+                        <DollarSign className="w-4 h-4 text-slate-400 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-slate-500">Current Value</p>
-                          <p className="text-base">{formatCurrency(account.current_balance || 0)}</p>
+                          <p className="text-xs font-medium text-slate-500">Current Value</p>
+                          <p className="text-sm">{formatCurrency(account.current_balance || 0)}</p>
                         </div>
                       </div>
                     </>
                   ) : account.entityType === 'Liability' ? (
                     <>
-                      <div className="flex items-start gap-3">
-                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                      <div className="flex items-start gap-2.5">
+                        <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-slate-500">Liability Type</p>
-                          <p className="text-base capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
+                          <p className="text-xs font-medium text-slate-500">Liability Type</p>
+                          <p className="text-sm capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
                         </div>
                       </div>
                       {(account.institution || account.institution_name) && (
-                        <div className="flex items-start gap-3">
-                          <Building2 className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div className="flex items-start gap-2.5">
+                          <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-500">Lender</p>
-                            <p className="text-base">{account.institution || account.institution_name}</p>
+                            <p className="text-xs font-medium text-slate-500">Lender</p>
+                            <p className="text-sm">{account.institution || account.institution_name}</p>
                           </div>
                         </div>
                       )}
                       {account.interest_rate && (
-                        <div className="flex items-start gap-3">
-                          <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                        <div className="flex items-start gap-2.5">
+                          <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
                           <div>
-                            <p className="text-sm font-medium text-slate-500">Interest Rate</p>
-                            <p className="text-base">{account.interest_rate}%</p>
+                            <p className="text-xs font-medium text-slate-500">Interest Rate</p>
+                            <p className="text-sm">{account.interest_rate}%</p>
                           </div>
                         </div>
                       )}
                     </>
                   ) : (
                     <>
-                      <div className="flex items-start gap-3">
-                        <Hash className="w-5 h-5 text-slate-400 mt-0.5" />
+                      <div className="flex items-start gap-2.5">
+                        <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
                         <div>
-                          <p className="text-sm font-medium text-slate-500">Type</p>
-                          <p className="text-base capitalize">{account.type}</p>
+                          <p className="text-xs font-medium text-slate-500">Type</p>
+                          <p className="text-sm capitalize">{account.type}</p>
                         </div>
                       </div>
                     </>
@@ -860,41 +860,41 @@ export default function AccountDetail() {
 
         {(account.entityType === 'Asset' || account.entityType === 'Liability') && linkedAccounts.length > 0 && (
           <Card>
-            <CardHeader>
+            <CardHeader className="pb-3 pt-4">
               <div className="flex items-center gap-2">
-                <Link2 className="w-5 h-5 text-slate-600" />
-                <h2 className="text-xl font-semibold">
+                <Link2 className="w-4 h-4 text-slate-600" />
+                <h2 className="text-base font-semibold">
                   {account.entityType === 'Asset' ? 'Linked Liabilities' : 'Linked Assets'}
                 </h2>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {linkedAccounts.map((linkedAccount) => (
                   <div
                     key={linkedAccount.id}
-                    className="flex items-center justify-between p-4 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                     onClick={() => navigate(`/account/${linkedAccount.id}`)}
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                         {linkedAccount.entityType === 'Asset' ? (
-                          <Car className="w-5 h-5 text-primary" />
+                          <Car className="w-4 h-4 text-primary" />
                         ) : (
-                          <CreditCardIcon className="w-5 h-5 text-primary" />
+                          <CreditCardIcon className="w-4 h-4 text-primary" />
                         )}
                       </div>
                       <div>
-                        <p className="font-medium">{linkedAccount.name}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs capitalize">
+                        <p className="font-medium text-sm">{linkedAccount.name}</p>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Badge variant="outline" className="text-xs capitalize h-4">
                             {linkedAccount.type}
                           </Badge>
                         </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className={`text-lg font-semibold ${linkedAccount.entityType === 'Liability' ? 'text-burgundy' : 'text-forest-green'}`}>
+                      <p className={`text-base font-semibold ${linkedAccount.entityType === 'Liability' ? 'text-burgundy' : 'text-forest-green'}`}>
                         {formatCurrency(linkedAccount.current_balance || 0)}
                       </p>
                     </div>
@@ -906,83 +906,83 @@ export default function AccountDetail() {
         )}
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <h2 className="text-xl font-semibold">Period Summary</h2>
+          <CardHeader className="pb-3 pt-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
+              <h2 className="text-base font-semibold">Period Summary</h2>
               <div className="flex items-center gap-2">
                 <DatePresetDropdown
                   value={datePreset}
                   onValueChange={setDatePreset}
-                  triggerClassName="w-48"
+                  triggerClassName="w-40 h-8"
                 />
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
               {beginningBalance !== null && (
-                <div className="p-4 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-2 text-slate-600 mb-1">
-                    <Calendar className="w-4 h-4" />
-                    <p className="text-sm font-medium">Beginning Balance</p>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    <p className="text-xs font-medium">Beginning Balance</p>
                   </div>
-                  <p className="text-2xl font-bold">{formatCurrency(beginningBalance)}</p>
+                  <p className="text-lg font-bold">{formatCurrency(beginningBalance)}</p>
                 </div>
               )}
 
-              <div className="p-4 bg-light-blue/20 rounded-lg">
-                <div className="flex items-center gap-2 text-sky-blue mb-1">
-                  <DollarSign className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Debits</p>
+              <div className="p-3 bg-light-blue/20 rounded-lg">
+                <div className="flex items-center gap-1.5 text-sky-blue mb-0.5">
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Total Debits</p>
                 </div>
-                <p className="text-2xl font-bold text-sky-blue">{formatCurrency(analytics.totalDebits)}</p>
+                <p className="text-lg font-bold text-sky-blue">{formatCurrency(analytics.totalDebits)}</p>
               </div>
 
-              <div className="p-4 bg-soft-green/20 rounded-lg">
-                <div className="flex items-center gap-2 text-forest-green mb-1">
-                  <TrendingUp className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Credits</p>
+              <div className="p-3 bg-soft-green/20 rounded-lg">
+                <div className="flex items-center gap-1.5 text-forest-green mb-0.5">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Total Credits</p>
                 </div>
-                <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.totalCredits)}</p>
+                <p className="text-lg font-bold text-forest-green">{formatCurrency(analytics.totalCredits)}</p>
               </div>
 
-              <div className="p-4 bg-burgundy/10 rounded-lg">
-                <div className="flex items-center gap-2 text-burgundy mb-1">
-                  <TrendingDown className="w-4 h-4" />
-                  <p className="text-sm font-medium">Net Change</p>
+              <div className="p-3 bg-burgundy/10 rounded-lg">
+                <div className="flex items-center gap-1.5 text-burgundy mb-0.5">
+                  <TrendingDown className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Net Change</p>
                 </div>
-                <p className={`text-2xl font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
+                <p className={`text-lg font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
                   {formatCurrency(analytics.netChange)}
                 </p>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-2 text-slate-600 mb-1">
-                  <Hash className="w-4 h-4" />
-                  <p className="text-sm font-medium">Transactions</p>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
+                  <Hash className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Transactions</p>
                 </div>
-                <p className="text-2xl font-bold">{analytics.transactionCount}</p>
+                <p className="text-lg font-bold">{analytics.transactionCount}</p>
               </div>
 
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-2 text-slate-600 mb-1">
-                  <DollarSign className="w-4 h-4" />
-                  <p className="text-sm font-medium">Avg Transaction</p>
+              <div className="p-3 bg-slate-50 rounded-lg">
+                <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
+                  <DollarSign className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Avg Transaction</p>
                 </div>
-                <p className="text-2xl font-bold">{formatCurrency(analytics.avgTransaction)}</p>
+                <p className="text-lg font-bold">{formatCurrency(analytics.avgTransaction)}</p>
               </div>
 
-              <div className="p-4 bg-primary/10 rounded-lg col-span-2">
-                <div className="flex items-center gap-2 text-primary mb-1">
-                  <Calendar className="w-4 h-4" />
-                  <p className="text-sm font-medium">Ending Balance</p>
+              <div className="p-3 bg-primary/10 rounded-lg col-span-2">
+                <div className="flex items-center gap-1.5 text-primary mb-0.5">
+                  <Calendar className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Ending Balance</p>
                 </div>
-                <p className="text-2xl font-bold text-primary">{formatCurrency(endingBalance)}</p>
+                <p className="text-lg font-bold text-primary">{formatCurrency(endingBalance)}</p>
               </div>
             </div>
 
             {analytics.firstTransaction && analytics.lastTransaction && (
-              <div className="mt-4 pt-4 border-t text-sm text-slate-600">
+              <div className="mt-3 pt-3 border-t text-xs text-slate-600">
                 <p>
                   Period: <span className="font-medium">{format(parseISO(analytics.firstTransaction), 'MMM d, yyyy')}</span>
                   {' '} to {' '}
@@ -994,13 +994,13 @@ export default function AccountDetail() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between flex-wrap gap-4">
+          <CardHeader className="pb-3 pt-4">
+            <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
-                <h2 className="text-xl font-semibold">
+                <h2 className="text-base font-semibold">
                   {isTransactionBasedAccount ? 'Account Register' : 'General Ledger Activity'}
                 </h2>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-xs text-slate-500 mt-0.5">
                   {isTransactionBasedAccount
                     ? 'Posted transactions from journal entries + pending items (checkbook-style register)'
                     : 'All journal entry lines for this account (complete accounting activity)'
@@ -1009,12 +1009,12 @@ export default function AccountDetail() {
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input
                     placeholder="Search transactions..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 w-64"
+                    className="pl-8 w-52 h-8 text-sm"
                   />
                 </div>
               </div>
@@ -1022,22 +1022,22 @@ export default function AccountDetail() {
           </CardHeader>
           <CardContent>
             {(transactionsLoading || journalLinesLoading) ? (
-              <p className="text-center text-slate-500 py-4">Loading register...</p>
+              <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
             ) : allActivity.length === 0 ? (
-              <p className="text-center text-slate-500 py-8">No activity found</p>
+              <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
             ) : (
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Reference</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
-                      <TableHead className="text-right">Debit</TableHead>
-                      <TableHead className="text-right">Credit</TableHead>
-                      <TableHead className="text-right">Balance</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
+                    <TableRow className="h-9">
+                      <TableHead className="py-2 text-xs">Date</TableHead>
+                      <TableHead className="py-2 text-xs">Reference</TableHead>
+                      <TableHead className="py-2 text-xs">Description</TableHead>
+                      <TableHead className="py-2 text-xs">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
+                      <TableHead className="text-right py-2 text-xs">Debit</TableHead>
+                      <TableHead className="text-right py-2 text-xs">Credit</TableHead>
+                      <TableHead className="text-right py-2 text-xs">Balance</TableHead>
+                      <TableHead className="w-[40px] py-2"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1045,55 +1045,55 @@ export default function AccountDetail() {
                       <TableRow
                         key={`${activity.activityType}-${activity.id || index}`}
                         className={
-                          activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50' :
-                          activity.activityType === 'pending' ? 'bg-amber-50/30 hover:bg-amber-50/50' : ''
+                          activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50 h-10' :
+                          activity.activityType === 'pending' ? 'bg-amber-50/30 hover:bg-amber-50/50 h-10' : 'h-10'
                         }
                       >
-                        <TableCell className="whitespace-nowrap">
+                        <TableCell className="whitespace-nowrap text-xs py-2">
                           {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           {activity.activityType === 'posted' ? (
                             <Badge
                               variant="outline"
-                              className="font-mono text-xs gap-1 cursor-pointer hover:bg-slate-100 transition-colors"
+                              className="font-mono text-xs gap-1 cursor-pointer hover:bg-slate-100 transition-colors h-5"
                               onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
                             >
                               <FileText className="w-3 h-3" />
                               {activity.entryNumber}
                             </Badge>
                           ) : (
-                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800">PENDING</Badge>
+                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 h-5">PENDING</Badge>
                           )}
                         </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{activity.displayDescription}</div>
+                        <TableCell className="py-2">
+                          <div className="font-medium text-sm">{activity.displayDescription}</div>
                           {activity.entryType === 'opening_balance' && (
-                            <Badge variant="secondary" className="text-xs mt-1 bg-blue-100 text-blue-700">Opening Balance</Badge>
+                            <Badge variant="secondary" className="text-xs mt-0.5 bg-blue-100 text-blue-700 h-4">Opening Balance</Badge>
                           )}
                         </TableCell>
-                        <TableCell className="text-sm text-slate-600">
+                        <TableCell className="text-xs text-slate-600 py-2">
                           {activity.offsettingAccounts || '—'}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-right font-medium text-sm py-2">
                           {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
                         </TableCell>
-                        <TableCell className="text-right font-medium">
+                        <TableCell className="text-right font-medium text-sm py-2">
                           {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
                         </TableCell>
-                        <TableCell className="text-right font-bold">
+                        <TableCell className="text-right font-bold text-sm py-2">
                           {formatCurrency(activity.runningBalance)}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-2">
                           {activity.journalEntryId && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                              className="h-8 w-8 p-0"
+                              className="h-7 w-7 p-0"
                               title="View Journal Entry"
                             >
-                              <ExternalLink className="w-4 h-4 text-slate-400" />
+                              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                             </Button>
                           )}
                         </TableCell>
@@ -1101,7 +1101,7 @@ export default function AccountDetail() {
                     ))}
                     {isFetchingNextPage && (
                       <TableRow>
-                        <TableCell colSpan={8} className="text-center py-4 text-slate-500">
+                        <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
                           Loading more transactions...
                         </TableCell>
                       </TableRow>
@@ -1114,7 +1114,7 @@ export default function AccountDetail() {
                   </TableBody>
                 </Table>
                 {totalJournalLines > 0 && (
-                  <div className="text-sm text-slate-500 text-center py-2 border-t">
+                  <div className="text-xs text-slate-500 text-center py-1.5 border-t">
                     Showing {allActivity.length} of {totalJournalLines} transactions
                   </div>
                 )}
