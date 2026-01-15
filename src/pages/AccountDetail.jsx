@@ -32,7 +32,7 @@ import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById } from '@/api/chartOfAccounts';
-import { getAccountJournalLinesPaginated, diagnoseAccountJournalLines } from '@/api/journalEntries';
+import { getAccountJournalLinesPaginated } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 
@@ -431,22 +431,6 @@ export default function AccountDetail() {
           <div className="flex items-center gap-1.5">
             {!isEditMode ? (
               <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    const diagnostic = await diagnoseAccountJournalLines(id);
-                    console.log('Diagnostic Results:', diagnostic);
-                    console.log('Total lines found:', diagnostic.length);
-                    console.log('Date Range:', { start: formatDateForDb(dateRange.start), end: formatDateForDb(dateRange.end) });
-                    console.log('Journal Lines Data:', journalLinesData);
-                    console.log('Total Journal Lines:', totalJournalLines);
-                    toast.info(`Diagnostic: Found ${diagnostic.length} journal lines. Check console for details.`);
-                  }}
-                  className="gap-1.5 h-8 px-2.5"
-                >
-                  Debug
-                </Button>
                 <Button
                   variant="outline"
                   size="sm"
