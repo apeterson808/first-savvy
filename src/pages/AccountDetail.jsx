@@ -904,9 +904,7 @@ export default function AccountDetail() {
                       <TableRow
                         key={`${activity.id || index}`}
                         className={`h-7 ${
-                          activity.entryType === 'opening_balance'
-                            ? 'bg-blue-50/50 hover:bg-blue-50'
-                            : index % 2 === 0
+                          index % 2 === 0
                             ? 'bg-white hover:bg-slate-50'
                             : 'bg-slate-50/50 hover:bg-slate-100'
                         }`}
