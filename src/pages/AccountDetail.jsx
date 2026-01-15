@@ -105,46 +105,8 @@ export default function AccountDetail() {
     return accountClass === 'asset' || accountClass === 'liability';
   }, [account]);
 
-  // STAGING AREA: Query pending transactions only (not yet posted to journal)
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'account', id, activeProfile?.id, dateRange],
-    queryFn: async () => {
-      if (!id || !account || !activeProfile) return [];
-
-      let query = firstsavvy
-        .from('transactions')
-        .select(`
-          *,
-          category:user_chart_of_accounts!category_account_id(
-            id,
-            account_number,
-            display_name
-          )
-        `)
-        .eq('profile_id', activeProfile.id)
-        .eq('bank_account_id', id)
-        .eq('status', 'pending');
-
-      if (dateRange.start) {
-        query = query.gte('date', formatDateForDb(dateRange.start));
-      }
-      if (dateRange.end) {
-        query = query.lte('date', formatDateForDb(dateRange.end));
-      }
-
-      query = query.order('date', { ascending: true });
-
-      const { data: txns, error } = await query;
-
-      if (error) throw error;
-
-      return txns.map(t => ({
-        ...t,
-        categoryName: t.category ? `${t.category.account_number} - ${t.category.display_name}` : 'Uncategorized'
-      }));
-    },
-    enabled: !!id && !!account && !!activeProfile && isTransactionBasedAccount
-  });
+  // NOTE: Pending transactions are NOT shown in the register (QuickBooks behavior)
+  // Transactions only appear in the register after they've been posted to journal entries
 
   // SOURCE OF TRUTH: Query posted journal entry lines with pagination
   const {
@@ -245,66 +207,24 @@ export default function AccountDetail() {
   });
 
   const { allActivity, analytics, beginningBalance, endingBalance } = useMemo(() => {
-    let combined = [];
-
     const accountClass = account?.account_class || account?.class || 'asset';
     const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
 
-    if (isTransactionBasedAccount) {
-      // SINGLE SOURCE OF TRUTH ARCHITECTURE:
-      // 1. journalItems = Posted transactions (from journal_entry_lines) - THE SOURCE OF TRUTH
-      // 2. transactionItems = Pending transactions (from transactions table) - STAGING AREA
-      // Once a transaction is posted, it exists ONLY in journal_entry_lines
-
-      // PENDING ITEMS: Show transactions that haven't been posted yet (staging area)
-      const transactionItems = transactions.map(t => ({
-        ...t,
-        activityType: 'pending',
-        displayDate: t.date,
-        displayDescription: t.description,
-        displayAmount: t.amount,
-        debitAmount: null,
-        creditAmount: null,
-        journalEntryId: t.journal_entry_id,
-        offsettingAccounts: t.categoryName || 'Uncategorized'
-      }));
-
-      // POSTED ITEMS: All posted journal lines (source of truth) with pre-calculated balance
-      const journalItems = journalLines.map(jl => ({
-        ...jl,
-        id: jl.line_id,
-        activityType: 'posted',
-        displayDate: jl.entry_date,
-        displayDescription: jl.line_description || jl.entry_description,
-        debitAmount: jl.debit_amount,
-        creditAmount: jl.credit_amount,
-        entryNumber: jl.entry_number,
-        journalEntryId: jl.entry_id,
-        entryType: jl.entry_type || 'adjustment',
-        offsettingAccounts: jl.offsetting_accounts,
-        runningBalance: parseFloat(jl.running_balance || 0)
-      }));
-
-      // Combine posted (from journal) + pending (from transactions staging table)
-      combined = [...journalItems, ...transactionItems];
-    } else {
-      // For GL accounts (Income/Expense), ALL activity comes from journal lines only
-      const journalItems = journalLines.map(jl => ({
-        ...jl,
-        id: jl.line_id,
-        activityType: 'posted',
-        displayDate: jl.entry_date,
-        displayDescription: jl.line_description || jl.entry_description,
-        debitAmount: jl.debit_amount,
-        creditAmount: jl.credit_amount,
-        entryNumber: jl.entry_number,
-        journalEntryId: jl.entry_id,
-        entryType: jl.entry_type || 'adjustment',
-        offsettingAccounts: jl.offsetting_accounts,
-        runningBalance: parseFloat(jl.running_balance || 0)
-      }));
-      combined = journalItems;
-    }
+    // ALL accounts show only posted journal lines (no pending transactions)
+    let combined = journalLines.map(jl => ({
+      ...jl,
+      id: jl.line_id,
+      activityType: 'posted',
+      displayDate: jl.entry_date,
+      displayDescription: jl.line_description || jl.entry_description,
+      debitAmount: jl.debit_amount,
+      creditAmount: jl.credit_amount,
+      entryNumber: jl.entry_number,
+      journalEntryId: jl.entry_id,
+      entryType: jl.entry_type || 'adjustment',
+      offsettingAccounts: jl.offsetting_accounts,
+      runningBalance: parseFloat(jl.running_balance || 0)
+    }));
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -329,57 +249,12 @@ export default function AccountDetail() {
       return dateDiff;
     });
 
-    // Calculate balance for pending items only
-    let activitiesWithBalance = combined.map((activity, index) => {
-      let debit = 0;
-      let credit = 0;
-
-      if (activity.activityType === 'posted') {
-        // Posted items: Use actual debit/credit and pre-calculated running balance
-        debit = activity.debitAmount || 0;
-        credit = activity.creditAmount || 0;
-        // Balance already calculated in database
-        return {
-          ...activity,
-          calculatedDebit: debit,
-          calculatedCredit: credit
-        };
-      } else {
-        // Pending items: Calculate debit/credit for display and overlay on last known balance
-        const amount = activity.displayAmount || 0;
-        if (amount < 0) {
-          if (isDebitNormal) {
-            credit = Math.abs(amount);
-          } else {
-            debit = Math.abs(amount);
-          }
-        } else {
-          if (isDebitNormal) {
-            debit = Math.abs(amount);
-          } else {
-            credit = Math.abs(amount);
-          }
-        }
-
-        // Find the last posted item before this pending item to get base balance
-        let baseBalance = 0;
-        for (let i = index - 1; i >= 0; i--) {
-          if (combined[i].activityType === 'posted') {
-            baseBalance = combined[i].runningBalance;
-            break;
-          }
-        }
-
-        const netChange = isDebitNormal ? (debit - credit) : (credit - debit);
-
-        return {
-          ...activity,
-          calculatedDebit: debit,
-          calculatedCredit: credit,
-          runningBalance: baseBalance + netChange
-        };
-      }
-    });
+    // All items are posted with pre-calculated running balance from database
+    let activitiesWithBalance = combined.map(activity => ({
+      ...activity,
+      calculatedDebit: activity.debitAmount || 0,
+      calculatedCredit: activity.creditAmount || 0
+    }));
 
     if (dateRange.start && activitiesWithBalance.length > 0) {
       beginningBal = account?.current_balance || 0;
@@ -415,7 +290,7 @@ export default function AccountDetail() {
       beginningBalance: dateRange.start ? beginningBal : null,
       endingBalance: endingBal
     };
-  }, [transactions, journalLines, account, searchQuery, dateRange, isTransactionBasedAccount]);
+  }, [journalLines, account, searchQuery, dateRange]);
 
   // Infinite scroll observer
   const loadMoreRef = useRef();
@@ -1043,28 +918,23 @@ export default function AccountDetail() {
                   <TableBody>
                     {allActivity.map((activity, index) => (
                       <TableRow
-                        key={`${activity.activityType}-${activity.id || index}`}
+                        key={`${activity.id || index}`}
                         className={
-                          activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50 h-10' :
-                          activity.activityType === 'pending' ? 'bg-amber-50/30 hover:bg-amber-50/50 h-10' : 'h-10'
+                          activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50 h-10' : 'h-10'
                         }
                       >
                         <TableCell className="whitespace-nowrap text-xs py-2">
                           {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                         </TableCell>
                         <TableCell className="py-2">
-                          {activity.activityType === 'posted' ? (
-                            <Badge
-                              variant="outline"
-                              className="font-mono text-xs gap-1 cursor-pointer hover:bg-slate-100 transition-colors h-5"
-                              onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                            >
-                              <FileText className="w-3 h-3" />
-                              {activity.entryNumber}
-                            </Badge>
-                          ) : (
-                            <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 h-5">PENDING</Badge>
-                          )}
+                          <Badge
+                            variant="outline"
+                            className="font-mono text-xs gap-1 cursor-pointer hover:bg-slate-100 transition-colors h-5"
+                            onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                          >
+                            <FileText className="w-3 h-3" />
+                            {activity.entryNumber}
+                          </Badge>
                         </TableCell>
                         <TableCell className="py-2">
                           <div className="font-medium text-sm">{activity.displayDescription}</div>
