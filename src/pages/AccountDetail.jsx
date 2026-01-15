@@ -888,29 +888,33 @@ export default function AccountDetail() {
               <div className="rounded-md border overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="h-9">
-                      <TableHead className="py-2 text-xs">Date</TableHead>
-                      <TableHead className="py-2 text-xs">Reference</TableHead>
-                      <TableHead className="py-2 text-xs">Description</TableHead>
-                      <TableHead className="py-2 text-xs">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
-                      <TableHead className="text-right py-2 text-xs">Debit</TableHead>
-                      <TableHead className="text-right py-2 text-xs">Credit</TableHead>
-                      <TableHead className="text-right py-2 text-xs">Balance</TableHead>
-                      <TableHead className="w-[40px] py-2"></TableHead>
+                    <TableRow className="h-8 bg-slate-100">
+                      <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                      <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                      <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                      <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
+                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Debit</TableHead>
+                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Credit</TableHead>
+                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                      <TableHead className="w-[40px] py-1.5"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {allActivity.map((activity, index) => (
                       <TableRow
                         key={`${activity.id || index}`}
-                        className={
-                          activity.entryType === 'opening_balance' ? 'bg-blue-50/50 hover:bg-blue-50 h-10' : 'h-10'
-                        }
+                        className={`h-7 ${
+                          activity.entryType === 'opening_balance'
+                            ? 'bg-blue-50/50 hover:bg-blue-50'
+                            : index % 2 === 0
+                            ? 'bg-white hover:bg-slate-50'
+                            : 'bg-slate-50/50 hover:bg-slate-100'
+                        }`}
                       >
-                        <TableCell className="whitespace-nowrap text-xs py-2">
+                        <TableCell className="whitespace-nowrap text-[11px] py-1">
                           {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                         </TableCell>
-                        <TableCell className="py-2">
+                        <TableCell className="py-1">
                           <span
                             className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
                             onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
@@ -918,31 +922,31 @@ export default function AccountDetail() {
                             {activity.entryNumber}
                           </span>
                         </TableCell>
-                        <TableCell className="py-2 max-w-[300px]">
-                          <div className="font-medium text-sm truncate">{activity.displayDescription}</div>
+                        <TableCell className="py-1 max-w-[300px]">
+                          <div className="text-[11px] truncate">{activity.displayDescription}</div>
                         </TableCell>
-                        <TableCell className="text-xs text-slate-600 py-2">
+                        <TableCell className="text-[11px] text-slate-600 py-1">
                           {activity.offsettingAccounts || '—'}
                         </TableCell>
-                        <TableCell className="text-right font-medium text-sm py-2">
+                        <TableCell className="text-right text-[11px] py-1">
                           {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
                         </TableCell>
-                        <TableCell className="text-right font-medium text-sm py-2">
+                        <TableCell className="text-right text-[11px] py-1">
                           {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
                         </TableCell>
-                        <TableCell className="text-right font-bold text-sm py-2">
+                        <TableCell className="text-right font-semibold text-[11px] py-1">
                           {formatCurrency(activity.runningBalance)}
                         </TableCell>
-                        <TableCell className="py-2">
+                        <TableCell className="py-1">
                           {activity.journalEntryId && (
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                              className="h-7 w-7 p-0"
+                              className="h-6 w-6 p-0"
                               title="View Journal Entry"
                             >
-                              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+                              <ExternalLink className="w-3 h-3 text-slate-400" />
                             </Button>
                           )}
                         </TableCell>
