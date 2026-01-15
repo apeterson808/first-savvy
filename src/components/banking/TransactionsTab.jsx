@@ -1756,6 +1756,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             if (isInMatchMode) {
                               const paired = findPairedTransfer(transaction);
                               const pairedAccountId = paired ? paired.bank_account_id : '';
+                              const isAlreadyMatched = !!transaction.transfer_pair_id && !!paired;
+
+                              // If already matched, show as read-only
+                              if (isAlreadyMatched) {
+                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
+                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
+                              }
+
                               return (
                                 <div onClick={(e) => e.stopPropagation()}>
                                   <AccountDropdown
