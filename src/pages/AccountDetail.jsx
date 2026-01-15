@@ -877,7 +877,7 @@ export default function AccountDetail() {
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   {isTransactionBasedAccount
-                    ? 'Posted transactions from journal entries + pending items (checkbook-style register)'
+                    ? 'Posted transactions from journal entries (checkbook-style register)'
                     : 'All journal entry lines for this account (complete accounting activity)'
                   }
                 </p>
@@ -896,7 +896,7 @@ export default function AccountDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            {(transactionsLoading || journalLinesLoading) ? (
+            {journalLinesLoading ? (
               <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
             ) : allActivity.length === 0 ? (
               <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
