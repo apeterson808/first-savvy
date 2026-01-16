@@ -59,11 +59,11 @@ export default function NetWorth() {
 
   const getTypeLabel = (typeKey) => {
     const labels = {
-      'bank_accounts': 'Bank Accounts',
+      'bank_account': 'Bank Accounts',
       'cash': 'Cash',
       'investments': 'Investments',
       'fixed_assets': 'Fixed Assets',
-      'credit_cards': 'Credit Cards',
+      'credit_card': 'Credit Cards',
       'loans': 'Loans',
       'other': 'Other'
     };

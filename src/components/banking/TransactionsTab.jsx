@@ -457,7 +457,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     ...acc,
     account_name: acc.display_name || acc.account_name,
     institution: acc.institution_name,
-    entityType: acc.account_type === 'credit_cards' ? 'CreditCard' : 'BankAccount'
+    entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
   }));
 
   const { detectNewTransactions } = useAutomaticTransferDetection(

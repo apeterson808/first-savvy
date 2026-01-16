@@ -73,7 +73,7 @@ export default function Banking() {
 
   const accounts = allAccounts.filter(acc =>
     (acc.class === 'asset' && ['checking_account', 'savings_account'].includes(acc.account_detail)) ||
-    (acc.class === 'liability' && acc.account_type === 'credit_cards')
+    (acc.class === 'liability' && acc.account_type === 'credit_card')
   );
 
   const { data: transactions = [] } = useQuery({

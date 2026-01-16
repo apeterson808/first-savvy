@@ -43,7 +43,7 @@ export default function AccountDropdown({
     const isCheckingOrSavings = acc.class === 'asset' &&
       ['checking_account', 'savings_account'].includes(acc.account_detail);
     const isCreditCard = acc.class === 'liability' &&
-      (acc.account_detail === 'credit_card' || acc.account_type === 'credit_cards');
+      (acc.account_detail === 'credit_card' || acc.account_type === 'credit_card');
 
     return isCheckingOrSavings || isCreditCard;
   });

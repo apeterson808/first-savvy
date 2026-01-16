@@ -135,7 +135,7 @@ const buildAccountTypeCardsFromTemplates = (templates) => {
     });
   }
 
-  const hasVehicles = templates.some(t => t.account_type === 'vehicles');
+  const hasVehicles = templates.some(t => t.account_type === 'vehicle');
   if (hasVehicles) {
     cards.push({
       id: 'vehicle',
@@ -1608,15 +1608,15 @@ export default function AccountCreationWizard({
         setSelectedAccountsToImport(prev => [...prev, accountId]);
 
         const accountTypeMapping = {
-          'checking': { class: 'asset', type: 'bank_accounts', detail: 'checking_account' },
-          'savings': { class: 'asset', type: 'bank_accounts', detail: 'savings_account' },
-          'credit_card': { class: 'liability', type: 'credit_cards', detail: 'personal_credit_card' },
+          'checking': { class: 'asset', type: 'bank_account', detail: 'checking_account' },
+          'savings': { class: 'asset', type: 'bank_account', detail: 'savings_account' },
+          'credit_card': { class: 'liability', type: 'credit_card', detail: 'personal_credit_card' },
           'loan': { class: 'liability', type: 'loans', detail: 'personal_loan' },
           'mortgage': { class: 'liability', type: 'loans', detail: 'mortgage_primary' },
           'investment': { class: 'asset', type: 'investments', detail: 'brokerage_account' }
         };
 
-        const mapping = accountTypeMapping[account.type] || { class: 'asset', type: 'bank_accounts', detail: 'checking_account' };
+        const mapping = accountTypeMapping[account.type] || { class: 'asset', type: 'bank_account', detail: 'checking_account' };
 
         const startDate = account.date_range?.start || '';
         let beginningBalance = '';

@@ -94,7 +94,7 @@ export default function Dashboard() {
 
   const bankAccounts = [
     ...assets.filter(acc => ['checking_account', 'savings_account'].includes(acc.account_detail)),
-    ...liabilities.filter(acc => acc.account_type === 'credit_cards')
+    ...liabilities.filter(acc => acc.account_type === 'credit_card')
   ];
 
   useEffect(() => {
