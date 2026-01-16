@@ -234,6 +234,23 @@ export default function AccountDetail() {
     }
   });
 
+  // Determine if this is a bank account (asset/liability with bank-related detail)
+  const isBankAccount = useMemo(() => {
+    if (!account) return false;
+    const accountClass = account.account_class || account.class;
+    const accountDetail = account.account_detail;
+
+    // Check if it's an asset or liability with bank-related account_detail
+    if ((accountClass === 'asset' || accountClass === 'liability') && accountDetail) {
+      const bankDetails = ['checking_account', 'savings_account', 'money_market', 'certificate_of_deposit'];
+      return bankDetails.includes(accountDetail);
+    }
+    return false;
+  }, [account]);
+
+  const isActive = account?.is_active !== false;
+  const accountClass = account?.account_class || account?.class || 'Asset';
+
   const { allActivity, analytics, beginningBalance, endingBalance } = useMemo(() => {
     const accountClass = account?.account_class || account?.class || 'asset';
     const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
@@ -440,23 +457,6 @@ export default function AccountDetail() {
       </div>
     );
   }
-
-  // Determine if this is a bank account (asset/liability with bank-related detail)
-  const isBankAccount = useMemo(() => {
-    if (!account) return false;
-    const accountClass = account.account_class || account.class;
-    const accountDetail = account.account_detail;
-
-    // Check if it's an asset or liability with bank-related account_detail
-    if ((accountClass === 'asset' || accountClass === 'liability') && accountDetail) {
-      const bankDetails = ['checking_account', 'savings_account', 'money_market', 'certificate_of_deposit'];
-      return bankDetails.includes(accountDetail);
-    }
-    return false;
-  }, [account]);
-
-  const isActive = account.is_active !== false;
-  const accountClass = account.account_class || account.class || 'Asset';
 
   // Initialize edit mode state when entering edit mode
   const initializeEditMode = () => {
