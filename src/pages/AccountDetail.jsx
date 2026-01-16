@@ -769,16 +769,12 @@ export default function AccountDetail() {
             {isEditMode ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {isBankAccount ? (
-                  <div className="flex items-start gap-2.5">
-                    <Building2 className="w-4 h-4 text-slate-400 mt-2.5" />
-                    <Input
-                      id="institution_name"
-                      name="institution_name"
-                      defaultValue={account.institution_name || account.institution}
-                      placeholder="e.g., Chase, Wells Fargo"
-                      className="flex-1"
-                    />
-                  </div>
+                  <Input
+                    id="institution_name"
+                    name="institution_name"
+                    defaultValue={account.institution_name || account.institution}
+                    placeholder="e.g., Chase, Wells Fargo"
+                  />
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <IconPicker name="icon" defaultValue={account.icon} />
@@ -799,11 +795,8 @@ export default function AccountDetail() {
                   {isBankAccount ? (
                     <>
                       {(account.bank_name || account.institution || account.institution_name) && (
-                        <div className="flex items-start gap-2.5">
-                          <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
-                          <div>
-                            <p className="text-sm">{account.bank_name || account.institution || account.institution_name}</p>
-                          </div>
+                        <div>
+                          <p className="text-sm">{account.bank_name || account.institution || account.institution_name}</p>
                         </div>
                       )}
                     </>
