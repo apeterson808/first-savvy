@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
+import { ClickThroughSelect, ClickThroughSelectItem, ClickThroughSelectSeparator } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
 import { getIncomeAccounts, getExpenseAccounts, getDisplayName } from '@/api/chartOfAccounts';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
@@ -24,45 +24,40 @@ export default function CategoryDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [showAddWizard, setShowAddWizard] = useState(false);
   const [wizardInitialName, setWizardInitialName] = useState('');
+  const [wizardType, setWizardType] = useState('expense');
 
-  const accountType = transactionType === 'income' ? 'income' : 'expense';
-
-  const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts', accountType, activeProfile?.id],
+  const { data: incomeAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', 'income', activeProfile?.id],
     queryFn: async () => {
       if (!activeProfile) return [];
-      if (accountType === 'income') {
-        return await getIncomeAccounts(activeProfile.id);
-      } else {
-        return await getExpenseAccounts(activeProfile.id);
-      }
+      return await getIncomeAccounts(activeProfile.id);
     },
     enabled: !!activeProfile && !isTransactionTransfer
   });
 
-  const level3Accounts = chartAccounts;
+  const { data: expenseAccounts = [] } = useQuery({
+    queryKey: ['chart-accounts', 'expense', activeProfile?.id],
+    queryFn: async () => {
+      if (!activeProfile) return [];
+      return await getExpenseAccounts(activeProfile.id);
+    },
+    enabled: !!activeProfile && !isTransactionTransfer
+  });
 
-  const transferIncomeAccount = chartAccounts.find(a => a.account_detail === 'Transfer Income');
-  const transferExpenseAccount = chartAccounts.find(a => a.account_detail === 'Transfer Expense');
+  const transferIncomeAccount = incomeAccounts.find(a => a.account_detail === 'Transfer Income');
+  const transferExpenseAccount = expenseAccounts.find(a => a.account_detail === 'Transfer Expense');
 
-  let availableAccounts = [];
   let currentDisplayValue = value;
 
   if (isTransactionTransfer) {
     const targetTransferAccount = transactionAmount > 0 ? transferIncomeAccount : transferExpenseAccount;
     if (targetTransferAccount) {
-      availableAccounts = [targetTransferAccount];
       currentDisplayValue = targetTransferAccount.id;
     }
-  } else {
-    availableAccounts = level3Accounts;
   }
 
-  const suggestedAccount = aiSuggestionId ? availableAccounts.find(a => a.id === aiSuggestionId) : null;
-
-  if (suggestedAccount && !availableAccounts.find(a => a.id === aiSuggestionId)) {
-    availableAccounts = [suggestedAccount, ...availableAccounts];
-  }
+  const allAccounts = [...incomeAccounts, ...expenseAccounts];
+  const suggestedAccount = aiSuggestionId ? allAccounts.find(a => a.id === aiSuggestionId) : null;
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
@@ -71,7 +66,7 @@ export default function CategoryDropdown({
     }
   };
 
-  const selectedAccount = availableAccounts.find(a => a.id === currentDisplayValue);
+  const selectedAccount = allAccounts.find(a => a.id === currentDisplayValue);
   const displayValue = selectedAccount
     ? getDisplayName(selectedAccount)
     : placeholder;
@@ -81,8 +76,16 @@ export default function CategoryDropdown({
       <ClickThroughSelect
         value={currentDisplayValue || ''}
         onValueChange={(val) => {
-          if (val === '__add_new__' && onAddNew) {
+          if (val === '__add_new_income__' && onAddNew) {
             setWizardInitialName(searchTerm);
+            setWizardType('income');
+            setShowAddWizard(true);
+            setIsOpen(false);
+            return;
+          }
+          if (val === '__add_new_expense__' && onAddNew) {
+            setWizardInitialName(searchTerm);
+            setWizardType('expense');
             setShowAddWizard(true);
             setIsOpen(false);
             return;
@@ -98,45 +101,74 @@ export default function CategoryDropdown({
         displayValue={displayValue}
       >
       {onAddNew && (
-        <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-          + Add new category{searchTerm ? `: "${searchTerm}"` : ''}
-        </ClickThroughSelectItem>
+        <>
+          <ClickThroughSelectItem value="__add_new_income__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
+            + Add new income{searchTerm ? `: "${searchTerm}"` : ''}
+          </ClickThroughSelectItem>
+          <ClickThroughSelectItem value="__add_new_expense__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
+            + Add new expense{searchTerm ? `: "${searchTerm}"` : ''}
+          </ClickThroughSelectItem>
+          <ClickThroughSelectSeparator />
+        </>
       )}
       {suggestedAccount && (
-        <ClickThroughSelectItem
-          key={`suggested-${suggestedAccount.id}`}
-          value={suggestedAccount.id}
-          isRecommended={true}
-          data-display={getDisplayName(suggestedAccount)}
-          className="flex items-center justify-between whitespace-nowrap"
-        >
-          <span className="truncate">
-            {getDisplayName(suggestedAccount)}
-          </span>
-          <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
-        </ClickThroughSelectItem>
-      )}
-      {availableAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
-        const displayName = getDisplayName(acc);
-        return (
+        <>
           <ClickThroughSelectItem
-            key={acc.id}
-            value={acc.id}
-            data-display={displayName}
+            key={`suggested-${suggestedAccount.id}`}
+            value={suggestedAccount.id}
+            isRecommended={true}
+            data-display={getDisplayName(suggestedAccount)}
             className="flex items-center justify-between whitespace-nowrap"
           >
-            <span className="truncate flex-1">{displayName}</span>
+            <span className="truncate">
+              {getDisplayName(suggestedAccount)}
+            </span>
+            <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
           </ClickThroughSelectItem>
-        );
-      })}
-      {isTransactionTransfer && availableAccounts.length > 0 && (
-        <ClickThroughSelectItem
-          key={availableAccounts[0].id}
-          value={availableAccounts[0].id}
-          data-display="Transfer"
-        >
-          <span className="truncate">Transfer</span>
-        </ClickThroughSelectItem>
+          <ClickThroughSelectSeparator />
+        </>
+      )}
+
+      {incomeAccounts.length > 0 && (
+        <>
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0 z-10">
+            Income
+          </div>
+          {incomeAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
+            const displayName = getDisplayName(acc);
+            return (
+              <ClickThroughSelectItem
+                key={acc.id}
+                value={acc.id}
+                data-display={displayName}
+                className="flex items-center justify-between whitespace-nowrap"
+              >
+                <span className="truncate flex-1">{displayName}</span>
+              </ClickThroughSelectItem>
+            );
+          })}
+        </>
+      )}
+
+      {expenseAccounts.length > 0 && (
+        <>
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0 z-10">
+            Expenses
+          </div>
+          {expenseAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
+            const displayName = getDisplayName(acc);
+            return (
+              <ClickThroughSelectItem
+                key={acc.id}
+                value={acc.id}
+                data-display={displayName}
+                className="flex items-center justify-between whitespace-nowrap"
+              >
+                <span className="truncate flex-1">{displayName}</span>
+              </ClickThroughSelectItem>
+            );
+          })}
+        </>
       )}
     </ClickThroughSelect>
 
@@ -149,7 +181,7 @@ export default function CategoryDropdown({
         }
       }}
       initialAccountType="budget"
-      initialSubtype={transactionType}
+      initialSubtype={wizardType}
       initialCategoryName={wizardInitialName}
       onAccountCreated={(result) => {
         setWizardInitialName('');
