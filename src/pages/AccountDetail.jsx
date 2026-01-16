@@ -56,6 +56,7 @@ export default function AccountDetail() {
   const { activeProfile } = useProfile();
 
   // Edit form state
+  const [editName, setEditName] = useState('');
   const [editClass, setEditClass] = useState('');
   const [editAccountType, setEditAccountType] = useState('');
   const [editAccountDetail, setEditAccountDetail] = useState('');
@@ -164,6 +165,7 @@ export default function AccountDetail() {
   // Helper functions for edit mode
   const cancelEditMode = () => {
     setIsEditMode(false);
+    setEditName('');
     setEditClass('');
     setEditAccountType('');
     setEditAccountDetail('');
@@ -360,7 +362,7 @@ export default function AccountDetail() {
     const formData = new FormData(e.target);
 
     const data = {
-      display_name: formData.get('name'),
+      display_name: editName,
       class: editClass,
       account_type: editAccountType,
       account_detail: editAccountDetail || null,
@@ -442,6 +444,7 @@ export default function AccountDetail() {
 
   // Initialize edit mode state when entering edit mode
   const initializeEditMode = () => {
+    setEditName(account.display_name || account.name || '');
     setEditClass(account.class || '');
     setEditAccountType(account.account_type || '');
     setEditAccountDetail(account.account_detail || '');
@@ -527,7 +530,8 @@ export default function AccountDetail() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <Input
                       name="name"
-                      defaultValue={account.display_name || account.name}
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
                       placeholder="Account name"
                       className="h-9 flex-1 min-w-[200px] max-w-[400px] font-semibold text-base"
                     />
