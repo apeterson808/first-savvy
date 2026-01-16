@@ -187,7 +187,7 @@ export default function AccountDetail() {
       return updatedData;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['account', id] });
+      queryClient.invalidateQueries({ queryKey: ['account'] });
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
       queryClient.invalidateQueries({ queryKey: ['assets'] });
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });

@@ -15,9 +15,10 @@ export default function useAllAccounts() {
       return accounts;
     },
     enabled: !!activeProfile?.id,
-    staleTime: 30000,
+    staleTime: 0,
     gcTime: 300000,
     refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   const isLoading = profileLoading || loadingChartAccounts;
