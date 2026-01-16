@@ -372,7 +372,7 @@ export default function AccountDetail() {
     // For bank accounts (asset/liability with bank-related account_detail)
     if (isBankAccount) {
       data.institution_name = formData.get('institution_name') || undefined;
-      data.current_balance = parseFloat(formData.get('current_balance')) || 0;
+      // Note: current_balance is managed by journal entry triggers, not manually edited
     } else {
       // For income/expense categories
       data.icon = formData.get('icon') || undefined;
