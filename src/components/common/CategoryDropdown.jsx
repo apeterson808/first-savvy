@@ -24,7 +24,6 @@ export default function CategoryDropdown({
   const [isOpen, setIsOpen] = useState(false);
   const [showAddWizard, setShowAddWizard] = useState(false);
   const [wizardInitialName, setWizardInitialName] = useState('');
-  const [wizardType, setWizardType] = useState('expense');
 
   const { data: incomeAccounts = [] } = useQuery({
     queryKey: ['chart-accounts', 'income', activeProfile?.id],
@@ -76,16 +75,8 @@ export default function CategoryDropdown({
       <ClickThroughSelect
         value={currentDisplayValue || ''}
         onValueChange={(val) => {
-          if (val === '__add_new_income__' && onAddNew) {
+          if (val === '__add_new__' && onAddNew) {
             setWizardInitialName(searchTerm);
-            setWizardType('income');
-            setShowAddWizard(true);
-            setIsOpen(false);
-            return;
-          }
-          if (val === '__add_new_expense__' && onAddNew) {
-            setWizardInitialName(searchTerm);
-            setWizardType('expense');
             setShowAddWizard(true);
             setIsOpen(false);
             return;
@@ -102,11 +93,8 @@ export default function CategoryDropdown({
       >
       {onAddNew && (
         <>
-          <ClickThroughSelectItem value="__add_new_income__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-            + Add new income{searchTerm ? `: "${searchTerm}"` : ''}
-          </ClickThroughSelectItem>
-          <ClickThroughSelectItem value="__add_new_expense__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-            + Add new expense{searchTerm ? `: "${searchTerm}"` : ''}
+          <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
+            + Add new{searchTerm ? `: "${searchTerm}"` : ''}
           </ClickThroughSelectItem>
           <ClickThroughSelectSeparator />
         </>
@@ -131,7 +119,7 @@ export default function CategoryDropdown({
 
       {incomeAccounts.length > 0 && (
         <>
-          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0 z-10">
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Income
           </div>
           {incomeAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
@@ -152,7 +140,7 @@ export default function CategoryDropdown({
 
       {expenseAccounts.length > 0 && (
         <>
-          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50 sticky top-0 z-10">
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Expenses
           </div>
           {expenseAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
@@ -181,7 +169,6 @@ export default function CategoryDropdown({
         }
       }}
       initialAccountType="budget"
-      initialSubtype={wizardType}
       initialCategoryName={wizardInitialName}
       onAccountCreated={(result) => {
         setWizardInitialName('');
