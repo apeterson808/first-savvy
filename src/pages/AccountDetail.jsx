@@ -517,16 +517,13 @@ export default function AccountDetail() {
                   </Badge>
                 </div>
                 <h1 className="text-xl font-bold">{account.name}</h1>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  <Badge variant="outline" className="capitalize text-xs h-5">
-                    {accountClass}
-                  </Badge>
-                  {account.type && (
+                {account.type && (
+                  <div className="flex items-center gap-1.5 mt-1.5">
                     <Badge variant="secondary" className="capitalize text-xs h-5">
                       {account.type}
                     </Badge>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
               <div className="text-right">
                 <TooltipProvider>
@@ -689,43 +686,18 @@ export default function AccountDetail() {
                     </>
                   ) : account.entityType === 'Asset' ? (
                     <>
-                      <div className="flex items-start gap-2.5">
-                        <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500">Asset Type</p>
-                          <p className="text-sm capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
+                      {account.detail_type === 'vehicle' && account.vehicle_make && (
+                        <div className="flex items-start gap-2.5">
+                          <Car className="w-4 h-4 text-slate-400 mt-0.5" />
+                          <div>
+                            <p className="text-xs font-medium text-slate-500">Make & Model</p>
+                            <p className="text-sm">{account.vehicle_year} {account.vehicle_make} {account.vehicle_model}</p>
+                          </div>
                         </div>
-                      </div>
-                      {account.detail_type === 'vehicle' && (
-                        <>
-                          {account.vehicle_make && (
-                            <div className="flex items-start gap-2.5">
-                              <Car className="w-4 h-4 text-slate-400 mt-0.5" />
-                              <div>
-                                <p className="text-xs font-medium text-slate-500">Make & Model</p>
-                                <p className="text-sm">{account.vehicle_year} {account.vehicle_make} {account.vehicle_model}</p>
-                              </div>
-                            </div>
-                          )}
-                        </>
                       )}
-                      <div className="flex items-start gap-2.5">
-                        <DollarSign className="w-4 h-4 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500">Current Value</p>
-                          <p className="text-sm">{formatCurrency(account.current_balance || 0)}</p>
-                        </div>
-                      </div>
                     </>
                   ) : account.entityType === 'Liability' ? (
                     <>
-                      <div className="flex items-start gap-2.5">
-                        <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
-                        <div>
-                          <p className="text-xs font-medium text-slate-500">Liability Type</p>
-                          <p className="text-sm capitalize">{account.detail_type?.replace(/_/g, ' ')}</p>
-                        </div>
-                      </div>
                       {(account.institution || account.institution_name) && (
                         <div className="flex items-start gap-2.5">
                           <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
