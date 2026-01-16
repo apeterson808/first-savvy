@@ -173,10 +173,16 @@ export default function AccountDetail() {
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       if (!activeProfile) throw new Error('No active profile');
-      return firstsavvy.from('user_chart_of_accounts')
+      const { data: updatedData, error } = await firstsavvy
+        .from('user_chart_of_accounts')
         .update(data)
         .eq('id', id)
-        .eq('profile_id', activeProfile.id);
+        .eq('profile_id', activeProfile.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return updatedData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['account', id] });
@@ -186,6 +192,7 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-of-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-of-accounts'] });
       cancelEditMode();
       toast.success('Account updated successfully');
     },
