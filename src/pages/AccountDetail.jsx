@@ -262,6 +262,7 @@ export default function AccountDetail() {
       calculatedCredit: activity.creditAmount || 0
     }));
 
+    let beginningBal = null;
     if (dateRange.start && activitiesWithBalance.length > 0) {
       beginningBal = account?.current_balance || 0;
       const totalChange = activitiesWithBalance[activitiesWithBalance.length - 1].runningBalance;
