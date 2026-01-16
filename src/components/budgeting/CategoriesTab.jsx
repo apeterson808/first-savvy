@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,9 +7,9 @@ import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtil
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
-import QuickAddBudgetDialog from './QuickAddBudgetDialog';
 import BudgetAllocationBar from './BudgetAllocationBar';
 import InlineEditableAmount from './InlineEditableAmount';
+import InlineEditableAverage from './InlineEditableAverage';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
@@ -42,10 +42,10 @@ export default function CategoriesTab() {
   });
 
   const [addBudgetSheetOpen, setAddBudgetSheetOpen] = useState(false);
-  const [quickAddDialogOpen, setQuickAddDialogOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [editingBudget, setEditingBudget] = useState(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
+  const [categoryAmounts, setCategoryAmounts] = useState({});
+  const [creatingBudgetId, setCreatingBudgetId] = useState(null);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'sections', JSON.stringify(collapsedSections));
@@ -84,14 +84,92 @@ export default function CategoriesTab() {
     }
   });
 
-  const handleAddBudget = (category) => {
-    setSelectedCategory(category);
-    setQuickAddDialogOpen(true);
+  const createBudgetMutation = useMutation({
+    mutationFn: (data) => firstsavvy.entities.Budget.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      setCreatingBudgetId(null);
+      toast.success('Budget created successfully');
+    },
+    onError: (error) => {
+      console.error('Error creating budget:', error);
+      setCreatingBudgetId(null);
+      toast.error('Failed to create budget');
+    }
+  });
+
+  const historicalAverages = useMemo(() => {
+    const averages = {};
+
+    categories.forEach(category => {
+      const categoryTransactions = transactions.filter(t =>
+        t.chart_account_id === category.id &&
+        t.status === 'posted' &&
+        t.type !== 'transfer'
+      );
+
+      if (categoryTransactions.length === 0) {
+        averages[category.id] = 0;
+        return;
+      }
+
+      const monthlyTotals = categoryTransactions.reduce((acc, t) => {
+        const date = new Date(t.date);
+        const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
+        acc[monthKey] = (acc[monthKey] || 0) + Math.abs(t.amount);
+        return acc;
+      }, {});
+
+      const months = Object.keys(monthlyTotals).length;
+      const totalSpent = Object.values(monthlyTotals).reduce((sum, amt) => sum + amt, 0);
+      const avgMonthly = months > 0 ? totalSpent / months : 0;
+
+      averages[category.id] = avgMonthly;
+    });
+
+    return averages;
+  }, [categories, transactions]);
+
+  useEffect(() => {
+    const initialAmounts = {};
+    categories.forEach(category => {
+      if (!categoryAmounts[category.id]) {
+        initialAmounts[category.id] = historicalAverages[category.id] || 0;
+      }
+    });
+    if (Object.keys(initialAmounts).length > 0) {
+      setCategoryAmounts(prev => ({ ...prev, ...initialAmounts }));
+    }
+  }, [categories, historicalAverages]);
+
+  const handleAddBudget = (categoryId) => {
+    const amount = categoryAmounts[categoryId] || historicalAverages[categoryId] || 0;
+
+    if (amount <= 0) {
+      toast.error('Please enter a valid amount');
+      return;
+    }
+
+    setCreatingBudgetId(categoryId);
+    const budgetData = {
+      chart_account_id: categoryId,
+      allocated_amount: amount,
+      cadence: 'monthly',
+      is_active: true
+    };
+
+    createBudgetMutation.mutate(budgetData);
+  };
+
+  const handleAmountChange = (categoryId, newAmount) => {
+    setCategoryAmounts(prev => ({
+      ...prev,
+      [categoryId]: newAmount
+    }));
   };
 
   const handleEditBudget = (budget) => {
     setEditingBudget(budget);
-    setSelectedCategory(null);
     setAddBudgetSheetOpen(true);
   };
 
@@ -199,6 +277,8 @@ export default function CategoriesTab() {
     const everUsed = usage?.everUsed || false;
     const lastUsed = usage?.lastUsed;
     const IconComponent = Icons[category.icon] || Icons.Circle;
+    const suggestedAmount = historicalAverages[category.id] || 0;
+    const isCreating = creatingBudgetId === category.id;
 
     return (
       <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
@@ -223,11 +303,19 @@ export default function CategoriesTab() {
         <td className="px-4 text-muted-foreground text-sm border-r border-slate-200">
           {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
+        <InlineEditableAverage
+          suggestedAmount={suggestedAmount}
+          currentAmount={categoryAmounts[category.id]}
+          onAmountChange={(newAmount) => handleAmountChange(category.id, newAmount)}
+          isLoading={isCreating}
+          hasBorder={true}
+        />
         <td className="px-4 text-right">
           <Button
             variant="outline"
             size="sm"
-            onClick={() => handleAddBudget(category)}
+            onClick={() => handleAddBudget(category.id)}
+            disabled={isCreating || (categoryAmounts[category.id] || suggestedAmount) <= 0}
           >
             <Plus className="h-4 w-4 mr-1" />
             Add
@@ -302,7 +390,7 @@ export default function CategoriesTab() {
                     ) : (
                       <>
                         <th
-                          className="py-2 px-4 text-left font-bold w-[40%] cursor-pointer hover:bg-slate-100"
+                          className="py-2 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-100"
                           onClick={() => toggleSection(sectionKey)}
                         >
                           <div className="flex items-center gap-2">
@@ -310,8 +398,9 @@ export default function CategoriesTab() {
                             {categoryColumnLabel}
                           </div>
                         </th>
-                        <th className="py-2 px-4 text-left font-normal w-[20%]">Ever Used</th>
-                        <th className="py-2 px-4 text-left font-normal w-[20%]">Last Used</th>
+                        <th className="py-2 px-4 text-left font-normal w-[15%]">Ever Used</th>
+                        <th className="py-2 px-4 text-left font-normal w-[15%]">Last Used</th>
+                        <th className="py-2 px-4 text-right font-normal w-[20%]">Avg Monthly</th>
                         <th className="py-2 px-4 text-right font-normal w-[20%]">Action</th>
                       </>
                     )}
@@ -427,15 +516,6 @@ export default function CategoriesTab() {
         onOpenChange={setAddBudgetSheetOpen}
         availableCategories={categories}
         editingBudget={editingBudget}
-        preselectedCategoryId={selectedCategory?.id}
-      />
-
-      <QuickAddBudgetDialog
-        open={quickAddDialogOpen}
-        onOpenChange={setQuickAddDialogOpen}
-        category={selectedCategory}
-        budgets={budgets}
-        transactions={transactions}
       />
     </div>
   );
