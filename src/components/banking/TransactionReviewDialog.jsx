@@ -6,12 +6,14 @@ import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
-import { Loader2, CheckCircle2, AlertCircle, Info } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
 import { format } from 'date-fns';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
+import transactionRulesApi from '@/api/transactionRules';
+import { toast } from 'sonner';
 
 export function TransactionReviewDialog({
   open,
@@ -144,8 +146,43 @@ export function TransactionReviewDialog({
 
       if (insertedTransactions && insertedTransactions.length > 0) {
         const transactionIds = insertedTransactions.map(t => t.id);
-        await transferAutoDetectionAPI.detectTransfers(profileId, transactionIds).catch(err => {
+
+        const { data: fullTransactions } = await supabase
+          .from('transactions')
+          .select('*')
+          .in('id', transactionIds);
+
+        let categorizedCount = 0;
+        let transfersCount = 0;
+
+        try {
+          const ruleUpdates = await transactionRulesApi.applyAllRules(fullTransactions, profileId);
+          categorizedCount = ruleUpdates.length;
+        } catch (err) {
+          console.warn('Auto-categorization failed:', err);
+        }
+
+        try {
+          await transferAutoDetectionAPI.detectTransfers(profileId, transactionIds);
+          const { count } = await supabase
+            .from('transactions')
+            .select('id', { count: 'exact' })
+            .in('id', transactionIds)
+            .eq('type', 'transfer');
+          transfersCount = count || 0;
+        } catch (err) {
           console.warn('Transfer auto-detection failed:', err);
+        }
+
+        const successMessage = [
+          `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported`,
+          categorizedCount > 0 && `${categorizedCount} auto-categorized`,
+          transfersCount > 0 && `${transfersCount} transfer${transfersCount !== 1 ? 's' : ''} detected`
+        ].filter(Boolean).join(', ');
+
+        toast.success(successMessage, {
+          duration: 5000,
+          icon: categorizedCount > 0 ? <Sparkles className="w-4 h-4" /> : undefined
         });
       }
 
