@@ -501,30 +501,14 @@ export default function AccountDetail() {
           <CardHeader className="pb-3 pt-4">
             <div className="flex items-start justify-between">
               <div>
-                <div className="flex items-center gap-2 mb-1.5">
-                  {account.account_number && (
-                    <Badge variant="secondary" className="font-mono text-xs h-5">
-                      {account.account_number}
-                    </Badge>
-                  )}
-                  <Badge
-                    className={
-                      isActive
-                        ? 'bg-soft-green/30 text-forest-green h-5 text-xs'
-                        : 'bg-gray-100 text-gray-800 h-5 text-xs'
-                    }
-                  >
-                    {isActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </div>
                 <h1 className="text-xl font-bold">{account.name}</h1>
-                {account.type && (
-                  <div className="flex items-center gap-1.5 mt-1.5">
-                    <Badge variant="secondary" className="capitalize text-xs h-5">
-                      {account.type}
-                    </Badge>
-                  </div>
-                )}
+                <div className="text-sm text-slate-600 mt-1">
+                  {account.account_number && <span className="font-mono">{account.account_number}</span>}
+                  {account.account_number && account.type && <span> </span>}
+                  {account.type && <span className="capitalize">{account.type}</span>}
+                  {(account.account_number || account.type) && <span> </span>}
+                  <span>{isActive ? 'Active' : 'Inactive'}</span>
+                </div>
               </div>
               <div className="text-right">
                 <TooltipProvider>
