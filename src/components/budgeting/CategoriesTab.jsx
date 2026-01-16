@@ -103,7 +103,7 @@ export default function CategoriesTab() {
 
     categories.forEach(category => {
       const categoryTransactions = transactions.filter(t =>
-        t.chart_account_id === category.id &&
+        t.category_account_id === category.id &&
         t.status === 'posted' &&
         t.type !== 'transfer'
       );
@@ -400,7 +400,7 @@ export default function CategoriesTab() {
                         </th>
                         <th className="py-2 px-4 text-left font-normal w-[15%]">Ever Used</th>
                         <th className="py-2 px-4 text-left font-normal w-[15%]">Last Used</th>
-                        <th className="py-2 px-4 text-right font-normal w-[20%]">Avg Monthly</th>
+                        <th className="py-2 px-4 text-right font-normal w-[20%]">Amount</th>
                         <th className="py-2 px-4 text-right font-normal w-[20%]">Action</th>
                       </>
                     )}
