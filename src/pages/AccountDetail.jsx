@@ -215,24 +215,6 @@ export default function AccountDetail() {
     }
   });
 
-  const toggleActiveMutation = useMutation({
-    mutationFn: async ({ id, isActive }) => {
-      if (!activeProfile) throw new Error('No active profile');
-      return firstsavvy.from('user_chart_of_accounts')
-        .update({ is_active: !isActive })
-        .eq('id', id)
-        .eq('profile_id', activeProfile.id);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['account', id] });
-      queryClient.invalidateQueries({ queryKey: ['accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['assets'] });
-      queryClient.invalidateQueries({ queryKey: ['liabilities'] });
-      queryClient.invalidateQueries({ queryKey: ['equity'] });
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      toast.success('Account status updated');
-    }
-  });
 
   // Determine if this is a bank account (asset/liability with bank-related detail)
   const isBankAccount = useMemo(() => {
@@ -397,13 +379,6 @@ export default function AccountDetail() {
     }
   };
 
-  const handleToggleActive = () => {
-    toggleActiveMutation.mutate({
-      id: account.id,
-      isActive: account.is_active !== false
-    });
-  };
-
   const handleExport = () => {
     const csvContent = [
       ['Date', 'Description', 'Reference', 'Offsetting Account', 'Debit', 'Credit', 'Balance'].join(','),
@@ -502,14 +477,6 @@ export default function AccountDetail() {
                 >
                   <Printer className="w-3.5 h-3.5" />
                   Print
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleToggleActive}
-                  className="gap-1.5 h-8 px-2.5"
-                >
-                  {isActive ? 'Deactivate' : 'Activate'}
                 </Button>
                 <Button
                   variant="outline"
