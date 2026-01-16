@@ -1925,8 +1925,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     updateMutation.mutate({
                                       id: transaction.id,
                                       data: {
-                                        category_account_id: categoryValue,
-                                        type: selectedCategory ? selectedCategory.class : transaction.type
+                                        category_account_id: categoryValue
                                       }
                                     });
                                     setCategorySuggestions(prev => {
