@@ -769,27 +769,20 @@ export default function AccountDetail() {
             {isEditMode ? (
               <form onSubmit={handleSubmit} className="space-y-6">
                 {isBankAccount ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="institution_name">Institution Name</Label>
-                      <Input
-                        id="institution_name"
-                        name="institution_name"
-                        defaultValue={account.institution_name || account.institution}
-                        placeholder="e.g., Chase, Wells Fargo"
-                      />
-                    </div>
+                  <div className="flex items-start gap-2.5">
+                    <Building2 className="w-4 h-4 text-slate-400 mt-2.5" />
+                    <Input
+                      id="institution_name"
+                      name="institution_name"
+                      defaultValue={account.institution_name || account.institution}
+                      placeholder="e.g., Chase, Wells Fargo"
+                      className="flex-1"
+                    />
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <Label htmlFor="icon">Icon</Label>
-                      <IconPicker name="icon" defaultValue={account.icon} />
-                    </div>
-                    <div>
-                      <Label htmlFor="color">Color</Label>
-                      <ColorPicker name="color" defaultValue={account.color} />
-                    </div>
+                    <IconPicker name="icon" defaultValue={account.icon} />
+                    <ColorPicker name="color" defaultValue={account.color} />
                   </div>
                 )}
 
@@ -809,17 +802,7 @@ export default function AccountDetail() {
                         <div className="flex items-start gap-2.5">
                           <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
                           <div>
-                            <p className="text-xs font-medium text-slate-500">Institution</p>
                             <p className="text-sm">{account.bank_name || account.institution || account.institution_name}</p>
-                          </div>
-                        </div>
-                      )}
-                      {account.account_type && (
-                        <div className="flex items-start gap-2.5">
-                          <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-medium text-slate-500">Account Type</p>
-                            <p className="text-sm capitalize">{account.account_type}</p>
                           </div>
                         </div>
                       )}
