@@ -8,6 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Table,
   TableBody,
   TableCell,
@@ -19,7 +25,7 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
-  Download, Printer, Search, Filter, ExternalLink, FileText
+  Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -523,14 +529,53 @@ export default function AccountDetail() {
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-xs text-slate-500 mb-0.5">Current Balance</p>
-                <p className={`text-2xl font-bold ${
-                  account.entityType === 'Asset' ? 'text-forest-green' :
-                  account.entityType === 'Liability' ? 'text-burgundy' :
-                  'text-slate-900'
-                }`}>
-                  {formatCurrency(endingBalance)}
-                </p>
+                <TooltipProvider>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-xs text-slate-500">Bank Balance</span>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className={`text-lg font-semibold cursor-help ${
+                            account.entityType === 'Asset' ? 'text-forest-green' :
+                            account.entityType === 'Liability' ? 'text-burgundy' :
+                            'text-slate-900'
+                          }`}>
+                            {account.bank_balance !== null && account.bank_balance !== undefined
+                              ? formatCurrency(account.bank_balance)
+                              : 'Not synced'}
+                          </span>
+                        </TooltipTrigger>
+                        {account.last_synced_at && (
+                          <TooltipContent>
+                            <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
+                          </TooltipContent>
+                        )}
+                      </Tooltip>
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <span className="text-xs text-slate-500">Savvy Balance</span>
+                      <span className={`text-lg font-semibold ${
+                        account.entityType === 'Asset' ? 'text-forest-green' :
+                        account.entityType === 'Liability' ? 'text-burgundy' :
+                        'text-slate-900'
+                      }`}>
+                        {formatCurrency(endingBalance)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                      <span className="text-xs text-slate-500">Difference</span>
+                      <span className={`text-base font-bold ${
+                        account.bank_balance !== null && account.bank_balance !== undefined
+                          ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
+                          : 'text-slate-400'
+                      }`}>
+                        {account.bank_balance !== null && account.bank_balance !== undefined
+                          ? formatCurrency(account.bank_balance - endingBalance)
+                          : '—'}
+                      </span>
+                    </div>
+                  </div>
+                </TooltipProvider>
               </div>
             </div>
           </CardHeader>
