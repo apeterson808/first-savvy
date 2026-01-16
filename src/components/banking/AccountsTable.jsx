@@ -59,7 +59,7 @@ function EditableAccountName({ account }) {
 
   React.useEffect(() => {
     setValue(getAccountDisplayName(account));
-  }, [account.custom_display_name, account.display_name, account.account_name, account.name]);
+  }, [account.display_name, account.account_name, account.name]);
 
   const handleSave = async () => {
     setIsEditing(false);
@@ -71,7 +71,7 @@ function EditableAccountName({ account }) {
     }
 
     await firstsavvy.entities.ChartAccount.update(account.id, {
-      custom_display_name: trimmed
+      display_name: trimmed
     });
 
     queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });

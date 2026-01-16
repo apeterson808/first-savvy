@@ -33,7 +33,7 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
       if (!account) return;
 
       return await firstsavvy.entities.ChartAccount.update(account.id, {
-        custom_display_name: data.name,
+        display_name: data.name,
         institution_name: data.institution || null,
         current_balance: parseFloat(data.current_balance) || 0,
         notes: data.notes || null,

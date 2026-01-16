@@ -360,7 +360,7 @@ export default function AccountDetail() {
     const formData = new FormData(e.target);
 
     const data = {
-      custom_display_name: formData.get('name'),
+      display_name: formData.get('name'),
       class: editClass,
       account_type: editAccountType,
       account_detail: editAccountDetail || null,
@@ -527,7 +527,7 @@ export default function AccountDetail() {
                   <div className="flex items-center gap-3 flex-wrap">
                     <Input
                       name="name"
-                      defaultValue={account.custom_display_name || account.name}
+                      defaultValue={account.display_name || account.name}
                       placeholder="Account name"
                       className="h-9 flex-1 min-w-[200px] max-w-[400px] font-semibold text-base"
                     />
@@ -659,7 +659,7 @@ export default function AccountDetail() {
                 <div className="space-y-2">
                   {/* Line 1: Name, Account Number, Active Badge */}
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-lg font-semibold">{account.custom_display_name || account.name}</h1>
+                    <h1 className="text-lg font-semibold">{account.display_name || account.name}</h1>
                     {account.account_number && (
                       <span className="text-sm text-slate-500 font-mono">
                         ({account.account_number})

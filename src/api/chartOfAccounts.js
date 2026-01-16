@@ -317,8 +317,7 @@ export const getAccountNumberRanges = async (classValue) => {
 export const getDisplayName = (account) => {
   if (!account) return 'Unnamed Account';
 
-  return account.custom_display_name ||
-         account.display_name ||
+  return account.display_name ||
          account.name ||
          account.account_detail ||
          'Unnamed Account';
@@ -333,7 +332,7 @@ export const activateTemplateAccount = async (profileId, templateAccountNumber, 
   const { data, error } = await supabase.rpc('activate_template_account', {
     p_profile_id: profileId,
     p_template_account_number: templateAccountNumber,
-    p_custom_display_name: options.customDisplayName || null,
+    p_display_name: options.displayName || null,
     p_initial_balance: options.initialBalance || null,
     p_institution_name: options.institutionName || null,
     p_account_number_last4: options.accountNumberLast4 || null,
