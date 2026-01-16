@@ -273,7 +273,7 @@ export default function AccountDetail() {
     }
 
     const endingBal = activitiesWithBalance.length > 0
-      ? activitiesWithBalance[activitiesWithBalance.length - 1].runningBalance
+      ? activitiesWithBalance[0].runningBalance
       : (account?.current_balance || 0);
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
