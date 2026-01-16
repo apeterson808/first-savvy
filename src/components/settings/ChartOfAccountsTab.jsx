@@ -69,11 +69,11 @@ export default function ChartOfAccountsTab() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Account Number</TableHead>
-                      <TableHead>Account Name</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead></TableHead>
+                      <TableHead className="w-[120px]">Account Number</TableHead>
+                      <TableHead className="min-w-[300px]">Account Name</TableHead>
+                      <TableHead className="w-[180px]">Type</TableHead>
+                      <TableHead className="w-[100px]">Status</TableHead>
+                      <TableHead className="w-[140px]"></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -85,22 +85,22 @@ export default function ChartOfAccountsTab() {
                           className="cursor-pointer hover:bg-muted/50"
                           onClick={() => navigate(`/account/${account.id}?from=${encodeURIComponent(window.location.pathname)}`)}
                         >
-                          <TableCell className="font-mono">{account.account_number}</TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              {Icon && <Icon className="h-4 w-4" style={{ color: account.color }} />}
+                          <TableCell className="font-mono w-[120px]">{account.account_number}</TableCell>
+                          <TableCell className="min-w-[300px]">
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              {Icon && <Icon className="h-4 w-4 flex-shrink-0" style={{ color: account.color }} />}
                               <span className="font-medium">{account.account_name}</span>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="w-[180px]">
                             <span className="text-sm text-muted-foreground">{account.account_detail}</span>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="w-[100px]">
                             <Badge variant={account.is_active ? 'default' : 'secondary'}>
                               {account.is_active ? 'Active' : 'Inactive'}
                             </Badge>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="w-[140px]">
                             <Button variant="ghost" size="sm">
                               <FileText className="h-4 w-4 mr-2" />
                               View Register
