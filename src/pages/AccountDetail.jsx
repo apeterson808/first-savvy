@@ -682,14 +682,35 @@ export default function AccountDetail() {
               </div>
             ) : (
               <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-xl font-bold">{account.name}</h1>
-                  <div className="text-sm text-slate-600 mt-1">
-                    {account.account_number && <span className="font-mono">{account.account_number}</span>}
-                    {account.account_number && account.type && <span> </span>}
-                    {account.type && <span className="capitalize">{account.type}</span>}
-                    {(account.account_number || account.type) && <span> </span>}
-                    <span>{isActive ? 'Active' : 'Inactive'}</span>
+                <div className="space-y-2">
+                  {/* Line 1: Name, Account Number, Active Badge */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-lg font-semibold">{account.custom_display_name || account.name}</h1>
+                    {account.account_number && (
+                      <span className="text-sm text-slate-500 font-mono">
+                        ({account.account_number})
+                      </span>
+                    )}
+                    <Badge variant={isActive ? "default" : "secondary"}>
+                      {isActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+
+                  {/* Line 2: Class, Account Type, Account Detail */}
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <span className="capitalize">{formatLabel(account.account_class || account.class || '')}</span>
+                    {account.account_type && (
+                      <>
+                        <span>•</span>
+                        <span>{formatLabel(account.account_type)}</span>
+                      </>
+                    )}
+                    {account.account_detail && (
+                      <>
+                        <span>•</span>
+                        <span>{formatLabel(account.account_detail)}</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
@@ -756,17 +777,6 @@ export default function AccountDetail() {
                         name="institution_name"
                         defaultValue={account.institution_name || account.institution}
                         placeholder="e.g., Chase, Wells Fargo"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="current_balance">Current Balance</Label>
-                      <Input
-                        id="current_balance"
-                        name="current_balance"
-                        type="number"
-                        step="0.01"
-                        defaultValue={account.current_balance || 0}
-                        placeholder="0.00"
                       />
                     </div>
                   </div>
