@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Tooltip,
   TooltipContent,
@@ -29,7 +30,7 @@ import {
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
-import { formatCurrency } from '@/components/utils/formatters';
+import { formatCurrency, formatLabel } from '@/components/utils/formatters';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
 import DatePresetDropdown from '@/components/common/DatePresetDropdown';
@@ -41,6 +42,7 @@ import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById }
 import { getAccountJournalLinesPaginated } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
+import { useAccountTypesByClass, useAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -53,10 +55,20 @@ export default function AccountDetail() {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
 
+  // Edit form state
+  const [editClass, setEditClass] = useState('');
+  const [editAccountType, setEditAccountType] = useState('');
+  const [editAccountDetail, setEditAccountDetail] = useState('');
+  const [editIsActive, setEditIsActive] = useState(true);
+
   const urlParams = new URLSearchParams(window.location.search);
   const returnUrl = urlParams.get('from') || '?tab=accounts';
 
   const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
+
+  // Hooks for fetching account types and details in edit mode
+  const { accountTypes = [] } = useAccountTypesByClass(editClass);
+  const { accountDetails = [] } = useAccountDetailsByType(editClass, editAccountType);
 
   const { data: account, isLoading: accountLoading } = useQuery({
     queryKey: ['account', id],
@@ -149,6 +161,15 @@ export default function AccountDetail() {
 
   const totalJournalLines = journalLinesData?.pages?.[0]?.totalCount || 0;
 
+  // Helper functions for edit mode
+  const cancelEditMode = () => {
+    setIsEditMode(false);
+    setEditClass('');
+    setEditAccountType('');
+    setEditAccountDetail('');
+    setEditIsActive(true);
+  };
+
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }) => {
       if (!activeProfile) throw new Error('No active profile');
@@ -164,7 +185,8 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['liabilities'] });
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      setIsEditMode(false);
+      queryClient.invalidateQueries({ queryKey: ['user-chart-of-accounts'] });
+      cancelEditMode();
       toast.success('Account updated successfully');
     },
     onError: (error) => {
@@ -332,18 +354,21 @@ export default function AccountDetail() {
     const formData = new FormData(e.target);
 
     const data = {
-      name: formData.get('name'),
-      is_active: account.is_active
+      custom_display_name: formData.get('name'),
+      class: editClass,
+      account_type: editAccountType,
+      account_detail: editAccountDetail || null,
+      is_active: editIsActive
     };
 
-    if (account.entityType === 'BankAccount') {
-      data.bank_name = formData.get('bank_name') || undefined;
-      data.account_type = formData.get('account_type') || undefined;
+    // For bank accounts (asset/liability with bank-related account_detail)
+    if (isBankAccount) {
+      data.institution_name = formData.get('institution_name') || undefined;
       data.current_balance = parseFloat(formData.get('current_balance')) || 0;
     } else {
+      // For income/expense categories
       data.icon = formData.get('icon') || undefined;
       data.color = formData.get('color') || undefined;
-      data.type = formData.get('type') || undefined;
     }
 
     updateMutation.mutate({ id: account.id, data });
@@ -416,9 +441,31 @@ export default function AccountDetail() {
     );
   }
 
-  const isBankAccount = account.entityType === 'BankAccount';
+  // Determine if this is a bank account (asset/liability with bank-related detail)
+  const isBankAccount = useMemo(() => {
+    if (!account) return false;
+    const accountClass = account.account_class || account.class;
+    const accountDetail = account.account_detail;
+
+    // Check if it's an asset or liability with bank-related account_detail
+    if ((accountClass === 'asset' || accountClass === 'liability') && accountDetail) {
+      const bankDetails = ['checking_account', 'savings_account', 'money_market', 'certificate_of_deposit'];
+      return bankDetails.includes(accountDetail);
+    }
+    return false;
+  }, [account]);
+
   const isActive = account.is_active !== false;
   const accountClass = account.account_class || account.class || 'Asset';
+
+  // Initialize edit mode state when entering edit mode
+  const initializeEditMode = () => {
+    setEditClass(account.class || '');
+    setEditAccountType(account.account_type || '');
+    setEditAccountDetail(account.account_detail || '');
+    setEditIsActive(account.is_active !== false);
+    setIsEditMode(true);
+  };
 
   return (
     <div className="p-3 md:p-4">
@@ -467,7 +514,7 @@ export default function AccountDetail() {
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => setIsEditMode(true)}
+                  onClick={initializeEditMode}
                   className="gap-1.5 h-8 px-2.5"
                 >
                   <Edit2 className="w-3.5 h-3.5" />
@@ -487,7 +534,7 @@ export default function AccountDetail() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setIsEditMode(false)}
+                onClick={cancelEditMode}
                 className="gap-1.5 h-8 px-2.5"
               >
                 <X className="w-3.5 h-3.5" />
@@ -499,144 +546,242 @@ export default function AccountDetail() {
 
         <Card>
           <CardHeader className="pb-3 pt-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-xl font-bold">{account.name}</h1>
-                <div className="text-sm text-slate-600 mt-1">
-                  {account.account_number && <span className="font-mono">{account.account_number}</span>}
-                  {account.account_number && account.type && <span> </span>}
-                  {account.type && <span className="capitalize">{account.type}</span>}
-                  {(account.account_number || account.type) && <span> </span>}
-                  <span>{isActive ? 'Active' : 'Inactive'}</span>
+            {isEditMode ? (
+              <div className="flex items-start justify-between">
+                <div className="flex-1 space-y-3">
+                  {/* Line 1: Name, Account Number, Active Badge */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Input
+                      name="name"
+                      defaultValue={account.custom_display_name || account.name}
+                      placeholder="Account name"
+                      className="h-9 flex-1 min-w-[200px] max-w-[400px] font-semibold text-base"
+                    />
+                    {account.account_number && (
+                      <span className="text-sm text-slate-500 font-mono">
+                        ({account.account_number})
+                      </span>
+                    )}
+                    <Badge
+                      variant={editIsActive ? "default" : "secondary"}
+                      className="cursor-pointer select-none"
+                      onClick={() => setEditIsActive(!editIsActive)}
+                    >
+                      {editIsActive ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+
+                  {/* Line 2: Class, Account Type, Account Detail */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <div className="flex-1 min-w-[150px] max-w-[200px]">
+                      <Select value={editClass} onValueChange={setEditClass}>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Class" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="asset">Asset</SelectItem>
+                          <SelectItem value="liability">Liability</SelectItem>
+                          <SelectItem value="equity">Equity</SelectItem>
+                          <SelectItem value="income">Income</SelectItem>
+                          <SelectItem value="expense">Expense</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1 min-w-[150px] max-w-[200px]">
+                      <Select
+                        value={editAccountType}
+                        onValueChange={(value) => {
+                          setEditAccountType(value);
+                          setEditAccountDetail('');
+                        }}
+                        disabled={!editClass || accountTypes.length === 0}
+                      >
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Account Type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {accountTypes.map((type) => (
+                            <SelectItem key={type} value={type}>
+                              {formatLabel(type)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {accountDetails.length > 0 && (
+                      <div className="flex-1 min-w-[150px] max-w-[200px]">
+                        <Select
+                          value={editAccountDetail}
+                          onValueChange={setEditAccountDetail}
+                          disabled={!editAccountType}
+                        >
+                          <SelectTrigger className="h-9">
+                            <SelectValue placeholder="Account Detail" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {accountDetails.map((detail) => (
+                              <SelectItem key={detail} value={detail}>
+                                {formatLabel(detail)}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="text-right ml-6">
+                  <TooltipProvider>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-slate-500">Bank Balance</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`text-lg font-semibold cursor-help ${
+                              account.entityType === 'Asset' ? 'text-forest-green' :
+                              account.entityType === 'Liability' ? 'text-burgundy' :
+                              'text-slate-900'
+                            }`}>
+                              {account.bank_balance !== null && account.bank_balance !== undefined
+                                ? formatCurrency(account.bank_balance)
+                                : 'Not synced'}
+                            </span>
+                          </TooltipTrigger>
+                          {account.last_synced_at && (
+                            <TooltipContent>
+                              <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-slate-500">Savvy Balance</span>
+                        <span className={`text-lg font-semibold ${
+                          account.entityType === 'Asset' ? 'text-forest-green' :
+                          account.entityType === 'Liability' ? 'text-burgundy' :
+                          'text-slate-900'
+                        }`}>
+                          {formatCurrency(endingBalance)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                        <span className="text-xs text-slate-500">Difference</span>
+                        <span className={`text-base font-bold ${
+                          account.bank_balance !== null && account.bank_balance !== undefined
+                            ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
+                            : 'text-slate-400'
+                        }`}>
+                          {account.bank_balance !== null && account.bank_balance !== undefined
+                            ? formatCurrency(account.bank_balance - endingBalance)
+                            : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </TooltipProvider>
                 </div>
               </div>
-              <div className="text-right">
-                <TooltipProvider>
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs text-slate-500">Bank Balance</span>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className={`text-lg font-semibold cursor-help ${
-                            account.entityType === 'Asset' ? 'text-forest-green' :
-                            account.entityType === 'Liability' ? 'text-burgundy' :
-                            'text-slate-900'
-                          }`}>
-                            {account.bank_balance !== null && account.bank_balance !== undefined
-                              ? formatCurrency(account.bank_balance)
-                              : 'Not synced'}
-                          </span>
-                        </TooltipTrigger>
-                        {account.last_synced_at && (
-                          <TooltipContent>
-                            <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
-                          </TooltipContent>
-                        )}
-                      </Tooltip>
-                    </div>
-                    <div className="flex items-center justify-end gap-2">
-                      <span className="text-xs text-slate-500">Savvy Balance</span>
-                      <span className={`text-lg font-semibold ${
-                        account.entityType === 'Asset' ? 'text-forest-green' :
-                        account.entityType === 'Liability' ? 'text-burgundy' :
-                        'text-slate-900'
-                      }`}>
-                        {formatCurrency(endingBalance)}
-                      </span>
-                    </div>
-                    <div className="flex items-center justify-end gap-2 pt-1 border-t">
-                      <span className="text-xs text-slate-500">Difference</span>
-                      <span className={`text-base font-bold ${
-                        account.bank_balance !== null && account.bank_balance !== undefined
-                          ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
-                          : 'text-slate-400'
-                      }`}>
-                        {account.bank_balance !== null && account.bank_balance !== undefined
-                          ? formatCurrency(account.bank_balance - endingBalance)
-                          : '—'}
-                      </span>
-                    </div>
+            ) : (
+              <div className="flex items-start justify-between">
+                <div>
+                  <h1 className="text-xl font-bold">{account.name}</h1>
+                  <div className="text-sm text-slate-600 mt-1">
+                    {account.account_number && <span className="font-mono">{account.account_number}</span>}
+                    {account.account_number && account.type && <span> </span>}
+                    {account.type && <span className="capitalize">{account.type}</span>}
+                    {(account.account_number || account.type) && <span> </span>}
+                    <span>{isActive ? 'Active' : 'Inactive'}</span>
                   </div>
-                </TooltipProvider>
+                </div>
+                <div className="text-right">
+                  <TooltipProvider>
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-slate-500">Bank Balance</span>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`text-lg font-semibold cursor-help ${
+                              account.entityType === 'Asset' ? 'text-forest-green' :
+                              account.entityType === 'Liability' ? 'text-burgundy' :
+                              'text-slate-900'
+                            }`}>
+                              {account.bank_balance !== null && account.bank_balance !== undefined
+                                ? formatCurrency(account.bank_balance)
+                                : 'Not synced'}
+                            </span>
+                          </TooltipTrigger>
+                          {account.last_synced_at && (
+                            <TooltipContent>
+                              <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
+                            </TooltipContent>
+                          )}
+                        </Tooltip>
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <span className="text-xs text-slate-500">Savvy Balance</span>
+                        <span className={`text-lg font-semibold ${
+                          account.entityType === 'Asset' ? 'text-forest-green' :
+                          account.entityType === 'Liability' ? 'text-burgundy' :
+                          'text-slate-900'
+                        }`}>
+                          {formatCurrency(endingBalance)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                        <span className="text-xs text-slate-500">Difference</span>
+                        <span className={`text-base font-bold ${
+                          account.bank_balance !== null && account.bank_balance !== undefined
+                            ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
+                            : 'text-slate-400'
+                        }`}>
+                          {account.bank_balance !== null && account.bank_balance !== undefined
+                            ? formatCurrency(account.bank_balance - endingBalance)
+                            : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </TooltipProvider>
+                </div>
               </div>
-            </div>
+            )}
           </CardHeader>
           <CardContent>
             {isEditMode ? (
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="name">Account Name *</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      defaultValue={account.name}
-                      placeholder="Account name"
-                      required
-                    />
+                {isBankAccount ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="institution_name">Institution Name</Label>
+                      <Input
+                        id="institution_name"
+                        name="institution_name"
+                        defaultValue={account.institution_name || account.institution}
+                        placeholder="e.g., Chase, Wells Fargo"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="current_balance">Current Balance</Label>
+                      <Input
+                        id="current_balance"
+                        name="current_balance"
+                        type="number"
+                        step="0.01"
+                        defaultValue={account.current_balance || 0}
+                        placeholder="0.00"
+                      />
+                    </div>
                   </div>
-
-                  {isBankAccount ? (
-                    <>
-                      <div>
-                        <Label htmlFor="bank_name">Institution Name</Label>
-                        <Input
-                          id="bank_name"
-                          name="bank_name"
-                          defaultValue={account.bank_name || account.institution}
-                          placeholder="e.g., Chase, Wells Fargo"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="account_type">Account Type</Label>
-                        <ClickThroughSelect
-                          name="account_type"
-                          defaultValue={account.account_type}
-                          placeholder="Select type"
-                        >
-                          <ClickThroughSelectItem value="checking">Checking</ClickThroughSelectItem>
-                          <ClickThroughSelectItem value="savings">Savings</ClickThroughSelectItem>
-                          <ClickThroughSelectItem value="credit">Credit Card</ClickThroughSelectItem>
-                          <ClickThroughSelectItem value="investment">Investment</ClickThroughSelectItem>
-                          <ClickThroughSelectItem value="loan">Loan</ClickThroughSelectItem>
-                        </ClickThroughSelect>
-                      </div>
-                      <div>
-                        <Label htmlFor="current_balance">Current Balance</Label>
-                        <Input
-                          id="current_balance"
-                          name="current_balance"
-                          type="number"
-                          step="0.01"
-                          defaultValue={account.current_balance || 0}
-                          placeholder="0.00"
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div>
-                        <Label htmlFor="type">Category Type</Label>
-                        <ClickThroughSelect
-                          name="type"
-                          defaultValue={account.type}
-                          placeholder="Select type"
-                        >
-                          <ClickThroughSelectItem value="income">Income</ClickThroughSelectItem>
-                          <ClickThroughSelectItem value="expense">Expense</ClickThroughSelectItem>
-                        </ClickThroughSelect>
-                      </div>
-                      <div>
-                        <Label htmlFor="icon">Icon</Label>
-                        <IconPicker name="icon" defaultValue={account.icon} />
-                      </div>
-                      <div>
-                        <Label htmlFor="color">Color</Label>
-                        <ColorPicker name="color" defaultValue={account.color} />
-                      </div>
-                    </>
-                  )}
-                </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label htmlFor="icon">Icon</Label>
+                      <IconPicker name="icon" defaultValue={account.icon} />
+                    </div>
+                    <div>
+                      <Label htmlFor="color">Color</Label>
+                      <ColorPicker name="color" defaultValue={account.color} />
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex gap-2 justify-end pt-4 border-t">
                   <Button type="submit" className="gap-2 bg-primary hover:bg-primary/90">
