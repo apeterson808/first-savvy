@@ -123,7 +123,7 @@ export default function AccountDetail() {
     isLoading: journalLinesLoading,
     error: journalLinesError
   } = useInfiniteQuery({
-    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, dateRange],
+    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset],
     queryFn: async ({ pageParam = 0 }) => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountJournalLinesPaginated({
