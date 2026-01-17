@@ -2704,7 +2704,7 @@ export default function AccountCreationWizard({
       // Filter existing categories by income/expense type
       const accountClass = formData.subtype === 'income' ? 'income' : 'expense';
       const existingCategories = userChartAccounts.filter(
-        acc => acc.account_class === accountClass && acc.is_active
+        acc => acc.account_class === accountClass
       );
 
       // Get parent categories (those without parent_account_id)
