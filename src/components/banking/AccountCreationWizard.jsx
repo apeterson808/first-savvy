@@ -21,6 +21,9 @@ import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import { activateTemplateAccount } from '@/api/chartOfAccounts';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
+import IconPicker from '@/components/common/IconPicker';
+import ColorPicker from '@/components/common/ColorPicker';
+import { getIconComponent, suggestIconForName } from '../utils/iconMapper';
 import { useTemplateAccountTypesByClass, useTemplateAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -50,7 +53,8 @@ import {
   X,
   Search,
   Building,
-  AlertCircle
+  AlertCircle,
+  Circle
 } from 'lucide-react';
 import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
@@ -458,6 +462,9 @@ export default function AccountCreationWizard({
           });
           setCurrentStep('details');
         }
+      } else if (initialAccountType === 'budget' && !initialSubtype) {
+        // Skip type selection, go directly to subtype selection (income/expense)
+        setCurrentStep('select-subtype');
       }
     }
   }, [open, initialAccountType, initialSubtype, initialCategoryName, accountTypeCards.length]);
@@ -1009,8 +1016,9 @@ export default function AccountCreationWizard({
           class: template.class,
           account_detail: template.account_detail,
           account_type: template.account_type,
-          icon: template.icon,
-          color: template.color,
+          parent_account_id: data.parentAccountId || null,
+          icon: data.icon || template.icon,
+          color: data.color || template.color,
           is_active: true,
           is_user_created: true
         })
@@ -1229,7 +1237,10 @@ export default function AccountCreationWizard({
         await createCategoryMutation.mutateAsync({
           name: formData.name,
           accountDetail: formData.accountDetail,
-          type: selectedSubtype.value
+          type: selectedSubtype.value,
+          parentAccountId: formData.parentAccountId || null,
+          icon: formData.icon || suggestIconForName(formData.name) || 'Circle',
+          color: formData.color || '#52A5CE'
         });
       }
     } catch (error) {
@@ -2690,36 +2701,221 @@ export default function AccountCreationWizard({
 
       const categoryTypes = formData.subtype === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
 
+      // Filter existing categories by income/expense type
+      const accountClass = formData.subtype === 'income' ? 'income' : 'expense';
+      const existingCategories = userChartAccounts.filter(
+        acc => acc.account_class === accountClass && acc.is_active
+      );
+
+      // Get parent categories (those without parent_account_id)
+      const parentCategories = existingCategories.filter(cat => !cat.parent_account_id);
+
+      // Build category hierarchy
+      const categoryHierarchy = parentCategories.map(parent => ({
+        ...parent,
+        children: existingCategories.filter(cat => cat.parent_account_id === parent.id)
+      })).sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+      // Add categories without parents that aren't in the parent list
+      const orphanCategories = existingCategories
+        .filter(cat => !cat.parent_account_id && !parentCategories.find(p => p.id === cat.id))
+        .sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+      // Set default icon and color if not set
+      const currentIcon = formData.icon || suggestIconForName(formData.name) || 'Circle';
+      const currentColor = formData.color || '#52A5CE';
+
+      // Check for duplicate names
+      const isDuplicate = existingCategories.some(
+        cat => cat.display_name.toLowerCase() === (formData.name || '').toLowerCase().trim()
+      );
+
+      // Create preview entry for the new category
+      const previewCategory = formData.name && formData.name.trim() ? {
+        id: 'preview',
+        display_name: formData.name.trim(),
+        icon: currentIcon,
+        color: currentColor,
+        parent_account_id: formData.parentAccountId || null,
+        isNew: true,
+        isDuplicate
+      } : null;
+
+      // Merge preview into the hierarchy
+      let previewHierarchy = [...categoryHierarchy, ...orphanCategories.map(cat => ({ ...cat, children: [] }))];
+      if (previewCategory) {
+        if (previewCategory.parent_account_id) {
+          // Add as child to parent
+          previewHierarchy = previewHierarchy.map(parent => {
+            if (parent.id === previewCategory.parent_account_id) {
+              return {
+                ...parent,
+                children: [...parent.children, previewCategory].sort((a, b) =>
+                  a.display_name.localeCompare(b.display_name)
+                )
+              };
+            }
+            return parent;
+          });
+        } else {
+          // Add as top-level category
+          previewHierarchy.push({ ...previewCategory, children: [] });
+          previewHierarchy.sort((a, b) => a.display_name.localeCompare(b.display_name));
+        }
+      }
+
       return (
-        <div className="space-y-5 max-w-lg mx-auto">
-          <div>
-            <Label htmlFor="name">Category Name*</Label>
-            <Input
-              id="name"
-              value={formData.name || ''}
-              onChange={(e) => updateFormData('name', e.target.value)}
-              placeholder="e.g., Freelance Income, Groceries"
-              required
-            />
+        <div className="flex gap-3 h-full">
+          {/* Left Column - Compact Form */}
+          <div className="w-[220px] flex-shrink-0 space-y-2">
+            <div>
+              <Label htmlFor="name" className="text-xs mb-0.5">Category Name*</Label>
+              <Input
+                id="name"
+                value={formData.name || ''}
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  updateFormData('name', newName);
+                  // Auto-suggest icon if not manually set
+                  if (!formData.iconManuallySet) {
+                    updateFormData('icon', suggestIconForName(newName) || 'Circle');
+                  }
+                }}
+                placeholder="e.g., Groceries"
+                className="h-8 text-sm"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="accountDetail" className="text-xs mb-0.5">Category Type*</Label>
+              <Select
+                value={formData.accountDetail || ''}
+                onValueChange={(value) => updateFormData('accountDetail', value)}
+                required
+              >
+                <SelectTrigger id="accountDetail" className="h-8 text-sm">
+                  <SelectValue placeholder={`Select type`} />
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryTypes.map((type) => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="parentCategory" className="text-xs mb-0.5">Parent (Optional)</Label>
+              <Select
+                value={formData.parentAccountId || 'none'}
+                onValueChange={(value) => updateFormData('parentAccountId', value === 'none' ? null : value)}
+              >
+                <SelectTrigger id="parentCategory" className="h-8 text-sm">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {parentCategories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-xs mb-0.5">Appearance</Label>
+              <div className="flex items-center gap-2">
+                <IconPicker
+                  value={currentIcon}
+                  onValueChange={(icon) => {
+                    updateFormData('icon', icon);
+                    updateFormData('iconManuallySet', true);
+                  }}
+                  triggerClassName="h-8 w-8"
+                />
+                <ColorPicker
+                  value={currentColor}
+                  onChange={(color) => updateFormData('color', color)}
+                  showLabel={false}
+                />
+              </div>
+            </div>
           </div>
-          <div>
-            <Label htmlFor="accountDetail">Category Type*</Label>
-            <Select
-              value={formData.accountDetail || ''}
-              onValueChange={(value) => updateFormData('accountDetail', value)}
-              required
-            >
-              <SelectTrigger id="accountDetail">
-                <SelectValue placeholder={`Select ${formData.subtype === 'income' ? 'income' : 'expense'} type`} />
-              </SelectTrigger>
-              <SelectContent>
-                {categoryTypes.map((type) => (
-                  <SelectItem key={type.value} value={type.value}>
-                    {type.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+          {/* Right Column - Preview Panel */}
+          <div className="flex-1 border-l border-slate-200 pl-3 flex flex-col min-w-0">
+            <div className="mb-2">
+              <div className="text-xs font-medium text-slate-700">Category Preview</div>
+              <div className="text-xs text-slate-500">{existingCategories.length} existing</div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-0.5">
+              {previewHierarchy.map((category) => {
+                const IconComponent = getIconComponent(category.icon);
+                return (
+                  <div key={category.id}>
+                    {/* Parent/Top-level category */}
+                    <div
+                      className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                        category.isNew
+                          ? category.isDuplicate
+                            ? 'bg-red-50 border border-red-200'
+                            : 'bg-blue-50 border border-blue-200'
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <IconComponent
+                        className="w-3 h-3 flex-shrink-0"
+                        style={{ color: category.color }}
+                      />
+                      <span className={`truncate ${category.isNew ? 'font-medium' : ''}`}>
+                        {category.display_name}
+                      </span>
+                      {category.isNew && category.isDuplicate && (
+                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
+                      )}
+                    </div>
+
+                    {/* Children */}
+                    {category.children && category.children.length > 0 && (
+                      <div className="ml-4 space-y-0.5 mt-0.5">
+                        {category.children.map((child) => {
+                          const ChildIcon = getIconComponent(child.icon);
+                          return (
+                            <div
+                              key={child.id}
+                              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                                child.isNew
+                                  ? child.isDuplicate
+                                    ? 'bg-red-50 border border-red-200'
+                                    : 'bg-blue-50 border border-blue-200'
+                                  : 'hover:bg-slate-50'
+                              }`}
+                            >
+                              <ChildIcon
+                                className="w-3 h-3 flex-shrink-0"
+                                style={{ color: child.color }}
+                              />
+                              <span className={`truncate ${child.isNew ? 'font-medium' : ''}`}>
+                                {child.display_name}
+                              </span>
+                              {child.isNew && child.isDuplicate && (
+                                <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       );

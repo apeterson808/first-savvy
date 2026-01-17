@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem, ClickThroughSelectSeparator } from '@/components/ui/ClickThroughSelect';
 import { Sparkles } from 'lucide-react';
 import { getIncomeAccounts, getExpenseAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import { getIconComponent } from '@/components/utils/iconMapper';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 
 export default function CategoryDropdown({
@@ -65,6 +66,19 @@ export default function CategoryDropdown({
     }
   };
 
+  // Build hierarchy for accounts
+  const buildHierarchy = (accounts) => {
+    const parents = accounts.filter(acc => !acc.parent_account_id);
+    return parents.map(parent => ({
+      ...parent,
+      children: accounts.filter(acc => acc.parent_account_id === parent.id)
+        .sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)))
+    })).sort((a, b) => getDisplayName(a).localeCompare(getDisplayName(b)));
+  };
+
+  const incomeHierarchy = buildHierarchy(incomeAccounts);
+  const expenseHierarchy = buildHierarchy(expenseAccounts);
+
   const selectedAccount = allAccounts.find(a => a.id === currentDisplayValue);
   const displayValue = selectedAccount
     ? getDisplayName(selectedAccount)
@@ -122,17 +136,41 @@ export default function CategoryDropdown({
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Income
           </div>
-          {incomeAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
-            const displayName = getDisplayName(acc);
+          {incomeHierarchy.filter(acc => acc.id !== aiSuggestionId).map((parent) => {
+            const displayName = getDisplayName(parent);
+            const IconComponent = getIconComponent(parent.icon);
             return (
-              <ClickThroughSelectItem
-                key={acc.id}
-                value={acc.id}
-                data-display={displayName}
-                className="flex items-center justify-between whitespace-nowrap"
-              >
-                <span className="truncate flex-1">{displayName}</span>
-              </ClickThroughSelectItem>
+              <React.Fragment key={parent.id}>
+                <ClickThroughSelectItem
+                  value={parent.id}
+                  data-display={displayName}
+                  className="flex items-center gap-2 whitespace-nowrap"
+                >
+                  <IconComponent
+                    className="w-3.5 h-3.5 flex-shrink-0"
+                    style={{ color: parent.color }}
+                  />
+                  <span className="truncate flex-1">{displayName}</span>
+                </ClickThroughSelectItem>
+                {parent.children && parent.children.length > 0 && parent.children.filter(child => child.id !== aiSuggestionId).map((child) => {
+                  const childDisplayName = getDisplayName(child);
+                  const ChildIcon = getIconComponent(child.icon);
+                  return (
+                    <ClickThroughSelectItem
+                      key={child.id}
+                      value={child.id}
+                      data-display={childDisplayName}
+                      className="flex items-center gap-2 whitespace-nowrap pl-6"
+                    >
+                      <ChildIcon
+                        className="w-3.5 h-3.5 flex-shrink-0"
+                        style={{ color: child.color }}
+                      />
+                      <span className="truncate flex-1">{childDisplayName}</span>
+                    </ClickThroughSelectItem>
+                  );
+                })}
+              </React.Fragment>
             );
           })}
         </>
@@ -143,17 +181,41 @@ export default function CategoryDropdown({
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Expenses
           </div>
-          {expenseAccounts.filter(acc => acc.id !== aiSuggestionId).map((acc) => {
-            const displayName = getDisplayName(acc);
+          {expenseHierarchy.filter(acc => acc.id !== aiSuggestionId).map((parent) => {
+            const displayName = getDisplayName(parent);
+            const IconComponent = getIconComponent(parent.icon);
             return (
-              <ClickThroughSelectItem
-                key={acc.id}
-                value={acc.id}
-                data-display={displayName}
-                className="flex items-center justify-between whitespace-nowrap"
-              >
-                <span className="truncate flex-1">{displayName}</span>
-              </ClickThroughSelectItem>
+              <React.Fragment key={parent.id}>
+                <ClickThroughSelectItem
+                  value={parent.id}
+                  data-display={displayName}
+                  className="flex items-center gap-2 whitespace-nowrap"
+                >
+                  <IconComponent
+                    className="w-3.5 h-3.5 flex-shrink-0"
+                    style={{ color: parent.color }}
+                  />
+                  <span className="truncate flex-1">{displayName}</span>
+                </ClickThroughSelectItem>
+                {parent.children && parent.children.length > 0 && parent.children.filter(child => child.id !== aiSuggestionId).map((child) => {
+                  const childDisplayName = getDisplayName(child);
+                  const ChildIcon = getIconComponent(child.icon);
+                  return (
+                    <ClickThroughSelectItem
+                      key={child.id}
+                      value={child.id}
+                      data-display={childDisplayName}
+                      className="flex items-center gap-2 whitespace-nowrap pl-6"
+                    >
+                      <ChildIcon
+                        className="w-3.5 h-3.5 flex-shrink-0"
+                        style={{ color: child.color }}
+                      />
+                      <span className="truncate flex-1">{childDisplayName}</span>
+                    </ClickThroughSelectItem>
+                  );
+                })}
+              </React.Fragment>
             );
           })}
         </>
