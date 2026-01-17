@@ -3330,6 +3330,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           <AccountCreationWizard
                                             open={addAccountSheetOpen}
                                             onOpenChange={setAddAccountSheetOpen}
+                                            initialSubtype={triggeringTransactionType}
+                                            initialCategoryName={categorySearchTerm}
                                             onAccountCreated={async (newCategory) => {
                                               setCategorySearchTerm('');
                                               setTriggeringTransactionId(null);

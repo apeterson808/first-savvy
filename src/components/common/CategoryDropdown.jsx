@@ -231,6 +231,7 @@ export default function CategoryDropdown({
         }
       }}
       initialAccountType="budget"
+      initialSubtype={transactionType}
       initialCategoryName={wizardInitialName}
       onAccountCreated={(result) => {
         setWizardInitialName('');
