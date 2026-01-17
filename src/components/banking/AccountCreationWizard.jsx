@@ -2715,7 +2715,7 @@ export default function AccountCreationWizard({
       const parentCategories = existingCategories.filter(cat => !cat.parent_account_id);
 
       // Helper function to get display name
-      const getDisplayName = (cat) => cat.custom_display_name || cat.display_name_default || cat.account_detail || 'Unnamed';
+      const getDisplayName = (cat) => cat.display_name || cat.account_detail || 'Unnamed';
 
       // Build category hierarchy
       const categoryHierarchy = parentCategories.map(parent => ({
