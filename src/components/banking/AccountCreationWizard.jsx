@@ -2818,7 +2818,7 @@ export default function AccountCreationWizard({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">None</SelectItem>
-                  {parentCategories.map((cat) => (
+                  {existingCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.display_name}
                     </SelectItem>
