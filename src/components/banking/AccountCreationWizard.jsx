@@ -350,6 +350,7 @@ export default function AccountCreationWizard({
   const navigate = useNavigate();
 
   const [uploadedFile, setUploadedFile] = useState(null);
+  const newItemRef = useRef(null);
   const [processingStatus, setProcessingStatus] = useState(null);
   const [processedData, setProcessedData] = useState(null);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
@@ -504,6 +505,18 @@ export default function AccountCreationWizard({
         });
     }
   }, [open, currentStep]);
+
+  // Scroll to new item in budget category preview
+  useEffect(() => {
+    if (selectedCard?.id === 'budget' && currentStep === 'details' && formData.name && newItemRef.current) {
+      setTimeout(() => {
+        newItemRef.current?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center'
+        });
+      }, 100);
+    }
+  }, [formData.name, selectedCard?.id, currentStep]);
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
@@ -2701,9 +2714,6 @@ export default function AccountCreationWizard({
 
       const categoryTypes = selectedSubtype?.value === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
 
-      // Ref for scrolling to new item
-      const newItemRef = useRef(null);
-
       // Filter existing categories by income/expense type
       const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
       console.log('Budget Details - selectedSubtype:', selectedSubtype);
@@ -2778,16 +2788,6 @@ export default function AccountCreationWizard({
           previewHierarchy.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
         }
       }
-
-      // Scroll to new item when preview category is added
-      useEffect(() => {
-        if (previewCategory && newItemRef.current) {
-          newItemRef.current.scrollIntoView({
-            behavior: 'smooth',
-            block: 'center'
-          });
-        }
-      }, [previewCategory?.id]);
 
       return (
         <div className="flex gap-3 h-full">
