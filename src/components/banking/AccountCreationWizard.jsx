@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
@@ -2701,6 +2701,9 @@ export default function AccountCreationWizard({
 
       const categoryTypes = selectedSubtype?.value === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
 
+      // Ref for scrolling to new item
+      const newItemRef = useRef(null);
+
       // Filter existing categories by income/expense type
       const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
       console.log('Budget Details - selectedSubtype:', selectedSubtype);
@@ -2775,6 +2778,16 @@ export default function AccountCreationWizard({
           previewHierarchy.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
         }
       }
+
+      // Scroll to new item when preview category is added
+      useEffect(() => {
+        if (previewCategory && newItemRef.current) {
+          newItemRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, [previewCategory?.id]);
 
       return (
         <div className="flex gap-3 h-full">
@@ -2873,6 +2886,7 @@ export default function AccountCreationWizard({
                   <div key={category.id}>
                     {/* Parent/Top-level category */}
                     <div
+                      ref={category.isNew ? newItemRef : null}
                       className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
                         category.isNew
                           ? category.isDuplicate
@@ -2901,6 +2915,7 @@ export default function AccountCreationWizard({
                           return (
                             <div
                               key={child.id}
+                              ref={child.isNew ? newItemRef : null}
                               className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
                                 child.isNew
                                   ? child.isDuplicate
