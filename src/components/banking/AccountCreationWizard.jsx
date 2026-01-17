@@ -1037,7 +1037,7 @@ export default function AccountCreationWizard({
 
       const hasCallback = !!onAccountCreated;
       if (hasCallback) {
-        onAccountCreated({ type: formData.subtype, account: newCategory });
+        onAccountCreated({ type: selectedSubtype?.value, account: newCategory });
       } else {
         setTimeout(() => {
           navigate(`/Banking/account/${newCategory.id}`);
@@ -2699,10 +2699,10 @@ export default function AccountCreationWizard({
         { value: 'taxes', label: 'Taxes' },
       ];
 
-      const categoryTypes = formData.subtype === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
+      const categoryTypes = selectedSubtype?.value === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
 
       // Filter existing categories by income/expense type
-      const accountClass = formData.subtype === 'income' ? 'income' : 'expense';
+      const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
       const existingCategories = userChartAccounts.filter(
         acc => acc.account_class === accountClass
       );
