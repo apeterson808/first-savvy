@@ -2704,22 +2704,30 @@ export default function AccountCreationWizard({
       // Filter existing categories by income/expense type
       const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
       const existingCategories = userChartAccounts.filter(
-        acc => acc.account_class === accountClass
+        acc => acc.account_type === accountClass
       );
 
       // Get parent categories (those without parent_account_id)
       const parentCategories = existingCategories.filter(cat => !cat.parent_account_id);
 
+      // Helper function to get display name
+      const getDisplayName = (cat) => cat.custom_display_name || cat.display_name_default || cat.account_detail || 'Unnamed';
+
       // Build category hierarchy
       const categoryHierarchy = parentCategories.map(parent => ({
         ...parent,
-        children: existingCategories.filter(cat => cat.parent_account_id === parent.id)
-      })).sort((a, b) => a.display_name.localeCompare(b.display_name));
+        displayName: getDisplayName(parent),
+        children: existingCategories.filter(cat => cat.parent_account_id === parent.id).map(child => ({
+          ...child,
+          displayName: getDisplayName(child)
+        }))
+      })).sort((a, b) => a.displayName.localeCompare(b.displayName));
 
       // Add categories without parents that aren't in the parent list
       const orphanCategories = existingCategories
         .filter(cat => !cat.parent_account_id && !parentCategories.find(p => p.id === cat.id))
-        .sort((a, b) => a.display_name.localeCompare(b.display_name));
+        .map(cat => ({ ...cat, displayName: getDisplayName(cat) }))
+        .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
       // Set default icon and color if not set
       const currentIcon = formData.icon || suggestIconForName(formData.name) || 'Circle';
@@ -2727,13 +2735,13 @@ export default function AccountCreationWizard({
 
       // Check for duplicate names
       const isDuplicate = existingCategories.some(
-        cat => cat.display_name.toLowerCase() === (formData.name || '').toLowerCase().trim()
+        cat => getDisplayName(cat).toLowerCase() === (formData.name || '').toLowerCase().trim()
       );
 
       // Create preview entry for the new category
       const previewCategory = formData.name && formData.name.trim() ? {
         id: 'preview',
-        display_name: formData.name.trim(),
+        displayName: formData.name.trim(),
         icon: currentIcon,
         color: currentColor,
         parent_account_id: formData.parentAccountId || null,
@@ -2751,7 +2759,7 @@ export default function AccountCreationWizard({
               return {
                 ...parent,
                 children: [...parent.children, previewCategory].sort((a, b) =>
-                  a.display_name.localeCompare(b.display_name)
+                  (a.displayName || '').localeCompare(b.displayName || '')
                 )
               };
             }
@@ -2760,7 +2768,7 @@ export default function AccountCreationWizard({
         } else {
           // Add as top-level category
           previewHierarchy.push({ ...previewCategory, children: [] });
-          previewHierarchy.sort((a, b) => a.display_name.localeCompare(b.display_name));
+          previewHierarchy.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
         }
       }
 
@@ -2820,7 +2828,7 @@ export default function AccountCreationWizard({
                   <SelectItem value="none">None</SelectItem>
                   {existingCategories.map((cat) => (
                     <SelectItem key={cat.id} value={cat.id}>
-                      {cat.display_name}
+                      {getDisplayName(cat)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -2874,7 +2882,7 @@ export default function AccountCreationWizard({
                         style={{ color: category.color }}
                       />
                       <span className={`truncate ${category.isNew ? 'font-medium' : ''}`}>
-                        {category.display_name}
+                        {category.displayName}
                       </span>
                       {category.isNew && category.isDuplicate && (
                         <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
@@ -2902,7 +2910,7 @@ export default function AccountCreationWizard({
                                 style={{ color: child.color }}
                               />
                               <span className={`truncate ${child.isNew ? 'font-medium' : ''}`}>
-                                {child.display_name}
+                                {child.displayName}
                               </span>
                               {child.isNew && child.isDuplicate && (
                                 <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
