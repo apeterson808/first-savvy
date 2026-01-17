@@ -407,6 +407,8 @@ export default function AccountCreationWizard({
         console.error('Error fetching user chart accounts:', error);
         return [];
       }
+      console.log('Loaded userChartAccounts:', data?.length || 0, 'accounts');
+      console.log('Sample accounts:', data?.slice(0, 3));
       return data || [];
     },
     enabled: !!activeProfile?.id && open
@@ -2703,9 +2705,14 @@ export default function AccountCreationWizard({
 
       // Filter existing categories by income/expense type
       const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
+      console.log('Budget Details - selectedSubtype:', selectedSubtype);
+      console.log('Budget Details - accountClass:', accountClass);
+      console.log('Budget Details - total userChartAccounts:', userChartAccounts.length);
+      console.log('Budget Details - account types in data:', [...new Set(userChartAccounts.map(a => a.account_type))]);
       const existingCategories = userChartAccounts.filter(
         acc => acc.account_type === accountClass
       );
+      console.log('Budget Details - filtered existingCategories:', existingCategories.length);
 
       // Get parent categories (those without parent_account_id)
       const parentCategories = existingCategories.filter(cat => !cat.parent_account_id);
