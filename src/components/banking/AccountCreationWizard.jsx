@@ -408,7 +408,12 @@ export default function AccountCreationWizard({
         return [];
       }
       console.log('Loaded userChartAccounts:', data?.length || 0, 'accounts');
-      console.log('Sample accounts:', data?.slice(0, 3));
+      console.log('Sample accounts with all fields:', data?.slice(0, 3).map(a => ({
+        account_number: a.account_number,
+        account_type: a.account_type,
+        account_detail: a.account_detail,
+        custom_display_name: a.custom_display_name
+      })));
       return data || [];
     },
     enabled: !!activeProfile?.id && open
