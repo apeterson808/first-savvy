@@ -2056,8 +2056,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>;
                             }
 
-                            // For transfers/credit card payments, show type label (not editable)
-                            if (transaction.type === 'transfer') {
+                            // For credit card payments and transfers, show type label (not editable)
+                            // Check pair_id fields first, then fall back to type field
+                            if (transaction.cc_payment_pair_id) {
+                              return <span className="text-xs px-1">Credit Card Payment</span>;
+                            } else if (transaction.transfer_pair_id) {
+                              return <span className="text-xs px-1">Transfer</span>;
+                            } else if (transaction.type === 'transfer') {
                               return <span className="text-xs px-1">Transfer</span>;
                             } else if (transaction.type === 'credit_card_payment') {
                               return <span className="text-xs px-1">Credit Card Payment</span>;
