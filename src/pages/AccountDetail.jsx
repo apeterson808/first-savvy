@@ -247,20 +247,32 @@ export default function AccountDetail() {
     const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
 
     // ALL accounts show only posted journal lines (no pending transactions)
-    let combined = journalLines.map(jl => ({
-      ...jl,
-      id: jl.line_id,
-      activityType: 'posted',
-      displayDate: jl.entry_date,
-      displayDescription: jl.line_description || jl.entry_description,
-      debitAmount: jl.debit_amount,
-      creditAmount: jl.credit_amount,
-      entryNumber: jl.entry_number,
-      journalEntryId: jl.entry_id,
-      entryType: jl.entry_type || 'adjustment',
-      offsettingAccounts: jl.offsetting_accounts,
-      runningBalance: parseFloat(jl.running_balance || 0)
-    }));
+    let combined = journalLines.map(jl => {
+      // For transfers and credit card payments, show special labels instead of account names
+      const entryType = jl.entry_type || 'adjustment';
+      let offsettingAccountsDisplay = jl.offsetting_accounts;
+
+      if (entryType === 'transfer') {
+        offsettingAccountsDisplay = 'Transfer';
+      } else if (entryType === 'credit_card_payment') {
+        offsettingAccountsDisplay = 'Credit Card Payment';
+      }
+
+      return {
+        ...jl,
+        id: jl.line_id,
+        activityType: 'posted',
+        displayDate: jl.entry_date,
+        displayDescription: jl.line_description || jl.entry_description,
+        debitAmount: jl.debit_amount,
+        creditAmount: jl.credit_amount,
+        entryNumber: jl.entry_number,
+        journalEntryId: jl.entry_id,
+        entryType,
+        offsettingAccounts: offsettingAccountsDisplay,
+        runningBalance: parseFloat(jl.running_balance || 0)
+      };
+    });
 
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
