@@ -51,10 +51,14 @@ import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
+import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
+import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import transactionRulesApi from '@/api/transactionRules';
 import aiCategorizationApi from '@/api/aiCategorization';
 import { useAuth } from '@/contexts/AuthContext';
+import TransfersToReview from './TransfersToReview';
+import CreditCardPaymentsToReview from './CreditCardPaymentsToReview';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -465,6 +469,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     fullPendingTransactions
   );
 
+  const { detectNewPayments } = useAutomaticCreditCardPaymentDetection(
+    activeProfile?.id,
+    fullPostedTransactions
+  );
+
   // Fetch all active accounts for Match tab dropdown (from unified chart of accounts)
   const { data: allActiveAccounts = [] } = useQuery({
     queryKey: ['allActiveAccountsForMatch', activeProfile?.id],
@@ -521,6 +530,28 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     enabled: !!activeProfile?.id
   });
 
+  const { data: unreviewedTransfers = [], refetch: refetchUnreviewedTransfers } = useQuery({
+    queryKey: ['unreviewedTransfers', activeProfile?.id],
+    queryFn: async () => {
+      const { data, error } = await transferAutoDetectionAPI.getUnreviewedTransfers(activeProfile.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeProfile?.id && statusFilter === 'pending',
+    refetchInterval: 5000
+  });
+
+  const { data: unreviewedPayments = [], refetch: refetchUnreviewedPayments } = useQuery({
+    queryKey: ['unreviewedCCPayments', activeProfile?.id],
+    queryFn: async () => {
+      const { data, error } = await creditCardPaymentDetectionAPI.getUnreviewedPayments(activeProfile.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeProfile?.id && statusFilter === 'posted',
+    refetchInterval: 5000
+  });
+
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
     onSuccess: (createdTransaction) => {
@@ -534,6 +565,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (createdTransaction?.id) {
         detectNewTransactions([createdTransaction.id]);
+        if (createdTransaction.status === 'posted') {
+          detectNewPayments([createdTransaction.id]);
+        }
       }
     },
     onError: (error) => {
@@ -625,7 +659,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       logError(error, { action: 'updateTransaction' });
       showErrorToast(error);
     },
-    onSettled: () => {
+    onSettled: (updatedTransaction, error, variables) => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
@@ -633,6 +667,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
+
+      if (!error && updatedTransaction?.id && variables?.data?.status === 'posted') {
+        detectNewPayments([updatedTransaction.id]);
+      }
     }
   });
 
@@ -1353,6 +1391,96 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
+  const handleAcceptTransfer = async (transferPairId) => {
+    try {
+      const { error } = await transferAutoDetectionAPI.acceptTransfer(transferPairId);
+      if (error) throw error;
+
+      await refetchUnreviewedTransfers();
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Transfer accepted');
+    } catch (error) {
+      console.error('Error accepting transfer:', error);
+      toast.error('Failed to accept transfer');
+    }
+  };
+
+  const handleRejectTransfer = async (transferPairId) => {
+    try {
+      const { error } = await transferAutoDetectionAPI.rejectTransfer(transferPairId);
+      if (error) throw error;
+
+      await refetchUnreviewedTransfers();
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Transfer rejected');
+    } catch (error) {
+      console.error('Error rejecting transfer:', error);
+      toast.error('Failed to reject transfer');
+    }
+  };
+
+  const handleAcceptAllTransfers = async () => {
+    try {
+      const { error, count } = await transferAutoDetectionAPI.acceptAllTransfers(activeProfile.id);
+      if (error) throw error;
+
+      await refetchUnreviewedTransfers();
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success(`${count} transfer${count !== 1 ? 's' : ''} accepted`);
+    } catch (error) {
+      console.error('Error accepting all transfers:', error);
+      toast.error('Failed to accept transfers');
+    }
+  };
+
+  const handleAcceptCCPayment = async (paymentPairId) => {
+    try {
+      const { error } = await creditCardPaymentDetectionAPI.acceptPayment(paymentPairId);
+      if (error) throw error;
+
+      await refetchUnreviewedPayments();
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Credit card payment accepted');
+    } catch (error) {
+      console.error('Error accepting credit card payment:', error);
+      toast.error('Failed to accept credit card payment');
+    }
+  };
+
+  const handleRejectCCPayment = async (paymentPairId) => {
+    try {
+      const { error } = await creditCardPaymentDetectionAPI.rejectPayment(paymentPairId);
+      if (error) throw error;
+
+      await refetchUnreviewedPayments();
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Credit card payment rejected');
+    } catch (error) {
+      console.error('Error rejecting credit card payment:', error);
+      toast.error('Failed to reject credit card payment');
+    }
+  };
+
+  const handleAcceptAllCCPayments = async () => {
+    try {
+      const { error, count } = await creditCardPaymentDetectionAPI.acceptAllPayments(activeProfile.id);
+      if (error) throw error;
+
+      await refetchUnreviewedPayments();
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success(`${count} credit card payment${count !== 1 ? 's' : ''} accepted`);
+    } catch (error) {
+      console.error('Error accepting all credit card payments:', error);
+      toast.error('Failed to accept credit card payments');
+    }
+  };
+
   const startResize = (column, e) => {
     e.preventDefault();
     setResizing({ column, startX: e.clientX, startWidth: columnWidths[column] });
@@ -1575,11 +1703,60 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     <ClickThroughDropdownMenuItem onClick={handleResetViewSettings}>
                       Reset View Settings
                     </ClickThroughDropdownMenuItem>
+                    {statusFilter === 'posted' && (
+                      <ClickThroughDropdownMenuItem onClick={async () => {
+                        toast.info('Detecting credit card payments...');
+                        await creditCardPaymentDetectionAPI.detectPayments(activeProfile?.id);
+                        await refetchUnreviewedPayments();
+                        queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+                        toast.success('Detection complete');
+                      }}>
+                        Detect CC Payments
+                      </ClickThroughDropdownMenuItem>
+                    )}
+                    {statusFilter === 'pending' && (
+                      <ClickThroughDropdownMenuItem onClick={async () => {
+                        toast.info('Detecting transfers...');
+                        await transferAutoDetectionAPI.detectTransfers(activeProfile?.id);
+                        await refetchUnreviewedTransfers();
+                        queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+                        toast.success('Detection complete');
+                      }}>
+                        Detect Transfers
+                      </ClickThroughDropdownMenuItem>
+                    )}
                   </ClickThroughDropdownMenuContent>
                 </ClickThroughDropdownMenu>
               </div>
             </div>
           </div>
+
+          {/* Review Components */}
+          {statusFilter === 'pending' && unreviewedTransfers.length > 0 && (
+            <div className="p-4 pb-0">
+              <TransfersToReview
+                transferPairs={unreviewedTransfers}
+                accounts={allActiveAccounts}
+                onAccept={handleAcceptTransfer}
+                onReject={handleRejectTransfer}
+                onAcceptAll={handleAcceptAllTransfers}
+                isLoading={false}
+              />
+            </div>
+          )}
+
+          {statusFilter === 'posted' && unreviewedPayments.length > 0 && (
+            <div className="p-4 pb-0">
+              <CreditCardPaymentsToReview
+                paymentPairs={unreviewedPayments}
+                accounts={allActiveAccounts}
+                onAccept={handleAcceptCCPayment}
+                onReject={handleRejectCCPayment}
+                onAcceptAll={handleAcceptAllCCPayments}
+                isLoading={false}
+              />
+            </div>
+          )}
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
