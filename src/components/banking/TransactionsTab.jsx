@@ -1836,11 +1836,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           </div>
                         </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                                                                                                                                               {(transaction.type === 'expense' || transaction.type === 'credit_card_payment' || (transaction.type === 'transfer' && transaction.amount < 0)) && `$${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-                                                                                                                                                             </td>
-                                                                                                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                                                                                                                                               {(transaction.type === 'income' || (transaction.type === 'transfer' && transaction.amount > 0)) && `$${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-
+                                                      {transaction.amount < 0 && (
+                                                        <span className="text-red-600">
+                                                          ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                      )}
+                                                    </td>
+                                                    <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                                                      {transaction.amount >= 0 && (
+                                                        <span className="text-green-600">
+                                                          ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                        </span>
+                                                      )}
                                                     </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
                           {(() => {
