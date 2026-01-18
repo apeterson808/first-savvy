@@ -1984,12 +1984,38 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>;
                             }
 
-                            // For credit card payments and transfers, show type label (not editable)
-                            // Check pair_id fields first, then fall back to type field
+                            // For matched transfers, show account dropdown
+                            if (transaction.transfer_pair_id) {
+                              const pairedTransaction = findPairedTransfer(transaction);
+                              const pairedAccountId = pairedTransaction?.bank_account_id;
+
+                              return (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <AccountDropdown
+                                    value={pairedAccountId || ''}
+                                    onValueChange={(val) => {
+                                      if (val && pairedTransaction) {
+                                        updateMutation.mutate({
+                                          id: pairedTransaction.id,
+                                          data: {
+                                            bank_account_id: val
+                                          }
+                                        });
+                                      }
+                                    }}
+                                    showAllOption={false}
+                                    showPendingCounts={false}
+                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                    placeholder="Select account..."
+                                    filterAccounts={(acc) => acc.id !== transaction.bank_account_id}
+                                  />
+                                </div>
+                              );
+                            }
+
+                            // For credit card payments, show type label
                             if (transaction.cc_payment_pair_id) {
                               return <span className="text-xs px-1">Credit Card Payment</span>;
-                            } else if (transaction.transfer_pair_id) {
-                              return <span className="text-xs px-1">Transfer</span>;
                             } else if (transaction.type === 'transfer') {
                               return <span className="text-xs px-1">Transfer</span>;
                             } else if (transaction.type === 'credit_card_payment') {
