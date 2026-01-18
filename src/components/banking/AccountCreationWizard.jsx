@@ -790,7 +790,7 @@ export default function AccountCreationWizard({
           date: txn.date,
           description: txn.description,
           original_description: txn.original_description,
-          amount: Math.abs(txn.amount),
+          amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
           type: txn.type
         }));
 
@@ -2048,7 +2048,7 @@ export default function AccountCreationWizard({
               date: txn.date,
               description: txn.description,
               original_description: txn.description,
-              amount: Math.abs(txn.amount),
+              amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
               type: txn.type === 'expense' ? 'expense' : 'income',
               original_type: txn.type === 'expense' ? 'expense' : 'income',
               status: 'pending',
@@ -3665,7 +3665,7 @@ export default function AccountCreationWizard({
                               date: txn.date,
                               description: txn.description,
                               original_description: txn.description,
-                              amount: Math.abs(txn.amount),
+                              amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
                               type: txn.type === 'expense' ? 'expense' : 'income',
                               original_type: txn.type === 'expense' ? 'expense' : 'income',
                               status: 'pending',
