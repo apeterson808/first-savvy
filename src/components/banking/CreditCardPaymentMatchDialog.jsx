@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, ArrowRight, Check, X } from 'lucide-react';
+import { CreditCard, ArrowRight } from 'lucide-react';
 import { getAccountDisplayName } from '../utils/constants';
 
 export default function CreditCardPaymentMatchDialog({
@@ -20,8 +20,7 @@ export default function CreditCardPaymentMatchDialog({
   transaction,
   pairedTransaction,
   accounts,
-  onAccept,
-  onReject
+  onConfirm
 }) {
   if (!transaction) return null;
 
@@ -50,13 +49,8 @@ export default function CreditCardPaymentMatchDialog({
     return 'Low Confidence';
   };
 
-  const handleAccept = () => {
-    onAccept(transaction.cc_payment_pair_id);
-    onClose();
-  };
-
-  const handleReject = () => {
-    onReject(transaction.cc_payment_pair_id);
+  const handleConfirm = () => {
+    onConfirm();
     onClose();
   };
 
@@ -136,24 +130,15 @@ export default function CreditCardPaymentMatchDialog({
           )}
         </div>
 
-        <DialogFooter className="gap-2">
+        <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
-            variant="outline"
-            onClick={handleReject}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={handleConfirm}
+            className="bg-orange-600 hover:bg-orange-700"
           >
-            <X className="h-4 w-4 mr-1" />
-            Reject
-          </Button>
-          <Button
-            onClick={handleAccept}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            <Check className="h-4 w-4 mr-1" />
-            Accept Match
+            Confirm Match
           </Button>
         </DialogFooter>
       </DialogContent>

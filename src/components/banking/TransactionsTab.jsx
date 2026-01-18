@@ -58,8 +58,6 @@ import transactionRulesApi from '@/api/transactionRules';
 import aiCategorizationApi from '@/api/aiCategorization';
 import { useAuth } from '@/contexts/AuthContext';
 import TransfersToReview from './TransfersToReview';
-import TransferRecognitionBadge from './TransferRecognitionBadge';
-import CreditCardPaymentBadge from './CreditCardPaymentBadge';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -126,7 +124,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const isMatched = (transaction) => {
-    return transaction && transaction.transfer_pair_id != null;
+    return transaction && (transaction.transfer_pair_id != null || transaction.cc_payment_pair_id != null);
   };
 
   const isSplitMode = (transactionId) => {
@@ -871,15 +869,27 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return isFromActiveAccount && matchesAccount;
   }).length;
 
-  // Find paired transfer transaction by transfer_pair_id
+  // Find paired transfer or credit card payment transaction
   const findPairedTransfer = (transaction) => {
-    if (!transaction || !transaction.transfer_pair_id) return null;
+    if (!transaction) return null;
 
-    // Don't filter by activeAccountIds - we want to find the pair even if it's from an inactive account
-    return transactions.find(t =>
-      t.id !== transaction.id &&
-      t.transfer_pair_id === transaction.transfer_pair_id
-    );
+    // Check for transfer pair
+    if (transaction.transfer_pair_id) {
+      return transactions.find(t =>
+        t.id !== transaction.id &&
+        t.transfer_pair_id === transaction.transfer_pair_id
+      );
+    }
+
+    // Check for credit card payment pair
+    if (transaction.cc_payment_pair_id) {
+      return transactions.find(t =>
+        t.id !== transaction.id &&
+        t.cc_payment_pair_id === transaction.cc_payment_pair_id
+      );
+    }
+
+    return null;
   };
 
   const handleUnmatch = async (transaction) => {
@@ -1142,16 +1152,34 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const handleTransferMatch = async (transaction) => {
-    // Check if transaction is already matched (has transfer_pair_id)
-    if (transaction.transfer_pair_id) {
+    const isCCPayment = transaction.type === 'credit_card_payment' || transaction.cc_payment_pair_id;
+    const isTransfer = transaction.type === 'transfer' || transaction.transfer_pair_id;
+
+    // Check if transaction is already matched
+    if (transaction.transfer_pair_id || transaction.cc_payment_pair_id) {
       const paired = findPairedTransfer(transaction);
 
       if (paired) {
-        // Already matched - OPEN PREVIEW instead of immediately posting
-        setMatchingTransfer(transaction);
-        setPairedTransfer(paired);
-        setTransferPostPreviewOpen(true);
-        return;
+        // Already matched - check if reviewed
+        if (isCCPayment && !transaction.cc_payment_reviewed) {
+          // Credit card payment not yet reviewed - open dialog to accept/reject
+          setMatchingCCPayment(transaction);
+          setPairedCCPayment(paired);
+          setCCPaymentDialogOpen(true);
+          return;
+        } else if (isTransfer && !transaction.transfer_reviewed) {
+          // Transfer not yet reviewed - open preview dialog
+          setMatchingTransfer(transaction);
+          setPairedTransfer(paired);
+          setTransferPostPreviewOpen(true);
+          return;
+        } else {
+          // Already reviewed - just open preview
+          setMatchingTransfer(transaction);
+          setPairedTransfer(paired);
+          setTransferPostPreviewOpen(true);
+          return;
+        }
       }
     }
 
@@ -1877,46 +1905,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 <span className="text-xs px-1">{formatTransactionDescription(transaction.description)}</span>
                               )}
                             </div>
-                            {transaction.transfer_auto_detected && transaction.transfer_pair_id && (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!transaction.transfer_reviewed) {
-                                    setMatchingTransfer(transaction);
-                                    setPairedTransfer(findPairedTransfer(transaction));
-                                    setTransferMatchDialogOpen(true);
-                                  }
-                                }}
-                                className={!transaction.transfer_reviewed ? 'cursor-pointer' : ''}
-                              >
-                                <TransferRecognitionBadge
-                                  transaction={transaction}
-                                  pairedTransaction={findPairedTransfer(transaction)}
-                                  accounts={allActiveAccounts}
-                                  getAccountDisplayName={getAccountDisplayName}
-                                />
-                              </div>
-                            )}
-                            {transaction.cc_payment_auto_detected && transaction.cc_payment_pair_id && (
-                              <div
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  if (!transaction.cc_payment_reviewed) {
-                                    setMatchingCCPayment(transaction);
-                                    setPairedCCPayment(filteredTransactions.find(t => t.cc_payment_pair_id === transaction.cc_payment_pair_id && t.id !== transaction.id));
-                                    setCCPaymentDialogOpen(true);
-                                  }
-                                }}
-                                className={!transaction.cc_payment_reviewed ? 'cursor-pointer' : ''}
-                              >
-                                <CreditCardPaymentBadge
-                                  transaction={transaction}
-                                  pairedTransaction={filteredTransactions.find(t => t.cc_payment_pair_id === transaction.cc_payment_pair_id && t.id !== transaction.id)}
-                                  accounts={allActiveAccounts}
-                                  getAccountDisplayName={getAccountDisplayName}
-                                />
-                              </div>
-                            )}
                           </div>
                         </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
@@ -1972,7 +1960,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
 
                             // For transfers/credit card payments, show the paired account name (not editable)
-                            if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && transaction.transfer_pair_id) {
+                            if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (transaction.transfer_pair_id || transaction.cc_payment_pair_id)) {
                               const paired = findPairedTransfer(transaction);
                               if (paired) {
                                 const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
@@ -3599,8 +3587,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             transaction={matchingCCPayment}
                             pairedTransaction={pairedCCPayment}
                             accounts={allActiveAccounts}
-                            onAccept={handleAcceptCCPayment}
-                            onReject={handleRejectCCPayment}
+                            onConfirm={async () => {
+                              if (matchingCCPayment?.cc_payment_pair_id) {
+                                await handleAcceptCCPayment(matchingCCPayment.cc_payment_pair_id);
+                              }
+                            }}
                           />
 
                           <TransactionReviewDialog
