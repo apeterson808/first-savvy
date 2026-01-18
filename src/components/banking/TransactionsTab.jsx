@@ -548,7 +548,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile?.id && statusFilter === 'posted',
+    enabled: !!activeProfile?.id && statusFilter === 'pending',
     refetchInterval: 5000
   });
 
