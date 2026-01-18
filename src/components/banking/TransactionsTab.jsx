@@ -58,7 +58,6 @@ import transactionRulesApi from '@/api/transactionRules';
 import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { useAuth } from '@/contexts/AuthContext';
-import TransfersToReview from './TransfersToReview';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -533,18 +532,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryFn: () => firstsavvy.entities.Contact.list('name', 1000),
     enabled: !!activeProfile?.id
   });
-
-  const { data: unreviewedTransfers = [], refetch: refetchUnreviewedTransfers } = useQuery({
-    queryKey: ['unreviewedTransfers', activeProfile?.id],
-    queryFn: async () => {
-      const { data, error } = await transferAutoDetectionAPI.getUnreviewedTransfers(activeProfile.id);
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!activeProfile?.id && statusFilter === 'pending',
-    refetchInterval: 5000
-  });
-
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
@@ -1415,51 +1402,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
-  const handleAcceptTransfer = async (transferPairId) => {
-    try {
-      const { error } = await transferAutoDetectionAPI.acceptTransfer(transferPairId);
-      if (error) throw error;
-
-      await refetchUnreviewedTransfers();
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      toast.success('Transfer accepted');
-    } catch (error) {
-      console.error('Error accepting transfer:', error);
-      toast.error('Failed to accept transfer');
-    }
-  };
-
-  const handleRejectTransfer = async (transferPairId) => {
-    try {
-      const { error } = await transferAutoDetectionAPI.rejectTransfer(transferPairId);
-      if (error) throw error;
-
-      await refetchUnreviewedTransfers();
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      toast.success('Transfer rejected');
-    } catch (error) {
-      console.error('Error rejecting transfer:', error);
-      toast.error('Failed to reject transfer');
-    }
-  };
-
-  const handleAcceptAllTransfers = async () => {
-    try {
-      const { error, count } = await transferAutoDetectionAPI.acceptAllTransfers(activeProfile.id);
-      if (error) throw error;
-
-      await refetchUnreviewedTransfers();
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      toast.success(`${count} transfer${count !== 1 ? 's' : ''} accepted`);
-    } catch (error) {
-      console.error('Error accepting all transfers:', error);
-      toast.error('Failed to accept transfers');
-    }
-  };
-
   const handleAcceptCCPayment = async (paymentPairId) => {
     try {
       const { error } = await creditCardPaymentDetectionAPI.acceptPayment(paymentPairId);
@@ -1737,21 +1679,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               </div>
             </div>
           </div>
-
-          {/* Review Components */}
-          {statusFilter === 'pending' && unreviewedTransfers.length > 0 && (
-            <div className="p-4 pb-0">
-              <TransfersToReview
-                transferPairs={unreviewedTransfers}
-                accounts={allActiveAccounts}
-                onAccept={handleAcceptTransfer}
-                onReject={handleRejectTransfer}
-                onAcceptAll={handleAcceptAllTransfers}
-                isLoading={false}
-              />
-            </div>
-          )}
-
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
