@@ -56,6 +56,7 @@ import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import transactionRulesApi from '@/api/transactionRules';
 import aiCategorizationApi from '@/api/aiCategorization';
+import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { useAuth } from '@/contexts/AuthContext';
 import TransfersToReview from './TransfersToReview';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
@@ -2109,20 +2110,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       return rest;
                                     });
 
-                                    if (categoryValue && activeProfile?.id && user?.id) {
-                                      aiCategorizationApi.learnFromCategorization(
-                                        transaction,
-                                        categoryValue,
+                                    if (categoryValue && activeProfile?.id) {
+                                      categorizationMemoryAPI.storeMemory(
                                         activeProfile.id,
-                                        user.id
-                                      ).then(result => {
-                                        if (result?.ruleCreated) {
-                                          toast.success('Created automatic rule for similar transactions', {
-                                            description: result.rule.name
-                                          });
-                                        }
-                                      }).catch(error => {
-                                        console.error('Failed to learn from categorization:', error);
+                                        transaction,
+                                        categoryValue
+                                      ).catch(error => {
+                                        console.error('Failed to store categorization memory:', error);
                                       });
                                     }
                                   }}

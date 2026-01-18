@@ -6,13 +6,14 @@ import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
-import { Loader2, CheckCircle2, AlertCircle, Info, Sparkles } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info, Sparkles, Brain } from 'lucide-react';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
 import { format } from 'date-fns';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import transactionRulesApi from '@/api/transactionRules';
+import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { toast } from 'sonner';
 
 export function TransactionReviewDialog({
@@ -29,30 +30,82 @@ export function TransactionReviewDialog({
   const [bulkAccountId, setBulkAccountId] = useState(null);
 
   useEffect(() => {
-    if (extractedData?.transactions) {
-      const txns = extractedData.transactions.map((txn, idx) => ({
-        id: `temp-${idx}`,
-        date: txn.date,
-        description: txn.description,
-        amount: txn.amount,
-        type: txn.type || 'expense',
-        chartAccountId: null,
-        confidence: txn.confidence || 50,
-        isValid: true
-      }));
+    if (extractedData?.transactions && profileId) {
+      const processTxns = async () => {
+        const txns = extractedData.transactions.map((txn, idx) => ({
+          id: `temp-${idx}`,
+          date: txn.date,
+          description: txn.description,
+          amount: txn.amount,
+          type: txn.type || 'expense',
+          chartAccountId: null,
+          categoryAccountId: null,
+          categoryFromMemory: false,
+          confidence: txn.confidence || 50,
+          isValid: true
+        }));
 
-      setTransactions(txns);
-      setSelectedIds(new Set(txns.map(t => t.id)));
+        let processedTxns = txns;
 
-      if (extractedData.suggestedAccountId) {
-        setBulkAccountId(extractedData.suggestedAccountId);
-        setTransactions(txns.map(t => ({
-          ...t,
-          chartAccountId: extractedData.suggestedAccountId
-        })));
-      }
+        if (extractedData.suggestedAccountId) {
+          setBulkAccountId(extractedData.suggestedAccountId);
+        }
+
+        try {
+          const memoriesMap = {};
+          for (const txn of txns) {
+            const memoryTxn = {
+              date: txn.date,
+              original_description: txn.description,
+              description: txn.description,
+              amount: txn.amount,
+              bank_account_id: extractedData.suggestedAccountId
+            };
+
+            const rememberedCategoryId = await categorizationMemoryAPI.lookupMemory(profileId, memoryTxn);
+            if (rememberedCategoryId) {
+              memoriesMap[txn.id] = rememberedCategoryId;
+            }
+          }
+
+          const memorizedCount = Object.keys(memoriesMap).length;
+          if (memorizedCount > 0) {
+            processedTxns = txns.map(t => ({
+              ...t,
+              chartAccountId: extractedData.suggestedAccountId || null,
+              categoryAccountId: memoriesMap[t.id] || null,
+              categoryFromMemory: !!memoriesMap[t.id]
+            }));
+
+            toast.success(`Found ${memorizedCount} remembered categorization${memorizedCount !== 1 ? 's' : ''}`, {
+              icon: <Brain className="w-4 h-4" />,
+              description: 'Categories from previous imports'
+            });
+          } else if (extractedData.suggestedAccountId) {
+            processedTxns = txns.map(t => ({
+              ...t,
+              chartAccountId: extractedData.suggestedAccountId,
+              categoryAccountId: null
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to lookup categorization memories:', error);
+          if (extractedData.suggestedAccountId) {
+            processedTxns = txns.map(t => ({
+              ...t,
+              chartAccountId: extractedData.suggestedAccountId,
+              categoryAccountId: null
+            }));
+          }
+        }
+
+        setTransactions(processedTxns);
+        setSelectedIds(new Set(processedTxns.map(t => t.id)));
+      };
+
+      processTxns();
     }
-  }, [extractedData]);
+  }, [extractedData, profileId]);
 
   const toggleSelectAll = () => {
     if (selectedIds.size === transactions.length) {
@@ -132,6 +185,7 @@ export function TransactionReviewDialog({
         amount: Math.abs(parseFloat(txn.amount)),
         type: txn.type,
         bank_account_id: txn.chartAccountId,
+        category_account_id: txn.categoryAccountId || null,
         source: 'pdf',
         status: 'posted',
         include_in_reports: true
@@ -326,14 +380,22 @@ export function TransactionReviewDialog({
                         />
                       </td>
                       <td className="p-3 text-center">
-                        {txn.confidence && (
-                          <Badge
-                            variant={txn.confidence > 80 ? 'default' : txn.confidence > 60 ? 'secondary' : 'outline'}
-                            className="text-xs"
-                          >
-                            {txn.confidence}%
-                          </Badge>
-                        )}
+                        <div className="flex flex-col items-center gap-1">
+                          {txn.confidence && (
+                            <Badge
+                              variant={txn.confidence > 80 ? 'default' : txn.confidence > 60 ? 'secondary' : 'outline'}
+                              className="text-xs"
+                            >
+                              {txn.confidence}%
+                            </Badge>
+                          )}
+                          {txn.categoryFromMemory && (
+                            <Badge variant="default" className="text-xs bg-purple-600">
+                              <Brain className="w-3 h-3 mr-1" />
+                              Remembered
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
