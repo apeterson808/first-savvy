@@ -1984,30 +1984,45 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>;
                             }
 
-                            // For matched transfers, show account dropdown
+                            // For matched transfers, show special category dropdown with transfer options
                             if (transaction.transfer_pair_id) {
                               const pairedTransaction = findPairedTransfer(transaction);
-                              const pairedAccountId = pairedTransaction?.bank_account_id;
+                              const pairedAccount = bankAccounts.find(acc => acc.id === pairedTransaction?.bank_account_id);
+                              const otherAccounts = bankAccounts.filter(acc => acc.id !== transaction.bank_account_id);
 
                               return (
                                 <div onClick={(e) => e.stopPropagation()}>
-                                  <AccountDropdown
-                                    value={pairedAccountId || ''}
-                                    onValueChange={(val) => {
-                                      if (val && pairedTransaction) {
+                                  <CategoryDropdown
+                                    value={pairedAccount?.id || ''}
+                                    onValueChange={(accountId) => {
+                                      if (accountId && pairedTransaction) {
                                         updateMutation.mutate({
                                           id: pairedTransaction.id,
                                           data: {
-                                            bank_account_id: val
+                                            bank_account_id: accountId
                                           }
                                         });
                                       }
                                     }}
-                                    showAllOption={false}
-                                    showPendingCounts={false}
+                                    transactionType={transaction.type}
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                    placeholder="Select account..."
-                                    filterAccounts={(acc) => acc.id !== transaction.bank_account_id}
+                                    placeholder="Select account"
+                                    isMatchedTransfer={true}
+                                    matchedAccountName={pairedAccount?.name || 'Unknown Account'}
+                                    matchedAccounts={otherAccounts}
+                                    onUnmatchTransfer={() => {
+                                      if (!pairedTransaction) return;
+
+                                      updateMutation.mutate({
+                                        id: transaction.id,
+                                        data: { transfer_pair_id: null, type: 'expense' }
+                                      });
+                                      updateMutation.mutate({
+                                        id: pairedTransaction.id,
+                                        data: { transfer_pair_id: null, type: 'income' }
+                                      });
+                                    }}
                                   />
                                 </div>
                               );

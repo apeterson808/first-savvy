@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ClickThroughSelect, ClickThroughSelectItem, ClickThroughSelectSeparator } from '@/components/ui/ClickThroughSelect';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Link2Off, ArrowLeftRight } from 'lucide-react';
 import { getIncomeAccounts, getExpenseAccounts, getDisplayName } from '@/api/chartOfAccounts';
 import { getIconComponent } from '@/components/utils/iconMapper';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
@@ -17,7 +17,11 @@ export default function CategoryDropdown({
   triggerClassName = "h-7 border-slate-300",
   placeholder = "Select category",
   isTransactionTransfer = false,
-  transactionAmount = 0
+  transactionAmount = 0,
+  isMatchedTransfer = false,
+  onUnmatchTransfer,
+  matchedAccountName = null,
+  matchedAccounts = []
 }) {
   const { activeProfile } = useProfile();
   const queryClient = useQueryClient();
@@ -80,9 +84,15 @@ export default function CategoryDropdown({
   const expenseHierarchy = buildHierarchy(expenseAccounts);
 
   const selectedAccount = allAccounts.find(a => a.id === currentDisplayValue);
-  const displayValue = selectedAccount
-    ? getDisplayName(selectedAccount)
-    : placeholder;
+
+  let displayValue;
+  if (isMatchedTransfer && matchedAccountName) {
+    displayValue = matchedAccountName;
+  } else if (selectedAccount) {
+    displayValue = getDisplayName(selectedAccount);
+  } else {
+    displayValue = placeholder;
+  }
 
   return (
     <>
@@ -95,41 +105,86 @@ export default function CategoryDropdown({
             setIsOpen(false);
             return;
           }
+          if (val === '__unmatch__') {
+            onUnmatchTransfer?.();
+            setIsOpen(false);
+            return;
+          }
+          if (val.startsWith('__change_account__:')) {
+            const accountId = val.replace('__change_account__:', '');
+            onValueChange?.(accountId);
+            setIsOpen(false);
+            return;
+          }
           onValueChange?.(val);
         }}
         onOpenChange={handleOpenChange}
         onSearchTermChange={setSearchTerm}
         placeholder={placeholder}
-        triggerClassName={`${triggerClassName} ${disabled || isTransactionTransfer ? 'opacity-50 pointer-events-none' : ''}`}
-        enableSearch={true}
-        disabled={disabled || isTransactionTransfer}
+        triggerClassName={`${triggerClassName} ${disabled || (isTransactionTransfer && !isMatchedTransfer) ? 'opacity-50 pointer-events-none' : ''}`}
+        enableSearch={!isMatchedTransfer}
+        disabled={disabled || (isTransactionTransfer && !isMatchedTransfer)}
         displayValue={displayValue}
       >
-      {onAddNew && (
+      {isMatchedTransfer ? (
         <>
-          <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
-            + Add new{searchTerm ? `: "${searchTerm}"` : ''}
-          </ClickThroughSelectItem>
-          <ClickThroughSelectSeparator />
-        </>
-      )}
-      {suggestedAccount && (
-        <>
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+            Transfer Options
+          </div>
           <ClickThroughSelectItem
-            key={`suggested-${suggestedAccount.id}`}
-            value={suggestedAccount.id}
-            isRecommended={true}
-            data-display={getDisplayName(suggestedAccount)}
-            className="flex items-center justify-between whitespace-nowrap"
+            value="__unmatch__"
+            className="text-red-600 font-medium whitespace-nowrap flex items-center gap-2"
+            isAction
           >
-            <span className="truncate">
-              {getDisplayName(suggestedAccount)}
-            </span>
-            <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
+            <Link2Off className="w-3.5 h-3.5" />
+            Unmatch Transfer
           </ClickThroughSelectItem>
-          <ClickThroughSelectSeparator />
+          {matchedAccounts.length > 0 && (
+            <>
+              <ClickThroughSelectSeparator />
+              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+                Change To Account
+              </div>
+              {matchedAccounts.map((account) => (
+                <ClickThroughSelectItem
+                  key={account.id}
+                  value={`__change_account__:${account.id}`}
+                  className="flex items-center gap-2 whitespace-nowrap"
+                >
+                  <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500" />
+                  <span className="truncate">{account.name}</span>
+                </ClickThroughSelectItem>
+              ))}
+            </>
+          )}
         </>
-      )}
+      ) : (
+        <>
+          {onAddNew && (
+            <>
+              <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
+                + Add new{searchTerm ? `: "${searchTerm}"` : ''}
+              </ClickThroughSelectItem>
+              <ClickThroughSelectSeparator />
+            </>
+          )}
+          {suggestedAccount && (
+            <>
+              <ClickThroughSelectItem
+                key={`suggested-${suggestedAccount.id}`}
+                value={suggestedAccount.id}
+                isRecommended={true}
+                data-display={getDisplayName(suggestedAccount)}
+                className="flex items-center justify-between whitespace-nowrap"
+              >
+                <span className="truncate">
+                  {getDisplayName(suggestedAccount)}
+                </span>
+                <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
+              </ClickThroughSelectItem>
+              <ClickThroughSelectSeparator />
+            </>
+          )}
 
       {incomeAccounts.length > 0 && (
         <>
@@ -218,6 +273,8 @@ export default function CategoryDropdown({
               </React.Fragment>
             );
           })}
+        </>
+      )}
         </>
       )}
     </ClickThroughSelect>
