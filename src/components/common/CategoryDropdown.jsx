@@ -21,10 +21,7 @@ export default function CategoryDropdown({
   isMatchedTransfer = false,
   onUnmatchTransfer,
   matchedAccountName = null,
-  matchedAccounts = [],
-  onMarkAsTransfer,
-  onMarkAsCreditCardPayment,
-  showSpecialOptions = false
+  matchedAccounts = []
 }) {
   const { activeProfile } = useProfile();
   const queryClient = useQueryClient();
@@ -113,16 +110,6 @@ export default function CategoryDropdown({
             setIsOpen(false);
             return;
           }
-          if (val === '__mark_transfer__') {
-            onMarkAsTransfer?.();
-            setIsOpen(false);
-            return;
-          }
-          if (val === '__mark_cc_payment__') {
-            onMarkAsCreditCardPayment?.();
-            setIsOpen(false);
-            return;
-          }
           if (val.startsWith('__change_account__:')) {
             const accountId = val.replace('__change_account__:', '');
             onValueChange?.(accountId);
@@ -134,8 +121,8 @@ export default function CategoryDropdown({
         onOpenChange={handleOpenChange}
         onSearchTermChange={setSearchTerm}
         placeholder={placeholder}
-        triggerClassName={`${triggerClassName} ${(disabled || (isTransactionTransfer && !isMatchedTransfer)) ? 'opacity-50 pointer-events-none' : ''}`}
-        enableSearch={!isMatchedTransfer && !showSpecialOptions}
+        triggerClassName={`${triggerClassName} ${disabled || (isTransactionTransfer && !isMatchedTransfer) ? 'opacity-50 pointer-events-none' : ''}`}
+        enableSearch={!isMatchedTransfer}
         disabled={disabled || (isTransactionTransfer && !isMatchedTransfer)}
         displayValue={displayValue}
       >
@@ -173,34 +160,6 @@ export default function CategoryDropdown({
         </>
       ) : (
         <>
-          {showSpecialOptions && (
-            <>
-              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
-                Special Types
-              </div>
-              {onMarkAsTransfer && (
-                <ClickThroughSelectItem
-                  value="__mark_transfer__"
-                  className="text-blue-600 font-medium whitespace-nowrap flex items-center gap-2"
-                  isAction
-                >
-                  <ArrowLeftRight className="w-3.5 h-3.5" />
-                  Mark as Transfer
-                </ClickThroughSelectItem>
-              )}
-              {onMarkAsCreditCardPayment && (
-                <ClickThroughSelectItem
-                  value="__mark_cc_payment__"
-                  className="text-blue-600 font-medium whitespace-nowrap flex items-center gap-2"
-                  isAction
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  Mark as Credit Card Payment
-                </ClickThroughSelectItem>
-              )}
-              <ClickThroughSelectSeparator />
-            </>
-          )}
           {onAddNew && (
             <>
               <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>

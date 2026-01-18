@@ -2005,10 +2005,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       }
                                     }}
                                     transactionType={transaction.type}
-                                    disabled={false}
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                     placeholder="Select account"
-                                    isTransactionTransfer={false}
                                     isMatchedTransfer={true}
                                     matchedAccountName={pairedAccount?.name || 'Unknown Account'}
                                     matchedAccounts={otherAccounts}
@@ -2102,15 +2101,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   isTransactionTransfer={transaction.type === 'transfer'}
                                   transactionAmount={transaction.amount}
                                   aiSuggestionId={categorySuggestions[transaction.id]}
-                                  showSpecialOptions={true}
-                                  onMarkAsTransfer={() => {
-                                    setMatchingTransfer(transaction);
-                                    setShowMatchDialog(true);
-                                  }}
-                                  onMarkAsCreditCardPayment={() => {
-                                    setMatchingCreditCardPayment(transaction);
-                                    setShowCreditCardMatchDialog(true);
-                                  }}
                                 />
                               </div>
                             );
