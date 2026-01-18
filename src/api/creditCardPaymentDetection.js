@@ -31,7 +31,7 @@ export const creditCardPaymentDetectionAPI = {
           )
         `)
         .eq('profile_id', profileId)
-        .eq('status', 'posted')
+        .eq('status', 'pending')
         .eq('cc_payment_auto_detected', true)
         .eq('cc_payment_reviewed', false)
         .not('cc_payment_pair_id', 'is', null)
@@ -153,7 +153,7 @@ export const creditCardPaymentDetectionAPI = {
         .from('transactions')
         .select('cc_payment_pair_id')
         .eq('profile_id', profileId)
-        .eq('status', 'posted')
+        .eq('status', 'pending')
         .eq('cc_payment_auto_detected', true)
         .eq('cc_payment_reviewed', false)
         .not('cc_payment_pair_id', 'is', null);

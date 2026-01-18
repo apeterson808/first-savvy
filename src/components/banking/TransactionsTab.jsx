@@ -471,7 +471,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const { detectNewPayments } = useAutomaticCreditCardPaymentDetection(
     activeProfile?.id,
-    fullPostedTransactions
+    fullPendingTransactions
   );
 
   // Fetch all active accounts for Match tab dropdown (from unified chart of accounts)
@@ -1745,7 +1745,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             </div>
           )}
 
-          {statusFilter === 'posted' && unreviewedPayments.length > 0 && (
+          {statusFilter === 'pending' && unreviewedPayments.length > 0 && (
             <div className="p-4 pb-0">
               <CreditCardPaymentsToReview
                 paymentPairs={unreviewedPayments}

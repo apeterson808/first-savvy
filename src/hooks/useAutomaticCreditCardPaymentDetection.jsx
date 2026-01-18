@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 
-export function useAutomaticCreditCardPaymentDetection(profileId, postedTransactions = []) {
+export function useAutomaticCreditCardPaymentDetection(profileId, pendingTransactions = []) {
   const lastDetectionRef = useRef(new Date(0));
   const scannedTransactionIdsRef = useRef(new Set());
   const detectionInProgressRef = useRef(false);
@@ -62,11 +62,11 @@ export function useAutomaticCreditCardPaymentDetection(profileId, postedTransact
   };
 
   useEffect(() => {
-    if (!profileId || !postedTransactions || postedTransactions.length === 0) {
+    if (!profileId || !pendingTransactions || pendingTransactions.length === 0) {
       return;
     }
 
-    const newTransactionIds = postedTransactions
+    const newTransactionIds = pendingTransactions
       .filter(t =>
         !scannedTransactionIdsRef.current.has(t.id) &&
         !t.cc_payment_pair_id &&
@@ -79,7 +79,7 @@ export function useAutomaticCreditCardPaymentDetection(profileId, postedTransact
       newTransactionIds.forEach(id => scannedTransactionIdsRef.current.add(id));
       detectNewPayments(newTransactionIds);
     }
-  }, [profileId, postedTransactions]);
+  }, [profileId, pendingTransactions]);
 
   return { detectNewPayments };
 }
