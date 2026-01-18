@@ -1863,28 +1863,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
                               }
 
-                              return (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <AccountDropdown
-                                    value={pairedAccountId}
-                                    onValueChange={(accountId) => {
-                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                      // Find or create matching transaction with selected account
-                                      if (paired) {
-                                        updateMutation.mutate({
-                                          id: paired.id,
-                                          data: { ...paired, bank_account_id: accountId }
-                                        });
-                                      }
-                                    }}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    triggerClassName="h-7 border-slate-300 text-xs"
-                                    placeholder="Select account"
-                                    showAllOption={false}
-                                    showPendingCounts={false}
-                                  />
-                                </div>
-                              );
+                              // Show paired account as read-only - bank data is immutable
+                              const pairedAccount = allActiveAccounts.find(a => a.id === pairedAccountId) || accounts.find(a => a.id === pairedAccountId);
+                              return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
                             }
 
                             // For transfers/credit card payments, show the paired account name (not editable)
@@ -1990,40 +1971,31 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               const pairedAccount = bankAccounts.find(acc => acc.id === pairedTransaction?.bank_account_id);
                               const otherAccounts = bankAccounts.filter(acc => acc.id !== transaction.bank_account_id);
 
+                              // Show paired account with unmatch option - bank data is immutable
                               return (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <CategoryDropdown
-                                    value={pairedAccount?.id || ''}
-                                    onValueChange={(accountId) => {
-                                      if (accountId && pairedTransaction) {
-                                        updateMutation.mutate({
-                                          id: pairedTransaction.id,
-                                          data: {
-                                            bank_account_id: accountId
-                                          }
-                                        });
-                                      }
-                                    }}
-                                    transactionType={transaction.type}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                    placeholder="Select account"
-                                    isMatchedTransfer={true}
-                                    matchedAccountName={pairedAccount?.name || 'Unknown Account'}
-                                    matchedAccounts={otherAccounts}
-                                    onUnmatchTransfer={() => {
-                                      if (!pairedTransaction) return;
+                                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                                  <span className="text-xs px-1">Transfer: {pairedAccount?.display_name || 'Unknown'}</span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="h-5 w-5 p-0 hover:bg-slate-100"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      if (!pairedTransaction || !activeAccountIds.includes(transaction.bank_account_id)) return;
 
                                       updateMutation.mutate({
                                         id: transaction.id,
-                                        data: { transfer_pair_id: null, type: 'expense' }
+                                        data: { transfer_pair_id: null, type: null }
                                       });
                                       updateMutation.mutate({
                                         id: pairedTransaction.id,
-                                        data: { transfer_pair_id: null, type: 'income' }
+                                        data: { transfer_pair_id: null, type: null }
                                       });
                                     }}
-                                  />
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                  >
+                                    <Unlink className="h-3 w-3" />
+                                  </Button>
                                 </div>
                               );
                             }
