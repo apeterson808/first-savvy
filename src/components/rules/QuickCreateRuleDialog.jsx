@@ -357,15 +357,12 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Search & Filter Criteria</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 pt-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rule-name" className="flex items-center gap-1">
+                  <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
                     Rule Name <span className="text-red-500">*</span>
                   </Label>
                   <Input
@@ -373,7 +370,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     placeholder="Enter a unique name for this rule"
                     value={ruleName}
                     onChange={(e) => setRuleName(e.target.value)}
-                    className={nameError ? 'border-red-500' : ''}
+                    className={nameError ? 'border-red-500 h-9' : 'h-9'}
                   />
                   {nameError && (
                     <p className="text-xs text-red-500 flex items-center gap-1">
@@ -386,36 +383,36 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   )}
                 </div>
 
-                <div className="space-y-2 pt-2 border-t">
-                  <Label className="text-sm font-semibold">Apply to</Label>
+                <div className="space-y-2 pt-1 border-t">
+                  <Label className="text-xs font-semibold text-slate-600">Apply to</Label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="direction" className="text-sm">Transaction Direction</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="direction" className="text-xs">Direction</Label>
                       <Select value={moneyDirection} onValueChange={setMoneyDirection}>
-                        <SelectTrigger id="direction">
+                        <SelectTrigger id="direction" className="h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="both">Both (Money In & Out)</SelectItem>
+                          <SelectItem value="both">Both</SelectItem>
                           <SelectItem value="money_in">Money In</SelectItem>
                           <SelectItem value="money_out">Money Out</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label className="text-sm">Accounts to Search</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Accounts</Label>
                       <Select
                         open={accountsDropdownOpen}
                         onOpenChange={setAccountsDropdownOpen}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-8 text-xs">
                           <SelectValue>
-                            {selectedAccountIds.length === 0 ? 'All Accounts' :
-                             selectedAccountIds.length === bankAccounts.length ? 'All Accounts' :
+                            {selectedAccountIds.length === 0 ? 'All' :
+                             selectedAccountIds.length === bankAccounts.length ? 'All' :
                              selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
-                             `${selectedAccountIds.length} Accounts Selected`}
+                             `${selectedAccountIds.length} Selected`}
                           </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
@@ -430,7 +427,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                               checked={allAccountsSelected}
                               onCheckedChange={toggleAllAccounts}
                             />
-                            <span className="font-medium">All Accounts</span>
+                            <span className="font-medium text-xs">All Accounts</span>
                           </div>
                           {bankAccounts.map(account => (
                             <div
@@ -445,7 +442,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                                 checked={selectedAccountIds.includes(account.id)}
                                 onCheckedChange={() => toggleAccount(account.id)}
                               />
-                              <span className="text-sm">{account.display_name || account.account_name}</span>
+                              <span className="text-xs">{account.display_name || account.account_name}</span>
                             </div>
                           ))}
                         </SelectContent>
@@ -454,19 +451,19 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-2 border-t">
+                <div className="space-y-2 pt-1 border-t">
                   <div className="flex items-center justify-between">
-                    <Label className="text-sm font-semibold">Include the following</Label>
+                    <Label className="text-xs font-semibold text-slate-600">Include the following</Label>
                     <ToggleGroup
                       type="single"
                       value={matchLogic}
                       onValueChange={(value) => value && setMatchLogic(value)}
                       className="gap-0"
                     >
-                      <ToggleGroupItem value="any" className="h-7 px-3 text-xs rounded-r-none">
+                      <ToggleGroupItem value="any" className="h-6 px-2 text-xs rounded-r-none">
                         Any
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="all" className="h-7 px-3 text-xs rounded-l-none">
+                      <ToggleGroupItem value="all" className="h-6 px-2 text-xs rounded-l-none">
                         All
                       </ToggleGroupItem>
                     </ToggleGroup>
@@ -479,12 +476,12 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                           {matchLogic === 'all' ? 'and' : 'or'}
                         </div>
                       )}
-                      <div className="grid grid-cols-[120px_120px_1fr_24px] gap-2">
+                      <div className="grid grid-cols-[110px_110px_1fr_24px] gap-1.5">
                         <Select
                           value={row.field}
                           onValueChange={(value) => updateConditionRow(index, 'field', value)}
                         >
-                          <SelectTrigger className="text-xs">
+                          <SelectTrigger className="text-xs h-8">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -498,7 +495,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                           value={row.operator}
                           onValueChange={(value) => updateConditionRow(index, 'operator', value)}
                         >
-                          <SelectTrigger className="text-xs">
+                          <SelectTrigger className="text-xs h-8">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -515,17 +512,17 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                           type={row.field === 'amount' ? 'number' : 'text'}
                           value={row.value}
                           onChange={(e) => updateConditionRow(index, 'value', e.target.value)}
-                          className="text-xs"
+                          className="text-xs h-8"
                         />
 
                         {conditionRows.length > 1 && (
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0"
+                            className="h-8 w-6 p-0"
                             onClick={() => removeConditionRow(index)}
                           >
-                            <X className="w-4 h-4" />
+                            <X className="w-3.5 h-3.5" />
                           </Button>
                         )}
                       </div>
@@ -536,35 +533,32 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="w-full text-xs"
+                    className="w-full text-xs h-7"
                     onClick={addConditionRow}
                   >
                     <Plus className="w-3 h-3 mr-1" />
-                    Add a condition
+                    Add condition
                   </Button>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Transaction Changes</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-[1fr_140px] gap-2">
-                  <div className="space-y-2">
-                    <Label className="text-sm">Set Category</Label>
+              <CardContent className="space-y-3 pt-4">
+                <div className="grid grid-cols-[1fr_130px] gap-2">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Category</Label>
                     <CategoryDropdown
                       value={categoryId}
                       onValueChange={setCategoryId}
                       transactionType={transaction?.type === 'income' ? 'income' : 'expense'}
                       placeholder="Select category..."
-                      triggerClassName="h-9 text-sm border-slate-300"
+                      triggerClassName="h-8 text-xs border-slate-300"
                       onAddNew={() => {}}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label className="text-sm">Contact</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Contact</Label>
                     <ContactDropdown
                       value={contactId}
                       onValueChange={setContactId}
@@ -572,22 +566,22 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                         setContactSearchTerm(searchTerm);
                         setAddContactSheetOpen(true);
                       }}
-                      triggerClassName="h-9 text-sm border-slate-300"
-                      placeholder="Select contact"
+                      triggerClassName="h-8 text-xs border-slate-300"
+                      placeholder="Select"
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="new-desc" className="text-sm flex items-center gap-1.5">
+                <div className="space-y-1.5">
+                  <Label htmlFor="new-desc" className="text-xs flex items-center gap-1.5">
                     Change Description To
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                          <Info className="w-3 h-3 text-slate-400 cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>If left blank bank memo will be used for each transaction</p>
+                          <p>If left blank bank memo will be used</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -597,28 +591,28 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     placeholder="Enter new description (optional)"
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
-                    className="text-sm"
+                    className="text-xs h-8"
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-sm">Add Notes</Label>
+                <div className="space-y-1.5">
+                  <Label htmlFor="notes" className="text-xs">Add Notes</Label>
                   <Textarea
                     id="notes"
-                    placeholder="Optional notes to add to matching transactions"
+                    placeholder="Optional notes"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     rows={2}
-                    className="text-sm"
+                    className="text-xs"
                   />
                 </div>
 
-                <div className="space-y-2 pt-2 border-t">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-1">
-                      <Label className="text-sm font-medium">Automatically confirm and post</Label>
+                <div className="space-y-2 pt-1 border-t">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="space-y-0.5">
+                      <Label className="text-xs font-medium">Auto confirm & post</Label>
                       <p className="text-xs text-slate-500">
-                        Matching transactions will be automatically posted without review
+                        Skip review for matches
                       </p>
                     </div>
                     <Switch
@@ -631,10 +625,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
           </div>
 
-          <Card className="flex flex-col h-[400px]">
-            <CardHeader className="pb-3 flex-shrink-0">
+          <Card className="flex flex-col h-[280px]">
+            <CardHeader className="pb-2 pt-3 flex-shrink-0">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Preview - Pending Transactions</CardTitle>
+                <CardTitle className="text-sm font-semibold">Preview - Pending Transactions</CardTitle>
                 <div className="flex items-center gap-2">
                   {previewLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
                   {!previewLoading && previewTransactions.length > 0 && (
