@@ -367,7 +367,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2 px-6">
+        <div className="space-y-2 px-6 flex-1 overflow-hidden py-4">
           <div className="grid grid-cols-2 gap-2 h-[300px]">
             <Card className="flex flex-col h-full">
               <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
