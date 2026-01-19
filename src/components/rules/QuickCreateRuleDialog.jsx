@@ -75,6 +75,16 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     enabled: !!profileId && open
   });
 
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts', profileId],
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.from('contacts').select('*').eq('profile_id', profileId);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!profileId && open
+  });
+
   useEffect(() => {
     if (transaction && open) {
       const suggested = `Auto-categorize "${transaction.description.substring(0, 30)}${transaction.description.length > 30 ? '...' : ''}"`;
