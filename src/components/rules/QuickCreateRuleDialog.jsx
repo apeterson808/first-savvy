@@ -24,6 +24,7 @@ import {
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
@@ -592,18 +593,22 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </div>
           </div>
 
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <Label className="text-sm font-semibold">Preview - Pending Transactions</Label>
-              {previewLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
-              {!previewLoading && previewTransactions.length > 0 && (
-                <Badge variant="secondary" className="text-xs">
-                  {previewTransactions.length} match{previewTransactions.length !== 1 ? 'es' : ''}
-                </Badge>
-              )}
-            </div>
+          <Card className="flex flex-col h-[600px]">
+            <CardHeader className="pb-3 flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold">Preview - Pending Transactions</CardTitle>
+                <div className="flex items-center gap-2">
+                  {previewLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+                  {!previewLoading && previewTransactions.length > 0 && (
+                    <Badge variant="secondary" className="text-xs">
+                      {previewTransactions.length} match{previewTransactions.length !== 1 ? 'es' : ''}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
 
-            <div className="max-h-[500px] overflow-auto space-y-2">
+            <CardContent className="flex-1 overflow-auto space-y-2 pt-0">
               {previewLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -668,8 +673,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   );
                 })
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         <DialogFooter>
