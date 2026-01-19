@@ -369,8 +369,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
         <div className="space-y-2">
           <div className="grid grid-cols-2 gap-2">
-            <Card>
-              <CardContent className="space-y-2 pt-3">
+            <Card className="flex flex-col max-h-[400px]">
+              <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
                 <div className="space-y-2">
                   <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
                     Rule Name <span className="text-red-500">*</span>
@@ -475,7 +475,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     </ToggleGroup>
                   </div>
 
-                  <div className="max-h-[140px] overflow-y-auto space-y-2 pr-1">
+                  <div className="space-y-2">
                     {conditionRows.map((row, index) => (
                       <div key={index}>
                         {index > 0 && (
@@ -551,8 +551,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               </CardContent>
             </Card>
 
-            <Card>
-              <CardContent className="space-y-2 pt-3">
+            <Card className="flex flex-col max-h-[400px]">
+              <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Contact</Label>
