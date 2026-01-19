@@ -347,7 +347,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>
             Create Rule
@@ -357,10 +357,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-2">
+          <div className="grid grid-cols-2 gap-2">
             <Card>
-              <CardContent className="space-y-3 pt-4">
+              <CardContent className="space-y-2 pt-3">
                 <div className="space-y-2">
                   <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
                     Rule Name <span className="text-red-500">*</span>
@@ -540,7 +540,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
 
             <Card>
-              <CardContent className="space-y-3 pt-4">
+              <CardContent className="space-y-2 pt-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Contact</Label>
@@ -621,10 +621,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
           </div>
 
-          <Card className="flex flex-col h-[280px]">
-            <CardHeader className="pb-2 pt-3 flex-shrink-0">
+          <Card className="flex flex-col h-[200px]">
+            <CardHeader className="pb-1 pt-2 flex-shrink-0">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">Preview - Pending Transactions</CardTitle>
+                <CardTitle className="text-sm font-semibold">Preview</CardTitle>
                 <div className="flex items-center gap-2">
                   {previewLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
                   {!previewLoading && previewTransactions.length > 0 && (
@@ -636,57 +636,64 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               </div>
             </CardHeader>
 
-            <CardContent className="flex-1 overflow-auto space-y-2 pt-0">
+            <CardContent className="flex-1 overflow-auto pt-0 pb-2">
               {previewLoading ? (
-                <div className="flex items-center justify-center py-12">
+                <div className="flex items-center justify-center py-6">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
                 </div>
               ) : previewTransactions.length === 0 ? (
-                <div className="text-center py-12 text-slate-500 text-sm">
+                <div className="text-center py-6 text-slate-500 text-sm">
                   <p>No pending transactions match</p>
                   <p className="text-xs mt-1">Add conditions to see preview</p>
                 </div>
               ) : (
-                previewTransactions.map((txn) => {
-                  const willChangeDescription = newDescription && txn.description !== newDescription;
-                  const displayDescription = newDescription || txn.description;
-                  const displayCategoryId = categoryId || txn.category_account_id;
-                  const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : 'Uncategorized';
-                  const categoryWillChange = categoryId && txn.category_account_id !== categoryId;
+                <div className="space-y-1">
+                  {previewTransactions.map((txn) => {
+                    const willChangeDescription = newDescription && txn.description !== newDescription;
+                    const displayDescription = newDescription || txn.original_description || txn.description;
+                    const displayCategoryId = categoryId || txn.category_account_id;
+                    const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : 'Uncategorized';
+                    const categoryWillChange = categoryId && txn.category_account_id !== categoryId;
+                    const isSourceTransaction = transaction && txn.id === transaction.id;
+                    const displayContact = contactId ? (contacts.find(c => c.id === contactId)?.name || 'Contact') : (txn.contact_id ? (contacts.find(c => c.id === txn.contact_id)?.name || 'Contact') : '—');
 
-                  return (
-                    <div key={txn.id} className="bg-white border border-slate-200 rounded-lg p-2.5 hover:border-slate-300 transition-colors">
-                      <div className="flex items-center gap-3 text-xs">
-                        <span className="text-slate-600 font-medium min-w-[60px] flex-shrink-0">
-                          {format(new Date(txn.date), 'MM/dd/yy')}
-                        </span>
-                        <div className="flex-1 min-w-0">
-                          <div className={`font-medium truncate ${willChangeDescription ? 'text-blue-600' : 'text-slate-900'}`}>
+                    return (
+                      <div
+                        key={txn.id}
+                        className={`border rounded p-1.5 text-xs ${isSourceTransaction ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200'}`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-slate-600 w-[60px] flex-shrink-0">
+                            {format(new Date(txn.date), 'MM/dd/yy')}
+                          </span>
+                          <span className="text-slate-600 w-[100px] flex-shrink-0 truncate">
+                            {getAccountName(txn.bank_account_id)}
+                          </span>
+                          <span className={`flex-1 min-w-0 truncate ${willChangeDescription ? 'text-blue-600 font-medium' : 'text-slate-900'}`}>
                             {displayDescription}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3 text-slate-600 flex-shrink-0">
-                          <span>{txn.contact_id ? 'Contact' : '—'}</span>
-                          <span className={categoryWillChange ? 'text-blue-600 font-medium' : ''}>
+                          </span>
+                          <span className="font-medium text-right w-[75px] flex-shrink-0">
+                            {txn.amount < 0 ? (
+                              <span className="text-red-600">
+                                -${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            ) : (
+                              <span className="text-green-600">
+                                +${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-slate-600 w-[80px] flex-shrink-0 truncate">
+                            {displayContact}
+                          </span>
+                          <span className={`w-[90px] flex-shrink-0 truncate ${categoryWillChange ? 'text-blue-600 font-medium' : 'text-slate-600'}`}>
                             {displayCategory}
                           </span>
-                          <span>{getAccountName(txn.bank_account_id)}</span>
-                        </div>
-                        <div className="font-semibold text-right min-w-[80px] flex-shrink-0">
-                          {txn.amount < 0 ? (
-                            <span className="text-red-600">
-                              -${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : (
-                            <span className="text-green-600">
-                              +${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          )}
                         </div>
                       </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
               )}
             </CardContent>
           </Card>
