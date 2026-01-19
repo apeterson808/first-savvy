@@ -28,7 +28,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
-import TransactionTypeDropdown from '../common/TransactionTypeDropdown';
+import ContactDropdown from '../common/ContactDropdown';
+import AddContactSheet from '../contacts/AddContactSheet';
 import { Sparkles, Plus, X, Loader2, ArrowRight, AlertCircle, Info } from 'lucide-react';
 import {
   Tooltip,
@@ -58,12 +59,15 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
   const [newDescription, setNewDescription] = useState('');
   const [categoryId, setCategoryId] = useState(null);
-  const [transactionType, setTransactionType] = useState('expense');
+  const [contactId, setContactId] = useState(null);
   const [notes, setNotes] = useState('');
   const [autoConfirmAndPost, setAutoConfirmAndPost] = useState(false);
 
   const [previewTransactions, setPreviewTransactions] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
+
+  const [addContactSheetOpen, setAddContactSheetOpen] = useState(false);
+  const [contactSearchTerm, setContactSearchTerm] = useState('');
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['user-chart-accounts', profileId],
@@ -76,7 +80,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
       const suggested = `Auto-categorize "${transaction.description.substring(0, 30)}${transaction.description.length > 30 ? '...' : ''}"`;
       setRuleName(suggested);
       setCategoryId(transaction.category_account_id || null);
-      setTransactionType(transaction.type || 'expense');
+      setContactId(transaction.contact_id || null);
       setConditionRows([
         { field: 'description', operator: 'contains', value: transaction.description }
       ]);
@@ -198,6 +202,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     setMatchLogic('all');
     setNewDescription('');
     setCategoryId(null);
+    setContactId(null);
     setNotes('');
     setAutoConfirmAndPost(false);
     setPreviewTransactions([]);
@@ -220,7 +225,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
       return;
     }
 
-    if (!newDescription && !categoryId && !notes) {
+    if (!newDescription && !categoryId && !contactId && !notes) {
       toast.error('Please specify at least one action');
       return;
     }
@@ -259,6 +264,9 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     }
     if (categoryId) {
       ruleData.action_set_category_id = categoryId;
+    }
+    if (contactId) {
+      ruleData.action_set_contact_id = contactId;
     }
     if (notes) {
       ruleData.action_add_note = notes;
@@ -337,6 +345,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   if (!transaction) return null;
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
@@ -539,19 +548,23 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   <CategoryDropdown
                     value={categoryId}
                     onValueChange={setCategoryId}
-                    transactionType={transactionType}
+                    transactionType={transaction?.type === 'income' ? 'income' : 'expense'}
                     placeholder="Select category..."
                     triggerClassName="h-9 text-sm border-slate-300"
                     onAddNew={() => {}}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm">Type</Label>
-                  <TransactionTypeDropdown
-                    value={transactionType}
-                    onValueChange={setTransactionType}
-                    showAllOption={false}
+                  <Label className="text-sm">Contact</Label>
+                  <ContactDropdown
+                    value={contactId}
+                    onValueChange={setContactId}
+                    onAddNew={(searchTerm) => {
+                      setContactSearchTerm(searchTerm);
+                      setAddContactSheetOpen(true);
+                    }}
                     triggerClassName="h-9 text-sm border-slate-300"
+                    placeholder="Select contact"
                   />
                 </div>
               </div>
@@ -692,5 +705,23 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
+    <AddContactSheet
+      open={addContactSheetOpen}
+      onOpenChange={(open) => {
+        setAddContactSheetOpen(open);
+        if (!open) {
+          setContactSearchTerm('');
+        }
+      }}
+      initialContactName={contactSearchTerm}
+      onContactCreated={(newContact) => {
+        if (newContact?.id) {
+          setContactId(newContact.id);
+        }
+        setContactSearchTerm('');
+      }}
+    />
+  </>
   );
 }
