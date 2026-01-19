@@ -5,6 +5,7 @@ import TransactionsTab from '../components/banking/TransactionsTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
+import RulesTab from '../components/banking/RulesTab';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -89,7 +90,7 @@ export default function Banking() {
 
   return (
     <div className="p-4 md:p-6">
-      <PageTabs tabs={['overview', 'transactions', 'recurring', 'accounts']} />
+      <PageTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-4">
@@ -180,6 +181,10 @@ export default function Banking() {
               <p className="text-slate-600">Recurring payments content coming soon</p>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="rules" className="space-y-4">
+          <RulesTab />
         </TabsContent>
 
         <TabsContent value="accounts" className="space-y-4">

@@ -11,7 +11,6 @@ import ContactDetail from "./ContactDetail";
 import AccountDetail from "./AccountDetail";
 import Settings from "./Settings";
 import Goals from "./Goals";
-import Rules from "./Rules";
 import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -30,8 +29,6 @@ const PAGES = {
     CreditScore: CreditScore,
 
     Contacts: Contacts,
-
-    Rules: Rules,
 
     Settings: Settings,
 
@@ -80,7 +77,6 @@ function PagesContent() {
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
-                    <Route path="/Rules" element={<Rules />} />
                     <Route path="/Settings" element={<Settings />} />
                 </Routes>
             </Layout>
