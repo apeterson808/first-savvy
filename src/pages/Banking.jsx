@@ -89,7 +89,7 @@ export default function Banking() {
 
   return (
     <div className="p-4 md:p-6">
-      <PageTabs tabs={['overview', 'transactions', 'recurring', 'accounts']} />
+      <PageTabs tabs={['overview', 'transactions', 'recurring', 'rules', 'accounts']} />
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-4">
@@ -178,6 +178,17 @@ export default function Banking() {
             </CardHeader>
             <CardContent>
               <p className="text-slate-600">Recurring payments content coming soon</p>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="rules" className="space-y-4">
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-2 pt-4 px-4">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Rules</p>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600">Rules content coming soon</p>
             </CardContent>
           </Card>
         </TabsContent>

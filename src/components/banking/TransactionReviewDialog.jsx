@@ -12,6 +12,7 @@ import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
 import { format } from 'date-fns';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
+import transactionRulesApi from '@/api/transactionRules';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { toast } from 'sonner';
 
@@ -205,7 +206,15 @@ export function TransactionReviewDialog({
           .select('*')
           .in('id', transactionIds);
 
+        let categorizedCount = 0;
         let transfersCount = 0;
+
+        try {
+          const ruleUpdates = await transactionRulesApi.applyAllRules(fullTransactions, profileId);
+          categorizedCount = ruleUpdates.length;
+        } catch (err) {
+          console.warn('Auto-categorization failed:', err);
+        }
 
         try {
           await transferAutoDetectionAPI.detectTransfers(profileId, transactionIds);
@@ -221,6 +230,7 @@ export function TransactionReviewDialog({
 
         const successMessage = [
           `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported`,
+          categorizedCount > 0 && `${categorizedCount} auto-categorized`,
           transfersCount > 0 && `${transfersCount} transfer${transfersCount !== 1 ? 's' : ''} detected`
         ].filter(Boolean).join(', ');
 
