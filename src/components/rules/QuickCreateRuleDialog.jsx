@@ -350,9 +350,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               <col style={{ width: 70, minWidth: 70 }} />
               <col style={{ minWidth: 150 }} />
               <col style={{ minWidth: 100 }} />
-              <col style={{ width: 1 }} />
-              <col style={{ width: 1 }} />
               <col style={{ minWidth: 100 }} />
+              <col style={{ minWidth: 100 }} />
+              <col style={{ width: 1 }} />
+              <col style={{ width: 1 }} />
             </colgroup>
             <tbody>
               <tr className="bg-white h-8">
@@ -362,33 +363,41 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     : 'Invalid'}
                 </td>
                 <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs px-1">{transaction.description}</span>
-                    </div>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium">{transaction.description}</span>
+                    {transaction.original_description && transaction.original_description !== transaction.description && (
+                      <span className="text-[10px] text-slate-500">Bank: {transaction.original_description}</span>
+                    )}
                   </div>
                 </td>
                 <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
-                    {transaction.type}
-                  </Badge>
+                  <span className="text-xs text-slate-600">
+                    {transaction.contact_id ? '(Contact)' : '—'}
+                  </span>
+                </td>
+                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
+                  <span className="text-xs text-slate-600">
+                    {transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}
+                  </span>
+                </td>
+                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
+                  <span className="text-xs text-slate-600">
+                    {getAccountName(transaction.bank_account_id)}
+                  </span>
                 </td>
                 <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                   {transaction.amount < 0 && (
-                    <span>
+                    <span className="text-xs">
                       ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
                 </td>
                 <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                   {transaction.amount >= 0 && (
-                    <span>
+                    <span className="text-xs">
                       ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   )}
-                </td>
-                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  {getAccountName(transaction.bank_account_id)}
                 </td>
               </tr>
             </tbody>
@@ -668,10 +677,12 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                 <table className="w-full" style={{ tableLayout: 'auto' }}>
                   <colgroup>
                     <col style={{ width: 70, minWidth: 70 }} />
-                    <col style={{ minWidth: 100 }} />
+                    <col style={{ minWidth: 120 }} />
+                    <col style={{ minWidth: 80 }} />
+                    <col style={{ minWidth: 90 }} />
+                    <col style={{ minWidth: 90 }} />
                     <col style={{ width: 1 }} />
                     <col style={{ width: 1 }} />
-                    <col style={{ minWidth: 100 }} />
                   </colgroup>
                   <thead className="sticky top-0 z-30 bg-slate-100 shadow-sm">
                     <tr className="bg-slate-100 h-8">
@@ -681,14 +692,20 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                       <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
                         Description
                       </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                        Contact
+                      </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                        Category
+                      </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                        Account
+                      </th>
                       <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
                         Spent
                       </th>
                       <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
                         Received
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
-                        Category
                       </th>
                     </tr>
                   </thead>
@@ -697,7 +714,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                       const willChangeDescription = newDescription && txn.description !== newDescription;
                       const displayDescription = newDescription || txn.description;
                       const displayCategoryId = categoryId || txn.category_account_id;
-                      const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : '—';
+                      const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : 'Uncategorized';
 
                       return (
                         <tr
@@ -708,18 +725,39 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                             {format(new Date(txn.date), 'MM/dd/yy')}
                           </td>
                           <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                            <div className="flex items-center gap-2">
-                              <div className="flex-1 min-w-0">
-                                <span className={`${willChangeDescription ? 'text-blue-600 font-medium' : ''}`}>
-                                  {displayDescription}
-                                </span>
-                                {willChangeDescription && (
-                                  <div className="text-slate-400 line-through text-[10px]">
-                                    {txn.description}
-                                  </div>
-                                )}
-                              </div>
+                            <div className="flex flex-col gap-0.5">
+                              <span className={`${willChangeDescription ? 'text-blue-600 font-medium' : ''}`}>
+                                {displayDescription}
+                              </span>
+                              {willChangeDescription && (
+                                <div className="text-slate-400 line-through text-[10px]">
+                                  {txn.description}
+                                </div>
+                              )}
+                              {txn.original_description && txn.original_description !== txn.description && (
+                                <span className="text-[10px] text-slate-500">Bank: {txn.original_description}</span>
+                              )}
                             </div>
+                          </td>
+                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
+                            <span className="text-slate-600">
+                              {txn.contact_id ? '(Contact)' : '—'}
+                            </span>
+                          </td>
+                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
+                            <span className={categoryId ? 'text-blue-600 font-medium' : 'text-slate-600'}>
+                              {displayCategory}
+                            </span>
+                            {categoryId && txn.category_account_id && txn.category_account_id !== categoryId && (
+                              <div className="text-slate-400 line-through text-[10px]">
+                                {getCategoryName(txn.category_account_id)}
+                              </div>
+                            )}
+                          </td>
+                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
+                            <span className="text-slate-600">
+                              {getAccountName(txn.bank_account_id)}
+                            </span>
                           </td>
                           <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                             {txn.amount < 0 && (
@@ -733,16 +771,6 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                               <span>
                                 ${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </span>
-                            )}
-                          </td>
-                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                            <span className={categoryId ? 'text-blue-600 font-medium' : ''}>
-                              {displayCategory}
-                            </span>
-                            {categoryId && txn.category_account_id && txn.category_account_id !== categoryId && (
-                              <div className="text-slate-400 line-through text-[10px]">
-                                {getCategoryName(txn.category_account_id)}
-                              </div>
                             )}
                           </td>
                         </tr>
