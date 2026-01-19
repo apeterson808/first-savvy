@@ -344,33 +344,19 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="border rounded-md overflow-hidden">
-          <table className="w-full" style={{ tableLayout: 'auto' }}>
-            <colgroup>
-              <col style={{ minWidth: 200 }} />
-              <col style={{ width: 80, minWidth: 80 }} />
-              <col style={{ width: 120, minWidth: 120 }} />
-              <col style={{ width: 1 }} />
-            </colgroup>
-            <tbody>
-              <tr className="bg-white h-8">
-                <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                  {transaction.description}
-                </td>
-                <td className="text-xs border-r border-slate-200 py-1 px-2 text-center">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                    {transaction.type}
-                  </Badge>
-                </td>
-                <td className="text-xs border-r border-slate-200 py-1 px-2">
-                  {getAccountName(transaction.bank_account_id)}
-                </td>
-                <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap font-semibold">
-                  ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="bg-slate-50 rounded-md p-3 border border-slate-200">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-slate-900">{transaction.description}</span>
+              <Badge variant="outline" className="text-xs">
+                {transaction.type}
+              </Badge>
+              <span className="text-slate-500">{getAccountName(transaction.bank_account_id)}</span>
+            </div>
+            <span className="font-semibold text-slate-900">
+              {formatCurrency(Math.abs(transaction.amount))}
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
