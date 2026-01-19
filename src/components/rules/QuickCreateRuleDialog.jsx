@@ -357,7 +357,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[85vh]">
+      <DialogContent className="max-w-5xl max-h-[85vh]">
         <DialogHeader>
           <DialogTitle>
             Create Rule
@@ -368,7 +368,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
         </DialogHeader>
 
         <div className="space-y-2">
-          <div className="grid grid-cols-2 gap-2 h-[400px]">
+          <div className="grid grid-cols-2 gap-2 h-[300px]">
             <Card className="flex flex-col h-full">
               <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
                 <div className="space-y-2">
