@@ -347,26 +347,48 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
         <div className="border rounded-md overflow-hidden">
           <table className="w-full" style={{ tableLayout: 'auto' }}>
             <colgroup>
-              <col style={{ minWidth: 200 }} />
-              <col style={{ width: 80, minWidth: 80 }} />
-              <col style={{ width: 120, minWidth: 120 }} />
+              <col style={{ width: 70, minWidth: 70 }} />
+              <col style={{ minWidth: 150 }} />
+              <col style={{ minWidth: 100 }} />
               <col style={{ width: 1 }} />
+              <col style={{ width: 1 }} />
+              <col style={{ minWidth: 100 }} />
             </colgroup>
             <tbody>
               <tr className="bg-white h-8">
-                <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                  {transaction.description}
+                <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
+                  {transaction.date && !isNaN(new Date(transaction.date).getTime())
+                    ? format(new Date(transaction.date), 'MM/dd/yy')
+                    : 'Invalid'}
                 </td>
-                <td className="text-xs border-r border-slate-200 py-1 px-2 text-center">
-                  <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs px-1">{transaction.description}</span>
+                    </div>
+                  </div>
+                </td>
+                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
+                  <Badge variant="outline" className="text-[10px] px-1.5 py-0.5">
                     {transaction.type}
                   </Badge>
                 </td>
-                <td className="text-xs border-r border-slate-200 py-1 px-2">
-                  {getAccountName(transaction.bank_account_id)}
+                <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                  {transaction.amount < 0 && (
+                    <span>
+                      ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  )}
                 </td>
-                <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap font-semibold">
-                  ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                  {transaction.amount >= 0 && (
+                    <span>
+                      ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  )}
+                </td>
+                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
+                  {getAccountName(transaction.bank_account_id)}
                 </td>
               </tr>
             </tbody>
