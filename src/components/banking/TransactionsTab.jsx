@@ -1765,7 +1765,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     return (
                       <React.Fragment key={transaction.id}>
                         <tr
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100' : ''}`}
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100 border-t-4 border-l-4 border-r-4 border-blue-500' : ''}`}
                           onClick={(e) => {
                             if (statusFilter !== 'pending') return;
                             const targetNode = e.target;
@@ -2288,9 +2288,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         </tr>
 
                         {expandedTransactionId === transaction.id && (
-                          <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} border-t border-slate-100`}>
+                          <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
                             <td colSpan={selectedAccount === 'all' ? 9 : 8} className="p-0">
-                              <div className="bg-slate-50 border-l-4 border-blue-500">
+                              <div className="bg-slate-50 border-l-4 border-r-4 border-b-4 border-blue-500">
                                 {activeAccountIds.includes(transaction.bank_account_id) ? (
                                   <div>
                                     {/* Toggle Section */}
@@ -2679,31 +2679,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                           {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
                                             <div>
-                                              <Label className="text-xs mb-1 block">Category</Label>
-                                              <CategoryDropdown
-                                                value={transaction.category_account_id || ''}
-                                                onValueChange={async (value) => {
-                                                  const categoryValue = value === '' ? null : value;
-
-                                                  await queryClient.refetchQueries({ queryKey: ['user-chart-accounts'] });
-                                                  await queryClient.refetchQueries({ queryKey: ['chart-accounts'] });
-
-                                                  const updatedChartAccounts = queryClient.getQueryData(['chart-accounts', 'expense', activeProfile?.id]) ||
-                                                                              queryClient.getQueryData(['chart-accounts', 'income', activeProfile?.id]) ||
-                                                                              chartAccounts;
-                                                  const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
-
-                                                  updateMutation.mutate({
-                                                    id: transaction.id,
-                                                    data: {
-                                                      category_account_id: categoryValue,
-                                                      type: selectedCategory?.class || transaction.type
-                                                    }
-                                                  });
-                                                }}
-                                                transactionType={transaction.type}
-                                                triggerClassName="h-8 text-xs"
-                                                disabled={isMatched(transaction)}
+                                              <Label className="text-xs mb-1 block">Bank Memo</Label>
+                                              <Input
+                                                value={transaction.original_description || 'No bank memo'}
+                                                readOnly
+                                                className="h-8 text-xs bg-slate-50 text-slate-600"
+                                                title={transaction.original_description || 'No bank memo'}
                                               />
                                             </div>
                                           )}
@@ -3365,11 +3346,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           </>
                                         )}
                                       </div>
-                                      {transaction.original_description && (
-                                        <span className="text-xs text-slate-400 italic">
-                                          {transaction.original_description}
-                                        </span>
-                                      )}
                                     </div>
                                     </div>
                                   </div>
