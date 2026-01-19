@@ -629,35 +629,22 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   return (
                     <div key={txn.id} className="bg-white border border-slate-200 rounded-lg p-2.5 hover:border-slate-300 transition-colors">
                       <div className="flex items-center gap-3 text-xs">
-                        <span className="text-slate-600 font-medium min-w-[60px]">
+                        <span className="text-slate-600 font-medium min-w-[60px] flex-shrink-0">
                           {format(new Date(txn.date), 'MM/dd/yy')}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <div className={`font-medium ${willChangeDescription ? 'text-blue-600' : 'text-slate-900'}`}>
+                          <div className={`font-medium truncate ${willChangeDescription ? 'text-blue-600' : 'text-slate-900'}`}>
                             {displayDescription}
                           </div>
-                          {willChangeDescription && (
-                            <div className="text-slate-400 line-through text-[10px]">
-                              {txn.description}
-                            </div>
-                          )}
-                          {txn.original_description && txn.original_description !== txn.description && !willChangeDescription && (
-                            <div className="text-slate-500 text-[10px]">Bank: {txn.original_description}</div>
-                          )}
                         </div>
-                        <div className="flex items-center gap-3 text-slate-600">
+                        <div className="flex items-center gap-3 text-slate-600 flex-shrink-0">
                           <span>{txn.contact_id ? 'Contact' : '—'}</span>
                           <span className={categoryWillChange ? 'text-blue-600 font-medium' : ''}>
                             {displayCategory}
-                            {categoryWillChange && (
-                              <span className="text-slate-400 line-through ml-1 text-[10px]">
-                                {getCategoryName(txn.category_account_id)}
-                              </span>
-                            )}
                           </span>
                           <span>{getAccountName(txn.bank_account_id)}</span>
                         </div>
-                        <div className="font-semibold text-right min-w-[80px]">
+                        <div className="font-semibold text-right min-w-[80px] flex-shrink-0">
                           {txn.amount < 0 ? (
                             <span className="text-red-600">
                               -${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
