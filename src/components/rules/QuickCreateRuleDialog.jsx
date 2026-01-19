@@ -344,64 +344,36 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="border rounded-md overflow-hidden">
-          <table className="w-full" style={{ tableLayout: 'auto' }}>
-            <colgroup>
-              <col style={{ width: 70, minWidth: 70 }} />
-              <col style={{ minWidth: 150 }} />
-              <col style={{ minWidth: 100 }} />
-              <col style={{ minWidth: 100 }} />
-              <col style={{ minWidth: 100 }} />
-              <col style={{ width: 1 }} />
-              <col style={{ width: 1 }} />
-            </colgroup>
-            <tbody>
-              <tr className="bg-white h-8">
-                <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
-                  {transaction.date && !isNaN(new Date(transaction.date).getTime())
-                    ? format(new Date(transaction.date), 'MM/dd/yy')
-                    : 'Invalid'}
-                </td>
-                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-medium">{transaction.description}</span>
-                    {transaction.original_description && transaction.original_description !== transaction.description && (
-                      <span className="text-[10px] text-slate-500">Bank: {transaction.original_description}</span>
-                    )}
-                  </div>
-                </td>
-                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  <span className="text-xs text-slate-600">
-                    {transaction.contact_id ? '(Contact)' : '—'}
-                  </span>
-                </td>
-                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  <span className="text-xs text-slate-600">
-                    {transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}
-                  </span>
-                </td>
-                <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                  <span className="text-xs text-slate-600">
-                    {getAccountName(transaction.bank_account_id)}
-                  </span>
-                </td>
-                <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                  {transaction.amount < 0 && (
-                    <span className="text-xs">
-                      ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  )}
-                </td>
-                <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                  {transaction.amount >= 0 && (
-                    <span className="text-xs">
-                      ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </span>
-                  )}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+          <div className="flex items-center gap-3 text-sm">
+            <span className="text-slate-600 font-medium min-w-[70px]">
+              {transaction.date && !isNaN(new Date(transaction.date).getTime())
+                ? format(new Date(transaction.date), 'MM/dd/yy')
+                : 'Invalid'}
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="font-medium text-slate-900">{transaction.description}</div>
+              {transaction.original_description && transaction.original_description !== transaction.description && (
+                <div className="text-xs text-slate-500">Bank: {transaction.original_description}</div>
+              )}
+            </div>
+            <div className="flex items-center gap-4 text-xs text-slate-600">
+              <span>{transaction.contact_id ? 'Contact' : '—'}</span>
+              <span>{transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}</span>
+              <span>{getAccountName(transaction.bank_account_id)}</span>
+            </div>
+            <div className="font-semibold text-right min-w-[100px]">
+              {transaction.amount < 0 ? (
+                <span className="text-red-600">
+                  -${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              ) : (
+                <span className="text-green-600">
+                  +${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-6">
@@ -663,7 +635,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               )}
             </div>
 
-            <div className="border rounded-md bg-white max-h-[500px] overflow-auto">
+            <div className="max-h-[500px] overflow-auto space-y-2">
               {previewLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -674,110 +646,59 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   <p className="text-xs mt-1">Add conditions to see preview</p>
                 </div>
               ) : (
-                <table className="w-full" style={{ tableLayout: 'auto' }}>
-                  <colgroup>
-                    <col style={{ width: 70, minWidth: 70 }} />
-                    <col style={{ minWidth: 120 }} />
-                    <col style={{ minWidth: 80 }} />
-                    <col style={{ minWidth: 90 }} />
-                    <col style={{ minWidth: 90 }} />
-                    <col style={{ width: 1 }} />
-                    <col style={{ width: 1 }} />
-                  </colgroup>
-                  <thead className="sticky top-0 z-30 bg-slate-100 shadow-sm">
-                    <tr className="bg-slate-100 h-8">
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs">
-                        Date
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
-                        Description
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
-                        Contact
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
-                        Category
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
-                        Account
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
-                        Spent
-                      </th>
-                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
-                        Received
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewTransactions.map((txn, index) => {
-                      const willChangeDescription = newDescription && txn.description !== newDescription;
-                      const displayDescription = newDescription || txn.description;
-                      const displayCategoryId = categoryId || txn.category_account_id;
-                      const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : 'Uncategorized';
+                previewTransactions.map((txn) => {
+                  const willChangeDescription = newDescription && txn.description !== newDescription;
+                  const displayDescription = newDescription || txn.description;
+                  const displayCategoryId = categoryId || txn.category_account_id;
+                  const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : 'Uncategorized';
+                  const categoryWillChange = categoryId && txn.category_account_id !== categoryId;
 
-                      return (
-                        <tr
-                          key={txn.id}
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}
-                        >
-                          <td className="text-xs border-r border-slate-200 py-1 pl-2 pr-1">
-                            {format(new Date(txn.date), 'MM/dd/yy')}
-                          </td>
-                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                            <div className="flex flex-col gap-0.5">
-                              <span className={`${willChangeDescription ? 'text-blue-600 font-medium' : ''}`}>
-                                {displayDescription}
-                              </span>
-                              {willChangeDescription && (
-                                <div className="text-slate-400 line-through text-[10px]">
-                                  {txn.description}
-                                </div>
-                              )}
-                              {txn.original_description && txn.original_description !== txn.description && (
-                                <span className="text-[10px] text-slate-500">Bank: {txn.original_description}</span>
-                              )}
+                  return (
+                    <div key={txn.id} className="bg-white border border-slate-200 rounded-lg p-2.5 hover:border-slate-300 transition-colors">
+                      <div className="flex items-center gap-3 text-xs">
+                        <span className="text-slate-600 font-medium min-w-[60px]">
+                          {format(new Date(txn.date), 'MM/dd/yy')}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className={`font-medium ${willChangeDescription ? 'text-blue-600' : 'text-slate-900'}`}>
+                            {displayDescription}
+                          </div>
+                          {willChangeDescription && (
+                            <div className="text-slate-400 line-through text-[10px]">
+                              {txn.description}
                             </div>
-                          </td>
-                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                            <span className="text-slate-600">
-                              {txn.contact_id ? '(Contact)' : '—'}
-                            </span>
-                          </td>
-                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                            <span className={categoryId ? 'text-blue-600 font-medium' : 'text-slate-600'}>
-                              {displayCategory}
-                            </span>
-                            {categoryId && txn.category_account_id && txn.category_account_id !== categoryId && (
-                              <div className="text-slate-400 line-through text-[10px]">
+                          )}
+                          {txn.original_description && txn.original_description !== txn.description && !willChangeDescription && (
+                            <div className="text-slate-500 text-[10px]">Bank: {txn.original_description}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-slate-600">
+                          <span>{txn.contact_id ? 'Contact' : '—'}</span>
+                          <span className={categoryWillChange ? 'text-blue-600 font-medium' : ''}>
+                            {displayCategory}
+                            {categoryWillChange && (
+                              <span className="text-slate-400 line-through ml-1 text-[10px]">
                                 {getCategoryName(txn.category_account_id)}
-                              </div>
+                              </span>
                             )}
-                          </td>
-                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
-                            <span className="text-slate-600">
-                              {getAccountName(txn.bank_account_id)}
+                          </span>
+                          <span>{getAccountName(txn.bank_account_id)}</span>
+                        </div>
+                        <div className="font-semibold text-right min-w-[80px]">
+                          {txn.amount < 0 ? (
+                            <span className="text-red-600">
+                              -${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                          </td>
-                          <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                            {txn.amount < 0 && (
-                              <span>
-                                ${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            )}
-                          </td>
-                          <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                            {txn.amount >= 0 && (
-                              <span>
-                                ${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          ) : (
+                            <span className="text-green-600">
+                              +${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>
