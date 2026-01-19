@@ -54,7 +54,6 @@ import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetec
 import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
-import transactionRulesApi from '@/api/transactionRules';
 import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { useAuth } from '@/contexts/AuthContext';
@@ -2194,30 +2193,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       >
                                         Split
                                       </ClickThroughDropdownMenuItem>
-                                      <TooltipProvider>
-                                        <Tooltip>
-                                          <TooltipTrigger asChild>
-                                            <div>
-                                              <ClickThroughDropdownMenuItem
-                                                onClick={(e) => {
-                                                  e?.stopPropagation();
-                                                  if (!isMatched(transaction)) {
-                                                    // TODO: Implement create rule functionality
-                                                  }
-                                                }}
-                                                disabled={isMatched(transaction)}
-                                              >
-                                                Create Rule
-                                              </ClickThroughDropdownMenuItem>
-                                            </div>
-                                          </TooltipTrigger>
-                                          {isMatched(transaction) && (
-                                            <TooltipContent>
-                                              <p>Matched transactions cannot have rules</p>
-                                            </TooltipContent>
-                                          )}
-                                        </Tooltip>
-                                      </TooltipProvider>
                                       <ClickThroughDropdownMenuItem
                                         onClick={(e) => {
                                           e?.stopPropagation();
@@ -3345,17 +3320,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               disabled={isMatched(transaction) || transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                             >
                                               Split
-                                            </Button>
-                                            <Button
-                                              size="sm"
-                                              variant="outline"
-                                              className="h-7 text-xs"
-                                              onClick={(e) => {
-                                                e?.stopPropagation();
-                                                // TODO: Implement create rule functionality
-                                              }}
-                                            >
-                                              Create Rule
                                             </Button>
                                             <Button
                                               size="sm"
