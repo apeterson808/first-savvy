@@ -380,7 +380,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     placeholder="Enter a unique name for this rule"
                     value={ruleName}
                     onChange={(e) => setRuleName(e.target.value)}
-                    className={nameError ? 'border-red-500 h-9' : 'h-9'}
+                    className={nameError ? 'border-red-500 h-8 text-xs' : 'h-8 text-xs'}
                   />
                   {nameError && (
                     <p className="text-xs text-red-500 flex items-center gap-1">
@@ -475,65 +475,67 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     </ToggleGroup>
                   </div>
 
-                  {conditionRows.map((row, index) => (
-                    <div key={index}>
-                      {index > 0 && (
-                        <div className="text-xs text-slate-500 my-1 ml-2">
-                          {matchLogic === 'all' ? 'and' : 'or'}
-                        </div>
-                      )}
-                      <div className="grid grid-cols-[110px_110px_1fr_24px] gap-1.5">
-                        <Select
-                          value={row.field}
-                          onValueChange={(value) => updateConditionRow(index, 'field', value)}
-                        >
-                          <SelectTrigger className="text-xs h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="description">Description</SelectItem>
-                            <SelectItem value="bank_memo">Bank Memo</SelectItem>
-                            <SelectItem value="amount">Amount</SelectItem>
-                          </SelectContent>
-                        </Select>
-
-                        <Select
-                          value={row.operator}
-                          onValueChange={(value) => updateConditionRow(index, 'operator', value)}
-                        >
-                          <SelectTrigger className="text-xs h-8">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {getOperatorOptions(row.field).map(opt => (
-                              <SelectItem key={opt.value} value={opt.value}>
-                                {opt.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        <Input
-                          placeholder={row.field === 'amount' ? '0.00' : 'Enter text...'}
-                          type={row.field === 'amount' ? 'number' : 'text'}
-                          value={row.value}
-                          onChange={(e) => updateConditionRow(index, 'value', e.target.value)}
-                          className="text-xs h-8"
-                        />
-
-                        {conditionRows.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-6 p-0"
-                            onClick={() => removeConditionRow(index)}
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </Button>
+                  <div className="max-h-[140px] overflow-y-auto space-y-2 pr-1">
+                    {conditionRows.map((row, index) => (
+                      <div key={index}>
+                        {index > 0 && (
+                          <div className="text-xs text-slate-500 my-1 ml-2">
+                            {matchLogic === 'all' ? 'and' : 'or'}
+                          </div>
                         )}
+                        <div className="grid grid-cols-[110px_110px_1fr_24px] gap-1.5">
+                          <Select
+                            value={row.field}
+                            onValueChange={(value) => updateConditionRow(index, 'field', value)}
+                          >
+                            <SelectTrigger className="text-xs h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="description">Description</SelectItem>
+                              <SelectItem value="bank_memo">Bank Memo</SelectItem>
+                              <SelectItem value="amount">Amount</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          <Select
+                            value={row.operator}
+                            onValueChange={(value) => updateConditionRow(index, 'operator', value)}
+                          >
+                            <SelectTrigger className="text-xs h-8">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {getOperatorOptions(row.field).map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>
+                                  {opt.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+
+                          <Input
+                            placeholder={row.field === 'amount' ? '0.00' : 'Enter text...'}
+                            type={row.field === 'amount' ? 'number' : 'text'}
+                            value={row.value}
+                            onChange={(e) => updateConditionRow(index, 'value', e.target.value)}
+                            className="text-xs h-8 w-full"
+                          />
+
+                          {conditionRows.length > 1 && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-8 w-6 p-0"
+                              onClick={() => removeConditionRow(index)}
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
 
                   <Button
                     type="button"
@@ -672,7 +674,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                         key={txn.id}
                         className={`border rounded p-1.5 text-xs ${isSourceTransaction ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200'}`}
                       >
-                        <div className="grid grid-cols-[70px_110px_minmax(0,1fr)_85px_95px_105px] gap-2 items-center">
+                        <div className="grid grid-cols-[80px_120px_1fr_90px_110px_115px] gap-3 items-center">
                           <span className="text-slate-600">
                             {format(new Date(txn.date), 'MM/dd/yy')}
                           </span>
