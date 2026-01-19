@@ -672,17 +672,17 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                         key={txn.id}
                         className={`border rounded p-1.5 text-xs ${isSourceTransaction ? 'bg-blue-50 border-blue-300' : 'bg-white border-slate-200'}`}
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="text-slate-600 w-[60px] flex-shrink-0">
+                        <div className="grid grid-cols-[70px_110px_minmax(0,1fr)_85px_95px_105px] gap-2 items-center">
+                          <span className="text-slate-600">
                             {format(new Date(txn.date), 'MM/dd/yy')}
                           </span>
-                          <span className="text-slate-600 w-[100px] flex-shrink-0 truncate">
+                          <span className="text-slate-600 truncate">
                             {getAccountName(txn.bank_account_id)}
                           </span>
-                          <span className={`flex-1 min-w-0 truncate ${willChangeDescription ? 'text-blue-600 font-medium' : 'text-slate-900'}`}>
+                          <span className={`truncate ${willChangeDescription ? 'text-blue-600 font-medium' : 'text-slate-900'}`}>
                             {displayDescription}
                           </span>
-                          <span className="font-medium text-right w-[75px] flex-shrink-0">
+                          <span className="font-medium text-right">
                             {txn.amount < 0 ? (
                               <span className="text-red-600">
                                 -${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -693,10 +693,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                               </span>
                             )}
                           </span>
-                          <span className="text-slate-600 w-[80px] flex-shrink-0 truncate">
+                          <span className="text-slate-600 truncate">
                             {displayContact}
                           </span>
-                          <span className={`w-[90px] flex-shrink-0 truncate ${categoryWillChange ? 'text-blue-600 font-medium' : 'text-slate-600'}`}>
+                          <span className={`truncate ${categoryWillChange ? 'text-blue-600 font-medium' : 'text-slate-600'}`}>
                             {displayCategory}
                           </span>
                         </div>
