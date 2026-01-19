@@ -259,13 +259,14 @@ export function UserAvatarDropdown() {
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>All transactions and financial history</li>
                   <li>All accounts and balances</li>
-                  <li>All budgets and categorization rules</li>
+                  <li>All budgets</li>
                   <li>All journal entries</li>
                 </ul>
                 <p className="font-semibold text-green-600 dark:text-green-500 mt-3">What will be preserved:</p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>All contacts</li>
-                  <li>Contact matching rules</li>
+                  <li>Custom categories you created</li>
+                  <li>Categorization memories</li>
                 </ul>
                 <p className="font-semibold text-foreground mt-3">What you'll get:</p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
@@ -302,8 +303,9 @@ export function UserAvatarDropdown() {
                   <li>All transactions and financial history</li>
                   <li>All accounts and balances</li>
                   <li>All budgets</li>
-                  <li>All contacts and contact matching rules</li>
-                  <li>All categorization rules</li>
+                  <li>All contacts</li>
+                  <li>All custom categories</li>
+                  <li>All categorization memories</li>
                   <li>All journal entries</li>
                 </ul>
                 <p className="font-semibold text-foreground mt-3">What you'll get:</p>

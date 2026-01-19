@@ -80,13 +80,14 @@ Deno.serve(async (req: Request) => {
       "transactions",
       "transfer_registry",
 
-      // Delete rules and budgets (depends on accounts and contacts)
-      "categorization_rules",
-      "contact_matching_rules",
+      // Delete budgets (depends on accounts)
       "budgets",
 
       // Delete contacts
       "contacts",
+
+      // Delete categorization memory
+      "transaction_categorization_memory",
 
       // Delete accounts last (after all references are gone)
       "user_chart_of_accounts",

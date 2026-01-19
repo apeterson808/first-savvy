@@ -69,7 +69,7 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
-    // Delete financial data only - preserving contacts, contact_matching_rules, custom categories, and categorization memories
+    // Delete financial data only - preserving contacts, custom categories, and categorization memories
     const tablesToDelete = [
       // Delete journal entries first (CASCADE will delete journal_entry_lines automatically)
       "journal_entries",
@@ -80,8 +80,7 @@ Deno.serve(async (req: Request) => {
       "transactions",
       "transfer_registry",
 
-      // Delete categorization rules (but NOT contact_matching_rules - those are preserved)
-      "categorization_rules",
+      // Delete budgets
       "budgets",
 
       // Delete profile-specific preferences
