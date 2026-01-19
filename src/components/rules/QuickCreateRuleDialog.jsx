@@ -26,7 +26,15 @@ import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
 import { toast } from 'sonner';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
-import { Sparkles, Plus, X, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
+import CategoryDropdown from '../common/CategoryDropdown';
+import { Sparkles, Plus, X, Loader2, ArrowRight, AlertCircle, Info } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { formatCurrency } from '../utils/formatters';
 import { format } from 'date-fns';
 
@@ -44,7 +52,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   const [conditionRows, setConditionRows] = useState([
     { field: 'description', operator: 'contains', value: '' }
   ]);
-  const [matchLogic, setMatchLogic] = useState('all');
+  const [matchLogic, setMatchLogic] = useState('any');
 
   const [newDescription, setNewDescription] = useState('');
   const [categoryId, setCategoryId] = useState(null);
@@ -68,9 +76,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
       setConditionRows([
         { field: 'description', operator: 'contains', value: transaction.description }
       ]);
-      if (transaction.bank_account_id) {
-        setSelectedAccountIds([transaction.bank_account_id]);
-      }
+      setSelectedAccountIds(transaction.bank_account_id ? [transaction.bank_account_id] : []);
     }
   }, [transaction, open]);
 
@@ -330,9 +336,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-blue-600" />
-            Quick Create Rule
+          <DialogTitle>
+            Create Rule
           </DialogTitle>
           <DialogDescription>
             Create a rule to automatically process similar transactions
@@ -381,91 +386,87 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             <div className="space-y-2 pt-2 border-t">
               <Label className="text-sm font-semibold">Apply to</Label>
 
-              <div className="space-y-2">
-                <Label htmlFor="direction" className="text-sm">Transaction Direction</Label>
-                <Select value={moneyDirection} onValueChange={setMoneyDirection}>
-                  <SelectTrigger id="direction">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="both">Both (Money In & Out)</SelectItem>
-                    <SelectItem value="money_in">Money In</SelectItem>
-                    <SelectItem value="money_out">Money Out</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="direction" className="text-sm">Transaction Direction</Label>
+                  <Select value={moneyDirection} onValueChange={setMoneyDirection}>
+                    <SelectTrigger id="direction">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="both">Both (Money In & Out)</SelectItem>
+                      <SelectItem value="money_in">Money In</SelectItem>
+                      <SelectItem value="money_out">Money Out</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm">Accounts to Search</Label>
-                <Select
-                  open={accountsDropdownOpen}
-                  onOpenChange={setAccountsDropdownOpen}
-                >
-                  <SelectTrigger>
-                    <SelectValue>
-                      {selectedAccountIds.length === 0 ? 'All Accounts' :
-                       selectedAccountIds.length === bankAccounts.length ? 'All Accounts' :
-                       selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
-                       `${selectedAccountIds.length} Accounts Selected`}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <div
-                      className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleAllAccounts();
-                      }}
-                    >
-                      <Checkbox
-                        checked={allAccountsSelected}
-                        onCheckedChange={toggleAllAccounts}
-                      />
-                      <span className="font-medium">All Accounts</span>
-                    </div>
-                    {bankAccounts.map(account => (
+                <div className="space-y-2">
+                  <Label className="text-sm">Accounts to Search</Label>
+                  <Select
+                    open={accountsDropdownOpen}
+                    onOpenChange={setAccountsDropdownOpen}
+                  >
+                    <SelectTrigger>
+                      <SelectValue>
+                        {selectedAccountIds.length === 0 ? 'All Accounts' :
+                         selectedAccountIds.length === bankAccounts.length ? 'All Accounts' :
+                         selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
+                         `${selectedAccountIds.length} Accounts Selected`}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
                       <div
-                        key={account.id}
                         className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
                         onClick={(e) => {
                           e.preventDefault();
-                          toggleAccount(account.id);
+                          toggleAllAccounts();
                         }}
                       >
                         <Checkbox
-                          checked={selectedAccountIds.includes(account.id)}
-                          onCheckedChange={() => toggleAccount(account.id)}
+                          checked={allAccountsSelected}
+                          onCheckedChange={toggleAllAccounts}
                         />
-                        <span className="text-sm">{account.display_name || account.account_name}</span>
+                        <span className="font-medium">All Accounts</span>
                       </div>
-                    ))}
-                  </SelectContent>
-                </Select>
+                      {bankAccounts.map(account => (
+                        <div
+                          key={account.id}
+                          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleAccount(account.id);
+                          }}
+                        >
+                          <Checkbox
+                            checked={selectedAccountIds.includes(account.id)}
+                            onCheckedChange={() => toggleAccount(account.id)}
+                          />
+                          <span className="text-sm">{account.display_name || account.account_name}</span>
+                        </div>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
             <div className="space-y-2 pt-2 border-t">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-semibold">Include the following</Label>
-                <div className="flex items-center gap-2 text-xs">
-                  <span className="text-slate-500">Match</span>
-                  <Button
-                    variant={matchLogic === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setMatchLogic('all')}
-                  >
-                    All
-                  </Button>
-                  <Button
-                    variant={matchLogic === 'any' ? 'default' : 'outline'}
-                    size="sm"
-                    className="h-6 px-2 text-xs"
-                    onClick={() => setMatchLogic('any')}
-                  >
+                <ToggleGroup
+                  type="single"
+                  value={matchLogic}
+                  onValueChange={(value) => value && setMatchLogic(value)}
+                  className="gap-0"
+                >
+                  <ToggleGroupItem value="any" className="h-7 px-3 text-xs rounded-r-none">
                     Any
-                  </Button>
-                </div>
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="all" className="h-7 px-3 text-xs rounded-l-none">
+                    All
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
 
               {conditionRows.map((row, index) => (
@@ -544,27 +545,36 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               <Label className="text-sm font-semibold">Then</Label>
 
               <div className="space-y-2">
-                <Label htmlFor="new-desc" className="text-sm">Change Description To</Label>
+                <Label className="text-sm">Set Category</Label>
+                <CategoryDropdown
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  transactionType={transaction?.type === 'income' ? 'income' : 'expense'}
+                  placeholder="Select category..."
+                  triggerClassName="h-9 text-sm border-slate-300"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-desc" className="text-sm flex items-center gap-1.5">
+                  Change Description To
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Info className="w-3.5 h-3.5 text-slate-400 cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>If left blank bank memo will be used for each transaction</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </Label>
                 <Input
                   id="new-desc"
                   placeholder="Enter new description (optional)"
                   value={newDescription}
                   onChange={(e) => setNewDescription(e.target.value)}
                   className="text-sm"
-                />
-                <p className="text-xs text-slate-500">
-                  Bank memo is always preserved
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm">Set Category</Label>
-                <ChartAccountDropdown
-                  value={categoryId}
-                  onValueChange={setCategoryId}
-                  profileId={profileId}
-                  filterByClass={['income', 'expense']}
-                  placeholder="Select category..."
                 />
               </div>
 
@@ -608,7 +618,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               )}
             </div>
 
-            <div className="border rounded-md bg-white max-h-[500px] overflow-y-auto">
+            <div className="border rounded-md bg-white max-h-[500px] overflow-auto">
               {previewLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
@@ -619,61 +629,64 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   <p className="text-xs mt-1">Add conditions to see preview</p>
                 </div>
               ) : (
-                <div className="divide-y">
-                  {previewTransactions.map((txn) => (
-                    <div key={txn.id} className="p-3 hover:bg-slate-50">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <div className="font-medium text-sm text-slate-900">
-                            {txn.description}
-                          </div>
-                          <div className="text-xs text-slate-500 mt-0.5">
-                            {format(new Date(txn.date), 'MMM d, yyyy')} • {getAccountName(txn.bank_account_id)}
-                          </div>
-                        </div>
-                        <div className="font-semibold text-sm">
-                          {formatCurrency(Math.abs(txn.amount))}
-                        </div>
-                      </div>
+                <table className="w-full text-xs">
+                  <thead className="bg-slate-50 sticky top-0">
+                    <tr>
+                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Date</th>
+                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Account</th>
+                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Description</th>
+                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Category</th>
+                      <th className="text-right py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {previewTransactions.map((txn, index) => {
+                      const willChangeDescription = newDescription && txn.description !== newDescription;
+                      const displayDescription = newDescription || txn.description;
+                      const displayCategoryId = categoryId || txn.category_account_id;
+                      const displayCategory = displayCategoryId ? getCategoryName(displayCategoryId) : '—';
 
-                      {(newDescription || categoryId || notes) && (
-                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
-                          {newDescription && txn.description !== newDescription && (
-                            <div className="text-xs">
-                              <span className="text-slate-500">Description: </span>
-                              <span className="line-through text-slate-400">{txn.description}</span>
-                              <ArrowRight className="w-3 h-3 inline mx-1" />
-                              <span className="text-blue-600 font-medium">{newDescription}</span>
-                            </div>
-                          )}
-                          {categoryId && (
-                            <div className="text-xs">
-                              <span className="text-slate-500">Category: </span>
-                              {txn.category_account_id && (
-                                <>
-                                  <span className="line-through text-slate-400">{getCategoryName(txn.category_account_id)}</span>
-                                  <ArrowRight className="w-3 h-3 inline mx-1" />
-                                </>
+                      return (
+                        <tr
+                          key={txn.id}
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50/30 transition-colors`}
+                        >
+                          <td className="py-2 px-3 border-b border-slate-100">
+                            {format(new Date(txn.date), 'MMM d, yyyy')}
+                          </td>
+                          <td className="py-2 px-3 border-b border-slate-100">
+                            {getAccountName(txn.bank_account_id)}
+                          </td>
+                          <td className="py-2 px-3 border-b border-slate-100">
+                            <div className="flex flex-col gap-0.5">
+                              <span className={willChangeDescription ? 'text-blue-600 font-medium' : ''}>
+                                {displayDescription}
+                              </span>
+                              {willChangeDescription && (
+                                <span className="text-slate-400 line-through text-[10px]">
+                                  {txn.description}
+                                </span>
                               )}
-                              <span className="text-blue-600 font-medium">{getCategoryName(categoryId)}</span>
                             </div>
-                          )}
-                          {notes && (
-                            <div className="text-xs">
-                              <span className="text-slate-500">Notes: </span>
-                              <span className="text-blue-600 font-medium">{notes}</span>
-                            </div>
-                          )}
-                          {autoConfirmAndPost && (
-                            <div className="text-xs">
-                              <span className="text-green-600 font-medium">Will be auto-posted</span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                          </td>
+                          <td className="py-2 px-3 border-b border-slate-100">
+                            <span className={categoryId ? 'text-blue-600 font-medium' : ''}>
+                              {displayCategory}
+                            </span>
+                            {categoryId && txn.category_account_id && txn.category_account_id !== categoryId && (
+                              <div className="text-slate-400 line-through text-[10px]">
+                                {getCategoryName(txn.category_account_id)}
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 border-b border-slate-100 text-right font-medium">
+                            {formatCurrency(Math.abs(txn.amount))}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               )}
             </div>
           </div>

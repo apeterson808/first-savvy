@@ -2215,7 +2215,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         }}
                                         disabled={transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                       >
-                                        <Wand2 className="h-3 w-3 mr-2" />
                                         Create Rule
                                       </ClickThroughDropdownMenuItem>
                                     </ClickThroughDropdownMenuContent>
@@ -3334,6 +3333,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               disabled={isMatched(transaction) || transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                             >
                                               Split
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-7 text-xs"
+                                              onClick={(e) => {
+                                                e?.stopPropagation();
+                                                setRuleSourceTransaction(transaction);
+                                                setQuickRuleDialogOpen(true);
+                                              }}
+                                              disabled={transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
+                                            >
+                                              Create Rule
                                             </Button>
                                             <Button
                                               size="sm"
