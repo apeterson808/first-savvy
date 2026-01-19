@@ -48,6 +48,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
 import { Trash2 } from 'lucide-react';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
+import { QuickCreateRuleDialog } from '../rules/QuickCreateRuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
@@ -113,6 +114,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [extractedData, setExtractedData] = useState(null);
   const [suggestedMatches, setSuggestedMatches] = useState({});
   const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
+  const [quickRuleDialogOpen, setQuickRuleDialogOpen] = useState(false);
+  const [ruleSourceTransaction, setRuleSourceTransaction] = useState(null);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -2204,6 +2207,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       >
                                         Exclude
                                       </ClickThroughDropdownMenuItem>
+                                      <ClickThroughDropdownMenuItem
+                                        onClick={(e) => {
+                                          e?.stopPropagation();
+                                          setRuleSourceTransaction(transaction);
+                                          setQuickRuleDialogOpen(true);
+                                        }}
+                                        disabled={transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
+                                      >
+                                        <Wand2 className="h-3 w-3 mr-2" />
+                                        Create Rule
+                                      </ClickThroughDropdownMenuItem>
                                     </ClickThroughDropdownMenuContent>
                                   </ClickThroughDropdownMenu>
                                   </div>
@@ -3510,6 +3524,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             extractedData={extractedData}
                             profileId={activeProfile?.id}
                             onImportComplete={handleImportComplete}
+                          />
+
+                          <QuickCreateRuleDialog
+                            open={quickRuleDialogOpen}
+                            onOpenChange={setQuickRuleDialogOpen}
+                            transaction={ruleSourceTransaction}
+                            profileId={activeProfile?.id}
                           />
     </>
   );

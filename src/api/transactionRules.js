@@ -1,0 +1,376 @@
+import { supabase } from './supabaseClient';
+
+export const transactionRulesApi = {
+  async listRules(profileId, options = {}) {
+    const { enabled, sortBy = '-priority' } = options;
+
+    let query = supabase
+      .from('transaction_rules')
+      .select('*')
+      .eq('profile_id', profileId);
+
+    if (enabled !== undefined) {
+      query = query.eq('is_enabled', enabled);
+    }
+
+    const [sortField, sortDirection] = sortBy.startsWith('-')
+      ? [sortBy.slice(1), false]
+      : [sortBy, true];
+
+    query = query.order(sortField, { ascending: sortDirection });
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getRule(ruleId) {
+    const { data, error } = await supabase
+      .from('transaction_rules')
+      .select('*')
+      .eq('id', ruleId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async createRule(profileId, ruleData) {
+    const { data, error } = await supabase
+      .from('transaction_rules')
+      .insert([{
+        profile_id: profileId,
+        ...ruleData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      }])
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateRule(ruleId, updates) {
+    const { data, error } = await supabase
+      .from('transaction_rules')
+      .update({
+        ...updates,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', ruleId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteRule(ruleId) {
+    const { error } = await supabase
+      .from('transaction_rules')
+      .delete()
+      .eq('id', ruleId);
+
+    if (error) throw error;
+    return true;
+  },
+
+  async toggleRule(ruleId, enabled) {
+    return this.updateRule(ruleId, { is_enabled: enabled });
+  },
+
+  async findMatchingRules(transactionId, limit = 10) {
+    const { data, error } = await supabase
+      .rpc('find_matching_rules_for_transaction', {
+        p_transaction_id: transactionId,
+        p_limit: limit
+      });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async applyRuleToTransaction(transactionId, ruleId, updateTransaction = true) {
+    const { data, error } = await supabase
+      .rpc('apply_rule_to_transaction', {
+        p_transaction_id: transactionId,
+        p_rule_id: ruleId,
+        p_update_transaction: updateTransaction
+      });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async checkTransactionMatchesRule(transactionId, ruleId) {
+    const { data, error } = await supabase
+      .rpc('check_transaction_matches_rule', {
+        p_transaction_id: transactionId,
+        p_rule_id: ruleId
+      });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async applyRulesToTransactions(profileId, ruleIds = null, transactionIds = null) {
+    let transactions;
+
+    if (transactionIds) {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('profile_id', profileId)
+        .in('id', transactionIds);
+
+      if (error) throw error;
+      transactions = data || [];
+    } else {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+      transactions = data || [];
+    }
+
+    let rules;
+    if (ruleIds) {
+      const { data, error } = await supabase
+        .from('transaction_rules')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('is_enabled', true)
+        .in('id', ruleIds)
+        .order('priority', { ascending: false });
+
+      if (error) throw error;
+      rules = data || [];
+    } else {
+      const { data, error } = await supabase
+        .from('transaction_rules')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('is_enabled', true)
+        .order('priority', { ascending: false });
+
+      if (error) throw error;
+      rules = data || [];
+    }
+
+    const results = {
+      totalTransactions: transactions.length,
+      totalRules: rules.length,
+      matchedTransactions: 0,
+      appliedRules: 0,
+      changes: []
+    };
+
+    for (const transaction of transactions) {
+      let matchedAnyRule = false;
+
+      for (const rule of rules) {
+        try {
+          const result = await this.applyRuleToTransaction(
+            transaction.id,
+            rule.id,
+            true
+          );
+
+          if (result?.success) {
+            matchedAnyRule = true;
+            results.appliedRules++;
+            results.changes.push({
+              transactionId: transaction.id,
+              ruleId: rule.id,
+              changes: result.changes
+            });
+            break;
+          }
+        } catch (error) {
+          console.error(`Error applying rule ${rule.id} to transaction ${transaction.id}:`, error);
+        }
+      }
+
+      if (matchedAnyRule) {
+        results.matchedTransactions++;
+      }
+    }
+
+    return results;
+  },
+
+  async recordRuleFeedback(ruleId, accepted) {
+    const field = accepted ? 'times_accepted' : 'times_rejected';
+
+    const { error } = await supabase.rpc('increment', {
+      table_name: 'transaction_rules',
+      row_id: ruleId,
+      field_name: field,
+      increment_by: 1
+    });
+
+    if (error) {
+      const rule = await this.getRule(ruleId);
+      const newValue = (rule[field] || 0) + 1;
+      await this.updateRule(ruleId, { [field]: newValue });
+    }
+  },
+
+  async createRuleFromTransaction(profileId, transaction, options = {}) {
+    const {
+      name,
+      categoryId,
+      contactId,
+      descriptionPattern,
+      matchMode = 'contains',
+      caseSensitive = false,
+      matchAmountExact = false,
+      matchAccount = false,
+      matchType = false,
+      addNote,
+      priority = 50
+    } = options;
+
+    const ruleData = {
+      name: name || `Auto-categorize ${transaction.description.substring(0, 30)}`,
+      priority,
+      match_description_pattern: descriptionPattern || transaction.description,
+      match_description_mode: matchMode,
+      match_case_sensitive: caseSensitive
+    };
+
+    if (matchAmountExact) {
+      ruleData.match_amount_exact = Math.abs(transaction.amount);
+    }
+
+    if (matchAccount && transaction.bank_account_id) {
+      ruleData.match_bank_account_id = transaction.bank_account_id;
+    }
+
+    if (matchType && transaction.type) {
+      ruleData.match_transaction_type = transaction.type;
+    }
+
+    if (categoryId) {
+      ruleData.action_set_category_id = categoryId;
+    }
+
+    if (contactId) {
+      ruleData.action_set_contact_id = contactId;
+    }
+
+    if (addNote) {
+      ruleData.action_add_note = addNote;
+    }
+
+    ruleData.created_from_transaction_id = transaction.id;
+
+    return this.createRule(profileId, ruleData);
+  },
+
+  async duplicateRule(ruleId) {
+    const rule = await this.getRule(ruleId);
+
+    const { id, created_at, updated_at, times_matched, times_accepted, times_rejected, last_matched_at, ...ruleData } = rule;
+
+    return this.createRule(rule.profile_id, {
+      ...ruleData,
+      name: `${rule.name} (Copy)`,
+      times_matched: 0,
+      times_accepted: 0,
+      times_rejected: 0
+    });
+  },
+
+  async getMatchPreview(profileId, conditions, limit = 5) {
+    let query = supabase
+      .from('transactions')
+      .select('*')
+      .eq('profile_id', profileId)
+      .limit(limit);
+
+    if (conditions.match_description_pattern) {
+      const pattern = conditions.match_case_sensitive
+        ? conditions.match_description_pattern
+        : conditions.match_description_pattern.toLowerCase();
+
+      if (conditions.match_description_mode === 'contains') {
+        query = query.ilike('description', `%${pattern}%`);
+      } else if (conditions.match_description_mode === 'starts_with') {
+        query = query.ilike('description', `${pattern}%`);
+      } else if (conditions.match_description_mode === 'ends_with') {
+        query = query.ilike('description', `%${pattern}`);
+      } else if (conditions.match_description_mode === 'exact') {
+        query = conditions.match_case_sensitive
+          ? query.eq('description', pattern)
+          : query.ilike('description', pattern);
+      }
+    }
+
+    if (conditions.match_amount_min !== undefined) {
+      query = query.gte('amount', conditions.match_amount_min);
+    }
+
+    if (conditions.match_amount_max !== undefined) {
+      query = query.lte('amount', conditions.match_amount_max);
+    }
+
+    if (conditions.match_amount_exact !== undefined) {
+      query = query.eq('amount', conditions.match_amount_exact);
+    }
+
+    if (conditions.match_transaction_type) {
+      query = query.eq('type', conditions.match_transaction_type);
+    }
+
+    if (conditions.match_bank_account_id) {
+      query = query.eq('bank_account_id', conditions.match_bank_account_id);
+    }
+
+    if (conditions.match_contact_id) {
+      query = query.eq('contact_id', conditions.match_contact_id);
+    }
+
+    if (conditions.match_date_from) {
+      query = query.gte('date', conditions.match_date_from);
+    }
+
+    if (conditions.match_date_to) {
+      query = query.lte('date', conditions.match_date_to);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async getRuleTemplates() {
+    const { data, error } = await supabase
+      .from('transaction_rules')
+      .select('*')
+      .eq('is_template', true)
+      .order('template_category');
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createRuleFromTemplate(profileId, templateId) {
+    const template = await this.getRule(templateId);
+
+    const { id, profile_id, created_at, updated_at, times_matched, times_accepted, times_rejected, last_matched_at, is_template, ...ruleData } = template;
+
+    return this.createRule(profileId, {
+      ...ruleData,
+      times_matched: 0,
+      times_accepted: 0,
+      times_rejected: 0
+    });
+  }
+};
