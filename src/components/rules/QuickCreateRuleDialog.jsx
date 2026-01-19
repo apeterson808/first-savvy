@@ -344,38 +344,6 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-slate-600 font-medium min-w-[70px]">
-              {transaction.date && !isNaN(new Date(transaction.date).getTime())
-                ? format(new Date(transaction.date), 'MM/dd/yy')
-                : 'Invalid'}
-            </span>
-            <div className="flex-1 min-w-0">
-              <div className="font-medium text-slate-900">{transaction.description}</div>
-              {transaction.original_description && transaction.original_description !== transaction.description && (
-                <div className="text-xs text-slate-500">Bank: {transaction.original_description}</div>
-              )}
-            </div>
-            <div className="flex items-center gap-4 text-xs text-slate-600">
-              <span>{transaction.contact_id ? 'Contact' : '—'}</span>
-              <span>{transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}</span>
-              <span>{getAccountName(transaction.bank_account_id)}</span>
-            </div>
-            <div className="font-semibold text-right min-w-[100px]">
-              {transaction.amount < 0 ? (
-                <span className="text-red-600">
-                  -${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              ) : (
-                <span className="text-green-600">
-                  +${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-4">
             <div className="space-y-2">
