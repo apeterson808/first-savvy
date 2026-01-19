@@ -383,87 +383,83 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   )}
                 </div>
 
-                <div className="space-y-2 pt-1 border-t">
-                  <Label className="text-xs font-semibold text-slate-600">Apply to</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="direction" className="text-xs">Money In/Out</Label>
+                    <Select value={moneyDirection} onValueChange={setMoneyDirection}>
+                      <SelectTrigger id="direction" className="h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="both">Both</SelectItem>
+                        <SelectItem value="money_in">Money In</SelectItem>
+                        <SelectItem value="money_out">Money Out</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="direction" className="text-xs">Direction</Label>
-                      <Select value={moneyDirection} onValueChange={setMoneyDirection}>
-                        <SelectTrigger id="direction" className="h-8 text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="both">Both</SelectItem>
-                          <SelectItem value="money_in">Money In</SelectItem>
-                          <SelectItem value="money_out">Money Out</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <Label className="text-xs">Accounts</Label>
-                      <Select
-                        open={accountsDropdownOpen}
-                        onOpenChange={setAccountsDropdownOpen}
-                      >
-                        <SelectTrigger className="h-8 text-xs">
-                          <SelectValue>
-                            {selectedAccountIds.length === 0 ? 'All' :
-                             selectedAccountIds.length === bankAccounts.length ? 'All' :
-                             selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
-                             `${selectedAccountIds.length} Selected`}
-                          </SelectValue>
-                        </SelectTrigger>
-                        <SelectContent>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Accounts</Label>
+                    <Select
+                      open={accountsDropdownOpen}
+                      onOpenChange={setAccountsDropdownOpen}
+                    >
+                      <SelectTrigger className="h-8 text-xs">
+                        <SelectValue>
+                          {selectedAccountIds.length === 0 ? 'All' :
+                           selectedAccountIds.length === bankAccounts.length ? 'All' :
+                           selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
+                           `${selectedAccountIds.length} Selected`}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <div
+                          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            toggleAllAccounts();
+                          }}
+                        >
+                          <Checkbox
+                            checked={allAccountsSelected}
+                            onCheckedChange={toggleAllAccounts}
+                          />
+                          <span className="font-medium text-xs">All Accounts</span>
+                        </div>
+                        {bankAccounts.map(account => (
                           <div
+                            key={account.id}
                             className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
                             onClick={(e) => {
                               e.preventDefault();
-                              toggleAllAccounts();
+                              toggleAccount(account.id);
                             }}
                           >
                             <Checkbox
-                              checked={allAccountsSelected}
-                              onCheckedChange={toggleAllAccounts}
+                              checked={selectedAccountIds.includes(account.id)}
+                              onCheckedChange={() => toggleAccount(account.id)}
                             />
-                            <span className="font-medium text-xs">All Accounts</span>
+                            <span className="text-xs">{account.display_name || account.account_name}</span>
                           </div>
-                          {bankAccounts.map(account => (
-                            <div
-                              key={account.id}
-                              className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                toggleAccount(account.id);
-                              }}
-                            >
-                              <Checkbox
-                                checked={selectedAccountIds.includes(account.id)}
-                                onCheckedChange={() => toggleAccount(account.id)}
-                              />
-                              <span className="text-xs">{account.display_name || account.account_name}</span>
-                            </div>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
 
-                <div className="space-y-2 pt-1 border-t">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-semibold text-slate-600">Include the following</Label>
                     <ToggleGroup
                       type="single"
                       value={matchLogic}
                       onValueChange={(value) => value && setMatchLogic(value)}
-                      className="gap-0"
+                      className="gap-0 border rounded-md"
                     >
-                      <ToggleGroupItem value="any" className="h-6 px-2 text-xs rounded-r-none">
+                      <ToggleGroupItem value="any" className="h-5 px-2 text-xs rounded-r-none border-0">
                         Any
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="all" className="h-6 px-2 text-xs rounded-l-none">
+                      <ToggleGroupItem value="all" className="h-5 px-2 text-xs rounded-l-none border-0">
                         All
                       </ToggleGroupItem>
                     </ToggleGroup>
@@ -545,18 +541,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
             <Card>
               <CardContent className="space-y-3 pt-4">
-                <div className="grid grid-cols-[1fr_130px] gap-2">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Category</Label>
-                    <CategoryDropdown
-                      value={categoryId}
-                      onValueChange={setCategoryId}
-                      transactionType={transaction?.type === 'income' ? 'income' : 'expense'}
-                      placeholder="Select category..."
-                      triggerClassName="h-8 text-xs border-slate-300"
-                      onAddNew={() => {}}
-                    />
-                  </div>
+                <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Contact</Label>
                     <ContactDropdown
@@ -568,6 +553,17 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                       }}
                       triggerClassName="h-8 text-xs border-slate-300"
                       placeholder="Select"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">Category</Label>
+                    <CategoryDropdown
+                      value={categoryId}
+                      onValueChange={setCategoryId}
+                      transactionType={transaction?.type === 'income' ? 'income' : 'expense'}
+                      placeholder="Select category..."
+                      triggerClassName="h-8 text-xs border-slate-300"
+                      onAddNew={() => {}}
                     />
                   </div>
                 </div>
@@ -607,7 +603,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   />
                 </div>
 
-                <div className="space-y-2 pt-1 border-t">
+                <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
                     <div className="space-y-0.5">
                       <Label className="text-xs font-medium">Auto confirm & post</Label>
