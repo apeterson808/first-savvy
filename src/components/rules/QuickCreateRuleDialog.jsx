@@ -28,6 +28,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
+import TransactionTypeDropdown from '../common/TransactionTypeDropdown';
 import { Sparkles, Plus, X, Loader2, ArrowRight, AlertCircle, Info } from 'lucide-react';
 import {
   Tooltip,
@@ -57,6 +58,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
   const [newDescription, setNewDescription] = useState('');
   const [categoryId, setCategoryId] = useState(null);
+  const [transactionType, setTransactionType] = useState('expense');
   const [notes, setNotes] = useState('');
   const [autoConfirmAndPost, setAutoConfirmAndPost] = useState(false);
 
@@ -74,6 +76,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
       const suggested = `Auto-categorize "${transaction.description.substring(0, 30)}${transaction.description.length > 30 ? '...' : ''}"`;
       setRuleName(suggested);
       setCategoryId(transaction.category_account_id || null);
+      setTransactionType(transaction.type || 'expense');
       setConditionRows([
         { field: 'description', operator: 'contains', value: transaction.description }
       ]);
@@ -530,15 +533,27 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             <div className="space-y-2 pt-2 border-t">
               <Label className="text-sm font-semibold">Then</Label>
 
-              <div className="space-y-2">
-                <Label className="text-sm">Set Category</Label>
-                <CategoryDropdown
-                  value={categoryId}
-                  onValueChange={setCategoryId}
-                  transactionType={transaction?.type === 'income' ? 'income' : 'expense'}
-                  placeholder="Select category..."
-                  triggerClassName="h-9 text-sm border-slate-300"
-                />
+              <div className="grid grid-cols-[1fr_140px] gap-2">
+                <div className="space-y-2">
+                  <Label className="text-sm">Set Category</Label>
+                  <CategoryDropdown
+                    value={categoryId}
+                    onValueChange={setCategoryId}
+                    transactionType={transactionType}
+                    placeholder="Select category..."
+                    triggerClassName="h-9 text-sm border-slate-300"
+                    onAddNew={() => {}}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-sm">Type</Label>
+                  <TransactionTypeDropdown
+                    value={transactionType}
+                    onValueChange={setTransactionType}
+                    showAllOption={false}
+                    triggerClassName="h-9 text-sm border-slate-300"
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
