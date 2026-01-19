@@ -1765,7 +1765,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     return (
                       <React.Fragment key={transaction.id}>
                         <tr
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100 border-t-4 border-l-4 border-r-4 border-blue-500' : ''}`}
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8 ${statusFilter === 'pending' ? 'cursor-pointer' : ''} ${expandedTransactionId === transaction.id ? 'bg-slate-100 border-t border-l border-r border-blue-500' : ''}`}
                           onClick={(e) => {
                             if (statusFilter !== 'pending') return;
                             const targetNode = e.target;
@@ -2289,8 +2289,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                         {expandedTransactionId === transaction.id && (
                           <tr className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
-                            <td colSpan={selectedAccount === 'all' ? 9 : 8} className="p-0">
-                              <div className="bg-slate-50 border-l-4 border-r-4 border-b-4 border-blue-500">
+                            <td colSpan={selectedAccount === 'all' ? 9 : 8} className="p-0 border-l border-r border-b border-blue-500">
+                              <div className="bg-slate-50">
                                 {activeAccountIds.includes(transaction.bank_account_id) ? (
                                   <div>
                                     {/* Toggle Section */}
