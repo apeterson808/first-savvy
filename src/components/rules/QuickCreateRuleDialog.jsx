@@ -357,8 +357,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[85vh]">
-        <DialogHeader>
+      <DialogContent className="max-w-5xl max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
           <DialogTitle>
             Create Rule
           </DialogTitle>
@@ -367,7 +367,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-2">
+        <div className="space-y-2 px-6 overflow-y-auto flex-1">
           <div className="grid grid-cols-2 gap-2 h-[300px]">
             <Card className="flex flex-col h-full">
               <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
@@ -711,7 +711,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </Card>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="px-6 py-4 flex-shrink-0 border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
