@@ -629,14 +629,31 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                   <p className="text-xs mt-1">Add conditions to see preview</p>
                 </div>
               ) : (
-                <table className="w-full text-xs">
-                  <thead className="bg-slate-50 sticky top-0">
-                    <tr>
-                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Date</th>
-                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Account</th>
-                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Description</th>
-                      <th className="text-left py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Category</th>
-                      <th className="text-right py-2 px-3 font-medium text-slate-600 border-b border-slate-200">Amount</th>
+                <table className="w-full" style={{ tableLayout: 'auto' }}>
+                  <colgroup>
+                    <col style={{ width: 70, minWidth: 70 }} />
+                    <col style={{ minWidth: 100 }} />
+                    <col style={{ width: 1 }} />
+                    <col style={{ width: 1 }} />
+                    <col style={{ minWidth: 100 }} />
+                  </colgroup>
+                  <thead className="sticky top-0 z-30 bg-slate-100 shadow-sm">
+                    <tr className="bg-slate-100 h-8">
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs">
+                        Date
+                      </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                        Description
+                      </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
+                        Spent
+                      </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
+                        Received
+                      </th>
+                      <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                        Category
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -649,27 +666,40 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                       return (
                         <tr
                           key={txn.id}
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50/30 transition-colors`}
+                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}
                         >
-                          <td className="py-2 px-3 border-b border-slate-100">
-                            {format(new Date(txn.date), 'MMM d, yyyy')}
+                          <td className="text-xs border-r border-slate-200 py-1 pl-2 pr-1">
+                            {format(new Date(txn.date), 'MM/dd/yy')}
                           </td>
-                          <td className="py-2 px-3 border-b border-slate-100">
-                            {getAccountName(txn.bank_account_id)}
-                          </td>
-                          <td className="py-2 px-3 border-b border-slate-100">
-                            <div className="flex flex-col gap-0.5">
-                              <span className={willChangeDescription ? 'text-blue-600 font-medium' : ''}>
-                                {displayDescription}
-                              </span>
-                              {willChangeDescription && (
-                                <span className="text-slate-400 line-through text-[10px]">
-                                  {txn.description}
+                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 min-w-0">
+                                <span className={`${willChangeDescription ? 'text-blue-600 font-medium' : ''}`}>
+                                  {displayDescription}
                                 </span>
-                              )}
+                                {willChangeDescription && (
+                                  <div className="text-slate-400 line-through text-[10px]">
+                                    {txn.description}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </td>
-                          <td className="py-2 px-3 border-b border-slate-100">
+                          <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                            {txn.amount < 0 && (
+                              <span>
+                                ${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-right text-xs border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                            {txn.amount >= 0 && (
+                              <span>
+                                ${Math.abs(txn.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-xs border-r border-slate-200 py-1 px-4 pl-2">
                             <span className={categoryId ? 'text-blue-600 font-medium' : ''}>
                               {displayCategory}
                             </span>
@@ -678,9 +708,6 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                                 {getCategoryName(txn.category_account_id)}
                               </div>
                             )}
-                          </td>
-                          <td className="py-2 px-3 border-b border-slate-100 text-right font-medium">
-                            {formatCurrency(Math.abs(txn.amount))}
                           </td>
                         </tr>
                       );
