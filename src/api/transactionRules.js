@@ -287,11 +287,13 @@ export const transactionRulesApi = {
     });
   },
 
-  async getMatchPreview(profileId, conditions, limit = 5) {
+  async getMatchPreview(profileId, conditions, limit = 10) {
     let query = supabase
       .from('transactions')
       .select('*')
       .eq('profile_id', profileId)
+      .eq('status', 'pending')
+      .order('date', { ascending: false })
       .limit(limit);
 
     if (conditions.match_description_pattern) {
@@ -312,16 +314,46 @@ export const transactionRulesApi = {
       }
     }
 
-    if (conditions.match_amount_min !== undefined) {
-      query = query.gte('amount', conditions.match_amount_min);
+    if (conditions.match_original_description_pattern) {
+      const pattern = conditions.match_case_sensitive
+        ? conditions.match_original_description_pattern
+        : conditions.match_original_description_pattern.toLowerCase();
+
+      if (conditions.match_description_mode === 'contains') {
+        query = query.ilike('original_description', `%${pattern}%`);
+      } else if (conditions.match_description_mode === 'starts_with') {
+        query = query.ilike('original_description', `${pattern}%`);
+      } else if (conditions.match_description_mode === 'ends_with') {
+        query = query.ilike('original_description', `%${pattern}`);
+      } else if (conditions.match_description_mode === 'exact') {
+        query = conditions.match_case_sensitive
+          ? query.eq('original_description', pattern)
+          : query.ilike('original_description', pattern);
+      }
     }
 
-    if (conditions.match_amount_max !== undefined) {
-      query = query.lte('amount', conditions.match_amount_max);
+    if (conditions.match_money_direction && conditions.match_money_direction !== 'both') {
+      if (conditions.match_money_direction === 'money_out') {
+        query = query.in('type', ['expense', 'transfer', 'credit_card_payment']);
+      } else if (conditions.match_money_direction === 'money_in') {
+        query = query.eq('type', 'income');
+      }
     }
 
-    if (conditions.match_amount_exact !== undefined) {
-      query = query.eq('amount', conditions.match_amount_exact);
+    if (conditions.match_bank_account_ids && conditions.match_bank_account_ids.length > 0) {
+      query = query.in('bank_account_id', conditions.match_bank_account_ids);
+    }
+
+    if (conditions.match_amount_min !== undefined && conditions.match_amount_min !== null) {
+      query = query.gte('amount', Math.abs(conditions.match_amount_min));
+    }
+
+    if (conditions.match_amount_max !== undefined && conditions.match_amount_max !== null) {
+      query = query.lte('amount', Math.abs(conditions.match_amount_max));
+    }
+
+    if (conditions.match_amount_exact !== undefined && conditions.match_amount_exact !== null) {
+      query = query.eq('amount', Math.abs(conditions.match_amount_exact));
     }
 
     if (conditions.match_transaction_type) {
@@ -348,6 +380,23 @@ export const transactionRulesApi = {
 
     if (error) throw error;
     return data || [];
+  },
+
+  async checkRuleNameUnique(profileId, name, excludeRuleId = null) {
+    let query = supabase
+      .from('transaction_rules')
+      .select('id, name')
+      .eq('profile_id', profileId)
+      .ilike('name', name);
+
+    if (excludeRuleId) {
+      query = query.neq('id', excludeRuleId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) throw error;
+    return data.length === 0;
   },
 
   async getRuleTemplates() {

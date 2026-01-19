@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { transactionRulesApi } from '../../api/transactionRules';
+import { getUserChartOfAccounts } from '../../api/chartOfAccounts';
 import {
   Dialog,
   DialogContent,
@@ -12,33 +13,155 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { Textarea } from '../ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
+import { Checkbox } from '../ui/checkbox';
 import { toast } from 'sonner';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
-import { Sparkles, TrendingUp } from 'lucide-react';
+import { Sparkles, Plus, X, Loader2, ArrowRight, AlertCircle } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import { format } from 'date-fns';
 
 export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profileId }) {
   const queryClient = useQueryClient();
 
   const [ruleName, setRuleName] = useState('');
-  const [matchExactAmount, setMatchExactAmount] = useState(false);
-  const [matchThisAccount, setMatchThisAccount] = useState(true);
-  const [categoryId, setCategoryId] = useState(transaction?.category_account_id || null);
-  const [priority, setPriority] = useState(50);
+  const [nameError, setNameError] = useState('');
+  const [checkingName, setCheckingName] = useState(false);
 
-  React.useEffect(() => {
+  const [moneyDirection, setMoneyDirection] = useState('both');
+  const [selectedAccountIds, setSelectedAccountIds] = useState([]);
+  const [accountsDropdownOpen, setAccountsDropdownOpen] = useState(false);
+
+  const [conditionRows, setConditionRows] = useState([
+    { field: 'description', operator: 'contains', value: '' }
+  ]);
+  const [matchLogic, setMatchLogic] = useState('all');
+
+  const [newDescription, setNewDescription] = useState('');
+  const [categoryId, setCategoryId] = useState(null);
+  const [notes, setNotes] = useState('');
+  const [autoConfirmAndPost, setAutoConfirmAndPost] = useState(false);
+
+  const [previewTransactions, setPreviewTransactions] = useState([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['user-chart-accounts', profileId],
+    queryFn: () => getUserChartOfAccounts(profileId),
+    enabled: !!profileId && open
+  });
+
+  useEffect(() => {
     if (transaction && open) {
       const suggested = `Auto-categorize "${transaction.description.substring(0, 30)}${transaction.description.length > 30 ? '...' : ''}"`;
       setRuleName(suggested);
       setCategoryId(transaction.category_account_id || null);
+      setConditionRows([
+        { field: 'description', operator: 'contains', value: transaction.description }
+      ]);
+      if (transaction.bank_account_id) {
+        setSelectedAccountIds([transaction.bank_account_id]);
+      }
     }
   }, [transaction, open]);
 
+  const checkNameUniqueness = useCallback(async (name) => {
+    if (!name.trim()) {
+      setNameError('');
+      return;
+    }
+
+    setCheckingName(true);
+    try {
+      const isUnique = await transactionRulesApi.checkRuleNameUnique(profileId, name);
+      if (!isUnique) {
+        setNameError('A rule with this name already exists');
+      } else {
+        setNameError('');
+      }
+    } catch (error) {
+      console.error('Error checking name:', error);
+    } finally {
+      setCheckingName(false);
+    }
+  }, [profileId]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (ruleName) {
+        checkNameUniqueness(ruleName);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [ruleName, checkNameUniqueness]);
+
+  const loadPreview = useCallback(async () => {
+    if (!open) return;
+
+    const hasConditions = conditionRows.some(row => row.value.trim());
+    if (!hasConditions) {
+      setPreviewTransactions([]);
+      return;
+    }
+
+    setPreviewLoading(true);
+    try {
+      const conditions = {
+        match_description_mode: conditionRows[0]?.operator || 'contains',
+        match_case_sensitive: false,
+        match_money_direction: moneyDirection,
+        match_bank_account_ids: selectedAccountIds.length > 0 ? selectedAccountIds : null,
+      };
+
+      conditionRows.forEach(row => {
+        if (row.value.trim()) {
+          if (row.field === 'description') {
+            conditions.match_description_pattern = row.value;
+          } else if (row.field === 'bank_memo') {
+            conditions.match_original_description_pattern = row.value;
+          } else if (row.field === 'amount') {
+            if (row.operator === 'exact') {
+              conditions.match_amount_exact = parseFloat(row.value);
+            } else if (row.operator === 'greater_than') {
+              conditions.match_amount_min = parseFloat(row.value);
+            } else if (row.operator === 'less_than') {
+              conditions.match_amount_max = parseFloat(row.value);
+            }
+          }
+        }
+      });
+
+      const preview = await transactionRulesApi.getMatchPreview(profileId, conditions, 10);
+      setPreviewTransactions(preview);
+    } catch (error) {
+      console.error('Error loading preview:', error);
+      setPreviewTransactions([]);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, [profileId, conditionRows, moneyDirection, selectedAccountIds, open]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadPreview();
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [loadPreview]);
+
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      return transactionRulesApi.createRuleFromTransaction(profileId, transaction, data);
+      return transactionRulesApi.createRule(profileId, data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['transaction-rules']);
@@ -48,16 +171,26 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     },
     onError: (error) => {
       console.error('Error creating rule:', error);
-      toast.error('Failed to create rule');
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        toast.error('A rule with this name already exists');
+      } else {
+        toast.error('Failed to create rule');
+      }
     }
   });
 
   const resetForm = () => {
     setRuleName('');
-    setMatchExactAmount(false);
-    setMatchThisAccount(true);
+    setNameError('');
+    setMoneyDirection('both');
+    setSelectedAccountIds([]);
+    setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
+    setMatchLogic('all');
+    setNewDescription('');
     setCategoryId(null);
-    setPriority(50);
+    setNotes('');
+    setAutoConfirmAndPost(false);
+    setPreviewTransactions([]);
   };
 
   const handleCreate = () => {
@@ -66,136 +199,483 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
       return;
     }
 
-    if (!categoryId) {
-      toast.error('Please select a category');
+    if (nameError) {
+      toast.error('Please fix the rule name error');
       return;
     }
 
-    createMutation.mutate({
-      name: ruleName,
-      categoryId,
-      descriptionPattern: transaction.description,
-      matchMode: 'contains',
-      caseSensitive: false,
-      matchAmountExact: matchExactAmount,
-      matchAccount: matchThisAccount,
-      matchType: false,
-      priority
+    const hasConditions = conditionRows.some(row => row.value.trim());
+    if (!hasConditions) {
+      toast.error('Please specify at least one search condition');
+      return;
+    }
+
+    if (!newDescription && !categoryId && !notes) {
+      toast.error('Please specify at least one action');
+      return;
+    }
+
+    const ruleData = {
+      name: ruleName.trim(),
+      match_money_direction: moneyDirection,
+      match_bank_account_ids: selectedAccountIds.length > 0 ? selectedAccountIds : null,
+      match_conditions_logic: matchLogic,
+      match_description_mode: 'contains',
+      match_case_sensitive: false,
+    };
+
+    conditionRows.forEach(row => {
+      if (row.value.trim()) {
+        if (row.field === 'description') {
+          ruleData.match_description_pattern = row.value;
+          ruleData.match_description_mode = row.operator;
+        } else if (row.field === 'bank_memo') {
+          ruleData.match_original_description_pattern = row.value;
+          ruleData.match_description_mode = row.operator;
+        } else if (row.field === 'amount') {
+          if (row.operator === 'exact') {
+            ruleData.match_amount_exact = parseFloat(row.value);
+          } else if (row.operator === 'greater_than') {
+            ruleData.match_amount_min = parseFloat(row.value);
+          } else if (row.operator === 'less_than') {
+            ruleData.match_amount_max = parseFloat(row.value);
+          }
+        }
+      }
     });
+
+    if (newDescription) {
+      ruleData.action_set_description = newDescription;
+    }
+    if (categoryId) {
+      ruleData.action_set_category_id = categoryId;
+    }
+    if (notes) {
+      ruleData.action_add_note = notes;
+    }
+
+    ruleData.auto_confirm_and_post = autoConfirmAndPost;
+
+    createMutation.mutate(ruleData);
+  };
+
+  const addConditionRow = () => {
+    setConditionRows([...conditionRows, { field: 'description', operator: 'contains', value: '' }]);
+  };
+
+  const removeConditionRow = (index) => {
+    if (conditionRows.length > 1) {
+      setConditionRows(conditionRows.filter((_, i) => i !== index));
+    }
+  };
+
+  const updateConditionRow = (index, field, value) => {
+    const updated = [...conditionRows];
+    updated[index][field] = value;
+    setConditionRows(updated);
+  };
+
+  const getOperatorOptions = (field) => {
+    if (field === 'amount') {
+      return [
+        { value: 'exact', label: 'Equal To' },
+        { value: 'greater_than', label: 'Greater Than' },
+        { value: 'less_than', label: 'Less Than' }
+      ];
+    }
+    return [
+      { value: 'contains', label: 'Contains' },
+      { value: 'exact', label: 'Exact Match' },
+      { value: 'starts_with', label: 'Starts With' },
+      { value: 'ends_with', label: 'Ends With' }
+    ];
+  };
+
+  const bankAccounts = accounts.filter(a =>
+    ['asset', 'liability'].includes(a.class) &&
+    a.display_in_sidebar
+  );
+
+  const allAccountsSelected = selectedAccountIds.length === bankAccounts.length;
+
+  const toggleAllAccounts = () => {
+    if (allAccountsSelected) {
+      setSelectedAccountIds([]);
+    } else {
+      setSelectedAccountIds(bankAccounts.map(a => a.id));
+    }
+  };
+
+  const toggleAccount = (accountId) => {
+    setSelectedAccountIds(prev =>
+      prev.includes(accountId)
+        ? prev.filter(id => id !== accountId)
+        : [...prev, accountId]
+    );
+  };
+
+  const getAccountName = (accountId) => {
+    const account = accounts.find(a => a.id === accountId);
+    return account?.display_name || account?.account_name || 'Unknown';
+  };
+
+  const getCategoryName = (categoryId) => {
+    const category = accounts.find(a => a.id === categoryId);
+    return category?.display_name || category?.account_name || 'Uncategorized';
   };
 
   if (!transaction) return null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-blue-600" />
             Quick Create Rule
           </DialogTitle>
           <DialogDescription>
-            Create a rule to automatically categorize similar transactions
+            Create a rule to automatically process similar transactions
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="bg-slate-50 rounded-md p-3 border border-slate-200">
-            <p className="text-xs text-slate-500 mb-1">Transaction</p>
-            <div className="flex items-start justify-between">
-              <div>
-                <p className="font-medium text-sm">{transaction.description}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <Badge variant="outline" className="text-xs">
-                    {transaction.type}
-                  </Badge>
+        <div className="bg-slate-50 rounded-md p-3 border border-slate-200">
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-3">
+              <span className="font-medium text-slate-900">{transaction.description}</span>
+              <Badge variant="outline" className="text-xs">
+                {transaction.type}
+              </Badge>
+              <span className="text-slate-500">{getAccountName(transaction.bank_account_id)}</span>
+            </div>
+            <span className="font-semibold text-slate-900">
+              {formatCurrency(Math.abs(transaction.amount))}
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="rule-name" className="flex items-center gap-1">
+                Rule Name <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="rule-name"
+                placeholder="Enter a unique name for this rule"
+                value={ruleName}
+                onChange={(e) => setRuleName(e.target.value)}
+                className={nameError ? 'border-red-500' : ''}
+              />
+              {nameError && (
+                <p className="text-xs text-red-500 flex items-center gap-1">
+                  <AlertCircle className="w-3 h-3" />
+                  {nameError}
+                </p>
+              )}
+              {checkingName && (
+                <p className="text-xs text-slate-500">Checking availability...</p>
+              )}
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="text-sm font-semibold">Apply to</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="direction" className="text-sm">Transaction Direction</Label>
+                <Select value={moneyDirection} onValueChange={setMoneyDirection}>
+                  <SelectTrigger id="direction">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="both">Both (Money In & Out)</SelectItem>
+                    <SelectItem value="money_in">Money In</SelectItem>
+                    <SelectItem value="money_out">Money Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Accounts to Search</Label>
+                <Select
+                  open={accountsDropdownOpen}
+                  onOpenChange={setAccountsDropdownOpen}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {selectedAccountIds.length === 0 ? 'All Accounts' :
+                       selectedAccountIds.length === bankAccounts.length ? 'All Accounts' :
+                       selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
+                       `${selectedAccountIds.length} Accounts Selected`}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <div
+                      className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        toggleAllAccounts();
+                      }}
+                    >
+                      <Checkbox
+                        checked={allAccountsSelected}
+                        onCheckedChange={toggleAllAccounts}
+                      />
+                      <span className="font-medium">All Accounts</span>
+                    </div>
+                    {bankAccounts.map(account => (
+                      <div
+                        key={account.id}
+                        className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          toggleAccount(account.id);
+                        }}
+                      >
+                        <Checkbox
+                          checked={selectedAccountIds.includes(account.id)}
+                          onCheckedChange={() => toggleAccount(account.id)}
+                        />
+                        <span className="text-sm">{account.display_name || account.account_name}</span>
+                      </div>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <Label className="text-sm font-semibold">Include the following</Label>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className="text-slate-500">Match</span>
+                  <Button
+                    variant={matchLogic === 'all' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setMatchLogic('all')}
+                  >
+                    All
+                  </Button>
+                  <Button
+                    variant={matchLogic === 'any' ? 'default' : 'outline'}
+                    size="sm"
+                    className="h-6 px-2 text-xs"
+                    onClick={() => setMatchLogic('any')}
+                  >
+                    Any
+                  </Button>
                 </div>
               </div>
-              <p className="font-semibold">{formatCurrency(Math.abs(transaction.amount))}</p>
-            </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="rule-name">Rule Name</Label>
-            <Input
-              id="rule-name"
-              placeholder="Enter a name for this rule"
-              value={ruleName}
-              onChange={(e) => setRuleName(e.target.value)}
-            />
-          </div>
+              {conditionRows.map((row, index) => (
+                <div key={index}>
+                  {index > 0 && (
+                    <div className="text-xs text-slate-500 my-1 ml-2">
+                      {matchLogic === 'all' ? 'and' : 'or'}
+                    </div>
+                  )}
+                  <div className="grid grid-cols-[120px_120px_1fr_24px] gap-2">
+                    <Select
+                      value={row.field}
+                      onValueChange={(value) => updateConditionRow(index, 'field', value)}
+                    >
+                      <SelectTrigger className="text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="description">Description</SelectItem>
+                        <SelectItem value="bank_memo">Bank Memo</SelectItem>
+                        <SelectItem value="amount">Amount</SelectItem>
+                      </SelectContent>
+                    </Select>
 
-          <div className="space-y-2">
-            <Label>Category to Apply</Label>
-            <ChartAccountDropdown
-              value={categoryId}
-              onValueChange={setCategoryId}
-              profileId={profileId}
-              filterByClass={['income', 'expense']}
-              placeholder="Select category..."
-            />
-            <p className="text-xs text-slate-500">
-              This category will be automatically applied to matching transactions
-            </p>
-          </div>
+                    <Select
+                      value={row.operator}
+                      onValueChange={(value) => updateConditionRow(index, 'operator', value)}
+                    >
+                      <SelectTrigger className="text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getOperatorOptions(row.field).map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-          <div className="space-y-3 pt-2 border-t border-slate-200">
-            <Label className="text-sm font-medium">Match Conditions</Label>
+                    <Input
+                      placeholder={row.field === 'amount' ? '0.00' : 'Enter text...'}
+                      type={row.field === 'amount' ? 'number' : 'text'}
+                      value={row.value}
+                      onChange={(e) => updateConditionRow(index, 'value', e.target.value)}
+                      className="text-xs"
+                    />
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm">Match exact amount</p>
-                <p className="text-xs text-slate-500">
-                  Only match transactions with amount {formatCurrency(Math.abs(transaction.amount))}
-                </p>
-              </div>
-              <Switch
-                checked={matchExactAmount}
-                onCheckedChange={setMatchExactAmount}
-              />
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div className="space-y-1">
-                <p className="text-sm">Match this account only</p>
-                <p className="text-xs text-slate-500">
-                  Only apply to transactions in this specific account
-                </p>
-              </div>
-              <Switch
-                checked={matchThisAccount}
-                onCheckedChange={setMatchThisAccount}
-              />
-            </div>
-
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm">
-              <div className="flex items-start gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-600 mt-0.5" />
-                <div className="text-blue-800">
-                  <p className="font-medium">This rule will match:</p>
-                  <ul className="text-xs mt-1 space-y-0.5 ml-4 list-disc">
-                    <li>Transactions containing "{transaction.description.substring(0, 30)}"</li>
-                    {matchExactAmount && <li>With exact amount {formatCurrency(Math.abs(transaction.amount))}</li>}
-                    {matchThisAccount && <li>In this specific account</li>}
-                  </ul>
+                    {conditionRows.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0"
+                        onClick={() => removeConditionRow(index)}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
                 </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-xs"
+                onClick={addConditionRow}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add a condition
+              </Button>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label className="text-sm font-semibold">Then</Label>
+
+              <div className="space-y-2">
+                <Label htmlFor="new-desc" className="text-sm">Change Description To</Label>
+                <Input
+                  id="new-desc"
+                  placeholder="Enter new description (optional)"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  className="text-sm"
+                />
+                <p className="text-xs text-slate-500">
+                  Bank memo is always preserved
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">Set Category</Label>
+                <ChartAccountDropdown
+                  value={categoryId}
+                  onValueChange={setCategoryId}
+                  profileId={profileId}
+                  filterByClass={['income', 'expense']}
+                  placeholder="Select category..."
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-sm">Add Notes</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Optional notes to add to matching transactions"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={2}
+                  className="text-sm"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">Automatically confirm and post</Label>
+                  <p className="text-xs text-slate-500">
+                    Matching transactions will be automatically posted without review
+                  </p>
+                </div>
+                <Switch
+                  checked={autoConfirmAndPost}
+                  onCheckedChange={setAutoConfirmAndPost}
+                />
               </div>
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="priority">Priority (1-100)</Label>
-            <Input
-              id="priority"
-              type="number"
-              min="1"
-              max="100"
-              value={priority}
-              onChange={(e) => setPriority(parseInt(e.target.value) || 50)}
-            />
-            <p className="text-xs text-slate-500">
-              Higher priority rules are evaluated first
-            </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-semibold">Preview - Pending Transactions</Label>
+              {previewLoading && <Loader2 className="w-4 h-4 animate-spin text-slate-400" />}
+              {!previewLoading && previewTransactions.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {previewTransactions.length} match{previewTransactions.length !== 1 ? 'es' : ''}
+                </Badge>
+              )}
+            </div>
+
+            <div className="border rounded-md bg-white max-h-[500px] overflow-y-auto">
+              {previewLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+                </div>
+              ) : previewTransactions.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 text-sm">
+                  <p>No pending transactions match</p>
+                  <p className="text-xs mt-1">Add conditions to see preview</p>
+                </div>
+              ) : (
+                <div className="divide-y">
+                  {previewTransactions.map((txn) => (
+                    <div key={txn.id} className="p-3 hover:bg-slate-50">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm text-slate-900">
+                            {txn.description}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            {format(new Date(txn.date), 'MMM d, yyyy')} • {getAccountName(txn.bank_account_id)}
+                          </div>
+                        </div>
+                        <div className="font-semibold text-sm">
+                          {formatCurrency(Math.abs(txn.amount))}
+                        </div>
+                      </div>
+
+                      {(newDescription || categoryId || notes) && (
+                        <div className="mt-2 pt-2 border-t border-slate-100 space-y-1">
+                          {newDescription && txn.description !== newDescription && (
+                            <div className="text-xs">
+                              <span className="text-slate-500">Description: </span>
+                              <span className="line-through text-slate-400">{txn.description}</span>
+                              <ArrowRight className="w-3 h-3 inline mx-1" />
+                              <span className="text-blue-600 font-medium">{newDescription}</span>
+                            </div>
+                          )}
+                          {categoryId && (
+                            <div className="text-xs">
+                              <span className="text-slate-500">Category: </span>
+                              {txn.category_account_id && (
+                                <>
+                                  <span className="line-through text-slate-400">{getCategoryName(txn.category_account_id)}</span>
+                                  <ArrowRight className="w-3 h-3 inline mx-1" />
+                                </>
+                              )}
+                              <span className="text-blue-600 font-medium">{getCategoryName(categoryId)}</span>
+                            </div>
+                          )}
+                          {notes && (
+                            <div className="text-xs">
+                              <span className="text-slate-500">Notes: </span>
+                              <span className="text-blue-600 font-medium">{notes}</span>
+                            </div>
+                          )}
+                          {autoConfirmAndPost && (
+                            <div className="text-xs">
+                              <span className="text-green-600 font-medium">Will be auto-posted</span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
@@ -203,7 +683,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleCreate} disabled={createMutation.isPending}>
+          <Button
+            onClick={handleCreate}
+            disabled={createMutation.isPending || checkingName || !!nameError}
+          >
             {createMutation.isPending ? 'Creating...' : 'Create Rule'}
           </Button>
         </DialogFooter>
