@@ -396,8 +396,10 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   };
 
   const bankAccounts = accounts.filter(a =>
-    ['asset', 'liability'].includes(a.class) &&
-    a.display_in_sidebar
+    a.account_type === 'checking_account' ||
+    a.account_type === 'savings_account' ||
+    a.account_type === 'credit_card' ||
+    (a.account_detail && a.account_detail.includes('credit_card'))
   );
 
   const allAccountsSelected = selectedAccountIds.length === bankAccounts.length;
@@ -442,13 +444,16 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
         <div className="px-6 flex-shrink-0">
           <div className="space-y-2">
-            <Input
-              id="rule-name"
-              placeholder="Enter rule name..."
-              value={ruleName}
-              onChange={(e) => setRuleName(e.target.value)}
-              className={nameError ? 'border-red-500 h-10' : 'h-10'}
-            />
+            <div className="relative">
+              <Input
+                id="rule-name"
+                placeholder="Enter rule name"
+                value={ruleName}
+                onChange={(e) => setRuleName(e.target.value)}
+                className={nameError ? 'border-red-500 h-10' : 'h-10'}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-sm">*</span>
+            </div>
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
