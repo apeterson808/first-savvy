@@ -362,7 +362,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogTitle>
         </DialogHeader>
 
-        <div className="px-6 pb-3 flex-shrink-0">
+        <div className="px-6 flex-shrink-0">
           <div className="space-y-2">
             <Input
               id="rule-name"
@@ -383,7 +383,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </div>
         </div>
 
-        <div className="space-y-4 px-6 flex-1 overflow-y-auto py-4">
+        <div className="space-y-4 px-6 flex-1 overflow-y-auto pt-4 pb-4">
           <div className="grid grid-cols-2 gap-4">
             <Card className="flex flex-col h-[300px] shrink-0">
               <CardContent className="space-y-2 pt-3 flex-1">
