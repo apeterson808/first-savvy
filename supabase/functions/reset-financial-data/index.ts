@@ -69,11 +69,8 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
-    // Delete financial data only - preserving contacts, custom categories, and categorization memories
+    // Delete financial data only - preserving contacts, custom categories, categorization memories, and transaction rules
     const tablesToDelete = [
-      // Delete transaction rules FIRST (before deleting accounts they reference)
-      "transaction_rules",
-
       // Delete journal entries (CASCADE will delete journal_entry_lines automatically)
       "journal_entries",
       "journal_entry_counters",
@@ -151,6 +148,14 @@ Deno.serve(async (req: Request) => {
       .eq("profile_id", profileId);
 
     console.log(`Preserved ${memoryCount || 0} categorization memories`);
+
+    // Count preserved transaction rules
+    const { count: rulesCount } = await supabase
+      .from("transaction_rules")
+      .select("*", { count: "exact", head: true })
+      .eq("profile_id", profileId);
+
+    console.log(`Preserved ${rulesCount || 0} transaction rules`);
     console.log(`Total rows deleted: ${totalDeleted}`);
 
     // Provision fresh chart of accounts and profile essentials
@@ -196,15 +201,16 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create profile tab: ${tabError.message}`);
     }
 
-    console.log(`Successfully reset financial data for user ${userId}. Contacts, custom categories, and categorization memories preserved.`);
+    console.log(`Successfully reset financial data for user ${userId}. Contacts, custom categories, categorization memories, and transaction rules preserved.`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Your financial data has been reset. Contacts, ${customCount || 0} custom categories, and ${memoryCount || 0} categorization memories have been preserved.`,
+        message: `Your financial data has been reset. Contacts, ${customCount || 0} custom categories, ${memoryCount || 0} categorization memories, and ${rulesCount || 0} transaction rules have been preserved.`,
         deleted_rows: totalDeleted,
         preserved_custom_categories: customCount || 0,
-        preserved_categorization_memories: memoryCount || 0
+        preserved_categorization_memories: memoryCount || 0,
+        preserved_transaction_rules: rulesCount || 0
       }),
       {
         status: 200,
