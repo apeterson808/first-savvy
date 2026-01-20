@@ -48,6 +48,7 @@ import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
 import { Trash2 } from 'lucide-react';
+import * as transactionService from '@/api/transactionService';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { RuleDialog } from '../rules/RuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
@@ -1090,16 +1091,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           try {
             // CRITICAL: Post SEQUENTIALLY to avoid race condition
             // First transaction posts -> trigger skips (paired not posted yet)
-            await updateMutation.mutateAsync({
-              id: pairedTransaction.id,
-              data: { status: 'posted' }
-            });
+            const result1 = await transactionService.postTransaction(pairedTransaction.id);
+            if (result1.error) {
+              console.error('Failed to post paired transaction:', result1.error);
+              toast.error('Failed to post transfer. Please try again.');
+              return false;
+            }
 
             // Second transaction posts -> trigger creates journal entry (paired is now posted)
-            await updateMutation.mutateAsync({
-              id: transaction.id,
-              data: { status: 'posted' }
-            });
+            const result2 = await transactionService.postTransaction(transaction.id);
+            if (result2.error) {
+              console.error('Failed to post transaction:', result2.error);
+              toast.error('Failed to post transfer. Please try again.');
+              return false;
+            }
+
+            // Invalidate queries to refresh the UI
+            queryClient.invalidateQueries(['fullPendingTransactions']);
+            queryClient.invalidateQueries(['fullPostedTransactions']);
 
             toast.success('Transfer posted (both sides)');
             return true;
@@ -1110,30 +1119,45 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           }
         } else {
           // Paired transaction already posted, just post this one
-          updateMutation.mutate({
-            id: transaction.id,
-            data: { status: 'posted' }
-          });
+          const result = await transactionService.postTransaction(transaction.id);
+          if (result.error) {
+            console.error('Failed to post transaction:', result.error);
+            toast.error('Failed to post transaction. Please try again.');
+            return false;
+          }
+
+          queryClient.invalidateQueries(['fullPendingTransactions']);
+          queryClient.invalidateQueries(['fullPostedTransactions']);
           toast.success('Transaction posted');
           return true;
         }
       } else {
         // transfer_pair_id exists but no paired transaction found - post anyway
         console.warn('transfer_pair_id exists but no paired transaction found');
-        updateMutation.mutate({
-          id: transaction.id,
-          data: { status: 'posted' }
-        });
+        const result = await transactionService.postTransaction(transaction.id);
+        if (result.error) {
+          console.error('Failed to post transaction:', result.error);
+          toast.error('Failed to post transaction. Please try again.');
+          return false;
+        }
+
+        queryClient.invalidateQueries(['fullPendingTransactions']);
+        queryClient.invalidateQueries(['fullPostedTransactions']);
         toast.success('Transaction posted');
         return true;
       }
     }
 
     // No transfer pair - post single transaction
-    updateMutation.mutate({
-      id: transaction.id,
-      data: { status: 'posted' }
-    });
+    const result = await transactionService.postTransaction(transaction.id);
+    if (result.error) {
+      console.error('Failed to post transaction:', result.error);
+      toast.error('Failed to post transaction. Please try again.');
+      return false;
+    }
+
+    queryClient.invalidateQueries(['fullPendingTransactions']);
+    queryClient.invalidateQueries(['fullPostedTransactions']);
     toast.success('Transaction posted');
     return true;
   };
