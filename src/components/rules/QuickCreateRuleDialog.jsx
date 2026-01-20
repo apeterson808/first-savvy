@@ -87,8 +87,6 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
   useEffect(() => {
     if (transaction && open) {
-      const suggested = `Auto-categorize "${transaction.description.substring(0, 30)}${transaction.description.length > 30 ? '...' : ''}"`;
-      setRuleName(suggested);
       setCategoryId(transaction.category_account_id || null);
       setContactId(transaction.contact_id || null);
       setConditionRows([
@@ -358,40 +356,40 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl h-[92vh] flex flex-col p-0 gap-0">
-        <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
+        <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle>
             Create Rule
           </DialogTitle>
-          <DialogDescription>
-            Create a rule to automatically process similar transactions
-          </DialogDescription>
         </DialogHeader>
+
+        <div className="px-6 pb-3 flex-shrink-0">
+          <div className="space-y-2">
+            <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
+              Rule Name <span className="text-red-500">*</span>
+            </Label>
+            <Input
+              id="rule-name"
+              placeholder="e.g., Auto-categorize Netflix subscriptions"
+              value={ruleName}
+              onChange={(e) => setRuleName(e.target.value)}
+              className={nameError ? 'border-red-500 h-10' : 'h-10'}
+            />
+            {nameError && (
+              <p className="text-xs text-red-500 flex items-center gap-1">
+                <AlertCircle className="w-3 h-3" />
+                {nameError}
+              </p>
+            )}
+            {checkingName && (
+              <p className="text-xs text-slate-500">Checking availability...</p>
+            )}
+          </div>
+        </div>
 
         <div className="space-y-4 px-6 flex-1 overflow-y-auto py-4">
           <div className="grid grid-cols-2 gap-4">
             <Card className="flex flex-col h-[300px] shrink-0">
               <CardContent className="space-y-2 pt-3 flex-1">
-                <div className="space-y-2">
-                  <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
-                    Rule Name <span className="text-red-500">*</span>
-                  </Label>
-                  <Input
-                    id="rule-name"
-                    placeholder="Enter a unique name for this rule"
-                    value={ruleName}
-                    onChange={(e) => setRuleName(e.target.value)}
-                    className={nameError ? 'border-red-500 h-8 text-xs' : 'h-8 text-xs'}
-                  />
-                  {nameError && (
-                    <p className="text-xs text-red-500 flex items-center gap-1">
-                      <AlertCircle className="w-3 h-3" />
-                      {nameError}
-                    </p>
-                  )}
-                  {checkingName && (
-                    <p className="text-xs text-slate-500">Checking availability...</p>
-                  )}
-                </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
