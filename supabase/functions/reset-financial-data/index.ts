@@ -71,7 +71,10 @@ Deno.serve(async (req: Request) => {
 
     // Delete financial data only - preserving contacts, custom categories, and categorization memories
     const tablesToDelete = [
-      // Delete journal entries first (CASCADE will delete journal_entry_lines automatically)
+      // Delete transaction rules FIRST (before deleting accounts they reference)
+      "transaction_rules",
+
+      // Delete journal entries (CASCADE will delete journal_entry_lines automatically)
       "journal_entries",
       "journal_entry_counters",
 
