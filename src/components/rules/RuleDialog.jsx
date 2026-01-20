@@ -147,7 +147,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       setConditionRows([
         { field: 'description', operator: 'contains', value: transaction.description || '' }
       ]);
-      setSelectedAccountIds(transaction.bank_account_id ? [transaction.bank_account_id] : []);
+      setSelectedAccountIds([]);
     }
   }, [rule, transaction, open, isEditMode]);
 
