@@ -247,10 +247,18 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     },
     onError: (error) => {
       console.error('Error creating rule:', error);
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+      const errorMessage = error.message || '';
+
+      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
         toast.error('A rule with this name already exists');
+      } else if (errorMessage.includes('actions_check') || errorMessage.includes('action_')) {
+        toast.error('Please specify at least one action (category, contact, description, or note)');
+      } else if (errorMessage.includes('foreign key') || errorMessage.includes('violates')) {
+        toast.error('Invalid category or contact selected. Please try again.');
+      } else if (errorMessage.includes('check constraint')) {
+        toast.error('Invalid rule configuration. Please check your conditions and try again.');
       } else {
-        toast.error('Failed to create rule');
+        toast.error('Failed to create rule. Please try again.');
       }
     }
   });
@@ -267,10 +275,18 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     },
     onError: (error) => {
       console.error('Error updating rule:', error);
-      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+      const errorMessage = error.message || '';
+
+      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
         toast.error('A rule with this name already exists');
+      } else if (errorMessage.includes('actions_check') || errorMessage.includes('action_')) {
+        toast.error('Please specify at least one action (category, contact, description, or note)');
+      } else if (errorMessage.includes('foreign key') || errorMessage.includes('violates')) {
+        toast.error('Invalid category or contact selected. Please try again.');
+      } else if (errorMessage.includes('check constraint')) {
+        toast.error('Invalid rule configuration. Please check your conditions and try again.');
       } else {
-        toast.error('Failed to update rule');
+        toast.error('Failed to update rule. Please try again.');
       }
     }
   });
@@ -321,25 +337,44 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       match_case_sensitive: false,
     };
 
-    conditionRows.forEach(row => {
+    let descriptionModeSet = false;
+    let hasValidationError = false;
+
+    for (const row of conditionRows) {
       if (row.value.trim()) {
         if (row.field === 'description') {
           ruleData.match_description_pattern = row.value;
-          ruleData.match_description_mode = row.operator;
+          if (!descriptionModeSet) {
+            ruleData.match_description_mode = row.operator;
+            descriptionModeSet = true;
+          }
         } else if (row.field === 'bank_memo') {
           ruleData.match_original_description_pattern = row.value;
-          ruleData.match_description_mode = row.operator;
+          if (!descriptionModeSet) {
+            ruleData.match_description_mode = row.operator;
+            descriptionModeSet = true;
+          }
         } else if (row.field === 'amount') {
+          const amount = parseFloat(row.value);
+          if (isNaN(amount) || amount < 0) {
+            toast.error('Please enter a valid positive amount');
+            hasValidationError = true;
+            break;
+          }
           if (row.operator === 'exact') {
-            ruleData.match_amount_exact = parseFloat(row.value);
+            ruleData.match_amount_exact = amount;
           } else if (row.operator === 'greater_than') {
-            ruleData.match_amount_min = parseFloat(row.value);
+            ruleData.match_amount_min = amount;
           } else if (row.operator === 'less_than') {
-            ruleData.match_amount_max = parseFloat(row.value);
+            ruleData.match_amount_max = amount;
           }
         }
       }
-    });
+    }
+
+    if (hasValidationError) {
+      return;
+    }
 
     if (newDescription) {
       ruleData.action_set_description = newDescription;
