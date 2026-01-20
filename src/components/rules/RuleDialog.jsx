@@ -396,28 +396,32 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   };
 
   const bankAccounts = accounts.filter(a =>
-    a.account_type === 'checking_account' ||
-    a.account_type === 'savings_account' ||
-    a.account_type === 'credit_card' ||
-    (a.account_detail && a.account_detail.includes('credit_card'))
+    a.account_type === 'bank_account' ||
+    a.account_type === 'credit_card'
   );
 
-  const allAccountsSelected = selectedAccountIds.length === bankAccounts.length;
+  const allAccountsSelected = selectedAccountIds.length === 0;
 
   const toggleAllAccounts = () => {
-    if (allAccountsSelected) {
+    if (!allAccountsSelected) {
       setSelectedAccountIds([]);
-    } else {
-      setSelectedAccountIds(bankAccounts.map(a => a.id));
     }
   };
 
   const toggleAccount = (accountId) => {
-    setSelectedAccountIds(prev =>
-      prev.includes(accountId)
-        ? prev.filter(id => id !== accountId)
-        : [...prev, accountId]
-    );
+    setSelectedAccountIds(prev => {
+      if (prev.length === 0) {
+        return bankAccounts.filter(a => a.id !== accountId).map(a => a.id);
+      }
+
+      if (prev.includes(accountId)) {
+        const newSelection = prev.filter(id => id !== accountId);
+        return newSelection.length === 0 ? [] : newSelection;
+      } else {
+        const newSelection = [...prev, accountId];
+        return newSelection.length === bankAccounts.length ? [] : newSelection;
+      }
+    });
   };
 
   const getAccountName = (accountId) => {
@@ -444,16 +448,13 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
         <div className="px-6 flex-shrink-0">
           <div className="space-y-2">
-            <div className="relative">
-              <Input
-                id="rule-name"
-                placeholder="Enter rule name"
-                value={ruleName}
-                onChange={(e) => setRuleName(e.target.value)}
-                className={nameError ? 'border-red-500 h-10' : 'h-10'}
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500 text-sm">*</span>
-            </div>
+            <Input
+              id="rule-name"
+              placeholder="Enter rule name*"
+              value={ruleName}
+              onChange={(e) => setRuleName(e.target.value)}
+              className={nameError ? 'border-red-500 h-10' : 'h-10'}
+            />
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -494,8 +495,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
                     >
                       <SelectTrigger className="h-8 text-xs">
                         <SelectValue>
-                          {selectedAccountIds.length === 0 ? 'All' :
-                           selectedAccountIds.length === bankAccounts.length ? 'All' :
+                          {selectedAccountIds.length === 0 ? 'All Accounts' :
                            selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
                            `${selectedAccountIds.length} Selected`}
                         </SelectValue>
