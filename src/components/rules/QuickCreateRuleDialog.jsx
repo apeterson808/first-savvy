@@ -364,12 +364,9 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
         <div className="px-6 pb-3 flex-shrink-0">
           <div className="space-y-2">
-            <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
-              Rule Name <span className="text-red-500">*</span>
-            </Label>
             <Input
               id="rule-name"
-              placeholder="e.g., Auto-categorize Netflix subscriptions"
+              placeholder="Create rule name..."
               value={ruleName}
               onChange={(e) => setRuleName(e.target.value)}
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
