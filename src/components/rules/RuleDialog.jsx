@@ -404,6 +404,9 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
     ruleData.auto_confirm_and_post = autoConfirmAndPost;
 
+    console.log('[RuleDialog] Final ruleData before mutation:', ruleData);
+    console.log('[RuleDialog] Final ruleData keys:', Object.keys(ruleData));
+
     if (isEditMode) {
       updateMutation.mutate(ruleData);
     } else {
