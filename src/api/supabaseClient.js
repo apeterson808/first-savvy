@@ -171,6 +171,15 @@ const createEntityAPI = (tableName) => {
     },
 
     async update(id, updates) {
+      // Special handling for transaction status changes
+      // Must use transactionService to maintain journal entry integrity
+      if (tableName === 'transactions' && 'status' in updates) {
+        throw new Error(
+          'Direct transaction status updates not allowed. ' +
+          'Use transactionService.postTransaction() or transactionService.undoPostTransaction() instead.'
+        );
+      }
+
       if (tableName === 'user_chart_of_accounts') {
         const accountToUpdate = await supabase
           .from('user_chart_of_accounts')
