@@ -80,6 +80,9 @@ Deno.serve(async (req: Request) => {
       "transactions",
       "transfer_registry",
 
+      // Delete accounting periods (for undo post compliance)
+      "accounting_periods",
+
       // Delete budgets
       "budgets",
 
