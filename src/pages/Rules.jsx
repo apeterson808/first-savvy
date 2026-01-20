@@ -43,8 +43,7 @@ import {
   Filter,
   FileText
 } from 'lucide-react';
-import { CreateRuleDialog } from '../components/rules/CreateRuleDialog';
-import { EditRuleDialog } from '../components/rules/EditRuleDialog';
+import { RuleDialog } from '../components/rules/RuleDialog';
 import { TestRuleDialog } from '../components/rules/TestRuleDialog';
 import { ApplyRulesDialog } from '../components/rules/ApplyRulesDialog';
 
@@ -370,7 +369,8 @@ export default function Rules() {
         </CardContent>
       </Card>
 
-      <CreateRuleDialog
+      <RuleDialog
+        mode="create"
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
         profileId={activeProfile?.id}
@@ -378,7 +378,8 @@ export default function Rules() {
 
       {selectedRule && (
         <>
-          <EditRuleDialog
+          <RuleDialog
+            mode="edit"
             open={editDialogOpen}
             onOpenChange={setEditDialogOpen}
             rule={selectedRule}

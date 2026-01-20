@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { transactionRulesApi } from '../../api/transactionRules';
 import { getUserChartOfAccounts } from '../../api/chartOfAccounts';
+import { firstsavvy } from '../../api/firstsavvyClient';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -26,11 +26,10 @@ import { Badge } from '../ui/badge';
 import { Checkbox } from '../ui/checkbox';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { toast } from 'sonner';
-import ChartAccountDropdown from '../common/ChartAccountDropdown';
-import CategoryDropdown from '../common/CategoryDropdown';
 import ContactDropdown from '../common/ContactDropdown';
+import CategoryDropdown from '../common/CategoryDropdown';
 import AddContactSheet from '../contacts/AddContactSheet';
-import { Sparkles, Plus, X, Loader2, ArrowRight, AlertCircle, Info } from 'lucide-react';
+import { Plus, X, Loader2, AlertCircle, Info } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -38,11 +37,11 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
-import { formatCurrency } from '../utils/formatters';
 import { format } from 'date-fns';
 
-export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profileId }) {
+export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, transaction = null, profileId }) {
   const queryClient = useQueryClient();
+  const isEditMode = mode === 'edit';
 
   const [ruleName, setRuleName] = useState('');
   const [nameError, setNameError] = useState('');
@@ -86,15 +85,66 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   });
 
   useEffect(() => {
-    if (transaction && open) {
+    if (!open) return;
+
+    if (isEditMode && rule) {
+      setRuleName(rule.name || '');
+      setMoneyDirection(rule.match_money_direction || 'both');
+      setSelectedAccountIds(rule.match_bank_account_ids || []);
+      setMatchLogic(rule.match_conditions_logic || 'any');
+      setNewDescription(rule.action_set_description || '');
+      setCategoryId(rule.action_set_category_id || null);
+      setContactId(rule.action_set_contact_id || null);
+      setNotes(rule.action_add_note || '');
+      setAutoConfirmAndPost(rule.auto_confirm_and_post || false);
+
+      const rows = [];
+      if (rule.match_description_pattern) {
+        rows.push({
+          field: 'description',
+          operator: rule.match_description_mode || 'contains',
+          value: rule.match_description_pattern
+        });
+      }
+      if (rule.match_original_description_pattern) {
+        rows.push({
+          field: 'bank_memo',
+          operator: rule.match_description_mode || 'contains',
+          value: rule.match_original_description_pattern
+        });
+      }
+      if (rule.match_amount_exact !== null && rule.match_amount_exact !== undefined) {
+        rows.push({
+          field: 'amount',
+          operator: 'exact',
+          value: String(rule.match_amount_exact)
+        });
+      } else if (rule.match_amount_min !== null && rule.match_amount_min !== undefined) {
+        rows.push({
+          field: 'amount',
+          operator: 'greater_than',
+          value: String(rule.match_amount_min)
+        });
+      } else if (rule.match_amount_max !== null && rule.match_amount_max !== undefined) {
+        rows.push({
+          field: 'amount',
+          operator: 'less_than',
+          value: String(rule.match_amount_max)
+        });
+      }
+
+      if (rows.length > 0) {
+        setConditionRows(rows);
+      }
+    } else if (transaction) {
       setCategoryId(transaction.category_account_id || null);
       setContactId(transaction.contact_id || null);
       setConditionRows([
-        { field: 'description', operator: 'contains', value: transaction.description }
+        { field: 'description', operator: 'contains', value: transaction.description || '' }
       ]);
       setSelectedAccountIds(transaction.bank_account_id ? [transaction.bank_account_id] : []);
     }
-  }, [transaction, open]);
+  }, [rule, transaction, open, isEditMode]);
 
   const checkNameUniqueness = useCallback(async (name) => {
     if (!name.trim()) {
@@ -104,7 +154,11 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
     setCheckingName(true);
     try {
-      const isUnique = await transactionRulesApi.checkRuleNameUnique(profileId, name);
+      const isUnique = await transactionRulesApi.checkRuleNameUnique(
+        profileId,
+        name,
+        isEditMode ? rule?.id : null
+      );
       if (!isUnique) {
         setNameError('A rule with this name already exists');
       } else {
@@ -115,17 +169,17 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     } finally {
       setCheckingName(false);
     }
-  }, [profileId]);
+  }, [profileId, isEditMode, rule?.id]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (ruleName) {
+      if (ruleName && (!isEditMode || ruleName !== rule?.name)) {
         checkNameUniqueness(ruleName);
       }
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [ruleName, checkNameUniqueness]);
+  }, [ruleName, checkNameUniqueness, isEditMode, rule?.name]);
 
   const loadPreview = useCallback(async () => {
     if (!open) return;
@@ -201,13 +255,33 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     }
   });
 
+  const updateMutation = useMutation({
+    mutationFn: async (data) => {
+      return transactionRulesApi.updateRule(rule.id, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['transaction-rules']);
+      toast.success('Rule updated successfully');
+      onOpenChange(false);
+      resetForm();
+    },
+    onError: (error) => {
+      console.error('Error updating rule:', error);
+      if (error.message?.includes('duplicate') || error.message?.includes('unique')) {
+        toast.error('A rule with this name already exists');
+      } else {
+        toast.error('Failed to update rule');
+      }
+    }
+  });
+
   const resetForm = () => {
     setRuleName('');
     setNameError('');
     setMoneyDirection('both');
     setSelectedAccountIds([]);
     setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
-    setMatchLogic('all');
+    setMatchLogic('any');
     setNewDescription('');
     setCategoryId(null);
     setContactId(null);
@@ -216,7 +290,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     setPreviewTransactions([]);
   };
 
-  const handleCreate = () => {
+  const handleSubmit = () => {
     if (!ruleName.trim()) {
       toast.error('Please enter a rule name');
       return;
@@ -282,7 +356,11 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
     ruleData.auto_confirm_and_post = autoConfirmAndPost;
 
-    createMutation.mutate(ruleData);
+    if (isEditMode) {
+      updateMutation.mutate(ruleData);
+    } else {
+      createMutation.mutate(ruleData);
+    }
   };
 
   const addConditionRow = () => {
@@ -350,7 +428,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
     return category?.display_name || category?.account_name || 'Uncategorized';
   };
 
-  if (!transaction) return null;
+  const mutation = isEditMode ? updateMutation : createMutation;
 
   return (
     <>
@@ -358,7 +436,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
       <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle>
-            Create Rule
+            {isEditMode ? 'Edit Rule' : 'Create Rule'}
           </DialogTitle>
         </DialogHeader>
 
@@ -366,7 +444,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           <div className="space-y-2">
             <Input
               id="rule-name"
-              placeholder="Create rule name..."
+              placeholder="Enter rule name..."
               value={ruleName}
               onChange={(e) => setRuleName(e.target.value)}
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
@@ -712,10 +790,10 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               Cancel
             </Button>
             <Button
-              onClick={handleCreate}
-              disabled={createMutation.isPending || checkingName || !!nameError}
+              onClick={handleSubmit}
+              disabled={mutation.isPending || checkingName || !!nameError}
             >
-              {createMutation.isPending ? 'Creating...' : 'Create Rule'}
+              {mutation.isPending ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create')}
             </Button>
           </div>
         </DialogFooter>

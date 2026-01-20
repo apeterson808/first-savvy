@@ -48,7 +48,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
 import { Trash2 } from 'lucide-react';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
-import { QuickCreateRuleDialog } from '../rules/QuickCreateRuleDialog';
+import { RuleDialog } from '../rules/RuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
@@ -3514,7 +3514,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             onImportComplete={handleImportComplete}
                           />
 
-                          <QuickCreateRuleDialog
+                          <RuleDialog
+                            mode="create"
                             open={quickRuleDialogOpen}
                             onOpenChange={setQuickRuleDialogOpen}
                             transaction={ruleSourceTransaction}
