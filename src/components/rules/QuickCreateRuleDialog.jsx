@@ -369,7 +369,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
         <div className="space-y-4 px-6 flex-1 overflow-y-auto py-4">
           <div className="grid grid-cols-2 gap-4">
-            <Card className="flex flex-col h-[340px] shrink-0">
+            <Card className="flex flex-col h-[300px] shrink-0">
               <CardContent className="space-y-2 pt-3 flex-1">
                 <div className="space-y-2">
                   <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
@@ -557,7 +557,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               </CardContent>
             </Card>
 
-            <Card className="flex flex-col h-[340px] shrink-0">
+            <Card className="flex flex-col h-[300px] shrink-0">
               <CardContent className="space-y-2 pt-3 flex-1">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
@@ -619,16 +619,6 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                     rows={2}
                     className="text-xs"
                   />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-xs font-medium">Auto confirm & post</Label>
-                    <Switch
-                      checked={autoConfirmAndPost}
-                      onCheckedChange={setAutoConfirmAndPost}
-                    />
-                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -712,16 +702,27 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </Card>
         </div>
 
-        <DialogFooter className="px-6 py-4 flex-shrink-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleCreate}
-            disabled={createMutation.isPending || checkingName || !!nameError}
-          >
-            {createMutation.isPending ? 'Creating...' : 'Create Rule'}
-          </Button>
+        <DialogFooter className="px-6 py-4 flex-shrink-0 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Switch
+              checked={autoConfirmAndPost}
+              onCheckedChange={setAutoConfirmAndPost}
+            />
+            <Label className="text-sm font-normal cursor-pointer" onClick={() => setAutoConfirmAndPost(!autoConfirmAndPost)}>
+              Auto-post transactions
+            </Label>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={createMutation.isPending || checkingName || !!nameError}
+            >
+              {createMutation.isPending ? 'Creating...' : 'Create Rule'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
