@@ -145,7 +145,7 @@ export function ApplyRulesDialog({ open, onOpenChange, profileId, rules }) {
                 <div>
                   <p className="font-medium">This will apply rules to pending transactions</p>
                   <p className="text-xs mt-1">
-                    Rules are evaluated in priority order. The first matching rule will be applied to each transaction.
+                    Rules are evaluated in alphabetical order. The first matching rule will be applied to each transaction.
                   </p>
                 </div>
               </div>
@@ -187,19 +187,21 @@ export function ApplyRulesDialog({ open, onOpenChange, profileId, rules }) {
                               {rule.description}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs text-slate-400">
-                              Priority: {rule.priority}
-                            </span>
-                            {rule.times_matched > 0 && (
-                              <>
-                                <span className="text-xs text-slate-300">•</span>
-                                <span className="text-xs text-slate-400">
-                                  {rule.times_matched} matches
-                                </span>
-                              </>
-                            )}
-                          </div>
+                          {rule.times_matched > 0 && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-slate-400">
+                                {rule.times_matched} matches
+                              </span>
+                              {rule.acceptance_rate > 0 && (
+                                <>
+                                  <span className="text-xs text-slate-300">•</span>
+                                  <span className="text-xs text-slate-400">
+                                    {rule.acceptance_rate.toFixed(0)}% accepted
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </label>
                     ))}

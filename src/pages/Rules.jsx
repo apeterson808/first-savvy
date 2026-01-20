@@ -229,13 +229,13 @@ export default function Rules() {
 
         <Card>
           <CardHeader className="pb-3">
-            <CardDescription>High Priority</CardDescription>
+            <CardDescription>Most Effective</CardDescription>
             <CardTitle className="text-3xl">
-              {rules.filter(r => r.priority >= 75).length}
+              {rules.filter(r => r.acceptance_rate >= 75 && r.times_matched > 5).length}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-slate-600">Priority ≥ 75</p>
+            <p className="text-sm text-slate-600">Acceptance ≥ 75%</p>
           </CardContent>
         </Card>
       </div>
@@ -269,7 +269,6 @@ export default function Rules() {
                   <TableHead>Name</TableHead>
                   <TableHead>Conditions</TableHead>
                   <TableHead>Actions</TableHead>
-                  <TableHead>Priority</TableHead>
                   <TableHead>Matches</TableHead>
                   <TableHead>Acceptance</TableHead>
                   <TableHead className="w-12"></TableHead>
@@ -309,18 +308,6 @@ export default function Rules() {
                     </TableCell>
                     <TableCell>
                       <span className="text-xs text-slate-600">{getActionSummary(rule)}</span>
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        variant={rule.priority >= 75 ? 'default' : 'secondary'}
-                        className={
-                          rule.priority >= 75
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-slate-100 text-slate-700'
-                        }
-                      >
-                        {rule.priority}
-                      </Badge>
                     </TableCell>
                     <TableCell>
                       <span className="text-sm">{rule.times_matched || 0}</span>

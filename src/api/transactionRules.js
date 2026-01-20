@@ -2,7 +2,7 @@ import { supabase } from './supabaseClient';
 
 export const transactionRulesApi = {
   async listRules(profileId, options = {}) {
-    const { enabled, sortBy = '-priority' } = options;
+    const { enabled, sortBy = 'name' } = options;
 
     let query = supabase
       .from('transaction_rules')
@@ -146,7 +146,7 @@ export const transactionRulesApi = {
         .eq('profile_id', profileId)
         .eq('is_enabled', true)
         .in('id', ruleIds)
-        .order('priority', { ascending: false });
+        .order('name', { ascending: true });
 
       if (error) throw error;
       rules = data || [];
@@ -156,7 +156,7 @@ export const transactionRulesApi = {
         .select('id')
         .eq('profile_id', profileId)
         .eq('is_enabled', true)
-        .order('priority', { ascending: false });
+        .order('name', { ascending: true });
 
       if (error) throw error;
       rules = data || [];
@@ -232,13 +232,11 @@ export const transactionRulesApi = {
       matchAmountExact = false,
       matchAccount = false,
       matchType = false,
-      addNote,
-      priority = 50
+      addNote
     } = options;
 
     const ruleData = {
       name: name || `Auto-categorize ${transaction.description.substring(0, 30)}`,
-      priority,
       match_description_pattern: descriptionPattern || transaction.description,
       match_description_mode: matchMode,
       match_case_sensitive: caseSensitive
