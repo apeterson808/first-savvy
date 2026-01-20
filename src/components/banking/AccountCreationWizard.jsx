@@ -781,7 +781,7 @@ export default function AccountCreationWizard({
       const transactionsToImport = skipDuplicates ? uniqueTransactions : transactionsToCheck;
 
       const allTransactions = transactionsToImport
-        .filter(txn => txn.amount > 0)
+        .filter(txn => txn.description && !txn.description.toLowerCase().includes('beginning balance'))
         .map(txn => ({
           profile_id: activeProfile.id,
           user_id: user.id,
@@ -2040,7 +2040,7 @@ export default function AccountCreationWizard({
           }
 
           const transactionsToInsert = filteredTransactions
-            .filter(txn => txn.amount > 0)
+            .filter(txn => txn.description && !txn.description.toLowerCase().includes('beginning balance'))
             .map(txn => ({
               profile_id: activeProfile.id,
               user_id: user.id,
@@ -3657,7 +3657,7 @@ export default function AccountCreationWizard({
                           }
 
                           const transactionsToInsert = filteredTransactions
-                            .filter(txn => txn.amount > 0)
+                            .filter(txn => txn.description && !txn.description.toLowerCase().includes('beginning balance'))
                             .map(txn => ({
                               profile_id: activeProfile.id,
                               user_id: user.id,
