@@ -451,17 +451,14 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         </DialogHeader>
 
         <div className="px-6 flex-shrink-0">
-          <div className="space-y-2 relative">
+          <div className="space-y-2">
             <Input
               id="rule-name"
-              placeholder="Enter rule name"
+              placeholder="Enter rule name*"
               value={ruleName}
               onChange={(e) => setRuleName(e.target.value)}
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
             />
-            {!ruleName && (
-              <span className="absolute left-[122px] top-[11px] text-red-500 pointer-events-none text-sm">*</span>
-            )}
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
