@@ -367,9 +367,9 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 px-6 flex-1 overflow-hidden py-4">
+        <div className="space-y-4 px-6 flex-1 overflow-y-auto py-4">
           <div className="grid grid-cols-2 gap-4 h-[240px]">
-            <Card className="flex flex-col h-full">
+            <Card className="flex flex-col h-full shrink-0">
               <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
                 <div className="space-y-2">
                   <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
@@ -557,7 +557,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               </CardContent>
             </Card>
 
-            <Card className="flex flex-col h-full">
+            <Card className="flex flex-col h-full shrink-0">
               <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
@@ -634,7 +634,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
           </div>
 
-          <Card className="flex flex-col h-[180px]">
+          <Card className="flex flex-col h-[180px] shrink-0">
             <CardHeader className="pb-1 pt-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold">Preview</CardTitle>
