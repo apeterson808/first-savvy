@@ -460,7 +460,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
             />
             {!ruleName && (
-              <span className="absolute left-[130px] top-[11px] text-red-500 pointer-events-none text-sm">*</span>
+              <span className="absolute left-[122px] top-[11px] text-red-500 pointer-events-none text-sm">*</span>
             )}
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
