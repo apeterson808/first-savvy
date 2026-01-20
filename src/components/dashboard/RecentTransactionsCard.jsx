@@ -31,7 +31,10 @@ export default function RecentTransactionsCard() {
     queryFn: async () => {
       const allAccounts = await firstsavvy.entities.Account.filter({ is_active: true });
       return allAccounts.filter(acc =>
-        ['checking_account', 'savings_account', 'credit_card'].includes(acc.account_detail)
+        acc.account_type === 'checking_account' ||
+        acc.account_type === 'savings_account' ||
+        acc.account_type === 'credit_card' ||
+        (acc.account_detail && acc.account_detail.includes('credit_card'))
       );
     }
   });
