@@ -410,16 +410,20 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
   const toggleAccount = (accountId) => {
     setSelectedAccountIds(prev => {
+      // If "All Accounts" is currently selected (empty array)
       if (prev.length === 0) {
-        return bankAccounts.filter(a => a.id !== accountId).map(a => a.id);
+        // Select only this account
+        return [accountId];
       }
 
+      // If this account is already selected, remove it
       if (prev.includes(accountId)) {
         const newSelection = prev.filter(id => id !== accountId);
+        // If no accounts left, return to "All Accounts" state
         return newSelection.length === 0 ? [] : newSelection;
       } else {
-        const newSelection = [...prev, accountId];
-        return newSelection.length === bankAccounts.length ? [] : newSelection;
+        // Add this account to the selection
+        return [...prev, accountId];
       }
     });
   };
@@ -447,17 +451,17 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         </DialogHeader>
 
         <div className="px-6 flex-shrink-0">
-          <div className="space-y-2">
-            <Label htmlFor="rule-name" className="text-sm">
-              Enter rule name<span className="text-red-500">*</span>
-            </Label>
+          <div className="space-y-2 relative">
             <Input
               id="rule-name"
-              placeholder=""
+              placeholder="Enter rule name"
               value={ruleName}
               onChange={(e) => setRuleName(e.target.value)}
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
             />
+            {!ruleName && (
+              <span className="absolute left-[122px] top-2.5 text-red-500 pointer-events-none">*</span>
+            )}
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
@@ -497,11 +501,11 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
                       onOpenChange={setAccountsDropdownOpen}
                     >
                       <SelectTrigger className="h-8 text-xs">
-                        <SelectValue>
+                        <span className="text-xs">
                           {selectedAccountIds.length === 0 ? 'All Accounts' :
                            selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
                            'Multiple'}
-                        </SelectValue>
+                        </span>
                       </SelectTrigger>
                       <SelectContent>
                         <div
