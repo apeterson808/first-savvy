@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { ClickThroughSelect, ClickThroughSelectItem, ClickThroughSelectSeparator } from '@/components/ui/ClickThroughSelect';
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -2026,7 +2027,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
 
                             return (
-                              <div onClick={(e) => e.stopPropagation()}>
+                              <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
                                 <CategoryDropdown
                                   value={transaction.category_account_id}
                                   onValueChange={async (value) => {
@@ -2083,6 +2084,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   transactionAmount={transaction.amount}
                                   aiSuggestionId={categorySuggestions[transaction.id]}
                                 />
+                                {transaction.applied_rule_id && (
+                                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-blue-50 text-blue-700 border-blue-200">
+                                    Rule
+                                  </Badge>
+                                )}
                               </div>
                             );
                           })()}
