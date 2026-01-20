@@ -117,6 +117,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [isAutoCategorizing, setIsAutoCategorizing] = useState(false);
   const [quickRuleDialogOpen, setQuickRuleDialogOpen] = useState(false);
   const [ruleSourceTransaction, setRuleSourceTransaction] = useState(null);
+  const [editingRule, setEditingRule] = useState(null);
+  const [ruleMode, setRuleMode] = useState('create');
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -2022,6 +2024,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             return (
                               <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                                {transaction.applied_rule_id && (
+                                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-slate-100 text-slate-700 border-slate-200">
+                                    RULE
+                                  </Badge>
+                                )}
                                 <CategoryDropdown
                                   value={transaction.category_account_id}
                                   onValueChange={async (value) => {
@@ -2078,11 +2085,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   transactionAmount={transaction.amount}
                                   aiSuggestionId={categorySuggestions[transaction.id]}
                                 />
-                                {transaction.applied_rule_id && (
-                                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-blue-50 text-blue-700 border-blue-200">
-                                    Rule
-                                  </Badge>
-                                )}
                               </div>
                             );
                           })()}
@@ -2208,14 +2210,36 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         Exclude
                                       </ClickThroughDropdownMenuItem>
                                       <ClickThroughDropdownMenuItem
-                                        onClick={(e) => {
+                                        onClick={async (e) => {
                                           e?.stopPropagation();
-                                          setRuleSourceTransaction(transaction);
-                                          setQuickRuleDialogOpen(true);
+                                          if (transaction.applied_rule_id) {
+                                            try {
+                                              const { data: rule, error } = await firstsavvy
+                                                .from('transaction_rules')
+                                                .select('*')
+                                                .eq('id', transaction.applied_rule_id)
+                                                .single();
+
+                                              if (error) throw error;
+
+                                              setEditingRule(rule);
+                                              setRuleMode('edit');
+                                              setRuleSourceTransaction(transaction);
+                                              setQuickRuleDialogOpen(true);
+                                            } catch (error) {
+                                              console.error('Failed to load rule:', error);
+                                              toast.error('Failed to load rule');
+                                            }
+                                          } else {
+                                            setRuleMode('create');
+                                            setEditingRule(null);
+                                            setRuleSourceTransaction(transaction);
+                                            setQuickRuleDialogOpen(true);
+                                          }
                                         }}
                                         disabled={transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                       >
-                                        Create Rule
+                                        {transaction.applied_rule_id ? 'Edit Rule' : 'Create Rule'}
                                       </ClickThroughDropdownMenuItem>
                                     </ClickThroughDropdownMenuContent>
                                   </ClickThroughDropdownMenu>
@@ -3319,14 +3343,36 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               size="sm"
                                               variant="outline"
                                               className="h-7 text-xs"
-                                              onClick={(e) => {
+                                              onClick={async (e) => {
                                                 e?.stopPropagation();
-                                                setRuleSourceTransaction(transaction);
-                                                setQuickRuleDialogOpen(true);
+                                                if (transaction.applied_rule_id) {
+                                                  try {
+                                                    const { data: rule, error } = await firstsavvy
+                                                      .from('transaction_rules')
+                                                      .select('*')
+                                                      .eq('id', transaction.applied_rule_id)
+                                                      .single();
+
+                                                    if (error) throw error;
+
+                                                    setEditingRule(rule);
+                                                    setRuleMode('edit');
+                                                    setRuleSourceTransaction(transaction);
+                                                    setQuickRuleDialogOpen(true);
+                                                  } catch (error) {
+                                                    console.error('Failed to load rule:', error);
+                                                    toast.error('Failed to load rule');
+                                                  }
+                                                } else {
+                                                  setRuleMode('create');
+                                                  setEditingRule(null);
+                                                  setRuleSourceTransaction(transaction);
+                                                  setQuickRuleDialogOpen(true);
+                                                }
                                               }}
                                               disabled={transaction.type === 'transfer' || transaction.type === 'credit_card_payment'}
                                             >
-                                              Create Rule
+                                              {transaction.applied_rule_id ? 'Edit Rule' : 'Create Rule'}
                                             </Button>
                                             <Button
                                               size="sm"
@@ -3515,11 +3561,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           />
 
                           <RuleDialog
-                            mode="create"
+                            mode={ruleMode}
                             open={quickRuleDialogOpen}
-                            onOpenChange={setQuickRuleDialogOpen}
+                            onOpenChange={(open) => {
+                              setQuickRuleDialogOpen(open);
+                              if (!open) {
+                                setEditingRule(null);
+                                setRuleMode('create');
+                              }
+                            }}
                             transaction={ruleSourceTransaction}
                             profileId={activeProfile?.id}
+                            existingRule={editingRule}
                           />
     </>
   );
