@@ -385,8 +385,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
         <div className="space-y-4 px-6 flex-1 overflow-y-auto pt-4 pb-4">
           <div className="grid grid-cols-2 gap-4">
-            <Card className="flex flex-col h-[270px] shrink-0">
-              <CardContent className="space-y-2 pt-3 flex-1">
+            <Card className="flex flex-col h-[260px] shrink-0">
+              <CardContent className="space-y-2 pt-3 flex-1 overflow-y-auto">
 
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
@@ -552,8 +552,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               </CardContent>
             </Card>
 
-            <Card className="flex flex-col h-[270px] shrink-0">
-              <CardContent className="space-y-2 pt-3 flex-1">
+            <Card className="flex flex-col h-[260px] shrink-0">
+              <CardContent className="space-y-2 pt-3 flex-1 overflow-y-auto">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Contact</Label>
