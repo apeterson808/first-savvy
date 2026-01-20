@@ -37,11 +37,45 @@ export const transactionRulesApi = {
   },
 
   async createRule(profileId, ruleData) {
+    const validColumns = [
+      'name',
+      'match_description_pattern',
+      'match_description_mode',
+      'match_original_description_pattern',
+      'match_case_sensitive',
+      'match_money_direction',
+      'match_bank_account_ids',
+      'match_bank_account_id',
+      'match_amount_exact',
+      'match_amount_min',
+      'match_amount_max',
+      'match_transaction_type',
+      'match_contact_id',
+      'match_date_from',
+      'match_date_to',
+      'match_conditions_logic',
+      'action_set_category_id',
+      'action_set_contact_id',
+      'action_set_description',
+      'action_add_note',
+      'action_add_tags',
+      'auto_confirm_and_post',
+      'is_enabled',
+      'created_from_transaction_id'
+    ];
+
+    const cleanedData = {};
+    for (const key of validColumns) {
+      if (ruleData[key] !== undefined) {
+        cleanedData[key] = ruleData[key];
+      }
+    }
+
     const { data, error } = await supabase
       .from('transaction_rules')
       .insert([{
         profile_id: profileId,
-        ...ruleData,
+        ...cleanedData,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       }])
@@ -53,10 +87,47 @@ export const transactionRulesApi = {
   },
 
   async updateRule(ruleId, updates) {
+    const validColumns = [
+      'name',
+      'match_description_pattern',
+      'match_description_mode',
+      'match_original_description_pattern',
+      'match_case_sensitive',
+      'match_money_direction',
+      'match_bank_account_ids',
+      'match_bank_account_id',
+      'match_amount_exact',
+      'match_amount_min',
+      'match_amount_max',
+      'match_transaction_type',
+      'match_contact_id',
+      'match_date_from',
+      'match_date_to',
+      'match_conditions_logic',
+      'action_set_category_id',
+      'action_set_contact_id',
+      'action_set_description',
+      'action_add_note',
+      'action_add_tags',
+      'auto_confirm_and_post',
+      'is_enabled',
+      'times_matched',
+      'times_accepted',
+      'times_rejected',
+      'last_matched_at'
+    ];
+
+    const cleanedUpdates = {};
+    for (const key of validColumns) {
+      if (updates[key] !== undefined) {
+        cleanedUpdates[key] = updates[key];
+      }
+    }
+
     const { data, error } = await supabase
       .from('transaction_rules')
       .update({
-        ...updates,
+        ...cleanedUpdates,
         updated_at: new Date().toISOString()
       })
       .eq('id', ruleId)
