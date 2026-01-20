@@ -520,13 +520,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const { data: categorizationRules = [] } = useQuery({
     queryKey: ['categorizationRules', activeProfile?.id],
-    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority'),
-    enabled: !!activeProfile?.id
-  });
-
-  const { data: contactMatchingRules = [] } = useQuery({
-    queryKey: ['contactMatchingRules', activeProfile?.id],
-    queryFn: () => firstsavvy.entities.ContactMatchingRule.list('-priority'),
+    queryFn: () => firstsavvy.entities.TransactionRule.list('created_at'),
     enabled: !!activeProfile?.id
   });
 

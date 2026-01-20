@@ -29,8 +29,7 @@ const getActiveProfileId = () => {
 const TABLES_WITH_PROFILE_ID = [
   'transactions', 'budgets', 'budget_groups',
   'goals', 'bills', 'contacts', 'user_chart_of_accounts',
-  'credit_scores', 'categorization_rules',
-  'transaction_splits', 'transaction_rules'
+  'credit_scores', 'transaction_splits', 'transaction_rules'
 ];
 
 const createEntityAPI = (tableName) => {
@@ -280,7 +279,6 @@ export const createSupabaseClient = () => {
       HouseholdGroup: createEntityAPI('household_groups'),
       HouseholdMember: createEntityAPI('household_members'),
       Invitation: createEntityAPI('invitations'),
-      CategorizationRule: createEntityAPI('categorization_rules'),
       TransactionSplit: createEntityAPI('transaction_splits'),
       TransactionRule: createEntityAPI('transaction_rules')
     },

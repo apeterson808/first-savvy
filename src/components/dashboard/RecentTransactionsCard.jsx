@@ -60,7 +60,7 @@ export default function RecentTransactionsCard() {
 
   const { data: categorizationRules = [] } = useQuery({
     queryKey: ['categorizationRules'],
-    queryFn: () => firstsavvy.entities.CategorizationRule.list('-priority')
+    queryFn: () => firstsavvy.entities.TransactionRule.list('created_at')
   });
 
   const updateMutation = useMutation({
