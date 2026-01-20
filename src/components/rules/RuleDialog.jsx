@@ -137,6 +137,11 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         setConditionRows(rows);
       }
     } else if (transaction) {
+      console.log('[RuleDialog] Prefilling from transaction:', {
+        transaction,
+        category_account_id: transaction.category_account_id,
+        contact_id: transaction.contact_id
+      });
       setCategoryId(transaction.category_account_id || null);
       setContactId(transaction.contact_id || null);
       setConditionRows([
@@ -322,6 +327,14 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       toast.error('Please specify at least one search condition');
       return;
     }
+
+    console.log('[RuleDialog] Validation check:', {
+      newDescription,
+      categoryId,
+      contactId,
+      notes,
+      transaction
+    });
 
     if (!newDescription && !categoryId && !contactId && !notes) {
       toast.error('Please specify at least one action');
