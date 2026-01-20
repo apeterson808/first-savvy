@@ -460,7 +460,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
             />
             {!ruleName && (
-              <span className="absolute left-[122px] top-2.5 text-red-500 pointer-events-none">*</span>
+              <span className="absolute left-[130px] top-[11px] text-red-500 pointer-events-none text-sm">*</span>
             )}
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
@@ -501,40 +501,42 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
                       onOpenChange={setAccountsDropdownOpen}
                     >
                       <SelectTrigger className="h-8 text-xs">
-                        <span className="text-xs">
+                        <span className="text-xs text-slate-900">
                           {selectedAccountIds.length === 0 ? 'All Accounts' :
                            selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
-                           'Multiple'}
+                           `${selectedAccountIds.length} Accounts`}
                         </span>
                       </SelectTrigger>
                       <SelectContent>
-                        <div
-                          className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toggleAllAccounts();
-                          }}
-                        >
+                        <div className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 rounded">
                           <Checkbox
+                            id="all-accounts-check"
                             checked={allAccountsSelected}
                             onCheckedChange={toggleAllAccounts}
                           />
-                          <span className="font-medium text-xs">All Accounts</span>
+                          <label
+                            htmlFor="all-accounts-check"
+                            className="font-medium text-xs cursor-pointer flex-1"
+                          >
+                            All Accounts
+                          </label>
                         </div>
                         {bankAccounts.map(account => (
                           <div
                             key={account.id}
-                            className="flex items-center gap-2 px-2 py-1.5 cursor-pointer hover:bg-slate-100 rounded"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              toggleAccount(account.id);
-                            }}
+                            className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-100 rounded"
                           >
                             <Checkbox
+                              id={`account-${account.id}`}
                               checked={selectedAccountIds.includes(account.id)}
                               onCheckedChange={() => toggleAccount(account.id)}
                             />
-                            <span className="text-xs">{account.display_name || account.account_name}</span>
+                            <label
+                              htmlFor={`account-${account.id}`}
+                              className="text-xs cursor-pointer flex-1"
+                            >
+                              {account.display_name || account.account_name}
+                            </label>
                           </div>
                         ))}
                       </SelectContent>
