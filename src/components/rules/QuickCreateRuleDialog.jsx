@@ -368,7 +368,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
         </DialogHeader>
 
         <div className="space-y-4 px-6 flex-1 overflow-hidden py-4">
-          <div className="grid grid-cols-2 gap-4 h-[300px]">
+          <div className="grid grid-cols-2 gap-4 h-[240px]">
             <Card className="flex flex-col h-full">
               <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
                 <div className="space-y-2">
@@ -458,18 +458,24 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-xs font-semibold text-slate-600">Include the following</Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs font-semibold text-slate-600">Include</Label>
                     <ToggleGroup
                       type="single"
                       value={matchLogic}
                       onValueChange={(value) => value && setMatchLogic(value)}
-                      className="gap-0 border rounded-md"
+                      className="gap-0 border border-slate-300 rounded-md bg-white"
                     >
-                      <ToggleGroupItem value="any" className="h-5 px-2 text-xs rounded-r-none border-0">
+                      <ToggleGroupItem
+                        value="any"
+                        className="h-5 px-2 text-xs rounded-r-none border-0 data-[state=on]:bg-slate-200 data-[state=on]:text-slate-900"
+                      >
                         Any
                       </ToggleGroupItem>
-                      <ToggleGroupItem value="all" className="h-5 px-2 text-xs rounded-l-none border-0">
+                      <ToggleGroupItem
+                        value="all"
+                        className="h-5 px-2 text-xs rounded-l-none border-0 data-[state=on]:bg-slate-200 data-[state=on]:text-slate-900"
+                      >
                         All
                       </ToggleGroupItem>
                     </ToggleGroup>
@@ -617,12 +623,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <Label className="text-xs font-medium">Auto confirm & post</Label>
-                      <p className="text-xs text-slate-500">
-                        Skip review for matches
-                      </p>
-                    </div>
+                    <Label className="text-xs font-medium">Auto confirm & post</Label>
                     <Switch
                       checked={autoConfirmAndPost}
                       onCheckedChange={setAutoConfirmAndPost}
@@ -633,7 +634,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
           </div>
 
-          <Card className="flex flex-col h-[200px]">
+          <Card className="flex flex-col h-[180px]">
             <CardHeader className="pb-1 pt-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold">Preview</CardTitle>
