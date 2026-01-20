@@ -619,7 +619,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
           </div>
 
-          <Card className="flex flex-col h-[220px] shrink-0">
+          <Card className="flex flex-col h-[200px] shrink-0">
             <CardHeader className="pb-1 pt-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold">Preview</CardTitle>
