@@ -357,7 +357,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl max-h-[95vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-5xl h-[92vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-2 flex-shrink-0">
           <DialogTitle>
             Create Rule
@@ -369,8 +369,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
 
         <div className="space-y-4 px-6 flex-1 overflow-y-auto py-4">
           <div className="grid grid-cols-2 gap-4">
-            <Card className="flex flex-col h-[260px] shrink-0">
-              <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
+            <Card className="flex flex-col h-[340px] shrink-0">
+              <CardContent className="space-y-2 pt-3 flex-1">
                 <div className="space-y-2">
                   <Label htmlFor="rule-name" className="flex items-center gap-1 text-sm">
                     Rule Name <span className="text-red-500">*</span>
@@ -557,8 +557,8 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
               </CardContent>
             </Card>
 
-            <Card className="flex flex-col h-[260px] shrink-0">
-              <CardContent className="space-y-2 pt-3 overflow-y-auto flex-1">
+            <Card className="flex flex-col h-[340px] shrink-0">
+              <CardContent className="space-y-2 pt-3 flex-1">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1.5">
                     <Label className="text-xs">Contact</Label>
@@ -634,7 +634,7 @@ export function QuickCreateRuleDialog({ open, onOpenChange, transaction, profile
             </Card>
           </div>
 
-          <Card className="flex flex-col h-[200px] shrink-0">
+          <Card className="flex flex-col h-[220px] shrink-0">
             <CardHeader className="pb-1 pt-2 flex-shrink-0">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold">Preview</CardTitle>
