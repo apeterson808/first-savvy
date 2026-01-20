@@ -2023,68 +2023,70 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
 
                             return (
-                              <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
+                              <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
                                 {transaction.applied_rule_id && (
-                                  <Badge variant="secondary" className="h-5 px-1.5 text-[10px] font-normal bg-slate-100 text-slate-700 border-slate-200">
+                                  <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
                                     RULE
                                   </Badge>
                                 )}
-                                <CategoryDropdown
-                                  value={transaction.category_account_id}
-                                  onValueChange={async (value) => {
-                                    if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                    const categoryValue = value === '' ? null : value;
+                                <div className="flex-1 min-w-0">
+                                  <CategoryDropdown
+                                    value={transaction.category_account_id}
+                                    onValueChange={async (value) => {
+                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+                                      const categoryValue = value === '' ? null : value;
 
-                                    await queryClient.refetchQueries({ queryKey: ['user-chart-accounts'] });
-                                    await queryClient.refetchQueries({ queryKey: ['chart-accounts'] });
+                                      await queryClient.refetchQueries({ queryKey: ['user-chart-accounts'] });
+                                      await queryClient.refetchQueries({ queryKey: ['chart-accounts'] });
 
-                                    const updatedChartAccounts = queryClient.getQueryData(['chart-accounts', 'expense', activeProfile?.id]) ||
-                                                                queryClient.getQueryData(['chart-accounts', 'income', activeProfile?.id]) ||
-                                                                chartAccounts;
-                                    const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
+                                      const updatedChartAccounts = queryClient.getQueryData(['chart-accounts', 'expense', activeProfile?.id]) ||
+                                                                  queryClient.getQueryData(['chart-accounts', 'income', activeProfile?.id]) ||
+                                                                  chartAccounts;
+                                      const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
 
-                                    console.log('Category selected:', {
-                                      transactionId: transaction.id,
-                                      categoryValue,
-                                      selectedCategory,
-                                      categoryClass: selectedCategory?.class
-                                    });
-
-                                    updateMutation.mutate({
-                                      id: transaction.id,
-                                      data: {
-                                        category_account_id: categoryValue
-                                      }
-                                    });
-                                    setCategorySuggestions(prev => {
-                                      const { [transaction.id]: _, ...rest } = prev;
-                                      return rest;
-                                    });
-
-                                    if (categoryValue && activeProfile?.id) {
-                                      categorizationMemoryAPI.storeMemory(
-                                        activeProfile.id,
-                                        transaction,
-                                        categoryValue
-                                      ).catch(error => {
-                                        console.error('Failed to store categorization memory:', error);
+                                      console.log('Category selected:', {
+                                        transactionId: transaction.id,
+                                        categoryValue,
+                                        selectedCategory,
+                                        categoryClass: selectedCategory?.class
                                       });
-                                    }
-                                  }}
-                                  transactionType={transaction.type}
-                                  disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
-                                  onAddNew={(searchTerm) => {
-                                    setCategorySearchTerm(searchTerm);
-                                    setTriggeringTransactionId(transaction.id);
-                                    setTriggeringTransactionType(transaction.type);
-                                    setAddAccountSheetOpen(true);
-                                  }}
-                                  triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                  placeholder="Select category"
-                                  isTransactionTransfer={transaction.type === 'transfer'}
-                                  transactionAmount={transaction.amount}
-                                  aiSuggestionId={categorySuggestions[transaction.id]}
-                                />
+
+                                      updateMutation.mutate({
+                                        id: transaction.id,
+                                        data: {
+                                          category_account_id: categoryValue
+                                        }
+                                      });
+                                      setCategorySuggestions(prev => {
+                                        const { [transaction.id]: _, ...rest } = prev;
+                                        return rest;
+                                      });
+
+                                      if (categoryValue && activeProfile?.id) {
+                                        categorizationMemoryAPI.storeMemory(
+                                          activeProfile.id,
+                                          transaction,
+                                          categoryValue
+                                        ).catch(error => {
+                                          console.error('Failed to store categorization memory:', error);
+                                        });
+                                      }
+                                    }}
+                                    transactionType={transaction.type}
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
+                                    onAddNew={(searchTerm) => {
+                                      setCategorySearchTerm(searchTerm);
+                                      setTriggeringTransactionId(transaction.id);
+                                      setTriggeringTransactionType(transaction.type);
+                                      setAddAccountSheetOpen(true);
+                                    }}
+                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                    placeholder="Select category"
+                                    isTransactionTransfer={transaction.type === 'transfer'}
+                                    transactionAmount={transaction.amount}
+                                    aiSuggestionId={categorySuggestions[transaction.id]}
+                                  />
+                                </div>
                               </div>
                             );
                           })()}
