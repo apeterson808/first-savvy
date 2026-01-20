@@ -69,158 +69,20 @@ Deno.serve(async (req: Request) => {
     const profileId = profile.id;
     console.log(`Found profile ${profileId} for user ${userId}`);
 
-    // Use raw SQL to delete data without triggering constraints or triggers
-    // This is an admin function that needs to work regardless of constraints
-    console.log("Starting deletion process with raw SQL...");
+    // Call the database function to reset financial data
+    // This bypasses all triggers and constraints
+    console.log("Calling reset_financial_data_for_profile function...");
+    const { data: resetResult, error: resetError } = await supabase.rpc(
+      "reset_financial_data_for_profile",
+      { p_profile_id: profileId }
+    );
 
-    // Step 1: Delete journal entry lines first (children of journal_entries)
-    console.log("Deleting journal_entry_lines...");
-    const { error: linesError } = await supabase.rpc("exec_sql", {
-      sql: `DELETE FROM journal_entry_lines WHERE profile_id = $1`,
-      params: [profileId]
-    });
-
-    // If rpc doesn't exist, use direct SQL
-    const deleteSql = `
-      -- Disable triggers temporarily for this session
-      SET session_replication_role = 'replica';
-
-      -- Delete in correct order to avoid foreign key violations
-      DELETE FROM journal_entry_lines WHERE profile_id = '${profileId}';
-      DELETE FROM journal_entries WHERE profile_id = '${profileId}';
-      DELETE FROM journal_entry_counters WHERE profile_id = '${profileId}';
-
-      DELETE FROM transaction_splits WHERE transaction_id IN (
-        SELECT id FROM transactions WHERE profile_id = '${profileId}'
-      );
-      DELETE FROM transactions WHERE profile_id = '${profileId}';
-      DELETE FROM transfer_registry WHERE profile_id = '${profileId}';
-
-      DELETE FROM accounting_periods WHERE profile_id = '${profileId}';
-      DELETE FROM budgets WHERE profile_id = '${profileId}';
-      DELETE FROM profile_view_preferences WHERE profile_id = '${profileId}';
-      DELETE FROM profile_tabs WHERE profile_id = '${profileId}';
-      DELETE FROM profile_memberships WHERE profile_id = '${profileId}';
-
-      -- Delete template accounts (preserve custom categories)
-      DELETE FROM user_chart_of_accounts
-      WHERE profile_id = '${profileId}'
-        AND is_user_created = false;
-
-      -- Re-enable triggers
-      SET session_replication_role = 'origin';
-    `;
-
-    console.log("Executing bulk delete SQL...");
-    const { error: deleteError } = await supabase.rpc("exec_sql", {
-      sql: deleteSql
-    });
-
-    if (deleteError) {
-      console.log("RPC method not available, using individual deletes...");
-
-      // Fallback: Delete using Supabase client in correct order
-      // Delete journal_entry_lines first
-      await supabase
-        .from("journal_entry_lines")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete journal_entries
-      await supabase
-        .from("journal_entries")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete journal_entry_counters
-      await supabase
-        .from("journal_entry_counters")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete transaction_splits
-      await supabase
-        .from("transaction_splits")
-        .delete()
-        .in("transaction_id",
-          supabase
-            .from("transactions")
-            .select("id")
-            .eq("profile_id", profileId)
-        );
-
-      // Delete transactions
-      await supabase
-        .from("transactions")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete transfer_registry
-      await supabase
-        .from("transfer_registry")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete accounting_periods
-      await supabase
-        .from("accounting_periods")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete budgets
-      await supabase
-        .from("budgets")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete profile_view_preferences
-      await supabase
-        .from("profile_view_preferences")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete profile_tabs
-      await supabase
-        .from("profile_tabs")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete profile_memberships
-      await supabase
-        .from("profile_memberships")
-        .delete()
-        .eq("profile_id", profileId);
-
-      // Delete template accounts
-      await supabase
-        .from("user_chart_of_accounts")
-        .delete()
-        .eq("profile_id", profileId)
-        .eq("is_user_created", false);
+    if (resetError) {
+      console.error("Error resetting financial data:", resetError);
+      throw new Error(`Failed to reset financial data: ${resetError.message}`);
     }
 
-    console.log("Deletion complete");
-
-    // Count preserved items
-    const { count: customCount } = await supabase
-      .from("user_chart_of_accounts")
-      .select("*", { count: "exact", head: true })
-      .eq("profile_id", profileId)
-      .eq("is_user_created", true);
-
-    const { count: memoryCount } = await supabase
-      .from("transaction_categorization_memory")
-      .select("*", { count: "exact", head: true })
-      .eq("profile_id", profileId);
-
-    const { count: rulesCount } = await supabase
-      .from("transaction_rules")
-      .select("*", { count: "exact", head: true })
-      .eq("profile_id", profileId);
-
-    console.log(`Preserved ${customCount || 0} custom categories`);
-    console.log(`Preserved ${memoryCount || 0} categorization memories`);
-    console.log(`Preserved ${rulesCount || 0} transaction rules`);
+    console.log("Reset result:", resetResult);
 
     // Provision fresh chart of accounts and profile essentials
     console.log(`Provisioning fresh financial data for user ${userId}...`);
@@ -265,15 +127,20 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create profile tab: ${tabError.message}`);
     }
 
-    console.log(`Successfully reset financial data for user ${userId}. Contacts, custom categories, categorization memories, and transaction rules preserved.`);
+    const customCount = resetResult?.preserved_custom_categories || 0;
+    const memoryCount = resetResult?.preserved_memories || 0;
+    const rulesCount = resetResult?.preserved_rules || 0;
+
+    console.log(`Successfully reset financial data for user ${userId}`);
+    console.log(`Preserved: ${customCount} custom categories, ${memoryCount} memories, ${rulesCount} rules`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Your financial data has been reset. Contacts, ${customCount || 0} custom categories, ${memoryCount || 0} categorization memories, and ${rulesCount || 0} transaction rules have been preserved.`,
-        preserved_custom_categories: customCount || 0,
-        preserved_categorization_memories: memoryCount || 0,
-        preserved_transaction_rules: rulesCount || 0
+        message: `Your financial data has been reset. ${customCount} custom categories, ${memoryCount} categorization memories, and ${rulesCount} transaction rules have been preserved.`,
+        preserved_custom_categories: customCount,
+        preserved_categorization_memories: memoryCount,
+        preserved_transaction_rules: rulesCount
       }),
       {
         status: 200,
@@ -283,7 +150,7 @@ Deno.serve(async (req: Request) => {
   } catch (error) {
     console.error("Error resetting financial data:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error.message || "Unknown error occurred" }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
