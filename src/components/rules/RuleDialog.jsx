@@ -448,9 +448,12 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
         <div className="px-6 flex-shrink-0">
           <div className="space-y-2">
+            <Label htmlFor="rule-name" className="text-sm">
+              Enter rule name<span className="text-red-500">*</span>
+            </Label>
             <Input
               id="rule-name"
-              placeholder="Enter rule name*"
+              placeholder=""
               value={ruleName}
               onChange={(e) => setRuleName(e.target.value)}
               className={nameError ? 'border-red-500 h-10' : 'h-10'}
@@ -497,7 +500,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
                         <SelectValue>
                           {selectedAccountIds.length === 0 ? 'All Accounts' :
                            selectedAccountIds.length === 1 ? getAccountName(selectedAccountIds[0]) :
-                           `${selectedAccountIds.length} Selected`}
+                           'Multiple'}
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
