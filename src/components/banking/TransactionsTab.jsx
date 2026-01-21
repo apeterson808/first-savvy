@@ -3598,7 +3598,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }}
                             transaction={ruleSourceTransaction}
                             profileId={activeProfile?.id}
-                            existingRule={editingRule}
+                            rule={editingRule}
                           />
     </>
   );
