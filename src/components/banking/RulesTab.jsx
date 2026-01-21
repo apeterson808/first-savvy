@@ -38,14 +38,12 @@ import {
   Edit,
   Trash2,
   Copy,
-  Play,
   TrendingUp,
   Filter,
   FileText
 } from 'lucide-react';
 import { RuleDialog } from '../rules/RuleDialog';
 import { TestRuleDialog } from '../rules/TestRuleDialog';
-import { ApplyRulesDialog } from '../rules/ApplyRulesDialog';
 
 export default function RulesTab() {
   const { activeProfile } = useProfile();
@@ -53,7 +51,6 @@ export default function RulesTab() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
-  const [applyDialogOpen, setApplyDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
   const [ruleToDelete, setRuleToDelete] = useState(null);
@@ -170,20 +167,10 @@ export default function RulesTab() {
           <h2 className="text-xl font-semibold text-slate-900">Transaction Rules</h2>
           <p className="text-sm text-slate-500 mt-1">Automatically categorize and tag transactions</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => setApplyDialogOpen(true)}
-            disabled={enabledRules === 0}
-          >
-            <Play className="w-4 h-4 mr-2" />
-            Apply Rules
-          </Button>
-          <Button onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Create Rule
-          </Button>
-        </div>
+        <Button onClick={() => setCreateDialogOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" />
+          Create Rule
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -381,13 +368,6 @@ export default function RulesTab() {
           />
         </>
       )}
-
-      <ApplyRulesDialog
-        open={applyDialogOpen}
-        onOpenChange={setApplyDialogOpen}
-        profileId={activeProfile?.id}
-        rules={rules.filter(r => r.is_enabled)}
-      />
 
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
