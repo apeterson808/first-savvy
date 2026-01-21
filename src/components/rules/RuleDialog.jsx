@@ -271,11 +271,31 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     mutationFn: async (data) => {
       return transactionRulesApi.createRule(profileId, data);
     },
-    onSuccess: () => {
+    onSuccess: async (newRule) => {
       queryClient.invalidateQueries(['transaction-rules']);
-      toast.success('Rule created successfully! Update the rule to auto-apply it to pending transactions.');
       onOpenChange(false);
       resetForm();
+
+      toast.success('Rule created successfully!', {
+        duration: 8000,
+        action: {
+          label: 'Apply Now',
+          onClick: async () => {
+            try {
+              await transactionRulesApi.updateRule(newRule.id, {
+                name: newRule.name
+              });
+              queryClient.invalidateQueries(['transaction-rules']);
+              queryClient.invalidateQueries(['transactions']);
+              toast.success('Rule applied to matching transactions!');
+            } catch (error) {
+              console.error('Error applying rule:', error);
+              toast.error('Failed to apply rule. Try again from the Rules page.');
+            }
+          }
+        },
+        description: 'Click "Apply Now" to apply this rule to pending transactions.'
+      });
     },
     onError: (error) => {
       console.error('Error creating rule:', error);
