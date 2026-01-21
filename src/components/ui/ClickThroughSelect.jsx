@@ -260,8 +260,6 @@ export function ClickThroughSelect({
       }
 
       if (searchTerm === '') {
-        setSelectedValue('');
-        onValueChange?.('');
         handleOpenChange(false);
         triggerInputRef.current?.blur();
         return;
