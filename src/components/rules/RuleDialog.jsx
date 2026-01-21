@@ -915,7 +915,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
           setContactSearchTerm('');
         }
       }}
-      initialContactName={contactSearchTerm}
+      initialName={contactSearchTerm}
       onContactCreated={(newContact) => {
         if (newContact?.id) {
           setContactId(newContact.id);
