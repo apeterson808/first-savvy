@@ -308,6 +308,13 @@ export default function AddContactSheet({
     onOpenChange(newOpen);
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
     <>
       <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -318,7 +325,7 @@ export default function AddContactSheet({
               Add a new vendor or customer to your contacts
             </SheetDescription>
           </SheetHeader>
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4 mt-4">
           <div>
             <Label htmlFor="name">Name *</Label>
             <Input
