@@ -273,15 +273,20 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['transaction-rules']);
-      toast.success('Rule created successfully');
+      toast.success('Rule created successfully! Update the rule to auto-apply it to pending transactions.');
       onOpenChange(false);
       resetForm();
     },
     onError: (error) => {
       console.error('Error creating rule:', error);
       const errorMessage = error.message || '';
+      const statusCode = error.code || error.status;
 
-      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
+      if (statusCode === 500 || errorMessage.includes('timeout') || errorMessage.includes('statement timeout')) {
+        toast.error('Rule created but auto-apply timed out. Edit the rule to apply it to pending transactions.', {
+          duration: 6000
+        });
+      } else if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
         toast.error('A rule with this name already exists');
       } else if (errorMessage.includes('actions_check') || errorMessage.includes('action_')) {
         toast.error('Please specify at least one action (category, contact, description, or note)');
@@ -289,6 +294,8 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         toast.error('Invalid category or contact selected. Please try again.');
       } else if (errorMessage.includes('check constraint')) {
         toast.error('Invalid rule configuration. Please check your conditions and try again.');
+      } else if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
+        toast.error('Permission denied. Please check your account access.');
       } else {
         toast.error('Failed to create rule. Please try again.');
       }
@@ -301,15 +308,20 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['transaction-rules']);
-      toast.success('Rule updated successfully');
+      toast.success('Rule updated and applied to matching transactions!');
       onOpenChange(false);
       resetForm();
     },
     onError: (error) => {
       console.error('Error updating rule:', error);
       const errorMessage = error.message || '';
+      const statusCode = error.code || error.status;
 
-      if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
+      if (statusCode === 500 || errorMessage.includes('timeout') || errorMessage.includes('statement timeout')) {
+        toast.error('Rule updated but some transactions may not have been processed. Try applying the rule manually.', {
+          duration: 6000
+        });
+      } else if (errorMessage.includes('duplicate') || errorMessage.includes('unique')) {
         toast.error('A rule with this name already exists');
       } else if (errorMessage.includes('actions_check') || errorMessage.includes('action_')) {
         toast.error('Please specify at least one action (category, contact, description, or note)');
@@ -317,6 +329,8 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         toast.error('Invalid category or contact selected. Please try again.');
       } else if (errorMessage.includes('check constraint')) {
         toast.error('Invalid rule configuration. Please check your conditions and try again.');
+      } else if (errorMessage.includes('permission') || errorMessage.includes('policy')) {
+        toast.error('Permission denied. Please check your account access.');
       } else {
         toast.error('Failed to update rule. Please try again.');
       }
