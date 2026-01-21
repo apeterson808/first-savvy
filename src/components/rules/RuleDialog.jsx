@@ -52,7 +52,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   const [accountsDropdownOpen, setAccountsDropdownOpen] = useState(false);
 
   const [conditionRows, setConditionRows] = useState([
-    { field: 'description', operator: 'contains', value: '' }
+    { field: 'bank_memo', operator: 'contains', value: '' }
   ]);
   const [matchLogic, setMatchLogic] = useState('any');
 
@@ -90,7 +90,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       setNameError('');
       setMoneyDirection('both');
       setSelectedAccountIds([]);
-      setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
+      setConditionRows([{ field: 'bank_memo', operator: 'contains', value: '' }]);
       setMatchLogic('any');
       setNewDescription('');
       setCategoryId(null);
@@ -167,7 +167,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       setNameError('');
       setMoneyDirection('both');
       setSelectedAccountIds([]);
-      setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
+      setConditionRows([{ field: 'bank_memo', operator: 'contains', value: '' }]);
       setMatchLogic('any');
       setNewDescription('');
       setCategoryId(null);
@@ -343,7 +343,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     setNameError('');
     setMoneyDirection('both');
     setSelectedAccountIds([]);
-    setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
+    setConditionRows([{ field: 'bank_memo', operator: 'contains', value: '' }]);
     setMatchLogic('any');
     setNewDescription('');
     setCategoryId(null);
@@ -457,7 +457,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   };
 
   const addConditionRow = () => {
-    setConditionRows([...conditionRows, { field: 'description', operator: 'contains', value: '' }]);
+    setConditionRows([...conditionRows, { field: 'bank_memo', operator: 'contains', value: '' }]);
   };
 
   const removeConditionRow = (index) => {
@@ -675,8 +675,8 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="description">Description</SelectItem>
                               <SelectItem value="bank_memo">Bank Memo</SelectItem>
+                              <SelectItem value="description">Description</SelectItem>
                               <SelectItem value="amount">Amount</SelectItem>
                             </SelectContent>
                           </Select>
