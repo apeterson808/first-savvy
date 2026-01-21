@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TransactionsTab from '../components/banking/TransactionsTab';
+import RulesTab from '../components/banking/RulesTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
@@ -89,7 +90,7 @@ export default function Banking() {
 
   return (
     <div className="p-4 md:p-6">
-      <PageTabs tabs={['overview', 'transactions', 'recurring', 'accounts']} />
+      <PageTabs tabs={['overview', 'transactions', 'rules', 'recurring', 'accounts']} />
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-4">
@@ -169,6 +170,10 @@ export default function Banking() {
               setTransactionFilters(null);
             }}
           />
+        </TabsContent>
+
+        <TabsContent value="rules" className="space-y-4">
+          <RulesTab />
         </TabsContent>
 
         <TabsContent value="recurring" className="space-y-4">
