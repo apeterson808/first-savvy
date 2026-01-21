@@ -22,24 +22,9 @@ import { firstsavvy } from './firstsavvyClient';
  */
 export async function postTransaction(transactionId) {
   try {
-    // Set session flag to authorize status change
-    await firstsavvy.rpc('set_session_flag', {
-      flag_name: 'internal_status_write',
-      flag_value: 'true'
-    });
-
-    // Update transaction status
-    const { data, error } = await firstsavvy
-      .from('transactions')
-      .update({ status: 'posted' })
-      .eq('id', transactionId)
-      .select()
-      .single();
-
-    // Clear session flag
-    await firstsavvy.rpc('set_session_flag', {
-      flag_name: 'internal_status_write',
-      flag_value: 'false'
+    // Use RPC function to set flag and update status in one transaction
+    const { data, error } = await firstsavvy.rpc('rpc_post_transaction', {
+      p_transaction_id: transactionId
     });
 
     if (error) {
@@ -49,12 +34,6 @@ export async function postTransaction(transactionId) {
 
     return { data, error: null };
   } catch (err) {
-    // Ensure flag is cleared even on error
-    await firstsavvy.rpc('set_session_flag', {
-      flag_name: 'internal_status_write',
-      flag_value: 'false'
-    });
-
     console.error('Exception posting transaction:', err);
     return { data: null, error: err };
   }
