@@ -743,7 +743,9 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
                       value={contactId}
                       onValueChange={setContactId}
                       onAddNew={(searchTerm) => {
-                        setContactSearchTerm(searchTerm);
+                        const descriptionCondition = conditionRows.find(row => row.field === 'description' && row.value.trim());
+                        const initialName = searchTerm || descriptionCondition?.value || '';
+                        setContactSearchTerm(initialName);
                         setAddContactSheetOpen(true);
                       }}
                       triggerClassName="h-8 text-xs border-slate-300"
