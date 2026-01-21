@@ -25,12 +25,14 @@ export function ClickThroughSelect({
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const [searchTerm, setSearchTerm] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const containerRef = useRef(null);
   const dropdownRef = useRef(null);
   const triggerInputRef = useRef(null);
   const isSelectingRef = useRef(false);
   const isCancelingRef = useRef(false);
   const originalValueRef = useRef(selectedValue);
+  const itemRefs = useRef({});
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
@@ -38,10 +40,12 @@ export function ClickThroughSelect({
     onOpenChange?.(open);
     if (open) {
       originalValueRef.current = selectedValue;
+      setHighlightedIndex(-1);
     }
     if (!open) {
       setIsEditing(false);
       setSearchTerm('');
+      setHighlightedIndex(-1);
     }
   };
 
@@ -180,8 +184,58 @@ export function ClickThroughSelect({
     ? (selectedOption.props['data-display'] || getDisplayText(selectedOption.props.children))
     : placeholder;
 
+  const getVisibleItems = () => {
+    const flattenChildren = (nodes) => {
+      const result = [];
+      React.Children.forEach(nodes, (child) => {
+        if (!child) return;
+        if (child.type === React.Fragment) {
+          result.push(...flattenChildren(child.props.children));
+        } else if (Array.isArray(child)) {
+          result.push(...flattenChildren(child));
+        } else {
+          result.push(child);
+        }
+      });
+      return result;
+    };
+
+    const flatChildren = flattenChildren(children);
+    return flatChildren.filter(child => {
+      if (!isSelectItem(child)) return false;
+      const displayText = child.props['data-display'] || getDisplayText(child.props.children);
+      return !enableSearch || !isEditing || !searchTerm ||
+        displayText.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        child.props.isRecommended;
+    });
+  };
+
   const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const visibleItems = getVisibleItems();
+      if (visibleItems.length === 0) return;
+
+      const newIndex = highlightedIndex < visibleItems.length - 1 ? highlightedIndex + 1 : 0;
+      setHighlightedIndex(newIndex);
+
+      const itemValue = visibleItems[newIndex]?.props?.value;
+      if (itemValue && itemRefs.current[itemValue]) {
+        itemRefs.current[itemValue].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const visibleItems = getVisibleItems();
+      if (visibleItems.length === 0) return;
+
+      const newIndex = highlightedIndex > 0 ? highlightedIndex - 1 : visibleItems.length - 1;
+      setHighlightedIndex(newIndex);
+
+      const itemValue = visibleItems[newIndex]?.props?.value;
+      if (itemValue && itemRefs.current[itemValue]) {
+        itemRefs.current[itemValue].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      }
+    } else if (e.key === 'Escape') {
       e.preventDefault();
       isCancelingRef.current = true;
       setSelectedValue(originalValueRef.current);
@@ -196,6 +250,14 @@ export function ClickThroughSelect({
       }, 200);
     } else if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
+
+      const visibleItems = getVisibleItems();
+
+      if (highlightedIndex >= 0 && visibleItems[highlightedIndex]) {
+        const highlightedItem = visibleItems[highlightedIndex];
+        handleSelect(highlightedItem.props.value, highlightedItem.props.isAction);
+        return;
+      }
 
       if (searchTerm === '') {
         setSelectedValue('');
@@ -221,13 +283,9 @@ export function ClickThroughSelect({
       };
 
       const flatChildren = flattenChildren(children);
-      const visibleItems = flatChildren.filter(child => {
-        if (!isSelectItem(child) || child.props.isAction) return false;
-        const displayText = child.props['data-display'] || getDisplayText(child.props.children);
-        return !searchTerm || displayText.toLowerCase().includes(searchTerm.toLowerCase()) || child.props.isRecommended;
-      });
+      const nonActionItems = visibleItems.filter(child => !child.props.isAction);
 
-      const exactMatch = visibleItems.find(child => {
+      const exactMatch = nonActionItems.find(child => {
         const displayText = child.props['data-display'] || getDisplayText(child.props.children);
         return displayText.toLowerCase() === searchTerm.toLowerCase();
       });
@@ -238,12 +296,12 @@ export function ClickThroughSelect({
 
       if (exactMatch) {
         handleSelect(exactMatch.props.value, false);
-      } else if (visibleItems.length === 1) {
-        handleSelect(visibleItems[0].props.value, false);
+      } else if (nonActionItems.length === 1) {
+        handleSelect(nonActionItems[0].props.value, false);
       } else if (searchTerm && actionItems.length > 0) {
         handleSelect(actionItems[0].props.value, true);
-      } else if (visibleItems.length > 0) {
-        handleSelect(visibleItems[0].props.value, false);
+      } else if (nonActionItems.length > 0) {
+        handleSelect(nonActionItems[0].props.value, false);
       }
     } else if (e.key === 'Backspace' || e.key === 'Delete') {
       if (searchTerm === '') {
@@ -279,6 +337,7 @@ export function ClickThroughSelect({
             onChange={(e) => {
               setSearchTerm(e.target.value);
               onSearchTermChange?.(e.target.value);
+              setHighlightedIndex(-1);
               if (!isOpen) {
                 handleOpenChange(true);
               }
@@ -406,6 +465,7 @@ export function ClickThroughSelect({
               };
 
               const flatChildren = flattenChildren(children);
+              let visibleItemIndex = 0;
 
               return flatChildren.map((child, index) => {
                 if (!child) return null;
@@ -419,10 +479,20 @@ export function ClickThroughSelect({
 
                   if (!matchesSearch) return null;
 
+                  const currentVisibleIndex = visibleItemIndex;
+                  visibleItemIndex++;
+
                   return React.cloneElement(child, {
                     key: child.props.value || index,
                     isSelected: child.props.value === selectedValue,
-                    onSelect: (val, isAction) => handleSelect(val, isAction || child.props.isAction)
+                    isHighlighted: currentVisibleIndex === highlightedIndex,
+                    onSelect: (val, isAction) => handleSelect(val, isAction || child.props.isAction),
+                    onMouseEnter: () => setHighlightedIndex(currentVisibleIndex),
+                    ref: (el) => {
+                      if (el && child.props.value) {
+                        itemRefs.current[child.props.value] = el;
+                      }
+                    }
                   });
                 }
 
@@ -441,9 +511,10 @@ export function ClickThroughSelect({
   );
 }
 
-export function ClickThroughSelectItem({ value, children, className, isSelected, onSelect, isAction }) {
+export const ClickThroughSelectItem = React.forwardRef(({ value, children, className, isSelected, isHighlighted, onSelect, onMouseEnter, isAction }, ref) => {
   return (
     <div
+      ref={ref}
       data-click-through-select-item="true"
       data-is-action={isAction ? "true" : undefined}
       data-value={value}
@@ -452,6 +523,7 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
         e.preventDefault();
         e.stopPropagation();
       }}
+      onMouseEnter={onMouseEnter}
       onClick={(e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -461,13 +533,14 @@ export function ClickThroughSelectItem({ value, children, className, isSelected,
         "relative flex w-full cursor-pointer select-none items-center rounded-sm py-1.5 px-2 text-xs outline-none",
         "hover:bg-accent hover:text-accent-foreground",
         isSelected && "bg-accent/50",
+        isHighlighted && "bg-accent text-accent-foreground",
         className
       )}
     >
       {children}
     </div>
   );
-}
+});
 ClickThroughSelectItem.displayName = 'ClickThroughSelectItem';
 
 export function ClickThroughSelectSeparator() {
