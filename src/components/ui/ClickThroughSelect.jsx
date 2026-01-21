@@ -249,21 +249,29 @@ export function ClickThroughSelect({
         isCancelingRef.current = false;
       }, 200);
     } else if (e.key === 'Enter' || e.key === 'Tab') {
-      e.preventDefault();
-
       const visibleItems = getVisibleItems();
 
       if (highlightedIndex >= 0 && visibleItems[highlightedIndex]) {
+        e.preventDefault();
         const highlightedItem = visibleItems[highlightedIndex];
         handleSelect(highlightedItem.props.value, highlightedItem.props.isAction);
         return;
       }
 
       if (searchTerm === '') {
+        // For Tab, allow natural focus movement
+        if (e.key === 'Tab') {
+          handleOpenChange(false);
+          return;
+        }
+        // For Enter, prevent default and close
+        e.preventDefault();
         handleOpenChange(false);
         triggerInputRef.current?.blur();
         return;
       }
+
+      e.preventDefault();
 
       const flattenChildren = (nodes) => {
         const result = [];
