@@ -867,10 +867,11 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         <DialogFooter className="px-6 py-4 flex-shrink-0 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Switch
+              id="auto-post-toggle"
               checked={autoConfirmAndPost}
               onCheckedChange={setAutoConfirmAndPost}
             />
-            <Label className="text-sm font-normal cursor-pointer" onClick={() => setAutoConfirmAndPost(!autoConfirmAndPost)}>
+            <Label htmlFor="auto-post-toggle" className="text-sm font-normal cursor-pointer">
               Auto-post transactions
             </Label>
           </div>
