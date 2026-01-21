@@ -85,7 +85,21 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   });
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      setRuleName('');
+      setNameError('');
+      setMoneyDirection('both');
+      setSelectedAccountIds([]);
+      setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
+      setMatchLogic('any');
+      setNewDescription('');
+      setCategoryId(null);
+      setContactId(null);
+      setNotes('');
+      setAutoConfirmAndPost(false);
+      setPreviewTransactions([]);
+      return;
+    }
 
     if (isEditMode && rule) {
       setRuleName(rule.name || '');
@@ -148,6 +162,19 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         { field: 'description', operator: 'contains', value: transaction.description || '' }
       ]);
       setSelectedAccountIds([]);
+    } else {
+      setRuleName('');
+      setNameError('');
+      setMoneyDirection('both');
+      setSelectedAccountIds([]);
+      setConditionRows([{ field: 'description', operator: 'contains', value: '' }]);
+      setMatchLogic('any');
+      setNewDescription('');
+      setCategoryId(null);
+      setContactId(null);
+      setNotes('');
+      setAutoConfirmAndPost(false);
+      setPreviewTransactions([]);
     }
   }, [rule, transaction, open, isEditMode]);
 
