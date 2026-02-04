@@ -1949,7 +1949,33 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
                           {(() => {
                             if (isMatched(transaction)) {
-                              return <span className="text-xs px-1 text-slate-500 opacity-50">Transfer</span>;
+                              return (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <MatchTypeDropdown
+                                    value={transaction.match_type || 'transfer'}
+                                    onChange={async (newType) => {
+                                      if (!transaction?.transfer_pair_id) return;
+
+                                      try {
+                                        await updateTransferPairType(
+                                          transaction.transfer_pair_id,
+                                          newType
+                                        );
+
+                                        queryClient.invalidateQueries({ queryKey: ['transactions'] });
+                                        queryClient.invalidateQueries({ queryKey: ['accounts'] });
+
+                                        toast.success('Match type updated');
+                                      } catch (error) {
+                                        console.error('Failed to update match type:', error);
+                                        toast.error('Failed to update match type');
+                                      }
+                                    }}
+                                    triggerClassName="h-7 border-slate-200 bg-slate-50 shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                  />
+                                </div>
+                              );
                             }
 
                             if (isSplitMode(transaction.id)) {
