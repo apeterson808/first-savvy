@@ -40,6 +40,7 @@ import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
+import MatchTypeDropdown from '../common/MatchTypeDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
 import TransferPostPreviewDialog from './TransferPostPreviewDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
@@ -1999,48 +2000,122 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>;
                             }
 
-                            // For matched transfers, show special category dropdown with transfer options
-                            if (transaction.transfer_pair_id) {
-                              const pairedTransaction = findPairedTransfer(transaction);
-                              const pairedAccount = bankAccounts.find(acc => acc.id === pairedTransaction?.bank_account_id);
-                              const otherAccounts = bankAccounts.filter(acc => acc.id !== transaction.bank_account_id);
+                            // For matched transactions, show match type dropdown
+                            if (transaction.transfer_pair_id || transaction.cc_payment_pair_id ||
+                                transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
+                              const pairedTransaction = transaction.transfer_pair_id ? findPairedTransfer(transaction) : null;
 
-                              // Show paired account with unmatch option - bank data is immutable
                               return (
-                                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1">
-                                  <span className="text-xs px-1">Transfer: {pairedAccount?.display_name || 'Unknown'}</span>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-5 w-5 p-0 hover:bg-slate-100"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (!pairedTransaction || !activeAccountIds.includes(transaction.bank_account_id)) return;
+                                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
+                                  <div className="flex-1 min-w-0">
+                                    <MatchTypeDropdown
+                                      value={transaction.type}
+                                      onValueChange={async (newType) => {
+                                        if (!activeAccountIds.includes(transaction.bank_account_id)) return;
 
-                                      updateMutation.mutate({
-                                        id: transaction.id,
-                                        data: { transfer_pair_id: null, type: null }
-                                      });
-                                      updateMutation.mutate({
-                                        id: pairedTransaction.id,
-                                        data: { transfer_pair_id: null, type: null }
-                                      });
-                                    }}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                  >
-                                    <Unlink className="h-3 w-3" />
-                                  </Button>
+                                        // If changing from one match type to another, clean up old pairing
+                                        if (transaction.transfer_pair_id && newType !== 'transfer') {
+                                          // Unpair the transfer
+                                          if (pairedTransaction) {
+                                            updateMutation.mutate({
+                                              id: pairedTransaction.id,
+                                              data: { transfer_pair_id: null, type: null }
+                                            });
+                                          }
+                                          updateMutation.mutate({
+                                            id: transaction.id,
+                                            data: { transfer_pair_id: null, type: newType }
+                                          });
+                                        } else if (transaction.cc_payment_pair_id && newType !== 'credit_card_payment') {
+                                          // Unpair the credit card payment
+                                          const { data: pairedCCPayment } = await firstsavvy
+                                            .from('transactions')
+                                            .select('*')
+                                            .eq('cc_payment_pair_id', transaction.cc_payment_pair_id)
+                                            .neq('id', transaction.id)
+                                            .maybeSingle();
+
+                                          if (pairedCCPayment) {
+                                            updateMutation.mutate({
+                                              id: pairedCCPayment.id,
+                                              data: { cc_payment_pair_id: null, type: null }
+                                            });
+                                          }
+                                          updateMutation.mutate({
+                                            id: transaction.id,
+                                            data: { cc_payment_pair_id: null, type: newType }
+                                          });
+                                        } else {
+                                          // Just update the type
+                                          updateMutation.mutate({
+                                            id: transaction.id,
+                                            data: { type: newType }
+                                          });
+                                        }
+
+                                        toast.success('Match type updated');
+                                      }}
+                                      triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                      disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                    />
+                                  </div>
+                                  {transaction.transfer_pair_id && pairedTransaction && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 hover:bg-slate-100 flex-shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+
+                                        updateMutation.mutate({
+                                          id: transaction.id,
+                                          data: { transfer_pair_id: null, type: null }
+                                        });
+                                        updateMutation.mutate({
+                                          id: pairedTransaction.id,
+                                          data: { transfer_pair_id: null, type: null }
+                                        });
+                                      }}
+                                      disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                    >
+                                      <Unlink className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                  {transaction.cc_payment_pair_id && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0 hover:bg-slate-100 flex-shrink-0"
+                                      onClick={async (e) => {
+                                        e.stopPropagation();
+                                        if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+
+                                        const { data: pairedCCPayment } = await firstsavvy
+                                          .from('transactions')
+                                          .select('*')
+                                          .eq('cc_payment_pair_id', transaction.cc_payment_pair_id)
+                                          .neq('id', transaction.id)
+                                          .maybeSingle();
+
+                                        if (pairedCCPayment) {
+                                          updateMutation.mutate({
+                                            id: pairedCCPayment.id,
+                                            data: { cc_payment_pair_id: null, type: null }
+                                          });
+                                        }
+                                        updateMutation.mutate({
+                                          id: transaction.id,
+                                          data: { cc_payment_pair_id: null, type: null }
+                                        });
+                                      }}
+                                      disabled={!activeAccountIds.includes(transaction.bank_account_id)}
+                                    >
+                                      <Unlink className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </div>
                               );
-                            }
-
-                            // For credit card payments, show type label
-                            if (transaction.cc_payment_pair_id) {
-                              return <span className="text-xs px-1">Credit Card Payment</span>;
-                            } else if (transaction.type === 'transfer') {
-                              return <span className="text-xs px-1">Transfer</span>;
-                            } else if (transaction.type === 'credit_card_payment') {
-                              return <span className="text-xs px-1">Credit Card Payment</span>;
                             }
 
                             // For regular transactions, show editable category dropdown (or read-only in posted)
