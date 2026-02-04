@@ -11,6 +11,7 @@ import ContactDetail from "./ContactDetail";
 import AccountDetail from "./AccountDetail";
 import Settings from "./Settings";
 import Goals from "./Goals";
+import Calendar from "./Calendar";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -23,6 +24,8 @@ const PAGES = {
     Budgeting: Budgeting,
 
     Goals: Goals,
+
+    Calendar: Calendar,
 
     NetWorth: NetWorth,
 
@@ -73,6 +76,7 @@ function PagesContent() {
                     <Route path="/Banking/account/:id" element={<AccountDetail />} />
                     <Route path="/Budgeting" element={<Budgeting />} />
                     <Route path="/Goals" element={<Goals />} />
+                    <Route path="/Calendar" element={<Calendar />} />
                     <Route path="/NetWorth" element={<NetWorth />} />
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
