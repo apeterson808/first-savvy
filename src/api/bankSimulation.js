@@ -603,7 +603,11 @@ export async function getAccountTransactions(accountId, institutionId) {
   Object.values(simulationData).forEach(monthData => {
     const accountData = monthData.accounts.find(acc => acc.last_four === last4);
     if (accountData) {
-      allTransactions.push(...accountData.transactions);
+      const filteredTransactions = accountData.transactions.filter(txn =>
+        txn.description !== 'Beginning Balance' &&
+        txn.description !== 'Statement Closing Balance'
+      );
+      allTransactions.push(...filteredTransactions);
     }
   });
 
