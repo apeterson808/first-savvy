@@ -2695,7 +2695,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     const pairedAccount = chartAccounts.find(a => a.id === currentlyPaired.bank_account_id);
 
                                                     if (transactionAccount && pairedAccount) {
-                                                      const isCreditCard = transactionAccount.account_detail === 'Credit Card' || pairedAccount.account_detail === 'Credit Card';
+                                                      const isCreditCard = transactionAccount.account_type === 'credit_card' || pairedAccount.account_type === 'credit_card';
                                                       if (isCreditCard) {
                                                         return 'Credit Card Payment';
                                                       }
