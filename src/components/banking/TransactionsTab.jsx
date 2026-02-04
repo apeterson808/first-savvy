@@ -2534,10 +2534,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
                                       if (!currentlyPaired) return null;
 
+                                      const isTransfer = transaction.transfer_pair_id != null;
+                                      const isCCPayment = transaction.cc_payment_pair_id != null;
+
                                       return (
                                         <>
-                                          <div className="pt-2 pb-1 px-4">
+                                          <div className="pt-2 pb-1 px-4 flex items-center gap-2">
                                             <p className="text-xs text-slate-600">Suggested Match</p>
+                                            {isTransfer && (
+                                              <Badge variant="outline" className="text-xs h-5 bg-blue-50 text-blue-700 border-blue-200">
+                                                Transfer
+                                              </Badge>
+                                            )}
+                                            {isCCPayment && (
+                                              <Badge variant="outline" className="text-xs h-5 bg-purple-50 text-purple-700 border-purple-200">
+                                                Credit Card Payment
+                                              </Badge>
+                                            )}
                                           </div>
                                           <div className="bg-blue-50/50">
                                             <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
