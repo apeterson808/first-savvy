@@ -16,7 +16,8 @@ export function ClickThroughSelect({
   renderValue,
   name,
   enableSearch = false,
-  onSearchTermChange
+  onSearchTermChange,
+  disabled = false
 }) {
   const dropdownId = useId();
   const { registerDropdown, openDropdownId } = useDropdownContext();
@@ -339,8 +340,10 @@ export function ClickThroughSelect({
           <input
             ref={triggerInputRef}
             type="text"
+            disabled={disabled}
             value={isEditing ? searchTerm : displayText}
             onChange={(e) => {
+              if (disabled) return;
               setSearchTerm(e.target.value);
               onSearchTermChange?.(e.target.value);
               setHighlightedIndex(-1);
@@ -350,6 +353,7 @@ export function ClickThroughSelect({
               setIsEditing(true);
             }}
             onFocus={() => {
+              if (disabled) return;
               setIsEditing(true);
               const options = extractOptions(children);
               const currentOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
@@ -402,10 +406,13 @@ export function ClickThroughSelect({
       ) : (
         <button
           type="button"
+          disabled={disabled}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            handleOpenChange(!isOpen);
+            if (!disabled) {
+              handleOpenChange(!isOpen);
+            }
           }}
           onMouseDown={(e) => {
             e.stopPropagation();

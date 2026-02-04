@@ -2055,7 +2055,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                         toast.success('Match type updated');
                                       }}
-                                      triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                      triggerClassName="h-7 border-slate-200 bg-slate-50 shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                       disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     />
                                   </div>
