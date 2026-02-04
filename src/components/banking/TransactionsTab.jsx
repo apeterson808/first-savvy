@@ -2539,18 +2539,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                       return (
                                         <>
-                                          <div className="pt-2 pb-1 px-4 flex items-center gap-2">
+                                          <div className="pt-2 pb-1 px-4">
                                             <p className="text-xs text-slate-600">Suggested Match</p>
-                                            {isTransfer && (
-                                              <Badge variant="outline" className="text-xs h-5 bg-blue-50 text-blue-700 border-blue-200">
-                                                Transfer
-                                              </Badge>
-                                            )}
-                                            {isCCPayment && (
-                                              <Badge variant="outline" className="text-xs h-5 bg-purple-50 text-purple-700 border-purple-200">
-                                                Credit Card Payment
-                                              </Badge>
-                                            )}
                                           </div>
                                           <div className="bg-blue-50/50">
                                             <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
@@ -2701,6 +2691,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 {/* Category */}
                                                 <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
                                                   {(() => {
+                                                    const transactionAccount = chartAccounts.find(a => a.id === transaction.bank_account_id);
+                                                    const pairedAccount = chartAccounts.find(a => a.id === currentlyPaired.bank_account_id);
+
+                                                    if (transactionAccount && pairedAccount) {
+                                                      const isCreditCard = transactionAccount.account_detail === 'Credit Card' || pairedAccount.account_detail === 'Credit Card';
+                                                      if (isCreditCard) {
+                                                        return 'Credit Card Payment';
+                                                      }
+                                                      return 'Transfer';
+                                                    }
+
                                                     if (currentlyPaired.type === 'transfer') return 'Transfer';
                                                     if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
                                                     const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
