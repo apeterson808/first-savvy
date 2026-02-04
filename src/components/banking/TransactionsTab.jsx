@@ -904,36 +904,40 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
       const originalType2 = pairedTransaction.original_type || (pairedTransaction.amount > 0 ? 'income' : 'expense');
 
+      const updateData1 = {
+        type: originalType1,
+        original_type: null
+      };
+
+      const updateData2 = {
+        type: originalType2,
+        original_type: null
+      };
+
+      if (transaction.transfer_pair_id) {
+        updateData1.transfer_pair_id = null;
+        updateData2.transfer_pair_id = null;
+      }
+
+      if (transaction.cc_payment_pair_id) {
+        updateData1.cc_payment_pair_id = null;
+        updateData2.cc_payment_pair_id = null;
+      }
+
       updateMutation.mutate({
         id: transaction.id,
-        data: {
-          transfer_pair_id: null,
-          type: originalType1,
-          original_type: null
-        }
+        data: updateData1
       });
 
       updateMutation.mutate({
         id: pairedTransaction.id,
-        data: {
-          ...pairedTransaction,
-          transfer_pair_id: null,
-          type: originalType2,
-          original_type: null
-        }
+        data: updateData2
       });
 
       setSelectedMatches(prev => {
         const next = { ...prev };
         delete next[transaction.id];
         delete next[pairedTransaction.id];
-        return next;
-      });
-
-      setManualActionOverrides(prev => {
-        const next = { ...prev };
-        next[transaction.id] = 'match';
-        next[pairedTransaction.id] = 'match';
         return next;
       });
 
@@ -2561,23 +2565,35 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                         const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
                                                         const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
 
+                                                        const updateData1 = {
+                                                          type: originalType1,
+                                                          original_type: null
+                                                        };
+
+                                                        const updateData2 = {
+                                                          type: originalType2,
+                                                          original_type: null
+                                                        };
+
+                                                        if (transaction.transfer_pair_id) {
+                                                          updateData1.transfer_pair_id = null;
+                                                          updateData2.transfer_pair_id = null;
+                                                        }
+
+                                                        if (transaction.cc_payment_pair_id) {
+                                                          updateData1.cc_payment_pair_id = null;
+                                                          updateData2.cc_payment_pair_id = null;
+                                                        }
+
                                                         try {
                                                           await Promise.all([
                                                             updateMutation.mutateAsync({
                                                               id: transaction.id,
-                                                              data: {
-                                                                transfer_pair_id: null,
-                                                                type: originalType1,
-                                                                original_type: null
-                                                              }
+                                                              data: updateData1
                                                             }),
                                                             updateMutation.mutateAsync({
                                                               id: currentlyPaired.id,
-                                                              data: {
-                                                                transfer_pair_id: null,
-                                                                type: originalType2,
-                                                                original_type: null
-                                                              }
+                                                              data: updateData2
                                                             })
                                                           ]);
 
@@ -2587,6 +2603,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                             delete next[currentlyPaired.id];
                                                             return next;
                                                           });
+
+                                                          setManualActionOverrides(prev => ({
+                                                            ...prev,
+                                                            [transaction.id]: 'post',
+                                                            [currentlyPaired.id]: 'post'
+                                                          }));
 
                                                           setSuggestedMatches(prev => ({
                                                             ...prev,
