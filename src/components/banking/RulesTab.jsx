@@ -40,7 +40,8 @@ import {
   Copy,
   TrendingUp,
   Filter,
-  FileText
+  FileText,
+  Play
 } from 'lucide-react';
 import { RuleDialog } from '../rules/RuleDialog';
 import { TestRuleDialog } from '../rules/TestRuleDialog';
