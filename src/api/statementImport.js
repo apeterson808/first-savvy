@@ -164,7 +164,9 @@ export const importStatementWithBeginningBalance = async (
 
   const transactionsToImport = transactions.filter(txn => {
     const desc = txn.description?.toLowerCase() || '';
-    return !desc.includes('beginning balance') && txn.amount > 0;
+    return !desc.includes('beginning balance') &&
+           !desc.includes('closing balance') &&
+           txn.amount > 0;
   });
 
   const insertedTransactionIds = [];
