@@ -71,7 +71,7 @@ const CUSTOM_COLOR_PALETTE = [
 
 const DEFAULT_COLOR = '#52A5CE';
 
-export default function AppearancePicker({ color, icon, onColorChange, onIconChange, inline = false }) {
+export default function AppearancePicker({ color, icon, onColorChange, onIconChange, inline = false, showPreview = false, useTabs = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('color');
@@ -136,74 +136,151 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
   };
 
   const pickerContent = inline ? (
-    <div className="space-y-4">
-      <div className="flex items-center justify-center">
-        <div
-          className="w-16 h-16 rounded-full flex items-center justify-center shadow-md"
-          style={{ backgroundColor: selectedColor }}
-        >
-          <SelectedIcon className="w-8 h-8 text-white" />
-        </div>
-      </div>
+    useTabs ? (
+      <div className="space-y-4">
+        {showPreview && (
+          <div className="flex items-center justify-center">
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center shadow-md"
+              style={{ backgroundColor: selectedColor }}
+            >
+              <SelectedIcon className="w-8 h-8 text-white" />
+            </div>
+          </div>
+        )}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="color">Color</TabsTrigger>
+            <TabsTrigger value="icon">Icon</TabsTrigger>
+          </TabsList>
 
-      <div>
-        <h4 className="text-sm font-medium text-slate-700 mb-3">Color</h4>
-        <div className="grid grid-cols-6 gap-2">
-          {CUSTOM_COLOR_PALETTE.map((colorOption) => (
-            <button
-              key={colorOption.hex}
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleColorSelect(colorOption.hex);
-              }}
-              onMouseDown={(e) => e.preventDefault()}
-              className={`w-10 h-10 rounded-full border-2 transition-all ${
-                selectedColor === colorOption.hex
-                  ? 'border-slate-800 scale-110'
-                  : 'border-slate-300 hover:scale-105 hover:border-slate-400'
-              }`}
-              style={{ backgroundColor: colorOption.hex }}
+          <TabsContent value="color" className="mt-4">
+            <div className="grid grid-cols-6 gap-2">
+              {CUSTOM_COLOR_PALETTE.map((colorOption) => (
+                <button
+                  key={colorOption.hex}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleColorSelect(colorOption.hex);
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className={`w-10 h-10 rounded-full border-2 transition-all ${
+                    selectedColor === colorOption.hex
+                      ? 'border-slate-800 scale-110'
+                      : 'border-slate-300 hover:scale-105 hover:border-slate-400'
+                  }`}
+                  style={{ backgroundColor: colorOption.hex }}
+                />
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="icon" className="mt-4">
+            <Input
+              placeholder="Search icons..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 text-sm mb-3"
             />
-          ))}
-        </div>
+            <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+              {filteredIcons.map((iconName) => {
+                const Icon = ICON_MAP[iconName];
+                if (!Icon) return null;
+
+                return (
+                  <button
+                    key={iconName}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleIconSelect(iconName);
+                    }}
+                    onMouseDown={(e) => e.preventDefault()}
+                    className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
+                      icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                    }`}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </button>
+                );
+              })}
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
+    ) : (
+      <div className="space-y-4">
+        <div className="flex items-center justify-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center shadow-md"
+            style={{ backgroundColor: selectedColor }}
+          >
+            <SelectedIcon className="w-8 h-8 text-white" />
+          </div>
+        </div>
 
-      <div>
-        <h4 className="text-sm font-medium text-slate-700 mb-3">Icon</h4>
-        <Input
-          placeholder="Search icons..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9 text-sm mb-3"
-        />
-        <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
-          {filteredIcons.map((iconName) => {
-            const Icon = ICON_MAP[iconName];
-            if (!Icon) return null;
-
-            return (
+        <div>
+          <h4 className="text-sm font-medium text-slate-700 mb-3">Color</h4>
+          <div className="grid grid-cols-6 gap-2">
+            {CUSTOM_COLOR_PALETTE.map((colorOption) => (
               <button
-                key={iconName}
+                key={colorOption.hex}
                 type="button"
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  handleIconSelect(iconName);
+                  handleColorSelect(colorOption.hex);
                 }}
                 onMouseDown={(e) => e.preventDefault()}
-                className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
-                  icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                className={`w-10 h-10 rounded-full border-2 transition-all ${
+                  selectedColor === colorOption.hex
+                    ? 'border-slate-800 scale-110'
+                    : 'border-slate-300 hover:scale-105 hover:border-slate-400'
                 }`}
-              >
-                <Icon className="w-5 h-5" />
-              </button>
-            );
-          })}
+                style={{ backgroundColor: colorOption.hex }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <h4 className="text-sm font-medium text-slate-700 mb-3">Icon</h4>
+          <Input
+            placeholder="Search icons..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 text-sm mb-3"
+          />
+          <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+            {filteredIcons.map((iconName) => {
+              const Icon = ICON_MAP[iconName];
+              if (!Icon) return null;
+
+              return (
+                <button
+                  key={iconName}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleIconSelect(iconName);
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
+                    icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
-    </div>
+    )
   ) : (
     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
       <TabsList className="w-full grid grid-cols-2">
