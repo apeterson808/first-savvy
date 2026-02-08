@@ -509,27 +509,5 @@ export const transactionRulesApi = {
       times_accepted: 0,
       times_rejected: 0
     });
-  },
-
-  async applyAllRules(transactions, profileId) {
-    if (!transactions || transactions.length === 0) {
-      return [];
-    }
-
-    const uncategorizedTransactions = transactions.filter(
-      txn => !txn.category_account_id && txn.type !== 'transfer'
-    );
-
-    if (uncategorizedTransactions.length === 0) {
-      return [];
-    }
-
-    const result = await this.applyRulesToTransactions(
-      profileId,
-      null,
-      uncategorizedTransactions.map(t => t.id)
-    );
-
-    return result.changes || [];
   }
 };
