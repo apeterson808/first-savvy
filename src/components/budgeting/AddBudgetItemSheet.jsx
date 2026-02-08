@@ -5,6 +5,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Sheet,
   SheetContent,
@@ -62,6 +63,9 @@ export default function AddBudgetItemSheet({
   const [showAddCategorySheet, setShowAddCategorySheet] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [parentBudgetInfo, setParentBudgetInfo] = useState(null);
+  const [hasParentCategory, setHasParentCategory] = useState(false);
+  const [selectedParentCategoryId, setSelectedParentCategoryId] = useState('');
+  const [parentCategories, setParentCategories] = useState([]);
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -87,6 +91,50 @@ export default function AddBudgetItemSheet({
       }
     }
   }, [selectedCategoryId, availableCategories, isEditMode]);
+
+  useEffect(() => {
+    if (selectedCategoryId) {
+      const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
+      if (selectedCategory?.parent_account_id) {
+        setHasParentCategory(true);
+        setSelectedParentCategoryId(selectedCategory.parent_account_id);
+      } else {
+        setHasParentCategory(false);
+        setSelectedParentCategoryId('');
+      }
+    }
+  }, [selectedCategoryId, availableCategories]);
+
+  useEffect(() => {
+    const fetchParentCategories = async () => {
+      if (!open || !selectedCategoryId) {
+        setParentCategories([]);
+        return;
+      }
+
+      const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
+      const categoryType = selectedCategory?.class || 'expense';
+
+      try {
+        const { data, error } = await firstsavvy.supabase
+          .from('user_chart_of_accounts')
+          .select('id, display_name, account_detail')
+          .eq('class', categoryType)
+          .is('parent_account_id', null)
+          .eq('is_active', true)
+          .neq('id', selectedCategoryId)
+          .order('display_name');
+
+        if (error) throw error;
+        setParentCategories(data || []);
+      } catch (error) {
+        console.error('Error fetching parent categories:', error);
+        setParentCategories([]);
+      }
+    };
+
+    fetchParentCategories();
+  }, [open, selectedCategoryId, availableCategories]);
 
   useEffect(() => {
     const fetchParentBudgetInfo = async () => {
@@ -182,6 +230,9 @@ export default function AddBudgetItemSheet({
     setSelectedIcon('');
     setSelectedCadence('monthly');
     setSearchTerm('');
+    setHasParentCategory(false);
+    setSelectedParentCategoryId('');
+    setParentCategories([]);
   };
 
   const handleCategoryCreated = (newCategory) => {
@@ -207,6 +258,11 @@ export default function AddBudgetItemSheet({
 
     if (!selectedCategoryId || !limitAmount) {
       toast.error('Please fill in all required fields');
+      return;
+    }
+
+    if (hasParentCategory && !selectedParentCategoryId) {
+      toast.error('Please select a parent category');
       return;
     }
 
@@ -254,6 +310,11 @@ export default function AddBudgetItemSheet({
     }
     if (selectedColor && selectedColor !== selectedAccount?.color) {
       updates.color = selectedColor;
+    }
+
+    const newParentId = hasParentCategory ? selectedParentCategoryId : null;
+    if (newParentId !== selectedAccount?.parent_account_id) {
+      updates.parent_account_id = newParentId;
     }
 
     if (Object.keys(updates).length > 0) {
@@ -359,6 +420,47 @@ export default function AddBudgetItemSheet({
               )}
             </div>
           </div>
+
+          {selectedCategoryId && (
+            <div className="space-y-3">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="hasParent"
+                  checked={hasParentCategory}
+                  onCheckedChange={(checked) => {
+                    setHasParentCategory(checked);
+                    if (!checked) {
+                      setSelectedParentCategoryId('');
+                    }
+                  }}
+                />
+                <Label htmlFor="hasParent" className="text-sm font-normal cursor-pointer">
+                  This is a sub-category
+                </Label>
+              </div>
+
+              {hasParentCategory && (
+                <div className="space-y-2 pl-6">
+                  <Label htmlFor="parentCategory">Parent Category*</Label>
+                  <Select
+                    value={selectedParentCategoryId}
+                    onValueChange={setSelectedParentCategoryId}
+                  >
+                    <SelectTrigger id="parentCategory" className="h-10">
+                      <SelectValue placeholder="Select parent category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {parentCategories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.display_name || cat.account_detail}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          )}
 
           <div>
             <Label htmlFor="limitAmount">Budget Amount*</Label>
