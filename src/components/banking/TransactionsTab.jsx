@@ -60,6 +60,7 @@ import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
+import { transactionRulesApi } from '@/api/transactionRules';
 import { useAuth } from '@/contexts/AuthContext';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 
@@ -686,19 +687,68 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
 
     setIsAutoCategorizing(true);
+    let totalCategorized = 0;
+
     try {
-      const updates = await transactionRulesApi.applyAllRules(
+      toast.info('Applying rules to transactions...');
+
+      const ruleUpdates = await transactionRulesApi.applyAllRules(
         uncategorizedTransactions,
         activeProfile.id
       );
 
+      totalCategorized += ruleUpdates.length;
+
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
-      if (updates.length > 0) {
-        toast.success(`Successfully categorized ${updates.length} transaction${updates.length !== 1 ? 's' : ''}`);
+      const { data: stillUncategorized } = await firstsavvy.entities.Transaction.filter(
+        {
+          profile_id: activeProfile.id,
+          status: 'pending',
+          category_account_id: null,
+          type: { $ne: 'transfer' }
+        },
+        '-date',
+        1000
+      );
+
+      if (stillUncategorized && stillUncategorized.length > 0) {
+        toast.info(`Applying AI categorization to ${stillUncategorized.length} remaining transaction${stillUncategorized.length !== 1 ? 's' : ''}...`);
+
+        let aiCategorized = 0;
+        for (const txn of stillUncategorized) {
+          try {
+            const suggestion = await aiCategorizationApi.getSuggestion(txn);
+
+            if (suggestion?.categoryId) {
+              await firstsavvy.entities.Transaction.update(txn.id, {
+                category_account_id: suggestion.categoryId
+              });
+
+              await categorizationMemoryAPI.recordCategorization(
+                txn.description,
+                suggestion.categoryId,
+                activeProfile.id
+              );
+
+              aiCategorized++;
+            }
+          } catch (error) {
+            console.error(`Failed to AI categorize transaction ${txn.id}:`, error);
+          }
+        }
+
+        totalCategorized += aiCategorized;
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+      if (totalCategorized > 0) {
+        toast.success(`Successfully categorized ${totalCategorized} transaction${totalCategorized !== 1 ? 's' : ''}!`);
       } else {
-        toast.info('No matching rules found for pending transactions');
+        toast.info('Could not categorize any transactions automatically');
       }
     } catch (error) {
       logError(error, { action: 'autoCategorize' });
@@ -1657,7 +1707,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Automatically categorize {uncategorizedCount} uncategorized transaction{uncategorizedCount !== 1 ? 's' : ''} using rules</p>
+                          <p>Automatically categorize {uncategorizedCount} uncategorized transaction{uncategorizedCount !== 1 ? 's' : ''} using rules and AI</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
