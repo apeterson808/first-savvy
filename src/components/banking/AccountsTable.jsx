@@ -767,17 +767,12 @@ export default function AccountsTable() {
                             )}
                             {visibleColumns.savvyBalance && (
                               <td className="px-4 py-0.5 text-right">
-                                <div className="flex items-center justify-end gap-1">
-                                  <span className="font-semibold text-slate-900 text-xs">
-                                    {(() => {
-                                      const balance = getAccountBalance(account);
-                                      return balance < 0 ? `-$${Math.abs(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-                                    })()}
-                                  </span>
-                                  {account.bank_balance != null && Math.abs(getAccountBalance(account) - account.bank_balance) > 0.01 && (
-                                    <span className="text-amber-500 text-xs" title={`Bank: $${account.bank_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}>⚠</span>
-                                  )}
-                                </div>
+                                <span className="font-semibold text-slate-900 text-xs">
+                                  {(() => {
+                                    const balance = getAccountBalance(account);
+                                    return balance < 0 ? `-$${Math.abs(balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                                  })()}
+                                </span>
                               </td>
                             )}
                             {visibleColumns.bankBalance && (
