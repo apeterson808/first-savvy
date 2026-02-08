@@ -2739,8 +2739,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                           setManualActionOverrides(prev => ({
                                                             ...prev,
-                                                            [transaction.id]: 'post',
-                                                            [currentlyPaired.id]: 'post'
+                                                            [transaction.id]: 'match',
+                                                            [currentlyPaired.id]: 'match'
                                                           }));
 
                                                           setSuggestedMatches(prev => ({
