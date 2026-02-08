@@ -41,6 +41,11 @@ export default function CategoriesTab() {
     };
   });
 
+  const [expandedParents, setExpandedParents] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'parents');
+    return saved ? new Set(JSON.parse(saved)) : new Set();
+  });
+
   const [addBudgetSheetOpen, setAddBudgetSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
@@ -51,11 +56,27 @@ export default function CategoriesTab() {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'sections', JSON.stringify(collapsedSections));
   }, [collapsedSections]);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'parents', JSON.stringify([...expandedParents]));
+  }, [expandedParents]);
+
   const toggleSection = (section) => {
     setCollapsedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
+  };
+
+  const toggleParent = (parentId) => {
+    setExpandedParents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(parentId)) {
+        newSet.delete(parentId);
+      } else {
+        newSet.add(parentId);
+      }
+      return newSet;
+    });
   };
 
   const deleteBudgetMutation = useMutation({
@@ -192,7 +213,7 @@ export default function CategoriesTab() {
     updateBudgetMutation.mutate({ id: budgetId, data: updateData });
   };
 
-  const renderBudgetedCategoryRow = (category, index) => {
+  const renderBudgetedCategoryRow = (category, index, isChild = false, allCategories = []) => {
     const budget = getBudgetForCategory(category.id);
     if (!budget) return null;
 
@@ -202,17 +223,45 @@ export default function CategoriesTab() {
     const isUpdating = updatingBudgetId === budget.id;
     const IconComponent = Icons[category.icon] || Icons.Circle;
 
-    return (
-      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+    const children = allCategories.filter(c => c.parent_account_id === category.id);
+    const hasChildren = children.length > 0;
+    const isParentExpanded = expandedParents.has(category.id);
+
+    const rows = [];
+
+    rows.push(
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
         <td className="px-4 border-r border-slate-100">
           <div className="flex items-center gap-2">
+            {!isChild && hasChildren ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0 hover:bg-slate-200 flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleParent(category.id);
+                }}
+              >
+                {isParentExpanded ? (
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+                )}
+              </Button>
+            ) : (
+              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+            )}
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: `${category.color}20` }}
             >
               <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
             </div>
-            <span>{category.display_name}</span>
+            <span className={isChild ? 'text-slate-700' : ''}>
+              {isChild && <span className="text-slate-400 mr-1.5">└</span>}
+              {category.display_name}
+            </span>
           </div>
         </td>
         <InlineEditableAmount
@@ -270,9 +319,17 @@ export default function CategoriesTab() {
         </td>
       </tr>
     );
+
+    if (hasChildren && isParentExpanded) {
+      children.forEach((childCategory, childIndex) => {
+        rows.push(...renderBudgetedCategoryRow(childCategory, index + childIndex + 1, true, allCategories));
+      });
+    }
+
+    return rows;
   };
 
-  const renderAvailableCategoryRow = (category, index) => {
+  const renderAvailableCategoryRow = (category, index, isChild = false, allCategories = []) => {
     const usage = categoryUsage[category.id];
     const everUsed = usage?.everUsed || false;
     const lastUsed = usage?.lastUsed;
@@ -280,17 +337,45 @@ export default function CategoriesTab() {
     const suggestedAmount = historicalAverages[category.id] || 0;
     const isCreating = creatingBudgetId === category.id;
 
-    return (
-      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+    const children = allCategories.filter(c => c.parent_account_id === category.id);
+    const hasChildren = children.length > 0;
+    const isParentExpanded = expandedParents.has(category.id);
+
+    const rows = [];
+
+    rows.push(
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
         <td className="px-4 font-medium border-r border-slate-200">
           <div className="flex items-center gap-2">
+            {!isChild && hasChildren ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0 hover:bg-slate-200 flex-shrink-0"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleParent(category.id);
+                }}
+              >
+                {isParentExpanded ? (
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+                )}
+              </Button>
+            ) : (
+              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+            )}
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
               style={{ backgroundColor: `${category.color}20` }}
             >
               <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
             </div>
-            <span>{category.display_name}</span>
+            <span className={isChild ? 'text-slate-700' : ''}>
+              {isChild && <span className="text-slate-400 mr-1.5">└</span>}
+              {category.display_name}
+            </span>
           </div>
         </td>
         <td className="px-4 border-r border-slate-200">
@@ -323,6 +408,14 @@ export default function CategoriesTab() {
         </td>
       </tr>
     );
+
+    if (hasChildren && isParentExpanded) {
+      children.forEach((childCategory, childIndex) => {
+        rows.push(...renderAvailableCategoryRow(childCategory, index + childIndex + 1, true, allCategories));
+      });
+    }
+
+    return rows;
   };
 
   const calculateTotals = (categories) => {
@@ -347,6 +440,9 @@ export default function CategoriesTab() {
     const isCollapsed = collapsedSections[sectionKey];
     const count = categories.length;
     const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
+
+    const parentCategories = categories.filter(c => !c.parent_account_id);
+
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
     const categoryColumnLabel = isBudgetedSection
       ? (title === 'Income Categories' ? 'Income Categories' : 'Expense Categories')
@@ -408,7 +504,7 @@ export default function CategoriesTab() {
                 </thead>
                 {!isCollapsed && (
                   <tbody>
-                    {categories.map((category, index) => renderRow(category, index))}
+                    {parentCategories.map((category, index) => renderRow(category, index, false, categories))}
                   </tbody>
                 )}
                 {totals && (
