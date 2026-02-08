@@ -164,7 +164,7 @@ export function UserAvatarDropdown() {
       .slice(0, 2);
   };
 
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Demo User';
+  const displayName = profile?.display_name || profile?.full_name || user?.email?.split('@')[0] || 'Demo User';
   const userEmail = user?.email || 'demo@example.com';
 
   if (loading) {

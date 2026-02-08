@@ -8,13 +8,14 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { getUserProfile, upsertUserProfile, uploadAvatar, deleteAvatar } from '@/api/userSettings';
 import { toast } from 'sonner';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, Loader2, RefreshCw } from 'lucide-react';
 
 export default function ProfileTab() {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    display_name: '',
     phone: '',
     bio: '',
     avatar_url: ''
@@ -35,6 +36,7 @@ export default function ProfileTab() {
           setFormData({
             first_name: profile.first_name || '',
             last_name: profile.last_name || '',
+            display_name: profile.display_name || '',
             phone: profile.phone || '',
             bio: profile.bio || '',
             avatar_url: profile.avatar_url || ''
@@ -56,6 +58,19 @@ export default function ProfileTab() {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleAutoFillDisplayName = () => {
+    const autoFilled = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
+    if (!autoFilled) {
+      toast.error('Please enter your first name first');
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      display_name: autoFilled
+    }));
+    toast.success('Display name auto-filled');
   };
 
   const handleAvatarClick = () => {
@@ -84,11 +99,13 @@ export default function ProfileTab() {
 
       const avatarUrl = await uploadAvatar(user.id, file);
       const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
+      const displayName = formData.display_name.trim() || fullName;
 
       await upsertUserProfile(user.id, {
         ...formData,
         email: user.email,
         avatar_url: avatarUrl,
+        display_name: displayName,
         full_name: fullName
       });
 
@@ -123,11 +140,13 @@ export default function ProfileTab() {
     setIsSaving(true);
     try {
       const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
+      const displayName = formData.display_name.trim() || fullName;
 
       await upsertUserProfile(user.id, {
         ...formData,
         first_name: formData.first_name.trim(),
         last_name: formData.last_name.trim(),
+        display_name: displayName,
         full_name: fullName,
         email: user.email
       });
@@ -164,7 +183,10 @@ export default function ProfileTab() {
           <div className="flex items-center gap-6">
             <div className="relative">
               <Avatar className="h-24 w-24">
-                <AvatarImage src={formData.avatar_url} alt={formData.full_name} />
+                <AvatarImage
+                  src={formData.avatar_url}
+                  alt={formData.display_name || `${formData.first_name} ${formData.last_name}`.trim() || 'Profile'}
+                />
                 <AvatarFallback className="text-2xl bg-blue-100 text-blue-700">
                   {getInitials()}
                 </AvatarFallback>
@@ -190,9 +212,10 @@ export default function ProfileTab() {
             </div>
             <div className="flex-1">
               <h3 className="font-semibold text-lg">
-                {formData.first_name || formData.last_name
-                  ? `${formData.first_name} ${formData.last_name}`.trim()
-                  : 'Set your name'}
+                {formData.display_name ||
+                  (formData.first_name || formData.last_name
+                    ? `${formData.first_name} ${formData.last_name}`.trim()
+                    : 'Set your name')}
               </h3>
               <p className="text-sm text-slate-500">{user?.email}</p>
               <p className="text-xs text-slate-400 mt-1">
@@ -225,6 +248,33 @@ export default function ProfileTab() {
                 disabled={isLoading}
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="displayName">Display Name</Label>
+            <div className="flex gap-2">
+              <Input
+                id="displayName"
+                placeholder="How you want to appear in the app"
+                value={formData.display_name}
+                onChange={(e) => handleInputChange('display_name', e.target.value)}
+                disabled={isLoading}
+                className="flex-1"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleAutoFillDisplayName}
+                disabled={isLoading}
+                className="shrink-0"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Auto-fill
+              </Button>
+            </div>
+            <p className="text-xs text-slate-500">
+              This is how your name appears throughout the app. Leave blank to use your full name.
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

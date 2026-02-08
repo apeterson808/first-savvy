@@ -168,7 +168,7 @@ export default function Layout({ children, currentPageName }) {
                 {user && (
                   <span className="text-sm text-slate-600 hidden md:block">
                     Welcome, <span className="font-medium text-slate-900">
-                      {userProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
+                      {userProfile?.display_name || userProfile?.full_name || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User'}
                     </span>
                   </span>
                 )}
