@@ -39,9 +39,22 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
     income: true,
     expense: true
   });
+  const [expandedParents, setExpandedParents] = useState(new Set());
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  const toggleParent = (parentId) => {
+    setExpandedParents(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(parentId)) {
+        newSet.delete(parentId);
+      } else {
+        newSet.add(parentId);
+      }
+      return newSet;
+    });
   };
 
   const calculatePeriodAmount = (monthlyAmount, period) => {
@@ -81,10 +94,89 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
 
+  const renderBudgetRow = (budget, isChild = false) => {
+    const Icon = ICON_MAP[budget.chartAccount?.icon] || Circle;
+    const monthlyAmount = budget.allocated_amount || 0;
+    const children = budgets.filter(b => b.chartAccount?.parent_account_id === budget.chart_account_id);
+    const hasChildren = children.length > 0;
+    const isParentExpanded = expandedParents.has(budget.chart_account_id);
+
+    return (
+      <React.Fragment key={budget.id}>
+        <div
+          className={cn(
+            "flex items-center gap-2 py-1.5 border-b border-slate-100 hover:bg-slate-50 transition-colors group",
+            isChild ? "bg-slate-50/50" : ""
+          )}
+        >
+          {!isChild && hasChildren ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0 hover:bg-slate-200 ml-3"
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleParent(budget.chart_account_id);
+              }}
+            >
+              {isParentExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+              )}
+            </Button>
+          ) : (
+            <div className={cn("w-5", isChild ? "ml-8" : "ml-3")}></div>
+          )}
+
+          <div
+            className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer"
+            style={{ backgroundColor: budget.chartAccount?.color || '#94a3b8' }}
+            onClick={() => onEditBudget?.(budget)}
+          >
+            <Icon className="w-4 h-4 text-white" />
+          </div>
+
+          <span
+            className={cn(
+              "text-sm min-w-[200px] cursor-pointer",
+              isChild ? "text-slate-700 pl-2" : "text-slate-900"
+            )}
+            onClick={() => onEditBudget?.(budget)}
+          >
+            {isChild && (
+              <span className="text-slate-400 mr-1.5">└</span>
+            )}
+            {budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unnamed'}
+          </span>
+
+          <div className="flex-1 flex items-center justify-end gap-2 text-sm">
+            <div className="w-24 text-center tabular-nums">
+              <span className="text-slate-500">$</span>{' '}<span className={cn(isChild ? "text-slate-600" : "text-slate-700")}>{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'), 'daily')}</span>
+            </div>
+            <div className="w-24 text-center tabular-nums">
+              <span className="text-slate-500">$</span>{' '}<span className={cn(isChild ? "text-slate-600" : "text-slate-700")}>{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'), 'weekly')}</span>
+            </div>
+            <div className={cn("w-28 text-center tabular-nums", isChild ? "" : "font-semibold")}>
+              <span className="text-slate-500">$</span>{' '}<span className={cn(isChild ? "text-slate-700" : "text-slate-900")}>{formatAmount(monthlyAmount, 'monthly')}</span>
+            </div>
+            <div className="w-28 text-center tabular-nums">
+              <span className="text-slate-500">$</span>{' '}<span className={cn(isChild ? "text-slate-600" : "text-slate-700")}>{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'), 'yearly')}</span>
+            </div>
+          </div>
+        </div>
+
+        {hasChildren && isParentExpanded && children.map(childBudget => renderBudgetRow(childBudget, true))}
+      </React.Fragment>
+    );
+  };
+
   const renderSection = (title, sectionBudgets, sectionKey, isIncome) => {
     if (sectionBudgets.length === 0) return null;
 
     const isExpanded = expandedSections[sectionKey];
+
+    const parentBudgets = sectionBudgets.filter(b => !b.chartAccount?.parent_account_id);
 
     const totals = sectionBudgets.reduce((acc, budget) => {
       const monthlyAmount = budget.allocated_amount || 0;
@@ -124,51 +216,12 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
 
         {isExpanded && (
           <>
-            {sectionBudgets.map((budget) => {
-              const Icon = ICON_MAP[budget.chartAccount?.icon] || Circle;
-              const monthlyAmount = budget.allocated_amount || 0;
-
-              return (
-                <div
-                  key={budget.id}
-                  className="flex items-center gap-2 py-1.5 px-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer transition-colors group"
-                  onClick={() => onEditBudget?.(budget)}
-                >
-                  <div className="w-5"></div>
-
-                  <div
-                    className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: budget.chartAccount?.color || '#94a3b8' }}
-                  >
-                    <Icon className="w-4 h-4 text-white" />
-                  </div>
-
-                  <span className="text-sm text-slate-900 min-w-[200px]">
-                    {budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unnamed'}
-                  </span>
-
-                  <div className="flex-1 flex items-center justify-end gap-2 text-sm">
-                    <div className="w-24 text-center tabular-nums">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'daily'), 'daily')}</span>
-                    </div>
-                    <div className="w-24 text-center tabular-nums">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'weekly'), 'weekly')}</span>
-                    </div>
-                    <div className="w-28 text-center tabular-nums font-semibold">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-900">{formatAmount(monthlyAmount, 'monthly')}</span>
-                    </div>
-                    <div className="w-28 text-center tabular-nums">
-                      <span className="text-slate-500">$</span>{' '}<span className="text-slate-700">{formatAmount(calculatePeriodAmount(monthlyAmount, 'yearly'), 'yearly')}</span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {parentBudgets.map(budget => renderBudgetRow(budget, false))}
           </>
         )}
 
         <div className="flex items-center gap-2 py-2 px-3 bg-slate-50">
-          <div className="w-5"></div>
+          <div className="w-5 ml-3"></div>
           <div className="w-7"></div>
           <span className="text-sm font-semibold text-slate-900 min-w-[200px]">Total</span>
 
