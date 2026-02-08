@@ -28,6 +28,7 @@ export default function AddEditCategorySheet({
   onOpenChange,
   editingCategory,
   accountType,
+  initialName,
   onCategoryCreated
 }) {
   const queryClient = useQueryClient();
@@ -48,14 +49,15 @@ export default function AddEditCategorySheet({
         color: editingCategory.color || '#52A5CE',
       });
     } else {
+      const name = initialName || '';
       setFormData({
-        name: '',
+        name,
         type: accountType || 'expense',
-        icon: 'Circle',
+        icon: name ? suggestIconForName(name) : 'Circle',
         color: '#52A5CE',
       });
     }
-  }, [editingCategory, open, accountType]);
+  }, [editingCategory, open, accountType, initialName]);
 
   const handleNameChange = (name) => {
     setFormData(prev => ({

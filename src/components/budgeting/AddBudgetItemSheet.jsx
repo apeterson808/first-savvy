@@ -186,6 +186,7 @@ export default function AddBudgetItemSheet({
   const handleCategoryCreated = (newCategory) => {
     if (newCategory?.id) {
       setSelectedCategoryId(newCategory.id);
+      setSearchTerm('');
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
@@ -314,7 +315,7 @@ export default function AddBudgetItemSheet({
                 isAction
               >
                 <Plus className="w-3 h-3 mr-1" />
-                Add New Category
+                {searchTerm ? `Add New: "${searchTerm}"` : 'Add New Category'}
               </ClickThroughSelectItem>
               {availableCategories.map((cat) => (
                 <ClickThroughSelectItem
@@ -420,6 +421,7 @@ export default function AddBudgetItemSheet({
       open={showAddCategorySheet}
       onOpenChange={setShowAddCategorySheet}
       accountType="expense"
+      initialName={searchTerm}
       onCategoryCreated={handleCategoryCreated}
     />
   </>
