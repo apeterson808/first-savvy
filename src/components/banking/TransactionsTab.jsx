@@ -1879,6 +1879,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
                           {(() => {
+                            // For transfers/credit card payments that are actually paired, show the paired account name (not editable)
+                            if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (transaction.transfer_pair_id || transaction.cc_payment_pair_id)) {
+                              const paired = findPairedTransfer(transaction);
+                              if (paired) {
+                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
+                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
+                              }
+                            }
+
                             const isInMatchMode = statusFilter === 'pending' && (
                               manualActionOverrides[transaction.id] === 'match' || (
                                 !manualActionOverrides[transaction.id] &&
@@ -1888,23 +1897,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             );
 
                             if (isInMatchMode) {
-                              const paired = findPairedTransfer(transaction);
-                              const pairedAccountId = paired ? paired.bank_account_id : '';
-                              const isAlreadyMatched = !!transaction.transfer_pair_id && !!paired;
-
-                              // If already matched, show as read-only
-                              if (isAlreadyMatched) {
-                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
-                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
-                              }
-
-                              // Show paired account as read-only - bank data is immutable
-                              const pairedAccount = allActiveAccounts.find(a => a.id === pairedAccountId) || accounts.find(a => a.id === pairedAccountId);
-                              return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
-                            }
-
-                            // For transfers/credit card payments, show the paired account name (not editable)
-                            if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (transaction.transfer_pair_id || transaction.cc_payment_pair_id)) {
                               const paired = findPairedTransfer(transaction);
                               if (paired) {
                                 const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
