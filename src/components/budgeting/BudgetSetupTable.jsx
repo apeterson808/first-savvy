@@ -178,7 +178,7 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
 
     const parentBudgets = sectionBudgets.filter(b => !b.chartAccount?.parent_account_id);
 
-    const totals = sectionBudgets.reduce((acc, budget) => {
+    const totals = parentBudgets.reduce((acc, budget) => {
       const monthlyAmount = budget.allocated_amount || 0;
       return {
         daily: acc.daily + calculatePeriodAmount(monthlyAmount, 'daily'),

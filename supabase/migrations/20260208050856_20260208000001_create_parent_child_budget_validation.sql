@@ -37,6 +37,7 @@
 -- Function: Calculate Total Child Budget Allocations
 -- =====================================================
 -- Returns the sum of all child budget allocated_amounts for a given parent category
+-- Normalizes all amounts to monthly for consistent comparison
 
 CREATE OR REPLACE FUNCTION calculate_total_child_budget_allocations(
   p_parent_account_id UUID,
@@ -46,7 +47,8 @@ RETURNS NUMERIC AS $$
 DECLARE
   v_total NUMERIC;
 BEGIN
-  -- Get all child category IDs
+  -- Get all child category IDs and sum their budget allocations
+  -- Normalize all cadences to monthly for comparison
   WITH child_categories AS (
     SELECT id
     FROM user_chart_of_accounts
@@ -54,8 +56,15 @@ BEGIN
       AND profile_id = p_profile_id
       AND is_active = true
   )
-  -- Sum their budget allocations
-  SELECT COALESCE(SUM(b.allocated_amount), 0)
+  SELECT COALESCE(SUM(
+    CASE b.cadence
+      WHEN 'daily' THEN b.allocated_amount * 365 / 12
+      WHEN 'weekly' THEN b.allocated_amount * 52 / 12
+      WHEN 'monthly' THEN b.allocated_amount
+      WHEN 'yearly' THEN b.allocated_amount / 12
+      ELSE b.allocated_amount
+    END
+  ), 0)
   INTO v_total
   FROM budgets b
   WHERE b.chart_account_id IN (SELECT id FROM child_categories)
@@ -114,6 +123,7 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 -- Function: Get Parent Budget Amount
 -- =====================================================
 -- Returns the budget amount for a parent category
+-- Normalizes to monthly for consistent comparison
 
 CREATE OR REPLACE FUNCTION get_parent_budget(
   p_parent_account_id UUID,
@@ -122,16 +132,27 @@ CREATE OR REPLACE FUNCTION get_parent_budget(
 RETURNS NUMERIC AS $$
 DECLARE
   v_amount NUMERIC;
+  v_cadence TEXT;
 BEGIN
-  SELECT allocated_amount
-  INTO v_amount
+  SELECT allocated_amount, cadence
+  INTO v_amount, v_cadence
   FROM budgets
   WHERE chart_account_id = p_parent_account_id
     AND profile_id = p_profile_id
     AND is_active = true
   LIMIT 1;
 
-  RETURN COALESCE(v_amount, 0);
+  -- Normalize to monthly
+  RETURN COALESCE(
+    CASE v_cadence
+      WHEN 'daily' THEN v_amount * 365 / 12
+      WHEN 'weekly' THEN v_amount * 52 / 12
+      WHEN 'monthly' THEN v_amount
+      WHEN 'yearly' THEN v_amount / 12
+      ELSE v_amount
+    END,
+    0
+  );
 END;
 $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 
@@ -139,12 +160,14 @@ $$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 -- Function: Validate Child Budget Allocation
 -- =====================================================
 -- Validates that a child budget allocation doesn't exceed available parent budget space
+-- All amounts are normalized to monthly for comparison
 
 CREATE OR REPLACE FUNCTION validate_child_budget_allocation(
   p_child_account_id UUID,
   p_proposed_amount NUMERIC,
   p_profile_id UUID,
-  p_budget_id UUID DEFAULT NULL
+  p_budget_id UUID DEFAULT NULL,
+  p_proposed_cadence TEXT DEFAULT 'monthly'
 )
 RETURNS TABLE(
   is_valid BOOLEAN,
@@ -158,9 +181,20 @@ DECLARE
   v_parent_budget NUMERIC;
   v_allocated_to_children NUMERIC;
   v_current_child_allocation NUMERIC := 0;
+  v_current_child_cadence TEXT;
   v_available_budget NUMERIC;
   v_parent_name TEXT;
+  v_normalized_proposed_amount NUMERIC;
 BEGIN
+  -- Normalize proposed amount to monthly
+  v_normalized_proposed_amount := CASE p_proposed_cadence
+    WHEN 'daily' THEN p_proposed_amount * 365 / 12
+    WHEN 'weekly' THEN p_proposed_amount * 52 / 12
+    WHEN 'monthly' THEN p_proposed_amount
+    WHEN 'yearly' THEN p_proposed_amount / 12
+    ELSE p_proposed_amount
+  END;
+
   -- Get the parent account ID for this child
   SELECT parent_account_id
   INTO v_parent_account_id
@@ -174,7 +208,7 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Get parent budget amount
+  -- Get parent budget amount (already normalized to monthly by get_parent_budget)
   v_parent_budget := get_parent_budget(v_parent_account_id, p_profile_id);
 
   -- If parent has no budget, child budget cannot be created
@@ -192,14 +226,24 @@ BEGIN
     RETURN;
   END IF;
 
-  -- Get total allocated to children (excluding the current budget if editing)
+  -- Get total allocated to children (already normalized to monthly)
   v_allocated_to_children := calculate_total_child_budget_allocations(v_parent_account_id, p_profile_id);
 
-  -- If editing, subtract the current allocation
+  -- If editing, subtract the current allocation (normalized)
   IF p_budget_id IS NOT NULL THEN
-    SELECT allocated_amount INTO v_current_child_allocation
+    SELECT allocated_amount, cadence
+    INTO v_current_child_allocation, v_current_child_cadence
     FROM budgets
     WHERE id = p_budget_id AND profile_id = p_profile_id;
+
+    v_current_child_allocation := CASE v_current_child_cadence
+      WHEN 'daily' THEN v_current_child_allocation * 365 / 12
+      WHEN 'weekly' THEN v_current_child_allocation * 52 / 12
+      WHEN 'monthly' THEN v_current_child_allocation
+      WHEN 'yearly' THEN v_current_child_allocation / 12
+      ELSE v_current_child_allocation
+    END;
+
     v_allocated_to_children := v_allocated_to_children - COALESCE(v_current_child_allocation, 0);
   END IF;
 
@@ -207,15 +251,15 @@ BEGIN
   v_available_budget := v_parent_budget - v_allocated_to_children;
 
   -- Check if proposed amount exceeds available budget
-  IF p_proposed_amount > v_available_budget THEN
+  IF v_normalized_proposed_amount > v_available_budget THEN
     SELECT display_name INTO v_parent_name
     FROM user_chart_of_accounts
     WHERE id = v_parent_account_id;
 
     RETURN QUERY SELECT
       false,
-      format('Child budget allocation ($%s) exceeds available parent budget ($%s). Parent "%s" has $%s total budget with $%s already allocated to other children.',
-        p_proposed_amount, v_available_budget, v_parent_name, v_parent_budget, v_allocated_to_children),
+      format('Child budget allocation ($%s/month) exceeds available parent budget ($%s/month). Parent "%s" has $%s/month total with $%s/month already allocated to other children.',
+        ROUND(v_normalized_proposed_amount, 2), ROUND(v_available_budget, 2), v_parent_name, ROUND(v_parent_budget, 2), ROUND(v_allocated_to_children, 2)),
       v_parent_budget,
       v_allocated_to_children,
       v_available_budget;
@@ -236,13 +280,14 @@ RETURNS TRIGGER AS $$
 DECLARE
   v_validation RECORD;
 BEGIN
-  -- Run validation
+  -- Run validation with cadence
   SELECT * INTO v_validation
   FROM validate_child_budget_allocation(
     NEW.chart_account_id,
     NEW.allocated_amount,
     NEW.profile_id,
-    NEW.id
+    NEW.id,
+    NEW.cadence
   );
 
   -- If validation failed, raise exception

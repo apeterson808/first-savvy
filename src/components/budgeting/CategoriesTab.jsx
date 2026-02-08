@@ -419,7 +419,9 @@ export default function CategoriesTab() {
   };
 
   const calculateTotals = (categories) => {
-    return categories.reduce((totals, category) => {
+    const parentCategories = categories.filter(c => !c.parent_account_id);
+
+    return parentCategories.reduce((totals, category) => {
       const budget = getBudgetForCategory(category.id);
       if (!budget) return totals;
 
