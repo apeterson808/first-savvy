@@ -63,11 +63,11 @@ export default function AddBudgetItemSheet({
 
   useEffect(() => {
     if (editingBudget && open) {
-      setSelectedCategoryId(editingBudget.category_account_id || '');
+      setSelectedCategoryId(editingBudget.chart_account_id || '');
       const amount = editingBudget.allocated_amount?.toString() || '';
       setLimitAmount(amount ? formatCurrency(amount) : '');
-      setSelectedColor(editingBudget.color || '');
-      setSelectedIcon(editingBudget.icon || '');
+      setSelectedColor(editingBudget.chartAccount?.color || '');
+      setSelectedIcon(editingBudget.chartAccount?.icon || '');
       setSelectedCadence(editingBudget.cadence || 'monthly');
     } else if (open && !editingBudget) {
       if (preselectedCategoryId) {
