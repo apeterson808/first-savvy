@@ -33,11 +33,13 @@ export default function AddEditCategorySheet({
 }) {
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [parentCategories, setParentCategories] = useState([]);
   const [formData, setFormData] = useState({
     name: '',
     type: accountType || 'expense',
     icon: 'Circle',
     color: '#52A5CE',
+    parentAccountId: null,
   });
 
   useEffect(() => {
@@ -47,6 +49,7 @@ export default function AddEditCategorySheet({
         type: editingCategory.class || 'expense',
         icon: editingCategory.icon || 'Circle',
         color: editingCategory.color || '#52A5CE',
+        parentAccountId: editingCategory.parent_account_id || null,
       });
     } else {
       const name = initialName || '';
@@ -55,9 +58,34 @@ export default function AddEditCategorySheet({
         type: accountType || 'expense',
         icon: name ? suggestIconForName(name) : 'Circle',
         color: '#52A5CE',
+        parentAccountId: null,
       });
     }
   }, [editingCategory, open, accountType, initialName]);
+
+  useEffect(() => {
+    if (open) {
+      fetchParentCategories();
+    }
+  }, [open, formData.type]);
+
+  const fetchParentCategories = async () => {
+    try {
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('id, display_name, account_detail')
+        .eq('class', formData.type)
+        .is('parent_account_id', null)
+        .eq('is_active', true)
+        .order('display_name');
+
+      if (error) throw error;
+      setParentCategories(data || []);
+    } catch (error) {
+      console.error('Error fetching parent categories:', error);
+      setParentCategories([]);
+    }
+  };
 
   const handleNameChange = (name) => {
     setFormData(prev => ({
@@ -83,6 +111,7 @@ export default function AddEditCategorySheet({
           display_name: formData.name.trim(),
           icon: formData.icon,
           color: formData.color,
+          parent_account_id: formData.parentAccountId || null,
         });
 
         await firstsavvy.supabase.from('budgets')
@@ -113,6 +142,7 @@ export default function AddEditCategorySheet({
           class: formData.type,
           icon: formData.icon,
           color: formData.color,
+          parent_account_id: formData.parentAccountId || null,
           is_user_created: true,
           is_active: true,
         };
@@ -187,6 +217,36 @@ export default function AddEditCategorySheet({
                 Category type cannot be changed after creation
               </p>
             )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="parentAccount">Parent Category (Optional)</Label>
+            <Select
+              value={formData.parentAccountId || 'none'}
+              onValueChange={(value) => setFormData(prev => ({
+                ...prev,
+                parentAccountId: value === 'none' ? null : value
+              }))}
+            >
+              <SelectTrigger id="parentAccount">
+                <SelectValue placeholder="None - Top Level Category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">None - Top Level Category</SelectItem>
+                {parentCategories.map((cat) => (
+                  <SelectItem
+                    key={cat.id}
+                    value={cat.id}
+                    disabled={editingCategory?.id === cat.id}
+                  >
+                    {cat.display_name || cat.account_detail}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500">
+              Select a parent category to create a sub-category. Leave as "None" for a top-level category.
+            </p>
           </div>
 
           <div className="space-y-2">
