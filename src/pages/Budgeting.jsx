@@ -134,7 +134,7 @@ export default function Budgeting() {
           )}
         </TabsContent>
 
-        <TabsContent value="categories" className="mt-0 h-[calc(100vh-12rem)]">
+        <TabsContent value="categories" className="mt-0">
           <CategoriesTab />
         </TabsContent>
       </Tabs>

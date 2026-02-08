@@ -460,15 +460,12 @@ export default function CategoriesTab() {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 pb-4">
-        <BudgetAllocationBar
-          budgets={budgets}
-        />
-      </div>
+    <div className="space-y-4">
+      <BudgetAllocationBar
+        budgets={budgets}
+      />
 
-      <div className="flex-1 overflow-y-auto space-y-4">
-        <Card className="shadow-sm border-slate-200">
+      <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-3 pt-4 px-6">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
         </CardHeader>
@@ -514,13 +511,12 @@ export default function CategoriesTab() {
         </CardContent>
       </Card>
 
-        <AddBudgetItemSheet
-          open={addBudgetSheetOpen}
-          onOpenChange={setAddBudgetSheetOpen}
-          availableCategories={categories}
-          editingBudget={editingBudget}
-        />
-      </div>
+      <AddBudgetItemSheet
+        open={addBudgetSheetOpen}
+        onOpenChange={setAddBudgetSheetOpen}
+        availableCategories={categories}
+        editingBudget={editingBudget}
+      />
     </div>
   );
 }
