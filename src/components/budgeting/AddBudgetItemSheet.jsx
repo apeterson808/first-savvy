@@ -22,7 +22,7 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import AddEditCategorySheet from '@/components/budgeting/AddEditCategorySheet';
-import { Plus } from 'lucide-react';
+import { Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as LucideIcons from 'lucide-react';
 
@@ -60,6 +60,7 @@ export default function AddBudgetItemSheet({
   const [selectedCadence, setSelectedCadence] = useState('monthly');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddCategorySheet, setShowAddCategorySheet] = useState(false);
+  const [editingCategory, setEditingCategory] = useState(null);
   const [parentBudgetInfo, setParentBudgetInfo] = useState(null);
 
   useEffect(() => {
@@ -187,9 +188,17 @@ export default function AddBudgetItemSheet({
     if (newCategory?.id) {
       setSelectedCategoryId(newCategory.id);
       setSearchTerm('');
+      setEditingCategory(null);
       queryClient.invalidateQueries({ queryKey: ['budgets'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts-income-expense'] });
+    }
+  };
+
+  const handleCategorySheetClose = (isOpen) => {
+    setShowAddCategorySheet(isOpen);
+    if (!isOpen) {
+      setEditingCategory(null);
     }
   };
 
@@ -295,38 +304,60 @@ export default function AddBudgetItemSheet({
         <form onSubmit={handleSubmit} className="space-y-4 py-4 px-1 flex-1 overflow-y-auto flex flex-col">
           <div>
             <Label htmlFor="category">Category*</Label>
-            <ClickThroughSelect
-              value={selectedCategoryId}
-              onValueChange={(val) => {
-                if (val === '__add_new_category__') {
-                  setShowAddCategorySheet(true);
-                  return;
-                }
-                setSelectedCategoryId(val);
-              }}
-              onSearchTermChange={setSearchTerm}
-              placeholder="Select a category"
-              triggerClassName="h-10"
-              enableSearch={true}
-            >
-              <ClickThroughSelectItem
-                value="__add_new_category__"
-                className="text-blue-600 font-medium whitespace-nowrap"
-                isAction
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                {searchTerm ? `Add New: "${searchTerm}"` : 'Add New Category'}
-              </ClickThroughSelectItem>
-              {availableCategories.map((cat) => (
-                <ClickThroughSelectItem
-                  key={cat.id}
-                  value={cat.id}
-                  data-display={cat.display_name || cat.account_detail}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <ClickThroughSelect
+                  value={selectedCategoryId}
+                  onValueChange={(val) => {
+                    if (val === '__add_new_category__') {
+                      setEditingCategory(null);
+                      setShowAddCategorySheet(true);
+                      return;
+                    }
+                    setSelectedCategoryId(val);
+                  }}
+                  onSearchTermChange={setSearchTerm}
+                  placeholder="Select a category"
+                  triggerClassName="h-10"
+                  enableSearch={true}
                 >
-                  {cat.display_name || cat.account_detail}
-                </ClickThroughSelectItem>
-              ))}
-            </ClickThroughSelect>
+                  <ClickThroughSelectItem
+                    value="__add_new_category__"
+                    className="text-blue-600 font-medium whitespace-nowrap"
+                    isAction
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    {searchTerm ? `Add New: "${searchTerm}"` : 'Add New Category'}
+                  </ClickThroughSelectItem>
+                  {availableCategories.map((cat) => (
+                    <ClickThroughSelectItem
+                      key={cat.id}
+                      value={cat.id}
+                      data-display={cat.display_name || cat.account_detail}
+                    >
+                      {cat.display_name || cat.account_detail}
+                    </ClickThroughSelectItem>
+                  ))}
+                </ClickThroughSelect>
+              </div>
+              {selectedCategoryId && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="h-10 w-10 shrink-0"
+                  onClick={() => {
+                    const category = availableCategories.find(c => c.id === selectedCategoryId);
+                    if (category) {
+                      setEditingCategory(category);
+                      setShowAddCategorySheet(true);
+                    }
+                  }}
+                >
+                  <Pencil className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           </div>
 
           <div>
@@ -419,8 +450,9 @@ export default function AddBudgetItemSheet({
 
     <AddEditCategorySheet
       open={showAddCategorySheet}
-      onOpenChange={setShowAddCategorySheet}
-      accountType="expense"
+      onOpenChange={handleCategorySheetClose}
+      editingCategory={editingCategory}
+      accountType={editingCategory ? editingCategory.class : "expense"}
       initialName={searchTerm}
       onCategoryCreated={handleCategoryCreated}
     />
