@@ -60,6 +60,7 @@ export default function AddBudgetItemSheet({
   const [selectedCadence, setSelectedCadence] = useState('monthly');
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddCategorySheet, setShowAddCategorySheet] = useState(false);
+  const [parentBudgetInfo, setParentBudgetInfo] = useState(null);
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -85,6 +86,65 @@ export default function AddBudgetItemSheet({
       }
     }
   }, [selectedCategoryId, availableCategories, isEditMode]);
+
+  useEffect(() => {
+    const fetchParentBudgetInfo = async () => {
+      if (!selectedCategoryId || !activeProfile?.id) {
+        setParentBudgetInfo(null);
+        return;
+      }
+
+      const selectedCategory = availableCategories.find(c => c.id === selectedCategoryId);
+      const parentAccountId = selectedCategory?.parent_account_id;
+
+      if (!parentAccountId) {
+        setParentBudgetInfo(null);
+        return;
+      }
+
+      try {
+        const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
+        const parentBudget = existingBudgets.find(b => b.chart_account_id === parentAccountId);
+
+        if (!parentBudget) {
+          const parentCategory = availableCategories.find(c => c.id === parentAccountId) ||
+            queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === parentAccountId);
+
+          setParentBudgetInfo({
+            hasParentBudget: false,
+            parentName: parentCategory?.display_name || 'Parent Category'
+          });
+          return;
+        }
+
+        const { data: validationData } = await firstsavvy.supabase.rpc(
+          'validate_child_budget_allocation',
+          {
+            p_child_account_id: selectedCategoryId,
+            p_proposed_amount: parseFloat(parseCurrency(limitAmount)) || 0,
+            p_profile_id: activeProfile.id,
+            p_budget_id: isEditMode ? editingBudget?.id : null
+          }
+        );
+
+        if (validationData && validationData.length > 0) {
+          const validation = validationData[0];
+          setParentBudgetInfo({
+            hasParentBudget: true,
+            parentName: parentBudget.chartAccount?.display_name || 'Parent Category',
+            parentBudget: validation.parent_budget,
+            allocatedToChildren: validation.allocated_to_children,
+            availableBudget: validation.available_budget
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching parent budget info:', error);
+        setParentBudgetInfo(null);
+      }
+    };
+
+    fetchParentBudgetInfo();
+  }, [selectedCategoryId, limitAmount, availableCategories, activeProfile, queryClient, isEditMode, editingBudget]);
 
   const createBudgetMutation = useMutation({
     mutationFn: (data) => firstsavvy.entities.Budget.create(data),
@@ -146,6 +206,23 @@ export default function AddBudgetItemSheet({
     if (newAmount <= 0) {
       toast.error('Amount must be greater than zero');
       return;
+    }
+
+    if (parentBudgetInfo && !parentBudgetInfo.hasParentBudget) {
+      toast.error(`Create a budget for ${parentBudgetInfo.parentName} first`);
+      return;
+    }
+
+    if (parentBudgetInfo && parentBudgetInfo.hasParentBudget) {
+      if (newAmount > parentBudgetInfo.availableBudget) {
+        const unallocated = parentBudgetInfo.parentBudget - parentBudgetInfo.allocatedToChildren;
+        toast.error(
+          `Budget allocation ($${newAmount.toFixed(2)}) exceeds available parent budget ($${unallocated.toFixed(2)}). ` +
+          `${parentBudgetInfo.parentName}: $${parentBudgetInfo.parentBudget.toFixed(2)} total, ` +
+          `$${parentBudgetInfo.allocatedToChildren.toFixed(2)} allocated to children.`
+        );
+        return;
+      }
     }
 
     if (!isEditMode) {
@@ -273,6 +350,26 @@ export default function AddBudgetItemSheet({
                 className="pl-7"
               />
             </div>
+            {parentBudgetInfo && parentBudgetInfo.hasParentBudget && (
+              <div className="mt-2 p-3 bg-blue-50 rounded-md text-sm">
+                <p className="font-medium text-slate-900">Parent Budget: {parentBudgetInfo.parentName}</p>
+                <div className="mt-1 space-y-0.5 text-slate-600">
+                  <p>Total Budget: ${parentBudgetInfo.parentBudget?.toFixed(2) || '0.00'}</p>
+                  <p>Allocated to Children: ${parentBudgetInfo.allocatedToChildren?.toFixed(2) || '0.00'}</p>
+                  <p className="font-medium text-slate-900">Available: ${parentBudgetInfo.availableBudget?.toFixed(2) || '0.00'}</p>
+                </div>
+              </div>
+            )}
+            {parentBudgetInfo && !parentBudgetInfo.hasParentBudget && (
+              <div className="mt-2 p-3 bg-amber-50 border border-amber-200 rounded-md text-sm">
+                <p className="text-amber-900 font-medium">
+                  Parent category "{parentBudgetInfo.parentName}" has no budget
+                </p>
+                <p className="text-amber-700 mt-1">
+                  Create a budget for the parent first
+                </p>
+              </div>
+            )}
           </div>
 
           <div>

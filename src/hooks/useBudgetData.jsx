@@ -21,7 +21,8 @@ export function useBudgetData() {
             account_type,
             account_detail,
             icon,
-            color
+            color,
+            parent_account_id
           )
         `)
         .eq('is_active', true)
@@ -71,6 +72,27 @@ export function useBudgetData() {
     refetchOnMount: true
   });
 
+  const budgetsWithParentInfo = useMemo(() => {
+    if (!budgets.length || !categories.length) return budgets;
+
+    return budgets.map(budget => {
+      const parentAccountId = budget.chartAccount?.parent_account_id;
+      if (!parentAccountId) return budget;
+
+      const parentBudget = budgets.find(b => b.chart_account_id === parentAccountId);
+      const parentCategory = categories.find(c => c.id === parentAccountId);
+
+      return {
+        ...budget,
+        parentBudget: parentBudget ? {
+          id: parentBudget.id,
+          allocated_amount: parentBudget.allocated_amount,
+          name: parentCategory?.display_name
+        } : null
+      };
+    });
+  }, [budgets, categories]);
+
   const isLoading = budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;
 
   const calculatedData = useMemo(() => {
@@ -100,6 +122,19 @@ export function useBudgetData() {
       acc[key] = (acc[key] || 0) + t.amount;
       return acc;
     }, {});
+
+    const spendingWithChildren = (categoryId) => {
+      if (!categoryId) return 0;
+
+      const directSpending = spendingByCategory[categoryId] || 0;
+
+      const childCategories = categories.filter(c => c.parent_account_id === categoryId);
+      const childSpending = childCategories.reduce((sum, child) => {
+        return sum + (spendingByCategory[child.id] || 0);
+      }, 0);
+
+      return directSpending + childSpending;
+    };
 
     const incomeByCategory = regularIncomeTransactions.reduce((acc, t) => {
       const key = t.category_account_id || '__uncategorized_income__';
@@ -180,6 +215,7 @@ export function useBudgetData() {
 
     return {
       spendingByCategory,
+      spendingWithChildren,
       incomeByCategory,
       totalActualIncome,
       totalRefunds,
@@ -200,7 +236,7 @@ export function useBudgetData() {
   }, [transactions, accounts, budgets, categories]);
 
   return {
-    budgets,
+    budgets: budgetsWithParentInfo,
     transactions,
     accounts,
     categories,

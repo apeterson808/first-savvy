@@ -10,9 +10,35 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
     income: false,
     expense: false
   });
+  const [expandedParents, setExpandedParents] = useState({});
 
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
+
+  const calculateSpendingWithChildren = (categoryId) => {
+    const directSpending = spendingByCategory[categoryId] || 0;
+    const childBudgets = budgets.filter(b => b.chartAccount?.parent_account_id === categoryId);
+    const childSpending = childBudgets.reduce((sum, childBudget) => {
+      return sum + (spendingByCategory[childBudget.chart_account_id] || 0);
+    }, 0);
+    return directSpending + childSpending;
+  };
+
+  const calculateIncomeWithChildren = (categoryId) => {
+    const directIncome = incomeByCategory[categoryId] || 0;
+    const childBudgets = budgets.filter(b => b.chartAccount?.parent_account_id === categoryId);
+    const childIncome = childBudgets.reduce((sum, childBudget) => {
+      return sum + (incomeByCategory[childBudget.chart_account_id] || 0);
+    }, 0);
+    return directIncome + childIncome;
+  };
+
+  const toggleParent = (parentId) => {
+    setExpandedParents(prev => ({
+      ...prev,
+      [parentId]: !prev[parentId]
+    }));
+  };
 
   const totalIncomeBudgeted = incomeBudgets.reduce((sum, b) => {
     return sum + convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
@@ -53,9 +79,12 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
       return null;
     }
 
-    const sortedBudgets = [...budgetsList].sort((a, b) => {
-      const aActual = actualByCategory[a.category_account_id] || 0;
-      const bActual = actualByCategory[b.category_account_id] || 0;
+    const parentBudgets = budgetsList.filter(b => !b.chartAccount?.parent_account_id);
+    const childBudgets = budgetsList.filter(b => b.chartAccount?.parent_account_id);
+
+    const sortedBudgets = [...parentBudgets].sort((a, b) => {
+      const aActual = isIncome ? calculateIncomeWithChildren(a.chart_account_id) : calculateSpendingWithChildren(a.chart_account_id);
+      const bActual = isIncome ? calculateIncomeWithChildren(b.chart_account_id) : calculateSpendingWithChildren(b.chart_account_id);
       const aBudgeted = convertCadence(parseFloat(a.allocated_amount || 0), a.cadence || 'monthly', 'monthly');
       const bBudgeted = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
       const aPercentage = aBudgeted > 0 ? (aActual / aBudgeted) : 0;
@@ -76,14 +105,53 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
         </CardHeader>
         {!isCollapsed && (
           <CardContent className="px-6 pb-4 space-y-3">
-            {sortedBudgets.map(budget => (
-              <BudgetProgressPill
-                key={budget.id}
-                budget={budget}
-                actualAmount={actualByCategory[budget.category_account_id] || 0}
-                isIncome={isIncome}
-              />
-            ))}
+            {sortedBudgets.map(budget => {
+              const children = childBudgets.filter(c => c.chartAccount?.parent_account_id === budget.chart_account_id);
+              const hasChildren = children.length > 0;
+              const isExpanded = expandedParents[budget.id] !== false;
+
+              return (
+                <div key={budget.id}>
+                  <div className="relative">
+                    {hasChildren && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleParent(budget.id);
+                        }}
+                        className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 p-1 hover:bg-slate-100 rounded"
+                      >
+                        {isExpanded ? (
+                          <ChevronDown className="h-3 w-3 text-slate-500" />
+                        ) : (
+                          <ChevronRight className="h-3 w-3 text-slate-500" />
+                        )}
+                      </button>
+                    )}
+                    <BudgetProgressPill
+                      budget={budget}
+                      actualAmount={isIncome ? calculateIncomeWithChildren(budget.chart_account_id) : calculateSpendingWithChildren(budget.chart_account_id)}
+                      isIncome={isIncome}
+                      isParent={hasChildren}
+                    />
+                  </div>
+                  {hasChildren && isExpanded && (
+                    <div className="ml-6 mt-2 space-y-2 pl-4 border-l-2 border-slate-200">
+                      {children.map(childBudget => (
+                        <BudgetProgressPill
+                          key={childBudget.id}
+                          budget={childBudget}
+                          actualAmount={actualByCategory[childBudget.chart_account_id] || 0}
+                          isIncome={isIncome}
+                          isChild={true}
+                          allocatedAmount={convertCadence(parseFloat(childBudget.allocated_amount || 0), childBudget.cadence || 'monthly', 'monthly')}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </CardContent>
         )}
       </Card>

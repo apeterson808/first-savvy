@@ -54,6 +54,7 @@ export default function Budgeting() {
     isLoading,
     hasSetupStarted,
     spendingByCategory,
+    spendingWithChildren,
     incomeByCategory,
     monthStart,
     monthEnd,

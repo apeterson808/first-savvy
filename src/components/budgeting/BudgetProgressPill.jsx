@@ -10,11 +10,11 @@ function lightenColor(hex, percent = 80) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
-export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false }) {
+export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false, isChild = false, isParent = false, allocatedAmount = null }) {
   const categoryData = budget.chartAccount;
   const IconComponent = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Icons.Circle;
 
-  const budgetedAmount = convertCadence(
+  const budgetedAmount = allocatedAmount !== null ? allocatedAmount : convertCadence(
     parseFloat(budget.allocated_amount || 0),
     budget.cadence || 'monthly',
     'monthly'
@@ -30,7 +30,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   let progressColor = categoryColor;
   let bgColor = lightenColor(categoryColor, 85);
 
-  if (!isIncome) {
+  if (!isIncome && !isChild) {
     if (isOverBudget) {
       progressColor = '#ef4444';
       bgColor = '#fee2e2';
