@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
 import BudgetAllocationBar from './BudgetAllocationBar';
+import BudgetAllocationDonut from './BudgetAllocationDonut';
 import InlineEditableAmount from './InlineEditableAmount';
 import InlineEditableAverage from './InlineEditableAverage';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -555,57 +556,75 @@ export default function CategoriesTab() {
     );
   }
 
+  const totalIncome = budgets
+    .filter(b => b.chartAccount?.class === 'income' && !b.chartAccount?.parent_account_id)
+    .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+
+  const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
+
   return (
     <div className="space-y-4">
       <BudgetAllocationBar
         budgets={budgets}
       />
 
-      <Card className="shadow-sm border-slate-200">
-        <CardHeader className="pb-3 pt-4 px-6">
-          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
-        </CardHeader>
-        <CardContent className="px-6 pb-4">
-          {renderSection(
-            'Income Categories',
-            budgetedIncomeCategories,
-            'budgetedIncome',
-            renderBudgetedCategoryRow,
-            'No income categories have been budgeted yet. Add a budget to get started.'
-          )}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
+        <div className="space-y-4">
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-3 pt-4 px-6">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
+            </CardHeader>
+            <CardContent className="px-6 pb-4">
+              {renderSection(
+                'Income Categories',
+                budgetedIncomeCategories,
+                'budgetedIncome',
+                renderBudgetedCategoryRow,
+                'No income categories have been budgeted yet. Add a budget to get started.'
+              )}
 
-          {renderSection(
-            'Expense Categories',
-            budgetedExpenseCategories,
-            'budgetedExpense',
-            renderBudgetedCategoryRow,
-            'No expense categories have been budgeted yet. Add a budget to get started.'
-          )}
-        </CardContent>
-      </Card>
+              {renderSection(
+                'Expense Categories',
+                budgetedExpenseCategories,
+                'budgetedExpense',
+                renderBudgetedCategoryRow,
+                'No expense categories have been budgeted yet. Add a budget to get started.'
+              )}
+            </CardContent>
+          </Card>
 
-      <Card className="shadow-sm border-slate-200">
-        <CardHeader className="pb-3 pt-4 px-6">
-          <CardTitle className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Not Budgeted</CardTitle>
-        </CardHeader>
-        <CardContent className="px-6 pb-4">
-          {renderSection(
-            'Available Income Categories',
-            availableIncomeCategories,
-            'availableIncome',
-            renderAvailableCategoryRow,
-            'All income categories have been budgeted.'
-          )}
+          <Card className="shadow-sm border-slate-200">
+            <CardHeader className="pb-3 pt-4 px-6">
+              <CardTitle className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Not Budgeted</CardTitle>
+            </CardHeader>
+            <CardContent className="px-6 pb-4">
+              {renderSection(
+                'Available Income Categories',
+                availableIncomeCategories,
+                'availableIncome',
+                renderAvailableCategoryRow,
+                'All income categories have been budgeted.'
+              )}
 
-          {renderSection(
-            'Available Expense Categories',
-            availableExpenseCategories,
-            'availableExpense',
-            renderAvailableCategoryRow,
-            'All expense categories have been budgeted.'
-          )}
-        </CardContent>
-      </Card>
+              {renderSection(
+                'Available Expense Categories',
+                availableExpenseCategories,
+                'availableExpense',
+                renderAvailableCategoryRow,
+                'All expense categories have been budgeted.'
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        <div className="lg:sticky lg:top-4 lg:self-start">
+          <BudgetAllocationDonut
+            budgets={expenseBudgets}
+            groups={[{ id: 'expenses', name: 'Expenses', type: 'expense' }]}
+            totalIncome={totalIncome}
+          />
+        </div>
+      </div>
 
       <AddBudgetItemSheet
         open={addBudgetSheetOpen}

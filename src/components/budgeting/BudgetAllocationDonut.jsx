@@ -91,18 +91,16 @@ export default function BudgetAllocationDonut({ budgets, groups, totalIncome }) 
     return '#64748b';
   };
 
-  // Get expense budgets only
-  const expenseGroups = groups.filter(g => g.type === 'expense');
-  const expenseGroupIds = new Set(expenseGroups.map(g => g.id));
-  const expenseBudgets = budgets.filter(b => expenseGroupIds.has(b.group_id));
+  // Filter to only parent expense budgets (exclude children)
+  const parentExpenseBudgets = budgets.filter(b => !b.chartAccount?.parent_account_id);
 
   // Calculate total allocated
-  const totalAllocated = expenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
+  const totalAllocated = parentExpenseBudgets.reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
   const remaining = Math.max(0, totalIncome - totalAllocated);
 
   // Build chart data
-  const chartData = expenseBudgets.map((budget) => ({
-    name: budget.name,
+  const chartData = parentExpenseBudgets.map((budget) => ({
+    name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unnamed',
     value: budget.allocated_amount || 0,
     color: getBudgetColor(budget)
   }));
@@ -285,9 +283,9 @@ export default function BudgetAllocationDonut({ budgets, groups, totalIncome }) 
                               <span className="font-medium text-slate-700">{formatCurrency(totalIncome)}</span>
                             </div>
                             <div className="flex justify-between">
-                                                <span className="text-slate-500">{expenseGroups[0]?.name || 'Expenses'}</span>
-                                                                    <span className="font-medium text-slate-700">-{formatCurrency(totalAllocated)}</span>
-                                              </div>
+                              <span className="text-slate-500">Expenses</span>
+                              <span className="font-medium text-slate-700">-{formatCurrency(totalAllocated)}</span>
+                            </div>
                             <div className="flex justify-between border-t pt-1.5">
                               <span className="text-slate-500">Remaining</span>
                               <span className={`font-semibold ${remaining > 0 ? 'text-green-600' : 'text-slate-700'}`}>
