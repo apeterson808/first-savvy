@@ -51,6 +51,16 @@ export default function Layout({ children, currentPageName }) {
     };
 
     loadUserData();
+
+    const handleProfileUpdate = () => {
+      loadUserData();
+    };
+
+    window.addEventListener('profileUpdated', handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener('profileUpdated', handleProfileUpdate);
+    };
   }, []);
 
   const navigation = [
