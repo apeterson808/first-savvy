@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, LogOut, User, Moon, Sun, Monitor, RotateCcw, Trash2 } from 'lucide-react';
+import { Settings, LogOut, Moon, Sun, Monitor, RotateCcw, Trash2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import {
   DropdownMenu,
@@ -196,10 +196,6 @@ export function UserAvatarDropdown() {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => navigate('/Settings')}>
-            <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </DropdownMenuItem>
           <DropdownMenuItem onClick={() => navigate('/Settings')}>
             <Settings className="mr-2 h-4 w-4" />
             <span>Settings</span>
