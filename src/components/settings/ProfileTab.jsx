@@ -13,7 +13,8 @@ import { Camera, Loader2 } from 'lucide-react';
 export default function ProfileTab() {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    full_name: '',
+    first_name: '',
+    last_name: '',
     phone: '',
     bio: '',
     avatar_url: ''
@@ -32,7 +33,8 @@ export default function ProfileTab() {
         const profile = await getUserProfile(user.id);
         if (profile) {
           setFormData({
-            full_name: profile.full_name || '',
+            first_name: profile.first_name || '',
+            last_name: profile.last_name || '',
             phone: profile.phone || '',
             bio: profile.bio || '',
             avatar_url: profile.avatar_url || ''
@@ -81,11 +83,13 @@ export default function ProfileTab() {
       }
 
       const avatarUrl = await uploadAvatar(user.id, file);
+      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
 
       await upsertUserProfile(user.id, {
         ...formData,
         email: user.email,
-        avatar_url: avatarUrl
+        avatar_url: avatarUrl,
+        full_name: fullName
       });
 
       setFormData(prev => ({
@@ -106,8 +110,8 @@ export default function ProfileTab() {
   const handleSave = async () => {
     if (!user?.id) return;
 
-    if (!formData.full_name.trim()) {
-      toast.error('Display name cannot be empty');
+    if (!formData.first_name.trim()) {
+      toast.error('First name cannot be empty');
       return;
     }
 
@@ -118,9 +122,13 @@ export default function ProfileTab() {
 
     setIsSaving(true);
     try {
+      const fullName = `${formData.first_name.trim()} ${formData.last_name.trim()}`.trim();
+
       await upsertUserProfile(user.id, {
         ...formData,
-        full_name: formData.full_name.trim(),
+        first_name: formData.first_name.trim(),
+        last_name: formData.last_name.trim(),
+        full_name: fullName,
         email: user.email
       });
 
@@ -135,12 +143,12 @@ export default function ProfileTab() {
   };
 
   const getInitials = () => {
-    if (!formData.full_name) return user?.email?.charAt(0).toUpperCase() || '?';
-    const names = formData.full_name.split(' ');
-    if (names.length >= 2) {
-      return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
-    }
-    return formData.full_name.substring(0, 2).toUpperCase();
+    if (!formData.first_name) return user?.email?.charAt(0).toUpperCase() || '?';
+
+    const firstInitial = formData.first_name.charAt(0).toUpperCase();
+    const lastInitial = formData.last_name ? formData.last_name.charAt(0).toUpperCase() : '';
+
+    return lastInitial ? `${firstInitial}${lastInitial}` : firstInitial;
   };
 
   return (
@@ -181,7 +189,11 @@ export default function ProfileTab() {
               />
             </div>
             <div className="flex-1">
-              <h3 className="font-semibold text-lg">{formData.full_name || 'Set your name'}</h3>
+              <h3 className="font-semibold text-lg">
+                {formData.first_name || formData.last_name
+                  ? `${formData.first_name} ${formData.last_name}`.trim()
+                  : 'Set your name'}
+              </h3>
               <p className="text-sm text-slate-500">{user?.email}</p>
               <p className="text-xs text-slate-400 mt-1">
                 Click the camera icon to upload a profile photo (max 5MB)
@@ -191,18 +203,31 @@ export default function ProfileTab() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="name">
-                Full Name <span className="text-red-500">*</span>
+              <Label htmlFor="firstName">
+                First Name <span className="text-red-500">*</span>
               </Label>
               <Input
-                id="name"
-                placeholder="John Doe"
-                value={formData.full_name}
-                onChange={(e) => handleInputChange('full_name', e.target.value)}
+                id="firstName"
+                placeholder="John"
+                value={formData.first_name}
+                onChange={(e) => handleInputChange('first_name', e.target.value)}
                 disabled={isLoading}
               />
             </div>
 
+            <div className="space-y-2">
+              <Label htmlFor="lastName">Last Name</Label>
+              <Input
+                id="lastName"
+                placeholder="Doe"
+                value={formData.last_name}
+                onChange={(e) => handleInputChange('last_name', e.target.value)}
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="email">Email Address</Label>
               <Input
@@ -216,21 +241,21 @@ export default function ProfileTab() {
                 Email cannot be changed here. Contact support to update.
               </p>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number</Label>
-            <Input
-              id="phone"
-              type="tel"
-              placeholder="+1 (555) 123-4567"
-              value={formData.phone}
-              onChange={(e) => handleInputChange('phone', e.target.value)}
-              disabled={isLoading}
-            />
-            <p className="text-xs text-slate-500">
-              Used for two-factor authentication and account recovery
-            </p>
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={formData.phone}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                disabled={isLoading}
+              />
+              <p className="text-xs text-slate-500">
+                Used for two-factor authentication and account recovery
+              </p>
+            </div>
           </div>
 
           <div className="space-y-2">
