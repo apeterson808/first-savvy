@@ -144,9 +144,6 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
             )}
             onClick={() => onEditBudget?.(budget)}
           >
-            {isChild && (
-              <span className="text-slate-400 mr-1.5">└</span>
-            )}
             {budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Unnamed'}
           </span>
 

@@ -259,7 +259,6 @@ export default function CategoriesTab() {
               <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
             </div>
             <span className={isChild ? 'text-slate-700' : ''}>
-              {isChild && <span className="text-slate-400 mr-1.5">└</span>}
               {category.display_name}
             </span>
           </div>
@@ -373,7 +372,6 @@ export default function CategoriesTab() {
               <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
             </div>
             <span className={isChild ? 'text-slate-700' : ''}>
-              {isChild && <span className="text-slate-400 mr-1.5">└</span>}
               {category.display_name}
             </span>
           </div>
