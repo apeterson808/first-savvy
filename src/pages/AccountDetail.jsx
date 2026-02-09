@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
   Tooltip,
   TooltipContent,
@@ -39,7 +40,7 @@ import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById } from '@/api/chartOfAccounts';
-import { getAccountJournalLinesPaginated } from '@/api/journalEntries';
+import { getAccountJournalLinesPaginated, getAccountAuditHistoryPaginated } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
@@ -53,6 +54,7 @@ export default function AccountDetail() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
+  const [activeTab, setActiveTab] = useState('register');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -163,6 +165,39 @@ export default function AccountDetail() {
   }, [journalLinesData]);
 
   const totalJournalLines = journalLinesData?.pages?.[0]?.totalCount || 0;
+
+  const {
+    data: auditHistoryData,
+    fetchNextPage: fetchNextAuditPage,
+    hasNextPage: hasNextAuditPage,
+    isFetchingNextPage: isFetchingNextAuditPage,
+    isLoading: auditHistoryLoading
+  } = useInfiniteQuery({
+    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset],
+    queryFn: async ({ pageParam = 0 }) => {
+      if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
+      return await getAccountAuditHistoryPaginated({
+        profileId: activeProfile.id,
+        accountId: id,
+        startDate: formatDateForDb(dateRange.start),
+        endDate: formatDateForDb(dateRange.end),
+        limit: 100,
+        offset: pageParam
+      });
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
+      return lastPage.hasMore ? loadedCount : undefined;
+    },
+    enabled: !!id && !!activeProfile && activeTab === 'audit'
+  });
+
+  const auditHistoryLines = useMemo(() => {
+    if (!auditHistoryData?.pages) return [];
+    return auditHistoryData.pages.flatMap(page => page.lines);
+  }, [auditHistoryData]);
+
+  const totalAuditLines = auditHistoryData?.pages?.[0]?.totalCount || 0;
 
   // Helper functions for edit mode
   const cancelEditMode = () => {
@@ -344,7 +379,80 @@ export default function AccountDetail() {
     };
   }, [journalLines, account, searchQuery, dateRange]);
 
-  // Infinite scroll observer
+  const { allAuditActivity, auditAnalytics } = useMemo(() => {
+    if (activeTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
+
+    const accountClass = account?.account_class || account?.class || 'asset';
+    const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
+
+    let combined = auditHistoryLines.map(jl => {
+      const entryType = jl.entry_type || 'adjustment';
+      let offsettingAccountsDisplay = jl.offsetting_accounts;
+
+      if (entryType === 'transfer') {
+        offsettingAccountsDisplay = 'Transfer';
+      } else if (entryType === 'credit_card_payment') {
+        offsettingAccountsDisplay = 'Credit Card Payment';
+      }
+
+      return {
+        ...jl,
+        id: jl.line_id,
+        activityType: 'posted',
+        displayDate: jl.entry_date,
+        displayDescription: jl.line_description || jl.entry_description,
+        debitAmount: jl.debit_amount,
+        creditAmount: jl.credit_amount,
+        entryNumber: jl.entry_number,
+        journalEntryId: jl.entry_id,
+        transactionId: jl.transaction_id,
+        entryType,
+        offsettingAccounts: offsettingAccountsDisplay,
+        runningBalance: parseFloat(jl.running_balance || 0),
+        isReversed: jl.is_reversed,
+        isReversal: jl.is_reversal,
+        reversedByEntryNumber: jl.reversed_by_entry_number,
+        reversesEntryNumber: jl.reverses_entry_number
+      };
+    });
+
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      combined = combined.filter(item =>
+        item.displayDescription?.toLowerCase().includes(query) ||
+        item.entryNumber?.toLowerCase().includes(query) ||
+        item.offsettingAccounts?.toLowerCase().includes(query)
+      );
+    }
+
+    combined.sort((a, b) => {
+      const dateA = new Date(a.displayDate);
+      const dateB = new Date(b.displayDate);
+      return dateB - dateA;
+    });
+
+    let activitiesWithBalance = combined.map(activity => ({
+      ...activity,
+      calculatedDebit: activity.debitAmount || 0,
+      calculatedCredit: activity.creditAmount || 0
+    }));
+
+    const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
+    const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
+
+    const analyticsData = {
+      transactionCount: combined.length,
+      totalDebits,
+      totalCredits
+    };
+
+    return {
+      allAuditActivity: activitiesWithBalance,
+      auditAnalytics: analyticsData
+    };
+  }, [auditHistoryLines, account, searchQuery, activeTab]);
+
+  // Infinite scroll observer for register
   const loadMoreRef = useRef();
   const observerCallback = useCallback((entries) => {
     const [entry] = entries;
@@ -352,6 +460,15 @@ export default function AccountDetail() {
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Infinite scroll observer for audit history
+  const loadMoreAuditRef = useRef();
+  const observerAuditCallback = useCallback((entries) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && hasNextAuditPage && !isFetchingNextAuditPage) {
+      fetchNextAuditPage();
+    }
+  }, [hasNextAuditPage, isFetchingNextAuditPage, fetchNextAuditPage]);
 
   React.useEffect(() => {
     const observer = new IntersectionObserver(observerCallback, {
@@ -371,6 +488,25 @@ export default function AccountDetail() {
       }
     };
   }, [observerCallback]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(observerAuditCallback, {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    const currentRef = loadMoreAuditRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [observerAuditCallback]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -979,18 +1115,12 @@ export default function AccountDetail() {
         </Card>
 
         <Card>
-          <CardHeader className="pb-3 pt-4">
+          <CardHeader className="pb-2 pt-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h2 className="text-base font-semibold">
                   {isTransactionBasedAccount ? 'Account Register' : 'General Ledger Activity'}
                 </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  {isTransactionBasedAccount
-                    ? 'Posted transactions from journal entries (checkbook-style register)'
-                    : 'All journal entry lines for this account (complete accounting activity)'
-                  }
-                </p>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative">
@@ -1006,6 +1136,19 @@ export default function AccountDetail() {
             </div>
           </CardHeader>
           <CardContent>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              <TabsList className="w-full justify-start mb-3">
+                <TabsTrigger value="register" className="flex items-center gap-1.5">
+                  <FileText className="w-3.5 h-3.5" />
+                  Register
+                </TabsTrigger>
+                <TabsTrigger value="audit" className="flex items-center gap-1.5">
+                  <History className="w-3.5 h-3.5" />
+                  Audit History
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="register" className="mt-0">
             {journalLinesLoading ? (
               <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
             ) : allActivity.length === 0 ? (
@@ -1110,6 +1253,154 @@ export default function AccountDetail() {
                 )}
               </div>
             )}
+              </TabsContent>
+
+              <TabsContent value="audit" className="mt-0">
+                <div className="mb-2 px-1">
+                  <p className="text-xs text-slate-600">
+                    Complete journal entry history including reversals, edits, and all accounting changes.
+                    Entries marked as "reversed" have been undone, and "reversal" entries are the system-generated corrections.
+                  </p>
+                </div>
+                {auditHistoryLoading ? (
+                  <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
+                ) : allAuditActivity.length === 0 ? (
+                  <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="h-8 bg-slate-100">
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Debit</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Credit</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Status</TableHead>
+                          <TableHead className="w-[40px] py-1.5"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allAuditActivity.map((activity, index) => (
+                          <TableRow
+                            key={`${activity.id || index}`}
+                            className={`h-7 ${
+                              activity.isReversed ? 'bg-burgundy/5' :
+                              activity.isReversal ? 'bg-amber-50/50' :
+                              index % 2 === 0
+                                ? 'bg-white hover:bg-slate-50'
+                                : 'bg-slate-50/50 hover:bg-slate-100'
+                            }`}
+                          >
+                            <TableCell className="whitespace-nowrap text-[11px] py-1">
+                              {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <span
+                                className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                              >
+                                {activity.entryNumber}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <Badge variant="outline" className="text-[10px] h-5 capitalize">
+                                {activity.entryType.replace('_', ' ')}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="py-1 max-w-[250px]">
+                              <div className={`text-[11px] truncate ${activity.isReversed ? 'line-through text-slate-400' : ''}`}>
+                                {activity.displayDescription}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-[11px] text-slate-600 py-1">
+                              {activity.offsettingAccounts || '—'}
+                            </TableCell>
+                            <TableCell className={`text-right text-[11px] py-1 ${activity.isReversed ? 'text-slate-400' : ''}`}>
+                              {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                            </TableCell>
+                            <TableCell className={`text-right text-[11px] py-1 ${activity.isReversed ? 'text-slate-400' : ''}`}>
+                              {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              {activity.isReversed && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge variant="secondary" className="text-[10px] h-5">Reversed</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">Reversed by {activity.reversedByEntryNumber}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                              {activity.isReversal && (
+                                <TooltipProvider>
+                                  <Tooltip>
+                                    <TooltipTrigger>
+                                      <Badge variant="outline" className="text-[10px] h-5 border-amber-500 text-amber-700">Reversal</Badge>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p className="text-xs">Reverses {activity.reversesEntryNumber}</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                </TooltipProvider>
+                              )}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <div className="flex items-center gap-1">
+                                {activity.journalEntryId && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                    className="h-6 w-6 p-0"
+                                    title="View Journal Entry"
+                                  >
+                                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                                  </Button>
+                                )}
+                                {activity.transactionId && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                    className="h-6 w-6 p-0"
+                                    title="View Audit History"
+                                  >
+                                    <History className="w-3 h-3 text-slate-400" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {isFetchingNextAuditPage && (
+                          <TableRow>
+                            <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
+                              Loading more entries...
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {hasNextAuditPage && !isFetchingNextAuditPage && (
+                          <TableRow ref={loadMoreAuditRef}>
+                            <TableCell colSpan={9} className="h-4"></TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                    {totalAuditLines > 0 && (
+                      <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                        Showing {allAuditActivity.length} of {totalAuditLines} entries
+                      </div>
+                    )}
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 
