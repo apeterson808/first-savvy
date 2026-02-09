@@ -2335,23 +2335,41 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return (
                                 <button
                                   className="text-xs text-blue-600 hover:underline"
-                                  onClick={(e) => {
+                                  onClick={async (e) => {
                                     e?.stopPropagation();
-                                    updateMutation.mutate({
-                                      id: transaction.id,
-                                      data: { status: 'pending' }
-                                    });
-                                    if (isMatched(transaction)) {
-                                      const pairedTransaction = findPairedTransfer(transaction);
-                                      if (pairedTransaction) {
-                                        updateMutation.mutate({
-                                          id: pairedTransaction.id,
-                                          data: { status: 'pending' }
-                                        });
+
+                                    try {
+                                      // Use the proper undo RPC functions based on transaction type
+                                      let result;
+
+                                      if (transaction.type === 'transfer' && transaction.transfer_pair_id) {
+                                        result = await transactionService.undoPostTransferPair(
+                                          transaction.transfer_pair_id,
+                                          'User initiated undo'
+                                        );
+                                      } else if (transaction.type === 'credit_card_payment' && transaction.cc_payment_id) {
+                                        result = await transactionService.undoPostCCPaymentPair(
+                                          transaction.cc_payment_id,
+                                          'User initiated undo'
+                                        );
+                                      } else {
+                                        result = await transactionService.undoPostTransaction(
+                                          transaction.id,
+                                          'User initiated undo'
+                                        );
                                       }
-                                    }
-                                    if (transaction.is_split) {
-                                      initializeSplitMode(transaction);
+
+                                      if (result.error) {
+                                        toast.error('Failed to undo posting: ' + result.error.message);
+                                      } else {
+                                        toast.success('Transaction unposted successfully');
+                                        queryClient.invalidateQueries(['transactions']);
+                                        queryClient.invalidateQueries(['accounts']);
+                                        queryClient.invalidateQueries(['journal-entries']);
+                                      }
+                                    } catch (error) {
+                                      console.error('Error undoing post:', error);
+                                      toast.error('Failed to undo posting');
                                     }
                                   }}
                                 >
