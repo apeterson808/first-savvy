@@ -26,7 +26,7 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
-  Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal
+  Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { toast } from 'sonner';
@@ -42,6 +42,7 @@ import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById }
 import { getAccountJournalLinesPaginated } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
+import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
 import { useAccountTypesByClass, useAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 
 export default function AccountDetail() {
@@ -51,6 +52,7 @@ export default function AccountDetail() {
   const [datePreset, setDatePreset] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
+  const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -268,6 +270,7 @@ export default function AccountDetail() {
         creditAmount: jl.credit_amount,
         entryNumber: jl.entry_number,
         journalEntryId: jl.entry_id,
+        transactionId: jl.transaction_id,
         entryType,
         offsettingAccounts: offsettingAccountsDisplay,
         runningBalance: parseFloat(jl.running_balance || 0)
@@ -1059,17 +1062,30 @@ export default function AccountDetail() {
                           {formatCurrency(activity.runningBalance)}
                         </TableCell>
                         <TableCell className="py-1">
-                          {activity.journalEntryId && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                              className="h-6 w-6 p-0"
-                              title="View Journal Entry"
-                            >
-                              <ExternalLink className="w-3 h-3 text-slate-400" />
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {activity.journalEntryId && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                className="h-6 w-6 p-0"
+                                title="View Journal Entry"
+                              >
+                                <ExternalLink className="w-3 h-3 text-slate-400" />
+                              </Button>
+                            )}
+                            {activity.transactionId && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                className="h-6 w-6 p-0"
+                                title="View Audit History"
+                              >
+                                <History className="w-3 h-3 text-slate-400" />
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1102,6 +1118,14 @@ export default function AccountDetail() {
             entryId={selectedJournalEntryId}
             open={!!selectedJournalEntryId}
             onClose={() => setSelectedJournalEntryId(null)}
+          />
+        )}
+
+        {selectedTransactionForAudit && (
+          <AuditHistoryModal
+            transactionId={selectedTransactionForAudit}
+            open={!!selectedTransactionForAudit}
+            onClose={() => setSelectedTransactionForAudit(null)}
           />
         )}
       </div>

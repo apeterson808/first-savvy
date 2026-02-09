@@ -211,3 +211,12 @@ export async function diagnoseAccountJournalLines(accountId) {
   if (error) throw error;
   return data || [];
 }
+
+export async function getJournalEntryAuditTrail(transactionId) {
+  const { data, error } = await supabase.rpc('get_journal_entry_audit_trail', {
+    p_transaction_id: transactionId
+  });
+
+  if (error) throw error;
+  return data || [];
+}
