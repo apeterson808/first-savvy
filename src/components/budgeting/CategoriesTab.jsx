@@ -230,27 +230,32 @@ export default function CategoriesTab() {
     const rows = [];
 
     rows.push(
-      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-4 border-r border-slate-100">
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/70' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+        <td className={`px-4 border-r border-slate-100 ${isChild ? 'border-l-2 border-l-slate-300 pl-6' : ''}`}>
           <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 w-5 p-0 hover:bg-slate-200 flex-shrink-0"
+              <button
+                className="h-5 w-5 p-0 hover:opacity-70 flex-shrink-0 flex items-center justify-center transition-transform duration-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleParent(category.id);
                 }}
               >
-                {isParentExpanded ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
-                )}
-              </Button>
+                <div
+                  className={`w-1.5 h-1.5 rounded-full bg-slate-400 transition-all duration-200 ${
+                    isParentExpanded ? 'rotate-0 scale-125' : ''
+                  }`}
+                  style={{
+                    boxShadow: isParentExpanded ? '0 0 0 3px rgba(148, 163, 184, 0.2)' : 'none'
+                  }}
+                />
+              </button>
+            ) : isChild ? (
+              <div className="w-5 flex-shrink-0 flex items-center justify-center">
+                <div className="w-1 h-1 rounded-full bg-slate-300" />
+              </div>
             ) : (
-              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+              <div className="w-5 flex-shrink-0"></div>
             )}
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
@@ -258,7 +263,7 @@ export default function CategoriesTab() {
             >
               <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
             </div>
-            <span className={isChild ? 'text-slate-700' : ''}>
+            <span className={isChild ? 'text-slate-700 font-normal' : ''}>
               {category.display_name}
             </span>
           </div>
@@ -343,27 +348,32 @@ export default function CategoriesTab() {
     const rows = [];
 
     rows.push(
-      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-4 font-medium border-r border-slate-200">
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/70' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+        <td className={`px-4 font-medium border-r border-slate-200 ${isChild ? 'border-l-2 border-l-slate-300 pl-6' : ''}`}>
           <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-5 w-5 p-0 hover:bg-slate-200 flex-shrink-0"
+              <button
+                className="h-5 w-5 p-0 hover:opacity-70 flex-shrink-0 flex items-center justify-center transition-transform duration-200"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleParent(category.id);
                 }}
               >
-                {isParentExpanded ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
-                ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
-                )}
-              </Button>
+                <div
+                  className={`w-1.5 h-1.5 rounded-full bg-slate-400 transition-all duration-200 ${
+                    isParentExpanded ? 'rotate-0 scale-125' : ''
+                  }`}
+                  style={{
+                    boxShadow: isParentExpanded ? '0 0 0 3px rgba(148, 163, 184, 0.2)' : 'none'
+                  }}
+                />
+              </button>
+            ) : isChild ? (
+              <div className="w-5 flex-shrink-0 flex items-center justify-center">
+                <div className="w-1 h-1 rounded-full bg-slate-300" />
+              </div>
             ) : (
-              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+              <div className="w-5 flex-shrink-0"></div>
             )}
             <div
               className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
@@ -371,7 +381,7 @@ export default function CategoriesTab() {
             >
               <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
             </div>
-            <span className={isChild ? 'text-slate-700' : ''}>
+            <span className={isChild ? 'text-slate-700 font-normal' : ''}>
               {category.display_name}
             </span>
           </div>
