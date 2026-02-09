@@ -7,7 +7,6 @@ import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtil
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
-import BudgetAllocationBar from './BudgetAllocationBar';
 import BudgetAllocationDonut from './BudgetAllocationDonut';
 import InlineEditableAmount from './InlineEditableAmount';
 import InlineEditableAverage from './InlineEditableAverage';
@@ -564,10 +563,6 @@ export default function CategoriesTab() {
 
   return (
     <div className="space-y-4">
-      <BudgetAllocationBar
-        budgets={budgets}
-      />
-
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
           <Card className="shadow-sm border-slate-200">
