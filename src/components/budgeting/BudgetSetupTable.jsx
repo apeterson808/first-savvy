@@ -105,29 +105,29 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
       <React.Fragment key={budget.id}>
         <div
           className={cn(
-            "flex items-center gap-2 py-1.5 border-b border-slate-100 hover:bg-slate-50 transition-colors group",
+            "flex items-center gap-3 py-2 border-b border-slate-100 hover:bg-slate-50 transition-colors group",
             isChild ? "bg-slate-50/50" : ""
           )}
         >
-          {!isChild && hasChildren ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-5 w-5 p-0 hover:bg-slate-200 ml-3"
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleParent(budget.chart_account_id);
-              }}
-            >
-              {isParentExpanded ? (
-                <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
-              ) : (
-                <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
-              )}
-            </Button>
-          ) : (
-            <div className={cn("w-5", isChild ? "ml-8" : "ml-3")}></div>
-          )}
+          <div className={cn("w-6 flex items-center justify-center flex-shrink-0", isChild ? "ml-9" : "ml-3")}>
+            {!isChild && hasChildren && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-5 w-5 p-0 hover:bg-slate-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleParent(budget.chart_account_id);
+                }}
+              >
+                {isParentExpanded ? (
+                  <ChevronDown className="h-4 w-4 text-slate-600" />
+                ) : (
+                  <ChevronRight className="h-4 w-4 text-slate-600" />
+                )}
+              </Button>
+            )}
+          </div>
 
           <div
             className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 cursor-pointer"
@@ -140,7 +140,7 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
           <span
             className={cn(
               "text-sm min-w-[200px] cursor-pointer",
-              isChild ? "text-slate-700 pl-2" : "text-slate-900"
+              isChild ? "text-slate-700" : "text-slate-900"
             )}
             onClick={() => onEditBudget?.(budget)}
           >
@@ -217,8 +217,8 @@ export default function BudgetSetupTable({ budgets, onEditBudget }) {
           </>
         )}
 
-        <div className="flex items-center gap-2 py-2 px-3 bg-slate-50">
-          <div className="w-5 ml-3"></div>
+        <div className="flex items-center gap-3 py-2 bg-slate-50">
+          <div className="w-6 ml-3"></div>
           <div className="w-7"></div>
           <span className="text-sm font-semibold text-slate-900 min-w-[200px]">Total</span>
 
