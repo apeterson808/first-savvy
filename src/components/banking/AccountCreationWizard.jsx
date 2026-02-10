@@ -400,7 +400,9 @@ export default function AccountCreationWizard({
   });
 
   const accountTypeCards = React.useMemo(() => {
-    return buildAccountTypeCardsFromTemplates(chartAccounts);
+    const cards = buildAccountTypeCardsFromTemplates(chartAccounts);
+    console.log('[AccountCreationWizard] Built account type cards:', cards.map(c => c.id));
+    return cards;
   }, [chartAccounts]);
 
   const { data: userChartAccounts = [] } = useQuery({
@@ -445,18 +447,22 @@ export default function AccountCreationWizard({
   });
 
   const fetchPlaidLinkToken = useCallback(async () => {
+    console.log('[AccountCreationWizard] fetchPlaidLinkToken called, user:', !!user, 'existingToken:', !!plaidLinkToken);
     if (!user || plaidLinkToken) return;
     setPlaidLoading(true);
     setPlaidError(null);
     try {
+      console.log('[AccountCreationWizard] Requesting Plaid link token...');
       const result = await firstsavvy.functions.createPlaidLinkToken({});
+      console.log('[AccountCreationWizard] Plaid link token response:', result);
       if (result.link_token) {
         setPlaidLinkToken(result.link_token);
+        console.log('[AccountCreationWizard] Plaid link token set successfully');
       } else {
         setPlaidError('Could not initialize bank connection');
       }
     } catch (err) {
-      console.error('Error fetching Plaid link token:', err);
+      console.error('[AccountCreationWizard] Error fetching Plaid link token:', err);
       setPlaidError(err.message || 'Bank connection unavailable');
     } finally {
       setPlaidLoading(false);
@@ -634,8 +640,12 @@ export default function AccountCreationWizard({
 
   useEffect(() => {
     if (open && currentStep === 'connect-bank') {
+      console.log('[AccountCreationWizard] Reached connect-bank step, loading institutions and Plaid token...');
       getAvailableInstitutions()
-        .then(institutions => setAvailableInstitutions(institutions))
+        .then(institutions => {
+          console.log('[AccountCreationWizard] Loaded institutions:', institutions.length);
+          setAvailableInstitutions(institutions);
+        })
         .catch(error => {
           console.error('Error loading institutions:', error);
         });
@@ -1669,10 +1679,17 @@ export default function AccountCreationWizard({
           </Button>
 
           {plaidError && (
-            <p className="text-xs text-amber-600 flex items-center gap-1.5">
-              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-              {plaidError}
-            </p>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-xs text-amber-800 flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                <span className="font-medium">{plaidError}</span>
+              </p>
+              {plaidError.includes('unavailable') || plaidError.includes('credentials') || plaidError.includes('configured') ? (
+                <p className="text-[11px] text-amber-600 mt-1.5 ml-5">
+                  Plaid integration requires API credentials. Please use demo institutions below or add accounts manually.
+                </p>
+              ) : null}
+            </div>
           )}
 
           <p className="text-[11px] text-gray-400 text-center">
