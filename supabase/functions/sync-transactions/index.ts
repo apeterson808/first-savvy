@@ -185,10 +185,10 @@ Deno.serve(async (req: Request) => {
             description: txn.merchant_name || txn.name,
             original_description: txn.name,
             amount: txn.amount,
-            type: txn.amount > 0 ? "debit" : "credit",
-            original_type: txn.amount > 0 ? "debit" : "credit",
+            type: txn.amount > 0 ? "expense" : "income",
+            original_type: txn.amount > 0 ? "expense" : "income",
             status: txn.pending ? "pending" : "posted",
-            source: "plaid",
+            source: "api",
             payment_method: txn.payment_channel || null,
           };
         })
@@ -226,7 +226,7 @@ Deno.serve(async (req: Request) => {
             description: txn.merchant_name || txn.name,
             original_description: txn.name,
             amount: txn.amount,
-            type: txn.amount > 0 ? "debit" : "credit",
+            type: txn.amount > 0 ? "expense" : "income",
             status: txn.pending ? "pending" : "posted",
             payment_method: txn.payment_channel || null,
             updated_at: new Date().toISOString(),
