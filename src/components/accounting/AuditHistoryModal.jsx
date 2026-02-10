@@ -17,8 +17,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { AlertCircle, CheckCircle2, Clock, FileText } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/components/utils/formatters';
 import { getJournalEntryAuditTrail } from '@/api/journalEntries';
@@ -67,26 +66,10 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
   }, [auditTrail]);
 
   const getEntryLabel = (entry) => {
-    if (entry.isCurrentEntry && !entry.isVoided) {
-      return { text: 'Current Active Entry', icon: CheckCircle2, color: 'text-green-600' };
-    }
     if (entry.reversesEntryId) {
-      return { text: 'Reversal Entry', icon: AlertCircle, color: 'text-orange-600' };
+      return 'Reversal';
     }
-    if (entry.isVoided) {
-      return { text: 'Voided Entry', icon: AlertCircle, color: 'text-gray-500' };
-    }
-    if (!entry.reversedByEntryId && !entry.isCurrentEntry) {
-      return { text: 'Original Entry', icon: FileText, color: 'text-blue-600' };
-    }
-    return { text: 'Historical Entry', icon: Clock, color: 'text-gray-600' };
-  };
-
-  const getEntryBadgeVariant = (entry) => {
-    if (entry.isCurrentEntry && !entry.isVoided) return 'default';
-    if (entry.reversesEntryId) return 'secondary';
-    if (entry.isVoided) return 'outline';
-    return 'secondary';
+    return 'Original';
   };
 
   return (
@@ -115,26 +98,18 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
           <div className="space-y-6">
             {groupedByEntry.map((entry, index) => {
               const label = getEntryLabel(entry);
-              const Icon = label.icon;
               const totalDebits = entry.lines.reduce((sum, line) => sum + (Number(line.debitAmount) || 0), 0);
               const totalCredits = entry.lines.reduce((sum, line) => sum + (Number(line.creditAmount) || 0), 0);
 
               return (
-                <Card
-                  key={entry.entryId}
-                  className={entry.isVoided ? 'opacity-60 border-dashed' : ''}
-                >
+                <Card key={entry.entryId}>
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <CardTitle className="text-lg flex items-center gap-2">
-                          <Icon className={`h-4 w-4 ${label.color}`} />
-                          <span className={entry.isVoided ? 'line-through' : ''}>
-                            {entry.entryNumber}
-                          </span>
-                          <Badge variant={getEntryBadgeVariant(entry)}>
-                            {label.text}
-                          </Badge>
+                          <FileText className="h-4 w-4" />
+                          <span>{entry.entryNumber}</span>
+                          <Badge variant="outline">{label}</Badge>
                         </CardTitle>
                         <div className="text-sm text-muted-foreground">
                           {entry.description}
@@ -155,16 +130,6 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
                       <Badge variant="outline" className="text-xs">
                         Source: {entry.source}
                       </Badge>
-                      {entry.reversesEntryId && (
-                        <Badge variant="outline" className="text-xs text-orange-600">
-                          Reverses entry
-                        </Badge>
-                      )}
-                      {entry.reversedByEntryId && !entry.isCurrentEntry && (
-                        <Badge variant="outline" className="text-xs text-red-600">
-                          Reversed
-                        </Badge>
-                      )}
                     </div>
                   </CardHeader>
                   <CardContent>
@@ -217,30 +182,6 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
                 </Card>
               );
             })}
-          </div>
-        )}
-
-        {groupedByEntry.length > 0 && (
-          <div className="mt-4 p-4 bg-muted/50 rounded-lg text-sm text-muted-foreground">
-            <div className="font-semibold mb-2">Legend:</div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-green-600" />
-                <span>Current Active Entry - Currently posted to accounts</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <FileText className="h-4 w-4 text-blue-600" />
-                <span>Original Entry - First entry created</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <span>Reversal Entry - Created when undoing post</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-gray-500" />
-                <span>Voided Entry - Reversed and no longer active</span>
-              </div>
-            </div>
           </div>
         )}
       </DialogContent>
