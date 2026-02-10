@@ -68,7 +68,7 @@ export async function undoPostTransaction(transactionId, reason = null) {
 
 /**
  * Undo post a transfer pair (both transactions)
- * Creates ONE reversal journal entry for the shared JE
+ * Creates reversal journal entries for both transactions
  *
  * @param {string} pairId - UUID of the transfer pair
  * @param {string} reason - Optional reason for unposting
@@ -76,8 +76,29 @@ export async function undoPostTransaction(transactionId, reason = null) {
  */
 export async function undoPostTransferPair(pairId, reason = null) {
   try {
+    // First, fetch both transactions in the pair
+    const { data: transactions, error: fetchError } = await firstsavvy
+      .from('transactions')
+      .select('id')
+      .eq('transfer_pair_id', pairId)
+      .eq('status', 'posted');
+
+    if (fetchError) {
+      console.error('Error fetching transfer pair transactions:', fetchError);
+      return { data: null, error: fetchError };
+    }
+
+    if (!transactions || transactions.length !== 2) {
+      return {
+        data: null,
+        error: { message: `Expected 2 posted transactions in pair, found ${transactions?.length || 0}` }
+      };
+    }
+
+    // Call the RPC with both transaction IDs
     const { data, error } = await firstsavvy.rpc('undo_post_transfer_pair', {
-      p_pair_id: pairId,
+      p_from_transaction_id: transactions[0].id,
+      p_to_transaction_id: transactions[1].id,
       p_reason: reason
     });
 
@@ -95,7 +116,7 @@ export async function undoPostTransferPair(pairId, reason = null) {
 
 /**
  * Undo post a credit card payment pair (both transactions)
- * Creates ONE reversal journal entry for the shared JE
+ * Creates reversal journal entries for both transactions
  *
  * @param {string} paymentId - UUID of the payment pair
  * @param {string} reason - Optional reason for unposting
@@ -103,8 +124,40 @@ export async function undoPostTransferPair(pairId, reason = null) {
  */
 export async function undoPostCCPaymentPair(paymentId, reason = null) {
   try {
+    // First, fetch both transactions in the pair
+    const { data: transactions, error: fetchError } = await firstsavvy
+      .from('transactions')
+      .select('id, type')
+      .eq('cc_payment_id', paymentId)
+      .eq('status', 'posted');
+
+    if (fetchError) {
+      console.error('Error fetching payment pair transactions:', fetchError);
+      return { data: null, error: fetchError };
+    }
+
+    if (!transactions || transactions.length !== 2) {
+      return {
+        data: null,
+        error: { message: `Expected 2 posted transactions in pair, found ${transactions?.length || 0}` }
+      };
+    }
+
+    // Identify which is the bank transaction and which is the credit card transaction
+    const bankTransaction = transactions.find(t => t.type === 'credit_card_payment');
+    const ccTransaction = transactions.find(t => t.type === 'expense' || t.type === 'income');
+
+    if (!bankTransaction || !ccTransaction) {
+      return {
+        data: null,
+        error: { message: 'Could not identify bank and credit card transactions in pair' }
+      };
+    }
+
+    // Call the RPC with both transaction IDs
     const { data, error } = await firstsavvy.rpc('undo_post_cc_payment_pair', {
-      p_payment_id: paymentId,
+      p_bank_transaction_id: bankTransaction.id,
+      p_cc_transaction_id: ccTransaction.id,
       p_reason: reason
     });
 
