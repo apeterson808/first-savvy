@@ -16,16 +16,17 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { FileText } from 'lucide-react';
+import { FileText, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/components/utils/formatters';
-import { getJournalEntryAuditTrail } from '@/api/journalEntries';
+import { getJournalEntryEditHistory } from '@/api/journalEntries';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 
-export default function AuditHistoryModal({ open, onClose, transactionId }) {
-  const { data: auditTrail = [], isLoading } = useQuery({
-    queryKey: ['journalEntryAuditTrail', transactionId],
-    queryFn: () => getJournalEntryAuditTrail(transactionId),
-    enabled: open && !!transactionId,
+export default function AuditHistoryModal({ open, onClose, journalEntryId, entryNumber }) {
+  const { data: editHistory = [], isLoading } = useQuery({
+    queryKey: ['journalEntryEditHistory', journalEntryId],
+    queryFn: () => getJournalEntryEditHistory(journalEntryId),
+    enabled: open && !!journalEntryId,
   });
 
   return (
@@ -34,81 +35,133 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Complete journal entry history including reversals, edits, and all accounting changes. Entries marked as "reversed" have been undone, and "reversal" entries are the system-generated corrections.
+            Edit History for Journal Entry {entryNumber}
           </DialogTitle>
+          <DialogDescription>
+            Complete history of all edits made to this journal entry.
+          </DialogDescription>
         </DialogHeader>
 
         {isLoading ? (
           <div className="py-8 text-center text-muted-foreground">
-            Loading audit trail...
+            Loading edit history...
           </div>
-        ) : auditTrail.length === 0 ? (
+        ) : editHistory.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
-            No journal entries found for this transaction.
+            No edits have been made to this journal entry.
           </div>
         ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Action Time</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Reference</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Offsetting Account</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {auditTrail.map((line) => (
-                  <TableRow key={line.line_id}>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(line.created_at), 'MMM d, h:mm a')}
-                    </TableCell>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(line.entry_date), 'MMM d, yyyy')}
-                    </TableCell>
-                    <TableCell className="font-mono text-xs">
-                      {line.entry_number}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="capitalize">
-                        {line.entry_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-xs truncate" title={line.description}>
-                        {line.description}
+          <div className="space-y-4">
+            {editHistory.map((edit, index) => {
+              const oldState = edit.metadata?.old_state;
+              const newState = edit.metadata?.new_state;
+              const editReason = edit.metadata?.edit_reason;
+
+              return (
+                <Accordion key={edit.id} type="single" collapsible>
+                  <AccordionItem value="edit" className="border rounded-lg px-4">
+                    <AccordionTrigger className="hover:no-underline">
+                      <div className="flex items-center justify-between w-full pr-4">
+                        <div className="flex items-center gap-3">
+                          <Clock className="h-4 w-4 text-muted-foreground" />
+                          <div className="text-left">
+                            <div className="font-medium">
+                              {format(new Date(edit.created_at), 'MMM d, yyyy h:mm a')}
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {editReason || edit.description}
+                            </div>
+                          </div>
+                        </div>
+                        <Badge variant={index === 0 ? "default" : "secondary"}>
+                          {index === 0 ? "Latest Edit" : `Edit ${editHistory.length - index}`}
+                        </Badge>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{line.account_name}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {line.account_number}
+                    </AccordionTrigger>
+                    <AccordionContent>
+                      <div className="space-y-4 pt-4">
+                        {oldState && newState && (
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <h4 className="font-medium mb-2 text-sm text-muted-foreground">Before</h4>
+                              <div className="text-sm space-y-2">
+                                <div>
+                                  <span className="font-medium">Description: </span>
+                                  {oldState.description}
+                                </div>
+                                <div className="rounded-md border">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="text-xs">Account</TableHead>
+                                        <TableHead className="text-xs text-right">Debit</TableHead>
+                                        <TableHead className="text-xs text-right">Credit</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {oldState.lines?.map((line) => (
+                                        <TableRow key={line.line_id}>
+                                          <TableCell className="text-xs">
+                                            <div>{line.account_name}</div>
+                                            <div className="text-muted-foreground">{line.account_number}</div>
+                                          </TableCell>
+                                          <TableCell className="text-xs text-right">
+                                            {line.debit_amount ? formatCurrency(line.debit_amount) : ''}
+                                          </TableCell>
+                                          <TableCell className="text-xs text-right">
+                                            {line.credit_amount ? formatCurrency(line.credit_amount) : ''}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            </div>
+                            <div>
+                              <h4 className="font-medium mb-2 text-sm text-muted-foreground">After</h4>
+                              <div className="text-sm space-y-2">
+                                <div>
+                                  <span className="font-medium">Description: </span>
+                                  {newState.description}
+                                </div>
+                                <div className="rounded-md border">
+                                  <Table>
+                                    <TableHeader>
+                                      <TableRow>
+                                        <TableHead className="text-xs">Account</TableHead>
+                                        <TableHead className="text-xs text-right">Debit</TableHead>
+                                        <TableHead className="text-xs text-right">Credit</TableHead>
+                                      </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                      {newState.lines?.map((line) => (
+                                        <TableRow key={line.line_id}>
+                                          <TableCell className="text-xs">
+                                            <div>{line.account_name}</div>
+                                            <div className="text-muted-foreground">{line.account_number}</div>
+                                          </TableCell>
+                                          <TableCell className="text-xs text-right">
+                                            {line.debit_amount ? formatCurrency(line.debit_amount) : ''}
+                                          </TableCell>
+                                          <TableCell className="text-xs text-right">
+                                            {line.credit_amount ? formatCurrency(line.credit_amount) : ''}
+                                          </TableCell>
+                                        </TableRow>
+                                      ))}
+                                    </TableBody>
+                                  </Table>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {line.debit_amount ? formatCurrency(line.debit_amount) : ''}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {line.credit_amount ? formatCurrency(line.credit_amount) : ''}
-                    </TableCell>
-                    <TableCell>
-                      {line.is_voided ? (
-                        <Badge variant="destructive">Reversed</Badge>
-                      ) : line.reverses_entry_id ? (
-                        <Badge variant="outline">Reversal</Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              );
+            })}
           </div>
         )}
       </DialogContent>

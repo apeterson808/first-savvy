@@ -212,10 +212,14 @@ export async function diagnoseAccountJournalLines(accountId) {
   return data || [];
 }
 
-export async function getJournalEntryAuditTrail(transactionId) {
-  const { data, error } = await supabase.rpc('get_journal_entry_audit_trail', {
-    p_transaction_id: transactionId
-  });
+export async function getJournalEntryEditHistory(journalEntryId) {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('*')
+    .eq('entity_type', 'journal_entry')
+    .eq('entity_id', journalEntryId)
+    .eq('action', 'edit_journal_entry')
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   return data || [];

@@ -3,14 +3,16 @@ import { firstsavvy } from './firstsavvyClient';
 /**
  * transactionService - Service Boundary Enforcement
  *
- * This service is the ONLY authorized way to change transaction status.
+ * This service is the ONLY authorized way to change transaction status and edit journal entries.
  * All status changes MUST go through these methods to maintain:
- * - Proper journal entry creation/reversal
+ * - Proper journal entry creation
  * - Audit trail integrity
  * - Security boundaries
  *
  * DO NOT directly call supabase.from('transactions').update({status})
  * The database will reject direct status updates (enforced by trigger).
+ *
+ * Journal entries are edited in place with full audit logging (no reversal system).
  */
 
 /**
@@ -40,135 +42,84 @@ export async function postTransaction(transactionId) {
 }
 
 /**
- * Undo post a transaction (posted → pending)
- * Creates a reversal journal entry
+ * Get journal entry details for editing
  *
- * @param {string} transactionId - UUID of transaction to undo
- * @param {string} reason - Optional reason for unposting
+ * @param {string} entryId - UUID of journal entry
  * @returns {Promise<{data: object, error: object}>}
  */
-export async function undoPostTransaction(transactionId, reason = null) {
+export async function getJournalEntry(entryId) {
   try {
-    const { data, error } = await firstsavvy.rpc('undo_post_transaction', {
-      p_transaction_id: transactionId,
-      p_reason: reason
-    });
+    const { data: entry, error: entryError } = await firstsavvy
+      .from('journal_entries')
+      .select('*')
+      .eq('id', entryId)
+      .single();
 
-    if (error) {
-      console.error('Error unposting transaction:', error);
-      return { data: null, error };
+    if (entryError) {
+      console.error('Error fetching journal entry:', entryError);
+      return { data: null, error: entryError };
     }
 
-    return { data, error: null };
+    const { data: lines, error: linesError } = await firstsavvy
+      .from('journal_entry_lines')
+      .select(`
+        *,
+        account:user_chart_of_accounts!account_id (
+          id,
+          account_number,
+          account_name,
+          display_name,
+          class
+        )
+      `)
+      .eq('journal_entry_id', entryId)
+      .order('line_number');
+
+    if (linesError) {
+      console.error('Error fetching journal entry lines:', linesError);
+      return { data: null, error: linesError };
+    }
+
+    return {
+      data: {
+        entry,
+        lines
+      },
+      error: null
+    };
   } catch (err) {
-    console.error('Exception unposting transaction:', err);
+    console.error('Exception fetching journal entry:', err);
     return { data: null, error: err };
   }
 }
 
 /**
- * Undo post a transfer pair (both transactions)
- * Creates reversal journal entries for both transactions
+ * Edit a journal entry in place
+ * Validates debits equal credits, captures audit trail
  *
- * @param {string} pairId - UUID of the transfer pair
- * @param {string} reason - Optional reason for unposting
+ * @param {string} entryId - UUID of journal entry to edit
+ * @param {string} description - Updated description
+ * @param {Array} lines - Array of line objects {account_id, debit_amount, credit_amount, description}
+ * @param {string} reason - Reason for the edit
  * @returns {Promise<{data: object, error: object}>}
  */
-export async function undoPostTransferPair(pairId, reason = null) {
+export async function editJournalEntry(entryId, description, lines, reason = null) {
   try {
-    // First, fetch both transactions in the pair
-    const { data: transactions, error: fetchError } = await firstsavvy
-      .from('transactions')
-      .select('id')
-      .eq('transfer_pair_id', pairId)
-      .eq('status', 'posted');
-
-    if (fetchError) {
-      console.error('Error fetching transfer pair transactions:', fetchError);
-      return { data: null, error: fetchError };
-    }
-
-    if (!transactions || transactions.length !== 2) {
-      return {
-        data: null,
-        error: { message: `Expected 2 posted transactions in pair, found ${transactions?.length || 0}` }
-      };
-    }
-
-    // Call the RPC with both transaction IDs
-    const { data, error } = await firstsavvy.rpc('undo_post_transfer_pair', {
-      p_from_transaction_id: transactions[0].id,
-      p_to_transaction_id: transactions[1].id,
-      p_reason: reason
+    const { data, error } = await firstsavvy.rpc('update_journal_entry', {
+      p_entry_id: entryId,
+      p_new_description: description,
+      p_lines: lines,
+      p_edit_reason: reason
     });
 
     if (error) {
-      console.error('Error unposting transfer pair:', error);
+      console.error('Error editing journal entry:', error);
       return { data: null, error };
     }
 
     return { data, error: null };
   } catch (err) {
-    console.error('Exception unposting transfer pair:', err);
-    return { data: null, error: err };
-  }
-}
-
-/**
- * Undo post a credit card payment pair (both transactions)
- * Creates reversal journal entries for both transactions
- *
- * @param {string} paymentId - UUID of the payment pair
- * @param {string} reason - Optional reason for unposting
- * @returns {Promise<{data: object, error: object}>}
- */
-export async function undoPostCCPaymentPair(paymentId, reason = null) {
-  try {
-    // First, fetch both transactions in the pair
-    const { data: transactions, error: fetchError } = await firstsavvy
-      .from('transactions')
-      .select('id, type')
-      .eq('cc_payment_id', paymentId)
-      .eq('status', 'posted');
-
-    if (fetchError) {
-      console.error('Error fetching payment pair transactions:', fetchError);
-      return { data: null, error: fetchError };
-    }
-
-    if (!transactions || transactions.length !== 2) {
-      return {
-        data: null,
-        error: { message: `Expected 2 posted transactions in pair, found ${transactions?.length || 0}` }
-      };
-    }
-
-    // Identify which is the bank transaction and which is the credit card transaction
-    const bankTransaction = transactions.find(t => t.type === 'credit_card_payment');
-    const ccTransaction = transactions.find(t => t.type === 'expense' || t.type === 'income');
-
-    if (!bankTransaction || !ccTransaction) {
-      return {
-        data: null,
-        error: { message: 'Could not identify bank and credit card transactions in pair' }
-      };
-    }
-
-    // Call the RPC with both transaction IDs
-    const { data, error } = await firstsavvy.rpc('undo_post_cc_payment_pair', {
-      p_bank_transaction_id: bankTransaction.id,
-      p_cc_transaction_id: ccTransaction.id,
-      p_reason: reason
-    });
-
-    if (error) {
-      console.error('Error unposting payment pair:', error);
-      return { data: null, error };
-    }
-
-    return { data, error: null };
-  } catch (err) {
-    console.error('Exception unposting payment pair:', err);
+    console.error('Exception editing journal entry:', err);
     return { data: null, error: err };
   }
 }
@@ -195,25 +146,3 @@ export async function postTransactionsBatch(transactionIds) {
   return { data: results, errors };
 }
 
-/**
- * Undo post multiple transactions in batch
- *
- * @param {string[]} transactionIds - Array of transaction UUIDs
- * @param {string} reason - Optional reason for unposting
- * @returns {Promise<{data: object[], errors: object[]}>}
- */
-export async function undoPostTransactionsBatch(transactionIds, reason = null) {
-  const results = [];
-  const errors = [];
-
-  for (const id of transactionIds) {
-    const result = await undoPostTransaction(id, reason);
-    if (result.error) {
-      errors.push({ id, error: result.error });
-    } else {
-      results.push(result.data);
-    }
-  }
-
-  return { data: results, errors };
-}

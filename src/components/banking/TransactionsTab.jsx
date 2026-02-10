@@ -62,6 +62,7 @@ import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { useAuth } from '@/contexts/AuthContext';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
+import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
@@ -120,6 +121,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [ruleSourceTransaction, setRuleSourceTransaction] = useState(null);
   const [editingRule, setEditingRule] = useState(null);
   const [ruleMode, setRuleMode] = useState('create');
+  const [editJournalEntryDialogOpen, setEditJournalEntryDialogOpen] = useState(false);
+  const [editingJournalEntryId, setEditingJournalEntryId] = useState(null);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -2335,45 +2338,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return (
                                 <button
                                   className="text-xs text-blue-600 hover:underline"
-                                  onClick={async (e) => {
+                                  onClick={(e) => {
                                     e?.stopPropagation();
-
-                                    try {
-                                      // Use the proper undo RPC functions based on transaction type
-                                      let result;
-
-                                      if (transaction.type === 'transfer' && transaction.transfer_pair_id) {
-                                        result = await transactionService.undoPostTransferPair(
-                                          transaction.transfer_pair_id,
-                                          'User initiated undo'
-                                        );
-                                      } else if (transaction.type === 'credit_card_payment' && transaction.cc_payment_id) {
-                                        result = await transactionService.undoPostCCPaymentPair(
-                                          transaction.cc_payment_id,
-                                          'User initiated undo'
-                                        );
-                                      } else {
-                                        result = await transactionService.undoPostTransaction(
-                                          transaction.id,
-                                          'User initiated undo'
-                                        );
-                                      }
-
-                                      if (result.error) {
-                                        toast.error('Failed to undo posting: ' + result.error.message);
-                                      } else {
-                                        toast.success('Transaction unposted successfully');
-                                        queryClient.invalidateQueries(['transactions']);
-                                        queryClient.invalidateQueries(['accounts']);
-                                        queryClient.invalidateQueries(['journal-entries']);
-                                      }
-                                    } catch (error) {
-                                      console.error('Error undoing post:', error);
-                                      toast.error('Failed to undo posting');
+                                    if (transaction.current_journal_entry_id) {
+                                      setEditingJournalEntryId(transaction.current_journal_entry_id);
+                                      setEditJournalEntryDialogOpen(true);
+                                    } else {
+                                      toast.error('No journal entry found for this transaction');
                                     }
                                   }}
                                 >
-                                  Undo
+                                  Edit
                                 </button>
                               );
                             }
@@ -3706,6 +3681,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             transaction={ruleSourceTransaction}
                             profileId={activeProfile?.id}
                             rule={editingRule}
+                          />
+
+                          <EditJournalEntryDialog
+                            open={editJournalEntryDialogOpen}
+                            onOpenChange={(open) => {
+                              setEditJournalEntryDialogOpen(open);
+                              if (!open) {
+                                setEditingJournalEntryId(null);
+                              }
+                            }}
+                            entryId={editingJournalEntryId}
+                            onSuccess={() => {
+                              queryClient.invalidateQueries(['transactions']);
+                              queryClient.invalidateQueries(['accounts']);
+                              queryClient.invalidateQueries(['journal-entries']);
+                            }}
                           />
     </>
   );
