@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
+import { usePlaidLink } from 'react-plaid-link';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -54,7 +55,9 @@ import {
   Search,
   Building,
   AlertCircle,
-  Circle
+  Circle,
+  Link2,
+  RefreshCw
 } from 'lucide-react';
 import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
@@ -375,6 +378,11 @@ export default function AccountCreationWizard({
   const [originalBeginningBalance, setOriginalBeginningBalance] = useState(null);
   const [statementBalances, setStatementBalances] = useState({ previous: null, new: null });
 
+  const [plaidLinkToken, setPlaidLinkToken] = useState(null);
+  const [plaidLoading, setPlaidLoading] = useState(false);
+  const [plaidError, setPlaidError] = useState(null);
+  const [plaidItemId, setPlaidItemId] = useState(null);
+
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
     queryFn: async () => {
@@ -436,6 +444,131 @@ export default function AccountCreationWizard({
     enabled: !!activeProfile?.id && open
   });
 
+  const fetchPlaidLinkToken = useCallback(async () => {
+    if (!user || plaidLinkToken) return;
+    setPlaidLoading(true);
+    setPlaidError(null);
+    try {
+      const result = await firstsavvy.functions.createPlaidLinkToken({});
+      if (result.link_token) {
+        setPlaidLinkToken(result.link_token);
+      } else {
+        setPlaidError('Could not initialize bank connection');
+      }
+    } catch (err) {
+      console.error('Error fetching Plaid link token:', err);
+      setPlaidError(err.message || 'Bank connection unavailable');
+    } finally {
+      setPlaidLoading(false);
+    }
+  }, [user, plaidLinkToken]);
+
+  const handlePlaidSuccess = useCallback(async (publicToken, metadata) => {
+    setIsConnecting(true);
+    setConnectionProgress('Exchanging credentials...');
+
+    try {
+      const exchangeResult = await firstsavvy.functions.exchangePlaidPublicToken({
+        public_token: publicToken,
+        institution: metadata.institution,
+        accounts: metadata.accounts,
+        profileId: activeProfile?.id
+      });
+
+      if (!exchangeResult.success) {
+        throw new Error('Failed to link accounts');
+      }
+
+      setPlaidItemId(exchangeResult.plaid_item_id);
+      setSelectedInstitution({
+        id: metadata.institution?.institution_id,
+        name: metadata.institution?.name
+      });
+
+      setConnectionProgress('Syncing transactions...');
+      const syncResult = await firstsavvy.functions.syncPlaidTransactions({
+        plaid_item_id: exchangeResult.plaid_item_id
+      });
+
+      setConnectionProgress('Loading accounts...');
+      const { data: linkedAccounts } = await firstsavvy
+        .from('user_chart_of_accounts')
+        .select('*')
+        .eq('plaid_item_id', exchangeResult.plaid_item_id);
+
+      const { data: allTransactions } = await firstsavvy
+        .from('transactions')
+        .select('*')
+        .in('bank_account_id', (linkedAccounts || []).map(a => a.id))
+        .order('date', { ascending: false });
+
+      const accountsWithData = (linkedAccounts || []).map(account => {
+        const acctTransactions = (allTransactions || []).filter(
+          t => t.bank_account_id === account.id
+        );
+        const dates = acctTransactions.map(t => t.date).filter(Boolean);
+        const startDate = dates.length > 0 ? dates[dates.length - 1] : null;
+        const endDate = dates.length > 0 ? dates[0] : null;
+
+        const typeMap = {
+          'Checking': 'checking',
+          'Savings': 'savings',
+          'Credit Card': 'credit_card',
+          'Mortgage': 'mortgage',
+          'Auto Loan': 'loan',
+          'Student Loan': 'loan',
+          'Personal Loan': 'loan',
+          'Brokerage': 'investment',
+          'Retirement': 'investment'
+        };
+
+        return {
+          id: account.id,
+          plaid_account_id: account.plaid_account_id,
+          name: account.display_name,
+          type: typeMap[account.account_type] || 'checking',
+          last_four: account.account_number_last4 || '',
+          current_balance: account.current_balance || 0,
+          beginning_balance: null,
+          transaction_count: acctTransactions.length,
+          transactions: acctTransactions.map(t => ({
+            date: t.date,
+            description: t.description,
+            amount: Math.abs(t.amount),
+            type: t.type
+          })),
+          date_range: { start: startDate, end: endDate },
+          selected: false,
+          isPlaid: true,
+          chartAccountId: account.id
+        };
+      });
+
+      setDiscoveredAccounts(accountsWithData);
+      setSelectedAccountsToImport([]);
+      setAccountConfigurations({});
+      setImportAccountMappings({});
+      setIsConnecting(false);
+      setCurrentStep('accounts-discovered');
+      toast.success(`Connected to ${metadata.institution?.name}!`);
+    } catch (error) {
+      console.error('Plaid connection error:', error);
+      toast.error(error.message || 'Failed to connect bank account');
+      setIsConnecting(false);
+      setConnectionProgress('');
+    }
+  }, [activeProfile?.id]);
+
+  const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
+    token: plaidLinkToken,
+    onSuccess: handlePlaidSuccess,
+    onExit: (err) => {
+      if (err) {
+        console.error('Plaid Link exit error:', err);
+      }
+    }
+  });
+
   useEffect(() => {
     if (!open) {
       resetWizard();
@@ -493,6 +626,10 @@ export default function AccountCreationWizard({
     setConnectionProgress('');
     setDiscoveredAccounts([]);
     setSelectedAccountsToImport([]);
+    setPlaidLinkToken(null);
+    setPlaidLoading(false);
+    setPlaidError(null);
+    setPlaidItemId(null);
   };
 
   useEffect(() => {
@@ -501,10 +638,10 @@ export default function AccountCreationWizard({
         .then(institutions => setAvailableInstitutions(institutions))
         .catch(error => {
           console.error('Error loading institutions:', error);
-          toast.error('Failed to load financial institutions');
         });
+      fetchPlaidLinkToken();
     }
-  }, [open, currentStep]);
+  }, [open, currentStep, fetchPlaidLinkToken]);
 
   // Scroll to new item in budget category preview
   useEffect(() => {
@@ -1501,51 +1638,100 @@ export default function AccountCreationWizard({
     }
 
     return (
-      <div className="space-y-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-          <Input
-            placeholder="Search for your bank or credit union..."
-            value={institutionSearch}
-            onChange={(e) => setInstitutionSearch(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        <div className="grid grid-cols-3 gap-4 max-w-md mx-auto min-h-[200px]">
-          {filteredInstitutions.length === 0 ? (
-            <div className="col-span-3 flex flex-col items-center justify-center py-8 text-gray-500">
-              <AlertCircle className="w-8 h-8 mb-2" />
-              <p>No institutions found</p>
+      <div className="space-y-5">
+        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 bg-blue-100 rounded-lg">
+              <Link2 className="w-5 h-5 text-blue-600" />
             </div>
-          ) : (
-            filteredInstitutions.map(institution => (
-              <button
-                key={institution.id}
-                onClick={() => handleInstitutionSelect(institution)}
-                className="flex flex-col items-center cursor-pointer transition-all hover:scale-105 p-4 rounded-lg hover:bg-gray-50"
-              >
-                <div
-                  className="rounded-full w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
-                  style={{ backgroundColor: institution.name.toLowerCase().includes('idaho central') ? '#003DA5' : '#52A5CE' }}
-                >
-                  <span className="text-white font-bold text-lg">
-                    {institution.name.split(' ').map(w => w[0]).join('').slice(0, 3)}
-                  </span>
-                </div>
-                <span className="text-xs font-medium text-gray-700 text-center leading-tight">{institution.name}</span>
-              </button>
-            ))
+            <div>
+              <h3 className="font-semibold text-gray-900">Connect Your Bank</h3>
+              <p className="text-xs text-gray-500">Securely link your account to automatically import transactions</p>
+            </div>
+          </div>
+
+          <Button
+            onClick={() => openPlaidLink()}
+            disabled={!plaidReady || plaidLoading}
+            className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-sm font-medium"
+          >
+            {plaidLoading ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Initializing...
+              </>
+            ) : (
+              <>
+                <Building2 className="w-4 h-4 mr-2" />
+                Connect Bank Account
+              </>
+            )}
+          </Button>
+
+          {plaidError && (
+            <p className="text-xs text-amber-600 flex items-center gap-1.5">
+              <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              {plaidError}
+            </p>
           )}
+
+          <p className="text-[11px] text-gray-400 text-center">
+            Powered by Plaid. Your credentials are never stored by FirstSavvy.
+          </p>
         </div>
 
-        <div className="text-center mt-6">
+        <div className="relative flex items-center gap-3">
+          <div className="flex-1 border-t border-gray-200" />
+          <span className="text-xs text-gray-400 font-medium">OR USE DEMO DATA</span>
+          <div className="flex-1 border-t border-gray-200" />
+        </div>
+
+        <div className="space-y-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Input
+              placeholder="Search demo institutions..."
+              value={institutionSearch}
+              onChange={(e) => setInstitutionSearch(e.target.value)}
+              className="pl-9 h-9 text-sm"
+            />
+          </div>
+
+          <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
+            {filteredInstitutions.length === 0 ? (
+              <div className="col-span-3 flex flex-col items-center justify-center py-4 text-gray-500">
+                <AlertCircle className="w-6 h-6 mb-1" />
+                <p className="text-xs">No institutions found</p>
+              </div>
+            ) : (
+              filteredInstitutions.map(institution => (
+                <button
+                  key={institution.id}
+                  onClick={() => handleInstitutionSelect(institution)}
+                  className="flex flex-col items-center cursor-pointer transition-all hover:scale-105 p-3 rounded-lg hover:bg-gray-50"
+                >
+                  <div
+                    className="rounded-full w-14 h-14 flex items-center justify-center shadow-md hover:shadow-lg transition-all mb-1.5"
+                    style={{ backgroundColor: institution.name.toLowerCase().includes('idaho central') ? '#003DA5' : '#52A5CE' }}
+                  >
+                    <span className="text-white font-bold text-sm">
+                      {institution.name.split(' ').map(w => w[0]).join('').slice(0, 3)}
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-medium text-gray-600 text-center leading-tight">{institution.name}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="text-center">
           <button
             onClick={() => {
               setSelectedCard(null);
               setCurrentStep('select-type');
             }}
-            className="text-sm text-gray-600 hover:text-gray-800 underline"
+            className="text-xs text-gray-500 hover:text-gray-700 underline"
           >
             Or add account manually
           </button>
@@ -1954,6 +2140,16 @@ export default function AccountCreationWizard({
             continue;
           }
 
+          if (account.isPlaid) {
+            if (config.displayName && config.displayName !== account.name) {
+              await firstsavvy
+                .from('user_chart_of_accounts')
+                .update({ display_name: config.displayName })
+                .eq('id', account.chartAccountId);
+            }
+            continue;
+          }
+
           let chartAccountId;
           let accountObject;
 
@@ -1999,13 +2195,6 @@ export default function AccountCreationWizard({
             const initialBalance = config.beginningBalance && config.beginningBalance !== ''
               ? parseFloat(config.beginningBalance)
               : null;
-
-            console.log(`Activating account ${config.displayName}:`, {
-              beginningBalance: config.beginningBalance,
-              parsedInitialBalance: initialBalance,
-              openingBalanceDate: openingBalanceDate,
-              accountClass: template.class
-            });
 
             chartAccountId = await activateTemplateAccount(activeProfile.id, template.account_number, {
               customDisplayName: config.displayName,
@@ -2056,7 +2245,6 @@ export default function AccountCreationWizard({
             }));
 
           if (transactionsToInsert.length > 0) {
-            console.log(`Inserting ${transactionsToInsert.length} transactions for account ${chartAccountId}`, transactionsToInsert[0]);
             const { data: insertedTxns, error: txnError } = await firstsavvy
               .from('transactions')
               .insert(transactionsToInsert)
@@ -2065,8 +2253,6 @@ export default function AccountCreationWizard({
             if (txnError) {
               console.error('Error inserting transactions:', txnError);
               toast.error(`Failed to insert transactions for ${config.displayName}: ${txnError.message}`);
-            } else {
-              console.log(`Successfully inserted ${insertedTxns?.length || 0} transactions`);
             }
           }
         }
@@ -3462,7 +3648,7 @@ export default function AccountCreationWizard({
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[600px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : 'h-[400px]'}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[540px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
