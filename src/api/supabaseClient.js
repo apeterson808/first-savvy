@@ -366,6 +366,21 @@ export const createSupabaseClient = () => {
         const { data, error } = await supabase.functions.invoke('send-payment-reminders', { body });
         if (error) throw error;
         return data;
+      },
+      async createPlaidLinkToken(body) {
+        const { data, error } = await supabase.functions.invoke('create-link-token', { body });
+        if (error) throw error;
+        return data;
+      },
+      async exchangePlaidPublicToken(body) {
+        const { data, error } = await supabase.functions.invoke('exchange-public-token', { body });
+        if (error) throw error;
+        return data;
+      },
+      async syncPlaidTransactions(body) {
+        const { data, error } = await supabase.functions.invoke('sync-transactions', { body });
+        if (error) throw error;
+        return data;
       }
     }
   };
