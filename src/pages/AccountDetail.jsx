@@ -1272,6 +1272,7 @@ export default function AccountDetail() {
                     <Table>
                       <TableHeader>
                         <TableRow className="h-8 bg-slate-100">
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Action Time</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
@@ -1279,7 +1280,6 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Debit</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Credit</TableHead>
-                          <TableHead className="py-1.5 text-[11px] font-semibold">Action Time</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Status</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
@@ -1296,6 +1296,9 @@ export default function AccountDetail() {
                                 : 'bg-slate-50/50 hover:bg-slate-100'
                             }`}
                           >
+                            <TableCell className="py-1 text-[11px] text-slate-600 whitespace-nowrap">
+                              {activity.createdAt ? format(new Date(activity.createdAt), 'MMM d, h:mm a') : '—'}
+                            </TableCell>
                             <TableCell className="whitespace-nowrap text-[11px] py-1">
                               {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                             </TableCell>
@@ -1325,9 +1328,6 @@ export default function AccountDetail() {
                             </TableCell>
                             <TableCell className={`text-right text-[11px] py-1 ${activity.isReversed ? 'text-slate-400' : ''}`}>
                               {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                            </TableCell>
-                            <TableCell className="py-1 text-[11px] text-slate-600 whitespace-nowrap">
-                              {activity.createdAt ? format(new Date(activity.createdAt), 'MMM d, h:mm a') : '—'}
                             </TableCell>
                             <TableCell className="py-1">
                               {activity.isReversed && (
