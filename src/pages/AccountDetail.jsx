@@ -171,7 +171,8 @@ export default function AccountDetail() {
     fetchNextPage: fetchNextAuditPage,
     hasNextPage: hasNextAuditPage,
     isFetchingNextPage: isFetchingNextAuditPage,
-    isLoading: auditHistoryLoading
+    isLoading: auditHistoryLoading,
+    error: auditHistoryError
   } = useInfiniteQuery({
     queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset],
     queryFn: async ({ pageParam = 0 }) => {
@@ -1152,6 +1153,11 @@ export default function AccountDetail() {
               <TabsContent value="register" className="mt-0">
             {journalLinesLoading ? (
               <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
+            ) : journalLinesError ? (
+              <div className="text-center py-6 space-y-2">
+                <p className="text-sm text-red-600">Failed to load register data</p>
+                <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+              </div>
             ) : allActivity.length === 0 ? (
               <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
             ) : (
@@ -1265,6 +1271,11 @@ export default function AccountDetail() {
                 </div>
                 {auditHistoryLoading ? (
                   <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
+                ) : auditHistoryError ? (
+                  <div className="text-center py-6 space-y-2">
+                    <p className="text-sm text-red-600">Failed to load audit history</p>
+                    <p className="text-xs text-slate-500">{auditHistoryError.message}</p>
+                  </div>
                 ) : allAuditActivity.length === 0 ? (
                   <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
                 ) : (
