@@ -399,7 +399,7 @@ export default function AccountDetail() {
         ...jl,
         id: jl.line_id,
         activityType: 'posted',
-        displayDate: jl.entry_date,
+        displayDate: jl.transaction_date || jl.entry_date,
         displayDescription: jl.line_description || jl.entry_description,
         debitAmount: jl.debit_amount,
         creditAmount: jl.credit_amount,
