@@ -67,9 +67,12 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
 
   const getEntryLabel = (entry) => {
     if (entry.reversesEntryId) {
-      return 'Reversal';
+      return 'Reversed';
     }
-    return 'Original';
+    if (entry.entryType === 'transaction') {
+      return 'Posted';
+    }
+    return 'Adjustment';
   };
 
   return (
@@ -81,8 +84,8 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
             Journal Entry Audit Trail
           </DialogTitle>
           <DialogDescription>
-            Complete history of all journal entries for this transaction, including original entries,
-            reversals, and re-posted entries.
+            Complete history of all journal entries for this transaction. Entries with the same reference
+            number are grouped together, with timestamps showing the chronological order of events.
           </DialogDescription>
         </DialogHeader>
 
@@ -123,14 +126,13 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
                       </div>
                     </div>
 
-                    <div className="flex gap-2 mt-2">
-                      <Badge variant="outline" className="text-xs">
-                        Type: {entry.entryType}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        Source: {entry.source}
-                      </Badge>
-                    </div>
+                    {entry.source && (
+                      <div className="flex gap-2 mt-2">
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {entry.source.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                    )}
                   </CardHeader>
                   <CardContent>
                     <Table>
