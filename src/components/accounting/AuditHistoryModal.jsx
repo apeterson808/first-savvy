@@ -121,7 +121,7 @@ export default function AuditHistoryModal({ open, onClose, transactionId }) {
                       <div className="text-right text-sm text-muted-foreground">
                         <div>{format(new Date(entry.entryDate), 'MMM d, yyyy')}</div>
                         <div className="text-xs">
-                          {format(new Date(entry.createdAt), 'MMM d, yyyy h:mm a')}
+                          Created: {format(new Date(entry.createdAt), 'MMM d, yyyy h:mm a')}
                         </div>
                       </div>
                     </div>
