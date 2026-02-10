@@ -410,10 +410,6 @@ export default function AccountDetail() {
         entryType,
         offsettingAccounts: offsettingAccountsDisplay,
         runningBalance: parseFloat(jl.running_balance || 0),
-        isReversed: jl.is_reversed,
-        isReversal: jl.is_reversal,
-        reversedByEntryNumber: jl.reversed_by_entry_number,
-        reversesEntryNumber: jl.reverses_entry_number,
         createdAt: jl.created_at
       };
     });
@@ -1265,8 +1261,7 @@ export default function AccountDetail() {
               <TabsContent value="audit" className="mt-0">
                 <div className="mb-2 px-1">
                   <p className="text-xs text-slate-600">
-                    Complete journal entry history including reversals, edits, and all accounting changes.
-                    Entries marked as "reversed" have been undone, and "reversal" entries are the system-generated corrections.
+                    Complete journal entry history including edits and all accounting changes.
                   </p>
                 </div>
                 {auditHistoryLoading ? (
@@ -1291,7 +1286,6 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Debit</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Credit</TableHead>
-                          <TableHead className="py-1.5 text-[11px] font-semibold">Status</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1300,8 +1294,6 @@ export default function AccountDetail() {
                           <TableRow
                             key={`${activity.id || index}`}
                             className={`h-7 ${
-                              activity.isReversed ? 'bg-burgundy/5' :
-                              activity.isReversal ? 'bg-amber-50/50' :
                               index % 2 === 0
                                 ? 'bg-white hover:bg-slate-50'
                                 : 'bg-slate-50/50 hover:bg-slate-100'
@@ -1327,44 +1319,18 @@ export default function AccountDetail() {
                               </Badge>
                             </TableCell>
                             <TableCell className="py-1 max-w-[250px]">
-                              <div className={`text-[11px] truncate ${activity.isReversed ? 'line-through text-slate-400' : ''}`}>
+                              <div className="text-[11px] truncate">
                                 {activity.displayDescription}
                               </div>
                             </TableCell>
                             <TableCell className="text-[11px] text-slate-600 py-1">
                               {activity.offsettingAccounts || '—'}
                             </TableCell>
-                            <TableCell className={`text-right text-[11px] py-1 ${activity.isReversed ? 'text-slate-400' : ''}`}>
+                            <TableCell className="text-right text-[11px] py-1">
                               {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
                             </TableCell>
-                            <TableCell className={`text-right text-[11px] py-1 ${activity.isReversed ? 'text-slate-400' : ''}`}>
+                            <TableCell className="text-right text-[11px] py-1">
                               {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                            </TableCell>
-                            <TableCell className="py-1">
-                              {activity.isReversed && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Badge variant="secondary" className="text-[10px] h-5">Reversed</Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-xs">Reversed by {activity.reversedByEntryNumber}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
-                              {activity.isReversal && (
-                                <TooltipProvider>
-                                  <Tooltip>
-                                    <TooltipTrigger>
-                                      <Badge variant="outline" className="text-[10px] h-5 border-amber-500 text-amber-700">Reversal</Badge>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="text-xs">Reverses {activity.reversesEntryNumber}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TooltipProvider>
-                              )}
                             </TableCell>
                             <TableCell className="py-1">
                               <div className="flex items-center gap-1">
