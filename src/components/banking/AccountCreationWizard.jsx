@@ -2019,7 +2019,7 @@ export default function AccountCreationWizard({
       ) || [];
 
       return (
-        <div className="space-y-5 max-w-lg mx-auto">
+        <div className="space-y-4 max-w-lg mx-auto">
           <div>
             <Label htmlFor="displayName">Display Name*</Label>
             <div className="relative">
@@ -2041,6 +2041,50 @@ export default function AccountCreationWizard({
                   </Badge>
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="institutionName">Bank/Institution</Label>
+              <Input
+                id="institutionName"
+                value={formData.institutionName || ''}
+                onChange={(e) => updateFormData('institutionName', e.target.value)}
+                placeholder="e.g., Chase, Bank of America"
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label htmlFor="last4">Last 4 Digits</Label>
+              <Input
+                id="last4"
+                value={formData.last4 || ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  updateFormData('last4', value);
+                }}
+                placeholder="1234"
+                maxLength={4}
+                className="h-9"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Icon</Label>
+              <IconPicker
+                value={formData.icon || 'Wallet'}
+                onChange={(icon) => updateFormData('icon', icon)}
+              />
+            </div>
+            <div>
+              <Label>Color</Label>
+              <ColorPicker
+                value={formData.color || '#3b82f6'}
+                onChange={(color) => updateFormData('color', color)}
+              />
             </div>
           </div>
 
@@ -3262,7 +3306,7 @@ export default function AccountCreationWizard({
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[440px]' : 'h-[400px]'}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[440px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-4 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-lg">{getStepTitle()}</DialogTitle>
             </DialogHeader>
