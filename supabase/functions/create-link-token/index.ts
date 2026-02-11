@@ -96,11 +96,20 @@ Deno.serve(async (req: Request) => {
     const plaidData = await plaidResponse.json();
 
     if (!plaidResponse.ok) {
-      console.error("Plaid error:", plaidData);
+      console.error("Plaid API error response:", JSON.stringify(plaidData, null, 2));
+      console.error("Plaid response status:", plaidResponse.status);
+      console.error("Full error details:", {
+        status: plaidResponse.status,
+        statusText: plaidResponse.statusText,
+        error: plaidData,
+      });
+
       return new Response(
         JSON.stringify({
           error: "Failed to create link token",
           plaid_error: plaidData.error_message || plaidData.error_type,
+          details: plaidData,
+          hint: "Check your Plaid Dashboard Team Settings for Application Visibility settings"
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
