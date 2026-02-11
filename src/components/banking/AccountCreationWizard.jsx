@@ -1486,23 +1486,20 @@ export default function AccountCreationWizard({
     };
 
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
-          <CardContent className="pt-6">
-            <div className="flex items-start space-x-4">
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <Landmark className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <Landmark className="w-5 h-5 text-white" />
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                <h3 className="text-base font-semibold text-gray-900">
                   Plaid Integration Coming Soon!
                 </h3>
-                <p className="text-sm text-gray-600 mb-3">
-                  Automatic bank syncing with real-time updates will be available soon. Connect your bank instantly and get automatic transaction updates.
-                </p>
-                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100 mt-1">
                   <Info className="w-3 h-3 mr-1" />
                   In Development
                 </Badge>
@@ -1511,22 +1508,12 @@ export default function AccountCreationWizard({
           </CardContent>
         </Card>
 
-        <div className="space-y-3">
-          <div className="text-center">
-            <h4 className="text-sm font-medium text-gray-700 mb-1">
-              Or add account manually
-            </h4>
-            <p className="text-xs text-gray-500">
-              Upload a CSV file from your bank statement
-            </p>
-          </div>
-
-          <div
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onClick={() => csvFileInputRef.current?.click()}
-            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
-          >
+        <div
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onClick={() => csvFileInputRef.current?.click()}
+          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
+        >
             <input
               ref={csvFileInputRef}
               type="file"
@@ -1537,7 +1524,7 @@ export default function AccountCreationWizard({
 
             {uploadedFile ? (
               <div className="flex flex-col items-center space-y-2">
-                <CheckCircle2 className="w-12 h-12 text-green-500" />
+                <CheckCircle2 className="w-10 h-10 text-green-500" />
                 <div>
                   <p className="text-sm font-medium text-gray-900">{uploadedFile.name}</p>
                   <p className="text-xs text-gray-500">
@@ -1557,15 +1544,15 @@ export default function AccountCreationWizard({
                 )}
               </div>
             ) : (
-              <div className="flex flex-col items-center space-y-3">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                  <FileUp className="w-8 h-8 text-gray-400" />
+              <div className="flex flex-col items-center space-y-2">
+                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                  <FileUp className="w-6 h-6 text-gray-400" />
                 </div>
                 <div>
                   <p className="text-sm font-medium text-gray-900">
                     Drag and drop your CSV file here
                   </p>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-gray-500">
                     or click to browse files
                   </p>
                 </div>
@@ -1575,14 +1562,6 @@ export default function AccountCreationWizard({
               </div>
             )}
           </div>
-
-          {uploadedFile && processingStatus === 'success' && (
-            <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
-              <Info className="w-3 h-3" />
-              <span>Click Continue to proceed with account setup</span>
-            </div>
-          )}
-        </div>
       </div>
     );
   };
