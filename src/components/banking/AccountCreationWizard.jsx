@@ -470,16 +470,19 @@ export default function AccountCreationWizard({
   }, [user, plaidLinkToken]);
 
   const handlePlaidSuccess = useCallback(async (publicToken, metadata) => {
+    console.log('[Plaid] Success callback triggered', { publicToken: publicToken?.substring(0, 10) + '...', metadata });
     setIsConnecting(true);
     setConnectionProgress('Exchanging credentials...');
 
     try {
+      console.log('[Plaid] Exchanging public token...');
       const exchangeResult = await firstsavvy.functions.exchangePlaidPublicToken({
         public_token: publicToken,
         institution: metadata.institution,
         accounts: metadata.accounts,
         profileId: activeProfile?.id
       });
+      console.log('[Plaid] Exchange result:', exchangeResult);
 
       if (!exchangeResult.success) {
         throw new Error('Failed to link accounts');
@@ -492,21 +495,27 @@ export default function AccountCreationWizard({
       });
 
       setConnectionProgress('Syncing transactions...');
+      console.log('[Plaid] Syncing transactions...');
       const syncResult = await firstsavvy.functions.syncPlaidTransactions({
         plaid_item_id: exchangeResult.plaid_item_id
       });
+      console.log('[Plaid] Sync result:', syncResult);
 
       setConnectionProgress('Loading accounts...');
+      console.log('[Plaid] Loading linked accounts...');
       const { data: linkedAccounts } = await firstsavvy
         .from('user_chart_of_accounts')
         .select('*')
         .eq('plaid_item_id', exchangeResult.plaid_item_id);
+      console.log('[Plaid] Linked accounts:', linkedAccounts);
 
+      console.log('[Plaid] Loading transactions...');
       const { data: allTransactions } = await firstsavvy
         .from('transactions')
         .select('*')
         .in('bank_account_id', (linkedAccounts || []).map(a => a.id))
         .order('date', { ascending: false });
+      console.log('[Plaid] All transactions:', allTransactions?.length || 0);
 
       const accountsWithData = (linkedAccounts || []).map(account => {
         const acctTransactions = (allTransactions || []).filter(
@@ -550,15 +559,22 @@ export default function AccountCreationWizard({
         };
       });
 
+      console.log('[Plaid] Setting discovered accounts:', accountsWithData.length);
       setDiscoveredAccounts(accountsWithData);
       setSelectedAccountsToImport([]);
       setAccountConfigurations({});
       setImportAccountMappings({});
       setIsConnecting(false);
       setCurrentStep('accounts-discovered');
+      console.log('[Plaid] Connection complete!');
       toast.success(`Connected to ${metadata.institution?.name}!`);
     } catch (error) {
-      console.error('Plaid connection error:', error);
+      console.error('[Plaid] Connection error:', error);
+      console.error('[Plaid] Error details:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      });
       toast.error(error.message || 'Failed to connect bank account');
       setIsConnecting(false);
       setConnectionProgress('');
@@ -569,9 +585,11 @@ export default function AccountCreationWizard({
     token: plaidLinkToken,
     env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
     onSuccess: handlePlaidSuccess,
-    onExit: (err) => {
+    onExit: (err, metadata) => {
+      console.log('[Plaid Link] Exit callback', { err, metadata });
       if (err) {
-        console.error('Plaid Link exit error:', err);
+        console.error('[Plaid Link] Exit error:', err);
+        toast.error(`Plaid error: ${err.error_message || err.display_message || 'Connection failed'}`);
       }
     }
   });
