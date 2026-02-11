@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { usePlaidLink } from 'react-plaid-link';
+
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,7 +56,6 @@ import {
   Building,
   AlertCircle,
   Circle,
-  Link2,
   RefreshCw
 } from 'lucide-react';
 import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
@@ -378,11 +377,6 @@ export default function AccountCreationWizard({
   const [originalBeginningBalance, setOriginalBeginningBalance] = useState(null);
   const [statementBalances, setStatementBalances] = useState({ previous: null, new: null });
 
-  const [plaidLinkToken, setPlaidLinkToken] = useState(null);
-  const [plaidLoading, setPlaidLoading] = useState(false);
-  const [plaidError, setPlaidError] = useState(null);
-  const [plaidItemId, setPlaidItemId] = useState(null);
-
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
     queryFn: async () => {
@@ -450,154 +444,6 @@ export default function AccountCreationWizard({
     gcTime: 5 * 60 * 1000
   });
 
-  const fetchPlaidLinkToken = useCallback(async () => {
-    if (!user || plaidLinkToken) return;
-    setPlaidLoading(true);
-    setPlaidError(null);
-    try {
-      const result = await firstsavvy.functions.createPlaidLinkToken({});
-      if (result.link_token) {
-        setPlaidLinkToken(result.link_token);
-      } else {
-        setPlaidError('Could not initialize bank connection');
-      }
-    } catch (err) {
-      console.error('[AccountCreationWizard] Error fetching Plaid link token:', err);
-      setPlaidError(err.message || 'Bank connection unavailable');
-    } finally {
-      setPlaidLoading(false);
-    }
-  }, [user, plaidLinkToken]);
-
-  const handlePlaidSuccess = useCallback(async (publicToken, metadata) => {
-    console.log('[Plaid] Success callback triggered', { publicToken: publicToken?.substring(0, 10) + '...', metadata });
-    setIsConnecting(true);
-    setConnectionProgress('Exchanging credentials...');
-
-    try {
-      console.log('[Plaid] Exchanging public token...');
-      const exchangeResult = await firstsavvy.functions.exchangePlaidPublicToken({
-        public_token: publicToken,
-        institution: metadata.institution,
-        accounts: metadata.accounts,
-        profileId: activeProfile?.id
-      });
-      console.log('[Plaid] Exchange result:', exchangeResult);
-
-      if (!exchangeResult.success) {
-        throw new Error('Failed to link accounts');
-      }
-
-      setPlaidItemId(exchangeResult.plaid_item_id);
-      setSelectedInstitution({
-        id: metadata.institution?.institution_id,
-        name: metadata.institution?.name
-      });
-
-      setConnectionProgress('Syncing transactions...');
-      console.log('[Plaid] Syncing transactions...');
-      const syncResult = await firstsavvy.functions.syncPlaidTransactions({
-        plaid_item_id: exchangeResult.plaid_item_id
-      });
-      console.log('[Plaid] Sync result:', syncResult);
-
-      setConnectionProgress('Loading accounts...');
-      console.log('[Plaid] Loading linked accounts...');
-      const { data: linkedAccounts } = await firstsavvy
-        .from('user_chart_of_accounts')
-        .select('*')
-        .eq('plaid_item_id', exchangeResult.plaid_item_id);
-      console.log('[Plaid] Linked accounts:', linkedAccounts);
-
-      console.log('[Plaid] Loading transactions...');
-      const { data: allTransactions } = await firstsavvy
-        .from('transactions')
-        .select('*')
-        .in('bank_account_id', (linkedAccounts || []).map(a => a.id))
-        .order('date', { ascending: false });
-      console.log('[Plaid] All transactions:', allTransactions?.length || 0);
-
-      const accountsWithData = (linkedAccounts || []).map(account => {
-        const acctTransactions = (allTransactions || []).filter(
-          t => t.bank_account_id === account.id
-        );
-        const dates = acctTransactions.map(t => t.date).filter(Boolean);
-        const startDate = dates.length > 0 ? dates[dates.length - 1] : null;
-        const endDate = dates.length > 0 ? dates[0] : null;
-
-        const detailTypeMap = {
-          'checking_account': 'checking',
-          'savings_account': 'savings',
-          'money_market': 'savings',
-          'personal_credit_card': 'credit_card',
-          'mortgage_primary': 'mortgage',
-          'mortgage_secondary': 'mortgage',
-          'auto_loan': 'loan',
-          'student_loan': 'loan',
-          'personal_loan': 'loan',
-          'other_debt': 'loan',
-          'brokerage_account': 'investment',
-          'traditional_ira': 'investment',
-          'roth_ira': 'investment',
-          'account_401k': 'investment',
-        };
-
-        return {
-          id: account.id,
-          plaid_account_id: account.plaid_account_id,
-          name: account.display_name,
-          type: detailTypeMap[account.account_detail] || (account.account_type === 'credit_card' ? 'credit_card' : 'checking'),
-          last_four: account.account_number_last4 || '',
-          current_balance: account.current_balance || 0,
-          beginning_balance: null,
-          transaction_count: acctTransactions.length,
-          transactions: acctTransactions.map(t => ({
-            date: t.date,
-            description: t.description,
-            amount: Math.abs(t.amount),
-            type: t.type
-          })),
-          date_range: { start: startDate, end: endDate },
-          selected: false,
-          isPlaid: true,
-          chartAccountId: account.id
-        };
-      });
-
-      console.log('[Plaid] Setting discovered accounts:', accountsWithData.length);
-      setDiscoveredAccounts(accountsWithData);
-      setSelectedAccountsToImport([]);
-      setAccountConfigurations({});
-      setImportAccountMappings({});
-      setIsConnecting(false);
-      setCurrentStep('accounts-discovered');
-      console.log('[Plaid] Connection complete!');
-      toast.success(`Connected to ${metadata.institution?.name}!`);
-    } catch (error) {
-      console.error('[Plaid] Connection error:', error);
-      console.error('[Plaid] Error details:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      });
-      toast.error(error.message || 'Failed to connect bank account');
-      setIsConnecting(false);
-      setConnectionProgress('');
-    }
-  }, [activeProfile?.id]);
-
-  const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
-    token: plaidLinkToken,
-    onSuccess: handlePlaidSuccess,
-    onExit: (err, metadata) => {
-      console.log('[Plaid Link] Exit callback', { err, metadata });
-      if (err) {
-        console.error('[Plaid Link] Exit error:', err);
-        toast.error(`Plaid error: ${err.error_message || err.display_message || 'Connection failed'}`);
-      }
-    }
-  });
-
   useEffect(() => {
     if (!open) {
       resetWizard();
@@ -655,10 +501,6 @@ export default function AccountCreationWizard({
     setConnectionProgress('');
     setDiscoveredAccounts([]);
     setSelectedAccountsToImport([]);
-    setPlaidLinkToken(null);
-    setPlaidLoading(false);
-    setPlaidError(null);
-    setPlaidItemId(null);
   };
 
   useEffect(() => {
@@ -670,9 +512,8 @@ export default function AccountCreationWizard({
         .catch(error => {
           console.error('Error loading institutions:', error);
         });
-      fetchPlaidLinkToken();
     }
-  }, [open, currentStep, fetchPlaidLinkToken]);
+  }, [open, currentStep]);
 
   // Scroll to new item in budget category preview
   useEffect(() => {
@@ -1670,58 +1511,6 @@ export default function AccountCreationWizard({
 
     return (
       <div className="space-y-5">
-        <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-100 rounded-lg">
-              <Link2 className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Connect Your Bank</h3>
-              <p className="text-xs text-gray-500">Securely link your account to automatically import transactions</p>
-            </div>
-          </div>
-
-          <Button
-            onClick={() => openPlaidLink()}
-            disabled={!plaidReady || plaidLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 h-11 text-sm font-medium"
-          >
-            {plaidLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Initializing...
-              </>
-            ) : (
-              <>
-                <Building2 className="w-4 h-4 mr-2" />
-                Connect Bank Account
-              </>
-            )}
-          </Button>
-
-          {plaidError && (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-xs text-amber-800 flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                <span className="font-medium">{plaidError}</span>
-              </p>
-              <p className="text-[11px] text-amber-600 mt-1.5 ml-5">
-                You can still use demo institutions below or add accounts manually.
-              </p>
-            </div>
-          )}
-
-          <p className="text-[11px] text-gray-400 text-center">
-            Powered by Plaid. Your credentials are never stored by FirstSavvy.
-          </p>
-        </div>
-
-        <div className="relative flex items-center gap-3">
-          <div className="flex-1 border-t border-gray-200" />
-          <span className="text-xs text-gray-400 font-medium">OR USE DEMO DATA</span>
-          <div className="flex-1 border-t border-gray-200" />
-        </div>
-
         <div className="space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -3556,16 +3345,6 @@ export default function AccountCreationWizard({
 
                           if (!config) {
                             console.error(`No configuration found for account ${account.id}`);
-                            continue;
-                          }
-
-                          if (account.isPlaid) {
-                            if (config.displayName && config.displayName !== account.name) {
-                              await firstsavvy
-                                .from('user_chart_of_accounts')
-                                .update({ display_name: config.displayName })
-                                .eq('id', account.chartAccountId);
-                            }
                             continue;
                           }
 

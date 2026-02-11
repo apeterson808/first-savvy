@@ -366,44 +366,6 @@ export const createSupabaseClient = () => {
         const { data, error } = await supabase.functions.invoke('send-payment-reminders', { body });
         if (error) throw error;
         return data;
-      },
-      async createPlaidLinkToken(body) {
-        const { data, error } = await supabase.functions.invoke('create-link-token', { body });
-        if (error) {
-          let details = null;
-          if (error.context) {
-            try {
-              details = await error.context.json();
-            } catch {}
-          }
-          if (details) {
-            console.error('[Plaid] Full error details:', JSON.stringify(details, null, 2));
-            let msg = details.error || error.message;
-            if (details.plaid_response) {
-              const plaidErr = details.plaid_response;
-              if (plaidErr.error_code === 'INVALID_API_KEYS') {
-                msg = 'Plaid API credentials are invalid. Please check your PLAID_CLIENT_ID and PLAID_SECRET in Supabase Edge Function secrets.';
-              } else if (plaidErr.error_message) {
-                msg = plaidErr.error_message;
-              }
-            }
-            const enriched = new Error(msg);
-            enriched.details = details;
-            throw enriched;
-          }
-          throw error;
-        }
-        return data;
-      },
-      async exchangePlaidPublicToken(body) {
-        const { data, error } = await supabase.functions.invoke('exchange-public-token', { body });
-        if (error) throw error;
-        return data;
-      },
-      async syncPlaidTransactions(body) {
-        const { data, error } = await supabase.functions.invoke('sync-transactions', { body });
-        if (error) throw error;
-        return data;
       }
     }
   };
