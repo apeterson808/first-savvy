@@ -12,7 +12,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 function getPlaidBaseUrl(): string {
-  const env = Deno.env.get("PLAID_ENV") || "development";
+  const env = Deno.env.get("PLAID_ENV") || "production";
   const urls: Record<string, string> = {
     sandbox: "https://sandbox.plaid.com",
     development: "https://development.plaid.com",
@@ -51,7 +51,7 @@ Deno.serve(async (req: Request) => {
 
     const clientId = Deno.env.get("PLAID_CLIENT_ID");
     const secret = Deno.env.get("PLAID_SECRET");
-    const plaidEnv = Deno.env.get("PLAID_ENV") || "development";
+    const plaidEnv = Deno.env.get("PLAID_ENV") || "production";
 
     if (!clientId || !secret) {
       return new Response(

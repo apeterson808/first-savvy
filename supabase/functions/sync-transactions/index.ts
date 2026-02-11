@@ -12,7 +12,7 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 function getPlaidBaseUrl(): string {
-  const env = Deno.env.get("PLAID_ENV") || "sandbox";
+  const env = Deno.env.get("PLAID_ENV") || "production";
   const urls: Record<string, string> = {
     sandbox: "https://sandbox.plaid.com",
     development: "https://development.plaid.com",
