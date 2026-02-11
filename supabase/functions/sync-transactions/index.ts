@@ -12,13 +12,13 @@ const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 function getPlaidBaseUrl(): string {
-  const env = Deno.env.get("PLAID_ENV") || "production";
+  const env = (Deno.env.get("PLAID_ENV") || "production").toLowerCase();
   const urls: Record<string, string> = {
     sandbox: "https://sandbox.plaid.com",
     development: "https://development.plaid.com",
     production: "https://production.plaid.com",
   };
-  return urls[env] || urls.sandbox;
+  return urls[env] || urls.production;
 }
 
 interface PlaidTransaction {

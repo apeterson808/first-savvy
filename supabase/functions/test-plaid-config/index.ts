@@ -6,26 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Client-Info, Apikey",
 };
 
-function getPlaidBaseUrl(): string {
-  const env = Deno.env.get("PLAID_ENV") || "sandbox";
-  const urls: Record<string, string> = {
-    sandbox: "https://sandbox.plaid.com",
-    development: "https://development.plaid.com",
-    production: "https://production.plaid.com",
-  };
-  return urls[env] || urls.sandbox;
-}
+const PLAID_URLS: Record<string, string> = {
+  sandbox: "https://sandbox.plaid.com",
+  development: "https://development.plaid.com",
+  production: "https://production.plaid.com",
+};
 
-async function testPlaidAPIConnection(clientId: string, secret: string): Promise<any> {
+async function testPlaidEnv(clientId: string, secret: string, env: string): Promise<any> {
+  const baseUrl = PLAID_URLS[env];
+  if (!baseUrl) return { success: false, error: `Unknown env: ${env}` };
+
   try {
-    const response = await fetch(`${getPlaidBaseUrl()}/link/token/create`, {
+    const response = await fetch(`${baseUrl}/link/token/create`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         client_id: clientId,
         secret: secret,
-        user: { client_user_id: "test-user-123" },
-        client_name: "FirstSavvy Test",
+        user: { client_user_id: "test-diag-123" },
+        client_name: "FirstSavvy Diagnostics",
         products: ["transactions"],
         country_codes: ["US"],
         language: "en",
@@ -35,16 +34,20 @@ async function testPlaidAPIConnection(clientId: string, secret: string): Promise
     const data = await response.json();
 
     return {
+      env,
+      url: baseUrl,
       success: response.ok,
       status: response.status,
-      status_text: response.statusText,
-      response_data: data,
+      error_code: data.error_code || null,
+      error_message: data.error_message || null,
+      link_token_created: !!data.link_token,
     };
   } catch (error) {
     return {
+      env,
+      url: baseUrl,
       success: false,
       error: error.message,
-      error_type: "network_error",
     };
   }
 }
@@ -57,18 +60,12 @@ Deno.serve(async (req: Request) => {
   try {
     const clientId = Deno.env.get("PLAID_CLIENT_ID");
     const secret = Deno.env.get("PLAID_SECRET");
-    const env = Deno.env.get("PLAID_ENV");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const configuredEnv = Deno.env.get("PLAID_ENV");
 
     const diagnostics: any = {
       timestamp: new Date().toISOString(),
-      environment: {
-        plaid_env: env || "not set",
-        plaid_base_url: getPlaidBaseUrl(),
-        supabase_url: supabaseUrl || "not set",
-      },
+      configured_env: configuredEnv || "NOT SET",
       credentials: {
-        configured: !!(clientId && secret),
         has_client_id: !!clientId,
         has_secret: !!secret,
         client_id_length: clientId ? clientId.length : 0,
@@ -77,54 +74,41 @@ Deno.serve(async (req: Request) => {
       },
     };
 
-    if (clientId && secret) {
-      diagnostics.api_test = await testPlaidAPIConnection(clientId, secret);
-
-      if (diagnostics.api_test.success) {
-        diagnostics.status = "✅ Plaid is fully configured and working!";
-        diagnostics.link_token_created = true;
-      } else {
-        diagnostics.status = "❌ Plaid credentials are set but API call failed";
-        diagnostics.link_token_created = false;
-
-        if (diagnostics.api_test.response_data?.error_type === "INVALID_API_KEYS") {
-          diagnostics.issue = "Your PLAID_CLIENT_ID or PLAID_SECRET appears to be invalid";
-          diagnostics.recommendation = "Double-check your credentials in the Plaid Dashboard";
-        } else if (diagnostics.api_test.response_data?.error_type) {
-          diagnostics.issue = `Plaid API error: ${diagnostics.api_test.response_data.error_type}`;
-          diagnostics.recommendation = diagnostics.api_test.response_data.error_message;
-        }
-      }
+    if (!clientId || !secret) {
+      diagnostics.status = "MISSING_CREDENTIALS";
+      diagnostics.fix = "Add PLAID_CLIENT_ID and PLAID_SECRET in Supabase: Project Settings > Edge Functions > Secrets";
     } else {
-      diagnostics.status = "❌ Plaid credentials not configured";
-      diagnostics.issue = "Missing environment variables";
-      diagnostics.recommendation = "Add PLAID_CLIENT_ID and PLAID_SECRET in Supabase Edge Function secrets";
-      diagnostics.instructions = {
-        step_1: "Sign up for Plaid at https://dashboard.plaid.com/signup",
-        step_2: "Get your credentials from https://dashboard.plaid.com/developers/keys",
-        step_3: "Add them in Supabase: Project Settings → Edge Functions → Secrets",
-        variables_needed: ["PLAID_CLIENT_ID", "PLAID_SECRET", "PLAID_ENV (should be 'sandbox')"]
-      };
+      const [sandbox, development, production] = await Promise.all([
+        testPlaidEnv(clientId, secret, "sandbox"),
+        testPlaidEnv(clientId, secret, "development"),
+        testPlaidEnv(clientId, secret, "production"),
+      ]);
+
+      diagnostics.results = { sandbox, development, production };
+
+      const working = [sandbox, development, production].filter((r) => r.success);
+      if (working.length > 0) {
+        diagnostics.status = "CREDENTIALS_VALID";
+        diagnostics.working_environments = working.map((r) => r.env);
+        diagnostics.recommendation = configuredEnv
+          ? working.some((r) => r.env === configuredEnv)
+            ? `PLAID_ENV=${configuredEnv} is correct and working`
+            : `PLAID_ENV=${configuredEnv} does NOT work. Set PLAID_ENV to: ${working[0].env}`
+          : `PLAID_ENV is not set. Add PLAID_ENV=${working[0].env} to your secrets`;
+      } else {
+        diagnostics.status = "CREDENTIALS_INVALID";
+        diagnostics.fix = "Your PLAID_CLIENT_ID or PLAID_SECRET is wrong. Check https://dashboard.plaid.com/developers/keys";
+      }
     }
 
-    return new Response(
-      JSON.stringify(diagnostics, null, 2),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
+    return new Response(JSON.stringify(diagnostics, null, 2), {
+      status: 200,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (error) {
     return new Response(
-      JSON.stringify({
-        status: "error",
-        error: error.message,
-        timestamp: new Date().toISOString(),
-      }, null, 2),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ status: "error", error: error.message, timestamp: new Date().toISOString() }, null, 2),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
