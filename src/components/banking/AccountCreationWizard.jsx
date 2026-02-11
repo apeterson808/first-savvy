@@ -525,23 +525,28 @@ export default function AccountCreationWizard({
         const startDate = dates.length > 0 ? dates[dates.length - 1] : null;
         const endDate = dates.length > 0 ? dates[0] : null;
 
-        const typeMap = {
-          'Checking': 'checking',
-          'Savings': 'savings',
-          'Credit Card': 'credit_card',
-          'Mortgage': 'mortgage',
-          'Auto Loan': 'loan',
-          'Student Loan': 'loan',
-          'Personal Loan': 'loan',
-          'Brokerage': 'investment',
-          'Retirement': 'investment'
+        const detailTypeMap = {
+          'checking_account': 'checking',
+          'savings_account': 'savings',
+          'money_market': 'savings',
+          'personal_credit_card': 'credit_card',
+          'mortgage_primary': 'mortgage',
+          'mortgage_secondary': 'mortgage',
+          'auto_loan': 'loan',
+          'student_loan': 'loan',
+          'personal_loan': 'loan',
+          'other_debt': 'loan',
+          'brokerage_account': 'investment',
+          'traditional_ira': 'investment',
+          'roth_ira': 'investment',
+          'account_401k': 'investment',
         };
 
         return {
           id: account.id,
           plaid_account_id: account.plaid_account_id,
           name: account.display_name,
-          type: typeMap[account.account_type] || 'checking',
+          type: detailTypeMap[account.account_detail] || (account.account_type === 'credit_card' ? 'credit_card' : 'checking'),
           last_four: account.account_number_last4 || '',
           current_balance: account.current_balance || 0,
           beginning_balance: null,
@@ -583,7 +588,6 @@ export default function AccountCreationWizard({
 
   const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
     token: plaidLinkToken,
-    env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
     onSuccess: handlePlaidSuccess,
     onExit: (err, metadata) => {
       console.log('[Plaid Link] Exit callback', { err, metadata });

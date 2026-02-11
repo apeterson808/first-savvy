@@ -21,30 +21,30 @@ function getPlaidBaseUrl(): string {
   return urls[env] || urls.production;
 }
 
-const PLAID_TYPE_MAP: Record<string, { class: string; accountType: string }> = {
-  depository_checking: { class: "asset", accountType: "Checking" },
-  depository_savings: { class: "asset", accountType: "Savings" },
-  depository_money_market: { class: "asset", accountType: "Money Market" },
-  depository_cd: { class: "asset", accountType: "CD" },
-  credit_credit_card: { class: "liability", accountType: "Credit Card" },
-  loan_mortgage: { class: "liability", accountType: "Mortgage" },
-  loan_auto: { class: "liability", accountType: "Auto Loan" },
-  loan_student: { class: "liability", accountType: "Student Loan" },
-  loan_personal: { class: "liability", accountType: "Personal Loan" },
-  investment_brokerage: { class: "asset", accountType: "Brokerage" },
-  investment_retirement: { class: "asset", accountType: "Retirement" },
+const PLAID_TYPE_MAP: Record<string, { class: string; accountType: string; accountDetail: string }> = {
+  depository_checking: { class: "asset", accountType: "bank_account", accountDetail: "checking_account" },
+  depository_savings: { class: "asset", accountType: "bank_account", accountDetail: "savings_account" },
+  depository_money_market: { class: "asset", accountType: "bank_account", accountDetail: "money_market" },
+  depository_cd: { class: "asset", accountType: "bank_account", accountDetail: "savings_account" },
+  credit_credit_card: { class: "liability", accountType: "credit_card", accountDetail: "personal_credit_card" },
+  loan_mortgage: { class: "liability", accountType: "loans", accountDetail: "mortgage_primary" },
+  loan_auto: { class: "liability", accountType: "loans", accountDetail: "auto_loan" },
+  loan_student: { class: "liability", accountType: "loans", accountDetail: "student_loan" },
+  loan_personal: { class: "liability", accountType: "loans", accountDetail: "personal_loan" },
+  investment_brokerage: { class: "asset", accountType: "investments", accountDetail: "brokerage_account" },
+  investment_retirement: { class: "asset", accountType: "investments", accountDetail: "traditional_ira" },
 };
 
-function mapPlaidAccountType(plaidType: string, plaidSubtype: string | null): { class: string; accountType: string } {
+function mapPlaidAccountType(plaidType: string, plaidSubtype: string | null): { class: string; accountType: string; accountDetail: string } {
   const key = `${plaidType}_${plaidSubtype || ""}`;
   if (PLAID_TYPE_MAP[key]) return PLAID_TYPE_MAP[key];
 
-  if (plaidType === "depository") return { class: "asset", accountType: "Checking" };
-  if (plaidType === "credit") return { class: "liability", accountType: "Credit Card" };
-  if (plaidType === "loan") return { class: "liability", accountType: "Loan" };
-  if (plaidType === "investment") return { class: "asset", accountType: "Investment" };
+  if (plaidType === "depository") return { class: "asset", accountType: "bank_account", accountDetail: "checking_account" };
+  if (plaidType === "credit") return { class: "liability", accountType: "credit_card", accountDetail: "personal_credit_card" };
+  if (plaidType === "loan") return { class: "liability", accountType: "loans", accountDetail: "other_debt" };
+  if (plaidType === "investment") return { class: "asset", accountType: "investments", accountDetail: "brokerage_account" };
 
-  return { class: "asset", accountType: "Other" };
+  return { class: "asset", accountType: "bank_account", accountDetail: "checking_account" };
 }
 
 function getNextAccountNumber(existingNumbers: number[], accountClass: string): number {
@@ -206,7 +206,7 @@ Deno.serve(async (req: Request) => {
         const accountNumber = getNextAccountNumber(existingNumbers, mapped.class);
         existingNumbers.push(accountNumber);
 
-        const displayName = plaidAcct.name || plaidAcct.official_name || `${institution?.name || "Bank"} ${mapped.accountType}`;
+        const displayName = plaidAcct.name || plaidAcct.official_name || `${institution?.name || "Bank"} ${mapped.accountDetail.replace(/_/g, " ").replace(/\b\w/g, (l: string) => l.toUpperCase())}`;
 
         const { data: newAccount, error: acctError } = await supabase
           .from("user_chart_of_accounts")
@@ -218,6 +218,7 @@ Deno.serve(async (req: Request) => {
             display_name: displayName,
             class: mapped.class,
             account_type: mapped.accountType,
+            account_detail: mapped.accountDetail,
             institution_name: institution?.name || null,
             account_number_last4: plaidAcct.mask || null,
             official_name: plaidAcct.official_name || plaidAcct.name || null,
