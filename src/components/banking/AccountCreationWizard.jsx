@@ -353,6 +353,7 @@ export default function AccountCreationWizard({
 
   const [uploadedFile, setUploadedFile] = useState(null);
   const newItemRef = useRef(null);
+  const csvFileInputRef = useRef(null);
   const [processingStatus, setProcessingStatus] = useState(null);
   const [processedData, setProcessedData] = useState(null);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
@@ -1442,8 +1443,6 @@ export default function AccountCreationWizard({
   };
 
   const renderConnectBankStep = () => {
-    const fileInputRef = useRef(null);
-
     const handleFileSelect = async (file) => {
       if (!file) return;
 
@@ -1525,11 +1524,11 @@ export default function AccountCreationWizard({
           <div
             onDrop={handleDrop}
             onDragOver={handleDragOver}
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => csvFileInputRef.current?.click()}
             className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
           >
             <input
-              ref={fileInputRef}
+              ref={csvFileInputRef}
               type="file"
               accept=".csv"
               onChange={(e) => handleFileSelect(e.target.files[0])}
