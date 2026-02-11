@@ -378,9 +378,15 @@ export const createSupabaseClient = () => {
           }
           if (details) {
             console.error('[Plaid] Full error details:', JSON.stringify(details, null, 2));
-            const msg = details.plaid_response
-              ? `Plaid error: ${JSON.stringify(details.plaid_response)}`
-              : details.error || error.message;
+            let msg = details.error || error.message;
+            if (details.plaid_response) {
+              const plaidErr = details.plaid_response;
+              if (plaidErr.error_code === 'INVALID_API_KEYS') {
+                msg = 'Plaid API credentials are invalid. Please check your PLAID_CLIENT_ID and PLAID_SECRET in Supabase Edge Function secrets.';
+              } else if (plaidErr.error_message) {
+                msg = plaidErr.error_message;
+              }
+            }
             const enriched = new Error(msg);
             enriched.details = details;
             throw enriched;

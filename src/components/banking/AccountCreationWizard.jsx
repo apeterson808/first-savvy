@@ -1701,11 +1701,9 @@ export default function AccountCreationWizard({
                 <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                 <span className="font-medium">{plaidError}</span>
               </p>
-              {plaidError.includes('unavailable') || plaidError.includes('credentials') || plaidError.includes('configured') ? (
-                <p className="text-[11px] text-amber-600 mt-1.5 ml-5">
-                  Plaid integration requires API credentials. Please use demo institutions below or add accounts manually.
-                </p>
-              ) : null}
+              <p className="text-[11px] text-amber-600 mt-1.5 ml-5">
+                You can still use demo institutions below or add accounts manually.
+              </p>
             </div>
           )}
 
