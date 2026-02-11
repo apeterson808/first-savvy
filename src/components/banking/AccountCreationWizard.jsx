@@ -567,7 +567,6 @@ export default function AccountCreationWizard({
 
   const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
     token: plaidLinkToken,
-    env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
     onSuccess: handlePlaidSuccess,
     onExit: (err) => {
       if (err) {
