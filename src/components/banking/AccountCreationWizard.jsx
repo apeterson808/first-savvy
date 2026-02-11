@@ -1455,50 +1455,8 @@ export default function AccountCreationWizard({
   };
 
   const renderConnectBankStep = () => {
-    const handleFileSelect = async (file) => {
-      if (!file) return;
-
-      if (!file.name.endsWith('.csv')) {
-        toast.error('Please upload a CSV file');
-        return;
-      }
-
-      setUploadedFile(file);
-      setProcessingStatus('processing');
-
-      try {
-        const result = await processStatementFile(file);
-
-        if (result.error) {
-          toast.error(result.error);
-          setProcessingStatus('error');
-          return;
-        }
-
-        setProcessedData(result);
-        setProcessingStatus('success');
-        toast.success('CSV file uploaded successfully!');
-      } catch (error) {
-        console.error('Error processing CSV:', error);
-        toast.error('Failed to process CSV file');
-        setProcessingStatus('error');
-      }
-    };
-
-    const handleDrop = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      const file = e.dataTransfer.files[0];
-      handleFileSelect(file);
-    };
-
-    const handleDragOver = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-    };
-
     return (
-      <div className="space-y-4">
+      <div className="space-y-6">
         <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
           <CardContent className="pt-4 pb-4">
             <div className="flex items-center space-x-3">
@@ -1520,60 +1478,14 @@ export default function AccountCreationWizard({
           </CardContent>
         </Card>
 
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          onClick={() => csvFileInputRef.current?.click()}
-          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
-        >
-            <input
-              ref={csvFileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={(e) => handleFileSelect(e.target.files[0])}
-              className="hidden"
-            />
-
-            {uploadedFile ? (
-              <div className="flex flex-col items-center space-y-2">
-                <CheckCircle2 className="w-10 h-10 text-green-500" />
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{uploadedFile.name}</p>
-                  <p className="text-xs text-gray-500">
-                    {(uploadedFile.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                {processingStatus === 'processing' && (
-                  <div className="flex items-center space-x-2 text-blue-600">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span className="text-xs">Processing...</span>
-                  </div>
-                )}
-                {processingStatus === 'success' && (
-                  <Badge variant="default" className="bg-green-500">
-                    Ready to import
-                  </Badge>
-                )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center space-y-2">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                  <FileUp className="w-6 h-6 text-gray-400" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-900">
-                    Drag and drop your CSV file here
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    or click to browse files
-                  </p>
-                </div>
-                <Badge variant="outline" className="text-xs">
-                  Supports CSV format only
-                </Badge>
-              </div>
-            )}
-          </div>
+        <div className="flex justify-center">
+          <Button
+            onClick={() => setCurrentStep('details')}
+            className="bg-blue-600 hover:bg-blue-700 rounded-full px-8"
+          >
+            Add Manually
+          </Button>
+        </div>
       </div>
     );
   };
@@ -3341,12 +3253,12 @@ export default function AccountCreationWizard({
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[440px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-4 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-lg">{getStepTitle()}</DialogTitle>
             </DialogHeader>
 
-            <div className={`py-4 px-4 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype') ? 'flex items-center justify-center' : ''}`}>
+            <div className={`py-4 px-4 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`}>
               {renderCurrentStep()}
             </div>
 
@@ -3363,17 +3275,7 @@ export default function AccountCreationWizard({
                   Back
                 </Button>
 
-                {currentStep === 'connect-bank' && (
-                  <Button
-                    type="button"
-                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                    onClick={() => setCurrentStep('details')}
-                    disabled={!uploadedFile || processingStatus !== 'success'}
-                  >
-                    Continue
-                    <ChevronRight className="w-4 h-4 ml-1" />
-                  </Button>
-                )}
+                {currentStep === 'connect-bank' && <div />}
 
                 {currentStep === 'bank-search' && <div />}
 
