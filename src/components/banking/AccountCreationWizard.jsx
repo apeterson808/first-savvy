@@ -396,13 +396,13 @@ export default function AccountCreationWizard({
       }
       return data || [];
     },
-    enabled: open && !!user
+    enabled: open && !!user,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
   });
 
   const accountTypeCards = React.useMemo(() => {
-    const cards = buildAccountTypeCardsFromTemplates(chartAccounts);
-    console.log('[AccountCreationWizard] Built account type cards:', cards.map(c => c.id));
-    return cards;
+    return buildAccountTypeCardsFromTemplates(chartAccounts);
   }, [chartAccounts]);
 
   const { data: userChartAccounts = [] } = useQuery({
@@ -420,7 +420,9 @@ export default function AccountCreationWizard({
       }
       return data || [];
     },
-    enabled: !!activeProfile?.id && open
+    enabled: !!activeProfile?.id && open,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000
   });
 
   const { data: existingAccounts = [] } = useQuery({
@@ -443,21 +445,19 @@ export default function AccountCreationWizard({
         account_type: account.account_detail
       }));
     },
-    enabled: !!activeProfile?.id && open
+    enabled: !!activeProfile?.id && open,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 5 * 60 * 1000
   });
 
   const fetchPlaidLinkToken = useCallback(async () => {
-    console.log('[AccountCreationWizard] fetchPlaidLinkToken called, user:', !!user, 'existingToken:', !!plaidLinkToken);
     if (!user || plaidLinkToken) return;
     setPlaidLoading(true);
     setPlaidError(null);
     try {
-      console.log('[AccountCreationWizard] Requesting Plaid link token...');
       const result = await firstsavvy.functions.createPlaidLinkToken({});
-      console.log('[AccountCreationWizard] Plaid link token response:', result);
       if (result.link_token) {
         setPlaidLinkToken(result.link_token);
-        console.log('[AccountCreationWizard] Plaid link token set successfully');
       } else {
         setPlaidError('Could not initialize bank connection');
       }
@@ -567,6 +567,7 @@ export default function AccountCreationWizard({
 
   const { open: openPlaidLink, ready: plaidReady } = usePlaidLink({
     token: plaidLinkToken,
+    env: import.meta.env.VITE_PLAID_ENV || 'sandbox',
     onSuccess: handlePlaidSuccess,
     onExit: (err) => {
       if (err) {
@@ -640,10 +641,8 @@ export default function AccountCreationWizard({
 
   useEffect(() => {
     if (open && currentStep === 'connect-bank') {
-      console.log('[AccountCreationWizard] Reached connect-bank step, loading institutions and Plaid token...');
       getAvailableInstitutions()
         .then(institutions => {
-          console.log('[AccountCreationWizard] Loaded institutions:', institutions.length);
           setAvailableInstitutions(institutions);
         })
         .catch(error => {
