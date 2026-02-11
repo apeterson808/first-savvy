@@ -521,6 +521,9 @@ export default function AccountCreationWizard({
     setSelectedCard(card);
 
     if (card.id === 'banking') {
+      const defaultSubtype = card.subtypes?.[0] || { value: 'checking', label: 'Checking Account' };
+      setSelectedSubtype(defaultSubtype);
+      setFormData({ subtype: defaultSubtype.value });
       setCurrentStep('connect-bank');
       return;
     }
@@ -560,7 +563,16 @@ export default function AccountCreationWizard({
       setCurrentStep('select-type');
       setSelectedCard(null);
     } else if (currentStep === 'details') {
-      if (selectedCard?.subtypes && selectedCard.subtypes.length > 0) {
+      if (selectedCard?.id === 'banking') {
+        setCurrentStep('connect-bank');
+        setUploadedFile(null);
+        setProcessedData(null);
+        setMappedTransactions([]);
+        setShowMappingSuccess(false);
+        setSelectedCachedAccount(null);
+        setSelectedStatements([]);
+        setCacheImportMode(false);
+      } else if (selectedCard?.subtypes && selectedCard.subtypes.length > 0) {
         setCurrentStep('select-subtype');
         setSelectedSubtype(null);
         setFormData({});
@@ -1375,7 +1387,7 @@ export default function AccountCreationWizard({
   const handleNext = async () => {
     if (selectedCard.id === 'banking') {
       if (currentStep === 'bank-search') {
-        setCurrentStep('select-subtype');
+        setCurrentStep('details');
       } else if (currentStep === 'details') {
         if (!selectedAccountName || !uploadedFile || mappedTransactions.length === 0) {
           toast.error('Please select or enter an account name and upload a statement');
@@ -2020,6 +2032,29 @@ export default function AccountCreationWizard({
 
       return (
         <div className="space-y-4 max-w-lg mx-auto">
+          <div>
+            <Label htmlFor="accountType">Account Type*</Label>
+            <Select
+              value={selectedSubtype?.value}
+              onValueChange={(value) => {
+                const subtype = selectedCard.subtypes.find(st => st.value === value);
+                setSelectedSubtype(subtype);
+                setFormData({ ...formData, subtype: value });
+              }}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select account type" />
+              </SelectTrigger>
+              <SelectContent>
+                {selectedCard.subtypes.map(subtype => (
+                  <SelectItem key={subtype.value} value={subtype.value}>
+                    {subtype.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div>
             <Label htmlFor="displayName">Display Name*</Label>
             <div className="relative">
@@ -3306,7 +3341,7 @@ export default function AccountCreationWizard({
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[440px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[440px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-4 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-lg">{getStepTitle()}</DialogTitle>
             </DialogHeader>
