@@ -503,17 +503,6 @@ export default function AccountCreationWizard({
     setSelectedAccountsToImport([]);
   };
 
-  useEffect(() => {
-    if (open && currentStep === 'connect-bank') {
-      getAvailableInstitutions()
-        .then(institutions => {
-          setAvailableInstitutions(institutions);
-        })
-        .catch(error => {
-          console.error('Error loading institutions:', error);
-        });
-    }
-  }, [open, currentStep]);
 
   // Scroll to new item in budget category preview
   useEffect(() => {
@@ -1453,113 +1442,147 @@ export default function AccountCreationWizard({
   };
 
   const renderConnectBankStep = () => {
-    const filteredInstitutions = availableInstitutions.filter(inst =>
-      inst.name.toLowerCase().includes(institutionSearch.toLowerCase())
-    );
+    const fileInputRef = useRef(null);
 
-    const handleInstitutionSelect = async (institution) => {
-      setSelectedInstitution(institution);
-      setIsConnecting(true);
+    const handleFileSelect = async (file) => {
+      if (!file) return;
+
+      if (!file.name.endsWith('.csv')) {
+        toast.error('Please upload a CSV file');
+        return;
+      }
+
+      setUploadedFile(file);
+      setProcessingStatus('processing');
 
       try {
-        setConnectionProgress('Connecting to ' + institution.name + '...');
-        await simulateConnection(institution.id, activeProfile?.id);
+        const result = await processStatementFile(file);
 
-        setConnectionProgress('Discovering accounts...');
-        const accounts = await getInstitutionAccounts(institution.id, activeProfile?.id);
+        if (result.error) {
+          toast.error(result.error);
+          setProcessingStatus('error');
+          return;
+        }
 
-        setConnectionProgress('Loading transactions...');
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const accountsWithData = await Promise.all(
-          accounts.map(async (account) => {
-            const transactions = await getAccountTransactions(account.id, institution.id);
-            return {
-              ...account,
-              transactions,
-              selected: false
-            };
-          })
-        );
-
-        setDiscoveredAccounts(accountsWithData);
-        setSelectedAccountsToImport([]);
-        setAccountConfigurations({});
-        setImportAccountMappings({});
-        setIsConnecting(false);
-        setCurrentStep('accounts-discovered');
-        toast.success(`Connected to ${institution.name}!`);
+        setProcessedData(result);
+        setProcessingStatus('success');
+        toast.success('CSV file uploaded successfully!');
       } catch (error) {
-        console.error('Connection error:', error);
-        toast.error(error.message || 'Failed to connect to institution');
-        setIsConnecting(false);
-        setConnectionProgress('');
+        console.error('Error processing CSV:', error);
+        toast.error('Failed to process CSV file');
+        setProcessingStatus('error');
       }
     };
 
-    if (isConnecting) {
-      return (
-        <div className="flex flex-col items-center justify-center py-12 space-y-4">
-          <Loader2 className="w-12 h-12 animate-spin text-blue-600" />
-          <div className="text-center">
-            <p className="text-lg font-medium text-gray-700">{connectionProgress}</p>
-            <p className="text-sm text-gray-500 mt-2">Please wait...</p>
-          </div>
-        </div>
-      );
-    }
+    const handleDrop = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const file = e.dataTransfer.files[0];
+      handleFileSelect(file);
+    };
+
+    const handleDragOver = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-6">
+        <Card className="bg-gradient-to-r from-blue-50 to-cyan-50 border-blue-200">
+          <CardContent className="pt-6">
+            <div className="flex items-start space-x-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+                  <Landmark className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">
+                  Plaid Integration Coming Soon!
+                </h3>
+                <p className="text-sm text-gray-600 mb-3">
+                  Automatic bank syncing with real-time updates will be available soon. Connect your bank instantly and get automatic transaction updates.
+                </p>
+                <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                  <Info className="w-3 h-3 mr-1" />
+                  In Development
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="space-y-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input
-              placeholder="Search demo institutions..."
-              value={institutionSearch}
-              onChange={(e) => setInstitutionSearch(e.target.value)}
-              className="pl-9 h-9 text-sm"
-            />
+          <div className="text-center">
+            <h4 className="text-sm font-medium text-gray-700 mb-1">
+              Or add account manually
+            </h4>
+            <p className="text-xs text-gray-500">
+              Upload a CSV file from your bank statement
+            </p>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 max-w-md mx-auto">
-            {filteredInstitutions.length === 0 ? (
-              <div className="col-span-3 flex flex-col items-center justify-center py-4 text-gray-500">
-                <AlertCircle className="w-6 h-6 mb-1" />
-                <p className="text-xs">No institutions found</p>
+          <div
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-blue-400 hover:bg-blue-50/50 transition-all"
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={(e) => handleFileSelect(e.target.files[0])}
+              className="hidden"
+            />
+
+            {uploadedFile ? (
+              <div className="flex flex-col items-center space-y-2">
+                <CheckCircle2 className="w-12 h-12 text-green-500" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{uploadedFile.name}</p>
+                  <p className="text-xs text-gray-500">
+                    {(uploadedFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                {processingStatus === 'processing' && (
+                  <div className="flex items-center space-x-2 text-blue-600">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span className="text-xs">Processing...</span>
+                  </div>
+                )}
+                {processingStatus === 'success' && (
+                  <Badge variant="default" className="bg-green-500">
+                    Ready to import
+                  </Badge>
+                )}
               </div>
             ) : (
-              filteredInstitutions.map(institution => (
-                <button
-                  key={institution.id}
-                  onClick={() => handleInstitutionSelect(institution)}
-                  className="flex flex-col items-center cursor-pointer transition-all hover:scale-105 p-3 rounded-lg hover:bg-gray-50"
-                >
-                  <div
-                    className="rounded-full w-14 h-14 flex items-center justify-center shadow-md hover:shadow-lg transition-all mb-1.5"
-                    style={{ backgroundColor: institution.name.toLowerCase().includes('idaho central') ? '#003DA5' : '#52A5CE' }}
-                  >
-                    <span className="text-white font-bold text-sm">
-                      {institution.name.split(' ').map(w => w[0]).join('').slice(0, 3)}
-                    </span>
-                  </div>
-                  <span className="text-[11px] font-medium text-gray-600 text-center leading-tight">{institution.name}</span>
-                </button>
-              ))
+              <div className="flex flex-col items-center space-y-3">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                  <FileUp className="w-8 h-8 text-gray-400" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    Drag and drop your CSV file here
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    or click to browse files
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-xs">
+                  Supports CSV format only
+                </Badge>
+              </div>
             )}
           </div>
-        </div>
 
-        <div className="text-center">
-          <button
-            onClick={() => {
-              setSelectedCard(null);
-              setCurrentStep('select-type');
-            }}
-            className="text-xs text-gray-500 hover:text-gray-700 underline"
-          >
-            Or add account manually
-          </button>
+          {uploadedFile && processingStatus === 'success' && (
+            <div className="flex items-center justify-center space-x-2 text-xs text-gray-500">
+              <Info className="w-3 h-3" />
+              <span>Click Continue to proceed with account setup</span>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -3261,7 +3284,7 @@ export default function AccountCreationWizard({
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[600px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[540px]' : 'h-[400px]'}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[580px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-5 px-5 flex-shrink-0">
               <DialogTitle className="text-center text-xl">{getStepTitle()}</DialogTitle>
             </DialogHeader>
@@ -3282,6 +3305,18 @@ export default function AccountCreationWizard({
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Back
                 </Button>
+
+                {currentStep === 'connect-bank' && (
+                  <Button
+                    type="button"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                    onClick={() => setCurrentStep('details')}
+                    disabled={!uploadedFile || processingStatus !== 'success'}
+                  >
+                    Continue
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </Button>
+                )}
 
                 {currentStep === 'bank-search' && <div />}
 
