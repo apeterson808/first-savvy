@@ -70,19 +70,21 @@ Deno.serve(async (req: Request) => {
       products: accessToken ? undefined : ["transactions"],
       country_codes: ["US"],
       language: "en",
-      redirect_uri: body.redirect_uri || `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/plaid-oauth-redirect`,
-      webhook: `${SUPABASE_URL.replace(/\/$/, '')}/functions/v1/plaid-webhook`,
     };
+
+    if (body.redirect_uri) {
+      plaidPayload.redirect_uri = body.redirect_uri;
+    }
+
+    if (accessToken) {
+      plaidPayload.access_token = accessToken;
+    }
 
     console.log("Creating Plaid link token with payload:", {
       ...plaidPayload,
       secret: "[REDACTED]",
       client_id: clientId?.substring(0, 10) + "...",
     });
-
-    if (accessToken) {
-      plaidPayload.access_token = accessToken;
-    }
 
     const plaidResponse = await fetch(
       `${getPlaidBaseUrl()}/link/token/create`,
