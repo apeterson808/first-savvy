@@ -1981,13 +1981,6 @@ export default function AccountCreationWizard({
                 }}
                 placeholder="Select existing or type new account name..."
               />
-              {selectedAccountName && (
-                <div className="mt-2">
-                  <Badge variant={isExistingAccount ? "default" : "secondary"} className="text-xs">
-                    {isExistingAccount ? "Existing Account" : "New Account"}
-                  </Badge>
-                </div>
-              )}
             </div>
           </div>
 
