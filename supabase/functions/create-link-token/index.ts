@@ -51,10 +51,14 @@ Deno.serve(async (req: Request) => {
 
     const clientId = Deno.env.get("PLAID_CLIENT_ID");
     const secret = Deno.env.get("PLAID_SECRET");
+    const plaidEnv = Deno.env.get("PLAID_ENV") || "sandbox";
 
     if (!clientId || !secret) {
       return new Response(
-        JSON.stringify({ error: "Plaid credentials not configured" }),
+        JSON.stringify({
+          error: "Plaid credentials not configured",
+          missing: { client_id: !clientId, secret: !secret },
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -80,14 +84,18 @@ Deno.serve(async (req: Request) => {
       plaidPayload.access_token = accessToken;
     }
 
-    console.log("Creating Plaid link token with payload:", {
-      ...plaidPayload,
-      secret: "[REDACTED]",
-      client_id: clientId?.substring(0, 10) + "...",
+    const baseUrl = getPlaidBaseUrl();
+
+    console.log("Plaid config:", {
+      env: plaidEnv,
+      baseUrl,
+      clientIdPrefix: clientId?.substring(0, 8) + "...",
+      secretPrefix: secret?.substring(0, 4) + "...",
+      secretLength: secret?.length,
     });
 
     const plaidResponse = await fetch(
-      `${getPlaidBaseUrl()}/link/token/create`,
+      `${baseUrl}/link/token/create`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,23 +103,32 @@ Deno.serve(async (req: Request) => {
       }
     );
 
-    const plaidData = await plaidResponse.json();
+    const rawText = await plaidResponse.text();
+    console.log("Plaid raw response status:", plaidResponse.status);
+    console.log("Plaid raw response body:", rawText);
 
-    if (!plaidResponse.ok) {
-      console.error("Plaid API error response:", JSON.stringify(plaidData, null, 2));
-      console.error("Plaid response status:", plaidResponse.status);
-      console.error("Full error details:", {
-        status: plaidResponse.status,
-        statusText: plaidResponse.statusText,
-        error: plaidData,
-      });
-
+    let plaidData;
+    try {
+      plaidData = JSON.parse(rawText);
+    } catch {
       return new Response(
         JSON.stringify({
-          error: "Failed to create link token",
-          plaid_error: plaidData.error_message || plaidData.error_type,
-          details: plaidData,
-          hint: "Check your Plaid Dashboard Team Settings for Application Visibility settings"
+          error: "Plaid returned non-JSON response",
+          status: plaidResponse.status,
+          raw: rawText.substring(0, 500),
+        }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (!plaidResponse.ok) {
+      return new Response(
+        JSON.stringify({
+          error: "Plaid API rejected the request",
+          plaid_status: plaidResponse.status,
+          plaid_response: plaidData,
+          plaid_env: plaidEnv,
+          plaid_url: baseUrl,
         }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
