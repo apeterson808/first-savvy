@@ -75,13 +75,7 @@ export default function AccountCombobox({ accounts, value, onValueChange, placeh
 
       {showDropdown && (
         <div className="absolute z-50 w-full mt-1 bg-popover text-popover-foreground border rounded-md shadow-md max-h-[300px] overflow-auto">
-          {filteredAccounts.length === 0 ? (
-            <div className="py-3 px-4 text-center">
-              <p className="text-sm text-muted-foreground">
-                Will create new account "{searchValue}"
-              </p>
-            </div>
-          ) : (
+          {filteredAccounts.length === 0 ? null : (
             <div className="py-1">
               <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
                 Existing Accounts
