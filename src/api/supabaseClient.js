@@ -183,14 +183,14 @@ const createEntityAPI = (tableName) => {
       if (tableName === 'user_chart_of_accounts') {
         const accountToUpdate = await supabase
           .from('user_chart_of_accounts')
-          .select('template_account_number, is_editable')
+          .select('template_account_number')
           .eq('id', id)
           .maybeSingle();
 
         if (accountToUpdate.data) {
           const isSystemAccount = accountToUpdate.data.template_account_number === 3000 ||
                                    accountToUpdate.data.template_account_number === 3200;
-          if (isSystemAccount || accountToUpdate.data.is_editable === false) {
+          if (isSystemAccount) {
             throw new Error('System accounts cannot be modified');
           }
         }
@@ -224,14 +224,14 @@ const createEntityAPI = (tableName) => {
       if (tableName === 'user_chart_of_accounts') {
         const accountToDelete = await supabase
           .from('user_chart_of_accounts')
-          .select('template_account_number, is_editable')
+          .select('template_account_number')
           .eq('id', id)
           .maybeSingle();
 
         if (accountToDelete.data) {
           const isSystemAccount = accountToDelete.data.template_account_number === 3000 ||
                                    accountToDelete.data.template_account_number === 3200;
-          if (isSystemAccount || accountToDelete.data.is_editable === false) {
+          if (isSystemAccount) {
             throw new Error('System accounts cannot be deleted');
           }
         }
