@@ -369,7 +369,24 @@ export const createSupabaseClient = () => {
       },
       async createPlaidLinkToken(body) {
         const { data, error } = await supabase.functions.invoke('create-link-token', { body });
-        if (error) throw error;
+        if (error) {
+          let details = null;
+          if (error.context) {
+            try {
+              details = await error.context.json();
+            } catch {}
+          }
+          if (details) {
+            console.error('[Plaid] Full error details:', JSON.stringify(details, null, 2));
+            const msg = details.plaid_response
+              ? `Plaid error: ${JSON.stringify(details.plaid_response)}`
+              : details.error || error.message;
+            const enriched = new Error(msg);
+            enriched.details = details;
+            throw enriched;
+          }
+          throw error;
+        }
         return data;
       },
       async exchangePlaidPublicToken(body) {
