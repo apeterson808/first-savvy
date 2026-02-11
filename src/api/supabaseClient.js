@@ -27,9 +27,8 @@ const getActiveProfileId = () => {
 };
 
 const TABLES_WITH_PROFILE_ID = [
-  'transactions', 'budgets', 'budget_groups',
-  'goals', 'bills', 'contacts', 'user_chart_of_accounts',
-  'credit_scores', 'transaction_splits', 'transaction_rules'
+  'transactions', 'budgets', 'contacts',
+  'user_chart_of_accounts', 'transaction_rules'
 ];
 
 const createEntityAPI = (tableName) => {
@@ -266,29 +265,11 @@ export const createSupabaseClient = () => {
     entities: {
       Transaction: createEntityAPI('transactions'),
       Budget: createEntityAPI('budgets'),
-      BudgetGroup: createEntityAPI('budget_groups'),
-      Goal: createEntityAPI('goals'),
-      Bill: createEntityAPI('bills'),
-      CreditScore: createEntityAPI('credit_scores'),
       Contact: createEntityAPI('contacts'),
       ChartAccount: createEntityAPI('user_chart_of_accounts'),
       Account: createEntityAPI('user_chart_of_accounts'),
-      Asset: createEntityAPI('user_chart_of_accounts'),
-      Liability: createEntityAPI('user_chart_of_accounts'),
-      Equity: createEntityAPI('user_chart_of_accounts'),
-      DetailType: createEntityAPI('detail_types'),
-      AuditLog: createEntityAPI('audit_logs'),
-      DataRetentionPolicy: createEntityAPI('data_retention_policies'),
-      UserConsent: createEntityAPI('user_consents'),
-      DataExportRequest: createEntityAPI('data_export_requests'),
-      DataDeletionRequest: createEntityAPI('data_deletion_requests'),
-      ServiceConnection: createEntityAPI('service_connections'),
       UserRelationship: createEntityAPI('user_relationships'),
-      SharedResource: createEntityAPI('shared_resources'),
-      HouseholdGroup: createEntityAPI('household_groups'),
-      HouseholdMember: createEntityAPI('household_members'),
       Invitation: createEntityAPI('invitations'),
-      TransactionSplit: createEntityAPI('transaction_splits'),
       TransactionRule: createEntityAPI('transaction_rules')
     },
     auth: {

@@ -7,9 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "import-statements": "node scripts/import-real-statements.js",
-    "cache-statements": "node scripts/generate-sample-statement-data.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^4.1.2",

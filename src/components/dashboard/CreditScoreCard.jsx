@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { createPageUrl } from '../../utils';
+import { createPageUrl } from '../../pages/utils';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ArrowUp, Percent, Bell } from 'lucide-react';
 

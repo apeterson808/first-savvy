@@ -5,7 +5,7 @@ import AccountDropdown from '../common/AccountDropdown';
 import ComparisonPeriodDropdown from '../common/ComparisonPeriodDropdown';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { createPageUrl } from '../../utils';
+import { createPageUrl } from '../../pages/utils';
 
 export default function SpendingChartCard({ 
   transactions, 
