@@ -550,6 +550,9 @@ export default function AccountCreationWizard({
       setSelectedCard(null);
       setInstitutionSearch('');
       setSelectedInstitution(null);
+    } else if (currentStep === 'manual-entry') {
+      setCurrentStep('connect-bank');
+      setFormData({});
     } else if (currentStep === 'accounts-discovered') {
       setCurrentStep('connect-bank');
       setDiscoveredAccounts([]);
@@ -948,12 +951,13 @@ export default function AccountCreationWizard({
     onSuccess: async (newAccount) => {
       if (newAccount.current_balance && newAccount.current_balance !== 0) {
         try {
+          const openingDate = formData.asOfDate || new Date().toISOString().split('T')[0];
           await createOpeningBalanceJournalEntry({
             profileId: activeProfile.id,
             userId: user?.id,
             accountId: newAccount.id,
             openingBalance: newAccount.current_balance,
-            openingDate: new Date().toISOString().split('T')[0],
+            openingDate: openingDate,
             accountName: newAccount.display_name,
             accountClass: newAccount.class
           });
@@ -1280,6 +1284,7 @@ export default function AccountCreationWizard({
     createCategoryMutation.isPending;
 
   const getTotalSteps = () => {
+    if (currentStep === 'manual-entry') return 3;
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
     if (currentStep === 'bank-search') return 5;
@@ -1305,6 +1310,8 @@ export default function AccountCreationWizard({
     if (selectedCard?.id === 'banking') {
       const bankingStepMap = {
         'select-type': 0,
+        'connect-bank': 1,
+        'manual-entry': 2,
         'bank-search': 1,
         'select-subtype': 2,
         'details': 3,
@@ -1352,6 +1359,9 @@ export default function AccountCreationWizard({
   };
 
   const canProceed = () => {
+    if (currentStep === 'manual-entry') {
+      return formData.name && formData.name.trim();
+    }
     if (currentStep === 'details') {
       if (selectedCard.id === 'banking') {
         return (selectedAccountName && selectedAccountName.trim() &&
@@ -1386,7 +1396,23 @@ export default function AccountCreationWizard({
 
   const handleNext = async () => {
     if (selectedCard.id === 'banking') {
-      if (currentStep === 'bank-search') {
+      if (currentStep === 'manual-entry') {
+        if (!formData.name || !formData.name.trim()) {
+          toast.error('Please enter an account name');
+          return;
+        }
+
+        const balance = parseFloat(formData.beginningBalance) || 0;
+        await createAccountMutation.mutateAsync({
+          account_name: formData.name.trim(),
+          account_type: selectedSubtype.value,
+          current_balance: balance,
+          institution_name: formData.institutionName || null,
+          account_number_last4: formData.last4 || null,
+          is_active: true
+        });
+        return;
+      } else if (currentStep === 'bank-search') {
         setCurrentStep('details');
       } else if (currentStep === 'details') {
         if (!selectedAccountName || !uploadedFile || mappedTransactions.length === 0) {
@@ -1480,11 +1506,124 @@ export default function AccountCreationWizard({
 
         <div className="flex justify-center">
           <Button
-            onClick={() => setCurrentStep('details')}
+            onClick={() => setCurrentStep('manual-entry')}
             className="bg-blue-600 hover:bg-blue-700 rounded-full px-8"
           >
             Add Manually
           </Button>
+        </div>
+      </div>
+    );
+  };
+
+  const renderManualEntryStep = () => {
+    const existingAccounts = userChartAccounts?.filter(acc =>
+      acc.account_detail === (selectedSubtype?.value === 'checking' ? 'checking_account' :
+                              selectedSubtype?.value === 'savings' ? 'savings_account' :
+                              selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' : '') &&
+      acc.is_active === true
+    ) || [];
+
+    return (
+      <div className="space-y-4 max-w-lg mx-auto">
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <p className="text-xs text-blue-700">
+            Create your account now and add transactions manually or import from CSV later.
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="accountType">Account Type*</Label>
+          <Select
+            value={selectedSubtype?.value}
+            onValueChange={(value) => {
+              const subtype = selectedCard.subtypes.find(st => st.value === value);
+              setSelectedSubtype(subtype);
+              setFormData({ ...formData, subtype: value });
+            }}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Select account type" />
+            </SelectTrigger>
+            <SelectContent>
+              {selectedCard.subtypes.map(subtype => (
+                <SelectItem key={subtype.value} value={subtype.value}>
+                  {subtype.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <Label htmlFor="displayName">Display Name*</Label>
+          <div className="relative">
+            <Input
+              id="displayName"
+              value={formData.name || ''}
+              onChange={(e) => updateFormData('name', e.target.value)}
+              placeholder="e.g., My Checking Account"
+              className="h-9"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="institutionName">Bank/Institution</Label>
+            <Input
+              id="institutionName"
+              value={formData.institutionName || ''}
+              onChange={(e) => updateFormData('institutionName', e.target.value)}
+              placeholder="e.g., Chase"
+              className="h-9"
+            />
+          </div>
+          <div>
+            <Label htmlFor="last4">Last 4 Digits</Label>
+            <Input
+              id="last4"
+              value={formData.last4 || ''}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                updateFormData('last4', value);
+              }}
+              placeholder="1234"
+              maxLength={4}
+              className="h-9"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="beginningBalance">Beginning Balance</Label>
+            <Input
+              id="beginningBalance"
+              type="text"
+              value={formData.beginningBalance !== undefined ? formData.beginningBalance : '0.00'}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.-]/g, '');
+                updateFormData('beginningBalance', value);
+              }}
+              onBlur={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                updateFormData('beginningBalance', value.toFixed(2));
+              }}
+              placeholder="0.00"
+              className="h-9"
+            />
+          </div>
+          <div>
+            <Label htmlFor="asOfDate">As of Date</Label>
+            <Input
+              id="asOfDate"
+              type="date"
+              value={formData.asOfDate || new Date().toISOString().split('T')[0]}
+              onChange={(e) => updateFormData('asOfDate', e.target.value)}
+              className="h-9"
+            />
+          </div>
         </div>
       </div>
     );
@@ -3194,6 +3333,8 @@ export default function AccountCreationWizard({
         return renderSelectType();
       case 'connect-bank':
         return renderConnectBankStep();
+      case 'manual-entry':
+        return renderManualEntryStep();
       case 'accounts-discovered':
         return renderAccountsDiscovered();
       case 'csv-mapping':
@@ -3220,6 +3361,7 @@ export default function AccountCreationWizard({
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
     if (currentStep === 'connect-bank') return 'Connect Your Bank';
+    if (currentStep === 'manual-entry') return 'Create Account';
     if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'bank-info') return 'Bank Account Details';
@@ -3245,13 +3387,13 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'manual-entry' ? 'h-[480px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-4 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-lg">{getStepTitle()}</DialogTitle>
             </DialogHeader>
 
-            <div className={`py-4 px-4 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`}>
+            <div className={`py-4 px-4 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'flex items-center justify-center' : ''}`}>
               {renderCurrentStep()}
             </div>
 
@@ -3269,6 +3411,27 @@ export default function AccountCreationWizard({
                 </Button>
 
                 {currentStep === 'connect-bank' && <div />}
+
+                {currentStep === 'manual-entry' && (
+                  <Button
+                    type="button"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                    onClick={handleNext}
+                    disabled={!canProceed() || isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Creating Account...
+                      </>
+                    ) : (
+                      <>
+                        <Check className="w-4 h-4 mr-1" />
+                        Create Account
+                      </>
+                    )}
+                  </Button>
+                )}
 
                 {currentStep === 'bank-search' && <div />}
 
