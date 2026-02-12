@@ -90,6 +90,27 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
     }
   }, [headers, hasAutoDetected]);
 
+  useEffect(() => {
+    if (hasAutoDetected) {
+      const isAutoValid = columnMappings.date && columnMappings.description &&
+        (columnMappings.amount || (debitColumn && creditColumn));
+
+      if (isAutoValid) {
+        const timer = setTimeout(() => {
+          onMap({
+            columnMappings,
+            dateFormat,
+            amountType,
+            debitColumn,
+            creditColumn
+          });
+        }, 500);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [hasAutoDetected, columnMappings, debitColumn, creditColumn, dateFormat, amountType, onMap]);
+
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
   };
