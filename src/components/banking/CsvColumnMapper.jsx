@@ -53,7 +53,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
+export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false }) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -89,27 +89,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
       setHasAutoDetected(true);
     }
   }, [headers, hasAutoDetected]);
-
-  useEffect(() => {
-    if (hasAutoDetected) {
-      const isAutoValid = columnMappings.date && columnMappings.description &&
-        (columnMappings.amount || (debitColumn && creditColumn));
-
-      if (isAutoValid) {
-        const timer = setTimeout(() => {
-          onMap({
-            columnMappings,
-            dateFormat,
-            amountType,
-            debitColumn,
-            creditColumn
-          });
-        }, 500);
-
-        return () => clearTimeout(timer);
-      }
-    }
-  }, [hasAutoDetected, columnMappings, debitColumn, creditColumn, dateFormat, amountType, onMap]);
 
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
@@ -431,16 +410,16 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel }) {
 
       {/* Actions */}
       <div className="flex justify-end gap-2 pt-2">
-        <Button variant="outline" onClick={onCancel} size="sm">
+        <Button variant="outline" onClick={onCancel} size="sm" disabled={isImporting}>
           Cancel
         </Button>
-        <Button 
-          onClick={handleMap} 
-          disabled={!isValid}
+        <Button
+          onClick={handleMap}
+          disabled={!isValid || isImporting}
           className="bg-blue-600 hover:bg-blue-700"
           size="sm"
         >
-          Import {csvData.rows?.length || 0} Transactions
+          {isImporting ? 'Importing...' : `Import ${csvData.rows?.length || 0} Transactions`}
         </Button>
       </div>
 

@@ -603,13 +603,10 @@ export default function AccountDetail() {
     }
   };
 
-  const handleCsvMapping = (transactions) => {
+  const handleCsvMapping = async (transactions) => {
     setMappedTransactions(transactions);
-    setImportStep('confirm');
-  };
 
-  const handleConfirmImport = async () => {
-    if (mappedTransactions.length === 0) {
+    if (transactions.length === 0) {
       toast.error('No transactions to import');
       return;
     }
@@ -618,7 +615,7 @@ export default function AccountDetail() {
     try {
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
         account.id,
-        mappedTransactions
+        transactions
       );
 
       const allTransactions = uniqueTransactions
@@ -1565,6 +1562,7 @@ export default function AccountDetail() {
                   setProcessedData(null);
                   setUploadedFile(null);
                 }}
+                isImporting={isImporting}
               />
             )}
 
