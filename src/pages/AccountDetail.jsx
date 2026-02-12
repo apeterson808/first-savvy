@@ -47,7 +47,7 @@ import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
 import { useAccountTypesByClass, useAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import CsvColumnMapper from '@/components/banking/CsvColumnMapper';
-import { processStatementFile, autoMatchTransfers } from '@/components/banking/StatementProcessor';
+import { processStatementFile, autoMatchTransfers, mapCsvToTransactions } from '@/components/banking/StatementProcessor';
 import { detectDuplicateTransactions } from '@/api/duplicateDetection';
 
 export default function AccountDetail() {
@@ -603,11 +603,22 @@ export default function AccountDetail() {
     }
   };
 
-  const handleCsvMapping = async (transactions) => {
+  const handleCsvMapping = async (mappingConfig) => {
+    const { columnMappings, dateFormat, amountType, debitColumn, creditColumn } = mappingConfig;
+
+    const transactions = mapCsvToTransactions(
+      processedData,
+      columnMappings,
+      amountType,
+      debitColumn,
+      creditColumn
+    );
+
     setMappedTransactions(transactions);
 
     if (transactions.length === 0) {
       toast.error('No transactions to import');
+      setIsImporting(false);
       return;
     }
 
