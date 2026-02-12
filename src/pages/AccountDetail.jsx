@@ -1589,6 +1589,7 @@ export default function AccountDetail() {
                   setUploadedFile(null);
                 }}
                 isImporting={isImporting}
+                isFirstImport={totalJournalLines === 0}
               />
             )}
 

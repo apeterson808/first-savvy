@@ -53,7 +53,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false }) {
+export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false }) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -410,28 +410,30 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         </Card>
       </div>
 
-      {/* Beginning Balance */}
-      <Card className="p-4">
-        <div className="space-y-2">
-          <Label htmlFor="beginningBalance" className="text-sm font-medium">
-            Beginning Balance (Optional)
-          </Label>
-          <div className="flex items-start gap-2">
-            <Input
-              id="beginningBalance"
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={beginningBalance}
-              onChange={(e) => setBeginningBalance(e.target.value)}
-              className="max-w-xs"
-            />
-            <div className="text-xs text-slate-500 mt-1.5">
-              Enter the account balance before these transactions if this is your first import.
+      {/* Beginning Balance - Only shown on first import */}
+      {isFirstImport && (
+        <Card className="p-4">
+          <div className="space-y-2">
+            <Label htmlFor="beginningBalance" className="text-sm font-medium">
+              Beginning Balance (Optional)
+            </Label>
+            <div className="flex items-start gap-2">
+              <Input
+                id="beginningBalance"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={beginningBalance}
+                onChange={(e) => setBeginningBalance(e.target.value)}
+                className="max-w-xs"
+              />
+              <div className="text-xs text-slate-500 mt-1.5">
+                Enter the account balance before these transactions.
+              </div>
             </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      )}
 
       {/* Actions */}
       <div className="flex justify-end gap-2 pt-2">
