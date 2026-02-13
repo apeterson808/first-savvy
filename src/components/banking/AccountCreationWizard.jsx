@@ -354,6 +354,7 @@ export default function AccountCreationWizard({
   const [uploadedFile, setUploadedFile] = useState(null);
   const newItemRef = useRef(null);
   const csvFileInputRef = useRef(null);
+  const balanceCsvFileInputRef = useRef(null);
   const [processingStatus, setProcessingStatus] = useState(null);
   const [processedData, setProcessedData] = useState(null);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
@@ -364,6 +365,7 @@ export default function AccountCreationWizard({
   const [skipDuplicates, setSkipDuplicates] = useState(true);
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
+  const [balanceData, setBalanceData] = useState(null);
 
   const [availableInstitutions, setAvailableInstitutions] = useState([]);
   const [institutionSearch, setInstitutionSearch] = useState('');
@@ -682,6 +684,67 @@ export default function AccountCreationWizard({
     }
   };
 
+  const handleBalanceCsvUpload = async (file) => {
+    try {
+      const result = await processStatementFile(file, null);
+
+      if (result.type === 'csv' && result.rows && result.rows.length > 0) {
+        const balanceColumnCandidates = result.headers.filter(h =>
+          h.toLowerCase().includes('balance') ||
+          h.toLowerCase().includes('amount') ||
+          h.toLowerCase() === 'bal'
+        );
+
+        const dateColumnCandidates = result.headers.filter(h =>
+          h.toLowerCase().includes('date') ||
+          h.toLowerCase() === 'trans date' ||
+          h.toLowerCase() === 'post date' ||
+          h.toLowerCase() === 'posting date'
+        );
+
+        if (balanceColumnCandidates.length > 0 && dateColumnCandidates.length > 0) {
+          const balanceColumn = balanceColumnCandidates[0];
+          const dateColumn = dateColumnCandidates[0];
+
+          const firstRow = result.rows[0];
+          const lastRow = result.rows[result.rows.length - 1];
+
+          const beginningBalance = parseFloat(firstRow[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
+          const endingBalance = parseFloat(lastRow[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
+
+          const beginningDate = parseDate(firstRow[dateColumn]);
+          const endingDate = parseDate(lastRow[dateColumn]);
+
+          setBalanceData({
+            beginningBalance,
+            endingBalance,
+            beginningDate,
+            endingDate,
+            fileName: file.name
+          });
+
+          if (beginningBalance !== 0 && beginningDate) {
+            updateFormData('beginningBalance', beginningBalance.toFixed(2));
+            updateFormData('asOfDate', beginningDate);
+          }
+
+          if (endingBalance !== 0 && endingDate) {
+            updateFormData('endingBalance', endingBalance.toFixed(2));
+            updateFormData('endingDate', endingDate);
+          }
+
+          toast.success('Balance information extracted from CSV');
+        } else {
+          toast.error('Could not find balance or date columns in CSV');
+        }
+      } else {
+        toast.error('Please upload a valid CSV file');
+      }
+    } catch (error) {
+      console.error('Error processing balance CSV:', error);
+      toast.error('Failed to process CSV file');
+    }
+  };
 
   const handleCsvMap = (mappingConfig) => {
     const transactions = mapCsvToTransactions(
@@ -1595,6 +1658,68 @@ export default function AccountCreationWizard({
           </div>
         </div>
 
+        <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-900">
+              Optional: Upload a CSV statement to automatically fill balance and date fields
+            </p>
+          </div>
+
+          {balanceData ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700">
+                  {balanceData.fileName}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setBalanceData(null);
+                    updateFormData('beginningBalance', '0.00');
+                    updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
+                    updateFormData('endingBalance', '0.00');
+                    updateFormData('endingDate', new Date().toISOString().split('T')[0]);
+                  }}
+                  className="h-7 text-xs"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Remove
+                </Button>
+              </div>
+              <div className="text-xs text-slate-600">
+                Beginning: ${balanceData.beginningBalance.toFixed(2)} on {balanceData.beginningDate} •
+                Ending: ${balanceData.endingBalance.toFixed(2)} on {balanceData.endingDate}
+              </div>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={balanceCsvFileInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleBalanceCsvUpload(file);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => balanceCsvFileInputRef.current?.click()}
+                className="w-full h-9 border-blue-300 hover:bg-blue-100"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload CSV Statement
+              </Button>
+            </>
+          )}
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="beginningBalance">Beginning Balance</Label>
@@ -1621,6 +1746,37 @@ export default function AccountCreationWizard({
               type="date"
               value={formData.asOfDate || new Date().toISOString().split('T')[0]}
               onChange={(e) => updateFormData('asOfDate', e.target.value)}
+              className="h-9"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="endingBalance">Ending Balance</Label>
+            <Input
+              id="endingBalance"
+              type="text"
+              value={formData.endingBalance !== undefined ? formData.endingBalance : '0.00'}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9.-]/g, '');
+                updateFormData('endingBalance', value);
+              }}
+              onBlur={(e) => {
+                const value = parseFloat(e.target.value) || 0;
+                updateFormData('endingBalance', value.toFixed(2));
+              }}
+              placeholder="0.00"
+              className="h-9"
+            />
+          </div>
+          <div>
+            <Label htmlFor="endingDate">Ending Date</Label>
+            <Input
+              id="endingDate"
+              type="date"
+              value={formData.endingDate || new Date().toISOString().split('T')[0]}
+              onChange={(e) => updateFormData('endingDate', e.target.value)}
               className="h-9"
             />
           </div>
