@@ -1172,7 +1172,7 @@ export default function AccountCreationWizard({
               date: txn.date,
               description: txn.description,
               original_description: txn.original_description || txn.description,
-              amount: txn.amount,
+              amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
               type: txn.type,
               status: 'pending',
               source: 'import',
