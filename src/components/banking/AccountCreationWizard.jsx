@@ -841,6 +841,9 @@ export default function AccountCreationWizard({
   };
 
   const handleImportTransactions = async () => {
+    console.log('=== handleImportTransactions CALLED ===');
+    console.log('isExistingAccount:', isExistingAccount);
+    console.log('mappedTransactions.length:', mappedTransactions.length);
     try {
       let targetAccountId = selectedAccountId;
       let targetAccountObject;
@@ -1596,6 +1599,11 @@ export default function AccountCreationWizard({
   };
 
   const handleNext = async () => {
+    console.log('=== handleNext CALLED ===');
+    console.log('currentStep:', currentStep);
+    console.log('selectedCard.id:', selectedCard?.id);
+    console.log('isExistingAccount:', isExistingAccount);
+
     if (selectedCard.id === 'banking') {
       if (currentStep === 'manual-entry') {
         if (!formData.name || !formData.name.trim()) {
