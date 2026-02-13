@@ -1611,9 +1611,9 @@ export default function AccountCreationWizard({
     ) || [];
 
     return (
-      <div className="space-y-2.5 max-w-lg mx-auto">
+      <div className="space-y-2 max-w-lg mx-auto">
         <div>
-          <Label htmlFor="accountType" className="text-sm mb-1">Account Type*</Label>
+          <Label htmlFor="accountType" className="text-sm mb-0.5">Account Type*</Label>
           <div className="flex gap-2">
             <Select
               value={selectedSubtype?.value}
@@ -1623,7 +1623,7 @@ export default function AccountCreationWizard({
                 setFormData({ ...formData, subtype: value });
               }}
             >
-              <SelectTrigger className="h-9 flex-1">
+              <SelectTrigger className="h-8 flex-1 text-sm">
                 <SelectValue placeholder="Select account type" />
               </SelectTrigger>
               <SelectContent position="popper" sideOffset={5}>
@@ -1646,9 +1646,9 @@ export default function AccountCreationWizard({
                       setBalanceImportStep('upload');
                       setBalanceProcessedData(null);
                     }}
-                    className="h-9 px-3"
+                    className="h-8 px-2"
                   >
-                    <Upload className="w-4 h-4" />
+                    <Upload className="w-3.5 h-3.5" />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1660,31 +1660,31 @@ export default function AccountCreationWizard({
         </div>
 
         <div>
-          <Label htmlFor="displayName" className="text-sm mb-1">Display Name*</Label>
+          <Label htmlFor="displayName" className="text-sm mb-0.5">Display Name*</Label>
           <div className="relative">
             <Input
               id="displayName"
               value={formData.name || ''}
               onChange={(e) => updateFormData('name', e.target.value)}
               placeholder="e.g., My Checking Account"
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <Label htmlFor="institutionName" className="text-sm mb-1">Bank/Institution</Label>
+            <Label htmlFor="institutionName" className="text-sm mb-0.5">Bank/Institution</Label>
             <Input
               id="institutionName"
               value={formData.institutionName || ''}
               onChange={(e) => updateFormData('institutionName', e.target.value)}
               placeholder="e.g., Chase"
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
           <div>
-            <Label htmlFor="last4" className="text-sm mb-1">Last 4 Digits</Label>
+            <Label htmlFor="last4" className="text-sm mb-0.5">Last 4 Digits</Label>
             <Input
               id="last4"
               value={formData.last4 || ''}
@@ -1694,14 +1694,14 @@ export default function AccountCreationWizard({
               }}
               placeholder="1234"
               maxLength={4}
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <Label htmlFor="beginningBalance" className="text-sm mb-1">Beginning Balance</Label>
+            <Label htmlFor="beginningBalance" className="text-sm mb-0.5">Beginning Balance</Label>
             <Input
               id="beginningBalance"
               type="text"
@@ -1715,24 +1715,24 @@ export default function AccountCreationWizard({
                 updateFormData('beginningBalance', value.toFixed(2));
               }}
               placeholder="0.00"
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
           <div>
-            <Label htmlFor="asOfDate" className="text-sm mb-1">As of Date</Label>
+            <Label htmlFor="asOfDate" className="text-sm mb-0.5">As of Date</Label>
             <Input
               id="asOfDate"
               type="date"
               value={formData.asOfDate || new Date().toISOString().split('T')[0]}
               onChange={(e) => updateFormData('asOfDate', e.target.value)}
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-2.5">
           <div>
-            <Label htmlFor="endingBalance" className="text-sm mb-1">Ending Balance</Label>
+            <Label htmlFor="endingBalance" className="text-sm mb-0.5">Ending Balance</Label>
             <Input
               id="endingBalance"
               type="text"
@@ -1746,17 +1746,17 @@ export default function AccountCreationWizard({
                 updateFormData('endingBalance', value.toFixed(2));
               }}
               placeholder="0.00"
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
           <div>
-            <Label htmlFor="endingDate" className="text-sm mb-1">Ending Date</Label>
+            <Label htmlFor="endingDate" className="text-sm mb-0.5">Ending Date</Label>
             <Input
               id="endingDate"
               type="date"
               value={formData.endingDate || new Date().toISOString().split('T')[0]}
               onChange={(e) => updateFormData('endingDate', e.target.value)}
-              className="h-9"
+              className="h-8 text-sm"
             />
           </div>
         </div>
@@ -3557,17 +3557,17 @@ export default function AccountCreationWizard({
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'manual-entry' ? 'h-[440px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
-            <DialogHeader className="pt-3 px-4 flex-shrink-0">
-              <DialogTitle className="text-center text-lg">{getStepTitle()}</DialogTitle>
+          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'manual-entry' ? 'h-[390px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+            <DialogHeader className="pt-2.5 px-4 flex-shrink-0">
+              <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
 
-            <div className={`${currentStep === 'manual-entry' ? 'py-3 px-4' : 'py-4 px-4'} flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'flex items-center justify-center' : ''}`}>
+            <div className={`${currentStep === 'manual-entry' ? 'py-2.5 px-4' : 'py-4 px-4'} flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'flex items-center justify-center' : ''}`}>
               {renderCurrentStep()}
             </div>
 
             {currentStep !== 'select-type' && currentStep !== 'csv-mapping' && (
-              <div className="flex justify-between gap-4 pt-2.5 pb-3 px-4 border-t flex-shrink-0">
+              <div className="flex justify-between gap-4 pt-2 pb-2.5 px-4 border-t flex-shrink-0">
                 <Button
                   type="button"
                   variant="outline"
