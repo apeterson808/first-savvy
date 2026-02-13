@@ -179,7 +179,9 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       amountType,
       debitColumn,
       creditColumn,
-      beginningBalance: beginningBalance ? parseFloat(beginningBalance) : null
+      balanceColumn,
+      beginningBalance: beginningBalance ? parseFloat(beginningBalance) : null,
+      csvData
     });
   };
 

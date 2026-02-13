@@ -733,7 +733,7 @@ export default function AccountCreationWizard({
   };
 
   const handleBalanceCsvMapping = async (mappingConfig) => {
-    const { columnMappings, amountType, debitColumn, creditColumn, beginningBalance } = mappingConfig;
+    const { columnMappings, amountType, debitColumn, creditColumn, balanceColumn, csvData } = mappingConfig;
 
     const transactions = mapCsvToTransactions(
       balanceProcessedData,
@@ -755,11 +755,40 @@ export default function AccountCreationWizard({
     const firstTxn = sortedTransactions[0];
     const lastTxn = sortedTransactions[sortedTransactions.length - 1];
 
-    const netChange = sortedTransactions.reduce((sum, txn) => sum + txn.amount, 0);
-    const calculatedBeginningBalance = beginningBalance !== null && beginningBalance !== undefined
-      ? beginningBalance
-      : 0;
-    const calculatedEndingBalance = calculatedBeginningBalance + netChange;
+    let calculatedBeginningBalance = 0;
+    let calculatedEndingBalance = 0;
+
+    if (balanceColumn && csvData && csvData.rows && csvData.rows.length > 0) {
+      const rowsWithDates = csvData.rows.map((row, idx) => ({
+        row,
+        date: parseDate(row[columnMappings.date]),
+        balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0),
+        index: idx
+      })).filter(item => item.date !== null && !isNaN(item.balance));
+
+      if (rowsWithDates.length > 0) {
+        rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const oldestRow = rowsWithDates[0];
+        const newestRow = rowsWithDates[rowsWithDates.length - 1];
+
+        let firstTransactionAmount = 0;
+        if (amountType === 'separate_columns' && debitColumn && creditColumn) {
+          const debit = parseFloat(oldestRow.row[debitColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
+          const credit = parseFloat(oldestRow.row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
+          firstTransactionAmount = credit - debit;
+        } else if (columnMappings.amount) {
+          const amountStr = oldestRow.row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
+          firstTransactionAmount = parseFloat(amountStr);
+        }
+
+        calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
+        calculatedEndingBalance = newestRow.balance;
+      }
+    } else {
+      const netChange = sortedTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+      calculatedBeginningBalance = 0;
+      calculatedEndingBalance = netChange;
+    }
 
     updateFormData('asOfDate', firstTxn.date);
     updateFormData('endingDate', lastTxn.date);
