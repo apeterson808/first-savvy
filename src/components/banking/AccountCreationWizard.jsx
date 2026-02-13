@@ -913,22 +913,33 @@ export default function AccountCreationWizard({
         targetAccountObject = existingAccount;
       }
 
+      console.log('=== TRANSACTION FILTERING DEBUG ===');
+      console.log('Mapped transactions count:', mappedTransactions.length);
+      console.log('First 3 mapped transactions:', mappedTransactions.slice(0, 3));
+      console.log('Custom start date:', customStartDate);
+
       const transactionsToCheck = mappedTransactions.filter(txn => {
         const desc = txn.description?.toLowerCase() || '';
         const isBeginningBalance = desc.includes('beginning balance') && txn.amount === 0;
 
-        if (isBeginningBalance) return false;
+        if (isBeginningBalance) {
+          console.log('Filtered out beginning balance transaction:', txn.description);
+          return false;
+        }
 
         if (customStartDate) {
           const txnDate = new Date(txn.date);
           const startDate = new Date(customStartDate);
-          return txnDate >= startDate;
+          const include = txnDate >= startDate;
+          if (!include) {
+            console.log('Filtered out by date:', txn.date, 'before', customStartDate);
+          }
+          return include;
         }
 
         return true;
       });
 
-      console.log('Mapped transactions:', mappedTransactions.length);
       console.log('Transactions to check (after date filter):', transactionsToCheck.length);
 
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
@@ -943,36 +954,61 @@ export default function AccountCreationWizard({
       setDuplicateTransactions(duplicates);
 
       const transactionsToImport = skipDuplicates ? uniqueTransactions : transactionsToCheck;
+      console.log('Transactions to import (after duplicate handling):', transactionsToImport.length);
 
-      const allTransactions = transactionsToImport
-        .filter(txn => txn.description && !txn.description.toLowerCase().includes('beginning balance'))
-        .map(txn => ({
-          profile_id: activeProfile.id,
-          user_id: user.id,
-          bank_account_id: targetAccountId,
-          status: 'pending',
-          date: txn.date,
-          description: txn.description,
-          original_description: txn.original_description,
-          amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
-          type: txn.type
-        }));
+      const filteredForBeginningBalance = transactionsToImport.filter(txn => {
+        const hasDescription = !!txn.description;
+        const isBeginningBalance = txn.description && txn.description.toLowerCase().includes('beginning balance');
 
-      console.log('About to insert transactions:', allTransactions.length, allTransactions.slice(0, 2));
+        if (!hasDescription) {
+          console.log('Filtered out: no description');
+        }
+        if (isBeginningBalance) {
+          console.log('Filtered out: beginning balance -', txn.description);
+        }
+
+        return hasDescription && !isBeginningBalance;
+      });
+
+      console.log('After final filter:', filteredForBeginningBalance.length);
+
+      const allTransactions = filteredForBeginningBalance.map(txn => ({
+        profile_id: activeProfile.id,
+        user_id: user.id,
+        bank_account_id: targetAccountId,
+        status: 'pending',
+        date: txn.date,
+        description: txn.description,
+        original_description: txn.original_description,
+        amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
+        type: txn.type
+      }));
+
+      console.log('About to insert transactions:', allTransactions.length);
+      console.log('First 2 transactions to insert:', allTransactions.slice(0, 2));
 
       if (allTransactions.length > 0) {
+        console.log('=== INSERTING TRANSACTIONS ===');
+        console.log('Total to insert:', allTransactions.length);
+
         const { data: insertedData, error } = await firstsavvy
           .from('transactions')
           .insert(allTransactions)
           .select();
 
         if (error) {
-          console.error('Transaction insert error:', error);
+          console.error('=== TRANSACTION INSERT ERROR ===');
+          console.error('Error details:', error);
+          console.error('Error message:', error.message);
+          console.error('Error hint:', error.hint);
           throw error;
         }
-        console.log('Transactions inserted successfully:', insertedData?.length);
+        console.log('=== TRANSACTIONS INSERTED SUCCESSFULLY ===');
+        console.log('Inserted count:', insertedData?.length);
+        console.log('Sample inserted data:', insertedData?.slice(0, 2));
       } else {
-        console.warn('No transactions to insert after filtering');
+        console.warn('=== NO TRANSACTIONS TO INSERT ===');
+        console.warn('This means all transactions were filtered out');
       }
 
       const endingBalanceValue = parseFloat(formData.endingBalance);
