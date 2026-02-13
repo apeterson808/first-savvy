@@ -813,6 +813,10 @@ export default function AccountCreationWizard({
   };
 
   const handleCsvMap = (mappingConfig) => {
+    console.log('=== CSV MAPPING ===');
+    console.log('Processed data rows:', processedData?.rows?.length);
+    console.log('Mapping config:', mappingConfig);
+
     const transactions = mapCsvToTransactions(
       processedData,
       mappingConfig.columnMappings,
@@ -820,6 +824,9 @@ export default function AccountCreationWizard({
       mappingConfig.debitColumn,
       mappingConfig.creditColumn
     );
+
+    console.log('Mapped transactions count:', transactions.length);
+    console.log('First 3 transactions:', transactions.slice(0, 3));
 
     setMappedTransactions(transactions);
     setProcessingStatus('success');
@@ -1140,6 +1147,12 @@ export default function AccountCreationWizard({
       }
     },
     onSuccess: async (newAccount) => {
+      console.log('=== ACCOUNT CREATION SUCCESS ===');
+      console.log('New account ID:', newAccount.id);
+      console.log('Mapped transactions count:', mappedTransactions.length);
+      console.log('Custom start date:', customStartDate);
+      console.log('Form asOfDate:', formData.asOfDate);
+
       if (newAccount.current_balance && newAccount.current_balance !== 0 && !newAccount._usedActivateTemplate) {
         try {
           const openingDate = formData.asOfDate || new Date().toISOString().split('T')[0];
@@ -1161,9 +1174,12 @@ export default function AccountCreationWizard({
       if (mappedTransactions.length > 0) {
         try {
           const startDate = customStartDate || formData.asOfDate;
+          console.log('Start date for filtering:', startDate);
           const transactionsToImport = startDate
             ? mappedTransactions.filter(txn => new Date(txn.date) >= new Date(startDate))
             : mappedTransactions;
+
+          console.log('Transactions after date filter:', transactionsToImport.length);
 
           if (transactionsToImport.length > 0) {
             const transactionsWithAccount = transactionsToImport.map(txn => ({
