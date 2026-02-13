@@ -787,20 +787,6 @@ export default function AccountCreationWizard({
 
         calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
         calculatedEndingBalance = newestRow.balance;
-
-        const verifiedEndingBalance = calculatedBeginningBalance + netChange;
-        const difference = Math.abs(verifiedEndingBalance - calculatedEndingBalance);
-
-        if (difference > 0.01) {
-          console.warn('Balance verification failed:', {
-            beginningBalance: calculatedBeginningBalance,
-            netChange,
-            calculatedFromTransactions: verifiedEndingBalance,
-            balanceFromCSV: calculatedEndingBalance,
-            difference
-          });
-          calculatedEndingBalance = verifiedEndingBalance;
-        }
       }
     } else {
       calculatedBeginningBalance = 0;
