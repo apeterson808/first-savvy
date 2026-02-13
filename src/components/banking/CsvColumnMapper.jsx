@@ -204,7 +204,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           <div className="flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-green-900 font-medium">Auto-detected {autoDetectedFields.length} field{autoDetectedFields.length !== 1 ? 's' : ''}</p>
+              <p className="text-sm text-green-900 font-medium">Auto-detected {autoDetectedFields.length} field{autoDetectedFields.length !== 1 ? 's' : ''} ({csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found)</p>
               <p className="text-xs text-green-700 mt-1">
                 {requiredFieldsMapped ? 'Required fields mapped successfully. ' : 'Some required fields need attention. '}
                 {optionalFieldsMapped > 0 && `Found ${optionalFieldsMapped} optional field${optionalFieldsMapped !== 1 ? 's' : ''}. `}
@@ -223,12 +223,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           </div>
         </div>
       )}
-
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <p className="text-sm text-blue-900">
-          Map your CSV columns to transaction fields. Preview shows first 3 rows.
-        </p>
-      </div>
 
       {/* Column Mappings */}
       <div className="space-y-3">
@@ -522,7 +516,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           size="sm"
         >
           {isBalanceExtraction
-            ? (isImporting ? 'Extracting...' : 'Extract Dates')
+            ? (isImporting ? 'Processing...' : 'Done')
             : (isImporting ? 'Importing...' : `Import ${csvData.rows?.length || 0} Transactions`)
           }
         </Button>
