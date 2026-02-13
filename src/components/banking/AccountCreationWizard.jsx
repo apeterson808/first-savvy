@@ -771,6 +771,7 @@ export default function AccountCreationWizard({
       if (rowsWithDates.length > 0) {
         rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
         const oldestRow = rowsWithDates[0];
+        const newestRow = rowsWithDates[rowsWithDates.length - 1];
 
         let firstTransactionAmount = 0;
         if (amountType === 'separate_columns' && debitColumn && creditColumn) {
@@ -783,7 +784,7 @@ export default function AccountCreationWizard({
         }
 
         calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
-        calculatedEndingBalance = calculatedBeginningBalance + netChange;
+        calculatedEndingBalance = newestRow.balance;
       }
     } else {
       calculatedBeginningBalance = 0;
