@@ -1620,25 +1620,49 @@ export default function AccountCreationWizard({
 
         <div>
           <Label htmlFor="accountType">Account Type*</Label>
-          <Select
-            value={selectedSubtype?.value}
-            onValueChange={(value) => {
-              const subtype = selectedCard.subtypes.find(st => st.value === value);
-              setSelectedSubtype(subtype);
-              setFormData({ ...formData, subtype: value });
-            }}
-          >
-            <SelectTrigger className="h-9">
-              <SelectValue placeholder="Select account type" />
-            </SelectTrigger>
-            <SelectContent>
-              {selectedCard.subtypes.map(subtype => (
-                <SelectItem key={subtype.value} value={subtype.value}>
-                  {subtype.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex gap-2">
+            <Select
+              value={selectedSubtype?.value}
+              onValueChange={(value) => {
+                const subtype = selectedCard.subtypes.find(st => st.value === value);
+                setSelectedSubtype(subtype);
+                setFormData({ ...formData, subtype: value });
+              }}
+            >
+              <SelectTrigger className="h-10 flex-1">
+                <SelectValue placeholder="Select account type" />
+              </SelectTrigger>
+              <SelectContent position="popper" sideOffset={5}>
+                {selectedCard.subtypes.map(subtype => (
+                  <SelectItem key={subtype.value} value={subtype.value}>
+                    {subtype.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowBalanceImportDialog(true);
+                      setBalanceImportStep('upload');
+                      setBalanceProcessedData(null);
+                    }}
+                    className="h-10 px-3"
+                  >
+                    <Upload className="w-4 h-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Upload CSV statement to automatically fill date fields</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </div>
 
         <div>
@@ -1743,56 +1767,37 @@ export default function AccountCreationWizard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-blue-900">
-              Optional: Upload a CSV statement to automatically fill date fields
-            </p>
-          </div>
-
-          {balanceData ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">
-                  {balanceData.fileName}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setBalanceData(null);
-                    updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
-                    updateFormData('endingDate', new Date().toISOString().split('T')[0]);
-                  }}
-                  className="h-7 text-xs"
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Remove
-                </Button>
+        {balanceData && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <div>
+                  <span className="text-sm font-medium text-slate-700">
+                    {balanceData.fileName}
+                  </span>
+                  <div className="text-xs text-slate-600">
+                    Beginning: {balanceData.beginningDate} • Ending: {balanceData.endingDate}
+                  </div>
+                </div>
               </div>
-              <div className="text-xs text-slate-600">
-                Beginning Date: {balanceData.beginningDate} • Ending Date: {balanceData.endingDate}
-              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setBalanceData(null);
+                  updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
+                  updateFormData('endingDate', new Date().toISOString().split('T')[0]);
+                }}
+                className="h-7 text-xs"
+              >
+                <X className="w-3 h-3 mr-1" />
+                Remove
+              </Button>
             </div>
-          ) : (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setShowBalanceImportDialog(true);
-                setBalanceImportStep('upload');
-                setBalanceProcessedData(null);
-              }}
-              className="w-full h-9 border-blue-300 hover:bg-blue-100"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Upload CSV Statement
-            </Button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     );
   };
