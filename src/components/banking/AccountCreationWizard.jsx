@@ -3591,6 +3591,23 @@ export default function AccountCreationWizard({
                               console.error('Error updating new account:', updateError);
                             }
 
+                            if (beginningBalance && beginningBalance !== 0) {
+                              try {
+                                await createOpeningBalanceJournalEntry({
+                                  profileId: activeProfile.id,
+                                  userId: user?.id,
+                                  accountId: chartAccountId,
+                                  openingBalance: beginningBalance,
+                                  openingDate: openingBalanceDate,
+                                  accountName: config.displayName,
+                                  accountClass: createdAccount.class
+                                });
+                                console.log(`✓ Created opening balance journal entry for ${config.displayName}`);
+                              } catch (error) {
+                                console.error('Failed to create opening balance journal entry:', error);
+                              }
+                            }
+
                             console.log(`✓ Created account ${config.displayName} with opening balance ${beginningBalance ? `$${beginningBalance}` : '$0'} as of ${openingBalanceDate}`);
                           }
 
