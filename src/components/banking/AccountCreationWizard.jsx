@@ -927,10 +927,17 @@ export default function AccountCreationWizard({
         return true;
       });
 
+      console.log('Mapped transactions:', mappedTransactions.length);
+      console.log('Transactions to check (after date filter):', transactionsToCheck.length);
+
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
         targetAccountId,
         transactionsToCheck
       );
+
+      console.log('Duplicates found:', duplicates.length);
+      console.log('Unique transactions:', uniqueTransactions.length);
+      console.log('Skip duplicates setting:', skipDuplicates);
 
       setDuplicateTransactions(duplicates);
 
@@ -950,12 +957,21 @@ export default function AccountCreationWizard({
           type: txn.type
         }));
 
-      if (allTransactions.length > 0) {
-        const { error } = await firstsavvy
-          .from('transactions')
-          .insert(allTransactions);
+      console.log('About to insert transactions:', allTransactions.length, allTransactions.slice(0, 2));
 
-        if (error) throw error;
+      if (allTransactions.length > 0) {
+        const { data: insertedData, error } = await firstsavvy
+          .from('transactions')
+          .insert(allTransactions)
+          .select();
+
+        if (error) {
+          console.error('Transaction insert error:', error);
+          throw error;
+        }
+        console.log('Transactions inserted successfully:', insertedData?.length);
+      } else {
+        console.warn('No transactions to insert after filtering');
       }
 
       if (processedData?.endingBalance !== undefined && processedData?.endingBalance !== null) {
