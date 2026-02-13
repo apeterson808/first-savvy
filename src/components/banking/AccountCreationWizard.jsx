@@ -574,10 +574,6 @@ export default function AccountCreationWizard({
     } else if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') {
         setCurrentStep('connect-bank');
-        setUploadedFile(null);
-        setProcessedData(null);
-        setMappedTransactions([]);
-        setShowMappingSuccess(false);
         setSelectedCachedAccount(null);
         setSelectedStatements([]);
         setCacheImportMode(false);
@@ -585,10 +581,6 @@ export default function AccountCreationWizard({
         setCurrentStep('select-subtype');
         setSelectedSubtype(null);
         setFormData({});
-        setUploadedFile(null);
-        setProcessedData(null);
-        setMappedTransactions([]);
-        setShowMappingSuccess(false);
         setSelectedCachedAccount(null);
         setSelectedStatements([]);
         setCacheImportMode(false);
@@ -597,10 +589,6 @@ export default function AccountCreationWizard({
         setSelectedCard(null);
         setSelectedSubtype(null);
         setFormData({});
-        setUploadedFile(null);
-        setProcessedData(null);
-        setMappedTransactions([]);
-        setShowMappingSuccess(false);
       }
     } else if (currentStep === 'loan-search' || currentStep === 'balance') {
       setCurrentStep('details');
@@ -627,6 +615,8 @@ export default function AccountCreationWizard({
   const handleFileUpload = async (file) => {
     setUploadedFile(file);
     setProcessingStatus('processing');
+    setMappedTransactions([]);
+    setShowMappingSuccess(false);
 
     try {
       const result = await processStatementFile(file, (status) => {
