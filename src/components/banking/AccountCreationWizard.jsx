@@ -755,39 +755,16 @@ export default function AccountCreationWizard({
     const firstTxn = sortedTransactions[0];
     const lastTxn = sortedTransactions[sortedTransactions.length - 1];
 
-    const balanceColumn = balanceProcessedData.headers.find(h =>
-      h.toLowerCase().includes('balance') || h.toLowerCase() === 'bal'
-    );
-
-    let beginningBalance = 0;
-    let endingBalance = 0;
-
-    if (balanceColumn) {
-      const firstRow = balanceProcessedData.rows.find(row =>
-        parseDate(row[columnMappings.date]) === firstTxn.date
-      );
-      const lastRow = balanceProcessedData.rows.find(row =>
-        parseDate(row[columnMappings.date]) === lastTxn.date
-      );
-
-      beginningBalance = parseFloat(firstRow?.[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
-      endingBalance = parseFloat(lastRow?.[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
-    }
+    updateFormData('asOfDate', firstTxn.date);
+    updateFormData('endingDate', lastTxn.date);
 
     setBalanceData({
-      beginningBalance,
-      endingBalance,
       beginningDate: firstTxn.date,
       endingDate: lastTxn.date,
       fileName: balanceProcessedData.fileName || 'statement.csv'
     });
 
-    updateFormData('beginningBalance', beginningBalance.toFixed(2));
-    updateFormData('asOfDate', firstTxn.date);
-    updateFormData('endingBalance', endingBalance.toFixed(2));
-    updateFormData('endingDate', lastTxn.date);
-
-    toast.success('Balance information extracted successfully');
+    toast.success('Dates extracted from statement');
     setShowBalanceImportDialog(false);
     setBalanceImportStep('upload');
   };
@@ -1770,7 +1747,7 @@ export default function AccountCreationWizard({
           <div className="flex items-start gap-2">
             <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
             <p className="text-sm text-blue-900">
-              Optional: Upload a CSV statement to automatically fill balance and date fields
+              Optional: Upload a CSV statement to automatically fill date fields
             </p>
           </div>
 
@@ -1786,9 +1763,7 @@ export default function AccountCreationWizard({
                   size="sm"
                   onClick={() => {
                     setBalanceData(null);
-                    updateFormData('beginningBalance', '0.00');
                     updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
-                    updateFormData('endingBalance', '0.00');
                     updateFormData('endingDate', new Date().toISOString().split('T')[0]);
                   }}
                   className="h-7 text-xs"
@@ -1798,8 +1773,7 @@ export default function AccountCreationWizard({
                 </Button>
               </div>
               <div className="text-xs text-slate-600">
-                Beginning: ${balanceData.beginningBalance.toFixed(2)} on {balanceData.beginningDate} •
-                Ending: ${balanceData.endingBalance.toFixed(2)} on {balanceData.endingDate}
+                Beginning Date: {balanceData.beginningDate} • Ending Date: {balanceData.endingDate}
               </div>
             </div>
           ) : (
@@ -4029,8 +4003,7 @@ export default function AccountCreationWizard({
               setBalanceProcessedData(null);
             }}
             isImporting={isProcessingBalance}
-            isFirstImport={true}
-            suggestedBeginningBalance={0}
+            isBalanceExtraction={true}
           />
         )}
       </DialogContent>

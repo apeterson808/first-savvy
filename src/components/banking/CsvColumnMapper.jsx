@@ -58,7 +58,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0 }) {
+export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false }) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -479,8 +479,8 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         </Card>
       </div>
 
-      {/* Beginning Balance - Only shown on first import */}
-      {isFirstImport && (
+      {/* Beginning Balance - Only shown on first import and not in balance extraction mode */}
+      {isFirstImport && !isBalanceExtraction && (
         <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="space-y-2">
             <div className="flex items-center gap-2">
@@ -521,7 +521,10 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           className="bg-blue-600 hover:bg-blue-700"
           size="sm"
         >
-          {isImporting ? 'Importing...' : `Import ${csvData.rows?.length || 0} Transactions`}
+          {isBalanceExtraction
+            ? (isImporting ? 'Extracting...' : 'Extract Dates')
+            : (isImporting ? 'Importing...' : `Import ${csvData.rows?.length || 0} Transactions`)
+          }
         </Button>
       </div>
 
