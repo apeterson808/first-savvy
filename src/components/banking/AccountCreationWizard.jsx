@@ -1051,7 +1051,8 @@ export default function AccountCreationWizard({
           customDisplayName: data.account_name,
           initialBalance: data.current_balance,
           institutionName: data.institution_name,
-          accountNumberLast4: data.account_number_last4
+          accountNumberLast4: data.account_number_last4,
+          openingBalanceDate: data.as_of_date || new Date().toISOString().split('T')[0]
         });
 
         const { data: newAccount, error } = await firstsavvy
@@ -1061,7 +1062,7 @@ export default function AccountCreationWizard({
           .single();
 
         if (error) throw error;
-        return newAccount;
+        return { ...newAccount, _usedActivateTemplate: true };
       } else {
         const accountNumber = await getNextAccountNumber(activeProfile.id, templateAccount.account_number);
 
@@ -1087,11 +1088,11 @@ export default function AccountCreationWizard({
           .single();
 
         if (error) throw error;
-        return newAccount;
+        return { ...newAccount, _usedActivateTemplate: false };
       }
     },
     onSuccess: async (newAccount) => {
-      if (newAccount.current_balance && newAccount.current_balance !== 0) {
+      if (newAccount.current_balance && newAccount.current_balance !== 0 && !newAccount._usedActivateTemplate) {
         try {
           const openingDate = formData.asOfDate || new Date().toISOString().split('T')[0];
           await createOpeningBalanceJournalEntry({
@@ -1240,6 +1241,7 @@ export default function AccountCreationWizard({
           current_balance: selectedSubtype.value === 'credit_card' ? Math.abs(balanceValidation.value) : balanceValidation.value,
           institution_name: formData.institutionName || null,
           account_number_last4: formData.last4 || null,
+          as_of_date: formData.asOfDate || new Date().toISOString().split('T')[0],
           is_active: true
         });
       } else if (selectedCard.id === 'vehicle') {
@@ -1551,6 +1553,7 @@ export default function AccountCreationWizard({
           current_balance: balance,
           institution_name: formData.institutionName || null,
           account_number_last4: formData.last4 || null,
+          as_of_date: formData.asOfDate || new Date().toISOString().split('T')[0],
           is_active: true
         });
         return;
