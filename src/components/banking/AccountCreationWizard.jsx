@@ -771,14 +771,10 @@ export default function AccountCreationWizard({
       })).filter(item => item.date !== null && !isNaN(item.balance));
 
       if (rowsWithDates.length > 0) {
+        const firstRowInFile = rowsWithDates[0];
+
         rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
         const oldestRow = rowsWithDates[0];
-
-        const latestDate = rowsWithDates[rowsWithDates.length - 1].date;
-        const transactionsOnLatestDate = rowsWithDates.filter(item => item.date === latestDate);
-        const newestRow = transactionsOnLatestDate.reduce((max, item) =>
-          item.balance > max.balance ? item : max
-        );
 
         let firstTransactionAmount = 0;
         if (amountType === 'separate_columns' && debitColumn && creditColumn) {
@@ -791,7 +787,7 @@ export default function AccountCreationWizard({
         }
 
         calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
-        calculatedEndingBalance = newestRow.balance;
+        calculatedEndingBalance = firstRowInFile.balance;
       }
     } else {
       calculatedBeginningBalance = 0;
