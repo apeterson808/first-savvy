@@ -92,6 +92,12 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     }
   }, [headers, hasAutoDetected]);
 
+  useEffect(() => {
+    if (isFirstImport && suggestedBeginningBalance !== undefined) {
+      setBeginningBalance(suggestedBeginningBalance.toFixed(2));
+    }
+  }, [isFirstImport, suggestedBeginningBalance]);
+
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
   };
