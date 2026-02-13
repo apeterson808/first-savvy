@@ -93,10 +93,40 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   }, [headers, hasAutoDetected]);
 
   useEffect(() => {
-    if (isFirstImport && suggestedBeginningBalance !== undefined) {
-      setBeginningBalance(suggestedBeginningBalance.toFixed(2));
+    if (!isFirstImport || !csvData.rows?.length) return;
+
+    const calculateBeginningBalance = () => {
+      let netChange = 0;
+
+      if (amountType === 'separate_columns' && debitColumn && creditColumn) {
+        csvData.rows.forEach(row => {
+          const debit = parseFloat(row[debitColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
+          const credit = parseFloat(row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
+          netChange += credit - debit;
+        });
+      } else if (columnMappings.amount) {
+        csvData.rows.forEach(row => {
+          const amountStr = row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
+          const amount = parseFloat(amountStr);
+
+          if (amountType === 'always_expense') {
+            netChange -= Math.abs(amount);
+          } else if (amountType === 'always_income') {
+            netChange += Math.abs(amount);
+          } else {
+            netChange += amount;
+          }
+        });
+      }
+
+      const calculatedBeginning = (suggestedBeginningBalance || 0) - netChange;
+      return calculatedBeginning.toFixed(2);
+    };
+
+    if (columnMappings.amount || (debitColumn && creditColumn)) {
+      setBeginningBalance(calculateBeginningBalance());
     }
-  }, [isFirstImport, suggestedBeginningBalance]);
+  }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
 
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
@@ -419,11 +449,17 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
       {/* Beginning Balance - Only shown on first import */}
       {isFirstImport && (
-        <Card className="p-4">
+        <Card className="p-4 bg-blue-50 border-blue-200">
           <div className="space-y-2">
-            <Label htmlFor="beginningBalance" className="text-sm font-medium">
-              Beginning Balance (Optional)
-            </Label>
+            <div className="flex items-center gap-2">
+              <Label htmlFor="beginningBalance" className="text-sm font-medium">
+                Beginning Balance (Optional)
+              </Label>
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto-calculated
+              </Badge>
+            </div>
             <div className="flex items-start gap-2">
               <Input
                 id="beginningBalance"
@@ -434,8 +470,8 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 onChange={(e) => setBeginningBalance(e.target.value)}
                 className="max-w-xs"
               />
-              <div className="text-xs text-slate-500 mt-1.5">
-                Enter the account balance before these transactions.
+              <div className="text-xs text-slate-600 mt-1.5">
+                Calculated from your CSV transactions and current account balance. You can adjust if needed.
               </div>
             </div>
           </div>
