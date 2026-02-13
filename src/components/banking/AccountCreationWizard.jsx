@@ -733,7 +733,7 @@ export default function AccountCreationWizard({
   };
 
   const handleBalanceCsvMapping = async (mappingConfig) => {
-    const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
+    const { columnMappings, amountType, debitColumn, creditColumn, beginningBalance } = mappingConfig;
 
     const transactions = mapCsvToTransactions(
       balanceProcessedData,
@@ -755,16 +755,26 @@ export default function AccountCreationWizard({
     const firstTxn = sortedTransactions[0];
     const lastTxn = sortedTransactions[sortedTransactions.length - 1];
 
+    const netChange = sortedTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+    const calculatedBeginningBalance = beginningBalance !== null && beginningBalance !== undefined
+      ? beginningBalance
+      : 0;
+    const calculatedEndingBalance = calculatedBeginningBalance + netChange;
+
     updateFormData('asOfDate', firstTxn.date);
     updateFormData('endingDate', lastTxn.date);
+    updateFormData('beginningBalance', calculatedBeginningBalance.toFixed(2));
+    updateFormData('endingBalance', calculatedEndingBalance.toFixed(2));
 
     setBalanceData({
+      beginningBalance: calculatedBeginningBalance,
+      endingBalance: calculatedEndingBalance,
       beginningDate: firstTxn.date,
       endingDate: lastTxn.date,
       fileName: balanceProcessedData.fileName || 'statement.csv'
     });
 
-    toast.success('Dates extracted from statement');
+    toast.success('Balance information extracted from statement');
     setShowBalanceImportDialog(false);
     setBalanceImportStep('upload');
   };
@@ -1771,7 +1781,11 @@ export default function AccountCreationWizard({
                     {balanceData.fileName}
                   </span>
                   <div className="text-xs text-slate-600">
-                    Beginning: {balanceData.beginningDate} • Ending: {balanceData.endingDate}
+                    Beginning: {balanceData.beginningDate}
+                    {balanceData.beginningBalance !== undefined && ` ($${balanceData.beginningBalance.toFixed(2)})`}
+                    {' • '}
+                    Ending: {balanceData.endingDate}
+                    {balanceData.endingBalance !== undefined && ` ($${balanceData.endingBalance.toFixed(2)})`}
                   </div>
                 </div>
               </div>
@@ -1783,6 +1797,8 @@ export default function AccountCreationWizard({
                   setBalanceData(null);
                   updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
                   updateFormData('endingDate', new Date().toISOString().split('T')[0]);
+                  updateFormData('beginningBalance', '0.00');
+                  updateFormData('endingBalance', '0.00');
                 }}
                 className="h-7 text-xs"
               >
