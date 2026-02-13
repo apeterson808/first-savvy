@@ -366,6 +366,10 @@ export default function AccountCreationWizard({
   const [showMappingSuccess, setShowMappingSuccess] = useState(false);
   const [includeLastFour, setIncludeLastFour] = useState(false);
   const [balanceData, setBalanceData] = useState(null);
+  const [showBalanceImportDialog, setShowBalanceImportDialog] = useState(false);
+  const [balanceImportStep, setBalanceImportStep] = useState('upload');
+  const [balanceProcessedData, setBalanceProcessedData] = useState(null);
+  const [isProcessingBalance, setIsProcessingBalance] = useState(false);
 
   const [availableInstitutions, setAvailableInstitutions] = useState([]);
   const [institutionSearch, setInstitutionSearch] = useState('');
@@ -685,65 +689,107 @@ export default function AccountCreationWizard({
   };
 
   const handleBalanceCsvUpload = async (file) => {
+    if (!file) return;
+
+    setIsProcessingBalance(true);
     try {
-      const result = await processStatementFile(file, null);
+      const result = await processStatementFile(file, (status) => {
+        console.log('Processing balance file:', status);
+      });
 
-      if (result.type === 'csv' && result.rows && result.rows.length > 0) {
-        const balanceColumnCandidates = result.headers.filter(h =>
-          h.toLowerCase().includes('balance') ||
-          h.toLowerCase().includes('amount') ||
-          h.toLowerCase() === 'bal'
-        );
+      setBalanceProcessedData(result);
 
-        const dateColumnCandidates = result.headers.filter(h =>
-          h.toLowerCase().includes('date') ||
-          h.toLowerCase() === 'trans date' ||
-          h.toLowerCase() === 'post date' ||
-          h.toLowerCase() === 'posting date'
-        );
-
-        if (balanceColumnCandidates.length > 0 && dateColumnCandidates.length > 0) {
-          const balanceColumn = balanceColumnCandidates[0];
-          const dateColumn = dateColumnCandidates[0];
-
-          const firstRow = result.rows[0];
-          const lastRow = result.rows[result.rows.length - 1];
-
-          const beginningBalance = parseFloat(firstRow[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
-          const endingBalance = parseFloat(lastRow[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
-
-          const beginningDate = parseDate(firstRow[dateColumn]);
-          const endingDate = parseDate(lastRow[dateColumn]);
+      if (result.type === 'transactions') {
+        const transactions = result.transactions || [];
+        if (transactions.length > 0) {
+          const firstTxn = transactions[0];
+          const lastTxn = transactions[transactions.length - 1];
 
           setBalanceData({
-            beginningBalance,
-            endingBalance,
-            beginningDate,
-            endingDate,
+            beginningBalance: result.beginningBalance || 0,
+            endingBalance: result.newBalance || result.beginningBalance || 0,
+            beginningDate: parseDate(firstTxn.date),
+            endingDate: parseDate(lastTxn.date),
             fileName: file.name
           });
 
-          if (beginningBalance !== 0 && beginningDate) {
-            updateFormData('beginningBalance', beginningBalance.toFixed(2));
-            updateFormData('asOfDate', beginningDate);
-          }
+          updateFormData('beginningBalance', (result.beginningBalance || 0).toFixed(2));
+          updateFormData('asOfDate', parseDate(firstTxn.date));
+          updateFormData('endingBalance', (result.newBalance || result.beginningBalance || 0).toFixed(2));
+          updateFormData('endingDate', parseDate(lastTxn.date));
 
-          if (endingBalance !== 0 && endingDate) {
-            updateFormData('endingBalance', endingBalance.toFixed(2));
-            updateFormData('endingDate', endingDate);
-          }
-
-          toast.success('Balance information extracted from CSV');
-        } else {
-          toast.error('Could not find balance or date columns in CSV');
+          toast.success('Balance information extracted from file');
+          setShowBalanceImportDialog(false);
         }
       } else {
-        toast.error('Please upload a valid CSV file');
+        setBalanceImportStep('mapping');
       }
     } catch (error) {
-      console.error('Error processing balance CSV:', error);
-      toast.error('Failed to process CSV file');
+      console.error('Error processing balance file:', error);
+      toast.error(error.message || 'Failed to process file');
+    } finally {
+      setIsProcessingBalance(false);
     }
+  };
+
+  const handleBalanceCsvMapping = async (mappingConfig) => {
+    const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
+
+    const transactions = mapCsvToTransactions(
+      balanceProcessedData,
+      columnMappings,
+      amountType,
+      debitColumn,
+      creditColumn
+    );
+
+    if (transactions.length === 0) {
+      toast.error('No transactions found in CSV');
+      return;
+    }
+
+    const sortedTransactions = [...transactions].sort((a, b) =>
+      new Date(a.date) - new Date(b.date)
+    );
+
+    const firstTxn = sortedTransactions[0];
+    const lastTxn = sortedTransactions[sortedTransactions.length - 1];
+
+    const balanceColumn = balanceProcessedData.headers.find(h =>
+      h.toLowerCase().includes('balance') || h.toLowerCase() === 'bal'
+    );
+
+    let beginningBalance = 0;
+    let endingBalance = 0;
+
+    if (balanceColumn) {
+      const firstRow = balanceProcessedData.rows.find(row =>
+        parseDate(row[columnMappings.date]) === firstTxn.date
+      );
+      const lastRow = balanceProcessedData.rows.find(row =>
+        parseDate(row[columnMappings.date]) === lastTxn.date
+      );
+
+      beginningBalance = parseFloat(firstRow?.[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
+      endingBalance = parseFloat(lastRow?.[balanceColumn]?.replace(/[^0-9.-]/g, '') || 0);
+    }
+
+    setBalanceData({
+      beginningBalance,
+      endingBalance,
+      beginningDate: firstTxn.date,
+      endingDate: lastTxn.date,
+      fileName: balanceProcessedData.fileName || 'statement.csv'
+    });
+
+    updateFormData('beginningBalance', beginningBalance.toFixed(2));
+    updateFormData('asOfDate', firstTxn.date);
+    updateFormData('endingBalance', endingBalance.toFixed(2));
+    updateFormData('endingDate', lastTxn.date);
+
+    toast.success('Balance information extracted successfully');
+    setShowBalanceImportDialog(false);
+    setBalanceImportStep('upload');
   };
 
   const handleCsvMap = (mappingConfig) => {
@@ -1757,28 +1803,20 @@ export default function AccountCreationWizard({
               </div>
             </div>
           ) : (
-            <>
-              <input
-                ref={balanceCsvFileInputRef}
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleBalanceCsvUpload(file);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => balanceCsvFileInputRef.current?.click()}
-                className="w-full h-9 border-blue-300 hover:bg-blue-100"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload CSV Statement
-              </Button>
-            </>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setShowBalanceImportDialog(true);
+                setBalanceImportStep('upload');
+                setBalanceProcessedData(null);
+              }}
+              className="w-full h-9 border-blue-300 hover:bg-blue-100"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload CSV Statement
+            </Button>
           )}
         </div>
       </div>
@@ -3934,6 +3972,67 @@ export default function AccountCreationWizard({
 
           {renderProgressBar()}
         </div>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={showBalanceImportDialog} onOpenChange={setShowBalanceImportDialog}>
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            {balanceImportStep === 'upload' && 'Upload Statement for Balance Information'}
+            {balanceImportStep === 'mapping' && 'Map CSV Columns'}
+          </DialogTitle>
+        </DialogHeader>
+
+        {balanceImportStep === 'upload' && (
+          <div className="space-y-4">
+            <div className="text-sm text-muted-foreground">
+              Upload a CSV or OFX file to automatically extract beginning and ending balances with their dates.
+            </div>
+            <div
+              onClick={() => document.getElementById('balance-import-file-input')?.click()}
+              onDrop={(e) => {
+                e.preventDefault();
+                const file = e.dataTransfer.files[0];
+                if (file) handleBalanceCsvUpload(file);
+              }}
+              onDragOver={(e) => e.preventDefault()}
+              className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer"
+            >
+              <Upload className="w-12 h-12 mx-auto text-gray-400 mb-3" />
+              <p className="text-sm font-medium text-gray-900 mb-1">
+                Click to upload or drag and drop
+              </p>
+              <p className="text-xs text-gray-500">
+                CSV, OFX, or QFX files supported
+              </p>
+              <input
+                id="balance-import-file-input"
+                type="file"
+                accept=".csv,.ofx,.qfx"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleBalanceCsvUpload(file);
+                }}
+                className="hidden"
+              />
+            </div>
+          </div>
+        )}
+
+        {balanceImportStep === 'mapping' && balanceProcessedData && (
+          <CsvColumnMapper
+            csvData={balanceProcessedData}
+            onMap={handleBalanceCsvMapping}
+            onCancel={() => {
+              setBalanceImportStep('upload');
+              setBalanceProcessedData(null);
+            }}
+            isImporting={isProcessingBalance}
+            isFirstImport={true}
+            suggestedBeginningBalance={0}
+          />
+        )}
       </DialogContent>
     </Dialog>
     </>
