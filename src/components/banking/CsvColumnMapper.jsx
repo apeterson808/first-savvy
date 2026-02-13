@@ -6,11 +6,13 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
+import { parseDate } from './StatementProcessor';
 
 const DETECTION_PATTERNS = {
   date: ['date', 'trans date', 'transaction date', 'posted date', 'post date', 'posting date', 'value date', 'entry date'],
   description: ['description', 'merchant', 'payee', 'memo', 'details', 'transaction', 'trans desc', 'narrative', 'particulars'],
-  amount: ['amount', 'total', 'transaction amount', 'trans amount', 'value', 'sum', 'balance'],
+  amount: ['amount', 'total', 'transaction amount', 'trans amount', 'value', 'sum'],
+  balance: ['balance', 'running balance', 'account balance', 'current balance'],
   debit: ['debit', 'withdrawal', 'withdrawals', 'payment', 'expense', 'dr', 'out', 'spent', 'paid'],
   credit: ['credit', 'deposit', 'deposits', 'income', 'receipt', 'cr', 'in', 'received'],
   type: ['type', 'transaction type', 'trans type', 'txn type', 'category', 'classification'],
@@ -40,6 +42,7 @@ const autoDetectMappings = (headers) => {
 
   const debitColumn = detectColumn(headers, DETECTION_PATTERNS.debit);
   const creditColumn = detectColumn(headers, DETECTION_PATTERNS.credit);
+  const balanceColumn = detectColumn(headers, DETECTION_PATTERNS.balance);
 
   let detectedAmountType = 'auto';
   if (debitColumn && creditColumn) {
@@ -50,7 +53,8 @@ const autoDetectMappings = (headers) => {
     mappings: detectedMappings,
     amountType: detectedAmountType,
     debitColumn: debitColumn || '',
-    creditColumn: creditColumn || ''
+    creditColumn: creditColumn || '',
+    balanceColumn: balanceColumn || ''
   };
 };
 
@@ -67,6 +71,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const [amountType, setAmountType] = useState('auto');
   const [debitColumn, setDebitColumn] = useState('');
   const [creditColumn, setCreditColumn] = useState('');
+  const [balanceColumn, setBalanceColumn] = useState('');
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
   const [hasAutoDetected, setHasAutoDetected] = useState(false);
   const [beginningBalance, setBeginningBalance] = useState(suggestedBeginningBalance.toString());
@@ -87,6 +92,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       setAmountType(detected.amountType);
       setDebitColumn(detected.debitColumn);
       setCreditColumn(detected.creditColumn);
+      setBalanceColumn(detected.balanceColumn);
       setAutoDetectedFields(detectedFieldsList);
       setHasAutoDetected(true);
     }
@@ -96,6 +102,32 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     if (!isFirstImport || !csvData.rows?.length) return;
 
     const calculateBeginningBalance = () => {
+      if (balanceColumn && columnMappings.date) {
+        const rowsWithDates = csvData.rows.map(row => ({
+          row,
+          date: parseDate(row[columnMappings.date]),
+          balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0)
+        })).filter(item => item.date !== null);
+
+        if (rowsWithDates.length === 0) return '0.00';
+
+        rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
+        const oldestTransaction = rowsWithDates[0];
+
+        let transactionAmount = 0;
+        if (amountType === 'separate_columns' && debitColumn && creditColumn) {
+          const debit = parseFloat(oldestTransaction.row[debitColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
+          const credit = parseFloat(oldestTransaction.row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
+          transactionAmount = credit - debit;
+        } else if (columnMappings.amount) {
+          const amountStr = oldestTransaction.row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
+          transactionAmount = parseFloat(amountStr);
+        }
+
+        const beginningBalance = oldestTransaction.balance - transactionAmount;
+        return beginningBalance.toFixed(2);
+      }
+
       let netChange = 0;
 
       if (amountType === 'separate_columns' && debitColumn && creditColumn) {
@@ -126,7 +158,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     if (columnMappings.amount || (debitColumn && creditColumn)) {
       setBeginningBalance(calculateBeginningBalance());
     }
-  }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
+  }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, columnMappings.date, amountType, debitColumn, creditColumn, balanceColumn]);
 
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
