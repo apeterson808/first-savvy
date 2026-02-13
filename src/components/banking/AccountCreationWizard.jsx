@@ -1612,12 +1612,6 @@ export default function AccountCreationWizard({
 
     return (
       <div className="space-y-4 max-w-lg mx-auto">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
-          <p className="text-xs text-blue-700">
-            Create your account now and add transactions manually or import from CSV later.
-          </p>
-        </div>
-
         <div>
           <Label htmlFor="accountType">Account Type*</Label>
           <div className="flex gap-2">
