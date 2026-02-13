@@ -758,7 +758,9 @@ export default function AccountCreationWizard({
     let calculatedBeginningBalance = 0;
     let calculatedEndingBalance = 0;
 
-    const netChange = sortedTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+    const netChange = sortedTransactions.reduce((sum, txn) => {
+      return sum + (txn.type === 'income' ? txn.amount : -txn.amount);
+    }, 0);
 
     if (balanceColumn && csvData && csvData.rows && csvData.rows.length > 0) {
       const rowsWithDates = csvData.rows.map((row, idx) => ({
