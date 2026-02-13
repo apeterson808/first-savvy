@@ -758,6 +758,8 @@ export default function AccountCreationWizard({
     let calculatedBeginningBalance = 0;
     let calculatedEndingBalance = 0;
 
+    const netChange = sortedTransactions.reduce((sum, txn) => sum + txn.amount, 0);
+
     if (balanceColumn && csvData && csvData.rows && csvData.rows.length > 0) {
       const rowsWithDates = csvData.rows.map((row, idx) => ({
         row,
@@ -769,7 +771,6 @@ export default function AccountCreationWizard({
       if (rowsWithDates.length > 0) {
         rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
         const oldestRow = rowsWithDates[0];
-        const newestRow = rowsWithDates[rowsWithDates.length - 1];
 
         let firstTransactionAmount = 0;
         if (amountType === 'separate_columns' && debitColumn && creditColumn) {
@@ -782,10 +783,9 @@ export default function AccountCreationWizard({
         }
 
         calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
-        calculatedEndingBalance = newestRow.balance;
+        calculatedEndingBalance = calculatedBeginningBalance + netChange;
       }
     } else {
-      const netChange = sortedTransactions.reduce((sum, txn) => sum + txn.amount, 0);
       calculatedBeginningBalance = 0;
       calculatedEndingBalance = netChange;
     }
