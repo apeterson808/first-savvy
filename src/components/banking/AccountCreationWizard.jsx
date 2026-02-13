@@ -3166,7 +3166,7 @@ export default function AccountCreationWizard({
           setProcessedData(null);
         }}
         isFirstImport={true}
-        suggestedBeginningBalance={0}
+        suggestedBeginningBalance={parseFloat(formData.currentBalance) || 0}
       />
     </div>
   );
