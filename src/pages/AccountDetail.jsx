@@ -1590,6 +1590,7 @@ export default function AccountDetail() {
                 }}
                 isImporting={isImporting}
                 isFirstImport={totalJournalLines === 0}
+                suggestedBeginningBalance={account?.current_balance || 0}
               />
             )}
 

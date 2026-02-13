@@ -3165,6 +3165,8 @@ export default function AccountCreationWizard({
           setUploadedFile(null);
           setProcessedData(null);
         }}
+        isFirstImport={true}
+        suggestedBeginningBalance={0}
       />
     </div>
   );

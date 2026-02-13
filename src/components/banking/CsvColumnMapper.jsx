@@ -54,7 +54,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false }) {
+export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0 }) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -69,7 +69,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const [creditColumn, setCreditColumn] = useState('');
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
   const [hasAutoDetected, setHasAutoDetected] = useState(false);
-  const [beginningBalance, setBeginningBalance] = useState('');
+  const [beginningBalance, setBeginningBalance] = useState(suggestedBeginningBalance.toString());
 
   const headers = csvData.headers || [];
   const sampleRows = csvData.rows?.slice(0, 3) || [];
