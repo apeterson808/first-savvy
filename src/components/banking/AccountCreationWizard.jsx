@@ -867,17 +867,14 @@ export default function AccountCreationWizard({
           : selectedAccountName;
 
         const beginningBalanceForCalc = parseFloat(formData.beginningBalance) || 0;
-        const isLiabilityAccount = templateAccount.class === 'liability';
-        const transactionsSum = mappedTransactions.reduce((sum, txn) => {
-          const amount = parseFloat(txn.amount) || 0;
-          if (txn.type === 'income') {
-            return isLiabilityAccount ? sum - amount : sum + amount;
-          } else {
-            return isLiabilityAccount ? sum + amount : sum - amount;
-          }
-        }, 0);
+        const endingBalanceForCalc = parseFloat(formData.endingBalance) || beginningBalanceForCalc;
 
-        const calculatedInitialBalance = beginningBalanceForCalc + transactionsSum;
+        console.log('=== ACCOUNT CREATION DEBUG ===');
+        console.log('Beginning Balance:', beginningBalanceForCalc);
+        console.log('Ending Balance:', endingBalanceForCalc);
+        console.log('As of Date:', formData.asOfDate);
+        console.log('Ending Date:', formData.endingDate);
+        console.log('Transactions to import:', mappedTransactions.length);
 
         const newAccountData = {
           profile_id: activeProfile.id,
@@ -890,7 +887,8 @@ export default function AccountCreationWizard({
           is_active: true,
           institution_name: formData.institutionName || '',
           account_number_last4: formData.last4 || '',
-          current_balance: calculatedInitialBalance
+          current_balance: beginningBalanceForCalc,
+          as_of_date: formData.asOfDate
         };
 
         const { data: newAccount, error: createError } = await firstsavvy
@@ -977,15 +975,21 @@ export default function AccountCreationWizard({
         console.warn('No transactions to insert after filtering');
       }
 
-      if (processedData?.endingBalance !== undefined && processedData?.endingBalance !== null) {
+      const endingBalanceValue = parseFloat(formData.endingBalance);
+      if (!isNaN(endingBalanceValue)) {
         const updateData = {
-          bank_balance: processedData.endingBalance,
+          bank_balance: endingBalanceValue,
           last_synced_at: new Date().toISOString()
         };
 
-        if (processedData.statementEndDate) {
-          updateData.last_statement_date = processedData.statementEndDate;
+        if (formData.endingDate) {
+          updateData.last_statement_date = formData.endingDate;
         }
+
+        console.log('=== UPDATING BANK BALANCE ===');
+        console.log('Target Account ID:', targetAccountId);
+        console.log('Bank Balance:', endingBalanceValue);
+        console.log('Statement End Date:', formData.endingDate);
 
         const { error: balanceError } = await firstsavvy
           .from('user_chart_of_accounts')
@@ -995,8 +999,10 @@ export default function AccountCreationWizard({
         if (balanceError) {
           console.error('Error updating bank balance:', balanceError);
         } else {
-          console.log(`Updated bank balance to $${processedData.endingBalance} for account ${targetAccountId}`);
+          console.log(`Successfully updated bank balance to $${endingBalanceValue} for account ${targetAccountId}`);
         }
+      } else {
+        console.warn('No valid ending balance found in formData');
       }
 
       const matchedCount = await autoMatchTransfers(allTransactions);
