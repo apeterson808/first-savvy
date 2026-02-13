@@ -1658,68 +1658,6 @@ export default function AccountCreationWizard({
           </div>
         </div>
 
-        <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-3">
-          <div className="flex items-start gap-2">
-            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-blue-900">
-              Optional: Upload a CSV statement to automatically fill balance and date fields
-            </p>
-          </div>
-
-          {balanceData ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">
-                  {balanceData.fileName}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setBalanceData(null);
-                    updateFormData('beginningBalance', '0.00');
-                    updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
-                    updateFormData('endingBalance', '0.00');
-                    updateFormData('endingDate', new Date().toISOString().split('T')[0]);
-                  }}
-                  className="h-7 text-xs"
-                >
-                  <X className="w-3 h-3 mr-1" />
-                  Remove
-                </Button>
-              </div>
-              <div className="text-xs text-slate-600">
-                Beginning: ${balanceData.beginningBalance.toFixed(2)} on {balanceData.beginningDate} •
-                Ending: ${balanceData.endingBalance.toFixed(2)} on {balanceData.endingDate}
-              </div>
-            </div>
-          ) : (
-            <>
-              <input
-                ref={balanceCsvFileInputRef}
-                type="file"
-                accept=".csv"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleBalanceCsvUpload(file);
-                }}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => balanceCsvFileInputRef.current?.click()}
-                className="w-full h-9 border-blue-300 hover:bg-blue-100"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload CSV Statement
-              </Button>
-            </>
-          )}
-        </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="beginningBalance">Beginning Balance</Label>
@@ -1780,6 +1718,68 @@ export default function AccountCreationWizard({
               className="h-9"
             />
           </div>
+        </div>
+
+        <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-3">
+          <div className="flex items-start gap-2">
+            <Info className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-sm text-blue-900">
+              Optional: Upload a CSV statement to automatically fill balance and date fields
+            </p>
+          </div>
+
+          {balanceData ? (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-slate-700">
+                  {balanceData.fileName}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setBalanceData(null);
+                    updateFormData('beginningBalance', '0.00');
+                    updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
+                    updateFormData('endingBalance', '0.00');
+                    updateFormData('endingDate', new Date().toISOString().split('T')[0]);
+                  }}
+                  className="h-7 text-xs"
+                >
+                  <X className="w-3 h-3 mr-1" />
+                  Remove
+                </Button>
+              </div>
+              <div className="text-xs text-slate-600">
+                Beginning: ${balanceData.beginningBalance.toFixed(2)} on {balanceData.beginningDate} •
+                Ending: ${balanceData.endingBalance.toFixed(2)} on {balanceData.endingDate}
+              </div>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={balanceCsvFileInputRef}
+                type="file"
+                accept=".csv"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleBalanceCsvUpload(file);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => balanceCsvFileInputRef.current?.click()}
+                className="w-full h-9 border-blue-300 hover:bg-blue-100"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload CSV Statement
+              </Button>
+            </>
+          )}
         </div>
       </div>
     );
