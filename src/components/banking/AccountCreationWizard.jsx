@@ -1110,11 +1110,52 @@ export default function AccountCreationWizard({
         }
       }
 
+      if (mappedTransactions.length > 0) {
+        try {
+          const startDate = customStartDate || formData.asOfDate;
+          const transactionsToImport = startDate
+            ? mappedTransactions.filter(txn => new Date(txn.date) >= new Date(startDate))
+            : mappedTransactions;
+
+          if (transactionsToImport.length > 0) {
+            const transactionsWithAccount = transactionsToImport.map(txn => ({
+              profile_id: activeProfile.id,
+              user_id: user?.id,
+              bank_account_id: newAccount.id,
+              date: txn.date,
+              description: txn.description,
+              original_description: txn.original_description || txn.description,
+              amount: txn.amount,
+              type: txn.type,
+              status: 'pending',
+              source: 'import',
+              include_in_reports: true
+            }));
+
+            const { error: importError } = await firstsavvy
+              .from('transactions')
+              .insert(transactionsWithAccount);
+
+            if (importError) {
+              console.error('Failed to import transactions:', importError);
+              toast.error(`Account created but failed to import ${transactionsToImport.length} transactions`);
+            } else {
+              toast.success(`Account created with ${transactionsToImport.length} transactions imported!`);
+            }
+          }
+        } catch (error) {
+          console.error('Error importing transactions:', error);
+          toast.error('Account created but transaction import failed');
+        }
+      } else {
+        toast.success('Account created successfully!');
+      }
+
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
-      toast.success('Account created successfully!');
       onOpenChange(false);
       setTimeout(() => {
         navigate(`/Banking/account/${newAccount.id}`);
