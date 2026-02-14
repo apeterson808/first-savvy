@@ -797,7 +797,11 @@ export default function AccountCreationWizard({
       fileName: balanceProcessedData.fileName || 'statement.csv'
     });
 
-    toast.success('Balance information extracted from statement');
+    setMappedTransactions(sortedTransactions);
+    setProcessedData(balanceProcessedData);
+    setProcessingStatus('success');
+
+    toast.success(`Balance information extracted from statement. ${transactions.length} transactions ready to import.`);
     setShowBalanceImportDialog(false);
     setBalanceImportStep('upload');
   };
