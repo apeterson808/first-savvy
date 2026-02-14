@@ -183,11 +183,15 @@ Deno.serve(async (req: Request) => {
       line.includes('citicards.com')
     );
 
-    if (!isCitiStatement) {
+    let parsedData;
+
+    if (isCitiStatement) {
+      parsedData = parseCitiCreditCardStatement(lines);
+    } else {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'This does not appear to be a Citi credit card statement. Currently only Citi statements are supported.'
+          error: 'PDF statement not recognized. Currently only Citi credit card statements are supported. For other banks, please use CSV or OFX files.'
         }),
         {
           status: 400,
@@ -195,8 +199,6 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
-
-    const parsedData = parseCitiCreditCardStatement(lines);
 
     if (parsedData.transactions.length === 0) {
       return new Response(
