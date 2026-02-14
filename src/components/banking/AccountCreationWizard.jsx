@@ -808,6 +808,10 @@ export default function AccountCreationWizard({
   };
 
   const handleCsvMap = (mappingConfig) => {
+    console.log('=== CSV MAP CONFIG ===');
+    console.log('Beginning Balance from mapper:', mappingConfig.beginningBalance);
+    console.log('Ending Balance from mapper:', mappingConfig.endingBalance);
+
     const transactions = mapCsvToTransactions(
       processedData,
       mappingConfig.columnMappings,
@@ -819,6 +823,25 @@ export default function AccountCreationWizard({
     if (transactions.length === 0) {
       toast.error('No valid transactions found in CSV. Please check your date and amount columns.');
       return;
+    }
+
+    const dateRange = getTransactionDateRange(transactions);
+
+    if (mappingConfig.beginningBalance !== null && mappingConfig.beginningBalance !== undefined) {
+      updateFormData('beginningBalance', mappingConfig.beginningBalance.toFixed(2));
+    }
+
+    if (mappingConfig.endingBalance !== null && mappingConfig.endingBalance !== undefined) {
+      updateFormData('endingBalance', mappingConfig.endingBalance.toFixed(2));
+      updateFormData('balance', mappingConfig.endingBalance.toFixed(2));
+    }
+
+    if (dateRange.startDate) {
+      updateFormData('asOfDate', dateRange.startDate);
+    }
+
+    if (dateRange.endDate) {
+      updateFormData('endingDate', dateRange.endDate);
     }
 
     setMappedTransactions(transactions);
@@ -857,8 +880,10 @@ export default function AccountCreationWizard({
         const endingBalanceForCalc = parseFloat(formData.endingBalance) || beginningBalanceForCalc;
 
         console.log('=== ACCOUNT CREATION DEBUG ===');
-        console.log('Beginning Balance:', beginningBalanceForCalc);
-        console.log('Ending Balance:', endingBalanceForCalc);
+        console.log('formData.beginningBalance (raw):', formData.beginningBalance);
+        console.log('formData.endingBalance (raw):', formData.endingBalance);
+        console.log('Beginning Balance (parsed):', beginningBalanceForCalc);
+        console.log('Ending Balance (parsed):', endingBalanceForCalc);
         console.log('As of Date:', formData.asOfDate);
         console.log('Ending Date:', formData.endingDate);
         console.log('Transactions to import:', mappedTransactions.length);
@@ -999,7 +1024,14 @@ export default function AccountCreationWizard({
         console.warn('This means all transactions were filtered out');
       }
 
+      console.log('=== BANK BALANCE UPDATE CHECK ===');
+      console.log('formData.endingBalance:', formData.endingBalance);
+      console.log('Type:', typeof formData.endingBalance);
+
       const endingBalanceValue = parseFloat(formData.endingBalance);
+      console.log('Parsed endingBalanceValue:', endingBalanceValue);
+      console.log('isNaN check:', isNaN(endingBalanceValue));
+
       if (!isNaN(endingBalanceValue)) {
         const updateData = {
           bank_balance: endingBalanceValue,
@@ -1014,6 +1046,7 @@ export default function AccountCreationWizard({
         console.log('Target Account ID:', targetAccountId);
         console.log('Bank Balance:', endingBalanceValue);
         console.log('Statement End Date:', formData.endingDate);
+        console.log('Update Data:', updateData);
 
         const { error: balanceError } = await firstsavvy
           .from('user_chart_of_accounts')
