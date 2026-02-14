@@ -604,7 +604,7 @@ export default function AccountDetail() {
   };
 
   const handleCsvMapping = async (mappingConfig) => {
-    const { columnMappings, dateFormat, amountType, debitColumn, creditColumn, beginningBalance } = mappingConfig;
+    const { columnMappings, dateFormat, amountType, debitColumn, creditColumn, beginningBalance, endingBalance } = mappingConfig;
 
     const transactions = mapCsvToTransactions(
       processedData,
@@ -665,6 +665,20 @@ export default function AccountDetail() {
         if (error) throw error;
       }
 
+      if (endingBalance !== null && endingBalance !== undefined) {
+        const { error: bankBalanceError } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .update({
+            bank_balance: endingBalance,
+            last_synced_at: new Date().toISOString()
+          })
+          .eq('id', account.id);
+
+        if (bankBalanceError) {
+          console.error('Error updating bank balance:', bankBalanceError);
+        }
+      }
+
       await autoMatchTransfers(allTransactions);
 
       queryClient.invalidateQueries({ queryKey: ['account-activity', id] });
@@ -672,8 +686,9 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
       const balanceMsg = beginningBalance !== null && beginningBalance !== undefined ? ` Beginning balance set to ${formatCurrency(beginningBalance)}.` : '';
+      const endingBalanceMsg = endingBalance !== null && endingBalance !== undefined ? ` Bank balance set to ${formatCurrency(endingBalance)}.` : '';
       const duplicateMsg = duplicates.length > 0 ? ` (${duplicates.length} duplicates skipped)` : '';
-      toast.success(`Successfully imported ${allTransactions.length} transactions${duplicateMsg}.${balanceMsg}`);
+      toast.success(`Successfully imported ${allTransactions.length} transactions${duplicateMsg}.${balanceMsg}${endingBalanceMsg}`);
 
       setShowImportDialog(false);
       setUploadedFile(null);

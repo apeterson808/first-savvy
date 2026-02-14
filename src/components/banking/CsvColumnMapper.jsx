@@ -75,6 +75,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
   const [hasAutoDetected, setHasAutoDetected] = useState(false);
   const [beginningBalance, setBeginningBalance] = useState(suggestedBeginningBalance.toString());
+  const [endingBalance, setEndingBalance] = useState('');
 
   const headers = csvData.headers || [];
   const sampleRows = csvData.rows?.slice(0, 3) || [];
@@ -160,6 +161,34 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     }
   }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, columnMappings.date, amountType, debitColumn, creditColumn, balanceColumn]);
 
+  useEffect(() => {
+    if (!csvData.rows?.length) return;
+
+    const calculateEndingBalance = () => {
+      if (balanceColumn && columnMappings.date) {
+        const rowsWithDates = csvData.rows.map(row => ({
+          row,
+          date: parseDate(row[columnMappings.date]),
+          balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0)
+        })).filter(item => item.date !== null);
+
+        if (rowsWithDates.length === 0) return '';
+
+        rowsWithDates.sort((a, b) => new Date(b.date) - new Date(a.date));
+        const newestTransaction = rowsWithDates[0];
+
+        return newestTransaction.balance.toFixed(2);
+      }
+
+      return '';
+    };
+
+    const calculatedEnding = calculateEndingBalance();
+    if (calculatedEnding) {
+      setEndingBalance(calculatedEnding);
+    }
+  }, [csvData, columnMappings.date, balanceColumn]);
+
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
   };
@@ -181,6 +210,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       creditColumn,
       balanceColumn,
       beginningBalance: beginningBalance ? parseFloat(beginningBalance) : null,
+      endingBalance: endingBalance ? parseFloat(endingBalance) : null,
       csvData
     });
   };
@@ -500,6 +530,37 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               />
               <div className="text-xs text-slate-600 mt-1.5">
                 Calculated from your CSV transactions and current account balance. You can adjust if needed.
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Ending Balance - shown for all imports when balance column is detected */}
+      {!isBalanceExtraction && endingBalance && (
+        <Card className="p-4 bg-green-50 border-green-200">
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="endingBalance" className="text-sm font-medium">
+                Ending Balance (Optional)
+              </Label>
+              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto-detected
+              </Badge>
+            </div>
+            <div className="flex items-start gap-2">
+              <Input
+                id="endingBalance"
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={endingBalance}
+                onChange={(e) => setEndingBalance(e.target.value)}
+                className="max-w-xs"
+              />
+              <div className="text-xs text-slate-600 mt-1.5">
+                Detected from the last transaction in your CSV. This will update the bank balance for reconciliation.
               </div>
             </div>
           </div>
