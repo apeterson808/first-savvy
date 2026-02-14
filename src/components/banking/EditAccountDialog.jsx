@@ -21,6 +21,7 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
         name: getAccountDisplayName(account),
         institution: account.institution_name || account.institution || '',
         current_balance: account.current_balance || 0,
+        bank_balance: account.bank_balance !== null && account.bank_balance !== undefined ? account.bank_balance : (account.current_balance || 0),
         notes: account.notes || '',
         account_type: account.account_type || null,
         account_detail: account.account_detail || null
@@ -32,14 +33,21 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
     mutationFn: async (data) => {
       if (!account) return;
 
-      return await firstsavvy.entities.ChartAccount.update(account.id, {
+      const updateData = {
         display_name: data.name,
         institution_name: data.institution || null,
         current_balance: parseFloat(data.current_balance) || 0,
         notes: data.notes || null,
         account_type: data.account_type || null,
         account_detail: data.account_detail || null
-      });
+      };
+
+      if (data.bank_balance !== undefined && data.bank_balance !== null) {
+        updateData.bank_balance = parseFloat(data.bank_balance) || 0;
+        updateData.last_synced_at = new Date().toISOString();
+      }
+
+      return await firstsavvy.entities.ChartAccount.update(account.id, updateData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
@@ -110,17 +118,31 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           )}
 
           {showBalance && (
-            <div>
-              <Label htmlFor="balance">Current Balance</Label>
-              <Input
-                id="balance"
-                type="number"
-                step="0.01"
-                value={formData.current_balance || ''}
-                onChange={(e) => setFormData({ ...formData, current_balance: e.target.value })}
-                placeholder="0.00"
-              />
-            </div>
+            <>
+              <div>
+                <Label htmlFor="balance">Current Balance</Label>
+                <Input
+                  id="balance"
+                  type="number"
+                  step="0.01"
+                  value={formData.current_balance || ''}
+                  onChange={(e) => setFormData({ ...formData, current_balance: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="bank_balance">Bank Balance</Label>
+                <Input
+                  id="bank_balance"
+                  type="number"
+                  step="0.01"
+                  value={formData.bank_balance !== undefined && formData.bank_balance !== null ? formData.bank_balance : ''}
+                  onChange={(e) => setFormData({ ...formData, bank_balance: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            </>
           )}
 
           <div>
