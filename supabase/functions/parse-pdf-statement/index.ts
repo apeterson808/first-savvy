@@ -63,14 +63,13 @@ function parseCitiCreditCardStatement(lines: string[]): {
       }
     }
 
-    if (line === "Standard Purchases" || line === "Standard Purchases, cont'd" ||
-        line === "Payments, Credits and Adjustments") {
+    if (line.includes("Standard Purchases") || line.includes("Payments, Credits and Adjustments")) {
       inTransactionSection = true;
       continue;
     }
 
-    if (line === "Fees Charged" || line === "Interest Charged" ||
-        line === "2026 totals year-to-date" || line === "CARDHOLDER SUMMARY") {
+    if (line.includes("Fees Charged") || line.includes("Interest Charged") ||
+        line.includes("2026 totals year-to-date") || line.includes("2027 totals year-to-date")) {
       inTransactionSection = false;
       continue;
     }
