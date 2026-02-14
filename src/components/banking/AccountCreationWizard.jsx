@@ -58,7 +58,7 @@ import {
   Circle,
   RefreshCw
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, autoMatchTransfers, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
 import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
@@ -948,15 +948,20 @@ export default function AccountCreationWizard({
         type: txn.type
       }));
 
+      let insertedTransactionIds = [];
       if (allTransactions.length > 0) {
         const { data: insertedData, error } = await firstsavvy
           .from('transactions')
           .insert(allTransactions)
-          .select();
+          .select('id');
 
         if (error) {
           console.error('Error inserting transactions:', error);
           throw error;
+        }
+
+        if (insertedData && insertedData.length > 0) {
+          insertedTransactionIds = insertedData.map(t => t.id);
         }
       }
 
@@ -982,7 +987,21 @@ export default function AccountCreationWizard({
         }
       }
 
-      const matchedCount = await autoMatchTransfers(allTransactions);
+      let matchedCount = 0;
+      if (insertedTransactionIds.length > 0) {
+        try {
+          const { data: detectionResult } = await transferAutoDetectionAPI.detectTransfers(
+            activeProfile.id,
+            insertedTransactionIds
+          );
+
+          if (detectionResult && Array.isArray(detectionResult)) {
+            matchedCount = detectionResult.filter(r => r.auto_matched).length;
+          }
+        } catch (err) {
+          console.warn('Transfer auto-detection failed:', err);
+        }
+      }
 
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
