@@ -162,19 +162,7 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
     };
   });
 
-  console.log('=== TRANSACTION MAPPING DEBUG ===');
-  console.log('Total rows from CSV:', csvData.rows.length);
-  console.log('Sample mapped transactions (first 3):', allTransactions.slice(0, 3));
-
-  const filtered = allTransactions.filter(t => {
-    const valid = t.amount > 0 && t.date !== null;
-    if (!valid) {
-      console.log('Filtered out transaction:', t, 'Reason:', t.amount <= 0 ? 'amount <= 0' : 'date is null');
-    }
-    return valid;
-  });
-
-  console.log('Transactions after filter:', filtered.length);
+  const filtered = allTransactions.filter(t => t.amount > 0 && t.date !== null);
   return filtered;
 };
 

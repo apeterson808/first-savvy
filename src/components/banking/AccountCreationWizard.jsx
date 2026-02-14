@@ -807,16 +807,6 @@ export default function AccountCreationWizard({
   };
 
   const handleCsvMap = (mappingConfig) => {
-    console.log('=== CSV MAPPING ===');
-    console.log('Processed data rows:', processedData?.rows?.length);
-    console.log('Mapping config:', mappingConfig);
-    console.log('CSV Data sample:', processedData?.rows?.slice(0, 2));
-    console.log('Date column name:', mappingConfig.columnMappings.date);
-    console.log('Sample date values:', processedData?.rows?.slice(0, 3).map(r => ({
-      raw: r[mappingConfig.columnMappings.date],
-      type: typeof r[mappingConfig.columnMappings.date]
-    })));
-
     const transactions = mapCsvToTransactions(
       processedData,
       mappingConfig.columnMappings,
@@ -825,8 +815,10 @@ export default function AccountCreationWizard({
       mappingConfig.creditColumn
     );
 
-    console.log('Mapped transactions count:', transactions.length);
-    console.log('First 3 transactions:', transactions.slice(0, 3));
+    if (transactions.length === 0) {
+      toast.error('No valid transactions found in CSV. Please check your date and amount columns.');
+      return;
+    }
 
     setMappedTransactions(transactions);
     setProcessingStatus('success');
@@ -1192,7 +1184,7 @@ export default function AccountCreationWizard({
               amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
               type: txn.type,
               status: 'pending',
-              source: 'import',
+              source: 'csv',
               include_in_reports: true
             }));
 
