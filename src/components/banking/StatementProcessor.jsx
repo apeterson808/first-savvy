@@ -55,7 +55,8 @@ export const processStatementFile = async (file, onProgress) => {
         transactions: extractResponse.output.transactions,
         institutionName: extractResponse.output.institutionName,
         accountNumber: extractResponse.output.accountNumber,
-        beginningBalance: extractResponse.output.beginningBalance
+        beginningBalance: extractResponse.output.beginningBalance,
+        endingBalance: extractResponse.output.endingBalance
       };
     }
 

@@ -595,11 +595,106 @@ export default function AccountDetail() {
       });
 
       setProcessedData(data);
-      setImportStep('mapping');
+
+      if (data.type === 'transactions') {
+        await handleOfxImport(data);
+      } else {
+        setImportStep('mapping');
+      }
     } catch (error) {
       console.error('Error processing file:', error);
       toast.error(error.message || 'Failed to process file');
       setUploadedFile(null);
+    }
+  };
+
+  const handleOfxImport = async (data) => {
+    const { transactions, beginningBalance, endingBalance } = data;
+
+    if (!transactions || transactions.length === 0) {
+      toast.error('No transactions found in file');
+      setUploadedFile(null);
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      if (beginningBalance !== null && beginningBalance !== undefined) {
+        const { error: balanceError } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .update({ current_balance: beginningBalance })
+          .eq('id', account.id);
+
+        if (balanceError) {
+          console.error('Error updating beginning balance:', balanceError);
+          toast.error('Failed to update beginning balance');
+          setIsImporting(false);
+          return;
+        }
+      }
+
+      const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
+        account.id,
+        transactions
+      );
+
+      const allTransactions = uniqueTransactions
+        .filter(txn => txn.description && !txn.description.toLowerCase().includes('beginning balance'))
+        .map(txn => ({
+          profile_id: activeProfile.id,
+          user_id: user.id,
+          bank_account_id: account.id,
+          status: 'pending',
+          date: txn.date,
+          description: txn.description,
+          original_description: txn.original_description,
+          amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
+          type: txn.type
+        }));
+
+      if (allTransactions.length > 0) {
+        const { error } = await firstsavvy
+          .from('transactions')
+          .insert(allTransactions);
+
+        if (error) throw error;
+      }
+
+      if (endingBalance !== null && endingBalance !== undefined) {
+        const { error: bankBalanceError } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .update({
+            bank_balance: endingBalance,
+            last_synced_at: new Date().toISOString()
+          })
+          .eq('id', account.id);
+
+        if (bankBalanceError) {
+          console.error('Error updating bank balance:', bankBalanceError);
+        }
+      }
+
+      await autoMatchTransfers(allTransactions);
+
+      queryClient.invalidateQueries({ queryKey: ['account-activity', id] });
+      queryClient.invalidateQueries({ queryKey: ['account', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+      const balanceMsg = beginningBalance !== null && beginningBalance !== undefined ? ` Beginning balance set to ${formatCurrency(beginningBalance)}.` : '';
+      const endingBalanceMsg = endingBalance !== null && endingBalance !== undefined ? ` Bank balance set to ${formatCurrency(endingBalance)}.` : '';
+      const duplicateMsg = duplicates.length > 0 ? ` (${duplicates.length} duplicates skipped)` : '';
+      toast.success(`Successfully imported ${allTransactions.length} transactions${duplicateMsg}.${balanceMsg}${endingBalanceMsg}`);
+
+      setShowImportDialog(false);
+      setUploadedFile(null);
+      setProcessedData(null);
+      setMappedTransactions([]);
+      setImportStep('upload');
+    } catch (error) {
+      console.error('Error importing OFX transactions:', error);
+      toast.error(error.message || 'Failed to import transactions');
+    } finally {
+      setIsImporting(false);
     }
   };
 

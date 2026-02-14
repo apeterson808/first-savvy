@@ -109,7 +109,6 @@ Deno.serve(async (req: Request) => {
       if (isCreditCard && endingBalance < 0) {
         endingBalance = Math.abs(endingBalance);
       }
-      beginningBalance = endingBalance;
     }
 
     const stmtTrnPattern = /<STMTTRN>([\s\S]*?)<\/STMTTRN>/gi;
@@ -145,7 +144,21 @@ Deno.serve(async (req: Request) => {
       });
     }
 
+    if (endingBalance !== 0 && transactions.length > 0) {
+      beginningBalance = endingBalance;
+      for (const txn of transactions) {
+        if (txn.type === 'income') {
+          beginningBalance -= txn.amount;
+        } else {
+          beginningBalance += txn.amount;
+        }
+      }
+    } else if (endingBalance !== 0) {
+      beginningBalance = endingBalance;
+    }
+
     console.log('Parsed transactions:', transactions.length);
+    console.log('Beginning balance:', beginningBalance, 'Ending balance:', endingBalance);
 
     return new Response(
       JSON.stringify({
