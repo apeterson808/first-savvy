@@ -64,7 +64,32 @@ export const processStatementFile = async (file, onProgress) => {
     throw new Error(errorMsg);
   }
 
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
+  if (fileExt === 'pdf') {
+    onProgress?.('parsing');
+
+    const arrayBuffer = await file.arrayBuffer();
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer)
+        .reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    const parseResponse = await firstsavvy.functions.parsePdfStatement({ file_data: base64Data, file_name: file.name });
+
+    if (parseResponse.status === 'success' && parseResponse.output?.transactions) {
+      return {
+        type: 'transactions',
+        transactions: parseResponse.output.transactions,
+        institutionName: parseResponse.output.institutionName,
+        accountNumber: parseResponse.output.accountNumber,
+        endingBalance: parseResponse.output.endingBalance
+      };
+    }
+
+    const errorMsg = parseResponse.details || parseResponse.error || 'Failed to parse PDF';
+    throw new Error(errorMsg);
+  }
+
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, QFX, or PDF file.`);
 };
 
 export const parseDate = (dateStr) => {
