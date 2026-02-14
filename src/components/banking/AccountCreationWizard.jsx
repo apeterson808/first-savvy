@@ -788,6 +788,7 @@ export default function AccountCreationWizard({
     updateFormData('endingDate', lastTxn.date);
     updateFormData('beginningBalance', calculatedBeginningBalance.toFixed(2));
     updateFormData('endingBalance', calculatedEndingBalance.toFixed(2));
+    updateFormData('balance', calculatedEndingBalance.toFixed(2));
 
     setBalanceData({
       beginningBalance: calculatedBeginningBalance,
