@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '../ui/dialog';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -6,7 +6,7 @@ import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
-import { Loader2, CheckCircle2, AlertCircle, Info, Sparkles, Brain } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info, Sparkles, Brain, Calendar, Filter } from 'lucide-react';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
@@ -14,6 +14,8 @@ import { format } from 'date-fns';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { toast } from 'sonner';
+import { Label } from '../ui/label';
+import { calculateBeginningBalanceFromCurrent } from './StatementProcessor';
 
 export function TransactionReviewDialog({
   open,
@@ -27,6 +29,8 @@ export function TransactionReviewDialog({
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
   const [bulkAccountId, setBulkAccountId] = useState(null);
+  const [filterStartDate, setFilterStartDate] = useState(null);
+  const [showDateFilter, setShowDateFilter] = useState(false);
 
   useEffect(() => {
     if (extractedData?.transactions && profileId) {
@@ -107,10 +111,10 @@ export function TransactionReviewDialog({
   }, [extractedData, profileId]);
 
   const toggleSelectAll = () => {
-    if (selectedIds.size === transactions.length) {
+    if (selectedIds.size === filteredTransactions.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(transactions.map(t => t.id)));
+      setSelectedIds(new Set(filteredTransactions.map(t => t.id)));
     }
   };
 
@@ -241,8 +245,49 @@ export function TransactionReviewDialog({
     }
   };
 
+  const dateRange = useMemo(() => {
+    if (transactions.length === 0) return null;
+
+    const dates = transactions.map(t => new Date(t.date)).sort((a, b) => a - b);
+    return {
+      minDate: format(dates[0], 'yyyy-MM-dd'),
+      maxDate: format(dates[dates.length - 1], 'yyyy-MM-dd')
+    };
+  }, [transactions]);
+
+  const filteredTransactions = useMemo(() => {
+    if (!filterStartDate) return transactions;
+
+    return transactions.filter(t => t.date >= filterStartDate);
+  }, [transactions, filterStartDate]);
+
+  const excludedTransactions = useMemo(() => {
+    if (!filterStartDate) return [];
+
+    return transactions.filter(t => t.date < filterStartDate);
+  }, [transactions, filterStartDate]);
+
+  const calculatedBeginningBalance = useMemo(() => {
+    if (!filterStartDate || !extractedData?.endingBalance) return null;
+
+    const allTransactions = transactions.map(t => ({
+      date: t.date,
+      amount: Math.abs(parseFloat(t.amount) || 0),
+      type: t.type
+    }));
+
+    const isLiability = extractedData.accountType === 'liability';
+
+    return calculateBeginningBalanceFromCurrent(
+      extractedData.endingBalance,
+      allTransactions,
+      filterStartDate,
+      isLiability
+    );
+  }, [filterStartDate, extractedData, transactions]);
+
   const selectedCount = selectedIds.size;
-  const selectedTransactions = transactions.filter(t => selectedIds.has(t.id));
+  const selectedTransactions = filteredTransactions.filter(t => selectedIds.has(t.id));
   const totalAmount = selectedTransactions.reduce((sum, t) => sum + Math.abs(parseFloat(t.amount) || 0), 0);
   const incomeCount = selectedTransactions.filter(t => t.type === 'income').length;
   const expenseCount = selectedTransactions.filter(t => t.type === 'expense').length;
@@ -270,13 +315,102 @@ export function TransactionReviewDialog({
             </div>
           )}
 
+          {dateRange && (
+            <div className="border rounded-lg p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-slate-600" />
+                  <span className="text-sm font-medium">Date Range Filter</span>
+                  {!showDateFilter && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setShowDateFilter(true)}
+                      className="h-7 px-2 text-xs"
+                    >
+                      <Filter className="w-3 h-3 mr-1" />
+                      Filter Transactions
+                    </Button>
+                  )}
+                </div>
+                <div className="text-xs text-slate-600">
+                  Statement period: {dateRange.minDate} to {dateRange.maxDate}
+                </div>
+              </div>
+
+              {showDateFilter && (
+                <div className="border-t pt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs">Import transactions from:</Label>
+                      <Input
+                        type="date"
+                        value={filterStartDate || dateRange.minDate}
+                        onChange={(e) => setFilterStartDate(e.target.value || null)}
+                        min={dateRange.minDate}
+                        max={dateRange.maxDate}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs">Through:</Label>
+                      <Input
+                        type="date"
+                        value={dateRange.maxDate}
+                        disabled
+                        className="text-sm bg-slate-50"
+                      />
+                    </div>
+                  </div>
+
+                  {filterStartDate && filterStartDate !== dateRange.minDate && (
+                    <Alert className="bg-amber-50 border-amber-200">
+                      <AlertCircle className="h-4 w-4 text-amber-600" />
+                      <AlertDescription className="text-xs">
+                        <div className="space-y-1">
+                          <p className="font-medium text-amber-900">
+                            {excludedTransactions.length} transaction{excludedTransactions.length !== 1 ? 's' : ''} will be excluded (before {filterStartDate})
+                          </p>
+                          <p className="text-amber-700">
+                            {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} will be imported
+                          </p>
+                          {calculatedBeginningBalance !== null && extractedData?.endingBalance && (
+                            <p className="text-amber-700 mt-2 pt-2 border-t border-amber-200">
+                              <span className="font-medium">Adjusted beginning balance:</span> {formatCurrency(calculatedBeginningBalance)}
+                              <br />
+                              <span className="text-xs">(Calculated from statement ending balance of {formatCurrency(extractedData.endingBalance)})</span>
+                            </p>
+                          )}
+                        </div>
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setFilterStartDate(null);
+                        setShowDateFilter(false);
+                      }}
+                      className="text-xs"
+                    >
+                      Clear Filter
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex items-center gap-4 px-4 py-2 bg-gray-50 rounded-lg">
             <div className="flex items-center gap-2">
               <Checkbox
-                checked={selectedIds.size === transactions.length && transactions.length > 0}
+                checked={selectedIds.size === filteredTransactions.length && filteredTransactions.length > 0}
                 onCheckedChange={toggleSelectAll}
               />
-              <span className="text-sm font-medium">Select All</span>
+              <span className="text-sm font-medium">Select All ({filteredTransactions.length})</span>
             </div>
 
             <div className="flex items-center gap-2 ml-auto">
@@ -314,7 +448,7 @@ export function TransactionReviewDialog({
                   </tr>
                 </thead>
                 <tbody>
-                  {transactions.map((txn, idx) => (
+                  {filteredTransactions.map((txn, idx) => (
                     <tr
                       key={txn.id}
                       className={`border-t hover:bg-gray-50 ${!txn.isValid ? 'bg-red-50' : ''}`}
