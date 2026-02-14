@@ -67,7 +67,14 @@ export const processStatementFile = async (file, onProgress) => {
 };
 
 export const parseDate = (dateStr) => {
-  if (!dateStr || typeof dateStr !== 'string') return null;
+  if (!dateStr) return null;
+
+  if (typeof dateStr !== 'string') {
+    if (dateStr instanceof Date) {
+      return format(dateStr, 'yyyy-MM-dd');
+    }
+    dateStr = String(dateStr);
+  }
 
   let cleanDate = dateStr.trim().split(' ')[0].split('T')[0];
   if (!cleanDate) return null;
@@ -113,7 +120,7 @@ export const parseDate = (dateStr) => {
 };
 
 export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn) => {
-  const transactions = csvData.rows.map(row => {
+  const allTransactions = csvData.rows.map(row => {
     let amount = 0;
     let type = 'expense';
 
@@ -144,16 +151,31 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
     }
 
     const originalDescription = row[columnMappings.description] || 'Unknown';
+    const parsedDate = parseDate(row[columnMappings.date]);
+
     return {
-      date: parseDate(row[columnMappings.date]),
+      date: parsedDate,
       description: originalDescription,
       original_description: originalDescription,
       amount,
       type
     };
-  }).filter(t => t.amount > 0 && t.date !== null);
+  });
 
-  return transactions;
+  console.log('=== TRANSACTION MAPPING DEBUG ===');
+  console.log('Total rows from CSV:', csvData.rows.length);
+  console.log('Sample mapped transactions (first 3):', allTransactions.slice(0, 3));
+
+  const filtered = allTransactions.filter(t => {
+    const valid = t.amount > 0 && t.date !== null;
+    if (!valid) {
+      console.log('Filtered out transaction:', t, 'Reason:', t.amount <= 0 ? 'amount <= 0' : 'date is null');
+    }
+    return valid;
+  });
+
+  console.log('Transactions after filter:', filtered.length);
+  return filtered;
 };
 
 export const splitTransactionsByGoLiveDate = (transactions, goLiveDate) => {

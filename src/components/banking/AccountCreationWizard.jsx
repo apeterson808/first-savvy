@@ -806,6 +806,12 @@ export default function AccountCreationWizard({
     console.log('=== CSV MAPPING ===');
     console.log('Processed data rows:', processedData?.rows?.length);
     console.log('Mapping config:', mappingConfig);
+    console.log('CSV Data sample:', processedData?.rows?.slice(0, 2));
+    console.log('Date column name:', mappingConfig.columnMappings.date);
+    console.log('Sample date values:', processedData?.rows?.slice(0, 3).map(r => ({
+      raw: r[mappingConfig.columnMappings.date],
+      type: typeof r[mappingConfig.columnMappings.date]
+    })));
 
     const transactions = mapCsvToTransactions(
       processedData,
