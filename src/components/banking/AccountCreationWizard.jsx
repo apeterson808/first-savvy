@@ -874,7 +874,8 @@ export default function AccountCreationWizard({
           is_active: true,
           institution_name: formData.institutionName || '',
           account_number_last4: formData.last4 || '',
-          current_balance: beginningBalanceForCalc,
+          current_balance: endingBalanceForCalc,
+          bank_balance: endingBalanceForCalc,
           as_of_date: formData.asOfDate
         };
 
