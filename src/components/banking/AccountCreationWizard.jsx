@@ -3503,6 +3503,8 @@ export default function AccountCreationWizard({
         }}
         isFirstImport={true}
         suggestedBeginningBalance={parseFloat(formData.currentBalance) || 0}
+        profileId={activeProfile?.id}
+        institutionName={formData.institutionName || 'Unknown Bank'}
       />
     </div>
   );
@@ -4172,6 +4174,8 @@ export default function AccountCreationWizard({
             }}
             isImporting={isProcessingBalance}
             isBalanceExtraction={true}
+            profileId={activeProfile?.id}
+            institutionName={formData.institutionName || 'Unknown Bank'}
           />
         )}
       </DialogContent>

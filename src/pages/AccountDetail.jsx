@@ -1606,6 +1606,8 @@ export default function AccountDetail() {
                 isImporting={isImporting}
                 isFirstImport={totalJournalLines === 0}
                 suggestedBeginningBalance={account?.current_balance || 0}
+                profileId={activeProfile?.id}
+                institutionName={account?.institution_name || account?.display_name || 'Unknown Bank'}
               />
             )}
 

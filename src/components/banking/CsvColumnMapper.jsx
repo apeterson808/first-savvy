@@ -7,6 +7,8 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
 import { parseDate } from './StatementProcessor';
+import { getCsvMappingConfig, saveCsvMappingConfig } from '@/api/csvMappingConfigs';
+import { toast } from 'sonner';
 
 const DETECTION_PATTERNS = {
   date: ['date', 'trans date', 'transaction date', 'posted date', 'post date', 'posting date', 'value date', 'entry date'],
@@ -58,7 +60,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false }) {
+export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false, profileId = null, institutionName = null }) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -76,28 +78,57 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const [hasAutoDetected, setHasAutoDetected] = useState(false);
   const [beginningBalance, setBeginningBalance] = useState(suggestedBeginningBalance.toString());
   const [endingBalance, setEndingBalance] = useState('');
+  const [savedMappingLoaded, setSavedMappingLoaded] = useState(false);
 
   const headers = csvData.headers || [];
   const sampleRows = csvData.rows?.slice(0, 3) || [];
 
   useEffect(() => {
-    if (headers.length > 0 && !hasAutoDetected) {
-      const detected = autoDetectMappings(headers);
+    const loadSavedMapping = async () => {
+      if (headers.length > 0 && !hasAutoDetected && profileId && institutionName) {
+        const { data: savedConfig } = await getCsvMappingConfig(profileId, institutionName);
 
-      const detectedFieldsList = [];
-      Object.entries(detected.mappings).forEach(([field, value]) => {
-        if (value) detectedFieldsList.push(field);
-      });
+        if (savedConfig && savedConfig.column_mappings) {
+          setColumnMappings(savedConfig.column_mappings);
+          setDateFormat(savedConfig.date_format || 'auto');
+          setAmountType(savedConfig.amount_type || 'auto');
+          setDebitColumn(savedConfig.debit_column || '');
+          setCreditColumn(savedConfig.credit_column || '');
+          setBalanceColumn(savedConfig.balance_column || '');
 
-      setColumnMappings(detected.mappings);
-      setAmountType(detected.amountType);
-      setDebitColumn(detected.debitColumn);
-      setCreditColumn(detected.creditColumn);
-      setBalanceColumn(detected.balanceColumn);
-      setAutoDetectedFields(detectedFieldsList);
-      setHasAutoDetected(true);
-    }
-  }, [headers, hasAutoDetected]);
+          const detectedFieldsList = [];
+          Object.entries(savedConfig.column_mappings).forEach(([field, value]) => {
+            if (value) detectedFieldsList.push(field);
+          });
+          setAutoDetectedFields(detectedFieldsList);
+          setSavedMappingLoaded(true);
+          setHasAutoDetected(true);
+
+          toast.success('Loaded saved mapping configuration');
+          return;
+        }
+      }
+
+      if (headers.length > 0 && !hasAutoDetected) {
+        const detected = autoDetectMappings(headers);
+
+        const detectedFieldsList = [];
+        Object.entries(detected.mappings).forEach(([field, value]) => {
+          if (value) detectedFieldsList.push(field);
+        });
+
+        setColumnMappings(detected.mappings);
+        setAmountType(detected.amountType);
+        setDebitColumn(detected.debitColumn);
+        setCreditColumn(detected.creditColumn);
+        setBalanceColumn(detected.balanceColumn);
+        setAutoDetectedFields(detectedFieldsList);
+        setHasAutoDetected(true);
+      }
+    };
+
+    loadSavedMapping();
+  }, [headers, hasAutoDetected, profileId, institutionName]);
 
   useEffect(() => {
     if (!isFirstImport || !csvData.rows?.length) return;
@@ -201,7 +232,18 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     category: 'Category'
   };
 
-  const handleMap = () => {
+  const handleMap = async () => {
+    if (profileId && institutionName) {
+      await saveCsvMappingConfig(profileId, institutionName, {
+        columnMappings,
+        dateFormat,
+        amountType,
+        debitColumn,
+        creditColumn,
+        balanceColumn
+      });
+    }
+
     onMap({
       columnMappings,
       dateFormat,
@@ -236,8 +278,11 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           <div className="flex items-start gap-2">
             <CheckCircle2 className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-green-900 font-medium">Auto-detected {autoDetectedFields.length} field{autoDetectedFields.length !== 1 ? 's' : ''} ({csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found)</p>
+              <p className="text-sm text-green-900 font-medium">
+                {savedMappingLoaded ? 'Loaded saved mapping' : `Auto-detected ${autoDetectedFields.length} field${autoDetectedFields.length !== 1 ? 's' : ''}`} ({csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found)
+              </p>
               <p className="text-xs text-green-700 mt-1">
+                {savedMappingLoaded ? `Using your previous configuration for ${institutionName || 'this bank'}. ` : ''}
                 {requiredFieldsMapped ? 'Required fields mapped successfully. ' : 'Some required fields need attention. '}
                 {optionalFieldsMapped > 0 && `Found ${optionalFieldsMapped} optional field${optionalFieldsMapped !== 1 ? 's' : ''}. `}
                 You can change any mapping if needed.
