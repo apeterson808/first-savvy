@@ -1231,6 +1231,34 @@ export default function AccountCreationWizard({
               console.error('Failed to import transactions:', importError);
               toast.error(`Account created but failed to import ${transactionsToImport.length} transactions`);
             } else {
+              const endingBalanceValue = parseFloat(formData.endingBalance);
+              if (!isNaN(endingBalanceValue)) {
+                const updateData = {
+                  bank_balance: endingBalanceValue,
+                  last_synced_at: new Date().toISOString()
+                };
+
+                if (formData.endingDate) {
+                  updateData.last_statement_date = formData.endingDate;
+                }
+
+                console.log('=== UPDATING BANK BALANCE (MANUAL-ENTRY) ===');
+                console.log('Account ID:', newAccount.id);
+                console.log('Bank Balance:', endingBalanceValue);
+                console.log('Statement End Date:', formData.endingDate);
+
+                const { error: balanceError } = await firstsavvy
+                  .from('user_chart_of_accounts')
+                  .update(updateData)
+                  .eq('id', newAccount.id);
+
+                if (balanceError) {
+                  console.error('Error updating bank balance:', balanceError);
+                } else {
+                  console.log(`Successfully updated bank balance to $${endingBalanceValue}`);
+                }
+              }
+
               toast.success(`Account created with ${transactionsToImport.length} transactions imported!`);
             }
           }
