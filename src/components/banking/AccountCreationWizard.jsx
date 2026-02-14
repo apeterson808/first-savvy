@@ -644,15 +644,11 @@ export default function AccountCreationWizard({
             setOriginalBeginningBalance(result.beginningBalance);
           }
           if (result.statementStartDate) {
-            console.log('Statement start date from parser:', result.statementStartDate);
             const startDate = parseDate(result.statementStartDate);
-            console.log('Parsed start date:', startDate);
             if (startDate) {
               updateFormData('startDate', startDate);
               setCustomStartDate(startDate);
             }
-          } else {
-            console.log('No statementStartDate in result');
           }
           if (result.previousBalance !== undefined || result.newBalance !== undefined) {
             setStatementBalances({
@@ -683,9 +679,7 @@ export default function AccountCreationWizard({
 
     setIsProcessingBalance(true);
     try {
-      const result = await processStatementFile(file, (status) => {
-        console.log('Processing balance file:', status);
-      });
+      const result = await processStatementFile(file);
 
       setBalanceProcessedData(result);
 
@@ -808,10 +802,6 @@ export default function AccountCreationWizard({
   };
 
   const handleCsvMap = (mappingConfig) => {
-    console.log('=== CSV MAP CONFIG ===');
-    console.log('Beginning Balance from mapper:', mappingConfig.beginningBalance);
-    console.log('Ending Balance from mapper:', mappingConfig.endingBalance);
-
     const transactions = mapCsvToTransactions(
       processedData,
       mappingConfig.columnMappings,
@@ -851,9 +841,6 @@ export default function AccountCreationWizard({
   };
 
   const handleImportTransactions = async () => {
-    console.log('=== handleImportTransactions CALLED ===');
-    console.log('isExistingAccount:', isExistingAccount);
-    console.log('mappedTransactions.length:', mappedTransactions.length);
     try {
       let targetAccountId = selectedAccountId;
       let targetAccountObject;
@@ -878,15 +865,6 @@ export default function AccountCreationWizard({
 
         const beginningBalanceForCalc = parseFloat(formData.beginningBalance) || 0;
         const endingBalanceForCalc = parseFloat(formData.endingBalance) || beginningBalanceForCalc;
-
-        console.log('=== ACCOUNT CREATION DEBUG ===');
-        console.log('formData.beginningBalance (raw):', formData.beginningBalance);
-        console.log('formData.endingBalance (raw):', formData.endingBalance);
-        console.log('Beginning Balance (parsed):', beginningBalanceForCalc);
-        console.log('Ending Balance (parsed):', endingBalanceForCalc);
-        console.log('As of Date:', formData.asOfDate);
-        console.log('Ending Date:', formData.endingDate);
-        console.log('Transactions to import:', mappedTransactions.length);
 
         const newAccountData = {
           profile_id: activeProfile.id,
@@ -926,64 +904,37 @@ export default function AccountCreationWizard({
         targetAccountObject = existingAccount;
       }
 
-      console.log('=== TRANSACTION FILTERING DEBUG ===');
-      console.log('Mapped transactions count:', mappedTransactions.length);
-      console.log('First 3 mapped transactions:', mappedTransactions.slice(0, 3));
-      console.log('Custom start date:', customStartDate);
-
       const transactionsToCheck = mappedTransactions.filter(txn => {
         const desc = txn.description?.toLowerCase() || '';
         const isBeginningBalance = desc.includes('beginning balance') && txn.amount === 0;
 
         if (isBeginningBalance) {
-          console.log('Filtered out beginning balance transaction:', txn.description);
           return false;
         }
 
         if (customStartDate) {
           const txnDate = new Date(txn.date);
           const startDate = new Date(customStartDate);
-          const include = txnDate >= startDate;
-          if (!include) {
-            console.log('Filtered out by date:', txn.date, 'before', customStartDate);
-          }
-          return include;
+          return txnDate >= startDate;
         }
 
         return true;
       });
-
-      console.log('Transactions to check (after date filter):', transactionsToCheck.length);
 
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
         targetAccountId,
         transactionsToCheck
       );
 
-      console.log('Duplicates found:', duplicates.length);
-      console.log('Unique transactions:', uniqueTransactions.length);
-      console.log('Skip duplicates setting:', skipDuplicates);
-
       setDuplicateTransactions(duplicates);
 
       const transactionsToImport = skipDuplicates ? uniqueTransactions : transactionsToCheck;
-      console.log('Transactions to import (after duplicate handling):', transactionsToImport.length);
 
       const filteredForBeginningBalance = transactionsToImport.filter(txn => {
         const hasDescription = !!txn.description;
         const isBeginningBalance = txn.description && txn.description.toLowerCase().includes('beginning balance');
-
-        if (!hasDescription) {
-          console.log('Filtered out: no description');
-        }
-        if (isBeginningBalance) {
-          console.log('Filtered out: beginning balance -', txn.description);
-        }
-
         return hasDescription && !isBeginningBalance;
       });
-
-      console.log('After final filter:', filteredForBeginningBalance.length);
 
       const allTransactions = filteredForBeginningBalance.map(txn => ({
         profile_id: activeProfile.id,
@@ -997,40 +948,19 @@ export default function AccountCreationWizard({
         type: txn.type
       }));
 
-      console.log('About to insert transactions:', allTransactions.length);
-      console.log('First 2 transactions to insert:', allTransactions.slice(0, 2));
-
       if (allTransactions.length > 0) {
-        console.log('=== INSERTING TRANSACTIONS ===');
-        console.log('Total to insert:', allTransactions.length);
-
         const { data: insertedData, error } = await firstsavvy
           .from('transactions')
           .insert(allTransactions)
           .select();
 
         if (error) {
-          console.error('=== TRANSACTION INSERT ERROR ===');
-          console.error('Error details:', error);
-          console.error('Error message:', error.message);
-          console.error('Error hint:', error.hint);
+          console.error('Error inserting transactions:', error);
           throw error;
         }
-        console.log('=== TRANSACTIONS INSERTED SUCCESSFULLY ===');
-        console.log('Inserted count:', insertedData?.length);
-        console.log('Sample inserted data:', insertedData?.slice(0, 2));
-      } else {
-        console.warn('=== NO TRANSACTIONS TO INSERT ===');
-        console.warn('This means all transactions were filtered out');
       }
 
-      console.log('=== BANK BALANCE UPDATE CHECK ===');
-      console.log('formData.endingBalance:', formData.endingBalance);
-      console.log('Type:', typeof formData.endingBalance);
-
       const endingBalanceValue = parseFloat(formData.endingBalance);
-      console.log('Parsed endingBalanceValue:', endingBalanceValue);
-      console.log('isNaN check:', isNaN(endingBalanceValue));
 
       if (!isNaN(endingBalanceValue)) {
         const updateData = {
@@ -1042,12 +972,6 @@ export default function AccountCreationWizard({
           updateData.last_statement_date = formData.endingDate;
         }
 
-        console.log('=== UPDATING BANK BALANCE ===');
-        console.log('Target Account ID:', targetAccountId);
-        console.log('Bank Balance:', endingBalanceValue);
-        console.log('Statement End Date:', formData.endingDate);
-        console.log('Update Data:', updateData);
-
         const { error: balanceError } = await firstsavvy
           .from('user_chart_of_accounts')
           .update(updateData)
@@ -1055,11 +979,7 @@ export default function AccountCreationWizard({
 
         if (balanceError) {
           console.error('Error updating bank balance:', balanceError);
-        } else {
-          console.log(`Successfully updated bank balance to $${endingBalanceValue} for account ${targetAccountId}`);
         }
-      } else {
-        console.warn('No valid ending balance found in formData');
       }
 
       const matchedCount = await autoMatchTransfers(allTransactions);
@@ -1174,12 +1094,6 @@ export default function AccountCreationWizard({
       }
     },
     onSuccess: async (newAccount) => {
-      console.log('=== ACCOUNT CREATION SUCCESS ===');
-      console.log('New account ID:', newAccount.id);
-      console.log('Mapped transactions count:', mappedTransactions.length);
-      console.log('Custom start date:', customStartDate);
-      console.log('Form asOfDate:', formData.asOfDate);
-
       if (newAccount.current_balance && newAccount.current_balance !== 0 && !newAccount._usedActivateTemplate) {
         try {
           const openingDate = formData.asOfDate || new Date().toISOString().split('T')[0];
@@ -1201,12 +1115,9 @@ export default function AccountCreationWizard({
       if (mappedTransactions.length > 0) {
         try {
           const startDate = customStartDate || formData.asOfDate;
-          console.log('Start date for filtering:', startDate);
           const transactionsToImport = startDate
             ? mappedTransactions.filter(txn => new Date(txn.date) >= new Date(startDate))
             : mappedTransactions;
-
-          console.log('Transactions after date filter:', transactionsToImport.length);
 
           if (transactionsToImport.length > 0) {
             const transactionsWithAccount = transactionsToImport.map(txn => ({
@@ -1242,11 +1153,6 @@ export default function AccountCreationWizard({
                   updateData.last_statement_date = formData.endingDate;
                 }
 
-                console.log('=== UPDATING BANK BALANCE (MANUAL-ENTRY) ===');
-                console.log('Account ID:', newAccount.id);
-                console.log('Bank Balance:', endingBalanceValue);
-                console.log('Statement End Date:', formData.endingDate);
-
                 const { error: balanceError } = await firstsavvy
                   .from('user_chart_of_accounts')
                   .update(updateData)
@@ -1254,8 +1160,6 @@ export default function AccountCreationWizard({
 
                 if (balanceError) {
                   console.error('Error updating bank balance:', balanceError);
-                } else {
-                  console.log(`Successfully updated bank balance to $${endingBalanceValue}`);
                 }
               }
 
@@ -1699,11 +1603,6 @@ export default function AccountCreationWizard({
   };
 
   const handleNext = async () => {
-    console.log('=== handleNext CALLED ===');
-    console.log('currentStep:', currentStep);
-    console.log('selectedCard.id:', selectedCard?.id);
-    console.log('isExistingAccount:', isExistingAccount);
-
     if (selectedCard.id === 'banking') {
       if (currentStep === 'manual-entry') {
         if (!formData.name || !formData.name.trim()) {
@@ -2120,17 +2019,8 @@ export default function AccountCreationWizard({
           ? Math.abs(account.current_balance).toString()
           : '';
 
-        console.log(`Processing account selection for ${account.name}:`, {
-          accountId: account.id,
-          beginning_balance: account.beginning_balance,
-          current_balance: account.current_balance,
-          startDate: startDate,
-          hasTransactions: !!account.transactions
-        });
-
         if (account.beginning_balance !== undefined && account.beginning_balance !== null) {
           beginningBalance = Math.abs(account.beginning_balance).toString();
-          console.log(`Using beginning_balance from account: ${beginningBalance}`);
         } else if (startDate && account.current_balance !== undefined && account.transactions) {
           const isLiability = mapping.class === 'liability';
           const calculatedBalance = calculateBeginningBalanceFromCurrent(
@@ -2140,7 +2030,6 @@ export default function AccountCreationWizard({
             isLiability
           );
           beginningBalance = calculatedBalance.toString();
-          console.log(`Calculated beginning_balance: ${beginningBalance}`);
         }
 
         setAccountConfigurations(prev => ({
@@ -3036,13 +2925,9 @@ export default function AccountCreationWizard({
 
       // Filter existing categories by income/expense type
       const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
-      console.log('Budget Details - selectedSubtype:', selectedSubtype);
-      console.log('Budget Details - accountClass:', accountClass);
-      console.log('Budget Details - total userChartAccounts:', userChartAccounts.length);
       const existingCategories = userChartAccounts.filter(
         acc => acc.class === accountClass
       );
-      console.log('Budget Details - filtered existingCategories:', existingCategories.length);
 
       // Get parent categories (those without parent_account_id)
       const parentCategories = existingCategories.filter(cat => !cat.parent_account_id);

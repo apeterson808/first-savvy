@@ -197,36 +197,27 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
     const calculateEndingBalance = () => {
       if (balanceColumn && columnMappings.date) {
-        console.log('Calculating ending balance with column:', balanceColumn);
         const rowsWithDates = csvData.rows.map(row => ({
           row,
           date: parseDate(row[columnMappings.date]),
           balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0)
         })).filter(item => item.date !== null && !isNaN(item.balance));
 
-        console.log('Rows with valid dates and balances:', rowsWithDates.length);
-
         if (rowsWithDates.length === 0) return '';
 
         rowsWithDates.sort((a, b) => new Date(b.date) - new Date(a.date));
         const newestTransaction = rowsWithDates[0];
 
-        console.log('Newest transaction balance:', newestTransaction.balance);
-
         if (newestTransaction.balance === 0) return '';
 
-        const result = newestTransaction.balance.toFixed(2);
-        console.log('Calculated ending balance:', result);
-        return result;
+        return newestTransaction.balance.toFixed(2);
       }
 
-      console.log('Cannot calculate ending balance - balanceColumn:', balanceColumn, 'date column:', columnMappings.date);
       return '';
     };
 
     const calculatedEnding = calculateEndingBalance();
     if (calculatedEnding) {
-      console.log('Setting ending balance to:', calculatedEnding);
       setEndingBalance(calculatedEnding);
     }
   }, [csvData, columnMappings.date, balanceColumn]);
@@ -266,12 +257,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       endingBalance: endingBalance ? parseFloat(endingBalance) : null,
       csvData
     };
-
-    console.log('CSV Mapping Config being passed to import:', {
-      balanceColumn,
-      beginningBalance: mappingConfig.beginningBalance,
-      endingBalance: mappingConfig.endingBalance
-    });
 
     onMap(mappingConfig);
   };
