@@ -76,5 +76,32 @@ export function useAutomaticTransferDetection(profileId, pendingTransactions = [
     }, 300);
   }, [runDetection]);
 
-  return { detectNewTransactions };
+  const scanAllPendingTransactions = useCallback(async () => {
+    if (!profileId || detectionInProgressRef.current) {
+      return { success: false, error: 'Detection already in progress or no profile' };
+    }
+
+    try {
+      detectionInProgressRef.current = true;
+      lastDetectionRef.current = new Date();
+
+      const result = await transferAutoDetectionAPI.detectTransfers(profileId, null);
+
+      if (result.error) {
+        return { success: false, error: result.error };
+      }
+
+      scannedTransactionIdsRef.current.clear();
+
+      const matchedCount = result.data?.[0]?.matched_pairs || 0;
+      return { success: true, matchedCount };
+    } catch (error) {
+      console.error('Bulk transfer detection failed:', error);
+      return { success: false, error };
+    } finally {
+      detectionInProgressRef.current = false;
+    }
+  }, [profileId]);
+
+  return { detectNewTransactions, scanAllPendingTransactions };
 }

@@ -81,5 +81,44 @@ export function useAutomaticCreditCardPaymentDetection(profileId, pendingTransac
     }
   }, [profileId, pendingTransactions]);
 
-  return { detectNewPayments };
+  const scanAllPendingTransactions = async () => {
+    if (!profileId) {
+      return { success: false, error: 'No profile ID' };
+    }
+
+    if (detectionInProgressRef.current) {
+      return { success: false, error: 'Detection already in progress' };
+    }
+
+    try {
+      detectionInProgressRef.current = true;
+      lastDetectionRef.current = new Date();
+
+      console.log('[CC Payment Detection] Running full scan of all pending transactions');
+
+      const { data, error } = await creditCardPaymentDetectionAPI.detectPayments(
+        profileId,
+        null
+      );
+
+      if (error) {
+        console.error('[CC Payment Detection] Scan error:', error);
+        return { success: false, error };
+      }
+
+      scannedTransactionIdsRef.current.clear();
+
+      const matchedCount = data?.[0]?.matched_count || 0;
+      console.log(`[CC Payment Detection] Scan complete: ${matchedCount} payment pair(s) found`);
+
+      return { success: true, matchedCount };
+    } catch (error) {
+      console.error('[CC Payment Detection] Scan exception:', error);
+      return { success: false, error };
+    } finally {
+      detectionInProgressRef.current = false;
+    }
+  };
+
+  return { detectNewPayments, scanAllPendingTransactions };
 }

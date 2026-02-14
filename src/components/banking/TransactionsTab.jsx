@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink, Scan } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -123,6 +123,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [ruleMode, setRuleMode] = useState('create');
   const [editJournalEntryDialogOpen, setEditJournalEntryDialogOpen] = useState(false);
   const [editingJournalEntryId, setEditingJournalEntryId] = useState(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -307,6 +308,41 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
+  const handleScanForMatches = async () => {
+    if (!activeProfile?.id || isScanning) return;
+
+    setIsScanning(true);
+    const toastId = toast.loading('Scanning transactions for matches...');
+
+    try {
+      const [transferResult, paymentResult] = await Promise.all([
+        scanTransfers(),
+        scanPayments()
+      ]);
+
+      const transferMatches = transferResult?.matchedCount || 0;
+      const paymentMatches = paymentResult?.matchedCount || 0;
+      const totalMatches = transferMatches + paymentMatches;
+
+      queryClient.invalidateQueries({ queryKey: ['transactions', activeProfile.id] });
+
+      if (totalMatches > 0) {
+        const parts = [];
+        if (transferMatches > 0) parts.push(`${transferMatches} transfer${transferMatches === 1 ? '' : 's'}`);
+        if (paymentMatches > 0) parts.push(`${paymentMatches} payment${paymentMatches === 1 ? '' : 's'}`);
+
+        toast.success(`Found ${parts.join(' and ')}`, { id: toastId });
+      } else {
+        toast.info('No new matches found', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Error scanning for matches:', error);
+      toast.error('Failed to scan for matches', { id: toastId });
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
   const handlePostWithSplit = async (transaction) => {
     if (isSplitMode(transaction.id)) {
       const lines = splitLineItems[transaction.id] || [];
@@ -476,12 +512,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
   }));
 
-  const { detectNewTransactions } = useAutomaticTransferDetection(
+  const { detectNewTransactions, scanAllPendingTransactions: scanTransfers } = useAutomaticTransferDetection(
     activeProfile?.id,
     fullPendingTransactions
   );
 
-  const { detectNewPayments } = useAutomaticCreditCardPaymentDetection(
+  const { detectNewPayments, scanAllPendingTransactions: scanPayments } = useAutomaticCreditCardPaymentDetection(
     activeProfile?.id,
     fullPendingTransactions
   );
@@ -1498,6 +1534,20 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   }, [expandedTransactionId]);
 
+  React.useEffect(() => {
+    const hasUnpairedPending = fullPendingTransactions?.some(
+      tx => !tx.transfer_pair_id && !tx.cc_payment_pair_id
+    );
+
+    if (activeProfile?.id && hasUnpairedPending && !isScanning) {
+      const timer = setTimeout(() => {
+        handleScanForMatches();
+      }, 2000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [activeProfile?.id]);
+
   return (
       <>
         <Card className="shadow-sm border-slate-200">
@@ -1581,9 +1631,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                 />
               </div>
               
-              <Button 
-                                    variant="outline" 
-                                    size="icon" 
+              <Button
+                                    variant="outline"
+                                    size="icon"
                                     className="h-9 w-9 relative"
                                     onClick={() => setFilterPanelOpen(true)}
                                   >
@@ -1594,6 +1644,32 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </span>
                                     )}
                                   </Button>
+
+              {statusFilter === 'pending' && pendingCount > 0 && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-9 gap-2"
+                        onClick={handleScanForMatches}
+                        disabled={isScanning}
+                      >
+                        {isScanning ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Scan className="w-4 h-4" />
+                        )}
+                        Scan for Matches
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Scan all pending transactions for transfers and credit card payments</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
 
               <div className="flex-1"></div>
 
