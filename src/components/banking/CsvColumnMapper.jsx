@@ -201,12 +201,14 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           row,
           date: parseDate(row[columnMappings.date]),
           balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0)
-        })).filter(item => item.date !== null);
+        })).filter(item => item.date !== null && !isNaN(item.balance));
 
         if (rowsWithDates.length === 0) return '';
 
         rowsWithDates.sort((a, b) => new Date(b.date) - new Date(a.date));
         const newestTransaction = rowsWithDates[0];
+
+        if (newestTransaction.balance === 0) return '';
 
         return newestTransaction.balance.toFixed(2);
       }
