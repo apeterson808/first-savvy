@@ -701,6 +701,11 @@ export default function AccountDetail() {
   const handleCsvMapping = async (mappingConfig) => {
     const { columnMappings, dateFormat, amountType, debitColumn, creditColumn, beginningBalance, endingBalance } = mappingConfig;
 
+    console.log('=== CSV Import Debug ===');
+    console.log('Beginning Balance:', beginningBalance);
+    console.log('Ending Balance:', endingBalance);
+    console.log('Account ID:', account.id);
+
     const transactions = mapCsvToTransactions(
       processedData,
       columnMappings,
@@ -720,6 +725,7 @@ export default function AccountDetail() {
     setIsImporting(true);
     try {
       if (beginningBalance !== null && beginningBalance !== undefined) {
+        console.log('Updating current_balance to:', beginningBalance);
         const { error: balanceError } = await firstsavvy
           .from('user_chart_of_accounts')
           .update({ current_balance: beginningBalance })
@@ -731,6 +737,7 @@ export default function AccountDetail() {
           setIsImporting(false);
           return;
         }
+        console.log('Current balance updated successfully');
       }
 
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
@@ -761,6 +768,7 @@ export default function AccountDetail() {
       }
 
       if (endingBalance !== null && endingBalance !== undefined) {
+        console.log('Updating bank_balance to:', endingBalance);
         const { error: bankBalanceError } = await firstsavvy
           .from('user_chart_of_accounts')
           .update({
@@ -771,7 +779,11 @@ export default function AccountDetail() {
 
         if (bankBalanceError) {
           console.error('Error updating bank balance:', bankBalanceError);
+        } else {
+          console.log('Bank balance updated successfully to:', endingBalance);
         }
+      } else {
+        console.warn('Ending balance is null or undefined, not updating bank_balance');
       }
 
       await autoMatchTransfers(allTransactions);
