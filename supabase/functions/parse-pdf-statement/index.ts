@@ -39,11 +39,13 @@ function parseCitiCreditCardStatement(lines: string[]): {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    if (line.includes("Account number ending in:")) {
-      const match = line.match(/ending in:\s*(\d+)/i);
+    // Extract account number
+    if (line.includes("Account number ending in:") || line.includes("Card ending in")) {
+      const match = line.match(/ending in[:\s]+(\d+)/i);
       if (match) accountNumber = match[1];
     }
 
+    // Extract billing period
     if (line.includes("Billing Period:")) {
       const match = line.match(/(\d{1,2}\/\d{1,2}\/\d{2})-(\d{1,2}\/\d{1,2}\/\d{2})/);
       if (match) {
@@ -56,61 +58,94 @@ function parseCitiCreditCardStatement(lines: string[]): {
       }
     }
 
-    if (line.includes("New balance as of") || line.includes("New balance $")) {
+    // Extract ending balance
+    if (line.includes("New balance as of") || line.includes("New balance $") || line.includes("New balance:")) {
       const match = line.match(/\$?([\d,]+\.\d{2})/);
       if (match) {
         endingBalance = parseFloat(match[1].replace(/,/g, ''));
       }
     }
 
-    if (line.includes("Standard Purchases") || line.includes("Payments, Credits and Adjustments")) {
+    // Start transaction section
+    if (line.includes("Standard Purchases") ||
+        line.includes("Payments, Credits and Adjustments") ||
+        line.includes("ACCOUNT SUMMARY")) {
       inTransactionSection = true;
       continue;
     }
 
-    if (line.includes("Fees Charged") || line.includes("Interest Charged") ||
-        line.includes("2026 totals year-to-date") || line.includes("2027 totals year-to-date")) {
+    // End transaction section
+    if (line.includes("Fees Charged") ||
+        line.includes("Interest Charged") ||
+        line.includes("totals year-to-date") ||
+        line.includes("TOTAL FEES FOR THIS PERIOD") ||
+        line.includes("Costco Cash Back")) {
       inTransactionSection = false;
       continue;
     }
 
     if (inTransactionSection) {
-      const citiTransactionPattern = /^(\d{1,2}\/\d{1,2})(?:\s+(\d{1,2}\/\d{1,2}))?\s+(.+?)\s+(-?\$?[\d,]+\.\d{2})$/;
-      const match = line.match(citiTransactionPattern);
+      // More flexible pattern for Citi transactions
+      // Matches: 12/17 DESCRIPTION $7.62 or 12/16 12/17 DESCRIPTION $176.00 or 01/02 01/02 DESCRIPTION -$149.15
+      const patterns = [
+        // Pattern with two dates and negative amount: 01/02 01/02 SP 33THREADS VISTA CA -$149.15
+        /^(\d{1,2}\/\d{1,2})\s+(\d{1,2}\/\d{1,2})\s+(.+?)\s+(-\$[\d,]+\.\d{2})$/,
+        // Pattern with two dates: 12/16 12/17 EVOLUTION INTEGRATIVE MED208-917-2928 ID $176.00
+        /^(\d{1,2}\/\d{1,2})\s+(\d{1,2}\/\d{1,2})\s+(.+?)\s+(\$[\d,]+\.\d{2})$/,
+        // Pattern with one date and negative: 12/22 ONLINE PAYMENT, THANK YOU -$1,943.69
+        /^(\d{1,2}\/\d{1,2})\s+(.+?)\s+(-\$[\d,]+\.\d{2})$/,
+        // Pattern with one date: 12/17 SQ *RIB SHACK EAGLE Eagle ID $16.11
+        /^(\d{1,2}\/\d{1,2})\s+(.+?)\s+(\$[\d,]+\.\d{2})$/
+      ];
 
-      if (match) {
-        const [, saleDate, postDate, description, amountStr] = match;
+      for (const pattern of patterns) {
+        const match = line.match(pattern);
 
-        const cleanAmount = parseFloat(amountStr.replace(/[$,]/g, ''));
-        const isNegative = amountStr.includes('-');
+        if (match) {
+          let saleDate, postDate, description, amountStr;
 
-        const amount = Math.abs(cleanAmount);
-        const type = isNegative ? 'income' : 'expense';
+          if (match.length === 5) {
+            // Two dates pattern
+            [, saleDate, postDate, description, amountStr] = match;
+          } else if (match.length === 4) {
+            // One date pattern
+            [, saleDate, description, amountStr] = match;
+            postDate = undefined;
+          } else {
+            continue;
+          }
 
-        let transactionDate = saleDate;
-        if (postDate) {
-          transactionDate = postDate;
+          const cleanAmount = parseFloat(amountStr.replace(/[$,-]/g, ''));
+          const isNegative = amountStr.includes('-');
+
+          const amount = Math.abs(cleanAmount);
+          const type = isNegative ? 'income' : 'expense';
+
+          let transactionDate = postDate || saleDate;
+
+          const [month, day] = transactionDate.split('/').map(d => d.padStart(2, '0'));
+          let year = currentYear;
+
+          // If month is greater than current month, it's from previous year
+          if (parseInt(month) > new Date().getMonth() + 1) {
+            year = currentYear - 1;
+          }
+
+          const formattedDate = `${year}-${month}-${day}`;
+
+          const cleanDescription = description.trim();
+
+          transactions.push({
+            date: formattedDate,
+            description: cleanDescription,
+            amount,
+            type,
+            original_description: cleanDescription,
+            post_date: postDate ? `${year}-${postDate.split('/').map(d => d.padStart(2, '0')).join('-')}` : undefined
+          });
+
+          break; // Found a match, no need to try other patterns
         }
-
-        const [month, day] = transactionDate.split('/').map(d => d.padStart(2, '0'));
-        let year = currentYear;
-
-        if (parseInt(month) > new Date().getMonth() + 1) {
-          year = currentYear - 1;
-        }
-
-        const formattedDate = `${year}-${month}-${day}`;
-
-        const cleanDescription = description.trim();
-
-        transactions.push({
-          date: formattedDate,
-          description: cleanDescription,
-          amount,
-          type,
-          original_description: cleanDescription,
-          post_date: postDate ? `${year}-${postDate.split('/').map(d => d.padStart(2, '0')).join('-')}` : undefined
-        });
       }
     }
   }
