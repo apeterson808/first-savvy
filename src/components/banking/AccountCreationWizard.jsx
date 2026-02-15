@@ -789,10 +789,9 @@ export default function AccountCreationWizard({
       })).filter(item => item.date !== null && !isNaN(item.balance));
 
       if (rowsWithDates.length > 0) {
-        const firstRowInFile = rowsWithDates[0];
-
         rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
         const oldestRow = rowsWithDates[0];
+        const newestRow = rowsWithDates[rowsWithDates.length - 1];
 
         let firstTransactionAmount = 0;
         if (amountType === 'separate_columns' && debitColumn && creditColumn) {
@@ -805,7 +804,7 @@ export default function AccountCreationWizard({
         }
 
         calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
-        calculatedEndingBalance = firstRowInFile.balance;
+        calculatedEndingBalance = newestRow.balance;
       }
     } else {
       calculatedBeginningBalance = 0;
