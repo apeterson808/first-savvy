@@ -64,44 +64,7 @@ export const processStatementFile = async (file, onProgress) => {
     throw new Error(errorMsg);
   }
 
-  if (fileExt === 'pdf') {
-    onProgress?.('parsing');
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const base64Data = btoa(
-        new Uint8Array(arrayBuffer)
-          .reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
-
-      console.log('Calling parsePdfStatement with file:', file.name);
-      const parseResponse = await firstsavvy.functions.parsePdfStatement({ file_data: base64Data, file_name: file.name });
-
-      console.log('PDF parse response:', parseResponse);
-
-      if (parseResponse.status === 'success' && parseResponse.output?.transactions) {
-        return {
-          type: 'transactions',
-          transactions: parseResponse.output.transactions,
-          institutionName: parseResponse.output.institutionName,
-          accountNumber: parseResponse.output.accountNumber,
-          endingBalance: parseResponse.output.endingBalance,
-          beginningBalance: parseResponse.output.beginningBalance,
-          statementStartDate: parseResponse.output.statementStartDate,
-          statementEndDate: parseResponse.output.statementEndDate
-        };
-      }
-
-      console.error('PDF parsing failed:', parseResponse);
-      const errorMsg = parseResponse.details || parseResponse.error || 'Failed to parse PDF';
-      throw new Error(errorMsg);
-    } catch (error) {
-      console.error('PDF processing error:', error);
-      throw error;
-    }
-  }
-
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, QFX, or PDF file.`);
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
 };
 
 export const parseDate = (dateStr) => {

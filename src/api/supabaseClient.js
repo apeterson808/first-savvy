@@ -333,47 +333,6 @@ export const createSupabaseClient = () => {
         if (error) throw error;
         return data;
       },
-      async parsePdfStatement(body) {
-        try {
-          const session = await supabase.auth.getSession();
-          const token = session.data?.session?.access_token;
-
-          if (!token) {
-            throw new Error('Not authenticated');
-          }
-
-          const functionUrl = `${supabaseUrl}/functions/v1/parse-pdf-statement`;
-
-          console.log('Calling edge function directly:', functionUrl);
-          console.log('Request body keys:', Object.keys(body));
-
-          const response = await fetch(functionUrl, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(body)
-          });
-
-          console.log('Response status:', response.status);
-          console.log('Response ok:', response.ok);
-
-          const responseData = await response.json();
-          console.log('Response data:', responseData);
-
-          if (!response.ok) {
-            const errorMessage = responseData.error || 'Edge function error';
-            const errorDetails = responseData.details || '';
-            throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
-          }
-
-          return responseData;
-        } catch (err) {
-          console.error('parsePdfStatement error:', err);
-          throw err;
-        }
-      },
       async aiCategorizeTransaction(body) {
         const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
         if (error) throw error;

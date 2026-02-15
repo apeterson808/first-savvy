@@ -1668,7 +1668,7 @@ export default function AccountDetail() {
             {importStep === 'upload' && (
               <div className="space-y-4">
                 <div className="text-sm text-muted-foreground">
-                  Upload a CSV, OFX, or PDF file containing your transactions. We'll help you map the columns and import them into this account.
+                  Upload a CSV, OFX, or QFX file containing your transactions. We'll help you map the columns and import them into this account.
                 </div>
                 <div
                   onClick={() => document.getElementById('import-file-input')?.click()}
@@ -1685,12 +1685,12 @@ export default function AccountDetail() {
                     Click to upload or drag and drop
                   </p>
                   <p className="text-xs text-gray-500">
-                    CSV, OFX, QFX, or PDF files supported (PDF: Citi statements only)
+                    CSV, OFX, and QFX files supported
                   </p>
                   <input
                     id="import-file-input"
                     type="file"
-                    accept=".csv,.ofx,.qfx,.pdf"
+                    accept=".csv,.ofx,.qfx"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) handleFileUpload(file);
