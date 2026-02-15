@@ -3443,7 +3443,7 @@ export default function AccountCreationWizard({
               <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
 
-            <div className={`${currentStep === 'manual-entry' ? 'py-2.5 px-4' : 'py-4 px-4'} flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'flex items-center justify-center' : ''}`}>
+            <div className={`${currentStep === 'manual-entry' ? 'py-2.5 px-4' : 'py-4 px-4'} flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`}>
               {renderCurrentStep()}
             </div>
 
