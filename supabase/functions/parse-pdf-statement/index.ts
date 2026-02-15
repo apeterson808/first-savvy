@@ -156,32 +156,17 @@ Deno.serve(async (req: Request) => {
     let fullText = '';
 
     try {
-      const pdfModule = await import('npm:pdfjs-dist@4.0.379');
-      const pdfjsLib = pdfModule.default || pdfModule;
+      // Use pdf-parse which works better in Deno
+      const pdfParse = (await import('npm:pdf-parse@1.1.1')).default;
 
-      console.log('PDF.js loaded');
+      console.log('pdf-parse loaded');
 
-      const loadingTask = pdfjsLib.getDocument({
-        data: pdfBytes,
-        useSystemFonts: true,
-        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/'
-      });
+      const pdfData = await pdfParse(pdfBytes);
 
-      const pdf = await loadingTask.promise;
-      console.log('PDF loaded, pages:', pdf.numPages);
+      console.log('PDF parsed, pages:', pdfData.numpages);
+      console.log('Text length:', pdfData.text.length);
 
-      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-        const page = await pdf.getPage(pageNum);
-        const textContent = await page.getTextContent();
-
-        const pageText = textContent.items
-          .map((item: any) => item.str)
-          .join(' ');
-
-        fullText += pageText + '\n';
-      }
-
-      console.log('Extracted text length:', fullText.length);
+      fullText = pdfData.text;
     } catch (pdfError) {
       console.error('PDF parsing error:', pdfError);
       return new Response(
