@@ -58,10 +58,10 @@ import {
   Circle,
   RefreshCw
 } from 'lucide-react';
-import { processStatementFile, mapCsvToTransactions, calculateOpeningBalanceForDate, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
+import { processStatementFile, mapCsvToTransactions, calculateBeginningBalanceFromCurrent, parseDate } from './StatementProcessor';
 import CsvColumnMapper from './CsvColumnMapper';
 import AccountCombobox from '../common/AccountCombobox';
-import { detectDuplicateTransactions, getTransactionDateRange } from '@/api/duplicateDetection';
+import { getTransactionDateRange } from '@/api/duplicateDetection';
 import TransactionDateRangeSelector from './TransactionDateRangeSelector';
 import {
   getAvailableInstitutions,
@@ -351,20 +351,9 @@ export default function AccountCreationWizard({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  const [uploadedFile, setUploadedFile] = useState(null);
   const newItemRef = useRef(null);
-  const csvFileInputRef = useRef(null);
   const balanceCsvFileInputRef = useRef(null);
-  const [processingStatus, setProcessingStatus] = useState(null);
-  const [processedData, setProcessedData] = useState(null);
-  const [selectedAccountId, setSelectedAccountId] = useState(null);
-  const [selectedAccountName, setSelectedAccountName] = useState('');
-  const [isExistingAccount, setIsExistingAccount] = useState(false);
   const [mappedTransactions, setMappedTransactions] = useState([]);
-  const [duplicateTransactions, setDuplicateTransactions] = useState([]);
-  const [skipDuplicates, setSkipDuplicates] = useState(true);
-  const [showMappingSuccess, setShowMappingSuccess] = useState(false);
-  const [includeLastFour, setIncludeLastFour] = useState(false);
   const [balanceData, setBalanceData] = useState(null);
   const [showBalanceImportDialog, setShowBalanceImportDialog] = useState(false);
   const [balanceImportStep, setBalanceImportStep] = useState('upload');
@@ -380,9 +369,6 @@ export default function AccountCreationWizard({
   const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
   const [accountConfigurations, setAccountConfigurations] = useState({});
   const [importAccountMappings, setImportAccountMappings] = useState({});
-  const [customStartDate, setCustomStartDate] = useState(null);
-  const [originalBeginningBalance, setOriginalBeginningBalance] = useState(null);
-  const [statementBalances, setStatementBalances] = useState({ previous: null, new: null });
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -612,67 +598,6 @@ export default function AccountCreationWizard({
   };
 
 
-  const handleFileUpload = async (file) => {
-    setUploadedFile(file);
-    setProcessingStatus('processing');
-    setMappedTransactions([]);
-    setShowMappingSuccess(false);
-
-    try {
-      const result = await processStatementFile(file, (status) => {
-        setProcessingStatus(status);
-      });
-
-      setProcessedData(result);
-
-      if (currentStep === 'details' && selectedCard.id === 'banking') {
-        if (result.type === 'csv') {
-          setCurrentStep('csv-mapping');
-        } else {
-          setMappedTransactions(result.transactions);
-          setProcessingStatus('success');
-          setShowMappingSuccess(true);
-
-          if (result.institutionName) {
-            updateFormData('institutionName', result.institutionName);
-          }
-          if (result.accountNumber) {
-            updateFormData('last4', result.accountNumber.slice(-4));
-          }
-          if (result.beginningBalance !== undefined) {
-            updateFormData('beginningBalance', result.beginningBalance);
-            setOriginalBeginningBalance(result.beginningBalance);
-          }
-          if (result.statementStartDate) {
-            const startDate = parseDate(result.statementStartDate);
-            if (startDate) {
-              updateFormData('startDate', startDate);
-              setCustomStartDate(startDate);
-            }
-          }
-          if (result.previousBalance !== undefined || result.newBalance !== undefined) {
-            setStatementBalances({
-              previous: result.previousBalance,
-              new: result.newBalance
-            });
-          }
-        }
-      } else {
-        if (result.type === 'csv') {
-          setCurrentStep('csv-mapping');
-        } else {
-          setMappedTransactions(result.transactions);
-          setShowMappingSuccess(true);
-        }
-        setProcessingStatus('success');
-      }
-    } catch (error) {
-      console.error('Error processing file:', error);
-      toast.error(error.message || 'Failed to process file');
-      setProcessingStatus('error');
-      setUploadedFile(null);
-    }
-  };
 
   const handleBalanceCsvUpload = async (file) => {
     if (!file) return;
@@ -801,230 +726,6 @@ export default function AccountCreationWizard({
     setBalanceImportStep('upload');
   };
 
-  const handleCsvMap = (mappingConfig) => {
-    const transactions = mapCsvToTransactions(
-      processedData,
-      mappingConfig.columnMappings,
-      mappingConfig.amountType,
-      mappingConfig.debitColumn,
-      mappingConfig.creditColumn
-    );
-
-    if (transactions.length === 0) {
-      toast.error('No valid transactions found in CSV. Please check your date and amount columns.');
-      return;
-    }
-
-    const dateRange = getTransactionDateRange(transactions);
-
-    if (mappingConfig.beginningBalance !== null && mappingConfig.beginningBalance !== undefined) {
-      updateFormData('beginningBalance', mappingConfig.beginningBalance.toFixed(2));
-    }
-
-    if (mappingConfig.endingBalance !== null && mappingConfig.endingBalance !== undefined) {
-      updateFormData('endingBalance', mappingConfig.endingBalance.toFixed(2));
-      updateFormData('balance', mappingConfig.endingBalance.toFixed(2));
-    }
-
-    if (dateRange.startDate) {
-      updateFormData('asOfDate', dateRange.startDate);
-    }
-
-    if (dateRange.endDate) {
-      updateFormData('endingDate', dateRange.endDate);
-    }
-
-    setMappedTransactions(transactions);
-    setProcessingStatus('success');
-    setShowMappingSuccess(true);
-    setCurrentStep('details');
-  };
-
-  const handleImportTransactions = async () => {
-    try {
-      let targetAccountId = selectedAccountId;
-      let targetAccountObject;
-
-      if (!isExistingAccount) {
-        const accountDetail = selectedSubtype?.value === 'checking' ? 'checking_account' :
-                             selectedSubtype?.value === 'savings' ? 'savings_account' :
-                             selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' :
-                             'checking_account';
-
-        const templateAccount = chartAccounts.find(t => t.account_detail === accountDetail);
-
-        if (!templateAccount) {
-          throw new Error('Could not find chart of accounts template');
-        }
-
-        const accountNumber = await getNextAccountNumber(activeProfile.id, templateAccount.account_number);
-
-        const finalDisplayName = includeLastFour && formData.last4
-          ? `${selectedAccountName} (...${formData.last4})`
-          : selectedAccountName;
-
-        const beginningBalanceForCalc = parseFloat(formData.beginningBalance) || 0;
-        const endingBalanceForCalc = parseFloat(formData.endingBalance) || beginningBalanceForCalc;
-
-        const newAccountData = {
-          profile_id: activeProfile.id,
-          template_account_number: templateAccount.account_number,
-          account_number: accountNumber,
-          display_name: finalDisplayName,
-          account_detail: accountDetail,
-          account_type: templateAccount.account_type,
-          class: templateAccount.class,
-          is_active: true,
-          institution_name: formData.institutionName || '',
-          account_number_last4: formData.last4 || '',
-          current_balance: endingBalanceForCalc,
-          bank_balance: endingBalanceForCalc,
-          as_of_date: formData.asOfDate
-        };
-
-        const { data: newAccount, error: createError } = await firstsavvy
-          .from('user_chart_of_accounts')
-          .insert(newAccountData)
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        targetAccountId = newAccount.id;
-        targetAccountObject = newAccount;
-      } else {
-        const { data: existingAccount, error: fetchError } = await firstsavvy
-          .from('user_chart_of_accounts')
-          .select('*')
-          .eq('id', targetAccountId)
-          .single();
-
-        if (fetchError || !existingAccount) {
-          throw new Error('Failed to fetch existing account details');
-        }
-        targetAccountObject = existingAccount;
-      }
-
-      const transactionsToCheck = mappedTransactions.filter(txn => {
-        const desc = txn.description?.toLowerCase() || '';
-        const isBeginningBalance = desc.includes('beginning balance') && txn.amount === 0;
-
-        if (isBeginningBalance) {
-          return false;
-        }
-
-        if (customStartDate) {
-          const txnDate = new Date(txn.date);
-          const startDate = new Date(customStartDate);
-          return txnDate >= startDate;
-        }
-
-        return true;
-      });
-
-      const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(
-        targetAccountId,
-        transactionsToCheck
-      );
-
-      setDuplicateTransactions(duplicates);
-
-      const transactionsToImport = skipDuplicates ? uniqueTransactions : transactionsToCheck;
-
-      const filteredForBeginningBalance = transactionsToImport.filter(txn => {
-        const hasDescription = !!txn.description;
-        const isBeginningBalance = txn.description && txn.description.toLowerCase().includes('beginning balance');
-        return hasDescription && !isBeginningBalance;
-      });
-
-      const allTransactions = filteredForBeginningBalance.map(txn => ({
-        profile_id: activeProfile.id,
-        user_id: user.id,
-        bank_account_id: targetAccountId,
-        status: 'pending',
-        date: txn.date,
-        description: txn.description,
-        original_description: txn.original_description,
-        amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
-        type: txn.type
-      }));
-
-      let insertedTransactionIds = [];
-      if (allTransactions.length > 0) {
-        const { data: insertedData, error } = await firstsavvy
-          .from('transactions')
-          .insert(allTransactions)
-          .select('id');
-
-        if (error) {
-          console.error('Error inserting transactions:', error);
-          throw error;
-        }
-
-        if (insertedData && insertedData.length > 0) {
-          insertedTransactionIds = insertedData.map(t => t.id);
-        }
-      }
-
-      const endingBalanceValue = parseFloat(formData.endingBalance);
-
-      if (!isNaN(endingBalanceValue)) {
-        const updateData = {
-          bank_balance: endingBalanceValue,
-          last_synced_at: new Date().toISOString()
-        };
-
-        if (formData.endingDate) {
-          updateData.last_statement_date = formData.endingDate;
-        }
-
-        const { error: balanceError } = await firstsavvy
-          .from('user_chart_of_accounts')
-          .update(updateData)
-          .eq('id', targetAccountId);
-
-        if (balanceError) {
-          console.error('Error updating bank balance:', balanceError);
-        }
-      }
-
-      let matchedCount = 0;
-      if (insertedTransactionIds.length > 0) {
-        try {
-          const { data: detectionResult } = await transferAutoDetectionAPI.detectTransfers(
-            activeProfile.id,
-            insertedTransactionIds
-          );
-
-          if (detectionResult && Array.isArray(detectionResult)) {
-            matchedCount = detectionResult.filter(r => r.auto_matched).length;
-          }
-        } catch (err) {
-          console.warn('Transfer auto-detection failed:', err);
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
-
-      const duplicateMsg = duplicates.length > 0 ? ` (${duplicates.length} duplicates skipped)` : '';
-      const message = isExistingAccount
-        ? `Successfully imported ${allTransactions.length} transactions to ${selectedAccountName}${duplicateMsg}`
-        : `Successfully created ${selectedAccountName} and imported ${allTransactions.length} transactions${duplicateMsg}`;
-
-      toast.success(`${message}${matchedCount > 0 ? ` - ${matchedCount} transfers matched` : ''}`);
-
-      onOpenChange(false);
-      if (targetAccountId) {
-        setTimeout(() => {
-          navigate(`/Banking/account/${targetAccountId}`);
-        }, 100);
-      }
-    } catch (error) {
-      console.error('Error importing transactions:', error);
-      toast.error(error.message || 'Failed to import transactions');
-    }
-  };
 
   const formatAmountField = (fieldName, value, isFocused) => {
     if (!value) return '';
@@ -3307,61 +3008,6 @@ export default function AccountCreationWizard({
     </div>
   );
 
-  const renderReviewStep = () => (
-    <div className="space-y-5 max-w-lg mx-auto">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-5">
-        <h3 className="font-semibold text-gray-900 mb-3">Review Your {selectedCard.title}</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-600">Type:</span>
-            <span className="font-medium">{selectedSubtype.label}</span>
-          </div>
-          {(formData.displayName || formData.name) && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Name:</span>
-              <span className="font-medium">{formData.displayName || formData.name}</span>
-            </div>
-          )}
-          {formData.institutionName && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Institution:</span>
-              <span className="font-medium">{formData.institutionName}</span>
-            </div>
-          )}
-          {formData.lenderName && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Lender:</span>
-              <span className="font-medium">{formData.lenderName}</span>
-            </div>
-          )}
-          {formData.balance && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Balance:</span>
-              <span className="font-medium">${parseFloat(formData.balance).toLocaleString()}</span>
-            </div>
-          )}
-          {formData.currentValue && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Value:</span>
-              <span className="font-medium">${parseFloat(formData.currentValue).toLocaleString()}</span>
-            </div>
-          )}
-          {formData.currentBalance && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Balance:</span>
-              <span className="font-medium">${parseFloat(formData.currentBalance).toLocaleString()}</span>
-            </div>
-          )}
-          {formData.loanBalance && (
-            <div className="flex justify-between">
-              <span className="text-gray-600">Loan Balance:</span>
-              <span className="font-medium">${parseFloat(formData.loanBalance).toLocaleString()}</span>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
 
   const renderLoanSearchStep = () => (
     <div className="space-y-6 max-w-lg mx-auto">
@@ -3456,181 +3102,6 @@ export default function AccountCreationWizard({
     </Dialog>
   );
 
-  const renderCsvMappingStep = () => (
-    <div className="max-w-2xl mx-auto">
-      <CsvColumnMapper
-        csvData={processedData}
-        onMap={handleCsvMap}
-        onCancel={() => {
-          setCurrentStep('details');
-          setUploadedFile(null);
-          setProcessedData(null);
-        }}
-        isFirstImport={true}
-        suggestedBeginningBalance={parseFloat(formData.currentBalance) || 0}
-        profileId={activeProfile?.id}
-        institutionName={formData.institutionName || 'Unknown Bank'}
-      />
-    </div>
-  );
-
-  const renderBankInfoStep = () => {
-    const dateRange = getTransactionDateRange(mappedTransactions);
-
-    const displayNameWithLast4 = includeLastFour && formData.last4
-      ? `${selectedAccountName} (...${formData.last4})`
-      : selectedAccountName;
-
-    const handleDisplayNameChange = (e) => {
-      let newValue = e.target.value;
-      if (includeLastFour && formData.last4) {
-        const suffix = ` (...${formData.last4})`;
-        if (newValue.endsWith(suffix)) {
-          newValue = newValue.slice(0, -suffix.length);
-        }
-      }
-      setSelectedAccountName(newValue);
-      updateFormData('name', newValue);
-    };
-
-    const handleStartDateChange = (newStartDate) => {
-      setCustomStartDate(newStartDate);
-
-      if (originalBeginningBalance !== null && mappedTransactions.length > 0 && newStartDate) {
-        const isLiability = selectedSubtype?.value === 'credit_card';
-        const calculatedBalance = calculateOpeningBalanceForDate(
-          originalBeginningBalance,
-          mappedTransactions,
-          newStartDate,
-          isLiability
-        );
-        updateFormData('beginningBalance', calculatedBalance);
-      }
-    };
-
-    const effectiveStartDate = customStartDate || dateRange.startDate;
-
-    return (
-      <div className="space-y-5 max-w-lg mx-auto">
-
-        <div>
-          <Label htmlFor="displayName">Display Name*</Label>
-          <Input
-            id="displayName"
-            placeholder="e.g., Main Checking"
-            value={displayNameWithLast4}
-            onChange={handleDisplayNameChange}
-            required
-          />
-          <div className="flex items-center space-x-2 mt-2">
-            <Checkbox
-              id="includeLastFour"
-              checked={includeLastFour}
-              onCheckedChange={(checked) => setIncludeLastFour(checked)}
-              disabled={!formData.last4}
-            />
-            <Label htmlFor="includeLastFour" className="cursor-pointer font-normal text-sm text-muted-foreground">
-              Include last 4 digits in name
-            </Label>
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="institutionName">Institution Name*</Label>
-          <Input
-            id="institutionName"
-            placeholder="e.g., Chase, Bank of America"
-            value={formData.institutionName || ''}
-            onChange={(e) => updateFormData('institutionName', e.target.value)}
-            required
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Enter the bank or financial institution name
-          </p>
-        </div>
-
-        <div>
-          <Label htmlFor="last4">Account Number (Last 4 Digits)</Label>
-          <Input
-            id="last4"
-            placeholder="1234"
-            maxLength={4}
-            value={formData.last4 || ''}
-            onChange={(e) => updateFormData('last4', e.target.value.replace(/\D/g, ''))}
-          />
-          <p className="text-xs text-muted-foreground mt-1">
-            Enter the last 4 digits of your account number (optional)
-          </p>
-        </div>
-
-        {dateRange.startDate && dateRange.endDate && (
-          <div>
-            <Label htmlFor="startDate">Import Start Date</Label>
-            <Input
-              id="startDate"
-              type="date"
-              value={effectiveStartDate || ''}
-              onChange={(e) => handleStartDateChange(e.target.value)}
-              min={dateRange.startDate}
-              max={dateRange.endDate}
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              Choose which date to start importing transactions from
-            </p>
-          </div>
-        )}
-
-        <div>
-          <Label htmlFor="beginningBalance">Beginning Balance*</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-            <Input
-              id="beginningBalance"
-              type="text"
-              value={formatAmountField('beginningBalance', formData.beginningBalance, focusedFields.beginningBalance)}
-              onChange={(e) => handleAmountChange('beginningBalance', e.target.value)}
-              onFocus={() => setFocusedFields(prev => ({ ...prev, beginningBalance: true }))}
-              onBlur={(e) => handleAmountBlur('beginningBalance', e.target.value)}
-              placeholder="0.00"
-              className="pl-7"
-              required
-            />
-          </div>
-          {statementBalances.previous !== null && customStartDate && originalBeginningBalance !== null ? (
-            <div className="text-xs text-muted-foreground mt-1 space-y-1">
-              <p className="flex items-center gap-1">
-                <Info className="w-3 h-3" />
-                Calculated from statement balance of ${statementBalances.previous?.toFixed(2)}
-              </p>
-              <p className="text-xs text-slate-500">
-                Adjusted for transactions before {effectiveStartDate}
-              </p>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground mt-1">
-              Enter the balance as of {effectiveStartDate || 'the first transaction'}
-            </p>
-          )}
-        </div>
-
-        {dateRange.startDate && dateRange.endDate && (
-          <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
-            <p className="text-xs text-muted-foreground">
-              {mappedTransactions.filter(txn => new Date(txn.date) >= new Date(effectiveStartDate)).length} transactions will be imported
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Date range: {effectiveStartDate} to {dateRange.endDate}
-            </p>
-            {customStartDate && (
-              <p className="text-xs text-blue-600">
-                {mappedTransactions.filter(txn => new Date(txn.date) < new Date(effectiveStartDate)).length} transactions excluded (before start date)
-              </p>
-            )}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -3642,10 +3113,6 @@ export default function AccountCreationWizard({
         return renderManualEntryStep();
       case 'accounts-discovered':
         return renderAccountsDiscovered();
-      case 'csv-mapping':
-        return renderCsvMappingStep();
-      case 'bank-info':
-        return renderBankInfoStep();
       case 'select-subtype':
         return renderSelectSubtype();
       case 'details':
@@ -3656,8 +3123,6 @@ export default function AccountCreationWizard({
         return renderLoanSearchStep();
       case 'loan-details':
         return renderLoanDetailsStep();
-      case 'review':
-        return renderReviewStep();
       default:
         return null;
     }
@@ -3668,8 +3133,6 @@ export default function AccountCreationWizard({
     if (currentStep === 'connect-bank') return 'Connect Your Bank';
     if (currentStep === 'manual-entry') return 'Create Account';
     if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
-    if (currentStep === 'csv-mapping') return 'Map CSV Columns';
-    if (currentStep === 'bank-info') return 'Bank Account Details';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') return 'Account Details';
@@ -3692,8 +3155,8 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'csv-mapping' ? 'w-[800px] max-w-[90vw]' : currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'csv-mapping' ? 'h-[600px]' : currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'manual-entry' ? 'h-[450px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'manual-entry' ? 'h-[450px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-2.5 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
@@ -3702,7 +3165,7 @@ export default function AccountCreationWizard({
               {renderCurrentStep()}
             </div>
 
-            {currentStep !== 'select-type' && currentStep !== 'csv-mapping' && (
+            {currentStep !== 'select-type' && (
               <div className="flex justify-between gap-4 pt-2 pb-2.5 px-4 border-t flex-shrink-0">
                 <Button
                   type="button"
