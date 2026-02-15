@@ -335,22 +335,40 @@ export const createSupabaseClient = () => {
       },
       async parsePdfStatement(body) {
         try {
-          const { data, error } = await supabase.functions.invoke('parse-pdf-statement', { body });
-          if (error) {
-            console.error('Edge function error:', error);
-            console.error('Error context:', error.context);
+          const session = await supabase.auth.getSession();
+          const token = session.data?.session?.access_token;
 
-            const errorMessage = error.context?.body?.error ||
-                               error.context?.body?.message ||
-                               error.message ||
-                               'Edge function error';
-            const errorDetails = error.context?.body?.details || '';
+          if (!token) {
+            throw new Error('Not authenticated');
+          }
 
+          const functionUrl = `${supabaseUrl}/functions/v1/parse-pdf-statement`;
+
+          console.log('Calling edge function directly:', functionUrl);
+          console.log('Request body keys:', Object.keys(body));
+
+          const response = await fetch(functionUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(body)
+          });
+
+          console.log('Response status:', response.status);
+          console.log('Response ok:', response.ok);
+
+          const responseData = await response.json();
+          console.log('Response data:', responseData);
+
+          if (!response.ok) {
+            const errorMessage = responseData.error || 'Edge function error';
+            const errorDetails = responseData.details || '';
             throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
           }
 
-          console.log('PDF parse response:', data);
-          return data;
+          return responseData;
         } catch (err) {
           console.error('parsePdfStatement error:', err);
           throw err;
