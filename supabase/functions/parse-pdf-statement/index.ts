@@ -15,146 +15,130 @@ interface Transaction {
   post_date?: string;
 }
 
-function extractTextFromPdf(pdfText: string): string[] {
-  return pdfText.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-}
-
-function parseCitiCreditCardStatement(lines: string[]): {
+function parseCitiCostcoStatement(fullText: string): {
   transactions: Transaction[];
   institutionName: string;
   accountNumber: string;
-  statementDate: string;
-  beginningBalance?: number;
   endingBalance?: number;
 } {
   const transactions: Transaction[] = [];
-  let institutionName = "Citi";
+  const institutionName = "Citi - Costco Anywhere Visa";
   let accountNumber = "";
-  let statementDate = "";
   let endingBalance: number | undefined;
 
-  let inTransactionSection = false;
+  const accountMatch = fullText.match(/Account number ending in[:\s]+(\d+)/i) ||
+                       fullText.match(/Card ending in[:\s]+(\d+)/i);
+  if (accountMatch) {
+    accountNumber = accountMatch[1];
+  }
+
+  const balanceMatch = fullText.match(/New balance.*?\$([0-9,]+\.\d{2})/i);
+  if (balanceMatch) {
+    endingBalance = parseFloat(balanceMatch[1].replace(/,/g, ''));
+  }
+
+  const billingPeriodMatch = fullText.match(/Billing Period:\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})-(\d{1,2})\/(\d{1,2})\/(\d{2,4})/i);
   let currentYear = new Date().getFullYear();
+  if (billingPeriodMatch) {
+    const year = parseInt(billingPeriodMatch[6]);
+    currentYear = year >= 50 && year < 100 ? 1900 + year : year < 100 ? 2000 + year : year;
+  }
+
+  const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  let inPaymentsSection = false;
+  let inPurchasesSection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
-    // Extract account number
-    if (line.includes("Account number ending in:") || line.includes("Card ending in")) {
-      const match = line.match(/ending in[:\s]+(\d+)/i);
-      if (match) accountNumber = match[1];
-    }
-
-    // Extract billing period
-    if (line.includes("Billing Period:")) {
-      const match = line.match(/(\d{1,2}\/\d{1,2}\/\d{2})-(\d{1,2}\/\d{1,2}\/\d{2})/);
-      if (match) {
-        statementDate = match[2];
-        const dateParts = match[2].split('/');
-        if (dateParts.length === 3) {
-          const year = parseInt(dateParts[2]);
-          currentYear = year >= 50 ? 1900 + year : 2000 + year;
-        }
-      }
-    }
-
-    // Extract ending balance
-    if (line.includes("New balance as of") || line.includes("New balance $") || line.includes("New balance:")) {
-      const match = line.match(/\$?([\d,]+\.\d{2})/);
-      if (match) {
-        endingBalance = parseFloat(match[1].replace(/,/g, ''));
-      }
-    }
-
-    // Start transaction section
-    if (line.includes("Standard Purchases") ||
-        line.includes("Payments, Credits and Adjustments") ||
-        line.includes("ACCOUNT SUMMARY")) {
-      inTransactionSection = true;
+    if (line.includes('Payments, Credits and Adjustments')) {
+      inPaymentsSection = true;
+      inPurchasesSection = false;
       continue;
     }
 
-    // End transaction section
-    if (line.includes("Fees Charged") ||
-        line.includes("Interest Charged") ||
-        line.includes("totals year-to-date") ||
-        line.includes("TOTAL FEES FOR THIS PERIOD") ||
-        line.includes("Costco Cash Back")) {
-      inTransactionSection = false;
+    if (line.includes('Standard Purchases')) {
+      inPurchasesSection = true;
+      inPaymentsSection = false;
       continue;
     }
 
-    if (inTransactionSection) {
-      // More flexible pattern for Citi transactions
-      // Matches: 12/17 DESCRIPTION $7.62 or 12/16 12/17 DESCRIPTION $176.00 or 01/02 01/02 DESCRIPTION -$149.15
-      const patterns = [
-        // Pattern with two dates and negative amount: 01/02 01/02 SP 33THREADS VISTA CA -$149.15
-        /^(\d{1,2}\/\d{1,2})\s+(\d{1,2}\/\d{1,2})\s+(.+?)\s+(-\$[\d,]+\.\d{2})$/,
-        // Pattern with two dates: 12/16 12/17 EVOLUTION INTEGRATIVE MED208-917-2928 ID $176.00
-        /^(\d{1,2}\/\d{1,2})\s+(\d{1,2}\/\d{1,2})\s+(.+?)\s+(\$[\d,]+\.\d{2})$/,
-        // Pattern with one date and negative: 12/22 ONLINE PAYMENT, THANK YOU -$1,943.69
-        /^(\d{1,2}\/\d{1,2})\s+(.+?)\s+(-\$[\d,]+\.\d{2})$/,
-        // Pattern with one date: 12/17 SQ *RIB SHACK EAGLE Eagle ID $16.11
-        /^(\d{1,2}\/\d{1,2})\s+(.+?)\s+(\$[\d,]+\.\d{2})$/
-      ];
+    if (line.includes('Fees Charged') ||
+        line.includes('Interest Charged') ||
+        line.includes('totals year-to-date') ||
+        line.includes('Costco Cash Back')) {
+      inPaymentsSection = false;
+      inPurchasesSection = false;
+      continue;
+    }
 
-      for (const pattern of patterns) {
-        const match = line.match(pattern);
+    if (!inPaymentsSection && !inPurchasesSection) {
+      continue;
+    }
 
-        if (match) {
-          let saleDate, postDate, description, amountStr;
+    const twoDatePattern = /^(\d{1,2})\/(\d{1,2})\s+(\d{1,2})\/(\d{1,2})\s+(.+?)\s+(-?\$[0-9,]+\.\d{2})$/;
+    const oneDatePattern = /^(\d{1,2})\/(\d{1,2})\s+(.+?)\s+(-?\$[0-9,]+\.\d{2})$/;
 
-          if (match.length === 5) {
-            // Two dates pattern
-            [, saleDate, postDate, description, amountStr] = match;
-          } else if (match.length === 4) {
-            // One date pattern
-            [, saleDate, description, amountStr] = match;
-            postDate = undefined;
-          } else {
-            continue;
-          }
+    let match = line.match(twoDatePattern);
+    let saleMonth, saleDay, postMonth, postDay, description, amountStr;
+    let hasTwoDates = false;
 
-          const cleanAmount = parseFloat(amountStr.replace(/[$,-]/g, ''));
-          const isNegative = amountStr.includes('-');
-
-          const amount = Math.abs(cleanAmount);
-          const type = isNegative ? 'income' : 'expense';
-
-          let transactionDate = postDate || saleDate;
-
-          const [month, day] = transactionDate.split('/').map(d => d.padStart(2, '0'));
-          let year = currentYear;
-
-          // If month is greater than current month, it's from previous year
-          if (parseInt(month) > new Date().getMonth() + 1) {
-            year = currentYear - 1;
-          }
-
-          const formattedDate = `${year}-${month}-${day}`;
-
-          const cleanDescription = description.trim();
-
-          transactions.push({
-            date: formattedDate,
-            description: cleanDescription,
-            amount,
-            type,
-            original_description: cleanDescription,
-            post_date: postDate ? `${year}-${postDate.split('/').map(d => d.padStart(2, '0')).join('-')}` : undefined
-          });
-
-          break; // Found a match, no need to try other patterns
-        }
+    if (match) {
+      [, saleMonth, saleDay, postMonth, postDay, description, amountStr] = match;
+      hasTwoDates = true;
+    } else {
+      match = line.match(oneDatePattern);
+      if (match) {
+        [, postMonth, postDay, description, amountStr] = match;
       }
     }
+
+    if (!match) {
+      continue;
+    }
+
+    const cleanAmount = amountStr.replace(/[$,]/g, '');
+    const isNegative = cleanAmount.startsWith('-');
+    const amount = Math.abs(parseFloat(cleanAmount));
+
+    const type = isNegative ? 'income' : 'expense';
+
+    const month = postMonth.padStart(2, '0');
+    const day = postDay.padStart(2, '0');
+    let year = currentYear;
+
+    if (parseInt(month) > new Date().getMonth() + 1) {
+      year = currentYear - 1;
+    }
+
+    const transactionDate = `${year}-${month}-${day}`;
+
+    let postDate: string | undefined;
+    if (hasTwoDates) {
+      const saleM = saleMonth.padStart(2, '0');
+      const saleD = saleDay.padStart(2, '0');
+      let saleY = year;
+      if (parseInt(saleM) > new Date().getMonth() + 1) {
+        saleY = currentYear - 1;
+      }
+      postDate = `${saleY}-${saleM}-${saleD}`;
+    }
+
+    transactions.push({
+      date: transactionDate,
+      description: description.trim(),
+      amount,
+      type,
+      original_description: description.trim(),
+      post_date: postDate
+    });
   }
 
   return {
     transactions,
     institutionName,
     accountNumber,
-    statementDate,
     endingBalance
   };
 }
@@ -191,16 +175,10 @@ Deno.serve(async (req: Request) => {
     let fullText = '';
 
     try {
-      // Use unpdf which is designed for Deno
       const { extractText } = await import('npm:unpdf@0.12.3');
-
-      console.log('unpdf loaded');
-
       const extracted = await extractText(pdfBytes);
-
-      console.log('PDF parsed, text length:', extracted.text.length);
-
       fullText = extracted.text;
+      console.log('PDF text extracted, length:', fullText.length);
     } catch (pdfError) {
       console.error('PDF parsing error:', pdfError);
       return new Response(
@@ -216,28 +194,15 @@ Deno.serve(async (req: Request) => {
       );
     }
 
-    const lines = extractTextFromPdf(fullText);
+    const isCitiStatement = fullText.includes('Costco Anywhere Visa') ||
+                           fullText.includes('Citi Cards') ||
+                           fullText.includes('citicards.com');
 
-    console.log('Total lines extracted:', lines.length);
-    console.log('First 50 lines of extracted text:', lines.slice(0, 50));
-    console.log('Lines 50-100:', lines.slice(50, 100));
-    console.log('Full text sample (first 2000 chars):', fullText.substring(0, 2000));
-
-    const isCitiStatement = lines.some(line =>
-      line.includes('Costco Anywhere Visa') ||
-      line.includes('Citi Cards') ||
-      line.includes('citicards.com')
-    );
-
-    let parsedData;
-
-    if (isCitiStatement) {
-      parsedData = parseCitiCreditCardStatement(lines);
-    } else {
+    if (!isCitiStatement) {
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'PDF statement not recognized. Currently only Citi credit card statements are supported. For other banks, please use CSV or OFX files.'
+          error: 'PDF statement not recognized. Currently only Citi Costco Anywhere Visa statements are supported. For other banks, please use CSV or OFX files.'
         }),
         {
           status: 400,
@@ -245,12 +210,15 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    const parsedData = parseCitiCostcoStatement(fullText);
 
     if (parsedData.transactions.length === 0) {
+      console.log('Full text for debugging:', fullText.substring(0, 3000));
       return new Response(
         JSON.stringify({
           status: 'error',
-          error: 'No transactions found in the PDF. Please check that this is a valid statement.'
+          error: 'No transactions found in the PDF. The statement format may not be recognized.'
         }),
         {
           status: 400,
@@ -258,6 +226,8 @@ Deno.serve(async (req: Request) => {
         }
       );
     }
+
+    console.log(`Successfully parsed ${parsedData.transactions.length} transactions`);
 
     return new Response(
       JSON.stringify({
