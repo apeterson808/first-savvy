@@ -40,6 +40,7 @@ import {
   DollarSign,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Check,
   PiggyBank,
   Landmark,
@@ -376,6 +377,7 @@ export default function AccountCreationWizard({
   const [csvHadBalanceColumn, setCsvHadBalanceColumn] = useState(false);
   const [csvMappingConfig, setCsvMappingConfig] = useState(null);
   const [calculationDiagnostics, setCalculationDiagnostics] = useState(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -1781,54 +1783,68 @@ export default function AccountCreationWizard({
         )}
 
         {calculationDiagnostics && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-3">
-            <div className="flex items-center gap-2 mb-2">
-              <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-              <span className="font-medium text-sm text-blue-900">Calculation Breakdown</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="space-y-1">
-                <div className="text-blue-700 font-medium">Date Range</div>
-                <div className="text-blue-900">{calculationDiagnostics.dateRange.startDate} to {calculationDiagnostics.dateRange.endDate}</div>
+          <div className="rounded-lg border border-blue-200 bg-blue-50/50">
+            <button
+              type="button"
+              onClick={() => setShowDiagnostics(!showDiagnostics)}
+              className="w-full flex items-center justify-between p-3 hover:bg-blue-100/50 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                <span className="font-medium text-sm text-blue-900">Calculation Breakdown</span>
+                <span className="text-xs text-blue-600">
+                  ({calculationDiagnostics.transactionCount} transactions)
+                </span>
               </div>
+              <ChevronDown className={`w-4 h-4 text-blue-600 transition-transform ${showDiagnostics ? 'rotate-180' : ''}`} />
+            </button>
 
-              <div className="space-y-1">
-                <div className="text-blue-700 font-medium">Transactions Found</div>
-                <div className="text-blue-900">{calculationDiagnostics.transactionCount} total</div>
-              </div>
+            {showDiagnostics && (
+              <div className="p-4 pt-0 space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="space-y-1">
+                    <div className="text-blue-700 font-medium">Date Range</div>
+                    <div className="text-blue-900">{calculationDiagnostics.dateRange.startDate} to {calculationDiagnostics.dateRange.endDate}</div>
+                  </div>
 
-              <div className="space-y-1">
-                <div className="text-blue-700 font-medium">Charges (Expenses)</div>
-                <div className="text-blue-900">{calculationDiagnostics.expenseCount} transactions = ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
-              </div>
+                  <div className="space-y-1">
+                    <div className="text-blue-700 font-medium">Transactions Found</div>
+                    <div className="text-blue-900">{calculationDiagnostics.transactionCount} total</div>
+                  </div>
 
-              <div className="space-y-1">
-                <div className="text-blue-700 font-medium">Payments (Income)</div>
-                <div className="text-blue-900">{calculationDiagnostics.incomeCount} transactions = ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
-              </div>
-            </div>
+                  <div className="space-y-1">
+                    <div className="text-blue-700 font-medium">Charges (Expenses)</div>
+                    <div className="text-blue-900">{calculationDiagnostics.expenseCount} transactions = ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
+                  </div>
 
-            <div className="border-t border-blue-200 pt-3 space-y-2">
-              <div className="text-sm font-mono text-blue-900">
-                {calculationDiagnostics.isLiability ? (
-                  <>
-                    <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
-                    <div>- Charges: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
-                    <div>+ Payments: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
-                  </>
-                ) : (
-                  <>
-                    <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
-                    <div>+ Expenses: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
-                    <div>- Income: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
-                  </>
-                )}
-                <div className="border-t border-blue-300 mt-2 pt-2 font-bold">
-                  = Beginning Balance: ${calculationDiagnostics.calculatedBeginningBalance.toFixed(2)}
+                  <div className="space-y-1">
+                    <div className="text-blue-700 font-medium">Payments (Income)</div>
+                    <div className="text-blue-900">{calculationDiagnostics.incomeCount} transactions = ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
+                  </div>
+                </div>
+
+                <div className="border-t border-blue-200 pt-3 space-y-2">
+                  <div className="text-sm font-mono text-blue-900">
+                    {calculationDiagnostics.isLiability ? (
+                      <>
+                        <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
+                        <div>- Charges: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
+                        <div>+ Payments: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
+                      </>
+                    ) : (
+                      <>
+                        <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
+                        <div>+ Expenses: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
+                        <div>- Income: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
+                      </>
+                    )}
+                    <div className="border-t border-blue-300 mt-2 pt-2 font-bold">
+                      = Beginning Balance: ${calculationDiagnostics.calculatedBeginningBalance.toFixed(2)}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
