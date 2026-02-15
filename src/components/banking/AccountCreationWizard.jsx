@@ -995,7 +995,7 @@ export default function AccountCreationWizard({
 
       if (mappedTransactions.length > 0) {
         try {
-          const startDate = customStartDate || formData.asOfDate;
+          const startDate = formData.asOfDate;
           console.log('Transaction import - mappedTransactions:', mappedTransactions.length, 'startDate:', startDate);
           const transactionsToImport = startDate
             ? mappedTransactions.filter(txn => new Date(txn.date) >= new Date(startDate))
