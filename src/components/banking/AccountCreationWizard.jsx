@@ -1065,6 +1065,7 @@ export default function AccountCreationWizard({
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       onOpenChange(false);
