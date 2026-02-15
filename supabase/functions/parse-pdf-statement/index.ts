@@ -148,35 +148,53 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    console.log('Processing PDF:', file_name);
+
     const pdfBytes = Uint8Array.from(atob(file_data), c => c.charCodeAt(0));
-
-    const pdfModule = await import('npm:pdfjs-dist@4.0.379');
-    const pdfjsLib = pdfModule.default || pdfModule;
-
-    const loadingTask = pdfjsLib.getDocument({
-      data: pdfBytes,
-      useSystemFonts: true,
-      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/'
-    });
-
-    const pdf = await loadingTask.promise;
+    console.log('PDF bytes length:', pdfBytes.length);
 
     let fullText = '';
-    const allTextItems: any[] = [];
 
-    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-      const page = await pdf.getPage(pageNum);
-      const textContent = await page.getTextContent();
+    try {
+      const pdfModule = await import('npm:pdfjs-dist@4.0.379');
+      const pdfjsLib = pdfModule.default || pdfModule;
 
-      textContent.items.forEach((item: any) => {
-        allTextItems.push(item);
+      console.log('PDF.js loaded');
+
+      const loadingTask = pdfjsLib.getDocument({
+        data: pdfBytes,
+        useSystemFonts: true,
+        standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/standard_fonts/'
       });
 
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
+      const pdf = await loadingTask.promise;
+      console.log('PDF loaded, pages:', pdf.numPages);
 
-      fullText += pageText + '\n';
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const textContent = await page.getTextContent();
+
+        const pageText = textContent.items
+          .map((item: any) => item.str)
+          .join(' ');
+
+        fullText += pageText + '\n';
+      }
+
+      console.log('Extracted text length:', fullText.length);
+    } catch (pdfError) {
+      console.error('PDF parsing error:', pdfError);
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Failed to parse PDF file',
+          details: pdfError.message || pdfError.toString()
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const lines = extractTextFromPdf(fullText);
