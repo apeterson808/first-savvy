@@ -162,10 +162,15 @@ Deno.serve(async (req: Request) => {
     const pdf = await loadingTask.promise;
 
     let fullText = '';
+    const allTextItems: any[] = [];
 
     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
       const page = await pdf.getPage(pageNum);
       const textContent = await page.getTextContent();
+
+      textContent.items.forEach((item: any) => {
+        allTextItems.push(item);
+      });
 
       const pageText = textContent.items
         .map((item: any) => item.str)
@@ -175,6 +180,8 @@ Deno.serve(async (req: Request) => {
     }
 
     const lines = extractTextFromPdf(fullText);
+
+    console.log('First 20 lines of extracted text:', lines.slice(0, 20));
 
     const isCitiStatement = lines.some(line =>
       line.includes('Costco Anywhere Visa') ||
