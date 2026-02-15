@@ -808,7 +808,7 @@ export default function AccountCreationWizard({
       }
     } else {
       calculatedBeginningBalance = 0;
-      calculatedEndingBalance = netChange;
+      calculatedEndingBalance = 0;
     }
 
     updateFormData('asOfDate', firstTxn.date);
@@ -834,6 +834,8 @@ export default function AccountCreationWizard({
     toast.success(`Balance information extracted from statement. ${transactions.length} transactions ready to import.`);
     setShowBalanceImportDialog(false);
     setBalanceImportStep('upload');
+
+    setTimeout(() => calculateBeginningBalanceFromEnding(), 100);
   };
 
   const handleFileUpload = async (file) => {
