@@ -373,6 +373,8 @@ export default function AccountCreationWizard({
   const [selectedAccountsToImport, setSelectedAccountsToImport] = useState([]);
   const [accountConfigurations, setAccountConfigurations] = useState({});
   const [importAccountMappings, setImportAccountMappings] = useState({});
+  const [csvHadBalanceColumn, setCsvHadBalanceColumn] = useState(false);
+  const [csvMappingConfig, setCsvMappingConfig] = useState(null);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -493,6 +495,8 @@ export default function AccountCreationWizard({
     setProcessedData(null);
     setProcessingStatus(null);
     setShowMappingSuccess(false);
+    setCsvHadBalanceColumn(false);
+    setCsvMappingConfig(null);
   };
 
 
@@ -594,6 +598,57 @@ export default function AccountCreationWizard({
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const calculateBeginningBalanceFromEnding = () => {
+    if (csvHadBalanceColumn) {
+      return;
+    }
+
+    if (!mappedTransactions || mappedTransactions.length === 0) {
+      return;
+    }
+
+    const endingBalance = parseFloat(formData.endingBalance) || 0;
+    const asOfDate = formData.asOfDate;
+    const endingDate = formData.endingDate;
+
+    if (!asOfDate || !endingDate) {
+      return;
+    }
+
+    const startDate = new Date(asOfDate);
+    const endDate = new Date(endingDate);
+    startDate.setHours(0, 0, 0, 0);
+    endDate.setHours(0, 0, 0, 0);
+
+    const isLiability = selectedSubtype === 'credit_card';
+
+    const transactionsInRange = mappedTransactions.filter(txn => {
+      const txnDate = new Date(txn.date);
+      txnDate.setHours(0, 0, 0, 0);
+      return txnDate >= startDate && txnDate <= endDate;
+    });
+
+    let calculatedBeginningBalance = endingBalance;
+
+    transactionsInRange.forEach(txn => {
+      if (isLiability) {
+        if (txn.type === 'expense') {
+          calculatedBeginningBalance -= txn.amount;
+        } else if (txn.type === 'income') {
+          calculatedBeginningBalance += txn.amount;
+        }
+      } else {
+        if (txn.type === 'expense') {
+          calculatedBeginningBalance += txn.amount;
+        } else if (txn.type === 'income') {
+          calculatedBeginningBalance -= txn.amount;
+        }
+      }
+    });
+
+    updateFormData('beginningBalance', calculatedBeginningBalance.toFixed(2));
   };
 
 
@@ -770,11 +825,13 @@ export default function AccountCreationWizard({
       setUploadedFile(null);
       setProcessedData(null);
       setProcessingStatus(null);
+      setCsvHadBalanceColumn(false);
+      setCsvMappingConfig(null);
     }
   };
 
   const handleCsvMapping = async (mappingConfig) => {
-    const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
+    const { columnMappings, amountType, debitColumn, creditColumn, balanceColumn } = mappingConfig;
 
     const transactions = mapCsvToTransactions(
       processedData,
@@ -789,6 +846,8 @@ export default function AccountCreationWizard({
       return;
     }
 
+    setCsvHadBalanceColumn(!!balanceColumn);
+    setCsvMappingConfig(mappingConfig);
     setMappedTransactions(transactions);
     setProcessingStatus('success');
     setShowMappingSuccess(true);
@@ -1637,7 +1696,10 @@ export default function AccountCreationWizard({
               id="asOfDate"
               type="date"
               value={formData.asOfDate || new Date().toISOString().split('T')[0]}
-              onChange={(e) => updateFormData('asOfDate', e.target.value)}
+              onChange={(e) => {
+                updateFormData('asOfDate', e.target.value);
+                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
+              }}
               className="h-8 text-sm"
             />
           </div>
@@ -1657,6 +1719,7 @@ export default function AccountCreationWizard({
               onBlur={(e) => {
                 const value = parseFloat(e.target.value) || 0;
                 updateFormData('endingBalance', value.toFixed(2));
+                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
               }}
               placeholder="0.00"
               className="h-8 text-sm"
@@ -1668,11 +1731,38 @@ export default function AccountCreationWizard({
               id="endingDate"
               type="date"
               value={formData.endingDate || new Date().toISOString().split('T')[0]}
-              onChange={(e) => updateFormData('endingDate', e.target.value)}
+              onChange={(e) => {
+                updateFormData('endingDate', e.target.value);
+                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
+              }}
               className="h-8 text-sm"
             />
           </div>
         </div>
+
+        {!csvHadBalanceColumn && mappedTransactions && mappedTransactions.length > 0 && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
+              <div className="text-sm text-amber-900">
+                <span className="font-medium">Auto-calculation active: </span>
+                <span className="text-amber-700">Beginning balance will be calculated from ending balance and transactions</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {csvHadBalanceColumn && mappedTransactions && mappedTransactions.length > 0 && (
+          <div className="rounded-lg border border-green-200 bg-green-50/50 p-3">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-green-600 flex-shrink-0" />
+              <div className="text-sm text-green-900">
+                <span className="font-medium">Using balance column: </span>
+                <span className="text-green-700">Balances extracted from CSV statement</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {balanceData && (
           <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
@@ -2298,6 +2388,8 @@ export default function AccountCreationWizard({
                     setProcessedData(null);
                     setMappedTransactions([]);
                     setShowMappingSuccess(false);
+                    setCsvHadBalanceColumn(false);
+                    setCsvMappingConfig(null);
                   }}
                 >
                   <X className="w-4 h-4 mr-1" />
@@ -2955,6 +3047,8 @@ export default function AccountCreationWizard({
             setProcessedData(null);
             setUploadedFile(null);
             setProcessingStatus(null);
+            setCsvHadBalanceColumn(false);
+            setCsvMappingConfig(null);
           }}
           profileId={activeProfile?.id}
           institutionName={formData.institutionName || 'Unknown Bank'}
