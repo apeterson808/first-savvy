@@ -375,6 +375,7 @@ export default function AccountCreationWizard({
   const [importAccountMappings, setImportAccountMappings] = useState({});
   const [csvHadBalanceColumn, setCsvHadBalanceColumn] = useState(false);
   const [csvMappingConfig, setCsvMappingConfig] = useState(null);
+  const [calculationDiagnostics, setCalculationDiagnostics] = useState(null);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -602,10 +603,12 @@ export default function AccountCreationWizard({
 
   const calculateBeginningBalanceFromEnding = () => {
     if (csvHadBalanceColumn) {
+      setCalculationDiagnostics(null);
       return;
     }
 
     if (!mappedTransactions || mappedTransactions.length === 0) {
+      setCalculationDiagnostics(null);
       return;
     }
 
@@ -614,6 +617,7 @@ export default function AccountCreationWizard({
     const endingDate = formData.endingDate;
 
     if (!asOfDate || !endingDate) {
+      setCalculationDiagnostics(null);
       return;
     }
 
@@ -631,21 +635,45 @@ export default function AccountCreationWizard({
     });
 
     let calculatedBeginningBalance = endingBalance;
+    let totalExpenses = 0;
+    let totalIncome = 0;
+    let expenseCount = 0;
+    let incomeCount = 0;
 
     transactionsInRange.forEach(txn => {
       if (isLiability) {
         if (txn.type === 'expense') {
           calculatedBeginningBalance -= txn.amount;
+          totalExpenses += txn.amount;
+          expenseCount++;
         } else if (txn.type === 'income') {
           calculatedBeginningBalance += txn.amount;
+          totalIncome += txn.amount;
+          incomeCount++;
         }
       } else {
         if (txn.type === 'expense') {
           calculatedBeginningBalance += txn.amount;
+          totalExpenses += txn.amount;
+          expenseCount++;
         } else if (txn.type === 'income') {
           calculatedBeginningBalance -= txn.amount;
+          totalIncome += txn.amount;
+          incomeCount++;
         }
       }
+    });
+
+    setCalculationDiagnostics({
+      transactionCount: transactionsInRange.length,
+      expenseCount,
+      incomeCount,
+      totalExpenses,
+      totalIncome,
+      endingBalance,
+      calculatedBeginningBalance,
+      isLiability,
+      dateRange: { startDate: asOfDate, endDate: endingDate }
     });
 
     updateFormData('beginningBalance', calculatedBeginningBalance.toFixed(2));
@@ -1747,6 +1775,58 @@ export default function AccountCreationWizard({
               <div className="text-sm text-amber-900">
                 <span className="font-medium">Auto-calculation active: </span>
                 <span className="text-amber-700">Beginning balance will be calculated from ending balance and transactions</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {calculationDiagnostics && (
+          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              <span className="font-medium text-sm text-blue-900">Calculation Breakdown</span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="space-y-1">
+                <div className="text-blue-700 font-medium">Date Range</div>
+                <div className="text-blue-900">{calculationDiagnostics.dateRange.startDate} to {calculationDiagnostics.dateRange.endDate}</div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-blue-700 font-medium">Transactions Found</div>
+                <div className="text-blue-900">{calculationDiagnostics.transactionCount} total</div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-blue-700 font-medium">Charges (Expenses)</div>
+                <div className="text-blue-900">{calculationDiagnostics.expenseCount} transactions = ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
+              </div>
+
+              <div className="space-y-1">
+                <div className="text-blue-700 font-medium">Payments (Income)</div>
+                <div className="text-blue-900">{calculationDiagnostics.incomeCount} transactions = ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
+              </div>
+            </div>
+
+            <div className="border-t border-blue-200 pt-3 space-y-2">
+              <div className="text-sm font-mono text-blue-900">
+                {calculationDiagnostics.isLiability ? (
+                  <>
+                    <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
+                    <div>- Charges: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
+                    <div>+ Payments: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
+                  </>
+                ) : (
+                  <>
+                    <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
+                    <div>+ Expenses: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
+                    <div>- Income: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
+                  </>
+                )}
+                <div className="border-t border-blue-300 mt-2 pt-2 font-bold">
+                  = Beginning Balance: ${calculationDiagnostics.calculatedBeginningBalance.toFixed(2)}
+                </div>
               </div>
             </div>
           </div>
