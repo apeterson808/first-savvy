@@ -478,16 +478,7 @@ export default function AccountCreationWizard({
     setFormData({});
     setShowConnectionModal(false);
     setConnectionStatus('connecting');
-    setUploadedFile(null);
-    setProcessingStatus(null);
-    setProcessedData(null);
-    setSelectedAccountId(null);
-    setSelectedAccountName('');
-    setIsExistingAccount(false);
     setMappedTransactions([]);
-    setDuplicateTransactions([]);
-    setSkipDuplicates(true);
-    setShowMappingSuccess(false);
     setInstitutionSearch('');
     setSelectedInstitution(null);
     setIsConnecting(false);
