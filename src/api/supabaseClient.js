@@ -334,13 +334,27 @@ export const createSupabaseClient = () => {
         return data;
       },
       async parsePdfStatement(body) {
-        const { data, error } = await supabase.functions.invoke('parse-pdf-statement', { body });
-        if (error) {
-          console.error('Edge function error:', error);
-          console.error('Error context:', error.context);
-          throw error;
+        try {
+          const { data, error } = await supabase.functions.invoke('parse-pdf-statement', { body });
+          if (error) {
+            console.error('Edge function error:', error);
+            console.error('Error context:', error.context);
+
+            const errorMessage = error.context?.body?.error ||
+                               error.context?.body?.message ||
+                               error.message ||
+                               'Edge function error';
+            const errorDetails = error.context?.body?.details || '';
+
+            throw new Error(errorDetails ? `${errorMessage}: ${errorDetails}` : errorMessage);
+          }
+
+          console.log('PDF parse response:', data);
+          return data;
+        } catch (err) {
+          console.error('parsePdfStatement error:', err);
+          throw err;
         }
-        return data;
       },
       async aiCategorizeTransaction(body) {
         const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
