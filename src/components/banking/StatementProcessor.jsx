@@ -75,6 +75,8 @@ export const processStatementFile = async (file, onProgress) => {
 
     const parseResponse = await firstsavvy.functions.parsePdfStatement({ file_data: base64Data, file_name: file.name });
 
+    console.log('PDF parse response:', parseResponse);
+
     if (parseResponse.status === 'success' && parseResponse.output?.transactions) {
       return {
         type: 'transactions',
@@ -85,6 +87,7 @@ export const processStatementFile = async (file, onProgress) => {
       };
     }
 
+    console.error('PDF parsing failed:', parseResponse);
     const errorMsg = parseResponse.details || parseResponse.error || 'Failed to parse PDF';
     throw new Error(errorMsg);
   }
