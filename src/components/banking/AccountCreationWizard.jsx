@@ -2259,7 +2259,7 @@ export default function AccountCreationWizard({
                 </p>
                 <input
                   type="file"
-                  accept=".csv,.ofx,.qfx,text/csv,application/x-ofx,application/vnd.intu.qfx"
+                  accept=".csv,text/csv"
                   className="hidden"
                   id="file-upload-details"
                   onChange={(e) => {
@@ -2268,7 +2268,7 @@ export default function AccountCreationWizard({
                   }}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Supports CSV, OFX, and QFX formats
+                  Supports CSV format
                 </p>
               </>
             )}
@@ -3575,7 +3575,7 @@ export default function AccountCreationWizard({
         {balanceImportStep === 'upload' && (
           <div className="space-y-4">
             <div className="text-sm text-muted-foreground">
-              Upload a CSV, OFX, or QFX file to automatically extract beginning and ending balances with their dates.
+              Upload a CSV file to automatically extract beginning and ending balances with their dates.
             </div>
             <div
               onClick={() => document.getElementById('balance-import-file-input')?.click()}
@@ -3592,12 +3592,12 @@ export default function AccountCreationWizard({
                 Click to upload or drag and drop
               </p>
               <p className="text-xs text-gray-500">
-                CSV, OFX, and QFX files supported
+                CSV files supported
               </p>
               <input
                 id="balance-import-file-input"
                 type="file"
-                accept=".csv,.ofx,.qfx,text/csv,application/x-ofx,application/vnd.intu.qfx"
+                accept=".csv,text/csv"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleBalanceCsvUpload(file);

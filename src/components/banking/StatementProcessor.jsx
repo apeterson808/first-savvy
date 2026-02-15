@@ -1,4 +1,3 @@
-import { firstsavvy } from '@/api/firstsavvyClient';
 import { format } from 'date-fns';
 import Papa from 'papaparse';
 
@@ -38,33 +37,7 @@ export const processStatementFile = async (file, onProgress) => {
     return { type: 'csv', headers, rows };
   }
 
-  if (fileExt === 'ofx' || fileExt === 'qfx') {
-    onProgress?.('extracting');
-
-    const arrayBuffer = await file.arrayBuffer();
-    const base64Data = btoa(
-      new Uint8Array(arrayBuffer)
-        .reduce((data, byte) => data + String.fromCharCode(byte), '')
-    );
-
-    const extractResponse = await firstsavvy.functions.parseOfx({ file_data: base64Data, file_name: file.name });
-
-    if (extractResponse.status === 'success' && extractResponse.output?.transactions) {
-      return {
-        type: 'transactions',
-        transactions: extractResponse.output.transactions,
-        institutionName: extractResponse.output.institutionName,
-        accountNumber: extractResponse.output.accountNumber,
-        beginningBalance: extractResponse.output.beginningBalance,
-        endingBalance: extractResponse.output.endingBalance
-      };
-    }
-
-    const errorMsg = extractResponse.details || extractResponse.error || 'Failed to extract data';
-    throw new Error(errorMsg);
-  }
-
-  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV, OFX, or QFX file.`);
+  throw new Error(`Unsupported file type: .${fileExt}. Please upload a CSV file.`);
 };
 
 export const parseDate = (dateStr) => {

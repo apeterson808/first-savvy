@@ -328,11 +328,6 @@ export const createSupabaseClient = () => {
       }
     },
     functions: {
-      async parseOfx(body) {
-        const { data, error } = await supabase.functions.invoke('parse-ofx', { body });
-        if (error) throw error;
-        return data;
-      },
       async aiCategorizeTransaction(body) {
         const { data, error } = await supabase.functions.invoke('ai-categorize-transaction', { body });
         if (error) throw error;

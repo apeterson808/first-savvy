@@ -691,7 +691,7 @@ export default function AccountDetail() {
       setMappedTransactions([]);
       setImportStep('upload');
     } catch (error) {
-      console.error('Error importing OFX transactions:', error);
+      console.error('Error importing transactions:', error);
       toast.error(error.message || 'Failed to import transactions');
     } finally {
       setIsImporting(false);
@@ -1668,7 +1668,7 @@ export default function AccountDetail() {
             {importStep === 'upload' && (
               <div className="space-y-4">
                 <div className="text-sm text-muted-foreground">
-                  Upload a CSV, OFX, or QFX file containing your transactions. We'll help you map the columns and import them into this account.
+                  Upload a CSV file containing your transactions. We'll help you map the columns and import them into this account.
                 </div>
                 <div
                   onClick={() => document.getElementById('import-file-input')?.click()}
@@ -1685,12 +1685,12 @@ export default function AccountDetail() {
                     Click to upload or drag and drop
                   </p>
                   <p className="text-xs text-gray-500">
-                    CSV, OFX, and QFX files supported
+                    CSV files supported
                   </p>
                   <input
                     id="import-file-input"
                     type="file"
-                    accept=".csv,.ofx,.qfx"
+                    accept=".csv,text/csv"
                     onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (file) handleFileUpload(file);
