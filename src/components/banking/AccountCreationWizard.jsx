@@ -359,6 +359,10 @@ export default function AccountCreationWizard({
   const [balanceImportStep, setBalanceImportStep] = useState('upload');
   const [balanceProcessedData, setBalanceProcessedData] = useState(null);
   const [isProcessingBalance, setIsProcessingBalance] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [processedData, setProcessedData] = useState(null);
+  const [processingStatus, setProcessingStatus] = useState(null);
+  const [showMappingSuccess, setShowMappingSuccess] = useState(false);
 
   const [availableInstitutions, setAvailableInstitutions] = useState([]);
   const [institutionSearch, setInstitutionSearch] = useState('');
@@ -485,6 +489,10 @@ export default function AccountCreationWizard({
     setConnectionProgress('');
     setDiscoveredAccounts([]);
     setSelectedAccountsToImport([]);
+    setUploadedFile(null);
+    setProcessedData(null);
+    setProcessingStatus(null);
+    setShowMappingSuccess(false);
   };
 
 
@@ -742,6 +750,52 @@ export default function AccountCreationWizard({
     setBalanceImportStep('upload');
   };
 
+  const handleFileUpload = async (file) => {
+    if (!file) return;
+
+    setProcessingStatus('processing');
+    setUploadedFile(file);
+    setShowMappingSuccess(false);
+
+    try {
+      const result = await processStatementFile(file);
+      setProcessedData(result);
+
+      if (result.type === 'csv') {
+        setCurrentStep('csv-mapping');
+      }
+    } catch (error) {
+      console.error('Error processing file:', error);
+      toast.error(error.message || 'Failed to process file');
+      setUploadedFile(null);
+      setProcessedData(null);
+      setProcessingStatus(null);
+    }
+  };
+
+  const handleCsvMapping = async (mappingConfig) => {
+    const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
+
+    const transactions = mapCsvToTransactions(
+      processedData,
+      columnMappings,
+      amountType,
+      debitColumn,
+      creditColumn
+    );
+
+    if (transactions.length === 0) {
+      toast.error('No transactions found in CSV');
+      return;
+    }
+
+    setMappedTransactions(transactions);
+    setProcessingStatus('success');
+    setShowMappingSuccess(true);
+    setCurrentStep('details');
+
+    toast.success(`Successfully mapped ${transactions.length} transactions`);
+  };
 
   const formatAmountField = (fieldName, value, isFocused) => {
     if (!value) return '';
@@ -2890,6 +2944,25 @@ export default function AccountCreationWizard({
     }
   };
 
+  const renderCsvMappingStep = () => {
+    return (
+      <div className="space-y-4">
+        <CsvColumnMapper
+          csvData={processedData}
+          onMap={handleCsvMapping}
+          onCancel={() => {
+            setCurrentStep('details');
+            setProcessedData(null);
+            setUploadedFile(null);
+            setProcessingStatus(null);
+          }}
+          profileId={activeProfile?.id}
+          institutionName={formData.institutionName || 'Unknown Bank'}
+        />
+      </div>
+    );
+  };
+
   const renderBalanceStep = () => (
     <div className="space-y-5 max-w-lg mx-auto">
       <div>
@@ -3133,6 +3206,8 @@ export default function AccountCreationWizard({
         return renderSelectSubtype();
       case 'details':
         return renderDetailsStep();
+      case 'csv-mapping':
+        return renderCsvMappingStep();
       case 'balance':
         return renderBalanceStep();
       case 'loan-search':
@@ -3150,6 +3225,7 @@ export default function AccountCreationWizard({
     if (currentStep === 'manual-entry') return 'Create Account';
     if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
+    if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') return 'Account Details';
       if (selectedCard?.id === 'vehicle') return 'Vehicle Details';
