@@ -2542,7 +2542,7 @@ export default function AccountCreationWizard({
                 </p>
                 <input
                   type="file"
-                  accept=".csv,.ofx,.qfx,.pdf"
+                  accept=".csv,.ofx,.qfx,.pdf,application/pdf,text/csv,application/x-ofx,application/vnd.intu.qfx"
                   className="hidden"
                   id="file-upload-details"
                   onChange={(e) => {
@@ -4118,7 +4118,7 @@ export default function AccountCreationWizard({
               <input
                 id="balance-import-file-input"
                 type="file"
-                accept=".csv,.ofx,.qfx,.pdf"
+                accept=".csv,.ofx,.qfx,.pdf,application/pdf,text/csv,application/x-ofx,application/vnd.intu.qfx"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) handleBalanceCsvUpload(file);
