@@ -156,17 +156,16 @@ Deno.serve(async (req: Request) => {
     let fullText = '';
 
     try {
-      // Use pdf-parse which works better in Deno
-      const pdfParse = (await import('npm:pdf-parse@1.1.1')).default;
+      // Use unpdf which is designed for Deno
+      const { extractText } = await import('npm:unpdf@0.12.3');
 
-      console.log('pdf-parse loaded');
+      console.log('unpdf loaded');
 
-      const pdfData = await pdfParse(pdfBytes);
+      const extracted = await extractText(pdfBytes);
 
-      console.log('PDF parsed, pages:', pdfData.numpages);
-      console.log('Text length:', pdfData.text.length);
+      console.log('PDF parsed, text length:', extracted.text.length);
 
-      fullText = pdfData.text;
+      fullText = extracted.text;
     } catch (pdfError) {
       console.error('PDF parsing error:', pdfError);
       return new Response(
