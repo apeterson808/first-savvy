@@ -605,20 +605,45 @@ export default function AccountCreationWizard({
           const firstTxn = transactions[0];
           const lastTxn = transactions[transactions.length - 1];
 
+          const beginningBal = result.beginningBalance ?? 0;
+          const endingBal = result.endingBalance ?? result.newBalance ?? 0;
+          const startDate = result.statementStartDate ?? parseDate(firstTxn.date);
+          const endDate = result.statementEndDate ?? parseDate(lastTxn.date);
+
           setBalanceData({
-            beginningBalance: result.beginningBalance || 0,
-            endingBalance: result.newBalance || result.beginningBalance || 0,
-            beginningDate: parseDate(firstTxn.date),
-            endingDate: parseDate(lastTxn.date),
+            beginningBalance: beginningBal,
+            endingBalance: endingBal,
+            beginningDate: startDate,
+            endingDate: endDate,
             fileName: file.name
           });
 
-          updateFormData('beginningBalance', (result.beginningBalance || 0).toFixed(2));
-          updateFormData('asOfDate', parseDate(firstTxn.date));
-          updateFormData('endingBalance', (result.newBalance || result.beginningBalance || 0).toFixed(2));
-          updateFormData('endingDate', parseDate(lastTxn.date));
+          updateFormData('beginningBalance', beginningBal.toFixed(2));
+          updateFormData('asOfDate', startDate);
+          updateFormData('endingBalance', endingBal.toFixed(2));
+          updateFormData('endingDate', endDate);
 
-          toast.success('Balance information extracted from file');
+          if (result.institutionName) {
+            updateFormData('bankName', result.institutionName);
+          }
+
+          if (result.accountNumber) {
+            updateFormData('accountNumberLast4', result.accountNumber);
+          }
+
+          const extractedFields = [];
+          if (result.beginningBalance !== undefined) extractedFields.push('previous balance');
+          if (result.endingBalance !== undefined) extractedFields.push('new balance');
+          if (result.statementStartDate) extractedFields.push('statement start date');
+          if (result.statementEndDate) extractedFields.push('statement end date');
+          if (result.institutionName) extractedFields.push('institution name');
+          if (result.accountNumber) extractedFields.push('account number');
+
+          const message = extractedFields.length > 0
+            ? `Extracted ${extractedFields.join(', ')} from statement`
+            : 'Balance information extracted from file';
+
+          toast.success(message);
           setShowBalanceImportDialog(false);
         }
       } else {

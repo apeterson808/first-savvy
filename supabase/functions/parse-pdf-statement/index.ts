@@ -20,16 +20,27 @@ function parseCitiCostcoStatement(fullText: string): {
   institutionName: string;
   accountNumber: string;
   endingBalance?: number;
+  beginningBalance?: number;
+  statementStartDate?: string;
+  statementEndDate?: string;
 } {
   const transactions: Transaction[] = [];
   const institutionName = "Citi - Costco Anywhere Visa";
   let accountNumber = "";
   let endingBalance: number | undefined;
+  let beginningBalance: number | undefined;
+  let statementStartDate: string | undefined;
+  let statementEndDate: string | undefined;
 
   const accountMatch = fullText.match(/Account number ending in[:\s]+(\d+)/i) ||
                        fullText.match(/Card ending in[:\s]+(\d+)/i);
   if (accountMatch) {
     accountNumber = accountMatch[1];
+  }
+
+  const previousBalanceMatch = fullText.match(/Previous balance[:\s]+\$([0-9,]+\.\d{2})/i);
+  if (previousBalanceMatch) {
+    beginningBalance = parseFloat(previousBalanceMatch[1].replace(/,/g, ''));
   }
 
   const balanceMatch = fullText.match(/New balance.*?\$([0-9,]+\.\d{2})/i);
@@ -40,8 +51,20 @@ function parseCitiCostcoStatement(fullText: string): {
   const billingPeriodMatch = fullText.match(/Billing Period:\s*(\d{1,2})\/(\d{1,2})\/(\d{2,4})-(\d{1,2})\/(\d{1,2})\/(\d{2,4})/i);
   let currentYear = new Date().getFullYear();
   if (billingPeriodMatch) {
-    const year = parseInt(billingPeriodMatch[6]);
-    currentYear = year >= 50 && year < 100 ? 1900 + year : year < 100 ? 2000 + year : year;
+    const [, startMonth, startDay, startYear, endMonth, endDay, endYear] = billingPeriodMatch;
+
+    const parseYear = (yearStr: string) => {
+      const year = parseInt(yearStr);
+      return year >= 50 && year < 100 ? 1900 + year : year < 100 ? 2000 + year : year;
+    };
+
+    const fullStartYear = parseYear(startYear);
+    const fullEndYear = parseYear(endYear);
+
+    statementStartDate = `${fullStartYear}-${startMonth.padStart(2, '0')}-${startDay.padStart(2, '0')}`;
+    statementEndDate = `${fullEndYear}-${endMonth.padStart(2, '0')}-${endDay.padStart(2, '0')}`;
+
+    currentYear = fullEndYear;
   }
 
   const lines = fullText.split('\n').map(l => l.trim()).filter(l => l.length > 0);
@@ -139,7 +162,10 @@ function parseCitiCostcoStatement(fullText: string): {
     transactions,
     institutionName,
     accountNumber,
-    endingBalance
+    endingBalance,
+    beginningBalance,
+    statementStartDate,
+    statementEndDate
   };
 }
 
@@ -236,7 +262,10 @@ Deno.serve(async (req: Request) => {
           transactions: parsedData.transactions,
           institutionName: parsedData.institutionName,
           accountNumber: parsedData.accountNumber,
-          endingBalance: parsedData.endingBalance
+          endingBalance: parsedData.endingBalance,
+          beginningBalance: parsedData.beginningBalance,
+          statementStartDate: parsedData.statementStartDate,
+          statementEndDate: parsedData.statementEndDate
         }
       }),
       {

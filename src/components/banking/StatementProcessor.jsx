@@ -83,7 +83,10 @@ export const processStatementFile = async (file, onProgress) => {
         transactions: parseResponse.output.transactions,
         institutionName: parseResponse.output.institutionName,
         accountNumber: parseResponse.output.accountNumber,
-        endingBalance: parseResponse.output.endingBalance
+        endingBalance: parseResponse.output.endingBalance,
+        beginningBalance: parseResponse.output.beginningBalance,
+        statementStartDate: parseResponse.output.statementStartDate,
+        statementEndDate: parseResponse.output.statementEndDate
       };
     }
 
