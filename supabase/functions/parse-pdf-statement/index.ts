@@ -218,7 +218,10 @@ Deno.serve(async (req: Request) => {
 
     const lines = extractTextFromPdf(fullText);
 
-    console.log('First 20 lines of extracted text:', lines.slice(0, 20));
+    console.log('Total lines extracted:', lines.length);
+    console.log('First 50 lines of extracted text:', lines.slice(0, 50));
+    console.log('Lines 50-100:', lines.slice(50, 100));
+    console.log('Full text sample (first 2000 chars):', fullText.substring(0, 2000));
 
     const isCitiStatement = lines.some(line =>
       line.includes('Costco Anywhere Visa') ||
