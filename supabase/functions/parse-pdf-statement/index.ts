@@ -178,9 +178,31 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { file_data, file_name } = await req.json();
+    console.log('=== PDF Statement Parser - Request received ===');
+
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body keys:', Object.keys(requestBody));
+    } catch (jsonError) {
+      console.error('Failed to parse JSON:', jsonError);
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Invalid JSON in request body',
+          details: jsonError.message
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+
+    const { file_data, file_name } = requestBody;
 
     if (!file_data) {
+      console.error('No file_data in request');
       return new Response(
         JSON.stringify({
           status: 'error',
@@ -194,9 +216,26 @@ Deno.serve(async (req: Request) => {
     }
 
     console.log('Processing PDF:', file_name);
+    console.log('File data length:', file_data.length);
 
-    const pdfBytes = Uint8Array.from(atob(file_data), c => c.charCodeAt(0));
-    console.log('PDF bytes length:', pdfBytes.length);
+    let pdfBytes;
+    try {
+      pdfBytes = Uint8Array.from(atob(file_data), c => c.charCodeAt(0));
+      console.log('PDF bytes length:', pdfBytes.length);
+    } catch (decodeError) {
+      console.error('Failed to decode base64:', decodeError);
+      return new Response(
+        JSON.stringify({
+          status: 'error',
+          error: 'Failed to decode PDF data',
+          details: decodeError.message
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
 
     let fullText = '';
 

@@ -335,7 +335,11 @@ export const createSupabaseClient = () => {
       },
       async parsePdfStatement(body) {
         const { data, error } = await supabase.functions.invoke('parse-pdf-statement', { body });
-        if (error) throw error;
+        if (error) {
+          console.error('Edge function error:', error);
+          console.error('Error context:', error.context);
+          throw error;
+        }
         return data;
       },
       async aiCategorizeTransaction(body) {
