@@ -383,6 +383,11 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       return;
     }
 
+    if (autoConfirmAndPost && !categoryId) {
+      toast.error('Auto-posting requires a category to create journal entries. Please select a category.');
+      return;
+    }
+
     const ruleData = {
       name: ruleName.trim(),
       match_money_direction: moneyDirection,
@@ -891,6 +896,16 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
             <Label htmlFor="auto-post-toggle" className="text-sm font-normal cursor-pointer">
               Auto-post transactions
             </Label>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Info className="w-4 h-4 text-slate-400" />
+                </TooltipTrigger>
+                <TooltipContent side="top" className="max-w-xs">
+                  <p className="text-xs">Auto-posting requires a category to create journal entries. Transactions without categories cannot be posted.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
