@@ -462,6 +462,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
   const isScanningRef = React.useRef(false);
+  const fetchedSuggestionsRef = React.useRef(new Set());
+  const fetchedContactSuggestionsRef = React.useRef(new Set());
   const queryClient = useQueryClient();
 
   const { data: fullPendingTransactions = [] } = useQuery({
@@ -489,15 +491,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!activeProfile?.id || transactions.length === 0) return;
 
       const uncategorizedTransactions = transactions
-        .filter(txn => !txn.category_account_id && txn.type !== 'transfer');
+        .filter(txn =>
+          !txn.category_account_id &&
+          txn.type !== 'transfer' &&
+          !fetchedSuggestionsRef.current.has(txn.id)
+        );
 
       if (uncategorizedTransactions.length === 0) return;
 
-      const suggestions = await aiCategorizationApi.getSuggestionsForTransactions(
+      const newSuggestions = await aiCategorizationApi.getSuggestionsForTransactions(
         uncategorizedTransactions
       );
 
-      setCategorySuggestions(suggestions);
+      uncategorizedTransactions.forEach(txn => {
+        fetchedSuggestionsRef.current.add(txn.id);
+      });
+
+      setCategorySuggestions(prev => ({ ...prev, ...newSuggestions }));
     };
 
     fetchAISuggestions();
@@ -581,16 +591,25 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
 
       const transactionsNeedingContacts = transactions
-        .filter(txn => !txn.contact_id && txn.type !== 'transfer' && txn.description);
+        .filter(txn =>
+          !txn.contact_id &&
+          txn.type !== 'transfer' &&
+          txn.description &&
+          !fetchedContactSuggestionsRef.current.has(txn.id)
+        );
 
       if (transactionsNeedingContacts.length === 0) return;
 
-      const suggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
+      const newSuggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
         transactionsNeedingContacts,
         contacts
       );
 
-      setContactSuggestions(suggestions);
+      transactionsNeedingContacts.forEach(txn => {
+        fetchedContactSuggestionsRef.current.add(txn.id);
+      });
+
+      setContactSuggestions(prev => ({ ...prev, ...newSuggestions }));
     };
 
     fetchContactSuggestions();
@@ -779,11 +798,21 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             setAutoCategorizeProgress(prev => ({ ...prev, current: currentIndex + 1 }));
 
             try {
-              const suggestion = await aiCategorizationApi.getSuggestion(txn);
+              let categoryId = categorySuggestions[txn.id];
 
-              if (suggestion?.categoryId) {
+              if (!categoryId) {
+                const suggestion = await aiCategorizationApi.getSuggestion(txn);
+                categoryId = suggestion?.categoryId;
+
+                if (categoryId) {
+                  setCategorySuggestions(prev => ({ ...prev, [txn.id]: categoryId }));
+                  fetchedSuggestionsRef.current.add(txn.id);
+                }
+              }
+
+              if (categoryId) {
                 await firstsavvy.entities.Transaction.update(txn.id, {
-                  category_account_id: suggestion.categoryId
+                  category_account_id: categoryId
                 });
                 categorizedCount++;
                 setAutoCategorizeProgress(prev => ({ ...prev, categorized: categorizedCount }));
