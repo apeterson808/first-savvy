@@ -44,7 +44,6 @@ const autoDetectMappings = (headers) => {
 
   const debitColumn = detectColumn(headers, DETECTION_PATTERNS.debit);
   const creditColumn = detectColumn(headers, DETECTION_PATTERNS.credit);
-  const balanceColumn = detectColumn(headers, DETECTION_PATTERNS.balance);
 
   let detectedAmountType = 'auto';
   if (debitColumn && creditColumn) {
@@ -55,8 +54,7 @@ const autoDetectMappings = (headers) => {
     mappings: detectedMappings,
     amountType: detectedAmountType,
     debitColumn: debitColumn || '',
-    creditColumn: creditColumn || '',
-    balanceColumn: balanceColumn || ''
+    creditColumn: creditColumn || ''
   };
 };
 
@@ -73,7 +71,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const [amountType, setAmountType] = useState('auto');
   const [debitColumn, setDebitColumn] = useState('');
   const [creditColumn, setCreditColumn] = useState('');
-  const [balanceColumn, setBalanceColumn] = useState('');
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
   const [hasAutoDetected, setHasAutoDetected] = useState(false);
   const [beginningBalance, setBeginningBalance] = useState(suggestedBeginningBalance.toString());
@@ -94,7 +91,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           setAmountType(savedConfig.amount_type || 'auto');
           setDebitColumn(savedConfig.debit_column || '');
           setCreditColumn(savedConfig.credit_column || '');
-          setBalanceColumn(savedConfig.balance_column || '');
 
           const detectedFieldsList = [];
           Object.entries(savedConfig.column_mappings).forEach(([field, value]) => {
@@ -121,7 +117,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         setAmountType(detected.amountType);
         setDebitColumn(detected.debitColumn);
         setCreditColumn(detected.creditColumn);
-        setBalanceColumn(detected.balanceColumn);
         setAutoDetectedFields(detectedFieldsList);
         setHasAutoDetected(true);
       }
@@ -134,32 +129,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     if (!isFirstImport || !csvData.rows?.length) return;
 
     const calculateBeginningBalance = () => {
-      if (balanceColumn && columnMappings.date) {
-        const rowsWithDates = csvData.rows.map(row => ({
-          row,
-          date: parseDate(row[columnMappings.date]),
-          balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0)
-        })).filter(item => item.date !== null);
-
-        if (rowsWithDates.length === 0) return '0.00';
-
-        rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
-        const oldestTransaction = rowsWithDates[0];
-
-        let transactionAmount = 0;
-        if (amountType === 'separate_columns' && debitColumn && creditColumn) {
-          const debit = parseFloat(oldestTransaction.row[debitColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
-          const credit = parseFloat(oldestTransaction.row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
-          transactionAmount = credit - debit;
-        } else if (columnMappings.amount) {
-          const amountStr = oldestTransaction.row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
-          transactionAmount = parseFloat(amountStr);
-        }
-
-        const beginningBalance = oldestTransaction.balance - transactionAmount;
-        return beginningBalance.toFixed(2);
-      }
-
       let netChange = 0;
 
       if (amountType === 'separate_columns' && debitColumn && creditColumn) {
@@ -190,37 +159,8 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
     if (columnMappings.amount || (debitColumn && creditColumn)) {
       setBeginningBalance(calculateBeginningBalance());
     }
-  }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, columnMappings.date, amountType, debitColumn, creditColumn, balanceColumn]);
+  }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
 
-  useEffect(() => {
-    if (!csvData.rows?.length) return;
-
-    const calculateEndingBalance = () => {
-      if (balanceColumn && columnMappings.date) {
-        const rowsWithDates = csvData.rows.map(row => ({
-          row,
-          date: parseDate(row[columnMappings.date]),
-          balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0)
-        })).filter(item => item.date !== null && !isNaN(item.balance));
-
-        if (rowsWithDates.length === 0) return '';
-
-        rowsWithDates.sort((a, b) => new Date(b.date) - new Date(a.date));
-        const newestTransaction = rowsWithDates[0];
-
-        if (newestTransaction.balance === 0) return '';
-
-        return newestTransaction.balance.toFixed(2);
-      }
-
-      return '';
-    };
-
-    const calculatedEnding = calculateEndingBalance();
-    if (calculatedEnding) {
-      setEndingBalance(calculatedEnding);
-    }
-  }, [csvData, columnMappings.date, balanceColumn]);
 
   const handleResetToAutoDetect = () => {
     setHasAutoDetected(false);
@@ -241,8 +181,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         dateFormat,
         amountType,
         debitColumn,
-        creditColumn,
-        balanceColumn
+        creditColumn
       });
     }
 
@@ -252,7 +191,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       amountType,
       debitColumn,
       creditColumn,
-      balanceColumn,
       beginningBalance: beginningBalance ? parseFloat(beginningBalance) : null,
       endingBalance: endingBalance ? parseFloat(endingBalance) : null,
       csvData
@@ -579,37 +517,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               />
               <div className="text-xs text-slate-600 mt-1.5">
                 Calculated from your CSV transactions and current account balance. You can adjust if needed.
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Ending Balance - shown for all imports when balance column is detected */}
-      {!isBalanceExtraction && endingBalance && (
-        <Card className="p-4 bg-green-50 border-green-200">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="endingBalance" className="text-sm font-medium">
-                Ending Balance (Optional)
-              </Label>
-              <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-normal">
-                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
-                Auto-detected
-              </Badge>
-            </div>
-            <div className="flex items-start gap-2">
-              <Input
-                id="endingBalance"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={endingBalance}
-                onChange={(e) => setEndingBalance(e.target.value)}
-                className="max-w-xs"
-              />
-              <div className="text-xs text-slate-600 mt-1.5">
-                Detected from the last transaction in your CSV. This will update the bank balance for reconciliation.
               </div>
             </div>
           </div>

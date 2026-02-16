@@ -751,7 +751,7 @@ export default function AccountCreationWizard({
   };
 
   const handleBalanceCsvMapping = async (mappingConfig) => {
-    const { columnMappings, amountType, debitColumn, creditColumn, balanceColumn, csvData } = mappingConfig;
+    const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
 
     const transactions = mapCsvToTransactions(
       balanceProcessedData,
@@ -773,65 +773,27 @@ export default function AccountCreationWizard({
     const firstTxn = sortedTransactions[0];
     const lastTxn = sortedTransactions[sortedTransactions.length - 1];
 
-    let calculatedBeginningBalance = 0;
-    let calculatedEndingBalance = 0;
-
-    const netChange = sortedTransactions.reduce((sum, txn) => {
-      return sum + (txn.type === 'income' ? txn.amount : -txn.amount);
-    }, 0);
-
-    if (balanceColumn && csvData && csvData.rows && csvData.rows.length > 0) {
-      const rowsWithDates = csvData.rows.map((row, idx) => ({
-        row,
-        date: parseDate(row[columnMappings.date]),
-        balance: parseFloat(row[balanceColumn]?.toString().replace(/[^0-9.-]/g, '') || 0),
-        index: idx
-      })).filter(item => item.date !== null && !isNaN(item.balance));
-
-      if (rowsWithDates.length > 0) {
-        rowsWithDates.sort((a, b) => new Date(a.date) - new Date(b.date));
-        const oldestRow = rowsWithDates[0];
-        const newestRow = rowsWithDates[rowsWithDates.length - 1];
-
-        let firstTransactionAmount = 0;
-        if (amountType === 'separate_columns' && debitColumn && creditColumn) {
-          const debit = parseFloat(oldestRow.row[debitColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
-          const credit = parseFloat(oldestRow.row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
-          firstTransactionAmount = credit - debit;
-        } else if (columnMappings.amount) {
-          const amountStr = oldestRow.row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
-          firstTransactionAmount = parseFloat(amountStr);
-        }
-
-        calculatedBeginningBalance = oldestRow.balance - firstTransactionAmount;
-        calculatedEndingBalance = newestRow.balance;
-      }
-    } else {
-      calculatedBeginningBalance = 0;
-      calculatedEndingBalance = 0;
-    }
-
     updateFormData('asOfDate', firstTxn.date);
     updateFormData('endingDate', lastTxn.date);
-    updateFormData('beginningBalance', calculatedBeginningBalance.toFixed(2));
-    updateFormData('endingBalance', calculatedEndingBalance.toFixed(2));
-    updateFormData('balance', calculatedEndingBalance.toFixed(2));
+    updateFormData('beginningBalance', '0.00');
+    updateFormData('endingBalance', '0.00');
+    updateFormData('balance', '0.00');
 
     setBalanceData({
-      beginningBalance: calculatedBeginningBalance,
-      endingBalance: calculatedEndingBalance,
+      beginningBalance: 0,
+      endingBalance: 0,
       beginningDate: firstTxn.date,
       endingDate: lastTxn.date,
       fileName: balanceProcessedData.fileName || 'statement.csv'
     });
 
-    setCsvHadBalanceColumn(!!balanceColumn);
+    setCsvHadBalanceColumn(false);
     setCsvMappingConfig(mappingConfig);
     setMappedTransactions(sortedTransactions);
     setProcessedData(balanceProcessedData);
     setProcessingStatus('success');
 
-    toast.success(`Balance information extracted from statement. ${transactions.length} transactions ready to import.`);
+    toast.success(`${transactions.length} transactions ready to import. Please enter your ending balance to calculate the beginning balance.`);
     setShowBalanceImportDialog(false);
     setBalanceImportStep('upload');
   };
@@ -1855,18 +1817,6 @@ export default function AccountCreationWizard({
                 </div>
               </div>
             )}
-          </div>
-        )}
-
-        {csvHadBalanceColumn && mappedTransactions && mappedTransactions.length > 0 && (
-          <div className="rounded-lg border border-green-200 bg-green-50/50 p-3">
-            <div className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-green-600 flex-shrink-0" />
-              <div className="text-sm text-green-900">
-                <span className="font-medium">Using balance column: </span>
-                <span className="text-green-700">Balances extracted from CSV statement</span>
-              </div>
-            </div>
           </div>
         )}
 
