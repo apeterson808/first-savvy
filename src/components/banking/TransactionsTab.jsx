@@ -60,6 +60,7 @@ import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
+import { contactSuggestionAPI } from '@/api/contactSuggestion';
 import { useAuth } from '@/contexts/AuthContext';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
@@ -97,6 +98,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
   const [categorySuggestions, setCategorySuggestions] = useState({});
+  const [contactSuggestions, setContactSuggestions] = useState({});
   const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
   const [transferPostPreviewOpen, setTransferPostPreviewOpen] = useState(false);
   const [matchingTransfer, setMatchingTransfer] = useState(null);
@@ -498,6 +500,27 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
     fetchAISuggestions();
   }, [transactions.length, activeProfile?.id]);
+
+  React.useEffect(() => {
+    const fetchContactSuggestions = async () => {
+      if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
+
+      const transactionsNeedingContacts = transactions
+        .filter(txn => !txn.contact_id && txn.type !== 'transfer' && txn.description)
+        .slice(0, 20);
+
+      if (transactionsNeedingContacts.length === 0) return;
+
+      const suggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
+        transactionsNeedingContacts,
+        contacts
+      );
+
+      setContactSuggestions(suggestions);
+    };
+
+    fetchContactSuggestions();
+  }, [transactions.length, contacts.length, activeProfile?.id]);
 
   const { data: fetchedAccounts = [] } = useQuery({
     queryKey: ['activeAccounts', activeProfile?.id],
@@ -1907,7 +1930,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             return (
                               <div onClick={(e) => e.stopPropagation()}>
                                 <ContactDropdown
-                                  value={transaction.contact_id}
+                                  value={transaction.contact_id || contactSuggestions[transaction.id]}
                                   onValueChange={(value) => {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     updateMutation.mutate({
@@ -1917,8 +1940,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         contact_manually_set: true
                                       }
                                     });
+                                    setContactSuggestions(prev => {
+                                      const { [transaction.id]: _, ...rest } = prev;
+                                      return rest;
+                                    });
                                   }}
                                   transactionDescription={transaction.description}
+                                  aiSuggestionId={contactSuggestions[transaction.id]}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                   onAddNew={(searchTerm) => {
                                     setContactSearchTerm(searchTerm);
