@@ -261,13 +261,14 @@ export function UserAvatarDropdown() {
                 <p className="font-semibold text-green-600 dark:text-green-500 mt-3">What will be preserved:</p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
                   <li>All contacts</li>
-                  <li>Custom categories you created</li>
+                  <li>All your categories (income and expense)</li>
                   <li>Categorization memories</li>
+                  <li>Transaction rules</li>
                 </ul>
                 <p className="font-semibold text-foreground mt-3">What you'll get:</p>
                 <ul className="list-disc list-inside ml-2 space-y-1">
-                  <li>8 active Income categories (ready for budgeting)</li>
-                  <li>30 active Expense categories (ready for budgeting)</li>
+                  <li>Your existing categories remain unchanged with all settings</li>
+                  <li>Fresh bank accounts ready to use</li>
                   <li>Clean financial slate</li>
                 </ul>
               </div>

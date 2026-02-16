@@ -127,18 +127,18 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create profile tab: ${tabError.message}`);
     }
 
-    const customCount = resetResult?.preserved_custom_categories || 0;
+    const categoriesCount = resetResult?.preserved_categories || 0;
     const memoryCount = resetResult?.preserved_memories || 0;
     const rulesCount = resetResult?.preserved_rules || 0;
 
     console.log(`Successfully reset financial data for user ${userId}`);
-    console.log(`Preserved: ${customCount} custom categories, ${memoryCount} memories, ${rulesCount} rules`);
+    console.log(`Preserved: ${categoriesCount} categories, ${memoryCount} memories, ${rulesCount} rules`);
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Your financial data has been reset. ${customCount} custom categories, ${memoryCount} categorization memories, and ${rulesCount} transaction rules have been preserved.`,
-        preserved_custom_categories: customCount,
+        message: `Your financial data has been reset. ${categoriesCount} categories (income and expense), ${memoryCount} categorization memories, and ${rulesCount} transaction rules have been preserved.`,
+        preserved_categories: categoriesCount,
         preserved_categorization_memories: memoryCount,
         preserved_transaction_rules: rulesCount
       }),
