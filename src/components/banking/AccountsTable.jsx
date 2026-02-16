@@ -344,19 +344,16 @@ export default function AccountsTable() {
   };
 
   // Get balance for an account (including children if parent)
+  // All accounts now use current_balance as the source of truth (class-aware ledger balance)
   const getAccountBalance = (account) => {
-    let balance = (account.entityType === 'Income' || account.entityType === 'Expense')
-      ? (categoryTotals[account.id] || 0)
-      : (account.current_balance || 0);
-    
+    // Use current_balance for leaf accounts
+    let balance = account.current_balance || 0;
+
+    // For parent accounts, aggregate children's balances
     if (!account.isSubAccount) {
       const childAccounts = accounts.filter(a => a.parent_bank_account_id === account.id);
       childAccounts.forEach(child => {
-        if (child.entityType === 'Income' || child.entityType === 'Expense') {
-          balance += (categoryTotals[child.id] || 0);
-        } else {
-          balance += (child.current_balance || 0);
-        }
+        balance += (child.current_balance || 0);
       });
     }
     return balance;
