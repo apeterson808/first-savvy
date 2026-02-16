@@ -1083,6 +1083,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const canPost = await handlePostWithSplit(transaction);
     if (!canPost) return false;
 
+    // Validate category requirement (except for transfers and credit card payments)
+    const isTransfer = transaction.type === 'transfer' || transaction.transfer_pair_id;
+    const isCCPayment = transaction.type === 'credit_card_payment' || transaction.cc_payment_pair_id;
+    const isSplit = transaction.is_split;
+
+    if (!isTransfer && !isCCPayment && !isSplit && !transaction.category_account_id) {
+      toast.error('Please select a category before posting');
+      return false;
+    }
+
     // Check if this transaction is part of a transfer pair
     if (transaction.transfer_pair_id) {
       const pairedTransaction = transactions.find(
