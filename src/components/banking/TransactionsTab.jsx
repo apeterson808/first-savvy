@@ -501,27 +501,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     fetchAISuggestions();
   }, [transactions.length, activeProfile?.id]);
 
-  React.useEffect(() => {
-    const fetchContactSuggestions = async () => {
-      if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
-
-      const transactionsNeedingContacts = transactions
-        .filter(txn => !txn.contact_id && txn.type !== 'transfer' && txn.description)
-        .slice(0, 20);
-
-      if (transactionsNeedingContacts.length === 0) return;
-
-      const suggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
-        transactionsNeedingContacts,
-        contacts
-      );
-
-      setContactSuggestions(suggestions);
-    };
-
-    fetchContactSuggestions();
-  }, [transactions.length, contacts.length, activeProfile?.id]);
-
   const { data: fetchedAccounts = [] } = useQuery({
     queryKey: ['activeAccounts', activeProfile?.id],
     queryFn: () => firstsavvy.entities.Account.filter({ is_active: true }),
@@ -594,6 +573,27 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     queryFn: () => firstsavvy.entities.Contact.list('name', 1000),
     enabled: !!activeProfile?.id
   });
+
+  React.useEffect(() => {
+    const fetchContactSuggestions = async () => {
+      if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
+
+      const transactionsNeedingContacts = transactions
+        .filter(txn => !txn.contact_id && txn.type !== 'transfer' && txn.description)
+        .slice(0, 20);
+
+      if (transactionsNeedingContacts.length === 0) return;
+
+      const suggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
+        transactionsNeedingContacts,
+        contacts
+      );
+
+      setContactSuggestions(suggestions);
+    };
+
+    fetchContactSuggestions();
+  }, [transactions.length, contacts.length, activeProfile?.id]);
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
