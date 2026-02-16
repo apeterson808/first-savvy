@@ -62,6 +62,7 @@ import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { contactSuggestionAPI } from '@/api/contactSuggestion';
 import { useAuth } from '@/contexts/AuthContext';
+import { getAiCategorySuggestionsForTransactions } from '@/api/aiCategorySuggestions';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -489,6 +490,28 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
 
   React.useEffect(() => {
+    const loadExistingSuggestions = async () => {
+      if (!activeProfile?.id || transactions.length === 0) return;
+
+      const transactionIds = transactions.map(txn => txn.id);
+      const { data: suggestions } = await getAiCategorySuggestionsForTransactions(
+        transactionIds,
+        activeProfile.id
+      );
+
+      if (suggestions && suggestions.length > 0) {
+        const suggestionsMap = {};
+        suggestions.forEach(s => {
+          suggestionsMap[s.transaction_id] = s.suggested_category_account_id;
+        });
+        setCategorySuggestions(prev => ({ ...prev, ...suggestionsMap }));
+      }
+    };
+
+    loadExistingSuggestions();
+  }, [transactions.length, activeProfile?.id]);
+
+  React.useEffect(() => {
     const fetchAISuggestions = async () => {
       if (!activeProfile?.id || transactions.length === 0) return;
 
@@ -502,7 +525,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (uncategorizedTransactions.length === 0) return;
 
       const newSuggestions = await aiCategorizationApi.getSuggestionsForTransactions(
-        uncategorizedTransactions
+        uncategorizedTransactions,
+        activeProfile.id
       );
 
       uncategorizedTransactions.forEach(txn => {
@@ -2368,6 +2392,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 <div className="flex-1 min-w-0">
                                   <CategoryDropdown
                                     value={transaction.category_account_id || categorySuggestions[transaction.id]}
+                                    aiSuggestion={categorySuggestions[transaction.id]}
                                     onValueChange={async (value) => {
                                       if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                       const categoryValue = value === '' ? null : value;

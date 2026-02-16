@@ -1,4 +1,5 @@
 import { firstsavvy } from './firstsavvyClient';
+import { saveAiCategorySuggestions } from './aiCategorySuggestions';
 
 export const aiCategorizationApi = {
   /**
@@ -28,10 +29,11 @@ export const aiCategorizationApi = {
   },
 
   /**
-   * Get AI suggestions for multiple transactions
+   * Get AI suggestions for multiple transactions and save them to database
    */
-  async getSuggestionsForTransactions(transactions) {
+  async getSuggestionsForTransactions(transactions, profileId) {
     const suggestions = {};
+    const suggestionsToSave = [];
 
     // Only get suggestions for uncategorized transactions
     const uncategorizedTransactions = transactions.filter(
@@ -48,9 +50,20 @@ export const aiCategorizationApi = {
           const suggestion = await this.getSuggestion(txn);
           if (suggestion) {
             suggestions[txn.id] = suggestion.categoryId;
+
+            suggestionsToSave.push({
+              transaction_id: txn.id,
+              suggested_category_account_id: suggestion.categoryId,
+              confidence_score: suggestion.confidence || 0.8,
+              profile_id: profileId
+            });
           }
         })
       );
+    }
+
+    if (suggestionsToSave.length > 0) {
+      await saveAiCategorySuggestions(suggestionsToSave, profileId);
     }
 
     return suggestions;

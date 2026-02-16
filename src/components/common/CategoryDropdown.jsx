@@ -12,6 +12,7 @@ export default function CategoryDropdown({
   onValueChange,
   transactionType = 'expense',
   aiSuggestionId,
+  aiSuggestion,
   disabled = false,
   onAddNew,
   triggerClassName = "h-7 border-slate-300",
@@ -61,7 +62,8 @@ export default function CategoryDropdown({
   }
 
   const allAccounts = [...incomeAccounts, ...expenseAccounts];
-  const suggestedAccount = aiSuggestionId ? allAccounts.find(a => a.id === aiSuggestionId) : null;
+  const effectiveAiSuggestion = aiSuggestion || aiSuggestionId;
+  const suggestedAccount = effectiveAiSuggestion ? allAccounts.find(a => a.id === effectiveAiSuggestion) : null;
 
   const handleOpenChange = (open) => {
     setIsOpen(open);
@@ -191,7 +193,7 @@ export default function CategoryDropdown({
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Income
           </div>
-          {incomeHierarchy.filter(acc => acc.id !== aiSuggestionId).map((parent) => {
+          {incomeHierarchy.filter(acc => acc.id !== effectiveAiSuggestion).map((parent) => {
             const displayName = getDisplayName(parent);
             const IconComponent = getIconComponent(parent.icon);
             return (
@@ -207,7 +209,7 @@ export default function CategoryDropdown({
                   />
                   <span className="truncate flex-1">{displayName}</span>
                 </ClickThroughSelectItem>
-                {parent.children && parent.children.length > 0 && parent.children.filter(child => child.id !== aiSuggestionId).map((child) => {
+                {parent.children && parent.children.length > 0 && parent.children.filter(child => child.id !== effectiveAiSuggestion).map((child) => {
                   const childDisplayName = getDisplayName(child);
                   const ChildIcon = getIconComponent(child.icon);
                   return (
@@ -236,7 +238,7 @@ export default function CategoryDropdown({
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Expenses
           </div>
-          {expenseHierarchy.filter(acc => acc.id !== aiSuggestionId).map((parent) => {
+          {expenseHierarchy.filter(acc => acc.id !== effectiveAiSuggestion).map((parent) => {
             const displayName = getDisplayName(parent);
             const IconComponent = getIconComponent(parent.icon);
             return (
@@ -252,7 +254,7 @@ export default function CategoryDropdown({
                   />
                   <span className="truncate flex-1">{displayName}</span>
                 </ClickThroughSelectItem>
-                {parent.children && parent.children.length > 0 && parent.children.filter(child => child.id !== aiSuggestionId).map((child) => {
+                {parent.children && parent.children.length > 0 && parent.children.filter(child => child.id !== effectiveAiSuggestion).map((child) => {
                   const childDisplayName = getDisplayName(child);
                   const ChildIcon = getIconComponent(child.icon);
                   return (
