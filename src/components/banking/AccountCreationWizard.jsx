@@ -645,11 +645,11 @@ export default function AccountCreationWizard({
     transactionsInRange.forEach(txn => {
       if (isLiability) {
         if (txn.type === 'expense') {
-          calculatedBeginningBalance -= txn.amount;
+          calculatedBeginningBalance += txn.amount;
           totalExpenses += txn.amount;
           expenseCount++;
         } else if (txn.type === 'income') {
-          calculatedBeginningBalance += txn.amount;
+          calculatedBeginningBalance -= txn.amount;
           totalIncome += txn.amount;
           incomeCount++;
         }
