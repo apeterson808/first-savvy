@@ -125,6 +125,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [ruleMode, setRuleMode] = useState('create');
   const [editJournalEntryDialogOpen, setEditJournalEntryDialogOpen] = useState(false);
   const [editingJournalEntryId, setEditingJournalEntryId] = useState(null);
+  const [autoCategorizing, setAutoCategorizing] = useState(false);
+  const [autoCategorizeProgress, setAutoCategorizeProgress] = useState({ current: 0, total: 0, categorized: 0, skipped: 0 });
+  const [autoCategorizeAbortController, setAutoCategorizeAbortController] = useState(null);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -486,8 +489,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!activeProfile?.id || transactions.length === 0) return;
 
       const uncategorizedTransactions = transactions
-        .filter(txn => !txn.category_account_id && txn.type !== 'transfer')
-        .slice(0, 20);
+        .filter(txn => !txn.category_account_id && txn.type !== 'transfer');
 
       if (uncategorizedTransactions.length === 0) return;
 
@@ -579,8 +581,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
 
       const transactionsNeedingContacts = transactions
-        .filter(txn => !txn.contact_id && txn.type !== 'transfer' && txn.description)
-        .slice(0, 20);
+        .filter(txn => !txn.contact_id && txn.type !== 'transfer' && txn.description);
 
       if (transactionsNeedingContacts.length === 0) return;
 
@@ -734,6 +735,92 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   });
 
+  const handleAutoCategorizeAll = async () => {
+    const uncategorizedTransactions = transactions
+      .filter(txn => !txn.category_account_id && txn.type !== 'transfer' && activeAccountIds.includes(txn.bank_account_id))
+      .sort((a, b) => {
+        const dateB = new Date(b.date);
+        const dateA = new Date(a.date);
+        if (dateB.getTime() !== dateA.getTime()) {
+          return dateB - dateA;
+        }
+        return b.id.localeCompare(a.id);
+      });
+
+    if (uncategorizedTransactions.length === 0) {
+      toast.info('No uncategorized transactions found');
+      return;
+    }
+
+    setAutoCategorizing(true);
+    setAutoCategorizeProgress({ current: 0, total: uncategorizedTransactions.length, categorized: 0, skipped: 0 });
+
+    const abortController = new AbortController();
+    setAutoCategorizeAbortController(abortController);
+
+    let categorizedCount = 0;
+    let skippedCount = 0;
+
+    try {
+      const batchSize = 10;
+      for (let i = 0; i < uncategorizedTransactions.length; i += batchSize) {
+        if (abortController.signal.aborted) {
+          toast.info('Auto-categorization stopped');
+          break;
+        }
+
+        const batch = uncategorizedTransactions.slice(i, i + batchSize);
+
+        await Promise.all(
+          batch.map(async (txn, batchIndex) => {
+            if (abortController.signal.aborted) return;
+
+            const currentIndex = i + batchIndex;
+            setAutoCategorizeProgress(prev => ({ ...prev, current: currentIndex + 1 }));
+
+            try {
+              const suggestion = await aiCategorizationApi.getSuggestion(txn);
+
+              if (suggestion?.categoryId) {
+                await firstsavvy.entities.Transaction.update(txn.id, {
+                  category_account_id: suggestion.categoryId
+                });
+                categorizedCount++;
+                setAutoCategorizeProgress(prev => ({ ...prev, categorized: categorizedCount }));
+              } else {
+                skippedCount++;
+                setAutoCategorizeProgress(prev => ({ ...prev, skipped: skippedCount }));
+              }
+            } catch (error) {
+              console.error(`Failed to categorize transaction ${txn.id}:`, error);
+              skippedCount++;
+              setAutoCategorizeProgress(prev => ({ ...prev, skipped: skippedCount }));
+            }
+          })
+        );
+      }
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
+
+      if (!abortController.signal.aborted) {
+        toast.success(`Auto-categorization complete! Categorized ${categorizedCount} transactions, skipped ${skippedCount}`);
+      }
+    } catch (error) {
+      console.error('Auto-categorization error:', error);
+      toast.error('Failed to auto-categorize transactions');
+    } finally {
+      setAutoCategorizing(false);
+      setAutoCategorizeAbortController(null);
+    }
+  };
+
+  const handleStopAutoCategorize = () => {
+    if (autoCategorizeAbortController) {
+      autoCategorizeAbortController.abort();
+    }
+  };
 
   const getDateRange = () => {
     const today = new Date();
@@ -1719,11 +1806,57 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         Detect Transfers
                       </ClickThroughDropdownMenuItem>
                     )}
+                    <ClickThroughDropdownMenuItem
+                      onClick={handleAutoCategorizeAll}
+                      disabled={autoCategorizing}
+                    >
+                      Auto-Categorize All
+                    </ClickThroughDropdownMenuItem>
                   </ClickThroughDropdownMenuContent>
                 </ClickThroughDropdownMenu>
               </div>
             </div>
           </div>
+
+          {/* Auto-Categorization Progress */}
+          {autoCategorizing && (
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  <span className="text-sm font-medium text-blue-900">
+                    Auto-categorizing transactions...
+                  </span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleStopAutoCategorize}
+                  className="h-7 text-xs"
+                >
+                  Stop
+                </Button>
+              </div>
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs text-blue-700">
+                  <span>
+                    Processing {autoCategorizeProgress.current} of {autoCategorizeProgress.total}
+                  </span>
+                  <span>
+                    Categorized: {autoCategorizeProgress.categorized} | Skipped: {autoCategorizeProgress.skipped}
+                  </span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                  <div
+                    className="bg-blue-600 h-full transition-all duration-300"
+                    style={{
+                      width: `${(autoCategorizeProgress.current / autoCategorizeProgress.total) * 100}%`
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
