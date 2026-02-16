@@ -18,7 +18,7 @@ export const contactSuggestionAPI = {
 
     for (const transaction of transactionsNeedingSuggestions) {
       try {
-        const result = await firstsavvy.rpc.aiSuggestContact({
+        const result = await firstsavvy.functions.aiSuggestContact({
           description: transaction.description,
           contacts: contacts.map(c => ({
             id: c.id,
