@@ -2175,7 +2175,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <CategoryDropdown
-                                    value={transaction.category_account_id}
+                                    value={transaction.category_account_id || categorySuggestions[transaction.id]}
                                     onValueChange={async (value) => {
                                       if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                       const categoryValue = value === '' ? null : value;
