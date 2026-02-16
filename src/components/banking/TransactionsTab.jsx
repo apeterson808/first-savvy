@@ -197,7 +197,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     if (transaction && transaction.is_split) {
       try {
         await deleteTransactionSplits(transactionId);
-        queryClient.invalidateQueries(['transactions']);
+        queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+        queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+        queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
         toast.success('Split removed');
       } catch (error) {
         console.error('Error removing split:', error);
@@ -3943,7 +3945,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }}
                             entryId={editingJournalEntryId}
                             onSuccess={() => {
-                              queryClient.invalidateQueries(['transactions']);
+                              queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+                              queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+                              queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
                               queryClient.invalidateQueries(['accounts']);
                               queryClient.invalidateQueries(['journal-entries']);
                             }}

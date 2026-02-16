@@ -1027,7 +1027,10 @@ export default function AccountCreationWizard({
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
       onAccountCreated?.({ type: newAccount.account_type, account: newAccount });
       onOpenChange(false);
       setTimeout(() => {
@@ -3686,7 +3689,10 @@ export default function AccountCreationWizard({
                         }
 
                         queryClient.invalidateQueries(['user-chart-accounts']);
-                        queryClient.invalidateQueries(['transactions']);
+                        queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+                        queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+                        queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
+                        queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
                         toast.dismiss();
                         toast.success(`Successfully imported ${selectedAccounts.length} accounts with ${totalTransactions} transactions!`);
                         onOpenChange(false);

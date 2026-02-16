@@ -273,7 +273,9 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     },
     onSuccess: async (newRule) => {
       queryClient.invalidateQueries(['transaction-rules']);
-      queryClient.invalidateQueries(['transactions']);
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       onOpenChange(false);
       resetForm();
       toast.success('Rule created and automatically applied to matching transactions!');
