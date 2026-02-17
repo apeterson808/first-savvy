@@ -548,9 +548,6 @@ export default function AccountCreationWizard({
       setSelectedCard(null);
       setInstitutionSearch('');
       setSelectedInstitution(null);
-    } else if (currentStep === 'manual-entry') {
-      setCurrentStep('connect-bank');
-      setFormData({});
     } else if (currentStep === 'accounts-discovered') {
       setCurrentStep('connect-bank');
       setDiscoveredAccounts([]);
@@ -1357,7 +1354,6 @@ export default function AccountCreationWizard({
     createCategoryMutation.isPending;
 
   const getTotalSteps = () => {
-    if (currentStep === 'manual-entry') return 3;
     if (currentStep === 'select-type') return 5;
     if (!selectedCard) return 5;
     if (currentStep === 'bank-search') return 5;
@@ -1432,9 +1428,6 @@ export default function AccountCreationWizard({
   };
 
   const canProceed = () => {
-    if (currentStep === 'manual-entry') {
-      return formData.name && formData.name.trim();
-    }
     if (currentStep === 'details') {
       if (selectedCard.id === 'banking') {
         return (selectedAccountName && selectedAccountName.trim() &&
@@ -1469,25 +1462,7 @@ export default function AccountCreationWizard({
 
   const handleNext = async () => {
     if (selectedCard.id === 'banking') {
-      if (currentStep === 'manual-entry') {
-        if (!formData.name || !formData.name.trim()) {
-          toast.error('Please enter an account name');
-          return;
-        }
-
-        const balance = parseFloat(formData.beginningBalance) || 0;
-        console.log('Creating account from manual-entry with', mappedTransactions.length, 'mapped transactions');
-        await createAccountMutation.mutateAsync({
-          account_name: formData.name.trim(),
-          account_type: selectedSubtype.value,
-          current_balance: balance,
-          institution_name: formData.institutionName || null,
-          account_number_last4: formData.last4 || null,
-          as_of_date: formData.asOfDate || new Date().toISOString().split('T')[0],
-          is_active: true
-        });
-        return;
-      } else if (currentStep === 'bank-search') {
+      if (currentStep === 'bank-search') {
         setCurrentStep('details');
       } else if (currentStep === 'details') {
         if (!selectedAccountName || !uploadedFile || mappedTransactions.length === 0) {
@@ -1579,297 +1554,37 @@ export default function AccountCreationWizard({
           </CardContent>
         </Card>
 
-        <div className="flex justify-center">
-          <Button
-            onClick={() => setCurrentStep('manual-entry')}
-            className="bg-blue-600 hover:bg-blue-700 rounded-full px-8"
-          >
-            Add Manually
-          </Button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderManualEntryStep = () => {
-    const existingAccounts = userChartAccounts?.filter(acc =>
-      acc.account_detail === (selectedSubtype?.value === 'checking' ? 'checking_account' :
-                              selectedSubtype?.value === 'savings' ? 'savings_account' :
-                              selectedSubtype?.value === 'credit_card' ? 'personal_credit_card' : '') &&
-      acc.is_active === true
-    ) || [];
-
-    return (
-      <div className="space-y-2 max-w-lg mx-auto">
-        <div>
-          <Label htmlFor="accountType" className="text-sm mb-0.5">Account Type*</Label>
-          <div className="flex gap-2">
-            <Select
-              value={selectedSubtype?.value}
-              onValueChange={(value) => {
-                const subtype = selectedCard.subtypes.find(st => st.value === value);
-                setSelectedSubtype(subtype);
-                setFormData({ ...formData, subtype: value });
-              }}
-            >
-              <SelectTrigger className="h-8 flex-1 text-sm">
-                <SelectValue placeholder="Select account type" />
-              </SelectTrigger>
-              <SelectContent position="popper" sideOffset={5}>
-                {selectedCard.subtypes.map(subtype => (
-                  <SelectItem key={subtype.value} value={subtype.value}>
-                    {subtype.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setShowBalanceImportDialog(true);
-                      setBalanceImportStep('upload');
-                      setBalanceProcessedData(null);
-                    }}
-                    className="h-8 px-2"
+        <div className="text-center">
+          <p className="text-xs text-slate-500 mb-3">Add Manually</p>
+          <div className="grid grid-cols-3 gap-4 max-w-md mx-auto">
+            {selectedCard.subtypes.map(subtype => {
+              const IconComponent = subtype.icon || selectedCard.icon;
+              return (
+                <div
+                  key={subtype.value}
+                  className="flex flex-col items-center cursor-pointer transition-all hover:scale-105"
+                  onClick={() => {
+                    setSelectedSubtype(subtype);
+                    setFormData({ subtype: subtype.value });
+                    setCurrentStep('details');
+                  }}
+                >
+                  <div
+                    className="rounded-[22%] w-20 h-20 flex items-center justify-center shadow-lg hover:shadow-xl transition-all mb-2"
+                    style={{ backgroundColor: selectedCard.bgColor }}
                   >
-                    <Upload className="w-3.5 h-3.5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="text-xs">Upload CSV statement to automatically fill date fields</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-        </div>
-
-        <div>
-          <Label htmlFor="displayName" className="text-sm mb-0.5">Display Name*</Label>
-          <div className="relative">
-            <Input
-              id="displayName"
-              value={formData.name || ''}
-              onChange={(e) => updateFormData('name', e.target.value)}
-              placeholder="e.g., My Checking Account"
-              className="h-8 text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <div>
-            <Label htmlFor="institutionName" className="text-sm mb-0.5">Bank/Institution</Label>
-            <Input
-              id="institutionName"
-              value={formData.institutionName || ''}
-              onChange={(e) => updateFormData('institutionName', e.target.value)}
-              placeholder="e.g., Chase"
-              className="h-8 text-sm"
-            />
-          </div>
-          <div>
-            <Label htmlFor="last4" className="text-sm mb-0.5">Last 4 Digits</Label>
-            <Input
-              id="last4"
-              value={formData.last4 || ''}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 4);
-                updateFormData('last4', value);
-              }}
-              placeholder="1234"
-              maxLength={4}
-              className="h-8 text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <div>
-            <Label htmlFor="beginningBalance" className="text-sm mb-0.5">Beginning Balance</Label>
-            <Input
-              id="beginningBalance"
-              type="text"
-              value={formData.beginningBalance !== undefined ? formData.beginningBalance : '0.00'}
-              readOnly
-              placeholder="0.00"
-              className="h-8 text-sm bg-slate-100 cursor-not-allowed"
-            />
-            <p className="text-xs text-slate-500 mt-0.5">Calculated automatically from ending balance</p>
-          </div>
-          <div>
-            <Label htmlFor="asOfDate" className="text-sm mb-0.5">As of Date</Label>
-            <Input
-              id="asOfDate"
-              type="date"
-              value={formData.asOfDate || new Date().toISOString().split('T')[0]}
-              onChange={(e) => {
-                updateFormData('asOfDate', e.target.value);
-                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
-              }}
-              className="h-8 text-sm"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2.5">
-          <div>
-            <Label htmlFor="endingBalance" className="text-sm mb-0.5">Ending Balance</Label>
-            <Input
-              id="endingBalance"
-              type="text"
-              value={formData.endingBalance !== undefined ? formData.endingBalance : '0.00'}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9.-]/g, '');
-                updateFormData('endingBalance', value);
-                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
-              }}
-              onBlur={(e) => {
-                const value = parseFloat(e.target.value) || 0;
-                updateFormData('endingBalance', value.toFixed(2));
-                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
-              }}
-              placeholder="0.00"
-              className="h-8 text-sm"
-            />
-          </div>
-          <div>
-            <Label htmlFor="endingDate" className="text-sm mb-0.5">Ending Date</Label>
-            <Input
-              id="endingDate"
-              type="date"
-              value={formData.endingDate || new Date().toISOString().split('T')[0]}
-              onChange={(e) => {
-                updateFormData('endingDate', e.target.value);
-                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
-              }}
-              className="h-8 text-sm"
-            />
-          </div>
-        </div>
-
-        {!csvHadBalanceColumn && mappedTransactions && mappedTransactions.length > 0 && (
-          <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3">
-            <div className="flex items-center gap-2">
-              <Info className="w-4 h-4 text-amber-600 flex-shrink-0" />
-              <div className="text-sm text-amber-900">
-                <span className="font-medium">Auto-calculation active: </span>
-                <span className="text-amber-700">Beginning balance will be calculated from ending balance and transactions</span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {calculationDiagnostics && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50/50">
-            <button
-              type="button"
-              onClick={() => setShowDiagnostics(!showDiagnostics)}
-              className="w-full flex items-center justify-between p-3 hover:bg-blue-100/50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <span className="font-medium text-sm text-blue-900">Calculation Breakdown</span>
-                <span className="text-xs text-blue-600">
-                  ({calculationDiagnostics.transactionCount} transactions)
-                </span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-blue-600 transition-transform ${showDiagnostics ? 'rotate-180' : ''}`} />
-            </button>
-
-            {showDiagnostics && (
-              <div className="p-4 pt-0 space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="space-y-1">
-                    <div className="text-blue-700 font-medium">Date Range</div>
-                    <div className="text-blue-900">{calculationDiagnostics.dateRange.startDate} to {calculationDiagnostics.dateRange.endDate}</div>
+                    <IconComponent className={`w-10 h-10 ${selectedCard.iconColor}`} strokeWidth={2} />
                   </div>
-
-                  <div className="space-y-1">
-                    <div className="text-blue-700 font-medium">Transactions Found</div>
-                    <div className="text-blue-900">{calculationDiagnostics.transactionCount} total</div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-blue-700 font-medium">Charges (Expenses)</div>
-                    <div className="text-blue-900">{calculationDiagnostics.expenseCount} transactions = ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="text-blue-700 font-medium">Payments (Income)</div>
-                    <div className="text-blue-900">{calculationDiagnostics.incomeCount} transactions = ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
-                  </div>
+                  <span className="text-xs font-medium text-gray-700 text-center leading-tight max-w-[80px]">{subtype.label}</span>
                 </div>
-
-                <div className="border-t border-blue-200 pt-3 space-y-2">
-                  <div className="text-sm font-mono text-blue-900">
-                    {calculationDiagnostics.isLiability ? (
-                      <>
-                        <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
-                        <div>- Charges: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
-                        <div>+ Payments: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
-                      </>
-                    ) : (
-                      <>
-                        <div>Ending Balance: ${calculationDiagnostics.endingBalance.toFixed(2)}</div>
-                        <div>+ Expenses: ${calculationDiagnostics.totalExpenses.toFixed(2)}</div>
-                        <div>- Income: ${calculationDiagnostics.totalIncome.toFixed(2)}</div>
-                      </>
-                    )}
-                    <div className="border-t border-blue-300 mt-2 pt-2 font-bold">
-                      = Beginning Balance: ${calculationDiagnostics.calculatedBeginningBalance.toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+              );
+            })}
           </div>
-        )}
-
-        {balanceData && (
-          <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Info className="w-4 h-4 text-blue-600 flex-shrink-0" />
-                <div>
-                  <span className="text-sm font-medium text-slate-700">
-                    {balanceData.fileName}
-                  </span>
-                  <div className="text-xs text-slate-600">
-                    Beginning: {balanceData.beginningDate}
-                    {balanceData.beginningBalance !== undefined && ` ($${balanceData.beginningBalance.toFixed(2)})`}
-                    {' • '}
-                    Ending: {balanceData.endingDate}
-                    {balanceData.endingBalance !== undefined && ` ($${balanceData.endingBalance.toFixed(2)})`}
-                  </div>
-                </div>
-              </div>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setBalanceData(null);
-                  updateFormData('asOfDate', new Date().toISOString().split('T')[0]);
-                  updateFormData('endingDate', new Date().toISOString().split('T')[0]);
-                  updateFormData('beginningBalance', '0.00');
-                  updateFormData('endingBalance', '0.00');
-                }}
-                className="h-7 text-xs"
-              >
-                <X className="w-3 h-3 mr-1" />
-                Remove
-              </Button>
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     );
   };
+
 
   const renderAccountsDiscovered = () => {
     const AccountTypeDetailSelector = ({ accountId, config }) => {
@@ -2316,26 +2031,12 @@ export default function AccountCreationWizard({
       return (
         <div className="space-y-4 max-w-lg mx-auto">
           <div>
-            <Label htmlFor="accountType">Account Type*</Label>
-            <Select
-              value={selectedSubtype?.value}
-              onValueChange={(value) => {
-                const subtype = selectedCard.subtypes.find(st => st.value === value);
-                setSelectedSubtype(subtype);
-                setFormData({ ...formData, subtype: value });
-              }}
-            >
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Select account type" />
-              </SelectTrigger>
-              <SelectContent>
-                {selectedCard.subtypes.map(subtype => (
-                  <SelectItem key={subtype.value} value={subtype.value}>
-                    {subtype.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Account Type</Label>
+            <div className="flex items-center h-9 px-3 bg-slate-50 border border-slate-200 rounded-md">
+              <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
+                {selectedSubtype?.label || 'Unknown'}
+              </Badge>
+            </div>
           </div>
 
           <div>
@@ -3358,8 +3059,6 @@ export default function AccountCreationWizard({
         return renderSelectType();
       case 'connect-bank':
         return renderConnectBankStep();
-      case 'manual-entry':
-        return renderManualEntryStep();
       case 'accounts-discovered':
         return renderAccountsDiscovered();
       case 'select-subtype':
@@ -3382,7 +3081,6 @@ export default function AccountCreationWizard({
   const getStepTitle = () => {
     if (currentStep === 'select-type') return 'Select Account Type';
     if (currentStep === 'connect-bank') return 'Connect Your Bank';
-    if (currentStep === 'manual-entry') return 'Create Account';
     if (currentStep === 'accounts-discovered') return 'Select Accounts to Import';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
@@ -3407,13 +3105,13 @@ export default function AccountCreationWizard({
     <>
       {renderConnectionModal()}
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank' || currentStep === 'manual-entry') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[300px]' : currentStep === 'manual-entry' ? 'h-[450px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'connect-bank' || currentStep === 'accounts-discovered' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'accounts-discovered' ? 'h-[500px]' : currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-2.5 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
 
-            <div className={`${currentStep === 'manual-entry' ? 'py-2.5 px-4' : 'py-4 px-4'} flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`}>
+            <div className={`py-4 px-4 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`}>
               {renderCurrentStep()}
             </div>
 
@@ -3431,27 +3129,6 @@ export default function AccountCreationWizard({
                 </Button>
 
                 {currentStep === 'connect-bank' && <div />}
-
-                {currentStep === 'manual-entry' && (
-                  <Button
-                    type="button"
-                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                    onClick={handleNext}
-                    disabled={!canProceed() || isLoading}
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                        Creating Account...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="w-4 h-4 mr-1" />
-                        Create Account
-                      </>
-                    )}
-                  </Button>
-                )}
 
                 {currentStep === 'bank-search' && <div />}
 
