@@ -506,12 +506,29 @@ export default function AccountCreationWizard({
   useEffect(() => {
     if ((currentStep === 'bank-info' || currentStep === 'details') && selectedSubtype?.value === 'credit_card' && formData.endingBalance && mappedTransactions.length > 0) {
       const endingBalance = parseFloat(formData.endingBalance) || 0;
+      const beginningDate = formData.beginningBalanceDate;
+      const endingDate = formData.endingBalanceDate;
+
+      // Filter transactions within the date range if dates are available
+      let transactionsToCalculate = mappedTransactions;
+      if (beginningDate && endingDate) {
+        const startDate = new Date(beginningDate);
+        const endDate = new Date(endingDate);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        transactionsToCalculate = mappedTransactions.filter(txn => {
+          const txnDate = new Date(txn.date);
+          txnDate.setHours(0, 0, 0, 0);
+          return txnDate >= startDate && txnDate <= endDate;
+        });
+      }
 
       // Calculate total charges and payments
       let totalCharges = 0;
       let totalPayments = 0;
 
-      mappedTransactions.forEach(txn => {
+      transactionsToCalculate.forEach(txn => {
         if (txn.type === 'expense') {
           totalCharges += txn.amount;
         } else if (txn.type === 'income') {
@@ -523,7 +540,7 @@ export default function AccountCreationWizard({
       const beginningBalance = endingBalance + totalCharges - totalPayments;
       updateFormData('beginningBalance', beginningBalance.toFixed(2));
     }
-  }, [formData.endingBalance, currentStep, selectedSubtype?.value, mappedTransactions]);
+  }, [formData.endingBalance, formData.beginningBalanceDate, formData.endingBalanceDate, currentStep, selectedSubtype?.value, mappedTransactions]);
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
@@ -868,11 +885,23 @@ export default function AccountCreationWizard({
       if (formData.endingBalance) {
         const endingBalance = parseFloat(formData.endingBalance) || 0;
 
+        // Filter transactions within the date range
+        const startDate = new Date(dateRange.startDate);
+        const endDate = new Date(dateRange.endDate);
+        startDate.setHours(0, 0, 0, 0);
+        endDate.setHours(23, 59, 59, 999);
+
+        const transactionsInRange = transactions.filter(txn => {
+          const txnDate = new Date(txn.date);
+          txnDate.setHours(0, 0, 0, 0);
+          return txnDate >= startDate && txnDate <= endDate;
+        });
+
         // Calculate total charges and payments
         let totalCharges = 0;
         let totalPayments = 0;
 
-        transactions.forEach(txn => {
+        transactionsInRange.forEach(txn => {
           if (txn.type === 'expense') {
             totalCharges += txn.amount;
           } else if (txn.type === 'income') {
