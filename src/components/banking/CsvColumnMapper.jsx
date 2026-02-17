@@ -216,33 +216,30 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const optionalFieldsMapped = autoDetectedFields.filter(f => f === 'type' || f === 'category').length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {autoDetectedFields.length > 0 && (
-        <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
+        <div className="bg-emerald-50/80 border border-emerald-200 rounded-lg p-3.5">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1">
-              <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center flex-shrink-0">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-              </div>
-              <div className="flex-1 min-w-0 pt-0.5">
-                <p className="text-sm text-emerald-900 font-semibold mb-1">
-                  {savedMappingLoaded ? 'Loaded saved mapping' : `Auto-detected ${autoDetectedFields.length} field${autoDetectedFields.length !== 1 ? 's' : ''}`} ({csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found)
+            <div className="flex items-start gap-2.5 flex-1">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-emerald-900 font-medium">
+                  {savedMappingLoaded ? 'Loaded saved mapping' : `Auto-detected ${autoDetectedFields.length} field${autoDetectedFields.length !== 1 ? 's' : ''}`} • {csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found
                 </p>
-                <p className="text-xs text-emerald-700 leading-relaxed">
+                <p className="text-xs text-emerald-700 mt-0.5">
                   {savedMappingLoaded ? `Using your previous configuration for ${institutionName || 'this bank'}. ` : ''}
                   {requiredFieldsMapped ? 'Required fields mapped successfully. ' : 'Some required fields need attention. '}
-                  {optionalFieldsMapped > 0 && `Found ${optionalFieldsMapped} optional field${optionalFieldsMapped !== 1 ? 's' : ''}. `}
                   You can change any mapping if needed.
                 </p>
               </div>
             </div>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
               onClick={handleResetToAutoDetect}
-              className="h-8 text-xs flex-shrink-0 border-emerald-300 hover:bg-emerald-100"
+              className="h-7 text-xs flex-shrink-0 hover:bg-emerald-100"
             >
-              <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+              <RotateCcw className="w-3 h-3 mr-1" />
               Re-detect
             </Button>
           </div>
@@ -250,17 +247,16 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       )}
 
       {/* Column Mappings */}
-      <Card className="p-5 bg-slate-50/50 border-slate-200">
-        <h3 className="text-sm font-semibold text-slate-900 mb-4">Column Mapping</h3>
-        <div className="space-y-4">
+      <div className="space-y-3.5">
+        <div className="grid grid-cols-2 gap-3">
           {/* Date */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Label className="text-sm font-medium text-slate-700">Date Column *</Label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Label className="text-xs font-medium text-slate-700">Date Column *</Label>
               {autoDetectedFields.includes('date') && (
-                <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Auto-detected
+                <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  Auto
                 </Badge>
               )}
             </div>
@@ -268,7 +264,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               value={columnMappings.date}
               onValueChange={(val) => setColumnMappings(prev => ({ ...prev, date: val }))}
               placeholder="Select date column"
-              triggerClassName="h-10 bg-white"
+              triggerClassName="h-9 text-sm bg-white"
             >
               {headers.map((header, idx) => (
                 <ClickThroughSelectItem key={idx} value={header}>
@@ -280,12 +276,12 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
           {/* Description */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Label className="text-sm font-medium text-slate-700">Description Column *</Label>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Label className="text-xs font-medium text-slate-700">Description Column *</Label>
               {autoDetectedFields.includes('description') && (
-                <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                  <Sparkles className="w-3 h-3 mr-1" />
-                  Auto-detected
+                <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  Auto
                 </Badge>
               )}
             </div>
@@ -293,7 +289,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               value={columnMappings.description}
               onValueChange={(val) => setColumnMappings(prev => ({ ...prev, description: val }))}
               placeholder="Select description column"
-              triggerClassName="h-10 bg-white"
+              triggerClassName="h-9 text-sm bg-white"
             >
               {headers.map((header, idx) => (
                 <ClickThroughSelectItem key={idx} value={header}>
@@ -302,88 +298,41 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               ))}
             </ClickThroughSelect>
           </div>
+        </div>
 
-          {/* Amount Type */}
-          <div>
-            <Label className="text-sm font-medium text-slate-700 mb-2 block">Amount Structure *</Label>
-            <ClickThroughSelect
-              value={amountType}
-              onValueChange={setAmountType}
-              triggerClassName="h-10 bg-white"
-            >
-              <ClickThroughSelectItem value="auto">Single Amount Column (auto-detect type)</ClickThroughSelectItem>
-              <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit Columns</ClickThroughSelectItem>
-              <ClickThroughSelectItem value="always_expense">Single Amount (all expenses)</ClickThroughSelectItem>
-              <ClickThroughSelectItem value="always_income">Single Amount (all income)</ClickThroughSelectItem>
-            </ClickThroughSelect>
-          </div>
+        {/* Amount Type */}
+        <div>
+          <Label className="text-xs font-medium text-slate-700 mb-1.5 block">Amount Structure *</Label>
+          <ClickThroughSelect
+            value={amountType}
+            onValueChange={setAmountType}
+            triggerClassName="h-9 text-sm bg-white"
+          >
+            <ClickThroughSelectItem value="auto">Single Column (auto-detect)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="always_expense">Single Column (all expenses)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="always_income">Single Column (all income)</ClickThroughSelectItem>
+          </ClickThroughSelect>
+        </div>
 
-          {/* Amount Column(s) */}
-          {amountType === 'separate_columns' ? (
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Label className="text-sm font-medium text-slate-700">Debit/Expense *</Label>
-                  {debitColumn && amountType === 'separate_columns' && (
-                    <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Auto-detected
-                    </Badge>
-                  )}
-                </div>
-                <ClickThroughSelect
-                  value={debitColumn}
-                  onValueChange={setDebitColumn}
-                  placeholder="Select debit column"
-                  triggerClassName="h-10 bg-white"
-                >
-                  {headers.map((header, idx) => (
-                    <ClickThroughSelectItem key={idx} value={header}>
-                      {header}
-                    </ClickThroughSelectItem>
-                  ))}
-                </ClickThroughSelect>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Label className="text-sm font-medium text-slate-700">Credit/Income *</Label>
-                  {creditColumn && amountType === 'separate_columns' && (
-                    <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Auto-detected
-                    </Badge>
-                  )}
-                </div>
-                <ClickThroughSelect
-                  value={creditColumn}
-                  onValueChange={setCreditColumn}
-                  placeholder="Select credit column"
-                  triggerClassName="h-10 bg-white"
-                >
-                  {headers.map((header, idx) => (
-                    <ClickThroughSelectItem key={idx} value={header}>
-                      {header}
-                    </ClickThroughSelectItem>
-                  ))}
-                </ClickThroughSelect>
-              </div>
-            </div>
-          ) : (
+        {/* Amount Column(s) */}
+        {amountType === 'separate_columns' ? (
+          <div className="grid grid-cols-2 gap-3">
             <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Label className="text-sm font-medium text-slate-700">Amount Column *</Label>
-                {autoDetectedFields.includes('amount') && (
-                  <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                    <Sparkles className="w-3 h-3 mr-1" />
-                    Auto-detected
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Label className="text-xs font-medium text-slate-700">Debit/Expense *</Label>
+                {debitColumn && amountType === 'separate_columns' && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                    Auto
                   </Badge>
                 )}
               </div>
               <ClickThroughSelect
-                value={columnMappings.amount}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, amount: val }))}
-                placeholder="Select amount column"
-                triggerClassName="h-10 bg-white"
+                value={debitColumn}
+                onValueChange={setDebitColumn}
+                placeholder="Select debit column"
+                triggerClassName="h-9 text-sm bg-white"
               >
                 {headers.map((header, idx) => (
                   <ClickThroughSelectItem key={idx} value={header}>
@@ -392,110 +341,158 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 ))}
               </ClickThroughSelect>
             </div>
-          )}
-
-          <div className="border-t border-slate-200 pt-4 mt-1">
-            <h4 className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wide">Optional Fields</h4>
-            <div className="space-y-4">
-              {/* Optional: Transaction Type */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Label className="text-sm font-medium text-slate-600">Transaction Type Column</Label>
-                  {autoDetectedFields.includes('type') && (
-                    <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Auto-detected
-                    </Badge>
-                  )}
-                </div>
-                <ClickThroughSelect
-                  value={columnMappings.type}
-                  onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
-                  placeholder="Skip if not available"
-                  triggerClassName="h-10 bg-white"
-                >
-                  <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                  {headers.map((header, idx) => (
-                    <ClickThroughSelectItem key={idx} value={header}>
-                      {header}
-                    </ClickThroughSelectItem>
-                  ))}
-                </ClickThroughSelect>
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Label className="text-xs font-medium text-slate-700">Credit/Income *</Label>
+                {creditColumn && amountType === 'separate_columns' && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                    Auto
+                  </Badge>
+                )}
               </div>
+              <ClickThroughSelect
+                value={creditColumn}
+                onValueChange={setCreditColumn}
+                placeholder="Select credit column"
+                triggerClassName="h-9 text-sm bg-white"
+              >
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Label className="text-xs font-medium text-slate-700">Amount Column *</Label>
+              {autoDetectedFields.includes('amount') && (
+                <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  Auto
+                </Badge>
+              )}
+            </div>
+            <ClickThroughSelect
+              value={columnMappings.amount}
+              onValueChange={(val) => setColumnMappings(prev => ({ ...prev, amount: val }))}
+              placeholder="Select amount column"
+              triggerClassName="h-9 text-sm bg-white"
+            >
+              {headers.map((header, idx) => (
+                <ClickThroughSelectItem key={idx} value={header}>
+                  {header}
+                </ClickThroughSelectItem>
+              ))}
+            </ClickThroughSelect>
+          </div>
+        )}
 
-              {/* Optional: Category */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Label className="text-sm font-medium text-slate-600">Category Column</Label>
-                  {autoDetectedFields.includes('category') && (
-                    <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                      <Sparkles className="w-3 h-3 mr-1" />
-                      Auto-detected
-                    </Badge>
-                  )}
-                </div>
-                <ClickThroughSelect
-                  value={columnMappings.category}
-                  onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
-                  placeholder="Skip if not available"
-                  triggerClassName="h-10 bg-white"
-                >
-                  <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                  {headers.map((header, idx) => (
-                    <ClickThroughSelectItem key={idx} value={header}>
-                      {header}
-                    </ClickThroughSelectItem>
-                  ))}
-                </ClickThroughSelect>
+        {/* Optional Fields */}
+        <div className="border-t border-slate-200 pt-3">
+          <h4 className="text-[10px] font-semibold text-slate-500 mb-2.5 uppercase tracking-wider">Optional Fields</h4>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Optional: Transaction Type */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Label className="text-xs font-medium text-slate-600">Transaction Type</Label>
+                {autoDetectedFields.includes('type') && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                    Auto
+                  </Badge>
+                )}
               </div>
+              <ClickThroughSelect
+                value={columnMappings.type}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
+                placeholder="None"
+                triggerClassName="h-9 text-sm bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            {/* Optional: Category */}
+            <div>
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Label className="text-xs font-medium text-slate-600">Category</Label>
+                {autoDetectedFields.includes('category') && (
+                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                    Auto
+                  </Badge>
+                )}
+              </div>
+              <ClickThroughSelect
+                value={columnMappings.category}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
+                placeholder="None"
+                triggerClassName="h-9 text-sm bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
             </div>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Preview */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-3">Preview</h3>
+        <h3 className="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Preview</h3>
         <Card className="overflow-hidden border-slate-200">
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-slate-100 border-b border-slate-200">
+              <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   {Object.entries(columnMappings).map(([field, column]) => {
                     if (amountType === 'separate_columns' && field === 'amount') return null;
                     if (!column && field !== 'category' && field !== 'type') return null;
                     return (
-                      <th key={field} className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">
+                      <th key={field} className="px-3 py-2 text-left font-medium text-slate-600 text-xs">
                         {FIELD_LABELS[field]}
                       </th>
                     );
                   })}
                   {amountType === 'separate_columns' && (
                     <>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">Debit</th>
-                      <th className="px-4 py-3 text-left font-semibold text-slate-700 text-xs uppercase tracking-wide">Credit</th>
+                      <th className="px-3 py-2 text-left font-medium text-slate-600 text-xs">Debit</th>
+                      <th className="px-3 py-2 text-left font-medium text-slate-600 text-xs">Credit</th>
                     </>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {sampleRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 transition-colors">
+                  <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
                     {Object.entries(columnMappings).map(([field, column]) => {
                       if (amountType === 'separate_columns' && field === 'amount') return null;
                       if (!column && field !== 'category' && field !== 'type') return null;
                       const cellValue = row[column] || '-';
                       const displayValue = field === 'amount' ? formatAmountValue(cellValue) : cellValue;
                       return (
-                        <td key={field} className="px-4 py-3 text-slate-900">
+                        <td key={field} className="px-3 py-2.5 text-slate-900 text-sm">
                           {displayValue}
                         </td>
                       );
                     })}
                     {amountType === 'separate_columns' && (
                       <>
-                        <td className="px-4 py-3 text-slate-900">{formatAmountValue(row[debitColumn])}</td>
-                        <td className="px-4 py-3 text-slate-900">{formatAmountValue(row[creditColumn])}</td>
+                        <td className="px-3 py-2.5 text-slate-900 text-sm">{formatAmountValue(row[debitColumn])}</td>
+                        <td className="px-3 py-2.5 text-slate-900 text-sm">{formatAmountValue(row[creditColumn])}</td>
                       </>
                     )}
                   </tr>
@@ -508,63 +505,59 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
       {/* Beginning Balance - Only shown on first import and not in balance extraction mode */}
       {isFirstImport && !isBalanceExtraction && (
-        <Card className="p-5 bg-sky-50/50 border-sky-200">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="beginningBalance" className="text-sm font-semibold text-slate-900">
+        <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3.5">
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5">
+              <Label htmlFor="beginningBalance" className="text-xs font-medium text-slate-700">
                 Beginning Balance (Optional)
               </Label>
-              <Badge variant="secondary" className="h-5 px-2 text-[10px] font-normal bg-sky-100 text-sky-700 border-sky-200">
-                <Sparkles className="w-3 h-3 mr-1" />
-                Auto-calculated
+              <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-100 text-blue-700 border-blue-200">
+                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                Auto
               </Badge>
             </div>
-            <div className="space-y-2">
-              <Input
-                id="beginningBalance"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                value={beginningBalance}
-                onChange={(e) => setBeginningBalance(e.target.value)}
-                className="max-w-xs h-10 bg-white"
-              />
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Calculated from your CSV transactions and current account balance. You can adjust if needed.
-              </p>
-            </div>
+            <Input
+              id="beginningBalance"
+              type="number"
+              step="0.01"
+              placeholder="0.00"
+              value={beginningBalance}
+              onChange={(e) => setBeginningBalance(e.target.value)}
+              className="max-w-xs h-9 text-sm bg-white"
+            />
+            <p className="text-xs text-slate-600">
+              Calculated from CSV transactions and current balance. Adjust if needed.
+            </p>
           </div>
-        </Card>
+        </div>
       )}
 
       {/* Validation Warning */}
       {!isValid && (
-        <div className="flex items-center gap-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-          <div className="w-10 h-10 bg-amber-100 rounded-full flex items-center justify-center flex-shrink-0">
-            <AlertCircle className="w-5 h-5 text-amber-600" />
-          </div>
+        <div className="flex items-center gap-2.5 p-3 bg-amber-50/80 border border-amber-200 rounded-lg">
+          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
             <p className="text-sm font-medium text-amber-900">Required fields missing</p>
-            <p className="text-xs text-amber-700 mt-0.5">Please map: Date, Description, and Amount columns</p>
+            <p className="text-xs text-amber-700">Please map: Date, Description, and Amount</p>
           </div>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex justify-between items-center gap-3 pt-2 border-t border-slate-200">
+      <div className="flex justify-between items-center gap-3 pt-3 border-t border-slate-200">
         <Button
           variant="outline"
           onClick={onCancel}
           size="default"
           disabled={isImporting}
-          className="h-10"
+          className="h-9"
         >
           Back
         </Button>
         <Button
           onClick={handleMap}
           disabled={!isValid || isImporting}
-          className="bg-blue-600 hover:bg-blue-700 h-10 px-6"
+          className="bg-blue-600 hover:bg-blue-700 h-9 px-5"
           size="default"
         >
           {isBalanceExtraction

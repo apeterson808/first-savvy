@@ -1686,14 +1686,16 @@ export default function AccountDetail() {
         )}
 
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
+          <DialogContent className="max-w-5xl max-h-[95vh] p-0 gap-0">
+            <DialogHeader className="px-6 pt-6 pb-4 border-b border-slate-200">
+              <DialogTitle className="text-xl font-semibold">
                 {importStep === 'upload' && 'Import Transactions'}
                 {importStep === 'mapping' && 'Map CSV Columns'}
                 {importStep === 'confirm' && 'Confirm Import'}
               </DialogTitle>
             </DialogHeader>
+
+            <div className="overflow-y-auto max-h-[calc(95vh-80px)] px-6 py-6">
 
             {importStep === 'upload' && (
               <div className="space-y-4">
@@ -1786,6 +1788,7 @@ export default function AccountDetail() {
                 </div>
               </div>
             )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
