@@ -2037,15 +2037,6 @@ export default function AccountCreationWizard({
       return (
         <div className="space-y-4 max-w-lg mx-auto">
           <div>
-            <Label>Account Type</Label>
-            <div className="flex items-center h-9 px-3 bg-slate-50 border border-slate-200 rounded-md">
-              <Badge variant="secondary" className="bg-blue-100 text-blue-700 hover:bg-blue-100">
-                {selectedSubtype?.label || 'Unknown'}
-              </Badge>
-            </div>
-          </div>
-
-          <div>
             <Label htmlFor="displayName">Display Name*</Label>
             <div className="relative">
               <AccountCombobox
@@ -2091,17 +2082,47 @@ export default function AccountCreationWizard({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Icon</Label>
-              <IconPicker
-                value={formData.icon || 'Wallet'}
-                onChange={(icon) => updateFormData('icon', icon)}
+              <Label htmlFor="beginningBalanceDate">Beginning Balance Date</Label>
+              <Input
+                id="beginningBalanceDate"
+                type="date"
+                value={formData.beginningBalanceDate || ''}
+                onChange={(e) => updateFormData('beginningBalanceDate', e.target.value)}
+                className="h-9"
               />
             </div>
             <div>
-              <Label>Color</Label>
-              <ColorPicker
-                value={formData.color || '#3b82f6'}
-                onChange={(color) => updateFormData('color', color)}
+              <Label htmlFor="beginningBalance">Beginning Balance</Label>
+              <Input
+                id="beginningBalance"
+                value={formData.beginningBalance || '0.00'}
+                readOnly
+                className="h-9 bg-slate-50 cursor-not-allowed"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="endingBalanceDate">Ending Balance Date</Label>
+              <Input
+                id="endingBalanceDate"
+                type="date"
+                value={formData.endingBalanceDate || ''}
+                onChange={(e) => updateFormData('endingBalanceDate', e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label htmlFor="endingBalance">Ending Balance*</Label>
+              <Input
+                id="endingBalance"
+                type="number"
+                step="0.01"
+                value={formData.endingBalance || ''}
+                onChange={(e) => updateFormData('endingBalance', e.target.value)}
+                placeholder="0.00"
+                className="h-9"
               />
             </div>
           </div>
@@ -3091,7 +3112,12 @@ export default function AccountCreationWizard({
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
     if (currentStep === 'details') {
-      if (selectedCard?.id === 'banking') return 'Account Details';
+      if (selectedCard?.id === 'banking') {
+        if (selectedSubtype?.value === 'checking') return 'Checking Account Details';
+        if (selectedSubtype?.value === 'savings') return 'Savings Account Details';
+        if (selectedSubtype?.value === 'credit_card') return 'Credit Card Details';
+        return 'Account Details';
+      }
       if (selectedCard?.id === 'vehicle') return 'Vehicle Details';
       if (selectedCard?.id === 'property') return 'Property Details';
       if (selectedCard?.id === 'investments') return 'Investment Details';
