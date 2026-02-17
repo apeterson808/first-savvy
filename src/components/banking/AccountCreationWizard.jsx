@@ -2048,7 +2048,7 @@ export default function AccountCreationWizard({
                   setIsExistingAccount(isExisting);
                   updateFormData('name', accountName);
                 }}
-                placeholder="Select existing or type new account name..."
+                placeholder="Enter account name..."
               />
             </div>
           </div>
