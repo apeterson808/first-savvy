@@ -373,6 +373,7 @@ export default function AccountCreationWizard({
   const [selectedCachedAccount, setSelectedCachedAccount] = useState(null);
   const [selectedStatements, setSelectedStatements] = useState([]);
   const [cacheImportMode, setCacheImportMode] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
@@ -1209,6 +1210,149 @@ export default function AccountCreationWizard({
     }
   });
 
+  const handleImportTransactions = async () => {
+    if (!selectedCard || selectedCard.id !== 'banking') return;
+
+    try {
+      setIsImporting(true);
+
+      let accountId;
+      let accountToUse;
+
+      // If importing to existing account
+      if (isExistingAccount) {
+        // Find the existing account
+        const existingAccount = userChartAccounts.find(a => a.id === selectedAccountName);
+        if (!existingAccount) {
+          toast.error('Selected account not found');
+          return;
+        }
+        accountId = existingAccount.id;
+        accountToUse = existingAccount;
+      } else {
+        // Create new account
+        const detailMap = {
+          'checking': 'checking_account',
+          'savings': 'savings_account',
+          'credit_card': 'personal_credit_card',
+        };
+        const accountDetail = detailMap[selectedSubtype.value] || selectedSubtype.value;
+
+        const templateAccount = chartAccounts.find(a => a.account_detail === accountDetail);
+        if (!templateAccount) {
+          throw new Error(`No template found for type: ${accountDetail}`);
+        }
+
+        // Validate beginning balance
+        const beginningBalance = parseFloat(formData.beginningBalance) || 0;
+
+        // Create the account using activateTemplateAccount
+        accountId = await activateTemplateAccount(activeProfile.id, templateAccount.account_number, {
+          customDisplayName: selectedAccountName,
+          initialBalance: beginningBalance,
+          institutionName: formData.institutionName || null,
+          accountNumberLast4: formData.last4 || null,
+          openingBalanceDate: formData.beginningBalanceDate || new Date().toISOString().split('T')[0]
+        });
+
+        // Fetch the newly created account
+        const { data: newAccount, error } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .select()
+          .eq('id', accountId)
+          .single();
+
+        if (error) throw error;
+        accountToUse = newAccount;
+      }
+
+      // Import transactions
+      if (mappedTransactions.length > 0) {
+        const startDate = formData.beginningBalanceDate;
+        const transactionsToImport = startDate
+          ? mappedTransactions.filter(txn => new Date(txn.date) >= new Date(startDate))
+          : mappedTransactions;
+
+        if (transactionsToImport.length > 0) {
+          const transactionsWithAccount = transactionsToImport.map(txn => ({
+            profile_id: activeProfile.id,
+            user_id: user?.id,
+            bank_account_id: accountId,
+            date: txn.date,
+            description: txn.description,
+            original_description: txn.original_description || txn.description,
+            amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
+            type: txn.type,
+            status: 'pending',
+            source: 'csv',
+            include_in_reports: true
+          }));
+
+          const { error: importError } = await firstsavvy
+            .from('transactions')
+            .insert(transactionsWithAccount);
+
+          if (importError) {
+            console.error('Failed to import transactions:', importError);
+            toast.error(`Failed to import ${transactionsToImport.length} transactions`);
+          } else {
+            // Update bank balance if we have an ending balance
+            const endingBalanceValue = parseFloat(formData.endingBalance);
+            if (!isNaN(endingBalanceValue)) {
+              const updateData = {
+                bank_balance: endingBalanceValue,
+                last_synced_at: new Date().toISOString()
+              };
+
+              if (formData.endingBalanceDate) {
+                updateData.last_statement_date = formData.endingBalanceDate;
+              }
+
+              const { error: balanceError } = await firstsavvy
+                .from('user_chart_of_accounts')
+                .update(updateData)
+                .eq('id', accountId);
+
+              if (balanceError) {
+                console.error('Error updating bank balance:', balanceError);
+              }
+            }
+
+            toast.success(
+              isExistingAccount
+                ? `Successfully imported ${transactionsToImport.length} transactions!`
+                : `Account created with ${transactionsToImport.length} transactions imported!`
+            );
+          }
+        } else {
+          toast.warning(`No transactions matched the date filter. ${mappedTransactions.length} transactions were before ${startDate}`);
+        }
+      }
+
+      // Invalidate queries
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['activeAccounts'] });
+
+      onAccountCreated?.({ type: accountToUse.account_type, account: accountToUse });
+      onOpenChange(false);
+
+      setTimeout(() => {
+        navigate(`/Banking/account/${accountId}`);
+      }, 100);
+    } catch (error) {
+      console.error('Error importing transactions:', error);
+      toast.error(error.message || 'Failed to import transactions. Please try again.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!selectedCard || !selectedSubtype) return;
 
@@ -1413,7 +1557,8 @@ export default function AccountCreationWizard({
     createAccountMutation.isPending ||
     createAssetMutation.isPending ||
     createLiabilityMutation.isPending ||
-    createCategoryMutation.isPending;
+    createCategoryMutation.isPending ||
+    isImporting;
 
   const getTotalSteps = () => {
     if (currentStep === 'select-type') return 5;
