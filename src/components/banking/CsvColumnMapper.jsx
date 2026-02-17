@@ -403,7 +403,9 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 <tr>
                   {Object.entries(columnMappings).map(([field, column]) => {
                     if (amountType === 'separate_columns' && field === 'amount') return null;
-                    if (!column && field !== 'category' && field !== 'type') return null;
+                    // Hide type and category columns from preview
+                    if (field === 'category' || field === 'type') return null;
+                    if (!column) return null;
                     return (
                       <th key={field} className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">
                         {FIELD_LABELS[field]}
@@ -423,7 +425,9 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                   <tr key={idx} className="hover:bg-slate-50/30">
                     {Object.entries(columnMappings).map(([field, column]) => {
                       if (amountType === 'separate_columns' && field === 'amount') return null;
-                      if (!column && field !== 'category' && field !== 'type') return null;
+                      // Hide type and category columns from preview
+                      if (field === 'category' || field === 'type') return null;
+                      if (!column) return null;
                       const cellValue = row[column] || '-';
                       const displayValue = field === 'amount' ? formatAmountValue(cellValue) : cellValue;
                       return (
