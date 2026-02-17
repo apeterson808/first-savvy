@@ -378,6 +378,12 @@ export default function AccountCreationWizard({
   const [csvMappingConfig, setCsvMappingConfig] = useState(null);
   const [calculationDiagnostics, setCalculationDiagnostics] = useState(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
+  const [selectedAccountName, setSelectedAccountName] = useState('');
+  const [isExistingAccount, setIsExistingAccount] = useState(false);
+  const [selectedCachedAccount, setSelectedCachedAccount] = useState(null);
+  const [selectedStatements, setSelectedStatements] = useState([]);
+  const [cacheImportMode, setCacheImportMode] = useState(false);
 
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
