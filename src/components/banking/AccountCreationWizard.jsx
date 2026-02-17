@@ -2082,28 +2082,6 @@ export default function AccountCreationWizard({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="beginningBalanceDate">Beginning Balance Date</Label>
-              <Input
-                id="beginningBalanceDate"
-                type="date"
-                value={formData.beginningBalanceDate || ''}
-                onChange={(e) => updateFormData('beginningBalanceDate', e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div>
-              <Label htmlFor="beginningBalance">Beginning Balance</Label>
-              <Input
-                id="beginningBalance"
-                value={formData.beginningBalance || '0.00'}
-                readOnly
-                className="h-9 bg-slate-50 cursor-not-allowed"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
               <Label htmlFor="endingBalanceDate">Ending Balance Date</Label>
               <Input
                 id="endingBalanceDate"
@@ -2124,6 +2102,25 @@ export default function AccountCreationWizard({
                 placeholder="0.00"
                 className="h-9"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="beginningBalanceDate">Beginning Balance Date</Label>
+              <Input
+                id="beginningBalanceDate"
+                type="date"
+                value={formData.beginningBalanceDate || ''}
+                onChange={(e) => updateFormData('beginningBalanceDate', e.target.value)}
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label>Beginning Balance</Label>
+              <div className="text-sm text-muted-foreground mt-2">
+                ${formData.beginningBalance || '0.00'}
+              </div>
             </div>
           </div>
 
