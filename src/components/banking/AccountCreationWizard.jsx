@@ -1703,13 +1703,13 @@ export default function AccountCreationWizard({
               <Label htmlFor="endingBalance">Ending Balance*</Label>
               <Input
                 id="endingBalance"
-                type="text"
-                value={formData.endingBalance ? formatCurrency(parseFloat(formData.endingBalance)) : ''}
+                type="number"
+                step="0.01"
+                value={formData.endingBalance || ''}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9.-]/g, '');
-                  updateFormData('endingBalance', value);
+                  updateFormData('endingBalance', e.target.value);
                 }}
-                placeholder="$0.00"
+                placeholder="0.00"
                 className="h-9"
               />
             </div>
