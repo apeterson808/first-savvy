@@ -644,16 +644,22 @@ export default function AccountCreationWizard({
 
     transactionsInRange.forEach(txn => {
       if (isLiability) {
+        // Working backwards from ending balance for liabilities (credit cards):
+        // - Expense: subtract (you hadn't made that purchase yet, so you owed less)
+        // - Income/Payment: add (you hadn't made that payment yet, so you owed more)
         if (txn.type === 'expense') {
-          calculatedBeginningBalance += txn.amount;
+          calculatedBeginningBalance -= txn.amount;
           totalExpenses += txn.amount;
           expenseCount++;
         } else if (txn.type === 'income') {
-          calculatedBeginningBalance -= txn.amount;
+          calculatedBeginningBalance += txn.amount;
           totalIncome += txn.amount;
           incomeCount++;
         }
       } else {
+        // Working backwards from ending balance for assets (bank accounts):
+        // - Expense: add (you hadn't spent that money yet, so you had more)
+        // - Income: subtract (you hadn't received that money yet, so you had less)
         if (txn.type === 'expense') {
           calculatedBeginningBalance += txn.amount;
           totalExpenses += txn.amount;
@@ -1974,7 +1980,7 @@ export default function AccountCreationWizard({
             startDate,
             isLiability
           );
-          beginningBalance = calculatedBalance.toString();
+          beginningBalance = Math.abs(calculatedBalance).toString();
         }
 
         setAccountConfigurations(prev => ({
@@ -2014,14 +2020,14 @@ export default function AccountCreationWizard({
         if (field === 'startDate' && value) {
           const account = discoveredAccounts.find(acc => acc.id === accountId);
           if (account && account.current_balance !== undefined && account.transactions) {
-            const isLiability = account.type === 'credit_card';
+            const isLiability = updatedConfig[accountId].accountClass === 'liability';
             const calculatedBalance = calculateBeginningBalanceFromCurrent(
               account.current_balance,
               account.transactions,
               value,
               isLiability
             );
-            updatedConfig[accountId].beginningBalance = calculatedBalance.toString();
+            updatedConfig[accountId].beginningBalance = Math.abs(calculatedBalance).toString();
           }
         }
 
