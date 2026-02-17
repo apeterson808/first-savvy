@@ -63,6 +63,7 @@ import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { contactSuggestionAPI } from '@/api/contactSuggestion';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAiCategorySuggestionsForTransactions } from '@/api/aiCategorySuggestions';
+import { getAiContactSuggestionsForTransactions } from '@/api/aiContactSuggestions';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -503,6 +504,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         const suggestionsMap = {};
         suggestions.forEach(s => {
           suggestionsMap[s.transaction_id] = s.suggested_category_account_id;
+          // Mark as fetched so we don't run AI again for these
+          fetchedSuggestionsRef.current.add(s.transaction_id);
         });
         setCategorySuggestions(prev => ({ ...prev, ...suggestionsMap }));
       }
@@ -613,6 +616,30 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   React.useEffect(() => {
+    const loadExistingContactSuggestions = async () => {
+      if (!activeProfile?.id || transactions.length === 0) return;
+
+      const transactionIds = transactions.map(txn => txn.id);
+      const { data: suggestions } = await getAiContactSuggestionsForTransactions(
+        transactionIds,
+        activeProfile.id
+      );
+
+      if (suggestions && suggestions.length > 0) {
+        const suggestionsMap = {};
+        suggestions.forEach(s => {
+          suggestionsMap[s.transaction_id] = s.suggested_contact_id;
+          // Mark as fetched so we don't run AI again for these
+          fetchedContactSuggestionsRef.current.add(s.transaction_id);
+        });
+        setContactSuggestions(prev => ({ ...prev, ...suggestionsMap }));
+      }
+    };
+
+    loadExistingContactSuggestions();
+  }, [transactions.length, activeProfile?.id]);
+
+  React.useEffect(() => {
     const fetchContactSuggestions = async () => {
       if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
 
@@ -628,7 +655,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       const newSuggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
         transactionsNeedingContacts,
-        contacts
+        contacts,
+        activeProfile.id
       );
 
       transactionsNeedingContacts.forEach(txn => {
@@ -2128,10 +2156,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         contact_manually_set: true
                                       }
                                     });
-                                    setContactSuggestions(prev => {
-                                      const { [transaction.id]: _, ...rest } = prev;
-                                      return rest;
-                                    });
+
+                                    // Keep the suggestion in state so it remains visible in the dropdown
+                                    // This allows users to easily revert to the AI suggestion if needed
                                   }}
                                   transactionDescription={transaction.description}
                                   aiSuggestionId={contactSuggestions[transaction.id]}
@@ -2418,10 +2445,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           category_account_id: categoryValue
                                         }
                                       });
-                                      setCategorySuggestions(prev => {
-                                        const { [transaction.id]: _, ...rest } = prev;
-                                        return rest;
-                                      });
+
+                                      // Keep the suggestion in state so it remains visible in the dropdown
+                                      // This allows users to easily revert to the AI suggestion if needed
 
                                       if (categoryValue && activeProfile?.id) {
                                         categorizationMemoryAPI.storeMemory(
