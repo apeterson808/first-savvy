@@ -1703,13 +1703,29 @@ export default function AccountCreationWizard({
               <Label htmlFor="endingBalance">Ending Balance*</Label>
               <Input
                 id="endingBalance"
-                type="number"
-                step="0.01"
-                value={formData.endingBalance || ''}
+                type="text"
+                value={
+                  focusedFields.endingBalance
+                    ? formData.endingBalance || ''
+                    : formData.endingBalance
+                    ? formatCurrency(parseFloat(formData.endingBalance))
+                    : ''
+                }
                 onChange={(e) => {
-                  updateFormData('endingBalance', e.target.value);
+                  const value = e.target.value.replace(/[^0-9.-]/g, '');
+                  updateFormData('endingBalance', value);
                 }}
-                placeholder="0.00"
+                onFocus={() => {
+                  setFocusedFields(prev => ({ ...prev, endingBalance: true }));
+                }}
+                onBlur={() => {
+                  setFocusedFields(prev => ({ ...prev, endingBalance: false }));
+                  const value = formData.endingBalance;
+                  if (value && !isNaN(parseFloat(value))) {
+                    updateFormData('endingBalance', parseFloat(value).toFixed(2));
+                  }
+                }}
+                placeholder="$0.00"
                 className="h-9"
               />
             </div>
