@@ -216,20 +216,20 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
   const optionalFieldsMapped = autoDetectedFields.filter(f => f === 'type' || f === 'category').length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {autoDetectedFields.length > 0 && (
-        <div className="bg-emerald-50/80 border border-emerald-200 rounded-lg p-3.5">
+        <div className="bg-emerald-50/80 border border-emerald-200 rounded-lg p-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2.5 flex-1">
-              <CheckCircle2 className="w-5 h-5 text-emerald-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 flex-1">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-emerald-900 font-medium">
+                <p className="text-xs text-emerald-900 font-medium">
                   {savedMappingLoaded ? 'Loaded saved mapping' : `Auto-detected ${autoDetectedFields.length} field${autoDetectedFields.length !== 1 ? 's' : ''}`} • {csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found
                 </p>
-                <p className="text-xs text-emerald-700 mt-0.5">
-                  {savedMappingLoaded ? `Using your previous configuration for ${institutionName || 'this bank'}. ` : ''}
-                  {requiredFieldsMapped ? 'Required fields mapped successfully. ' : 'Some required fields need attention. '}
-                  You can change any mapping if needed.
+                <p className="text-[11px] text-emerald-700 mt-0.5 leading-tight">
+                  {savedMappingLoaded ? `Using previous config for ${institutionName || 'this bank'}. ` : ''}
+                  {requiredFieldsMapped ? 'Required fields mapped. ' : 'Some fields need attention. '}
+                  You can change mappings as needed.
                 </p>
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               variant="ghost"
               size="sm"
               onClick={handleResetToAutoDetect}
-              className="h-7 text-xs flex-shrink-0 hover:bg-emerald-100"
+              className="h-6 text-[11px] px-2 flex-shrink-0 hover:bg-emerald-100"
             >
               <RotateCcw className="w-3 h-3 mr-1" />
               Re-detect
@@ -247,15 +247,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       )}
 
       {/* Column Mappings */}
-      <div className="space-y-3.5">
-        <div className="grid grid-cols-2 gap-3">
+      <div className="space-y-3">
+        <div className="grid grid-cols-2 gap-2.5">
           {/* Date */}
           <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Label className="text-xs font-medium text-slate-700">Date Column *</Label>
+            <div className="flex items-center gap-1 mb-1">
+              <Label className="text-[11px] font-medium text-slate-700">Date Column *</Label>
               {autoDetectedFields.includes('date') && (
-                <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2 h-2 mr-0.5" />
                   Auto
                 </Badge>
               )}
@@ -264,7 +264,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               value={columnMappings.date}
               onValueChange={(val) => setColumnMappings(prev => ({ ...prev, date: val }))}
               placeholder="Select date column"
-              triggerClassName="h-9 text-sm bg-white"
+              triggerClassName="h-8 text-xs bg-white"
             >
               {headers.map((header, idx) => (
                 <ClickThroughSelectItem key={idx} value={header}>
@@ -276,11 +276,11 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
           {/* Description */}
           <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Label className="text-xs font-medium text-slate-700">Description Column *</Label>
+            <div className="flex items-center gap-1 mb-1">
+              <Label className="text-[11px] font-medium text-slate-700">Description Column *</Label>
               {autoDetectedFields.includes('description') && (
-                <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2 h-2 mr-0.5" />
                   Auto
                 </Badge>
               )}
@@ -289,7 +289,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               value={columnMappings.description}
               onValueChange={(val) => setColumnMappings(prev => ({ ...prev, description: val }))}
               placeholder="Select description column"
-              triggerClassName="h-9 text-sm bg-white"
+              triggerClassName="h-8 text-xs bg-white"
             >
               {headers.map((header, idx) => (
                 <ClickThroughSelectItem key={idx} value={header}>
@@ -302,11 +302,11 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
         {/* Amount Type */}
         <div>
-          <Label className="text-xs font-medium text-slate-700 mb-1.5 block">Amount Structure *</Label>
+          <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Amount Structure *</Label>
           <ClickThroughSelect
             value={amountType}
             onValueChange={setAmountType}
-            triggerClassName="h-9 text-sm bg-white"
+            triggerClassName="h-8 text-xs bg-white"
           >
             <ClickThroughSelectItem value="auto">Single Column (auto-detect)</ClickThroughSelectItem>
             <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit</ClickThroughSelectItem>
@@ -317,13 +317,13 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
         {/* Amount Column(s) */}
         {amountType === 'separate_columns' ? (
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-2.5">
             <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Label className="text-xs font-medium text-slate-700">Debit/Expense *</Label>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-700">Debit/Expense *</Label>
                 {debitColumn && amountType === 'separate_columns' && (
-                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
                     Auto
                   </Badge>
                 )}
@@ -332,7 +332,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 value={debitColumn}
                 onValueChange={setDebitColumn}
                 placeholder="Select debit column"
-                triggerClassName="h-9 text-sm bg-white"
+                triggerClassName="h-8 text-xs bg-white"
               >
                 {headers.map((header, idx) => (
                   <ClickThroughSelectItem key={idx} value={header}>
@@ -342,11 +342,11 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               </ClickThroughSelect>
             </div>
             <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Label className="text-xs font-medium text-slate-700">Credit/Income *</Label>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-700">Credit/Income *</Label>
                 {creditColumn && amountType === 'separate_columns' && (
-                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
                     Auto
                   </Badge>
                 )}
@@ -355,7 +355,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 value={creditColumn}
                 onValueChange={setCreditColumn}
                 placeholder="Select credit column"
-                triggerClassName="h-9 text-sm bg-white"
+                triggerClassName="h-8 text-xs bg-white"
               >
                 {headers.map((header, idx) => (
                   <ClickThroughSelectItem key={idx} value={header}>
@@ -367,11 +367,11 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           </div>
         ) : (
           <div>
-            <div className="flex items-center gap-1.5 mb-1.5">
-              <Label className="text-xs font-medium text-slate-700">Amount Column *</Label>
+            <div className="flex items-center gap-1 mb-1">
+              <Label className="text-[11px] font-medium text-slate-700">Amount Column *</Label>
               {autoDetectedFields.includes('amount') && (
-                <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                  <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2 h-2 mr-0.5" />
                   Auto
                 </Badge>
               )}
@@ -380,7 +380,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               value={columnMappings.amount}
               onValueChange={(val) => setColumnMappings(prev => ({ ...prev, amount: val }))}
               placeholder="Select amount column"
-              triggerClassName="h-9 text-sm bg-white"
+              triggerClassName="h-8 text-xs bg-white"
             >
               {headers.map((header, idx) => (
                 <ClickThroughSelectItem key={idx} value={header}>
@@ -392,16 +392,16 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         )}
 
         {/* Optional Fields */}
-        <div className="border-t border-slate-200 pt-3">
-          <h4 className="text-[10px] font-semibold text-slate-500 mb-2.5 uppercase tracking-wider">Optional Fields</h4>
-          <div className="grid grid-cols-2 gap-3">
+        <div className="border-t border-slate-200 pt-2.5">
+          <h4 className="text-[9px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Optional Fields</h4>
+          <div className="grid grid-cols-2 gap-2.5">
             {/* Optional: Transaction Type */}
             <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Label className="text-xs font-medium text-slate-600">Transaction Type</Label>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-600">Transaction Type</Label>
                 {autoDetectedFields.includes('type') && (
-                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
                     Auto
                   </Badge>
                 )}
@@ -410,7 +410,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 value={columnMappings.type}
                 onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
                 placeholder="None"
-                triggerClassName="h-9 text-sm bg-white"
+                triggerClassName="h-8 text-xs bg-white"
               >
                 <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
                 {headers.map((header, idx) => (
@@ -423,11 +423,11 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
             {/* Optional: Category */}
             <div>
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <Label className="text-xs font-medium text-slate-600">Category</Label>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-600">Category</Label>
                 {autoDetectedFields.includes('category') && (
-                  <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
                     Auto
                   </Badge>
                 )}
@@ -436,7 +436,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                 value={columnMappings.category}
                 onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
                 placeholder="None"
-                triggerClassName="h-9 text-sm bg-white"
+                triggerClassName="h-8 text-xs bg-white"
               >
                 <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
                 {headers.map((header, idx) => (
@@ -450,49 +450,49 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         </div>
       </div>
 
-      {/* Preview */}
+      {/* Preview - Compact */}
       <div>
-        <h3 className="text-xs font-semibold text-slate-600 mb-2 uppercase tracking-wide">Preview</h3>
+        <h3 className="text-[9px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Preview (First 3 Rows)</h3>
         <Card className="overflow-hidden border-slate-200">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full">
               <thead className="bg-slate-50 border-b border-slate-200">
                 <tr>
                   {Object.entries(columnMappings).map(([field, column]) => {
                     if (amountType === 'separate_columns' && field === 'amount') return null;
                     if (!column && field !== 'category' && field !== 'type') return null;
                     return (
-                      <th key={field} className="px-3 py-2 text-left font-medium text-slate-600 text-xs">
+                      <th key={field} className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px]">
                         {FIELD_LABELS[field]}
                       </th>
                     );
                   })}
                   {amountType === 'separate_columns' && (
                     <>
-                      <th className="px-3 py-2 text-left font-medium text-slate-600 text-xs">Debit</th>
-                      <th className="px-3 py-2 text-left font-medium text-slate-600 text-xs">Credit</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px]">Debit</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px]">Credit</th>
                     </>
                   )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {sampleRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/30 transition-colors">
+                  <tr key={idx} className="hover:bg-slate-50/30">
                     {Object.entries(columnMappings).map(([field, column]) => {
                       if (amountType === 'separate_columns' && field === 'amount') return null;
                       if (!column && field !== 'category' && field !== 'type') return null;
                       const cellValue = row[column] || '-';
                       const displayValue = field === 'amount' ? formatAmountValue(cellValue) : cellValue;
                       return (
-                        <td key={field} className="px-3 py-2.5 text-slate-900 text-sm">
+                        <td key={field} className="px-2.5 py-1.5 text-slate-900 text-[11px]">
                           {displayValue}
                         </td>
                       );
                     })}
                     {amountType === 'separate_columns' && (
                       <>
-                        <td className="px-3 py-2.5 text-slate-900 text-sm">{formatAmountValue(row[debitColumn])}</td>
-                        <td className="px-3 py-2.5 text-slate-900 text-sm">{formatAmountValue(row[creditColumn])}</td>
+                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px]">{formatAmountValue(row[debitColumn])}</td>
+                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px]">{formatAmountValue(row[creditColumn])}</td>
                       </>
                     )}
                   </tr>
@@ -505,14 +505,14 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
       {/* Beginning Balance - Only shown on first import and not in balance extraction mode */}
       {isFirstImport && !isBalanceExtraction && (
-        <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-3.5">
-          <div className="space-y-2.5">
-            <div className="flex items-center gap-1.5">
-              <Label htmlFor="beginningBalance" className="text-xs font-medium text-slate-700">
+        <div className="bg-blue-50/50 border border-blue-200 rounded-lg p-2.5">
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <Label htmlFor="beginningBalance" className="text-[11px] font-medium text-slate-700">
                 Beginning Balance (Optional)
               </Label>
-              <Badge variant="secondary" className="h-4 px-1.5 text-[9px] font-normal bg-blue-100 text-blue-700 border-blue-200">
-                <Sparkles className="w-2.5 h-2.5 mr-0.5" />
+              <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-100 text-blue-700 border-blue-200">
+                <Sparkles className="w-2 h-2 mr-0.5" />
                 Auto
               </Badge>
             </div>
@@ -523,10 +523,10 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               placeholder="0.00"
               value={beginningBalance}
               onChange={(e) => setBeginningBalance(e.target.value)}
-              className="max-w-xs h-9 text-sm bg-white"
+              className="max-w-[200px] h-8 text-xs bg-white"
             />
-            <p className="text-xs text-slate-600">
-              Calculated from CSV transactions and current balance. Adjust if needed.
+            <p className="text-[10px] text-slate-600 leading-tight">
+              Auto-calculated from transactions. Adjust if needed.
             </p>
           </div>
         </div>
@@ -534,31 +534,31 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
       {/* Validation Warning */}
       {!isValid && (
-        <div className="flex items-center gap-2.5 p-3 bg-amber-50/80 border border-amber-200 rounded-lg">
-          <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+        <div className="flex items-center gap-2 p-2.5 bg-amber-50/80 border border-amber-200 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-amber-900">Required fields missing</p>
-            <p className="text-xs text-amber-700">Please map: Date, Description, and Amount</p>
+            <p className="text-xs font-medium text-amber-900">Required fields missing</p>
+            <p className="text-[10px] text-amber-700">Map: Date, Description, and Amount</p>
           </div>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex justify-between items-center gap-3 pt-3 border-t border-slate-200">
+      <div className="flex justify-between items-center gap-3 pt-2.5 border-t border-slate-200">
         <Button
           variant="outline"
           onClick={onCancel}
-          size="default"
+          size="sm"
           disabled={isImporting}
-          className="h-9"
+          className="h-8 text-xs"
         >
           Back
         </Button>
         <Button
           onClick={handleMap}
           disabled={!isValid || isImporting}
-          className="bg-blue-600 hover:bg-blue-700 h-9 px-5"
-          size="default"
+          className="bg-blue-600 hover:bg-blue-700 h-8 px-4 text-xs"
+          size="sm"
         >
           {isBalanceExtraction
             ? (isImporting ? 'Processing...' : 'Done')
