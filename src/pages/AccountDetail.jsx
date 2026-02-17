@@ -40,7 +40,7 @@ import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById } from '@/api/chartOfAccounts';
-import { getAccountJournalLinesPaginated, getAccountAuditHistoryPaginated } from '@/api/journalEntries';
+import { getAccountJournalLinesPaginated, getAccountAuditHistoryPaginated, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
@@ -619,17 +619,33 @@ export default function AccountDetail() {
 
     setIsImporting(true);
     try {
-      if (beginningBalance !== null && beginningBalance !== undefined) {
-        const { error: balanceError } = await firstsavvy
-          .from('user_chart_of_accounts')
-          .update({ current_balance: beginningBalance })
-          .eq('id', account.id);
+      // Create opening balance journal entry if this is the first import
+      if (beginningBalance !== null && beginningBalance !== undefined && totalJournalLines === 0) {
+        const earliestDate = transactions.reduce((earliest, txn) => {
+          const txnDate = new Date(txn.date);
+          return !earliest || txnDate < earliest ? txnDate : earliest;
+        }, null);
 
-        if (balanceError) {
-          console.error('Error updating beginning balance:', balanceError);
-          toast.error('Failed to update beginning balance');
-          setIsImporting(false);
-          return;
+        if (earliestDate) {
+          const openingDate = new Date(earliestDate);
+          openingDate.setDate(openingDate.getDate() - 1);
+
+          try {
+            await createOpeningBalanceJournalEntry({
+              profileId: activeProfile.id,
+              userId: user.id,
+              accountId: account.id,
+              openingBalance: beginningBalance,
+              openingDate: openingDate.toISOString().split('T')[0],
+              accountName: account.display_name || account.account_name,
+              accountClass: account.account_class
+            });
+          } catch (error) {
+            console.error('Error creating opening balance:', error);
+            toast.error('Failed to create opening balance journal entry');
+            setIsImporting(false);
+            return;
+          }
         }
       }
 
@@ -724,20 +740,34 @@ export default function AccountDetail() {
 
     setIsImporting(true);
     try {
-      if (beginningBalance !== null && beginningBalance !== undefined) {
-        console.log('Updating current_balance to:', beginningBalance);
-        const { error: balanceError } = await firstsavvy
-          .from('user_chart_of_accounts')
-          .update({ current_balance: beginningBalance })
-          .eq('id', account.id);
+      // Create opening balance journal entry if this is the first import
+      if (beginningBalance !== null && beginningBalance !== undefined && totalJournalLines === 0) {
+        const earliestDate = transactions.reduce((earliest, txn) => {
+          const txnDate = new Date(txn.date);
+          return !earliest || txnDate < earliest ? txnDate : earliest;
+        }, null);
 
-        if (balanceError) {
-          console.error('Error updating beginning balance:', balanceError);
-          toast.error('Failed to update beginning balance');
-          setIsImporting(false);
-          return;
+        if (earliestDate) {
+          const openingDate = new Date(earliestDate);
+          openingDate.setDate(openingDate.getDate() - 1);
+
+          try {
+            await createOpeningBalanceJournalEntry({
+              profileId: activeProfile.id,
+              userId: user.id,
+              accountId: account.id,
+              openingBalance: beginningBalance,
+              openingDate: openingDate.toISOString().split('T')[0],
+              accountName: account.display_name || account.account_name,
+              accountClass: account.account_class
+            });
+          } catch (error) {
+            console.error('Error creating opening balance:', error);
+            toast.error('Failed to create opening balance journal entry');
+            setIsImporting(false);
+            return;
+          }
         }
-        console.log('Current balance updated successfully');
       }
 
       const { duplicates, uniqueTransactions } = await detectDuplicateTransactions(

@@ -1695,17 +1695,11 @@ export default function AccountCreationWizard({
               id="beginningBalance"
               type="text"
               value={formData.beginningBalance !== undefined ? formData.beginningBalance : '0.00'}
-              onChange={(e) => {
-                const value = e.target.value.replace(/[^0-9.-]/g, '');
-                updateFormData('beginningBalance', value);
-              }}
-              onBlur={(e) => {
-                const value = parseFloat(e.target.value) || 0;
-                updateFormData('beginningBalance', value.toFixed(2));
-              }}
+              readOnly
               placeholder="0.00"
-              className="h-8 text-sm"
+              className="h-8 text-sm bg-slate-100 cursor-not-allowed"
             />
+            <p className="text-xs text-slate-500 mt-0.5">Calculated automatically from ending balance</p>
           </div>
           <div>
             <Label htmlFor="asOfDate" className="text-sm mb-0.5">As of Date</Label>
@@ -1732,6 +1726,7 @@ export default function AccountCreationWizard({
               onChange={(e) => {
                 const value = e.target.value.replace(/[^0-9.-]/g, '');
                 updateFormData('endingBalance', value);
+                setTimeout(() => calculateBeginningBalanceFromEnding(), 0);
               }}
               onBlur={(e) => {
                 const value = parseFloat(e.target.value) || 0;

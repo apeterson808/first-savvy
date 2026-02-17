@@ -152,14 +152,16 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         });
       }
 
-      const calculatedBeginning = (suggestedBeginningBalance || 0) - netChange;
+      // Use ending balance if provided, otherwise fall back to suggested beginning balance
+      const baseBalance = endingBalance ? parseFloat(endingBalance) : (suggestedBeginningBalance || 0);
+      const calculatedBeginning = baseBalance - netChange;
       return calculatedBeginning.toFixed(2);
     };
 
     if (columnMappings.amount || (debitColumn && creditColumn)) {
       setBeginningBalance(calculateBeginningBalance());
     }
-  }, [isFirstImport, suggestedBeginningBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
+  }, [isFirstImport, suggestedBeginningBalance, endingBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
 
 
   const handleResetToAutoDetect = () => {
