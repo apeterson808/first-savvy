@@ -519,8 +519,8 @@ export default function AccountCreationWizard({
         }
       });
 
-      // For credit cards (liabilities): Beginning = Ending - Charges + Payments
-      const beginningBalance = endingBalance - totalCharges + totalPayments;
+      // For credit cards: Beginning = Ending + Charges - Payments
+      const beginningBalance = endingBalance + totalCharges - totalPayments;
       updateFormData('beginningBalance', beginningBalance.toFixed(2));
     }
   }, [formData.endingBalance, currentStep, selectedSubtype?.value, mappedTransactions]);
@@ -880,8 +880,8 @@ export default function AccountCreationWizard({
           }
         });
 
-        // For credit cards (liabilities): Beginning = Ending - Charges + Payments
-        const beginningBalance = endingBalance - totalCharges + totalPayments;
+        // For credit cards: Beginning = Ending + Charges - Payments
+        const beginningBalance = endingBalance + totalCharges - totalPayments;
         updateFormData('beginningBalance', beginningBalance.toFixed(2));
       }
     }
