@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
-import { formatLabel } from '../utils/formatters';
+import { formatLabel, formatCurrency } from '../utils/formatters';
 import { toast } from 'sonner';
 import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/api/vehiclesAndLoans';
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
@@ -2085,11 +2085,13 @@ export default function AccountCreationWizard({
               <Label htmlFor="endingBalance">Ending Balance*</Label>
               <Input
                 id="endingBalance"
-                type="number"
-                step="0.01"
-                value={formData.endingBalance || ''}
-                onChange={(e) => updateFormData('endingBalance', e.target.value)}
-                placeholder="0.00"
+                type="text"
+                value={formData.endingBalance ? formatCurrency(parseFloat(formData.endingBalance)) : ''}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.-]/g, '');
+                  updateFormData('endingBalance', value);
+                }}
+                placeholder="$0.00"
                 className="h-9"
               />
             </div>
