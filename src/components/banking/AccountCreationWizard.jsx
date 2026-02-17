@@ -753,12 +753,15 @@ export default function AccountCreationWizard({
   const handleBalanceCsvMapping = async (mappingConfig) => {
     const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
 
+    const accountClass = (selectedSubtype?.value === 'credit_card' || selectedCard?.id === 'loans') ? 'liability' : 'asset';
+
     const transactions = mapCsvToTransactions(
       balanceProcessedData,
       columnMappings,
       amountType,
       debitColumn,
-      creditColumn
+      creditColumn,
+      accountClass
     );
 
     if (transactions.length === 0) {
@@ -826,12 +829,15 @@ export default function AccountCreationWizard({
   const handleCsvMapping = async (mappingConfig) => {
     const { columnMappings, amountType, debitColumn, creditColumn, balanceColumn } = mappingConfig;
 
+    const accountClass = (selectedSubtype?.value === 'credit_card' || selectedCard?.id === 'loans') ? 'liability' : 'asset';
+
     const transactions = mapCsvToTransactions(
       processedData,
       columnMappings,
       amountType,
       debitColumn,
-      creditColumn
+      creditColumn,
+      accountClass
     );
 
     if (transactions.length === 0) {

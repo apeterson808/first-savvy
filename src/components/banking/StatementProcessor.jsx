@@ -93,7 +93,7 @@ export const parseDate = (dateStr) => {
   return null;
 };
 
-export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn) => {
+export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn, accountClass = 'asset') => {
   const allTransactions = csvData.rows.map(row => {
     let amount = 0;
     let type = 'expense';
@@ -120,7 +120,13 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
         type = 'income';
       } else {
         amount = Math.abs(rawAmount);
-        type = rawAmount < 0 ? 'expense' : 'income';
+        // For liabilities (credit cards): positive = expense (purchase), negative = income (payment)
+        // For assets (bank accounts): negative = expense (withdrawal), positive = income (deposit)
+        if (accountClass === 'liability') {
+          type = rawAmount >= 0 ? 'expense' : 'income';
+        } else {
+          type = rawAmount < 0 ? 'expense' : 'income';
+        }
       }
     }
 
