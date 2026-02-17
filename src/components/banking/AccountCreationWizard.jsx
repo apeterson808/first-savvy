@@ -502,6 +502,29 @@ export default function AccountCreationWizard({
     }
   }, [formData.name, selectedCard?.id, currentStep]);
 
+  // Auto-recalculate beginning balance when ending balance changes in bank-info step
+  useEffect(() => {
+    if (currentStep === 'bank-info' && selectedSubtype?.value === 'credit_card' && formData.endingBalance && mappedTransactions.length > 0) {
+      const endingBalance = parseFloat(formData.endingBalance) || 0;
+
+      // Calculate total charges and payments
+      let totalCharges = 0;
+      let totalPayments = 0;
+
+      mappedTransactions.forEach(txn => {
+        if (txn.type === 'expense') {
+          totalCharges += txn.amount;
+        } else if (txn.type === 'income') {
+          totalPayments += txn.amount;
+        }
+      });
+
+      // For credit cards (liabilities): Beginning = Ending - Charges + Payments
+      const beginningBalance = endingBalance - totalCharges + totalPayments;
+      updateFormData('beginningBalance', beginningBalance.toFixed(2));
+    }
+  }, [formData.endingBalance, currentStep, selectedSubtype?.value, mappedTransactions]);
+
   const handleCardSelect = (card) => {
     setSelectedCard(card);
 
@@ -834,6 +857,35 @@ export default function AccountCreationWizard({
     setMappedTransactions(transactions);
     setProcessingStatus('success');
     setShowMappingSuccess(true);
+
+    // Auto-calculate dates and beginning balance for credit card accounts
+    if (selectedSubtype?.value === 'credit_card' && transactions.length > 0) {
+      const dateRange = getTransactionDateRange(transactions);
+      updateFormData('beginningBalanceDate', dateRange.startDate);
+      updateFormData('endingBalanceDate', dateRange.endDate);
+
+      // If ending balance is already set, calculate beginning balance
+      if (formData.endingBalance) {
+        const endingBalance = parseFloat(formData.endingBalance) || 0;
+
+        // Calculate total charges and payments
+        let totalCharges = 0;
+        let totalPayments = 0;
+
+        transactions.forEach(txn => {
+          if (txn.type === 'expense') {
+            totalCharges += txn.amount;
+          } else if (txn.type === 'income') {
+            totalPayments += txn.amount;
+          }
+        });
+
+        // For credit cards (liabilities): Beginning = Ending - Charges + Payments
+        const beginningBalance = endingBalance - totalCharges + totalPayments;
+        updateFormData('beginningBalance', beginningBalance.toFixed(2));
+      }
+    }
+
     setCurrentStep('details');
 
     toast.success(`Successfully mapped ${transactions.length} transactions`);
@@ -2668,6 +2720,112 @@ export default function AccountCreationWizard({
     </div>
   );
 
+  const renderBankInfoStep = () => (
+    <div className="space-y-4 max-w-lg mx-auto">
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="institutionName">Bank/Institution</Label>
+          <Input
+            id="institutionName"
+            value={formData.institutionName || ''}
+            onChange={(e) => updateFormData('institutionName', e.target.value)}
+            placeholder="e.g., Chase, Bank of America"
+            className="h-9"
+          />
+        </div>
+        <div>
+          <Label htmlFor="last4">Last 4 Digits</Label>
+          <Input
+            id="last4"
+            value={formData.last4 || ''}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+              updateFormData('last4', value);
+            }}
+            placeholder="1234"
+            maxLength={4}
+            className="h-9"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label htmlFor="endingBalance">Ending Balance*</Label>
+          <Input
+            id="endingBalance"
+            type="text"
+            value={formData.endingBalance ? formatCurrency(parseFloat(formData.endingBalance)) : '$0.00'}
+            onChange={(e) => {
+              const inputValue = e.target.value;
+              const digitsOnly = inputValue.replace(/\D/g, '');
+
+              if (digitsOnly === '') {
+                updateFormData('endingBalance', '0');
+                return;
+              }
+
+              const cents = parseInt(digitsOnly, 10);
+              const dollars = (cents / 100).toFixed(2);
+              updateFormData('endingBalance', dollars);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Backspace') {
+                e.preventDefault();
+                const currentValue = formData.endingBalance || '0';
+                const cents = Math.floor(parseFloat(currentValue) * 100);
+                const newCents = Math.floor(cents / 10);
+                const newDollars = (newCents / 100).toFixed(2);
+                updateFormData('endingBalance', newDollars);
+              }
+            }}
+            placeholder="$0.00"
+            className="h-9"
+          />
+        </div>
+        <div>
+          <Label htmlFor="endingBalanceDate">Ending Balance Date</Label>
+          <Input
+            id="endingBalanceDate"
+            type="date"
+            value={formData.endingBalanceDate || ''}
+            onChange={(e) => updateFormData('endingBalanceDate', e.target.value)}
+            className="h-9"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <Label>Beginning Balance</Label>
+          <div className="text-sm text-muted-foreground mt-2">
+            ${formData.beginningBalance || '0.00'}
+          </div>
+        </div>
+        <div>
+          <Label htmlFor="beginningBalanceDate">As of Date</Label>
+          <Input
+            id="beginningBalanceDate"
+            type="date"
+            value={formData.beginningBalanceDate || ''}
+            onChange={(e) => updateFormData('beginningBalanceDate', e.target.value)}
+            className="h-9"
+          />
+        </div>
+      </div>
+
+      {mappedTransactions.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-sm">
+          <div className="font-medium text-blue-900 mb-1">Transaction Summary</div>
+          <div className="text-xs text-blue-700 space-y-0.5">
+            <div>Total transactions: {mappedTransactions.length}</div>
+            <div>Date range: {formData.beginningBalanceDate} to {formData.endingBalanceDate}</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 'select-type':
@@ -2680,6 +2838,8 @@ export default function AccountCreationWizard({
         return renderDetailsStep();
       case 'csv-mapping':
         return renderCsvMappingStep();
+      case 'bank-info':
+        return renderBankInfoStep();
       case 'balance':
         return renderBalanceStep();
       case 'loan-search':
@@ -2696,6 +2856,10 @@ export default function AccountCreationWizard({
     if (currentStep === 'connect-bank') return 'Connect Your Bank';
     if (currentStep === 'select-subtype') return `Select ${selectedCard?.title} Type`;
     if (currentStep === 'csv-mapping') return 'Map CSV Columns';
+    if (currentStep === 'bank-info') {
+      if (selectedSubtype?.value === 'credit_card') return 'Credit Card Details';
+      return 'Account Information';
+    }
     if (currentStep === 'details') {
       if (selectedCard?.id === 'banking') {
         if (selectedSubtype?.value === 'checking') return 'Checking Account Details';
@@ -2722,7 +2886,7 @@ export default function AccountCreationWizard({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className={`${currentStep === 'connect-bank' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+          <div className={`relative flex flex-col ${currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'bank-info' ? 'h-[480px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[600px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-2.5 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
