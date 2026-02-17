@@ -462,15 +462,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                     if (amountType === 'separate_columns' && field === 'amount') return null;
                     if (!column && field !== 'category' && field !== 'type') return null;
                     return (
-                      <th key={field} className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px]">
+                      <th key={field} className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">
                         {FIELD_LABELS[field]}
                       </th>
                     );
                   })}
                   {amountType === 'separate_columns' && (
                     <>
-                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px]">Debit</th>
-                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px]">Credit</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Debit</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Credit</th>
                     </>
                   )}
                 </tr>
@@ -484,15 +484,15 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
                       const cellValue = row[column] || '-';
                       const displayValue = field === 'amount' ? formatAmountValue(cellValue) : cellValue;
                       return (
-                        <td key={field} className="px-2.5 py-1.5 text-slate-900 text-[11px]">
+                        <td key={field} className="px-2.5 py-1.5 text-slate-900 text-[11px] whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title={displayValue}>
                           {displayValue}
                         </td>
                       );
                     })}
                     {amountType === 'separate_columns' && (
                       <>
-                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px]">{formatAmountValue(row[debitColumn])}</td>
-                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px]">{formatAmountValue(row[creditColumn])}</td>
+                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px] whitespace-nowrap">{formatAmountValue(row[debitColumn])}</td>
+                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px] whitespace-nowrap">{formatAmountValue(row[creditColumn])}</td>
                       </>
                     )}
                   </tr>
