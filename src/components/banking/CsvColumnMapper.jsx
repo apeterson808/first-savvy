@@ -391,63 +391,6 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
           </div>
         )}
 
-        {/* Optional Fields */}
-        <div className="border-t border-slate-200 pt-2.5">
-          <h4 className="text-[9px] font-semibold text-slate-500 mb-2 uppercase tracking-wider">Optional Fields</h4>
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* Optional: Transaction Type */}
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-600">Transaction Type</Label>
-                {autoDetectedFields.includes('type') && (
-                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2 h-2 mr-0.5" />
-                    Auto
-                  </Badge>
-                )}
-              </div>
-              <ClickThroughSelect
-                value={columnMappings.type}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
-                placeholder="None"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            {/* Optional: Category */}
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-600">Category</Label>
-                {autoDetectedFields.includes('category') && (
-                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2 h-2 mr-0.5" />
-                    Auto
-                  </Badge>
-                )}
-              </div>
-              <ClickThroughSelect
-                value={columnMappings.category}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
-                placeholder="None"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Preview - Compact */}
