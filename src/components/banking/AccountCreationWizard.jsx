@@ -502,9 +502,9 @@ export default function AccountCreationWizard({
     }
   }, [formData.name, selectedCard?.id, currentStep]);
 
-  // Auto-recalculate beginning balance when ending balance changes in bank-info step
+  // Auto-recalculate beginning balance when ending balance changes in bank-info or details step
   useEffect(() => {
-    if (currentStep === 'bank-info' && selectedSubtype?.value === 'credit_card' && formData.endingBalance && mappedTransactions.length > 0) {
+    if ((currentStep === 'bank-info' || currentStep === 'details') && selectedSubtype?.value === 'credit_card' && formData.endingBalance && mappedTransactions.length > 0) {
       const endingBalance = parseFloat(formData.endingBalance) || 0;
 
       // Calculate total charges and payments
