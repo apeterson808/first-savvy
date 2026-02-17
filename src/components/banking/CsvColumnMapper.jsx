@@ -220,16 +220,16 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
       {autoDetectedFields.length > 0 && (
         <div className="bg-emerald-50/80 border border-emerald-200 rounded-lg p-3">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2 flex-1">
+            <div className="flex items-start gap-2 flex-1 min-w-0">
               <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-xs text-emerald-900 font-medium">
+                <p className="text-xs text-emerald-900 font-medium break-words">
                   {savedMappingLoaded ? 'Loaded saved mapping' : `Auto-detected ${autoDetectedFields.length} field${autoDetectedFields.length !== 1 ? 's' : ''}`} • {csvData.rows?.length || 0} transaction{csvData.rows?.length !== 1 ? 's' : ''} found
                 </p>
-                <p className="text-[11px] text-emerald-700 mt-0.5 leading-tight">
+                <p className="text-[11px] text-emerald-700 mt-0.5 leading-tight break-words">
                   {savedMappingLoaded ? `Using previous config for ${institutionName || 'this bank'}. ` : ''}
                   {requiredFieldsMapped ? 'Required fields mapped. ' : 'Some fields need attention. '}
-                  You can change mappings as needed.
+                  You can change any mapping if needed.
                 </p>
               </div>
             </div>
@@ -237,7 +237,7 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
               variant="ghost"
               size="sm"
               onClick={handleResetToAutoDetect}
-              className="h-6 text-[11px] px-2 flex-shrink-0 hover:bg-emerald-100"
+              className="h-6 text-[11px] px-2 flex-shrink-0 hover:bg-emerald-100 whitespace-nowrap"
             >
               <RotateCcw className="w-3 h-3 mr-1" />
               Re-detect

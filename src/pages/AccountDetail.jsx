@@ -1686,7 +1686,7 @@ export default function AccountDetail() {
         )}
 
         <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
-          <DialogContent className="max-w-4xl h-[85vh] p-0 gap-0 flex flex-col">
+          <DialogContent className="max-w-3xl h-[85vh] p-0 gap-0 flex flex-col overflow-hidden">
             <DialogHeader className="px-6 pt-5 pb-3 border-b border-slate-200 flex-shrink-0">
               <DialogTitle className="text-lg font-semibold">
                 {importStep === 'upload' && 'Import Transactions'}
