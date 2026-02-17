@@ -205,9 +205,9 @@ export const calculateBeginningBalanceFromCurrent = (currentBalance, transaction
   transactionsOnOrAfterStartDate.forEach(txn => {
     if (isLiability) {
       if (txn.type === 'expense') {
-        beginningBalance -= txn.amount;
-      } else if (txn.type === 'income') {
         beginningBalance += txn.amount;
+      } else if (txn.type === 'income') {
+        beginningBalance -= txn.amount;
       }
     } else {
       if (txn.type === 'expense') {
