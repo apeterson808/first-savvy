@@ -1704,25 +1704,28 @@ export default function AccountCreationWizard({
               <Input
                 id="endingBalance"
                 type="text"
-                value={
-                  focusedFields.endingBalance
-                    ? formData.endingBalance || ''
-                    : formData.endingBalance
-                    ? formatCurrency(parseFloat(formData.endingBalance))
-                    : ''
-                }
+                value={formData.endingBalance ? formatCurrency(parseFloat(formData.endingBalance)) : '$0.00'}
                 onChange={(e) => {
-                  const value = e.target.value.replace(/[^0-9.-]/g, '');
-                  updateFormData('endingBalance', value);
+                  const inputValue = e.target.value;
+                  const digitsOnly = inputValue.replace(/\D/g, '');
+
+                  if (digitsOnly === '') {
+                    updateFormData('endingBalance', '0');
+                    return;
+                  }
+
+                  const cents = parseInt(digitsOnly, 10);
+                  const dollars = (cents / 100).toFixed(2);
+                  updateFormData('endingBalance', dollars);
                 }}
-                onFocus={() => {
-                  setFocusedFields(prev => ({ ...prev, endingBalance: true }));
-                }}
-                onBlur={() => {
-                  setFocusedFields(prev => ({ ...prev, endingBalance: false }));
-                  const value = formData.endingBalance;
-                  if (value && !isNaN(parseFloat(value))) {
-                    updateFormData('endingBalance', parseFloat(value).toFixed(2));
+                onKeyDown={(e) => {
+                  if (e.key === 'Backspace') {
+                    e.preventDefault();
+                    const currentValue = formData.endingBalance || '0';
+                    const cents = Math.floor(parseFloat(currentValue) * 100);
+                    const newCents = Math.floor(cents / 10);
+                    const newDollars = (newCents / 100).toFixed(2);
+                    updateFormData('endingBalance', newDollars);
                   }
                 }}
                 placeholder="$0.00"
