@@ -117,7 +117,7 @@ Deno.serve(async (req: Request) => {
           accountNumber: fallbackAccount.account_number,
           category: fallbackAccount.display_name,
           type: fallbackAccount.class,
-          confidence: 'pattern',
+          confidence: 0.7,
         }),
         {
           status: 200,
@@ -130,7 +130,7 @@ Deno.serve(async (req: Request) => {
         chartAccountId: null,
         category: null,
         type: null,
-        confidence: 'none',
+        confidence: 0,
       }),
       {
         status: 200,
