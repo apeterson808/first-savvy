@@ -2082,16 +2082,6 @@ export default function AccountCreationWizard({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="endingBalanceDate">Ending Balance Date</Label>
-              <Input
-                id="endingBalanceDate"
-                type="date"
-                value={formData.endingBalanceDate || ''}
-                onChange={(e) => updateFormData('endingBalanceDate', e.target.value)}
-                className="h-9"
-              />
-            </div>
-            <div>
               <Label htmlFor="endingBalance">Ending Balance*</Label>
               <Input
                 id="endingBalance"
@@ -2103,11 +2093,27 @@ export default function AccountCreationWizard({
                 className="h-9"
               />
             </div>
+            <div>
+              <Label htmlFor="endingBalanceDate">Ending Balance Date</Label>
+              <Input
+                id="endingBalanceDate"
+                type="date"
+                value={formData.endingBalanceDate || ''}
+                onChange={(e) => updateFormData('endingBalanceDate', e.target.value)}
+                className="h-9"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="beginningBalanceDate">Beginning Balance Date</Label>
+              <Label>Beginning Balance</Label>
+              <div className="text-sm text-muted-foreground mt-2">
+                ${formData.beginningBalance || '0.00'}
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="beginningBalanceDate">As of Date</Label>
               <Input
                 id="beginningBalanceDate"
                 type="date"
@@ -2115,12 +2121,6 @@ export default function AccountCreationWizard({
                 onChange={(e) => updateFormData('beginningBalanceDate', e.target.value)}
                 className="h-9"
               />
-            </div>
-            <div>
-              <Label>Beginning Balance</Label>
-              <div className="text-sm text-muted-foreground mt-2">
-                ${formData.beginningBalance || '0.00'}
-              </div>
             </div>
           </div>
 
