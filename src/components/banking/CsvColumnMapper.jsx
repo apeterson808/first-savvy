@@ -334,7 +334,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Debit/Expense *</Label>
+                <Label className="text-[11px] font-medium text-slate-700">Spent Column *</Label>
                 {debitColumn && amountType === 'separate_columns' && (
                   <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                     <Sparkles className="w-2 h-2 mr-0.5" />
@@ -345,7 +345,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
               <ClickThroughSelect
                 value={debitColumn}
                 onValueChange={setDebitColumn}
-                placeholder="Select debit column"
+                placeholder="Select spent column"
                 triggerClassName="h-8 text-xs bg-white"
               >
                 {headers.map((header, idx) => (
@@ -357,7 +357,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             </div>
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Credit/Income *</Label>
+                <Label className="text-[11px] font-medium text-slate-700">Received Column *</Label>
                 {creditColumn && amountType === 'separate_columns' && (
                   <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                     <Sparkles className="w-2 h-2 mr-0.5" />
@@ -368,7 +368,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
               <ClickThroughSelect
                 value={creditColumn}
                 onValueChange={setCreditColumn}
-                placeholder="Select credit column"
+                placeholder="Select received column"
                 triggerClassName="h-8 text-xs bg-white"
               >
                 {headers.map((header, idx) => (
@@ -428,8 +428,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                   })}
                   {amountType === 'separate_columns' && (
                     <>
-                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Debit</th>
-                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Credit</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Spent</th>
+                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Received</th>
                     </>
                   )}
                 </tr>
