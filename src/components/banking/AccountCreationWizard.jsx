@@ -1010,30 +1010,16 @@ export default function AccountCreationWizard({
       }
     },
     onSuccess: async (newAccount) => {
-      // Calculate the beginning balance before creating the opening balance journal entry
-      let beginningBalance = newAccount.current_balance;
-
-      if (mappedTransactions.length > 0 && formData.asOfDate) {
-        // If we're importing transactions, the current_balance is the ENDING balance
-        // We need to calculate what the BEGINNING balance was
-        const isLiability = newAccount.class?.toUpperCase() === 'LIABILITY';
-        beginningBalance = calculateBeginningBalanceFromCurrent(
-          newAccount.current_balance,
-          mappedTransactions,
-          formData.asOfDate,
-          isLiability
-        );
-        console.log('Calculated beginning balance:', beginningBalance, 'from ending balance:', newAccount.current_balance);
-      }
-
-      if (beginningBalance && beginningBalance !== 0 && !newAccount._usedActivateTemplate) {
+      // Create opening balance journal entry using the current_balance
+      // (which is already set to the beginning balance if transactions are being imported)
+      if (newAccount.current_balance && newAccount.current_balance !== 0 && !newAccount._usedActivateTemplate) {
         try {
-          const openingDate = formData.asOfDate || new Date().toISOString().split('T')[0];
+          const openingDate = formData.beginningBalanceDate || formData.asOfDate || new Date().toISOString().split('T')[0];
           await createOpeningBalanceJournalEntry({
             profileId: activeProfile.id,
             userId: user?.id,
             accountId: newAccount.id,
-            openingBalance: beginningBalance,
+            openingBalance: newAccount.current_balance,
             openingDate: openingDate,
             accountName: newAccount.display_name,
             accountClass: newAccount.class
@@ -1242,13 +1228,19 @@ export default function AccountCreationWizard({
           return;
         }
 
+        // For accounts with transactions, use beginningBalance as the opening balance
+        // For accounts without transactions, use the balance field
+        const openingBalance = (mappedTransactions.length > 0 && formData.beginningBalance)
+          ? parseFloat(formData.beginningBalance)
+          : balanceValidation.value;
+
         await createAccountMutation.mutateAsync({
           account_name: formData.name,
           account_type: selectedSubtype.value,
-          current_balance: selectedSubtype.value === 'credit_card' ? Math.abs(balanceValidation.value) : balanceValidation.value,
+          current_balance: selectedSubtype.value === 'credit_card' ? Math.abs(openingBalance) : openingBalance,
           institution_name: formData.institutionName || null,
           account_number_last4: formData.last4 || null,
-          as_of_date: formData.asOfDate || new Date().toISOString().split('T')[0],
+          as_of_date: formData.beginningBalanceDate || formData.asOfDate || new Date().toISOString().split('T')[0],
           is_active: true
         });
       } else if (selectedCard.id === 'vehicle') {
