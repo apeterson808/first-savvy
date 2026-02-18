@@ -55,6 +55,7 @@ export default function RulesTab() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
   const [ruleToDelete, setRuleToDelete] = useState(null);
+  const [showAutoRules, setShowAutoRules] = useState(false);
 
   const { data: rules = [], isLoading } = useQuery({
     queryKey: ['transaction-rules', activeProfile?.id],
@@ -146,11 +147,15 @@ export default function RulesTab() {
     return actions.join(', ') || 'No actions';
   };
 
-  const enabledRules = rules.filter(r => r.is_enabled).length;
-  const disabledRules = rules.filter(r => !r.is_enabled).length;
-  const totalMatches = rules.reduce((sum, r) => sum + (r.times_matched || 0), 0);
-  const avgAcceptanceRate = rules.length > 0
-    ? rules.reduce((sum, r) => sum + (r.acceptance_rate || 0), 0) / rules.length
+  const manualRules = rules.filter(r => !r.created_from_transaction_id);
+  const autoRules = rules.filter(r => !!r.created_from_transaction_id);
+  const visibleRules = showAutoRules ? rules : manualRules;
+
+  const enabledRules = visibleRules.filter(r => r.is_enabled).length;
+  const disabledRules = visibleRules.filter(r => !r.is_enabled).length;
+  const totalMatches = visibleRules.reduce((sum, r) => sum + (r.times_matched || 0), 0);
+  const avgAcceptanceRate = visibleRules.length > 0
+    ? visibleRules.reduce((sum, r) => sum + (r.acceptance_rate || 0), 0) / visibleRules.length
     : 0;
 
   if (!activeProfile) {
@@ -168,17 +173,28 @@ export default function RulesTab() {
           <h2 className="text-xl font-semibold text-slate-900">Transaction Rules</h2>
           <p className="text-sm text-slate-500 mt-1">Automatically categorize and tag transactions</p>
         </div>
-        <Button onClick={() => setCreateDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Rule
-        </Button>
+        <div className="flex items-center gap-3">
+          {autoRules.length > 0 && (
+            <button
+              onClick={() => setShowAutoRules(v => !v)}
+              className="flex items-center gap-2 text-sm text-slate-500 hover:text-slate-700 transition-colors"
+            >
+              <Switch checked={showAutoRules} onCheckedChange={setShowAutoRules} className="pointer-events-none" />
+              <span>Show auto-learned ({autoRules.length})</span>
+            </button>
+          )}
+          <Button onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Rule
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardDescription>Total Rules</CardDescription>
-            <CardTitle className="text-3xl">{rules.length}</CardTitle>
+            <CardTitle className="text-3xl">{visibleRules.length}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex gap-2 text-sm text-slate-600">
@@ -219,7 +235,7 @@ export default function RulesTab() {
           <CardHeader className="pb-3">
             <CardDescription>Most Effective</CardDescription>
             <CardTitle className="text-3xl">
-              {rules.filter(r => r.acceptance_rate >= 75 && r.times_matched > 5).length}
+              {visibleRules.filter(r => r.acceptance_rate >= 75 && r.times_matched > 5).length}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -240,7 +256,7 @@ export default function RulesTab() {
             <div className="text-center py-12">
               <p className="text-slate-500">Loading rules...</p>
             </div>
-          ) : rules.length === 0 ? (
+          ) : visibleRules.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <p className="text-slate-500 mb-4">No rules created yet</p>
@@ -263,7 +279,7 @@ export default function RulesTab() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rules.map((rule) => (
+                {visibleRules.map((rule) => (
                   <TableRow key={rule.id}>
                     <TableCell>
                       <Switch
