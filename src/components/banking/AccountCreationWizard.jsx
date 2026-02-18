@@ -1010,8 +1010,8 @@ export default function AccountCreationWizard({
       }
     },
     onSuccess: async (newAccount) => {
-      // Create opening balance journal entry using the current_balance
-      // (which is already set to the beginning balance if transactions are being imported)
+      // Create opening balance journal entry if there's an opening balance
+      // current_balance contains the beginning balance (before imported transactions)
       if (newAccount.current_balance && newAccount.current_balance !== 0 && !newAccount._usedActivateTemplate) {
         try {
           const openingDate = formData.beginningBalanceDate || formData.asOfDate || new Date().toISOString().split('T')[0];
@@ -1237,7 +1237,7 @@ export default function AccountCreationWizard({
         await createAccountMutation.mutateAsync({
           account_name: formData.name,
           account_type: selectedSubtype.value,
-          current_balance: 0,
+          current_balance: openingBalance,
           institution_name: formData.institutionName || null,
           account_number_last4: formData.last4 || null,
           as_of_date: formData.beginningBalanceDate || formData.asOfDate || new Date().toISOString().split('T')[0],
