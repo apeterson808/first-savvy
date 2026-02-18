@@ -2097,14 +2097,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           </div>
                         </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                                      {transaction.amount < 0 && (
+                                                      {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
                                                         <span>
                                                           ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
                                                       )}
                                                     </td>
                                                     <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                                      {transaction.amount >= 0 && (
+                                                      {transaction.type === 'income' && (
                                                         <span>
                                                           ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                         </span>
@@ -3009,7 +3009,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                 {/* Spent */}
                                                 <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
-                                                  {currentlyPaired.amount < 0 && (
+                                                  {(currentlyPaired.type === 'expense' || currentlyPaired.type === 'transfer' || currentlyPaired.type === 'credit_card_payment') && (
                                                     <span className="font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
@@ -3018,7 +3018,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                 {/* Received */}
                                                 <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
-                                                  {currentlyPaired.amount >= 0 && (
+                                                  {currentlyPaired.type === 'income' && (
                                                     <span className="font-medium">
                                                       ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                     </span>
@@ -3528,7 +3528,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                               {/* Spent */}
                                                               <td className="border-r border-slate-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
-                                                                {match.amount < 0 && (
+                                                                {(match.type === 'expense' || match.type === 'transfer' || match.type === 'credit_card_payment') && (
                                                                   <span className="font-medium">
                                                                     ${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                   </span>
@@ -3537,7 +3537,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                               {/* Received */}
                                                               <td className="border-r border-slate-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
-                                                                {match.amount >= 0 && (
+                                                                {match.type === 'income' && (
                                                                   <span className="font-medium">
                                                                     ${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                                   </span>
