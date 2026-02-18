@@ -1544,7 +1544,7 @@ export default function AccountCreationWizard({
 
     try {
       // Step 1: Create the account
-      const balanceValidation = validateAmount(formData.endingBalance || '0', {
+      const balanceValidation = validateAmount(formData.beginningBalance || '0', {
         allowZero: true,
         allowNegative: true
       });
