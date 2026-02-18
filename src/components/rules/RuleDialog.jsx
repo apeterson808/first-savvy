@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { transactionRulesApi } from '../../api/transactionRules';
+import { supabase } from '../../api/supabaseClient';
 import { getUserChartOfAccounts } from '../../api/chartOfAccounts';
 import { firstsavvy } from '../../api/firstsavvyClient';
 import {
@@ -39,9 +40,10 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '../ui/toggle-group';
 import { format } from 'date-fns';
 
-export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, transaction = null, profileId }) {
+export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, transaction = null, profileId, onPromoteSuccess }) {
   const queryClient = useQueryClient();
-  const isEditMode = mode === 'edit';
+  const isEditMode = mode === 'edit' || mode === 'promote';
+  const isPromoteMode = mode === 'promote';
 
   const [ruleName, setRuleName] = useState('');
   const [nameError, setNameError] = useState('');
@@ -102,7 +104,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     }
 
     if (isEditMode && rule) {
-      setRuleName(rule.name || '');
+      setRuleName(isPromoteMode ? (rule.name || '').replace(/^Auto:\s*/i, '') : (rule.name || ''));
       setMoneyDirection(rule.match_money_direction || 'both');
       setSelectedAccountIds(rule.match_bank_account_ids || []);
       setMatchLogic(rule.match_conditions_logic || 'any');
@@ -302,13 +304,22 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
-      return transactionRulesApi.updateRule(rule.id, data);
+      const updated = await transactionRulesApi.updateRule(rule.id, data);
+      if (isPromoteMode) {
+        const { error } = await supabase
+          .from('transaction_rules')
+          .update({ created_from_transaction_id: null, updated_at: new Date().toISOString() })
+          .eq('id', rule.id);
+        if (error) throw error;
+      }
+      return updated;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['transaction-rules']);
-      toast.success('Rule updated and applied to matching transactions!');
+      toast.success(isPromoteMode ? 'Rule promoted to an active rule!' : 'Rule updated and applied to matching transactions!');
       onOpenChange(false);
       resetForm();
+      if (isPromoteMode && onPromoteSuccess) onPromoteSuccess();
     },
     onError: (error) => {
       console.error('Error updating rule:', error);
@@ -530,7 +541,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle>
-            {isEditMode ? 'Edit Rule' : 'Create Rule'}
+            {isPromoteMode ? 'Promote Rule' : isEditMode ? 'Edit Rule' : 'Create Rule'}
           </DialogTitle>
         </DialogHeader>
 
@@ -901,7 +912,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
               onClick={handleSubmit}
               disabled={mutation.isPending || checkingName || !!nameError}
             >
-              {mutation.isPending ? (isEditMode ? 'Saving...' : 'Creating...') : (isEditMode ? 'Save Changes' : 'Create')}
+              {mutation.isPending ? (isPromoteMode ? 'Promoting...' : isEditMode ? 'Saving...' : 'Creating...') : (isPromoteMode ? 'Promote Rule' : isEditMode ? 'Save Changes' : 'Create')}
             </Button>
           </div>
         </DialogFooter>

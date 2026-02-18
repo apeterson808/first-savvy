@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '../../contexts/ProfileContext';
 import { transactionRulesApi } from '../../api/transactionRules';
-import { supabase } from '../../api/supabaseClient';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import {
@@ -54,6 +53,7 @@ export default function RulesTab() {
   const queryClient = useQueryClient();
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [promoteDialogOpen, setPromoteDialogOpen] = useState(false);
   const [testDialogOpen, setTestDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRule, setSelectedRule] = useState(null);
@@ -94,20 +94,6 @@ export default function RulesTab() {
     onError: () => toast.error('Failed to duplicate rule')
   });
 
-  const promoteMutation = useMutation({
-    mutationFn: async (ruleId) => {
-      const { error } = await supabase
-        .from('transaction_rules')
-        .update({ created_from_transaction_id: null, updated_at: new Date().toISOString() })
-        .eq('id', ruleId);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries(['transaction-rules']);
-      toast.success('Rule promoted to an active rule');
-    },
-    onError: () => toast.error('Failed to promote rule')
-  });
 
   const handleToggle = (rule) => {
     toggleMutation.mutate({ ruleId: rule.id, enabled: !rule.is_enabled });
@@ -133,7 +119,8 @@ export default function RulesTab() {
   };
 
   const handlePromote = (rule) => {
-    promoteMutation.mutate(rule.id);
+    setSelectedRule(rule);
+    setPromoteDialogOpen(true);
   };
 
   const getMatchModeLabel = (mode) => {
@@ -244,7 +231,6 @@ export default function RulesTab() {
                     variant="outline"
                     className="h-7 text-xs gap-1 text-emerald-700 border-emerald-200 hover:bg-emerald-50"
                     onClick={() => handlePromote(rule)}
-                    disabled={promoteMutation.isPending}
                   >
                     <ArrowUpRight className="w-3 h-3" />
                     Promote
@@ -437,6 +423,14 @@ export default function RulesTab() {
             mode="edit"
             open={editDialogOpen}
             onOpenChange={setEditDialogOpen}
+            rule={selectedRule}
+            profileId={activeProfile?.id}
+          />
+
+          <RuleDialog
+            mode="promote"
+            open={promoteDialogOpen}
+            onOpenChange={setPromoteDialogOpen}
             rule={selectedRule}
             profileId={activeProfile?.id}
           />
