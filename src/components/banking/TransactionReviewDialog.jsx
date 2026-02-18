@@ -12,7 +12,6 @@ import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
 import { format } from 'date-fns';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
-import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { toast } from 'sonner';
 import { Label } from '../ui/label';
 import { calculateBeginningBalanceFromCurrent } from './StatementProcessor';
@@ -54,52 +53,12 @@ export function TransactionReviewDialog({
           setBulkAccountId(extractedData.suggestedAccountId);
         }
 
-        try {
-          const memoriesMap = {};
-          for (const txn of txns) {
-            const memoryTxn = {
-              date: txn.date,
-              original_description: txn.description,
-              description: txn.description,
-              amount: txn.amount,
-              bank_account_id: extractedData.suggestedAccountId
-            };
-
-            const rememberedCategoryId = await categorizationMemoryAPI.lookupMemory(profileId, memoryTxn);
-            if (rememberedCategoryId) {
-              memoriesMap[txn.id] = rememberedCategoryId;
-            }
-          }
-
-          const memorizedCount = Object.keys(memoriesMap).length;
-          if (memorizedCount > 0) {
-            processedTxns = txns.map(t => ({
-              ...t,
-              chartAccountId: extractedData.suggestedAccountId || null,
-              categoryAccountId: memoriesMap[t.id] || null,
-              categoryFromMemory: !!memoriesMap[t.id]
-            }));
-
-            toast.success(`Found ${memorizedCount} remembered categorization${memorizedCount !== 1 ? 's' : ''}`, {
-              icon: <Brain className="w-4 h-4" />,
-              description: 'Categories from previous imports'
-            });
-          } else if (extractedData.suggestedAccountId) {
-            processedTxns = txns.map(t => ({
-              ...t,
-              chartAccountId: extractedData.suggestedAccountId,
-              categoryAccountId: null
-            }));
-          }
-        } catch (error) {
-          console.error('Failed to lookup categorization memories:', error);
-          if (extractedData.suggestedAccountId) {
-            processedTxns = txns.map(t => ({
-              ...t,
-              chartAccountId: extractedData.suggestedAccountId,
-              categoryAccountId: null
-            }));
-          }
+        if (extractedData.suggestedAccountId) {
+          processedTxns = txns.map(t => ({
+            ...t,
+            chartAccountId: extractedData.suggestedAccountId,
+            categoryAccountId: null
+          }));
         }
 
         setTransactions(processedTxns);

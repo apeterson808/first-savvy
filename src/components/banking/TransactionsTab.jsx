@@ -58,10 +58,7 @@ import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetec
 import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
-import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { useAuth } from '@/contexts/AuthContext';
-import { getSuggestionsForTransaction } from '@/api/simpleSuggestions';
-import { transactionRulesApi } from '@/api/transactionRules';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -97,8 +94,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
-  const [categorySuggestions, setCategorySuggestions] = useState({});
-  const [contactSuggestions, setContactSuggestions] = useState({});
   const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
   const [transferPostPreviewOpen, setTransferPostPreviewOpen] = useState(false);
   const [matchingTransfer, setMatchingTransfer] = useState(null);
@@ -125,10 +120,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [ruleMode, setRuleMode] = useState('create');
   const [editJournalEntryDialogOpen, setEditJournalEntryDialogOpen] = useState(false);
   const [editingJournalEntryId, setEditingJournalEntryId] = useState(null);
-  const [autoCategorizing, setAutoCategorizing] = useState(false);
-  const [autoCategorizeProgress, setAutoCategorizeProgress] = useState({ current: 0, total: 0, categorized: 0, skipped: 0 });
-  const [autoCategorizeAbortController, setAutoCategorizeAbortController] = useState(null);
-  const [suggestionMetadata, setSuggestionMetadata] = useState({});
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -465,8 +456,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
   const isScanningRef = React.useRef(false);
-  const fetchedSuggestionsRef = React.useRef(new Set());
-  const fetchedContactSuggestionsRef = React.useRef(new Set());
   const queryClient = useQueryClient();
 
   const { data: fullPendingTransactions = [] } = useQuery({
@@ -488,89 +477,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
-
-  React.useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!activeProfile?.id || transactions.length === 0) return;
-
-      const pendingTransactions = transactions.filter(txn =>
-        !txn.category_account_id &&
-        txn.type !== 'transfer' &&
-        !fetchedSuggestionsRef.current.has(txn.id)
-      );
-
-      if (pendingTransactions.length === 0) return;
-
-      const newSuggestions = {};
-      const newMetadata = {};
-
-      for (const txn of pendingTransactions) {
-        try {
-          let suggestionFound = false;
-
-          const matchingRules = await transactionRulesApi.findMatchingRules(txn.id);
-          if (matchingRules && matchingRules.length > 0) {
-            const rule = matchingRules[0];
-            if (rule.action_set_category_id) {
-              newSuggestions[txn.id] = rule.action_set_category_id;
-              newMetadata[txn.id] = {
-                type: 'rule',
-                ruleName: rule.name,
-                ruleId: rule.id
-              };
-              suggestionFound = true;
-            }
-          }
-
-          if (!suggestionFound) {
-            const memoryCategoryId = await categorizationMemoryAPI.lookupMemory(
-              activeProfile.id,
-              txn
-            );
-            if (memoryCategoryId) {
-              newSuggestions[txn.id] = memoryCategoryId;
-              newMetadata[txn.id] = {
-                type: 'memory'
-              };
-              suggestionFound = true;
-            }
-          }
-
-          if (!suggestionFound) {
-            const patternSuggestion = await getSuggestionsForTransaction(txn, activeProfile.id);
-            if (patternSuggestion && patternSuggestion.categoryId) {
-              newSuggestions[txn.id] = patternSuggestion.categoryId;
-              newMetadata[txn.id] = {
-                type: 'pattern',
-                categoryName: patternSuggestion.categoryName,
-                usageCount: patternSuggestion.usageCount,
-                confidence: patternSuggestion.confidence
-              };
-              suggestionFound = true;
-            }
-
-            if (patternSuggestion && patternSuggestion.contactId) {
-              setContactSuggestions(prev => ({
-                ...prev,
-                [txn.id]: patternSuggestion.contactId
-              }));
-            }
-          }
-
-          fetchedSuggestionsRef.current.add(txn.id);
-        } catch (error) {
-          console.error(`Error fetching suggestion for transaction ${txn.id}:`, error);
-        }
-      }
-
-      if (Object.keys(newSuggestions).length > 0) {
-        setCategorySuggestions(prev => ({ ...prev, ...newSuggestions }));
-        setSuggestionMetadata(prev => ({ ...prev, ...newMetadata }));
-      }
-    };
-
-    fetchSuggestions();
-  }, [transactions.length, activeProfile?.id]);
 
   const { data: fetchedAccounts = [] } = useQuery({
     queryKey: ['activeAccounts', activeProfile?.id],
@@ -783,92 +689,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   });
 
-  const handleAutoCategorizeAll = async () => {
-    const uncategorizedTransactions = transactions
-      .filter(txn => !txn.category_account_id && txn.type !== 'transfer' && activeAccountIds.includes(txn.bank_account_id))
-      .sort((a, b) => {
-        const dateB = new Date(b.date);
-        const dateA = new Date(a.date);
-        if (dateB.getTime() !== dateA.getTime()) {
-          return dateB - dateA;
-        }
-        return b.id.localeCompare(a.id);
-      });
-
-    if (uncategorizedTransactions.length === 0) {
-      toast.info('No uncategorized transactions found');
-      return;
-    }
-
-    setAutoCategorizing(true);
-    setAutoCategorizeProgress({ current: 0, total: uncategorizedTransactions.length, categorized: 0, skipped: 0 });
-
-    const abortController = new AbortController();
-    setAutoCategorizeAbortController(abortController);
-
-    let categorizedCount = 0;
-    let skippedCount = 0;
-
-    try {
-      const batchSize = 10;
-      for (let i = 0; i < uncategorizedTransactions.length; i += batchSize) {
-        if (abortController.signal.aborted) {
-          toast.info('Auto-categorization stopped');
-          break;
-        }
-
-        const batch = uncategorizedTransactions.slice(i, i + batchSize);
-
-        await Promise.all(
-          batch.map(async (txn, batchIndex) => {
-            if (abortController.signal.aborted) return;
-
-            const currentIndex = i + batchIndex;
-            setAutoCategorizeProgress(prev => ({ ...prev, current: currentIndex + 1 }));
-
-            try {
-              const categoryId = categorySuggestions[txn.id];
-
-              if (categoryId) {
-                await firstsavvy.entities.Transaction.update(txn.id, {
-                  category_account_id: categoryId
-                });
-                categorizedCount++;
-                setAutoCategorizeProgress(prev => ({ ...prev, categorized: categorizedCount }));
-              } else {
-                skippedCount++;
-                setAutoCategorizeProgress(prev => ({ ...prev, skipped: skippedCount }));
-              }
-            } catch (error) {
-              console.error(`Failed to categorize transaction ${txn.id}:`, error);
-              skippedCount++;
-              setAutoCategorizeProgress(prev => ({ ...prev, skipped: skippedCount }));
-            }
-          })
-        );
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
-
-      if (!abortController.signal.aborted) {
-        toast.success(`Auto-categorization complete! Categorized ${categorizedCount} transactions, skipped ${skippedCount}`);
-      }
-    } catch (error) {
-      console.error('Auto-categorization error:', error);
-      toast.error('Failed to auto-categorize transactions');
-    } finally {
-      setAutoCategorizing(false);
-      setAutoCategorizeAbortController(null);
-    }
-  };
-
-  const handleStopAutoCategorize = () => {
-    if (autoCategorizeAbortController) {
-      autoCategorizeAbortController.abort();
-    }
-  };
 
   const getDateRange = () => {
     const today = new Date();
@@ -1853,57 +1673,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         Detect Transfers
                       </ClickThroughDropdownMenuItem>
                     )}
-                    <ClickThroughDropdownMenuItem
-                      onClick={handleAutoCategorizeAll}
-                      disabled={autoCategorizing}
-                    >
-                      Auto-Categorize All
-                    </ClickThroughDropdownMenuItem>
                   </ClickThroughDropdownMenuContent>
                 </ClickThroughDropdownMenu>
               </div>
             </div>
           </div>
-
-          {/* Auto-Categorization Progress */}
-          {autoCategorizing && (
-            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mb-3">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                  <span className="text-sm font-medium text-blue-900">
-                    Auto-categorizing transactions...
-                  </span>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleStopAutoCategorize}
-                  className="h-7 text-xs"
-                >
-                  Stop
-                </Button>
-              </div>
-              <div className="space-y-1">
-                <div className="flex justify-between text-xs text-blue-700">
-                  <span>
-                    Processing {autoCategorizeProgress.current} of {autoCategorizeProgress.total}
-                  </span>
-                  <span>
-                    Categorized: {autoCategorizeProgress.categorized} | Skipped: {autoCategorizeProgress.skipped}
-                  </span>
-                </div>
-                <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
-                  <div
-                    className="bg-blue-600 h-full transition-all duration-300"
-                    style={{
-                      width: `${(autoCategorizeProgress.current / autoCategorizeProgress.total) * 100}%`
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
@@ -2110,7 +1884,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             return (
                               <div onClick={(e) => e.stopPropagation()}>
                                 <ContactDropdown
-                                  value={transaction.contact_id || contactSuggestions[transaction.id]}
+                                  value={transaction.contact_id}
                                   onValueChange={(value) => {
                                     if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                     updateMutation.mutate({
@@ -2122,7 +1896,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     });
                                   }}
                                   transactionDescription={transaction.description}
-                                  aiSuggestionId={contactSuggestions[transaction.id]}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                   onAddNew={(searchTerm) => {
                                     setContactSearchTerm(searchTerm);
@@ -2372,40 +2145,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             return (
                               <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
-                                {(() => {
-                                  const metadata = suggestionMetadata[transaction.id];
-                                  const hasSuggestion = categorySuggestions[transaction.id];
-
-                                  if (transaction.applied_rule_id || (metadata && metadata.type === 'rule')) {
-                                    return (
-                                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
-                                        RULE
-                                      </Badge>
-                                    );
-                                  }
-
-                                  if (metadata && metadata.type === 'memory' && hasSuggestion) {
-                                    return (
-                                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-green-50 text-green-700 border-green-200 flex-shrink-0">
-                                        MEMORY
-                                      </Badge>
-                                    );
-                                  }
-
-                                  if (metadata && metadata.type === 'pattern' && hasSuggestion) {
-                                    return (
-                                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-gray-50 text-gray-700 border-gray-200 flex-shrink-0">
-                                        {metadata.usageCount}x
-                                      </Badge>
-                                    );
-                                  }
-
-                                  return null;
-                                })()}
+                                {transaction.applied_rule_id && (
+                                  <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
+                                    RULE
+                                  </Badge>
+                                )}
                                 <div className="flex-1 min-w-0">
                                   <CategoryDropdown
-                                    value={transaction.category_account_id || categorySuggestions[transaction.id]}
-                                    aiSuggestion={categorySuggestions[transaction.id]}
+                                    value={transaction.category_account_id}
                                     onValueChange={async (value) => {
                                       if (!activeAccountIds.includes(transaction.bank_account_id)) return;
                                       const categoryValue = value === '' ? null : value;
@@ -2424,16 +2171,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           category_account_id: categoryValue
                                         }
                                       });
-
-                                      if (categoryValue && activeProfile?.id) {
-                                        categorizationMemoryAPI.storeMemory(
-                                          activeProfile.id,
-                                          transaction,
-                                          categoryValue
-                                        ).catch(error => {
-                                          console.error('Failed to store categorization memory:', error);
-                                        });
-                                      }
                                     }}
                                     transactionType={transaction.type}
                                     disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
@@ -2447,7 +2184,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     placeholder="Select category"
                                     isTransactionTransfer={transaction.type === 'transfer'}
                                     transactionAmount={transaction.amount}
-                                    aiSuggestionId={categorySuggestions[transaction.id]}
                                   />
                                 </div>
                               </div>
