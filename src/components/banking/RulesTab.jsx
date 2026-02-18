@@ -78,6 +78,7 @@ export default function RulesTab() {
     mutationFn: (ruleId) => transactionRulesApi.deleteRule(ruleId),
     onSuccess: () => {
       queryClient.invalidateQueries(['transaction-rules']);
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       toast.success('Rule deleted');
       setDeleteDialogOpen(false);
       setRuleToDelete(null);
