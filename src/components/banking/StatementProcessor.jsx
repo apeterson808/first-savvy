@@ -117,25 +117,18 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
       });
 
       // For credit cards with separate debit/credit columns:
-      // - Debit column = purchases/charges (always positive, always expense)
-      // - Credit column = payments (negative) or refunds (positive)
-      //   - Negative credit = payment made (expense/transfer)
-      //   - Positive credit = refund received (income)
+      // - Debit column = purchases/charges (always positive) → Spent
+      // - Credit column = payments and refunds (always negative) → Received
+      //   All credit column items are income (will be matched as transfers later)
 
       if (Math.abs(debit) > 0) {
-        // Debit column has a value = this is a purchase
+        // Debit column has a value = this is a purchase (expense)
         amount = Math.abs(debit);
         type = 'expense';
       } else if (Math.abs(credit) > 0) {
-        // Credit column has a value
+        // Credit column has a value = payment or refund (income)
         amount = Math.abs(credit);
-        if (credit < 0) {
-          // Negative credit = payment made (expense/transfer)
-          type = 'expense';
-        } else {
-          // Positive credit = refund (income)
-          type = 'income';
-        }
+        type = 'income';
       }
     } else {
       const rawAmount = parseFloat(row[columnMappings.amount]?.replace(/[^0-9.-]/g, '') || 0);
