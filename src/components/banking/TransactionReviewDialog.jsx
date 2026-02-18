@@ -204,29 +204,30 @@ export function TransactionReviewDialog({
       if (insertedTransactions && insertedTransactions.length > 0) {
         const transactionIds = insertedTransactions.map(t => t.id);
 
-        const { data: fullTransactions } = await supabase
-          .from('transactions')
-          .select('*')
-          .in('id', transactionIds);
-
-        let transfersCount = 0;
-
+        // Phase 2: Enqueue background detection jobs instead of running client-side
         try {
-          await transferAutoDetectionAPI.detectTransfers(profileId, transactionIds);
-          const { count } = await supabase
-            .from('transactions')
-            .select('id', { count: 'exact' })
-            .in('id', transactionIds)
-            .eq('type', 'transfer');
-          transfersCount = count || 0;
+          const { detectionQueueAPI } = await import('../../api/detectionQueue');
+          const { batchId, error: queueError } = await detectionQueueAPI.enqueueDetection(
+            profileId,
+            transactionIds,
+            'csv_import'
+          );
+
+          if (queueError) {
+            console.warn('Failed to enqueue detection jobs:', queueError);
+          } else {
+            console.log('Detection jobs enqueued, batch ID:', batchId);
+
+            // Trigger worker to start processing immediately
+            detectionQueueAPI.triggerWorker().catch(err =>
+              console.warn('Worker trigger failed:', err)
+            );
+          }
         } catch (err) {
-          console.warn('Transfer auto-detection failed:', err);
+          console.warn('Detection queue not available:', err);
         }
 
-        const successMessage = [
-          `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported`,
-          transfersCount > 0 && `${transfersCount} transfer${transfersCount !== 1 ? 's' : ''} detected`
-        ].filter(Boolean).join(', ');
+        const successMessage = `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported. Detection running in background.`;
 
         toast.success(successMessage, {
           duration: 5000,
