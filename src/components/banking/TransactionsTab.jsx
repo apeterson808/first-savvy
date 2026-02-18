@@ -58,12 +58,11 @@ import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetec
 import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
-import aiCategorizationApi from '@/api/aiCategorization';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
 import { contactSuggestionAPI } from '@/api/contactSuggestion';
 import { useAuth } from '@/contexts/AuthContext';
-import { getAiCategorySuggestionsForTransactions } from '@/api/aiCategorySuggestions';
-import { getAiContactSuggestionsForTransactions } from '@/api/aiContactSuggestions';
+import { getSuggestionsForTransaction } from '@/api/simpleSuggestions';
+import { transactionRulesApi } from '@/api/transactionRules';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -130,6 +129,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [autoCategorizing, setAutoCategorizing] = useState(false);
   const [autoCategorizeProgress, setAutoCategorizeProgress] = useState({ current: 0, total: 0, categorized: 0, skipped: 0 });
   const [autoCategorizeAbortController, setAutoCategorizeAbortController] = useState(null);
+  const [suggestionMetadata, setSuggestionMetadata] = useState({});
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -491,55 +491,87 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
 
   React.useEffect(() => {
-    const loadExistingSuggestions = async () => {
+    const fetchSuggestions = async () => {
       if (!activeProfile?.id || transactions.length === 0) return;
 
-      const transactionIds = transactions.map(txn => txn.id);
-      const { data: suggestions } = await getAiCategorySuggestionsForTransactions(
-        transactionIds,
-        activeProfile.id
+      const pendingTransactions = transactions.filter(txn =>
+        !txn.category_account_id &&
+        txn.type !== 'transfer' &&
+        !fetchedSuggestionsRef.current.has(txn.id)
       );
 
-      if (suggestions && suggestions.length > 0) {
-        const suggestionsMap = {};
-        suggestions.forEach(s => {
-          suggestionsMap[s.transaction_id] = s.suggested_category_account_id;
-          // Mark as fetched so we don't run AI again for these
-          fetchedSuggestionsRef.current.add(s.transaction_id);
-        });
-        setCategorySuggestions(prev => ({ ...prev, ...suggestionsMap }));
+      if (pendingTransactions.length === 0) return;
+
+      const newSuggestions = {};
+      const newMetadata = {};
+
+      for (const txn of pendingTransactions) {
+        try {
+          let suggestionFound = false;
+
+          const matchingRules = await transactionRulesApi.findMatchingRules(txn.id);
+          if (matchingRules && matchingRules.length > 0) {
+            const rule = matchingRules[0];
+            if (rule.action_set_category_id) {
+              newSuggestions[txn.id] = rule.action_set_category_id;
+              newMetadata[txn.id] = {
+                type: 'rule',
+                ruleName: rule.name,
+                ruleId: rule.id
+              };
+              suggestionFound = true;
+            }
+          }
+
+          if (!suggestionFound) {
+            const memoryResult = await categorizationMemoryAPI.lookupCategorization(
+              txn.description,
+              activeProfile.id
+            );
+            if (memoryResult && memoryResult.category_account_id) {
+              newSuggestions[txn.id] = memoryResult.category_account_id;
+              newMetadata[txn.id] = {
+                type: 'memory',
+                categoryName: memoryResult.category_name
+              };
+              suggestionFound = true;
+            }
+          }
+
+          if (!suggestionFound) {
+            const patternSuggestion = await getSuggestionsForTransaction(txn, activeProfile.id);
+            if (patternSuggestion && patternSuggestion.categoryId) {
+              newSuggestions[txn.id] = patternSuggestion.categoryId;
+              newMetadata[txn.id] = {
+                type: 'pattern',
+                categoryName: patternSuggestion.categoryName,
+                usageCount: patternSuggestion.usageCount,
+                confidence: patternSuggestion.confidence
+              };
+              suggestionFound = true;
+            }
+
+            if (patternSuggestion && patternSuggestion.contactId) {
+              setContactSuggestions(prev => ({
+                ...prev,
+                [txn.id]: patternSuggestion.contactId
+              }));
+            }
+          }
+
+          fetchedSuggestionsRef.current.add(txn.id);
+        } catch (error) {
+          console.error(`Error fetching suggestion for transaction ${txn.id}:`, error);
+        }
+      }
+
+      if (Object.keys(newSuggestions).length > 0) {
+        setCategorySuggestions(prev => ({ ...prev, ...newSuggestions }));
+        setSuggestionMetadata(prev => ({ ...prev, ...newMetadata }));
       }
     };
 
-    loadExistingSuggestions();
-  }, [transactions.length, activeProfile?.id]);
-
-  React.useEffect(() => {
-    const fetchAISuggestions = async () => {
-      if (!activeProfile?.id || transactions.length === 0) return;
-
-      const uncategorizedTransactions = transactions
-        .filter(txn =>
-          !txn.category_account_id &&
-          txn.type !== 'transfer' &&
-          !fetchedSuggestionsRef.current.has(txn.id)
-        );
-
-      if (uncategorizedTransactions.length === 0) return;
-
-      const newSuggestions = await aiCategorizationApi.getSuggestionsForTransactions(
-        uncategorizedTransactions,
-        activeProfile.id
-      );
-
-      uncategorizedTransactions.forEach(txn => {
-        fetchedSuggestionsRef.current.add(txn.id);
-      });
-
-      setCategorySuggestions(prev => ({ ...prev, ...newSuggestions }));
-    };
-
-    fetchAISuggestions();
+    fetchSuggestions();
   }, [transactions.length, activeProfile?.id]);
 
   const { data: fetchedAccounts = [] } = useQuery({
@@ -850,17 +882,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             setAutoCategorizeProgress(prev => ({ ...prev, current: currentIndex + 1 }));
 
             try {
-              let categoryId = categorySuggestions[txn.id];
-
-              if (!categoryId) {
-                const suggestion = await aiCategorizationApi.getSuggestion(txn);
-                categoryId = suggestion?.categoryId;
-
-                if (categoryId) {
-                  setCategorySuggestions(prev => ({ ...prev, [txn.id]: categoryId }));
-                  fetchedSuggestionsRef.current.add(txn.id);
-                }
-              }
+              const categoryId = categorySuggestions[txn.id];
 
               if (categoryId) {
                 await firstsavvy.entities.Transaction.update(txn.id, {
@@ -2153,9 +2175,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         contact_manually_set: true
                                       }
                                     });
-
-                                    // Keep the suggestion in state so it remains visible in the dropdown
-                                    // This allows users to easily revert to the AI suggestion if needed
                                   }}
                                   transactionDescription={transaction.description}
                                   aiSuggestionId={contactSuggestions[transaction.id]}
@@ -2408,11 +2427,36 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             return (
                               <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
-                                {transaction.applied_rule_id && (
-                                  <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
-                                    RULE
-                                  </Badge>
-                                )}
+                                {(() => {
+                                  const metadata = suggestionMetadata[transaction.id];
+                                  const hasSuggestion = categorySuggestions[transaction.id];
+
+                                  if (transaction.applied_rule_id || (metadata && metadata.type === 'rule')) {
+                                    return (
+                                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
+                                        RULE
+                                      </Badge>
+                                    );
+                                  }
+
+                                  if (metadata && metadata.type === 'memory' && hasSuggestion) {
+                                    return (
+                                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-green-50 text-green-700 border-green-200 flex-shrink-0">
+                                        MEMORY
+                                      </Badge>
+                                    );
+                                  }
+
+                                  if (metadata && metadata.type === 'pattern' && hasSuggestion) {
+                                    return (
+                                      <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-gray-50 text-gray-700 border-gray-200 flex-shrink-0">
+                                        {metadata.usageCount}x
+                                      </Badge>
+                                    );
+                                  }
+
+                                  return null;
+                                })()}
                                 <div className="flex-1 min-w-0">
                                   <CategoryDropdown
                                     value={transaction.category_account_id || categorySuggestions[transaction.id]}
@@ -2435,9 +2479,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           category_account_id: categoryValue
                                         }
                                       });
-
-                                      // Keep the suggestion in state so it remains visible in the dropdown
-                                      // This allows users to easily revert to the AI suggestion if needed
 
                                       if (categoryValue && activeProfile?.id) {
                                         categorizationMemoryAPI.storeMemory(
