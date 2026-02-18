@@ -226,6 +226,18 @@ export default function RulesTab() {
             <TableCell>
               {isSuggested ? (
                 <div className="flex items-center gap-1">
+                  {(rule.times_matched || 0) === 0 ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs gap-1 text-gray-500 border-gray-200 hover:bg-gray-50"
+                      onClick={() => deleteMutation.mutate(rule.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Dismiss
+                    </Button>
+                  ) : (
                   <Button
                     size="sm"
                     variant="outline"
@@ -235,6 +247,7 @@ export default function RulesTab() {
                     <ArrowUpRight className="w-3 h-3" />
                     Promote
                   </Button>
+                  )}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button variant="ghost" size="sm">
@@ -433,6 +446,11 @@ export default function RulesTab() {
             onOpenChange={setPromoteDialogOpen}
             rule={selectedRule}
             profileId={activeProfile?.id}
+            onPromoteSuccess={() => {
+              suggestedRules
+                .filter(r => r.id !== selectedRule?.id && (r.times_matched || 0) === 0)
+                .forEach(r => deleteMutation.mutate(r.id));
+            }}
           />
 
           <TestRuleDialog
