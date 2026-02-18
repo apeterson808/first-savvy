@@ -352,7 +352,9 @@ export default function AccountCreationWizard({
 
   const newItemRef = useRef(null);
   const balanceCsvFileInputRef = useRef(null);
+  const csvMapperRef = useRef(null);
   const [mappedTransactions, setMappedTransactions] = useState([]);
+  const [csvValidation, setCsvValidation] = useState({ isValid: false, transactionCount: 0, isBalanceExtraction: false });
   const [balanceData, setBalanceData] = useState(null);
   const [showBalanceImportDialog, setShowBalanceImportDialog] = useState(false);
   const [balanceImportStep, setBalanceImportStep] = useState('upload');
@@ -2549,6 +2551,7 @@ export default function AccountCreationWizard({
     return (
       <div className="space-y-4">
         <CsvColumnMapper
+          ref={csvMapperRef}
           csvData={processedData}
           onMap={handleCsvMapping}
           onCancel={() => {
@@ -2559,6 +2562,8 @@ export default function AccountCreationWizard({
             setCsvHadBalanceColumn(false);
             setCsvMappingConfig(null);
           }}
+          onValidationChange={setCsvValidation}
+          hideFooter={true}
           profileId={activeProfile?.id}
           institutionName={formData.institutionName || 'Unknown Bank'}
         />
@@ -2975,6 +2980,26 @@ export default function AccountCreationWizard({
                   >
                     <Check className="w-4 h-4 mr-1" />
                     Finish
+                  </Button>
+                )}
+
+                {currentStep === 'csv-mapping' && (
+                  <Button
+                    type="button"
+                    className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
+                    onClick={() => csvMapperRef.current?.handleMap()}
+                    disabled={!csvValidation.isValid || isLoading}
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                        Importing...
+                      </>
+                    ) : csvValidation.isBalanceExtraction ? (
+                      'Done'
+                    ) : (
+                      `Import ${csvValidation.transactionCount} Transactions`
+                    )}
                   </Button>
                 )}
 

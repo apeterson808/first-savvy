@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -58,7 +58,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false, profileId = null, institutionName = null }) {
+const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false, profileId = null, institutionName = null, onValidationChange, hideFooter = false }, ref) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -203,6 +203,20 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
 
   const isValid = columnMappings.date && columnMappings.description &&
     (columnMappings.amount || (debitColumn && creditColumn));
+
+  useEffect(() => {
+    if (onValidationChange) {
+      onValidationChange({
+        isValid,
+        transactionCount: csvData.rows?.length || 0,
+        isBalanceExtraction
+      });
+    }
+  }, [isValid, csvData.rows?.length, isBalanceExtraction, onValidationChange]);
+
+  useImperativeHandle(ref, () => ({
+    handleMap
+  }));
 
   const formatAmountValue = (value) => {
     if (!value || value === '-') return '-';
@@ -490,29 +504,33 @@ export default function CsvColumnMapper({ csvData, onMap, onCancel, isImporting 
         </div>
       )}
 
-      {/* Actions */}
-      <div className="flex justify-between items-center gap-3 pt-2.5 border-t border-slate-200">
-        <Button
-          variant="outline"
-          onClick={onCancel}
-          size="sm"
-          disabled={isImporting}
-          className="h-8 text-xs"
-        >
-          Back
-        </Button>
-        <Button
-          onClick={handleMap}
-          disabled={!isValid || isImporting}
-          className="bg-blue-600 hover:bg-blue-700 h-8 px-4 text-xs"
-          size="sm"
-        >
-          {isBalanceExtraction
-            ? (isImporting ? 'Processing...' : 'Done')
-            : (isImporting ? 'Importing...' : `Import ${csvData.rows?.length || 0} Transactions`)
-          }
-        </Button>
-      </div>
+      {/* Actions - Only shown when hideFooter is false */}
+      {!hideFooter && (
+        <div className="flex justify-between items-center gap-3 pt-2.5 border-t border-slate-200">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            size="sm"
+            disabled={isImporting}
+            className="h-8 text-xs"
+          >
+            Back
+          </Button>
+          <Button
+            onClick={handleMap}
+            disabled={!isValid || isImporting}
+            className="bg-blue-600 hover:bg-blue-700 h-8 px-4 text-xs"
+            size="sm"
+          >
+            {isBalanceExtraction
+              ? (isImporting ? 'Processing...' : 'Done')
+              : (isImporting ? 'Importing...' : `Import ${csvData.rows?.length || 0} Transactions`)
+            }
+          </Button>
+        </div>
+      )}
     </div>
   );
-}
+});
+
+export default CsvColumnMapper;
