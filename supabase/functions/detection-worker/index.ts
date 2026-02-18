@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const WORKER_ID = `worker-${Deno.env.get('HOSTNAME') || 'edge'}-${Date.now()}`;
+const WORKER_ID = `worker-${crypto.randomUUID()}`;
 
 interface DetectionJob {
   id: string;
