@@ -207,7 +207,7 @@ export const transactionRulesApi = {
       .from('transactions')
       .select('id')
       .eq('profile_id', profileId)
-      .in('status', ['pending', 'posted']);
+      .eq('status', 'pending');
 
     if (txError) throw txError;
 
