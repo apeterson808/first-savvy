@@ -59,6 +59,7 @@ import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCred
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import { useAuth } from '@/contexts/AuthContext';
+import { findSimilarUncategorized } from '@/utils/similarTransactions';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -120,6 +121,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [ruleMode, setRuleMode] = useState('create');
   const [editJournalEntryDialogOpen, setEditJournalEntryDialogOpen] = useState(false);
   const [editingJournalEntryId, setEditingJournalEntryId] = useState(null);
+  const [similarSuggestion, setSimilarSuggestion] = useState(null);
 
   const getTransactionAccountId = (transaction) => {
     return transaction.bank_account_id;
@@ -668,6 +670,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       if (!error && updatedTransaction?.id && variables?.data?.status === 'posted') {
         detectNewPayments([updatedTransaction.id]);
+      }
+
+      if (!error && variables?.data?.category_account_id) {
+        const allTxns = [
+          ...(queryClient.getQueryData(['fullPendingTransactions']) || []),
+          ...(queryClient.getQueryData(['fullPostedTransactions']) || []),
+        ];
+        const source = allTxns.find(t => t.id === variables.id) || { id: variables.id, description: '', original_description: '' };
+        const similar = findSimilarUncategorized(source, allTxns);
+        if (similar.length > 0) {
+          setSimilarSuggestion({
+            sourceTransaction: source,
+            categoryId: variables.data.category_account_id,
+            similarTransactions: similar
+          });
+        }
       }
     }
   });
@@ -1678,6 +1696,45 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               </div>
             </div>
           </div>
+
+          {/* Similar Transactions Banner */}
+          {similarSuggestion && (
+            <div className="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-md px-3 py-2 mb-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-amber-600 text-sm font-medium flex-shrink-0">
+                  {similarSuggestion.similarTransactions.length} similar uncategorized transaction{similarSuggestion.similarTransactions.length !== 1 ? 's' : ''} found
+                </span>
+                <span className="text-amber-500 text-xs truncate hidden sm:block">
+                  — apply &ldquo;{getCategoryById(similarSuggestion.categoryId)?.display_name || 'same category'}&rdquo; to all?
+                </span>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs border-amber-300 text-amber-700 hover:bg-amber-100"
+                  onClick={async () => {
+                    const ids = similarSuggestion.similarTransactions.map(t => t.id);
+                    for (const id of ids) {
+                      updateMutation.mutate({ id, data: { category_account_id: similarSuggestion.categoryId } });
+                    }
+                    setSimilarSuggestion(null);
+                    toast.success(`Applied category to ${ids.length} transaction${ids.length !== 1 ? 's' : ''}`);
+                  }}
+                >
+                  Apply to all
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 text-xs text-amber-600 hover:bg-amber-100 px-2"
+                  onClick={() => setSimilarSuggestion(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            </div>
+          )}
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
