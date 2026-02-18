@@ -202,6 +202,52 @@ export const transactionRulesApi = {
     return data;
   },
 
+  async applyManualRuleToAllTransactions(profileId, ruleId) {
+    const { data: transactions, error: txError } = await supabase
+      .from('transactions')
+      .select('id')
+      .eq('profile_id', profileId)
+      .in('status', ['pending', 'posted']);
+
+    if (txError) throw txError;
+
+    const { data: rule, error: ruleError } = await supabase
+      .from('transaction_rules')
+      .select('match_description_pattern, match_description_mode')
+      .eq('id', ruleId)
+      .maybeSingle();
+
+    if (ruleError) throw ruleError;
+
+    let applied = 0;
+    for (const tx of (transactions || [])) {
+      try {
+        const result = await this.applyRuleToTransaction(tx.id, ruleId, true);
+        if (result?.success) applied++;
+      } catch {}
+    }
+
+    if (rule?.match_description_pattern) {
+      const { data: conflictingSuggestions } = await supabase
+        .from('transaction_rules')
+        .select('id')
+        .eq('profile_id', profileId)
+        .eq('match_description_pattern', rule.match_description_pattern)
+        .eq('match_description_mode', rule.match_description_mode || 'contains')
+        .not('created_from_transaction_id', 'is', null)
+        .neq('id', ruleId);
+
+      if (conflictingSuggestions?.length > 0) {
+        await supabase
+          .from('transaction_rules')
+          .delete()
+          .in('id', conflictingSuggestions.map(r => r.id));
+      }
+    }
+
+    return applied;
+  },
+
   async applyRulesToTransactions(profileId, ruleIds = null, transactionIds = null) {
     let transactions;
 
@@ -233,6 +279,7 @@ export const transactionRulesApi = {
         .eq('profile_id', profileId)
         .eq('is_enabled', true)
         .in('id', ruleIds)
+        .order('created_from_transaction_id', { ascending: true, nullsFirst: true })
         .order('name', { ascending: true });
 
       if (error) throw error;
@@ -243,6 +290,7 @@ export const transactionRulesApi = {
         .select('id')
         .eq('profile_id', profileId)
         .eq('is_enabled', true)
+        .order('created_from_transaction_id', { ascending: true, nullsFirst: true })
         .order('name', { ascending: true });
 
       if (error) throw error;

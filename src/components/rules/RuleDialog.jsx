@@ -266,16 +266,19 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      return transactionRulesApi.createRule(profileId, data);
+      const newRule = await transactionRulesApi.createRule(profileId, data);
+      await transactionRulesApi.applyManualRuleToAllTransactions(profileId, newRule.id);
+      return newRule;
     },
     onSuccess: async (newRule) => {
       queryClient.invalidateQueries(['transaction-rules']);
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
       onOpenChange(false);
       resetForm();
-      toast.success('Rule created and automatically applied to matching transactions!');
+      toast.success('Rule created and applied to all matching transactions!');
     },
     onError: (error) => {
       console.error('Error creating rule:', error);
@@ -311,12 +314,17 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
           .update({ created_from_transaction_id: null, updated_at: new Date().toISOString() })
           .eq('id', rule.id);
         if (error) throw error;
+        await transactionRulesApi.applyManualRuleToAllTransactions(profileId, rule.id);
       }
       return updated;
     },
     onSuccess: () => {
       queryClient.invalidateQueries(['transaction-rules']);
-      toast.success(isPromoteMode ? 'Rule promoted to an active rule!' : 'Rule updated and applied to matching transactions!');
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
+      toast.success(isPromoteMode ? 'Rule promoted and applied to all matching transactions!' : 'Rule updated and applied to matching transactions!');
       onOpenChange(false);
       resetForm();
       if (isPromoteMode && onPromoteSuccess) onPromoteSuccess();
