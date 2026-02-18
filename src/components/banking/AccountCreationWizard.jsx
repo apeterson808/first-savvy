@@ -372,6 +372,7 @@ export default function AccountCreationWizard({
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [selectedAccountName, setSelectedAccountName] = useState('');
   const [isExistingAccount, setIsExistingAccount] = useState(false);
+  const [isCreatingAccount, setIsCreatingAccount] = useState(false);
   const [selectedCachedAccount, setSelectedCachedAccount] = useState(null);
   const [selectedStatements, setSelectedStatements] = useState([]);
   const [cacheImportMode, setCacheImportMode] = useState(false);
@@ -1415,7 +1416,8 @@ export default function AccountCreationWizard({
     createAccountMutation.isPending ||
     createAssetMutation.isPending ||
     createLiabilityMutation.isPending ||
-    createCategoryMutation.isPending;
+    createCategoryMutation.isPending ||
+    isCreatingAccount;
 
   const getTotalSteps = () => {
     if (currentStep === 'select-type') return 5;
@@ -1530,7 +1532,7 @@ export default function AccountCreationWizard({
       return;
     }
 
-    setIsLoading(true);
+    setIsCreatingAccount(true);
 
     try {
       // Step 1: Create the account
@@ -1540,7 +1542,7 @@ export default function AccountCreationWizard({
       });
       if (!balanceValidation.valid) {
         toast.error(balanceValidation.error);
-        setIsLoading(false);
+        setIsCreatingAccount(false);
         return;
       }
 
@@ -1626,7 +1628,7 @@ export default function AccountCreationWizard({
       console.error('Error creating account and importing transactions:', error);
       showErrorToast(error);
     } finally {
-      setIsLoading(false);
+      setIsCreatingAccount(false);
     }
   };
 
