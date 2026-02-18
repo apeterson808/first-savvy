@@ -1853,7 +1853,7 @@ export default function AccountCreationWizard({
                 setSelectedAccountName(value);
                 setSelectedAccountId(null);
                 setIsExistingAccount(false);
-                updateFormData('name', value);
+                updateFormData('displayName', value);
               }}
               placeholder="Enter account name..."
               className="h-9"
