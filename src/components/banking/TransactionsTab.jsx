@@ -59,7 +59,6 @@ import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCred
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import categorizationMemoryAPI from '@/api/categorizationMemory';
-import { contactSuggestionAPI } from '@/api/contactSuggestion';
 import { useAuth } from '@/contexts/AuthContext';
 import { getSuggestionsForTransaction } from '@/api/simpleSuggestions';
 import { transactionRulesApi } from '@/api/transactionRules';
@@ -524,15 +523,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           }
 
           if (!suggestionFound) {
-            const memoryResult = await categorizationMemoryAPI.lookupCategorization(
-              txn.description,
-              activeProfile.id
+            const memoryCategoryId = await categorizationMemoryAPI.lookupMemory(
+              activeProfile.id,
+              txn
             );
-            if (memoryResult && memoryResult.category_account_id) {
-              newSuggestions[txn.id] = memoryResult.category_account_id;
+            if (memoryCategoryId) {
+              newSuggestions[txn.id] = memoryCategoryId;
               newMetadata[txn.id] = {
-                type: 'memory',
-                categoryName: memoryResult.category_name
+                type: 'memory'
               };
               suggestionFound = true;
             }
@@ -647,59 +645,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     enabled: !!activeProfile?.id
   });
 
-  React.useEffect(() => {
-    const loadExistingContactSuggestions = async () => {
-      if (!activeProfile?.id || transactions.length === 0) return;
-
-      const transactionIds = transactions.map(txn => txn.id);
-      const { data: suggestions } = await getAiContactSuggestionsForTransactions(
-        transactionIds,
-        activeProfile.id
-      );
-
-      if (suggestions && suggestions.length > 0) {
-        const suggestionsMap = {};
-        suggestions.forEach(s => {
-          suggestionsMap[s.transaction_id] = s.suggested_contact_id;
-          // Mark as fetched so we don't run AI again for these
-          fetchedContactSuggestionsRef.current.add(s.transaction_id);
-        });
-        setContactSuggestions(prev => ({ ...prev, ...suggestionsMap }));
-      }
-    };
-
-    loadExistingContactSuggestions();
-  }, [transactions.length, activeProfile?.id]);
-
-  React.useEffect(() => {
-    const fetchContactSuggestions = async () => {
-      if (!activeProfile?.id || transactions.length === 0 || contacts.length === 0) return;
-
-      const transactionsNeedingContacts = transactions
-        .filter(txn =>
-          !txn.contact_id &&
-          txn.type !== 'transfer' &&
-          txn.description &&
-          !fetchedContactSuggestionsRef.current.has(txn.id)
-        );
-
-      if (transactionsNeedingContacts.length === 0) return;
-
-      const newSuggestions = await contactSuggestionAPI.getSuggestionsForTransactions(
-        transactionsNeedingContacts,
-        contacts,
-        activeProfile.id
-      );
-
-      transactionsNeedingContacts.forEach(txn => {
-        fetchedContactSuggestionsRef.current.add(txn.id);
-      });
-
-      setContactSuggestions(prev => ({ ...prev, ...newSuggestions }));
-    };
-
-    fetchContactSuggestions();
-  }, [transactions.length, contacts.length, activeProfile?.id]);
 
   const createMutation = useMutation({
     mutationFn: (data) => withRetry(() => firstsavvy.entities.Transaction.create(data), { maxRetries: 2 }),
