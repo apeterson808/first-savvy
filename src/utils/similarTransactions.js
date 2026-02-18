@@ -63,3 +63,18 @@ export function findSimilarUncategorized(categorizedTransaction, allTransactions
     return isSimilarDescription(sourceDesc, targetDesc);
   });
 }
+
+export function findSimilarWithoutContact(sourceTransaction, allTransactions) {
+  const sourceDesc = getDescriptionKey(sourceTransaction);
+  if (!sourceDesc) return [];
+
+  return allTransactions.filter(txn => {
+    if (txn.id === sourceTransaction.id) return false;
+    if (txn.contact_id) return false;
+    if (txn.type === 'transfer' || txn.type === 'credit_card_payment') return false;
+    if (txn.status === 'excluded') return false;
+
+    const targetDesc = getDescriptionKey(txn);
+    return isSimilarDescription(sourceDesc, targetDesc);
+  });
+}

@@ -59,7 +59,7 @@ import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCred
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import { useAuth } from '@/contexts/AuthContext';
-import { findSimilarUncategorized } from '@/utils/similarTransactions';
+import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -680,6 +680,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         const similar = findSimilarUncategorized(source, allTxns);
         for (const txn of similar) {
           updateMutation.mutate({ id: txn.id, data: { category_account_id: variables.data.category_account_id } });
+        }
+      }
+
+      if (!error && variables?.data?.contact_id) {
+        const allTxns = [
+          ...(queryClient.getQueryData(['fullPendingTransactions']) || []),
+          ...(queryClient.getQueryData(['fullPostedTransactions']) || []),
+        ];
+        const source = allTxns.find(t => t.id === variables.id) || { id: variables.id, description: '', original_description: '' };
+        const similar = findSimilarWithoutContact(source, allTxns);
+        for (const txn of similar) {
+          updateMutation.mutate({ id: txn.id, data: { contact_id: variables.data.contact_id, contact_manually_set: true } });
         }
       }
     }
