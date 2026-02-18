@@ -116,15 +116,26 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
         accountClass
       });
 
-      // For credit cards: debit = purchases (expense), credit = payments/refunds (income)
-      // For bank accounts: debit = withdrawals (expense), credit = deposits (income)
-      // Both follow the same logic: debit = expense, credit = income
-      if (Math.abs(credit) > 0) {
-        amount = Math.abs(credit);
-        type = 'income';
-      } else if (Math.abs(debit) > 0) {
+      // For credit cards with separate debit/credit columns:
+      // - Debit column = purchases/charges (always positive, always expense)
+      // - Credit column = payments (negative) or refunds (positive)
+      //   - Negative credit = payment made (expense/transfer)
+      //   - Positive credit = refund received (income)
+
+      if (Math.abs(debit) > 0) {
+        // Debit column has a value = this is a purchase
         amount = Math.abs(debit);
         type = 'expense';
+      } else if (Math.abs(credit) > 0) {
+        // Credit column has a value
+        amount = Math.abs(credit);
+        if (credit < 0) {
+          // Negative credit = payment made (expense/transfer)
+          type = 'expense';
+        } else {
+          // Positive credit = refund (income)
+          type = 'income';
+        }
       }
     } else {
       const rawAmount = parseFloat(row[columnMappings.amount]?.replace(/[^0-9.-]/g, '') || 0);
