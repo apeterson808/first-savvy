@@ -1237,7 +1237,7 @@ export default function AccountCreationWizard({
         await createAccountMutation.mutateAsync({
           account_name: formData.name,
           account_type: selectedSubtype.value,
-          current_balance: selectedSubtype.value === 'credit_card' ? Math.abs(openingBalance) : openingBalance,
+          current_balance: 0,
           institution_name: formData.institutionName || null,
           account_number_last4: formData.last4 || null,
           as_of_date: formData.beginningBalanceDate || formData.asOfDate || new Date().toISOString().split('T')[0],

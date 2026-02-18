@@ -361,9 +361,13 @@ export default function AccountDetail() {
 
     let beginningBal = null;
     if (dateRange.start && activitiesWithBalance.length > 0) {
-      beginningBal = account?.current_balance || 0;
-      const totalChange = activitiesWithBalance[activitiesWithBalance.length - 1].runningBalance;
-      beginningBal = beginningBal - totalChange;
+      const oldestActivity = activitiesWithBalance[activitiesWithBalance.length - 1];
+      const oldestBalance = oldestActivity.runningBalance;
+      const oldestDebit = oldestActivity.calculatedDebit || 0;
+      const oldestCredit = oldestActivity.calculatedCredit || 0;
+      const oldestChange = isDebitNormal ? (oldestDebit - oldestCredit) : (oldestCredit - oldestDebit);
+
+      beginningBal = oldestBalance - oldestChange;
 
       activitiesWithBalance.forEach(activity => {
         activity.runningBalance += beginningBal;
@@ -372,7 +376,7 @@ export default function AccountDetail() {
 
     const endingBal = activitiesWithBalance.length > 0
       ? activitiesWithBalance[0].runningBalance
-      : (account?.current_balance || 0);
+      : 0;
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
     const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
