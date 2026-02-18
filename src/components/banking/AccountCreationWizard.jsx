@@ -1010,14 +1010,30 @@ export default function AccountCreationWizard({
       }
     },
     onSuccess: async (newAccount) => {
-      if (newAccount.current_balance && newAccount.current_balance !== 0 && !newAccount._usedActivateTemplate) {
+      // Calculate the beginning balance before creating the opening balance journal entry
+      let beginningBalance = newAccount.current_balance;
+
+      if (mappedTransactions.length > 0 && formData.asOfDate) {
+        // If we're importing transactions, the current_balance is the ENDING balance
+        // We need to calculate what the BEGINNING balance was
+        const isLiability = newAccount.class?.toUpperCase() === 'LIABILITY';
+        beginningBalance = calculateBeginningBalanceFromCurrent(
+          newAccount.current_balance,
+          mappedTransactions,
+          formData.asOfDate,
+          isLiability
+        );
+        console.log('Calculated beginning balance:', beginningBalance, 'from ending balance:', newAccount.current_balance);
+      }
+
+      if (beginningBalance && beginningBalance !== 0 && !newAccount._usedActivateTemplate) {
         try {
           const openingDate = formData.asOfDate || new Date().toISOString().split('T')[0];
           await createOpeningBalanceJournalEntry({
             profileId: activeProfile.id,
             userId: user?.id,
             accountId: newAccount.id,
-            openingBalance: newAccount.current_balance,
+            openingBalance: beginningBalance,
             openingDate: openingDate,
             accountName: newAccount.display_name,
             accountClass: newAccount.class
