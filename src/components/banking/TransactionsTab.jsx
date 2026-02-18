@@ -550,6 +550,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     enabled: !!activeProfile?.id
   });
 
+  const autoLearnedRuleIds = new Set(
+    categorizationRules.filter(r => r.created_from_transaction_id).map(r => r.id)
+  );
+
   const { data: contacts = [] } = useQuery({
     queryKey: ['contacts', activeProfile?.id],
     queryFn: () => firstsavvy.entities.Contact.list('name', 1000),
@@ -2186,7 +2190,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             return (
                               <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
-                                {transaction.applied_rule_id && (
+                                {transaction.applied_rule_id && !autoLearnedRuleIds.has(transaction.applied_rule_id) && (
                                   <Badge variant="secondary" className="h-4 px-1 text-[9px] font-normal bg-blue-50 text-blue-700 border-blue-200 flex-shrink-0">
                                     RULE
                                   </Badge>
