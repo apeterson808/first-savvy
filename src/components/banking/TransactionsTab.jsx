@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink, ScanSearch } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -312,6 +312,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     if (!activeProfile?.id || isScanningRef.current) return;
 
     isScanningRef.current = true;
+    setIsScanning(true);
     const toastId = toast.loading('Scanning transactions for matches...');
 
     try {
@@ -340,6 +341,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       toast.error('Failed to scan for matches', { id: toastId });
     } finally {
       isScanningRef.current = false;
+      setIsScanning(false);
     }
   };
 
@@ -458,6 +460,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
   const isScanningRef = React.useRef(false);
+  const [isScanning, setIsScanning] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: fullPendingTransactions = [] } = useQuery({
@@ -1553,19 +1556,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   }, [expandedTransactionId]);
 
-  React.useEffect(() => {
-    const hasUnpairedPending = fullPendingTransactions?.some(
-      tx => !tx.transfer_pair_id && !tx.cc_payment_pair_id
-    );
-
-    if (activeProfile?.id && hasUnpairedPending) {
-      const timer = setTimeout(() => {
-        handleScanForMatches();
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [activeProfile?.id]);
 
   return (
       <>
@@ -1667,6 +1657,25 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleScanForMatches}
+                        disabled={isScanning}
+                      >
+                        {isScanning
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <ScanSearch className="w-4 h-4" />
+                        }
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Scan for matches</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
