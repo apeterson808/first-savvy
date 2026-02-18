@@ -102,6 +102,9 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
       const debit = parseFloat(row[debitColumn]?.replace(/[^0-9.-]/g, '') || 0);
       const credit = parseFloat(row[creditColumn]?.replace(/[^0-9.-]/g, '') || 0);
 
+      // For credit cards: debit = purchases (expense), credit = payments/refunds (income)
+      // For bank accounts: debit = withdrawals (expense), credit = deposits (income)
+      // Both follow the same logic: debit = expense, credit = income
       if (Math.abs(credit) > 0) {
         amount = Math.abs(credit);
         type = 'income';

@@ -722,12 +722,16 @@ export default function AccountDetail() {
     console.log('Ending Balance:', endingBalance);
     console.log('Account ID:', account.id);
 
+    const accountClass = account.account_class || account.class || 'asset';
+    console.log('Account Class:', accountClass);
+
     const transactions = mapCsvToTransactions(
       processedData,
       columnMappings,
       amountType,
       debitColumn,
-      creditColumn
+      creditColumn,
+      accountClass
     );
 
     setMappedTransactions(transactions);
