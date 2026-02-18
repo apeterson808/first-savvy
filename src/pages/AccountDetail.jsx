@@ -348,10 +348,15 @@ export default function AccountDetail() {
     });
 
     // All items are posted with pre-calculated running balance from database
+    // For liability accounts (credit cards), swap debit/credit display for user-friendly presentation
+    // - Accounting: Purchases = Credit liability, Payments = Debit liability
+    // - Display: Show purchases in "Debit" column, payments in "Credit" column to match user expectations
+    const isLiability = accountClass === 'liability';
+
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: activity.debitAmount || 0,
-      calculatedCredit: activity.creditAmount || 0
+      calculatedDebit: isLiability ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
+      calculatedCredit: isLiability ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
     }));
 
     let beginningBal = null;
@@ -440,10 +445,13 @@ export default function AccountDetail() {
       return dateB - dateA;
     });
 
+    // For liability accounts, swap debit/credit display to match user expectations
+    const isLiability = accountClass === 'liability';
+
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: activity.debitAmount || 0,
-      calculatedCredit: activity.creditAmount || 0
+      calculatedDebit: isLiability ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
+      calculatedCredit: isLiability ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
     }));
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
