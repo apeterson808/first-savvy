@@ -1582,18 +1582,8 @@ export default function AccountCreationWizard({
           .eq('id', newAccount.id);
       }
 
-      // Step 3: Create opening balance entry if beginningBalance is provided
-      if (formData.beginningBalance && parseFloat(formData.beginningBalance) !== 0) {
-        await createOpeningBalanceJournalEntry({
-          profileId: activeProfile.id,
-          userId: user.id,
-          accountId: newAccount.id,
-          openingBalance: parseFloat(formData.beginningBalance),
-          openingDate: formData.beginningBalanceDate,
-          accountName: newAccount.display_name,
-          accountClass: newAccount.class
-        });
-      }
+      // Step 3: Opening balance journal entry is already created by activate_template_account
+      // No need to create it again here
 
       // Step 4: Import all transactions as pending
       const pendingTransactions = mappedTransactions.map(txn => ({
