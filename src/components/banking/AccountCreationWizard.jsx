@@ -1574,7 +1574,15 @@ export default function AccountCreationWizard({
 
       if (accountError) throw accountError;
 
-      // Step 2: Create opening balance entry if beginningBalance is provided
+      // Step 2: Update account with ending balance in bank_balance field
+      if (formData.endingBalance) {
+        await firstsavvy
+          .from('user_chart_of_accounts')
+          .update({ bank_balance: parseFloat(formData.endingBalance) })
+          .eq('id', newAccount.id);
+      }
+
+      // Step 3: Create opening balance entry if beginningBalance is provided
       if (formData.beginningBalance && parseFloat(formData.beginningBalance) !== 0) {
         await createOpeningBalanceJournalEntry({
           profileId: activeProfile.id,
@@ -1587,35 +1595,33 @@ export default function AccountCreationWizard({
         });
       }
 
-      // Step 3: Import all transactions
-      const transactionPromises = mappedTransactions.map(txn => {
-        const lines = [
-          {
-            account_id: newAccount.id,
-            debit: txn.type === 'expense' || txn.type === 'debit' ? txn.amount : 0,
-            credit: txn.type === 'income' || txn.type === 'credit' ? txn.amount : 0,
-            description: txn.description
-          }
-        ];
+      // Step 4: Import all transactions as pending
+      const pendingTransactions = mappedTransactions.map(txn => ({
+        profile_id: activeProfile.id,
+        user_id: user.id,
+        bank_account_id: newAccount.id,
+        date: txn.date,
+        description: txn.description,
+        original_description: txn.description,
+        amount: txn.amount,
+        type: txn.type,
+        status: 'pending',
+        source: 'csv',
+        cleared_status: 'uncleared'
+      }));
 
-        return createJournalEntry({
-          profileId: activeProfile.id,
-          userId: user.id,
-          entryDate: txn.date,
-          description: txn.description,
-          entryType: 'transaction',
-          source: 'csv_import',
-          lines
-        });
-      });
+      const { error: insertError } = await firstsavvy
+        .from('transactions')
+        .insert(pendingTransactions);
 
-      await Promise.all(transactionPromises);
+      if (insertError) throw insertError;
 
-      // Step 4: Invalidate queries and close dialog
+      // Step 5: Invalidate queries and close dialog
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
       queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
 
       toast.success(`Account created with ${mappedTransactions.length} transactions imported!`);
       onAccountCreated?.({ type: 'account', account: newAccount });
