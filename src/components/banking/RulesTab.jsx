@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useProfile } from '../../contexts/ProfileContext';
 import { transactionRulesApi } from '../../api/transactionRules';
@@ -145,14 +145,6 @@ export default function RulesTab() {
 
   const manualRules = rules.filter(r => !r.created_from_transaction_id);
   const suggestedRules = rules.filter(r => !!r.created_from_transaction_id);
-
-  useEffect(() => {
-    const zeroMatchSuggested = suggestedRules.filter(r => (r.times_matched || 0) === 0);
-    zeroMatchSuggested.forEach(r => transactionRulesApi.deleteRule(r.id));
-    if (zeroMatchSuggested.length > 0) {
-      queryClient.invalidateQueries(['transaction-rules']);
-    }
-  }, [rules]);
 
   const enabledRules = manualRules.filter(r => r.is_enabled).length;
   const disabledRules = manualRules.filter(r => !r.is_enabled).length;

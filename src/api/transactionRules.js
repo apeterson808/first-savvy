@@ -22,7 +22,18 @@ export const transactionRulesApi = {
     const { data, error } = await query;
 
     if (error) throw error;
-    return data || [];
+
+    const allRules = data || [];
+    const zeroMatchSuggested = allRules.filter(r => r.created_from_transaction_id && (r.times_matched || 0) === 0);
+    if (zeroMatchSuggested.length > 0) {
+      await supabase
+        .from('transaction_rules')
+        .delete()
+        .in('id', zeroMatchSuggested.map(r => r.id));
+      return allRules.filter(r => !zeroMatchSuggested.find(z => z.id === r.id));
+    }
+
+    return allRules;
   },
 
   async getRule(ruleId) {
