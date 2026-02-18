@@ -1033,12 +1033,10 @@ export default function AccountCreationWizard({
       if (mappedTransactions.length > 0) {
         try {
           const startDate = formData.asOfDate;
-          console.log('Transaction import - mappedTransactions:', mappedTransactions.length, 'startDate:', startDate);
           const transactionsToImport = startDate
             ? mappedTransactions.filter(txn => new Date(txn.date) >= new Date(startDate))
             : mappedTransactions;
 
-          console.log('Transaction import - after date filter:', transactionsToImport.length, 'transactions');
           if (transactionsToImport.length > 0) {
             const transactionsWithAccount = transactionsToImport.map(txn => ({
               profile_id: activeProfile.id,
@@ -1062,7 +1060,6 @@ export default function AccountCreationWizard({
               console.error('Failed to import transactions:', importError);
               toast.error(`Account created but failed to import ${transactionsToImport.length} transactions`);
             } else {
-              console.log('Successfully imported', transactionsToImport.length, 'transactions');
               const endingBalanceValue = parseFloat(formData.endingBalance);
               if (!isNaN(endingBalanceValue)) {
                 const updateData = {
@@ -1087,7 +1084,6 @@ export default function AccountCreationWizard({
               toast.success(`Account created with ${transactionsToImport.length} transactions imported!`);
             }
           } else {
-            console.log('No transactions to import after date filtering');
             toast.warning(`Account created but no transactions matched the date filter. ${mappedTransactions.length} transactions were before ${startDate}`);
           }
         } catch (error) {
@@ -1095,7 +1091,6 @@ export default function AccountCreationWizard({
           toast.error('Account created but transaction import failed');
         }
       } else {
-        console.log('No mapped transactions available for import');
         toast.success('Account created successfully!');
       }
 

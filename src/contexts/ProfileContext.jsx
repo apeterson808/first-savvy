@@ -139,10 +139,6 @@ export const ProfileProvider = ({ children }) => {
 
       if (error) throw error;
 
-      if (data?.success) {
-        console.log('Provisioning successful:', data);
-      }
-
       return data;
     } catch (err) {
       console.error('Error ensuring complete provisioning:', err);

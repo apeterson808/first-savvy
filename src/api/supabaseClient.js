@@ -9,8 +9,6 @@ if (!supabaseUrl || !supabaseAnonKey) {
     hasKey: !!supabaseAnonKey,
     url: supabaseUrl
   });
-} else {
-  console.log('Supabase client initializing with URL:', supabaseUrl);
 }
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
@@ -132,8 +130,6 @@ const createEntityAPI = (tableName) => {
         }
       }
 
-      console.log(`[${tableName}] Creating record:`, recordToInsert);
-
       const { data, error } = await supabase
         .from(tableName)
         .insert(recordToInsert)
@@ -194,8 +190,6 @@ const createEntityAPI = (tableName) => {
           }
         }
       }
-
-      console.log(`[${tableName}] Updating record:`, { id, updates });
 
       let query = supabase
         .from(tableName)

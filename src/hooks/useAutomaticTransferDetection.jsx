@@ -18,12 +18,10 @@ export function useAutomaticTransferDetection(profileId, pendingTransactions = [
 
   const detectNewTransactions = useCallback((newTransactionIds) => {
     // NO-OP: Detection happens server-side via job queue
-    console.log('[useAutomaticTransferDetection] Client-side detection disabled (Phase 2)');
   }, []);
 
   const scanAllPendingTransactions = useCallback(async () => {
     // NO-OP: Detection happens server-side via job queue
-    console.log('[useAutomaticTransferDetection] Client-side detection disabled (Phase 2)');
     return { success: true, matchedCount: 0 };
   }, []);
 

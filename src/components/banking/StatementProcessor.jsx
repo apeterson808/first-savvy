@@ -15,10 +15,6 @@ export const processStatementFile = async (file, onProgress) => {
       trim: true
     });
 
-    if (parseResult.errors.length > 0) {
-      console.warn('CSV parsing warnings:', parseResult.errors);
-    }
-
     const data = parseResult.data;
 
     if (data.length < 2) {
@@ -94,12 +90,6 @@ export const parseDate = (dateStr) => {
 };
 
 export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn, accountClass = 'asset') => {
-  console.log('=== mapCsvToTransactions Debug ===');
-  console.log('Amount Type:', amountType);
-  console.log('Debit Column:', debitColumn);
-  console.log('Credit Column:', creditColumn);
-  console.log('Account Class:', accountClass);
-
   const allTransactions = csvData.rows.map(row => {
     let amount = 0;
     let type = 'expense';
@@ -107,14 +97,6 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
     if (amountType === 'separate_columns') {
       const debit = parseFloat(row[debitColumn]?.replace(/[^0-9.-]/g, '') || 0);
       const credit = parseFloat(row[creditColumn]?.replace(/[^0-9.-]/g, '') || 0);
-
-      console.log('Row:', {
-        debitRaw: row[debitColumn],
-        creditRaw: row[creditColumn],
-        debitParsed: debit,
-        creditParsed: credit,
-        accountClass
-      });
 
       // For credit cards with separate debit/credit columns:
       // - Debit column = purchases/charges (always positive) → Spent

@@ -695,11 +695,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => {
-      console.log('Transaction update mutation starting:', { id, data });
       return withRetry(() => firstsavvy.entities.Transaction.update(id, data), { maxRetries: 2 });
     },
     onMutate: async ({ id, data }) => {
-      console.log('Transaction update onMutate:', { id, data });
       await queryClient.cancelQueries({ queryKey: ['fullPendingTransactions'] });
       await queryClient.cancelQueries({ queryKey: ['fullPostedTransactions'] });
       await queryClient.cancelQueries({ queryKey: ['fullExcludedTransactions'] });
@@ -1345,7 +1343,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         }
       } else {
         // transfer_pair_id exists but no paired transaction found - post anyway
-        console.warn('transfer_pair_id exists but no paired transaction found');
         const result = await transactionService.postTransaction(transaction.id);
         if (result.error) {
           console.error('Failed to post transaction:', result.error);
@@ -2431,13 +2428,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                   queryClient.getQueryData(['chart-accounts', 'income', activeProfile?.id]) ||
                                                                   chartAccounts;
                                       const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
-
-                                      console.log('Category selected:', {
-                                        transactionId: transaction.id,
-                                        categoryValue,
-                                        selectedCategory,
-                                        categoryClass: selectedCategory?.class
-                                      });
 
                                       updateMutation.mutate({
                                         id: transaction.id,

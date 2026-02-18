@@ -18,12 +18,10 @@ export function useAutomaticCreditCardPaymentDetection(profileId, pendingTransac
 
   const detectNewPayments = useCallback(async (transactionIds = null) => {
     // NO-OP: Detection happens server-side via job queue
-    console.log('[useAutomaticCreditCardPaymentDetection] Client-side detection disabled (Phase 2)');
   }, []);
 
   const scanAllPendingTransactions = useCallback(async () => {
     // NO-OP: Detection happens server-side via job queue
-    console.log('[useAutomaticCreditCardPaymentDetection] Client-side detection disabled (Phase 2)');
     return { success: true, matchedCount: 0 };
   }, []);
 

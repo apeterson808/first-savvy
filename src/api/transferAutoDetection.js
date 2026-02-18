@@ -95,7 +95,9 @@ export const transferAutoDetectionAPI = {
         if (patternId) {
           await supabase.rpc('increment_pattern_acceptance', {
             p_pattern_id: patternId
-          }).catch(err => console.warn('Pattern update failed:', err));
+          }).catch(() => {
+            // Silently fail if pattern update fails
+          });
         }
       }
 
@@ -135,7 +137,9 @@ export const transferAutoDetectionAPI = {
       if (patternId) {
         await supabase.rpc('increment_pattern_rejection', {
           p_pattern_id: patternId
-        }).catch(err => console.warn('Pattern update failed:', err));
+        }).catch(() => {
+          // Silently fail if pattern update fails
+        });
       }
 
       return { error: null };

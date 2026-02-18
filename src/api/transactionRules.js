@@ -64,24 +64,12 @@ export const transactionRulesApi = {
       'created_from_transaction_id'
     ];
 
-    console.log('[API] createRule - Original ruleData:', ruleData);
-    console.log('[API] createRule - ruleData keys:', Object.keys(ruleData));
-
     const cleanedData = {};
-    const rejected = [];
     for (const key of Object.keys(ruleData)) {
       if (validColumns.includes(key)) {
         cleanedData[key] = ruleData[key];
-      } else {
-        rejected.push(key);
       }
     }
-
-    if (rejected.length > 0) {
-      console.warn('[API] createRule - Rejected invalid columns:', rejected);
-    }
-
-    console.log('[API] createRule - Cleaned data:', cleanedData);
 
     const insertData = {
       profile_id: profileId,
@@ -89,8 +77,6 @@ export const transactionRulesApi = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
-
-    console.log('[API] createRule - Final insert data:', insertData);
 
     const { data, error } = await supabase
       .from('transaction_rules')

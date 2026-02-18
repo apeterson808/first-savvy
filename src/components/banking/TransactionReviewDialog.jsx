@@ -213,18 +213,14 @@ export function TransactionReviewDialog({
             'csv_import'
           );
 
-          if (queueError) {
-            console.warn('Failed to enqueue detection jobs:', queueError);
-          } else {
-            console.log('Detection jobs enqueued, batch ID:', batchId);
-
+          if (!queueError && batchId) {
             // Trigger worker to start processing immediately
-            detectionQueueAPI.triggerWorker().catch(err =>
-              console.warn('Worker trigger failed:', err)
-            );
+            detectionQueueAPI.triggerWorker().catch(() => {
+              // Silently fail if worker trigger fails
+            });
           }
         } catch (err) {
-          console.warn('Detection queue not available:', err);
+          // Detection queue not available, continue without it
         }
 
         const successMessage = `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported. Detection running in background.`;

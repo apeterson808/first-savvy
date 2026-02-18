@@ -147,9 +147,6 @@ export default function AddEditCategorySheet({
           is_active: true,
         };
 
-        console.log('Creating category with data:', categoryData);
-        console.log('formData.type:', formData.type);
-
         const newCategory = await firstsavvy.entities.ChartAccount.create(categoryData);
 
         if (onCategoryCreated) {

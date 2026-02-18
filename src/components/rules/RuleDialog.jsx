@@ -151,11 +151,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         setConditionRows(rows);
       }
     } else if (transaction) {
-      console.log('[RuleDialog] Prefilling from transaction:', {
-        transaction,
-        category_account_id: transaction.category_account_id,
-        contact_id: transaction.contact_id
-      });
       setCategoryId(transaction.category_account_id || null);
       setContactId(transaction.contact_id || null);
       setConditionRows([
@@ -372,14 +367,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       return;
     }
 
-    console.log('[RuleDialog] Validation check:', {
-      newDescription,
-      categoryId,
-      contactId,
-      notes,
-      transaction
-    });
-
     if (!newDescription && !categoryId && !contactId && !notes) {
       toast.error('Please specify at least one action');
       return;
@@ -452,9 +439,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     }
 
     ruleData.auto_confirm_and_post = autoConfirmAndPost;
-
-    console.log('[RuleDialog] Final ruleData before mutation:', ruleData);
-    console.log('[RuleDialog] Final ruleData keys:', Object.keys(ruleData));
 
     if (isEditMode) {
       updateMutation.mutate(ruleData);
