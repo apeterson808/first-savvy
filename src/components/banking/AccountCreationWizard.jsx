@@ -70,7 +70,7 @@ import {
   getInstitutionAccounts,
   getAccountTransactions
 } from '@/api/bankSimulation';
-import { createOpeningBalanceJournalEntry } from '@/api/journalEntries';
+import { createJournalEntry, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 const VEHICLE_TYPES = [
@@ -1522,6 +1522,112 @@ export default function AccountCreationWizard({
       return formData.loanBalance && formData.loanInstitution;
     }
     return true;
+  };
+
+  const handleCreateAccountAndImportTransactions = async () => {
+    if (!formData.displayName || !formData.endingBalance || mappedTransactions.length === 0) {
+      toast.error('Missing required fields or transactions');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Step 1: Create the account
+      const balanceValidation = validateAmount(formData.endingBalance || '0', {
+        allowZero: true,
+        allowNegative: true
+      });
+      if (!balanceValidation.valid) {
+        toast.error(balanceValidation.error);
+        setIsLoading(false);
+        return;
+      }
+
+      const detailMap = {
+        'checking': 'checking_account',
+        'savings': 'savings_account',
+        'credit_card': 'personal_credit_card',
+      };
+      const accountDetail = detailMap[selectedSubtype.value] || selectedSubtype.value;
+
+      const templateAccount = chartAccounts.find(a => a.account_detail === accountDetail);
+      if (!templateAccount) {
+        throw new Error(`No template found for type: ${accountDetail}`);
+      }
+
+      const accountId = await activateTemplateAccount(activeProfile.id, templateAccount.account_number, {
+        customDisplayName: formData.displayName,
+        initialBalance: balanceValidation.value,
+        institutionName: formData.institutionName || null,
+        accountNumberLast4: formData.last4 || null,
+        openingBalanceDate: formData.beginningBalanceDate || new Date().toISOString().split('T')[0]
+      });
+
+      const { data: newAccount, error: accountError } = await firstsavvy
+        .from('user_chart_of_accounts')
+        .select()
+        .eq('id', accountId)
+        .single();
+
+      if (accountError) throw accountError;
+
+      // Step 2: Create opening balance entry if beginningBalance is provided
+      if (formData.beginningBalance && parseFloat(formData.beginningBalance) !== 0) {
+        await createOpeningBalanceJournalEntry({
+          profileId: activeProfile.id,
+          userId: user.id,
+          accountId: newAccount.id,
+          openingBalance: parseFloat(formData.beginningBalance),
+          openingDate: formData.beginningBalanceDate,
+          accountName: newAccount.display_name,
+          accountClass: newAccount.class
+        });
+      }
+
+      // Step 3: Import all transactions
+      const transactionPromises = mappedTransactions.map(txn => {
+        const lines = [
+          {
+            account_id: newAccount.id,
+            debit: txn.type === 'expense' || txn.type === 'debit' ? txn.amount : 0,
+            credit: txn.type === 'income' || txn.type === 'credit' ? txn.amount : 0,
+            description: txn.description
+          }
+        ];
+
+        return createJournalEntry({
+          profileId: activeProfile.id,
+          userId: user.id,
+          entryDate: txn.date,
+          description: txn.description,
+          entryType: 'transaction',
+          source: 'csv_import',
+          lines
+        });
+      });
+
+      await Promise.all(transactionPromises);
+
+      // Step 4: Invalidate queries and close dialog
+      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+      queryClient.invalidateQueries({ queryKey: ['journal-entries'] });
+      queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
+
+      toast.success(`Account created with ${mappedTransactions.length} transactions imported!`);
+      onAccountCreated?.({ type: 'account', account: newAccount });
+      onOpenChange(false);
+
+      setTimeout(() => {
+        navigate(`/Banking/account/${newAccount.id}`);
+      }, 100);
+    } catch (error) {
+      console.error('Error creating account and importing transactions:', error);
+      showErrorToast(error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNext = async () => {
@@ -3007,13 +3113,18 @@ export default function AccountCreationWizard({
                 <Button
                   type="button"
                   className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                  onClick={handleNext}
+                  onClick={selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? handleCreateAccountAndImportTransactions : handleNext}
                   disabled={!canProceed() || isLoading}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      {selectedCard?.id === 'banking' && isExistingAccount ? 'Importing...' : 'Processing...'}
+                      {selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? 'Creating Account & Importing...' : selectedCard?.id === 'banking' && isExistingAccount ? 'Importing...' : 'Processing...'}
+                    </>
+                  ) : selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      {`Create Account & Import ${mappedTransactions.length} Transactions`}
                     </>
                   ) : selectedCard?.id === 'banking' && isExistingAccount ? (
                     <>
