@@ -60,6 +60,7 @@ import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import { useAuth } from '@/contexts/AuthContext';
 import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
+import { autoLearnRule } from '@/utils/autoLearnRule';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
@@ -681,9 +682,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         for (const txn of similar) {
           updateMutation.mutate({ id: txn.id, data: { category_account_id: variables.data.category_account_id } });
         }
+        if (activeProfile?.id) {
+          autoLearnRule(activeProfile.id, source, { categoryId: variables.data.category_account_id });
+        }
       }
 
-      if (!error && variables?.data?.contact_id) {
+      if (!error && variables?.data?.contact_id && variables?.data?.contact_manually_set) {
         const allTxns = [
           ...(queryClient.getQueryData(['fullPendingTransactions']) || []),
           ...(queryClient.getQueryData(['fullPostedTransactions']) || []),
@@ -692,6 +696,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         const similar = findSimilarWithoutContact(source, allTxns);
         for (const txn of similar) {
           updateMutation.mutate({ id: txn.id, data: { contact_id: variables.data.contact_id, contact_manually_set: true } });
+        }
+        if (activeProfile?.id) {
+          autoLearnRule(activeProfile.id, source, { contactId: variables.data.contact_id });
         }
       }
     }
