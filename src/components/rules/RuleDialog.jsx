@@ -246,7 +246,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         }
       });
 
-      const preview = await transactionRulesApi.getMatchPreview(profileId, conditions, 10);
+      const preview = await transactionRulesApi.getMatchPreview(profileId, conditions, 100);
       setPreviewTransactions(preview);
     } catch (error) {
       console.error('Error loading preview:', error);
