@@ -94,6 +94,12 @@ export const parseDate = (dateStr) => {
 };
 
 export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn, accountClass = 'asset') => {
+  console.log('=== mapCsvToTransactions Debug ===');
+  console.log('Amount Type:', amountType);
+  console.log('Debit Column:', debitColumn);
+  console.log('Credit Column:', creditColumn);
+  console.log('Account Class:', accountClass);
+
   const allTransactions = csvData.rows.map(row => {
     let amount = 0;
     let type = 'expense';
@@ -101,6 +107,14 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
     if (amountType === 'separate_columns') {
       const debit = parseFloat(row[debitColumn]?.replace(/[^0-9.-]/g, '') || 0);
       const credit = parseFloat(row[creditColumn]?.replace(/[^0-9.-]/g, '') || 0);
+
+      console.log('Row:', {
+        debitRaw: row[debitColumn],
+        creditRaw: row[creditColumn],
+        debitParsed: debit,
+        creditParsed: credit,
+        accountClass
+      });
 
       // For credit cards: debit = purchases (expense), credit = payments/refunds (income)
       // For bank accounts: debit = withdrawals (expense), credit = deposits (income)
