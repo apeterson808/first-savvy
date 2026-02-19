@@ -61,7 +61,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   return (
     <div className="group relative">
-      <div className="relative h-9 rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: bgColor }}>
+      <div className="relative h-7 rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: bgColor }}>
         <div
           className="absolute left-0 top-0 h-full transition-all duration-700 ease-out"
           style={{
@@ -70,9 +70,9 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
           }}
         />
 
-        <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
-          <div className="flex items-center gap-2.5 min-w-0 flex-1">
-            <IconComponent className="w-4 h-4 flex-shrink-0 text-white" />
+        <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-white" />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="font-semibold text-sm text-slate-900 truncate">
                 {categoryData?.display_name || 'Unknown Category'}
