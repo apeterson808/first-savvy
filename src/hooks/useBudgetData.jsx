@@ -48,7 +48,6 @@ export function useBudgetData() {
         .from('user_chart_of_accounts')
         .select('*')
         .eq('is_active', true)
-        .in('class', ['asset'])
         .in('account_type', ['checking', 'savings', 'credit_card']);
       if (error) throw error;
       return data || [];

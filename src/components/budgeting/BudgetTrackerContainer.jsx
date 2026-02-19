@@ -49,12 +49,12 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
   }, 0);
 
   const totalIncomeActual = incomeBudgets.reduce((sum, b) => {
-    const categoryId = b.category_account_id;
+    const categoryId = b.chart_account_id;
     return sum + (incomeByCategory[categoryId] || 0);
   }, 0);
 
   const totalExpenseActual = expenseBudgets.reduce((sum, b) => {
-    const categoryId = b.category_account_id;
+    const categoryId = b.chart_account_id;
     return sum + (spendingByCategory[categoryId] || 0);
   }, 0);
 
