@@ -363,6 +363,12 @@ export default function AccountCreationWizard({
   const [selectedStatements, setSelectedStatements] = useState([]);
   const [cacheImportMode, setCacheImportMode] = useState(false);
 
+  // Category Management state
+  const [selectedCategoryIdForTransaction, setSelectedCategoryIdForTransaction] = useState(null);
+  const [currentlyEditingCategoryId, setCurrentlyEditingCategoryId] = useState(null);
+  const [isDirty, setIsDirty] = useState(false);
+  const [justSavedCategoryId, setJustSavedCategoryId] = useState(null);
+
   const { data: chartAccounts = [], isLoading: isLoadingTemplates } = useQuery({
     queryKey: ['chart-accounts-templates'],
     queryFn: async () => {
@@ -479,11 +485,22 @@ export default function AccountCreationWizard({
     }
   }, [open, initialAccountType, initialSubtype, initialCategoryName, accountTypeCards.length]);
 
+  // Set isDirty when creating new category with initial data
+  useEffect(() => {
+    if (selectedCard?.id === 'budget' && currentStep === 'details' && initialCategoryName && !currentlyEditingCategoryId) {
+      setIsDirty(true);
+    }
+  }, [selectedCard?.id, currentStep, initialCategoryName, currentlyEditingCategoryId]);
+
   const resetWizard = () => {
     setCurrentStep('select-type');
     setSelectedCard(null);
     setSelectedSubtype(null);
     setFormData({});
+    setSelectedCategoryIdForTransaction(null);
+    setCurrentlyEditingCategoryId(null);
+    setIsDirty(false);
+    setJustSavedCategoryId(null);
     setMappedTransactions([]);
     setUploadedFile(null);
     setProcessedData(null);
@@ -628,6 +645,11 @@ export default function AccountCreationWizard({
 
   const updateFormData = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+
+    // Mark form as dirty when budget category fields are changed
+    if (selectedCard?.id === 'budget' && ['name', 'categoryClass', 'accountDetail', 'parentAccountId', 'icon', 'color'].includes(field)) {
+      setIsDirty(true);
+    }
   };
 
   const calculateBeginningBalanceFromEnding = () => {
@@ -1162,55 +1184,81 @@ export default function AccountCreationWizard({
     }
   });
 
-  const createCategoryMutation = useMutation({
+  const saveCategoryMutation = useMutation({
     mutationFn: async (data) => {
       const template = chartAccounts.find(t => t.account_detail === data.accountDetail);
       if (!template) {
         throw new Error(`No template found for account detail: ${data.accountDetail}`);
       }
 
-      const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
+      // Check if we're updating an existing category or creating a new one
+      if (data.categoryId) {
+        // Update existing category
+        const { data: updatedCategory, error } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .update({
+            display_name: data.name,
+            parent_account_id: data.parentAccountId || null,
+            icon: data.icon || template.icon,
+            color: data.color || template.color,
+            account_detail: template.account_detail
+          })
+          .eq('id', data.categoryId)
+          .eq('profile_id', activeProfile.id)
+          .select()
+          .single();
 
-      const { data: newCategory, error } = await firstsavvy
-        .from('user_chart_of_accounts')
-        .insert({
-          profile_id: activeProfile.id,
-          template_account_number: template.account_number,
-          account_number: accountNumber,
-          display_name: data.name,
-          class: template.class,
-          account_detail: template.account_detail,
-          account_type: template.account_type,
-          parent_account_id: data.parentAccountId || null,
-          icon: data.icon || template.icon,
-          color: data.color || template.color,
-          is_active: true,
-          is_user_created: true
-        })
-        .select()
-        .single();
+        if (error) throw error;
+        return { category: updatedCategory, isUpdate: true };
+      } else {
+        // Create new category
+        const accountNumber = await getNextAccountNumber(activeProfile.id, template.account_number);
 
-      if (error) throw error;
-      return newCategory;
+        const { data: newCategory, error } = await firstsavvy
+          .from('user_chart_of_accounts')
+          .insert({
+            profile_id: activeProfile.id,
+            template_account_number: template.account_number,
+            account_number: accountNumber,
+            display_name: data.name,
+            class: template.class,
+            account_detail: template.account_detail,
+            account_type: template.account_type,
+            parent_account_id: data.parentAccountId || null,
+            icon: data.icon || template.icon,
+            color: data.color || template.color,
+            is_active: true,
+            is_user_created: true
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
+        return { category: newCategory, isUpdate: false };
+      }
     },
-    onSuccess: (newCategory) => {
+    onSuccess: ({ category, isUpdate }) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
-      toast.success('Category created successfully!');
-      onOpenChange(false);
 
-      const hasCallback = !!onAccountCreated;
-      if (hasCallback) {
-        onAccountCreated({ type: formData.categoryClass || selectedSubtype?.value, account: newCategory });
-      } else {
-        setTimeout(() => {
-          navigate(`/Banking/account/${newCategory.id}`);
-        }, 100);
-      }
+      toast.success(isUpdate ? 'Category updated successfully!' : 'Category created successfully!');
+
+      // Set the saved category as selected and mark it as just saved
+      setSelectedCategoryIdForTransaction(category.id);
+      setCurrentlyEditingCategoryId(category.id);
+      setJustSavedCategoryId(category.id);
+      setIsDirty(false);
+
+      // Clear the "just saved" highlight after 3 seconds
+      setTimeout(() => {
+        setJustSavedCategoryId(null);
+      }, 3000);
+
+      // DO NOT close the modal - keep it open for continued editing
     },
     onError: (error) => {
-      logError(error, { action: 'createCategory' });
+      logError(error, { action: 'saveCategory' });
       showErrorToast(error);
     }
   });
@@ -1411,7 +1459,8 @@ export default function AccountCreationWizard({
           toast.error('Please select a category type');
           return;
         }
-        await createCategoryMutation.mutateAsync({
+        await saveCategoryMutation.mutateAsync({
+          categoryId: currentlyEditingCategoryId,
           name: formData.name,
           accountDetail: formData.accountDetail,
           type: formData.categoryClass,
@@ -1430,7 +1479,7 @@ export default function AccountCreationWizard({
     createAccountMutation.isPending ||
     createAssetMutation.isPending ||
     createLiabilityMutation.isPending ||
-    createCategoryMutation.isPending ||
+    saveCategoryMutation.isPending ||
     isCreatingAccount;
 
   const getTotalSteps = () => {
@@ -2488,12 +2537,36 @@ export default function AccountCreationWizard({
       const incomeHierarchy = buildSectionHierarchy(allIncomeCategories, 'income');
       const expenseHierarchy = buildSectionHierarchy(allExpenseCategories, 'expense');
 
+      const handleCategoryClick = (category) => {
+        if (category.isNew || category.isDuplicate) return;
+
+        // Load category into form for editing
+        setCurrentlyEditingCategoryId(category.id);
+        setSelectedCategoryIdForTransaction(category.id);
+
+        // Populate form with category data
+        updateFormData('name', category.displayName);
+        updateFormData('categoryClass', category.class);
+        updateFormData('accountDetail', category.account_detail);
+        updateFormData('parentAccountId', category.parent_account_id);
+        updateFormData('icon', category.icon);
+        updateFormData('color', category.color);
+        updateFormData('iconManuallySet', false);
+
+        // Reset dirty flag since we just loaded fresh data
+        setIsDirty(false);
+      };
+
       const renderCategoryRow = (category, indent = false) => {
         const IconComponent = getIconComponent(category.icon);
+        const isSelected = selectedCategoryIdForTransaction === category.id;
+        const isJustSaved = justSavedCategoryId === category.id;
+
         return (
           <div key={category.id}>
             <div
               ref={category.isNew ? newItemRef : null}
+              onClick={() => !category.isNew && !category.isDuplicate && handleCategoryClick(category)}
               className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
                 indent ? 'ml-4' : ''
               } ${
@@ -2501,18 +2574,25 @@ export default function AccountCreationWizard({
                   ? category.isDuplicate
                     ? 'bg-red-50 border border-red-200'
                     : 'bg-blue-50 border border-blue-200'
-                  : 'hover:bg-slate-50'
+                  : isSelected
+                    ? 'bg-blue-100 border border-blue-300 cursor-pointer'
+                    : isJustSaved
+                      ? 'bg-green-50 border border-green-200 cursor-pointer'
+                      : 'hover:bg-slate-50 cursor-pointer'
               }`}
             >
               <IconComponent
                 className="w-3 h-3 flex-shrink-0"
                 style={{ color: category.color }}
               />
-              <span className={`truncate ${category.isNew ? 'font-medium' : ''}`}>
+              <span className={`truncate ${category.isNew || isSelected ? 'font-medium' : ''}`}>
                 {category.displayName}
               </span>
               {category.isNew && category.isDuplicate && (
                 <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
+              )}
+              {isSelected && !category.isNew && (
+                <Check className="w-3 h-3 text-blue-600 flex-shrink-0 ml-auto" />
               )}
             </div>
             {category.children && category.children.length > 0 && (
@@ -2524,9 +2604,35 @@ export default function AccountCreationWizard({
         );
       };
 
+      const handleCreateNew = () => {
+        setCurrentlyEditingCategoryId(null);
+        setSelectedCategoryIdForTransaction(null);
+        setFormData({
+          categoryClass: formData.categoryClass || initialClass || '',
+          accountDetail: '',
+          name: '',
+          parentAccountId: null,
+          icon: 'Circle',
+          color: '#52A5CE',
+          iconManuallySet: false
+        });
+        setIsDirty(false);
+      };
+
       return (
         <div className="flex gap-3 h-full">
           <div className="w-[220px] flex-shrink-0 space-y-2">
+            {currentlyEditingCategoryId && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleCreateNew}
+                className="w-full h-7 text-xs"
+              >
+                + Create New Category
+              </Button>
+            )}
             <div>
               <Label htmlFor="name" className="text-xs mb-0.5">Category Name*</Label>
               <Input
@@ -3002,7 +3108,7 @@ export default function AccountCreationWizard({
       if (selectedCard?.id === 'property') return 'Property Details';
       if (selectedCard?.id === 'investments') return 'Investment Details';
       if (selectedCard?.id === 'loans') return 'Loan Details';
-      if (selectedCard?.id === 'budget') return 'Category Details';
+      if (selectedCard?.id === 'budget') return 'Category Management';
     }
     if (currentStep === 'balance') return 'Starting Balance';
     if (currentStep === 'loan-search') return 'Connect Lender';
@@ -3104,13 +3210,33 @@ export default function AccountCreationWizard({
                 <Button
                   type="button"
                   className="ml-auto bg-blue-600 hover:bg-blue-700 rounded-full px-6"
-                  onClick={selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? handleCreateAccountAndImportTransactions : handleNext}
+                  onClick={
+                    selectedCard?.id === 'budget'
+                      ? (isDirty ? handleSubmit : () => {
+                          // Finish - apply selected category to transaction
+                          if (selectedCategoryIdForTransaction && onAccountCreated) {
+                            const selectedCategory = userChartAccounts.find(c => c.id === selectedCategoryIdForTransaction);
+                            if (selectedCategory) {
+                              onAccountCreated({ type: selectedCategory.class, account: selectedCategory });
+                            }
+                          }
+                          onOpenChange(false);
+                        })
+                      : selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount
+                        ? handleCreateAccountAndImportTransactions
+                        : handleNext
+                  }
                   disabled={!canProceed() || isLoading}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      {selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? 'Creating Account & Importing...' : selectedCard?.id === 'banking' && isExistingAccount ? 'Importing...' : 'Processing...'}
+                      {selectedCard?.id === 'budget' ? 'Saving...' : selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? 'Creating Account & Importing...' : selectedCard?.id === 'banking' && isExistingAccount ? 'Importing...' : 'Processing...'}
+                    </>
+                  ) : selectedCard?.id === 'budget' ? (
+                    <>
+                      <Check className="w-4 h-4 mr-1" />
+                      {isDirty ? 'Save' : 'Finish'}
                     </>
                   ) : selectedCard?.id === 'banking' && selectedSubtype?.value === 'credit_card' && mappedTransactions.length > 0 && !isExistingAccount ? (
                     <>
@@ -3125,8 +3251,7 @@ export default function AccountCreationWizard({
                   ) : (selectedCard?.id === 'vehicle' && formData.skipLoanDetails) ||
                     (selectedCard?.id === 'property' && formData.skipMortgageDetails) ||
                     selectedCard?.id === 'investments' ||
-                    selectedCard?.id === 'loans' ||
-                    selectedCard?.id === 'budget' ? (
+                    selectedCard?.id === 'loans' ? (
                     <>
                       <Check className="w-4 h-4 mr-1" />
                       Finish
