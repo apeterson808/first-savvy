@@ -87,10 +87,10 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   });
 
   const { data: existingRules = [] } = useQuery({
-    queryKey: ['transaction-rules', profileId],
+    queryKey: ['transaction-rules-manual', profileId],
     queryFn: async () => {
       const rules = await transactionRulesApi.listRules(profileId, { enabled: true });
-      return rules.filter(r => !r.created_from_transaction_id);
+      return rules.filter(r => !r.created_from_transaction_id && !r.name?.startsWith('Auto:'));
     },
     enabled: !!profileId && open && !isEditMode
   });
