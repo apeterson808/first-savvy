@@ -67,6 +67,8 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   const [previewTransactions, setPreviewTransactions] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
 
+  const [selectedExistingRuleId, setSelectedExistingRuleId] = useState(null);
+
   const [addContactSheetOpen, setAddContactSheetOpen] = useState(false);
   const [contactSearchTerm, setContactSearchTerm] = useState('');
 
@@ -109,6 +111,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       setNotes('');
       setAutoConfirmAndPost(false);
       setPreviewTransactions([]);
+      setSelectedExistingRuleId(null);
       return;
     }
 
@@ -183,7 +186,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     }
   }, [rule, transaction, open, isEditMode]);
 
-  const handleExistingRuleSelect = useCallback((selectedRuleId) => {
+  const handleExistingRuleSelect = useCallback((selectedRuleId, currentConditionRows) => {
     const selected = existingRules.find(r => r.id === selectedRuleId);
     if (!selected) return;
 
@@ -196,6 +199,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     setContactId(selected.action_set_contact_id || null);
     setNotes(selected.action_add_note || '');
     setAutoConfirmAndPost(selected.auto_confirm_and_post || false);
+    setSelectedExistingRuleId(selectedRuleId);
 
     const rows = [];
     if (selected.match_description_pattern) {
@@ -211,9 +215,10 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     } else if (selected.match_amount_max !== null && selected.match_amount_max !== undefined) {
       rows.push({ field: 'amount', operator: 'less_than', value: String(selected.match_amount_max) });
     }
-    if (rows.length > 0) {
-      setConditionRows(rows);
-    }
+
+    const newConditions = (currentConditionRows || []).filter(row => row.value.trim());
+    const mergedRows = rows.length > 0 ? [...rows, ...newConditions] : newConditions;
+    setConditionRows(mergedRows.length > 0 ? mergedRows : [{ field: 'bank_memo', operator: 'contains', value: '' }]);
   }, [existingRules]);
 
   const loadPreview = useCallback(async () => {
@@ -313,14 +318,17 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
   const updateMutation = useMutation({
     mutationFn: async (data) => {
-      const updated = await transactionRulesApi.updateRule(rule.id, data);
+      const targetId = selectedExistingRuleId || rule?.id;
+      const updated = await transactionRulesApi.updateRule(targetId, data);
       if (isPromoteMode) {
         const { error } = await supabase
           .from('transaction_rules')
           .update({ created_from_transaction_id: null, updated_at: new Date().toISOString() })
-          .eq('id', rule.id);
+          .eq('id', targetId);
         if (error) throw error;
-        await transactionRulesApi.applyManualRuleToAllTransactions(profileId, rule.id);
+        await transactionRulesApi.applyManualRuleToAllTransactions(profileId, targetId);
+      } else if (selectedExistingRuleId) {
+        await transactionRulesApi.applyManualRuleToAllTransactions(profileId, targetId);
       }
       return updated;
     },
@@ -362,7 +370,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
   const resetForm = () => {
     setRuleName('');
-    setNameError('');
     setRuleNameSearch('');
     setMoneyDirection('both');
     setSelectedAccountIds([]);
@@ -374,6 +381,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     setNotes('');
     setAutoConfirmAndPost(false);
     setPreviewTransactions([]);
+    setSelectedExistingRuleId(null);
   };
 
   const handleSubmit = () => {
@@ -461,7 +469,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
     ruleData.auto_confirm_and_post = autoConfirmAndPost;
 
-    if (isEditMode) {
+    if (isEffectiveEditMode) {
       updateMutation.mutate(ruleData);
     } else {
       createMutation.mutate(ruleData);
@@ -543,7 +551,8 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     return category?.display_name || category?.account_name || 'Uncategorized';
   };
 
-  const mutation = isEditMode ? updateMutation : createMutation;
+  const isEffectiveEditMode = isEditMode || !!selectedExistingRuleId;
+  const mutation = isEffectiveEditMode ? updateMutation : createMutation;
 
   return (
     <>
@@ -551,12 +560,12 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle>
-            {isPromoteMode ? 'Promote Rule' : isEditMode ? 'Edit Rule' : 'Create Rule'}
+            {isPromoteMode ? 'Promote Rule' : isEffectiveEditMode ? 'Edit Rule' : 'Create Rule'}
           </DialogTitle>
         </DialogHeader>
 
         <div className="px-6 flex-shrink-0">
-          {isEditMode ? (
+          {isEffectiveEditMode ? (
             <Input
               id="rule-name"
               placeholder="Enter rule name*"
@@ -569,7 +578,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
               value={existingRules.find(r => r.name === ruleName)?.id || ''}
               onValueChange={(val) => {
                 if (val) {
-                  handleExistingRuleSelect(val);
+                  handleExistingRuleSelect(val, conditionRows);
                 }
               }}
               onSearchTermChange={(term) => {
@@ -938,7 +947,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
               onClick={handleSubmit}
               disabled={mutation.isPending}
             >
-              {mutation.isPending ? (isPromoteMode ? 'Promoting...' : isEditMode ? 'Saving...' : 'Creating...') : (isPromoteMode ? 'Promote Rule' : isEditMode ? 'Save Changes' : 'Create')}
+              {mutation.isPending ? (isPromoteMode ? 'Promoting...' : isEffectiveEditMode ? 'Saving...' : 'Creating...') : (isPromoteMode ? 'Promote Rule' : isEffectiveEditMode ? 'Save Changes' : 'Create')}
             </Button>
           </div>
         </DialogFooter>
