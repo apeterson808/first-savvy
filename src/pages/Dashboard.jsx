@@ -738,7 +738,7 @@ export default function Dashboard() {
                   <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Net Worth</p>
                   <span className="text-[10px] text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity">View details →</span>
                 </div>
-                <CardTitle className="text-3xl font-bold">${netWorth.toLocaleString()}</CardTitle>
+                <CardTitle className="text-3xl font-bold">${netWorth.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</CardTitle>
                 {netWorthChange.hasData && (
                   <div className={`flex items-center text-sm mt-2 ${netWorthChange.change >= 0 ? 'text-soft-green' : 'text-burgundy'}`}>
                     {netWorthChange.change >= 0 ? (
