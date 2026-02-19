@@ -376,7 +376,7 @@ export function ClickThroughSelect({
               setTimeout(() => {
                 if (!isSelectingRef.current && !isCancelingRef.current && isEditing && searchTerm === '') {
                   setSelectedValue('');
-                  onValueChange?.(null);
+                  onValueChange?.('');
                 }
                 setIsEditing(false);
                 setSearchTerm('');
