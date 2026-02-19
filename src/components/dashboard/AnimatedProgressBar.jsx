@@ -16,9 +16,9 @@ export default function AnimatedProgressBar({ item }) {
 
   return (
     <div className="group relative">
-      <div className="relative h-9 rounded-2xl overflow-hidden shadow-sm" style={{ backgroundColor: item.bgColor }}>
+      <div className="relative h-9 rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: item.bgColor }}>
         <div
-          className="absolute left-0 top-0 h-full transition-all duration-700 ease-out rounded-2xl"
+          className="absolute left-0 top-0 h-full transition-all duration-700 ease-out"
           style={{
             width: `${animatedWidth}%`,
             backgroundColor: item.progressColor
