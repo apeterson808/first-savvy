@@ -6,12 +6,14 @@ export default function InlineEditableAverage({
   suggestedAmount,
   currentAmount,
   onAmountChange,
+  onEnter,
   isLoading = false,
   hasBorder = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [value, setValue] = useState('');
   const inputRef = useRef(null);
+  const enterPressedRef = useRef(false);
 
   useEffect(() => {
     const amountToUse = currentAmount !== undefined && currentAmount !== null ? currentAmount : suggestedAmount;
@@ -38,6 +40,10 @@ export default function InlineEditableAverage({
   };
 
   const handleBlur = () => {
+    if (enterPressedRef.current) {
+      enterPressedRef.current = false;
+      return;
+    }
     setIsEditing(false);
     const numericValue = parseValue(value);
 
@@ -73,7 +79,19 @@ export default function InlineEditableAverage({
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      inputRef.current?.blur();
+      enterPressedRef.current = true;
+      const numericValue = parseValue(value);
+      setIsEditing(false);
+      if (!value || numericValue === 0) {
+        if (suggestedAmount !== null && suggestedAmount !== undefined) {
+          setValue(formatNumberWithCommas(suggestedAmount.toFixed(2)));
+          if (onAmountChange) onAmountChange(suggestedAmount);
+        }
+      } else {
+        setValue(formatNumberWithCommas(numericValue.toFixed(2)));
+        if (onAmountChange) onAmountChange(numericValue);
+      }
+      if (onEnter) onEnter();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       const amountToUse = currentAmount !== undefined && currentAmount !== null ? currentAmount : suggestedAmount;

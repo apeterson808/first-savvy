@@ -390,6 +390,7 @@ export default function CategoriesTab() {
           suggestedAmount={suggestedAmount}
           currentAmount={categoryAmounts[category.id]}
           onAmountChange={(newAmount) => handleAmountChange(category.id, newAmount)}
+          onEnter={() => handleAddBudget(category.id)}
           isLoading={isCreating}
           hasBorder={true}
         />
