@@ -42,7 +42,7 @@ export default function Dashboard() {
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
   const [userProfileData, setUserProfileData] = useState(null);
 
-  const { budgets: budgetData, spendingByCategory } = useBudgetData();
+  const { budgets: budgetData, spendingWithChildren } = useBudgetData();
 
   const handleChartPointClick = (data) => {
     if ((chartView === 'spending' || chartView === 'balance') && data?.fullDate) {
@@ -423,7 +423,7 @@ export default function Dashboard() {
         budget.cadence || 'monthly',
         'monthly'
       );
-      const spent = spendingByCategory[budget.category_account_id] || 0;
+      const spent = spendingWithChildren(budget.chart_account_id);
       const percentage = budgetedAmount > 0 ? (spent / budgetedAmount) * 100 : 0;
 
       const isOverBudget = spent > budgetedAmount;
