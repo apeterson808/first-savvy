@@ -2491,10 +2491,11 @@ export default function AccountCreationWizard({
       const currentColor = formData.color || '#52A5CE';
 
       const isDuplicate = existingCategoriesByClass.some(
-        cat => getDisplayName(cat).toLowerCase() === (formData.name || '').toLowerCase().trim()
+        cat => getDisplayName(cat).toLowerCase() === (formData.name || '').toLowerCase().trim() && cat.id !== currentlyEditingCategoryId
       );
 
-      const previewCategory = formData.name && formData.name.trim() && selectedClass ? {
+      // Only show preview if we're creating new (not editing existing) or if form has been modified
+      const previewCategory = formData.name && formData.name.trim() && selectedClass && !currentlyEditingCategoryId ? {
         id: 'preview',
         displayName: formData.name.trim(),
         icon: currentIcon,
