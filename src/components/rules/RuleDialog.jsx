@@ -128,17 +128,15 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
       const rows = [];
       if (rule.match_description_pattern) {
-        rows.push({
-          field: 'description',
-          operator: rule.match_description_mode || 'contains',
-          value: rule.match_description_pattern
+        const patterns = rule.match_description_pattern.split('|');
+        patterns.forEach(p => {
+          if (p.trim()) rows.push({ field: 'description', operator: rule.match_description_mode || 'contains', value: p.trim() });
         });
       }
       if (rule.match_original_description_pattern) {
-        rows.push({
-          field: 'bank_memo',
-          operator: rule.match_description_mode || 'contains',
-          value: rule.match_original_description_pattern
+        const patterns = rule.match_original_description_pattern.split('|');
+        patterns.forEach(p => {
+          if (p.trim()) rows.push({ field: 'bank_memo', operator: rule.match_description_mode || 'contains', value: p.trim() });
         });
       }
       if (rule.match_amount_exact !== null && rule.match_amount_exact !== undefined) {
@@ -203,10 +201,14 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
     const rows = [];
     if (selected.match_description_pattern) {
-      rows.push({ field: 'description', operator: selected.match_description_mode || 'contains', value: selected.match_description_pattern });
+      selected.match_description_pattern.split('|').forEach(p => {
+        if (p.trim()) rows.push({ field: 'description', operator: selected.match_description_mode || 'contains', value: p.trim() });
+      });
     }
     if (selected.match_original_description_pattern) {
-      rows.push({ field: 'bank_memo', operator: selected.match_description_mode || 'contains', value: selected.match_original_description_pattern });
+      selected.match_original_description_pattern.split('|').forEach(p => {
+        if (p.trim()) rows.push({ field: 'bank_memo', operator: selected.match_description_mode || 'contains', value: p.trim() });
+      });
     }
     if (selected.match_amount_exact !== null && selected.match_amount_exact !== undefined) {
       rows.push({ field: 'amount', operator: 'exact', value: String(selected.match_amount_exact) });
@@ -217,7 +219,9 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     }
 
     const newConditions = (currentConditionRows || []).filter(row => row.value.trim());
-    const mergedRows = rows.length > 0 ? [...rows, ...newConditions] : newConditions;
+    const existingValues = new Set(rows.map(r => `${r.field}:${r.value}`));
+    const deduped = newConditions.filter(r => !existingValues.has(`${r.field}:${r.value}`));
+    const mergedRows = [...rows, ...deduped];
     setConditionRows(mergedRows.length > 0 ? mergedRows : [{ field: 'bank_memo', operator: 'contains', value: '' }]);
   }, [existingRules]);
 
@@ -415,22 +419,21 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       match_case_sensitive: false,
     };
 
-    let descriptionModeSet = false;
     let hasValidationError = false;
+    const descriptionPatterns = [];
+    const bankMemoPatterns = [];
 
     for (const row of conditionRows) {
       if (row.value.trim()) {
         if (row.field === 'description') {
-          ruleData.match_description_pattern = row.value;
-          if (!descriptionModeSet) {
+          descriptionPatterns.push(row.value.trim());
+          if (!ruleData.match_description_mode) {
             ruleData.match_description_mode = row.operator;
-            descriptionModeSet = true;
           }
         } else if (row.field === 'bank_memo') {
-          ruleData.match_original_description_pattern = row.value;
-          if (!descriptionModeSet) {
+          bankMemoPatterns.push(row.value.trim());
+          if (!ruleData.match_description_mode) {
             ruleData.match_description_mode = row.operator;
-            descriptionModeSet = true;
           }
         } else if (row.field === 'amount') {
           const amount = parseFloat(row.value);
@@ -452,6 +455,13 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
     if (hasValidationError) {
       return;
+    }
+
+    if (descriptionPatterns.length > 0) {
+      ruleData.match_description_pattern = descriptionPatterns.join('|');
+    }
+    if (bankMemoPatterns.length > 0) {
+      ruleData.match_original_description_pattern = bankMemoPatterns.join('|');
     }
 
     if (newDescription) {

@@ -446,38 +446,38 @@ export const transactionRulesApi = {
       .limit(limit);
 
     if (conditions.match_description_pattern) {
-      const pattern = conditions.match_case_sensitive
-        ? conditions.match_description_pattern
-        : conditions.match_description_pattern.toLowerCase();
-
-      if (conditions.match_description_mode === 'contains') {
-        query = query.ilike('description', `%${pattern}%`);
-      } else if (conditions.match_description_mode === 'starts_with') {
-        query = query.ilike('description', `${pattern}%`);
-      } else if (conditions.match_description_mode === 'ends_with') {
-        query = query.ilike('description', `%${pattern}`);
-      } else if (conditions.match_description_mode === 'exact') {
-        query = conditions.match_case_sensitive
-          ? query.eq('description', pattern)
-          : query.ilike('description', pattern);
+      const patterns = conditions.match_description_pattern.split('|').map(p => p.trim()).filter(Boolean);
+      const mode = conditions.match_description_mode || 'contains';
+      if (patterns.length === 1) {
+        const p = conditions.match_case_sensitive ? patterns[0] : patterns[0].toLowerCase();
+        if (mode === 'contains') query = query.ilike('description', `%${p}%`);
+        else if (mode === 'starts_with') query = query.ilike('description', `${p}%`);
+        else if (mode === 'ends_with') query = query.ilike('description', `%${p}`);
+        else query = conditions.match_case_sensitive ? query.eq('description', p) : query.ilike('description', p);
+      } else if (patterns.length > 1) {
+        const orFilter = patterns.map(p => {
+          const lp = conditions.match_case_sensitive ? p : p.toLowerCase();
+          return `description.ilike.%${lp}%`;
+        }).join(',');
+        query = query.or(orFilter);
       }
     }
 
     if (conditions.match_original_description_pattern) {
-      const pattern = conditions.match_case_sensitive
-        ? conditions.match_original_description_pattern
-        : conditions.match_original_description_pattern.toLowerCase();
-
-      if (conditions.match_description_mode === 'contains') {
-        query = query.ilike('original_description', `%${pattern}%`);
-      } else if (conditions.match_description_mode === 'starts_with') {
-        query = query.ilike('original_description', `${pattern}%`);
-      } else if (conditions.match_description_mode === 'ends_with') {
-        query = query.ilike('original_description', `%${pattern}`);
-      } else if (conditions.match_description_mode === 'exact') {
-        query = conditions.match_case_sensitive
-          ? query.eq('original_description', pattern)
-          : query.ilike('original_description', pattern);
+      const patterns = conditions.match_original_description_pattern.split('|').map(p => p.trim()).filter(Boolean);
+      const mode = conditions.match_description_mode || 'contains';
+      if (patterns.length === 1) {
+        const p = conditions.match_case_sensitive ? patterns[0] : patterns[0].toLowerCase();
+        if (mode === 'contains') query = query.ilike('original_description', `%${p}%`);
+        else if (mode === 'starts_with') query = query.ilike('original_description', `${p}%`);
+        else if (mode === 'ends_with') query = query.ilike('original_description', `%${p}`);
+        else query = conditions.match_case_sensitive ? query.eq('original_description', p) : query.ilike('original_description', p);
+      } else if (patterns.length > 1) {
+        const orFilter = patterns.map(p => {
+          const lp = conditions.match_case_sensitive ? p : p.toLowerCase();
+          return `original_description.ilike.%${lp}%`;
+        }).join(',');
+        query = query.or(orFilter);
       }
     }
 
