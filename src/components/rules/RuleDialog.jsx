@@ -243,12 +243,15 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         match_bank_account_ids: selectedAccountIds.length > 0 ? selectedAccountIds : null,
       };
 
+      const descPatterns = [];
+      const memoPatterns = [];
+
       conditionRows.forEach(row => {
         if (row.value.trim()) {
           if (row.field === 'description') {
-            conditions.match_description_pattern = row.value;
+            descPatterns.push(row.value.trim());
           } else if (row.field === 'bank_memo') {
-            conditions.match_original_description_pattern = row.value;
+            memoPatterns.push(row.value.trim());
           } else if (row.field === 'amount') {
             if (row.operator === 'exact') {
               conditions.match_amount_exact = parseFloat(row.value);
@@ -260,6 +263,13 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
           }
         }
       });
+
+      if (descPatterns.length > 0) {
+        conditions.match_description_pattern = descPatterns.join('|');
+      }
+      if (memoPatterns.length > 0) {
+        conditions.match_original_description_pattern = memoPatterns.join('|');
+      }
 
       const preview = await transactionRulesApi.getMatchPreview(profileId, conditions, 100);
       setPreviewTransactions(preview);
