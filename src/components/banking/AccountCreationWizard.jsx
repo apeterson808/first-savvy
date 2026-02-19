@@ -22,8 +22,8 @@ import { createVehicleAsset, createAutoLoan, createAssetLiabilityLink } from '@/
 import { createPropertyAsset, createMortgage } from '@/api/propertiesAndMortgages';
 import { activateTemplateAccount } from '@/api/chartOfAccounts';
 import TypeDetailSelector from '@/components/common/TypeDetailSelector';
-import IconPicker from '@/components/common/IconPicker';
-import ColorPicker from '@/components/common/ColorPicker';
+import AppearancePicker from '@/components/common/AppearancePicker';
+import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { getIconComponent, suggestIconForName } from '../utils/iconMapper';
 import { useTemplateAccountTypesByClass, useTemplateAccountDetailsByType } from '@/hooks/useChartOfAccounts';
 import { useAuth } from '@/contexts/AuthContext';
@@ -266,29 +266,13 @@ const buildAccountTypeCardsFromTemplates = (templates) => {
   const hasExpense = templates.some(t => t.class === 'expense');
 
   if (hasIncome || hasExpense) {
-    const budgetSubtypes = [];
-    if (hasIncome) {
-      budgetSubtypes.push({
-        value: 'income',
-        label: 'Income',
-        icon: BadgeDollarSign
-      });
-    }
-    if (hasExpense) {
-      budgetSubtypes.push({
-        value: 'expense',
-        label: 'Expense',
-        icon: Receipt
-      });
-    }
-
     cards.push({
       id: 'budget',
       title: 'Budget Category',
       icon: DollarSign,
       bgColor: '#EFCE7B',
       iconColor: 'text-white',
-      subtypes: budgetSubtypes
+      subtypes: []
     });
   }
 
@@ -338,7 +322,9 @@ export default function AccountCreationWizard({
   onAccountCreated,
   initialAccountType = null,
   initialSubtype = null,
-  initialCategoryName = null
+  initialCategoryName = null,
+  initialClass = null,
+  editingCategory = null
 }) {
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -456,7 +442,25 @@ export default function AccountCreationWizard({
 
       setSelectedCard(card);
 
-      if (initialSubtype && card.subtypes) {
+      if (initialAccountType === 'budget') {
+        const classValue = initialClass || initialSubtype || null;
+        setFormData({
+          name: initialCategoryName || '',
+          categoryClass: classValue,
+          ...(editingCategory ? {
+            name: editingCategory.display_name || editingCategory.account_detail || '',
+            categoryClass: editingCategory.class || classValue,
+            accountDetail: editingCategory.account_detail || '',
+            parentAccountId: editingCategory.parent_account_id || null,
+            icon: editingCategory.icon || '',
+            color: editingCategory.color || '#52A5CE',
+            iconManuallySet: true,
+            isEditing: true,
+            editingId: editingCategory.id
+          } : {})
+        });
+        setCurrentStep('details');
+      } else if (initialSubtype && card.subtypes) {
         const subtype = card.subtypes.find(s => s.value === initialSubtype);
         if (subtype) {
           setSelectedSubtype(subtype);
@@ -471,9 +475,6 @@ export default function AccountCreationWizard({
           });
           setCurrentStep('details');
         }
-      } else if (initialAccountType === 'budget' && !initialSubtype) {
-        // Skip type selection, go directly to subtype selection (income/expense)
-        setCurrentStep('select-subtype');
       }
     }
   }, [open, initialAccountType, initialSubtype, initialCategoryName, accountTypeCards.length]);
@@ -590,6 +591,11 @@ export default function AccountCreationWizard({
         setSelectedCachedAccount(null);
         setSelectedStatements([]);
         setCacheImportMode(false);
+      } else if (selectedCard?.id === 'budget') {
+        setCurrentStep('select-type');
+        setSelectedCard(null);
+        setSelectedSubtype(null);
+        setFormData({});
       } else if (selectedCard?.subtypes && selectedCard.subtypes.length > 0) {
         setCurrentStep('select-subtype');
         setSelectedSubtype(null);
@@ -1196,7 +1202,7 @@ export default function AccountCreationWizard({
 
       const hasCallback = !!onAccountCreated;
       if (hasCallback) {
-        onAccountCreated({ type: selectedSubtype?.value, account: newCategory });
+        onAccountCreated({ type: formData.categoryClass || selectedSubtype?.value, account: newCategory });
       } else {
         setTimeout(() => {
           navigate(`/Banking/account/${newCategory.id}`);
@@ -1210,7 +1216,8 @@ export default function AccountCreationWizard({
   });
 
   const handleSubmit = async () => {
-    if (!selectedCard || !selectedSubtype) return;
+    if (!selectedCard) return;
+    if (selectedCard.id !== 'budget' && !selectedSubtype) return;
 
     try {
       if (selectedCard.id === 'banking') {
@@ -1396,6 +1403,10 @@ export default function AccountCreationWizard({
           is_active: true
         });
       } else if (selectedCard.id === 'budget') {
+        if (!formData.categoryClass) {
+          toast.error('Please select Income or Expense');
+          return;
+        }
         if (!formData.accountDetail) {
           toast.error('Please select a category type');
           return;
@@ -1403,7 +1414,7 @@ export default function AccountCreationWizard({
         await createCategoryMutation.mutateAsync({
           name: formData.name,
           accountDetail: formData.accountDetail,
-          type: selectedSubtype.value,
+          type: formData.categoryClass,
           parentAccountId: formData.parentAccountId || null,
           icon: formData.icon || suggestIconForName(formData.name) || 'Circle',
           color: formData.color || '#52A5CE'
@@ -1517,7 +1528,7 @@ export default function AccountCreationWizard({
         return formData.name && formData.name.trim() && formData.currentBalance && formData.lenderName;
       }
       if (selectedCard.id === 'budget') {
-        return formData.name && formData.name.trim() && formData.accountDetail;
+        return formData.name && formData.name.trim() && formData.categoryClass && formData.accountDetail;
       }
     }
     if (currentStep === 'balance') {
@@ -2408,82 +2419,113 @@ export default function AccountCreationWizard({
         { value: 'taxes', label: 'Taxes' },
       ];
 
-      const categoryTypes = selectedSubtype?.value === 'income' ? INCOME_TYPES : EXPENSE_TYPES;
+      const CLASS_OPTIONS = [
+        { value: 'income', label: 'Income' },
+        { value: 'expense', label: 'Expense' },
+      ];
 
-      // Filter existing categories by income/expense type
-      const accountClass = selectedSubtype?.value === 'income' ? 'income' : 'expense';
-      const existingCategories = userChartAccounts.filter(
-        acc => acc.class === accountClass
-      );
+      const selectedClass = formData.categoryClass || '';
+      const categoryTypes = selectedClass === 'income' ? INCOME_TYPES : selectedClass === 'expense' ? EXPENSE_TYPES : [];
 
-      // Get parent categories (those without parent_account_id)
-      const parentCategories = existingCategories.filter(cat => !cat.parent_account_id);
+      const allIncomeCategories = userChartAccounts.filter(acc => acc.class === 'income');
+      const allExpenseCategories = userChartAccounts.filter(acc => acc.class === 'expense');
+      const existingCategoriesByClass = selectedClass === 'income' ? allIncomeCategories : selectedClass === 'expense' ? allExpenseCategories : [];
 
-      // Helper function to get display name
       const getDisplayName = (cat) => cat.display_name || cat.account_detail || 'Unnamed';
 
-      // Build category hierarchy
-      const categoryHierarchy = parentCategories.map(parent => ({
-        ...parent,
-        displayName: getDisplayName(parent),
-        children: existingCategories.filter(cat => cat.parent_account_id === parent.id).map(child => ({
-          ...child,
-          displayName: getDisplayName(child)
-        }))
-      })).sort((a, b) => a.displayName.localeCompare(b.displayName));
+      const parentCategories = existingCategoriesByClass.filter(cat => !cat.parent_account_id);
 
-      // Add categories without parents that aren't in the parent list
-      const orphanCategories = existingCategories
-        .filter(cat => !cat.parent_account_id && !parentCategories.find(p => p.id === cat.id))
-        .map(cat => ({ ...cat, displayName: getDisplayName(cat) }))
-        .sort((a, b) => a.displayName.localeCompare(b.displayName));
-
-      // Set default icon and color if not set
       const currentIcon = formData.icon || suggestIconForName(formData.name) || 'Circle';
       const currentColor = formData.color || '#52A5CE';
 
-      // Check for duplicate names
-      const isDuplicate = existingCategories.some(
+      const isDuplicate = existingCategoriesByClass.some(
         cat => getDisplayName(cat).toLowerCase() === (formData.name || '').toLowerCase().trim()
       );
 
-      // Create preview entry for the new category
-      const previewCategory = formData.name && formData.name.trim() ? {
+      const previewCategory = formData.name && formData.name.trim() && selectedClass ? {
         id: 'preview',
         displayName: formData.name.trim(),
         icon: currentIcon,
         color: currentColor,
+        class: selectedClass,
         parent_account_id: formData.parentAccountId || null,
         isNew: true,
         isDuplicate
       } : null;
 
-      // Merge preview into the hierarchy
-      let previewHierarchy = [...categoryHierarchy, ...orphanCategories.map(cat => ({ ...cat, children: [] }))];
-      if (previewCategory) {
-        if (previewCategory.parent_account_id) {
-          // Add as child to parent
-          previewHierarchy = previewHierarchy.map(parent => {
-            if (parent.id === previewCategory.parent_account_id) {
-              return {
-                ...parent,
-                children: [...parent.children, previewCategory].sort((a, b) =>
-                  (a.displayName || '').localeCompare(b.displayName || '')
-                )
-              };
-            }
-            return parent;
-          });
-        } else {
-          // Add as top-level category
-          previewHierarchy.push({ ...previewCategory, children: [] });
-          previewHierarchy.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+      const buildSectionHierarchy = (cats, sectionClass) => {
+        const parents = cats.filter(c => !c.parent_account_id);
+        let hierarchy = parents.map(parent => ({
+          ...parent,
+          displayName: getDisplayName(parent),
+          children: cats.filter(c => c.parent_account_id === parent.id).map(child => ({
+            ...child,
+            displayName: getDisplayName(child)
+          }))
+        })).sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+        if (previewCategory && previewCategory.class === sectionClass) {
+          if (previewCategory.parent_account_id) {
+            hierarchy = hierarchy.map(parent => {
+              if (parent.id === previewCategory.parent_account_id) {
+                return {
+                  ...parent,
+                  children: [...parent.children, previewCategory].sort((a, b) =>
+                    (a.displayName || '').localeCompare(b.displayName || '')
+                  )
+                };
+              }
+              return parent;
+            });
+          } else {
+            hierarchy.push({ ...previewCategory, children: [] });
+            hierarchy.sort((a, b) => (a.displayName || '').localeCompare(b.displayName || ''));
+          }
         }
-      }
+        return hierarchy;
+      };
+
+      const incomeHierarchy = buildSectionHierarchy(allIncomeCategories, 'income');
+      const expenseHierarchy = buildSectionHierarchy(allExpenseCategories, 'expense');
+
+      const renderCategoryRow = (category, indent = false) => {
+        const IconComponent = getIconComponent(category.icon);
+        return (
+          <div key={category.id}>
+            <div
+              ref={category.isNew ? newItemRef : null}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
+                indent ? 'ml-4' : ''
+              } ${
+                category.isNew
+                  ? category.isDuplicate
+                    ? 'bg-red-50 border border-red-200'
+                    : 'bg-blue-50 border border-blue-200'
+                  : 'hover:bg-slate-50'
+              }`}
+            >
+              <IconComponent
+                className="w-3 h-3 flex-shrink-0"
+                style={{ color: category.color }}
+              />
+              <span className={`truncate ${category.isNew ? 'font-medium' : ''}`}>
+                {category.displayName}
+              </span>
+              {category.isNew && category.isDuplicate && (
+                <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
+              )}
+            </div>
+            {category.children && category.children.length > 0 && (
+              <div className="space-y-0.5 mt-0.5">
+                {category.children.map(child => renderCategoryRow(child, true))}
+              </div>
+            )}
+          </div>
+        );
+      };
 
       return (
         <div className="flex gap-3 h-full">
-          {/* Left Column - Compact Form */}
           <div className="w-[220px] flex-shrink-0 space-y-2">
             <div>
               <Label htmlFor="name" className="text-xs mb-0.5">Category Name*</Label>
@@ -2493,7 +2535,6 @@ export default function AccountCreationWizard({
                 onChange={(e) => {
                   const newName = e.target.value;
                   updateFormData('name', newName);
-                  // Auto-suggest icon if not manually set
                   if (!formData.iconManuallySet) {
                     updateFormData('icon', suggestIconForName(newName) || 'Circle');
                   }
@@ -2505,135 +2546,97 @@ export default function AccountCreationWizard({
             </div>
 
             <div>
-              <Label htmlFor="accountDetail" className="text-xs mb-0.5">Category Type*</Label>
-              <Select
-                value={formData.accountDetail || ''}
-                onValueChange={(value) => updateFormData('accountDetail', value)}
-                required
+              <Label className="text-xs mb-0.5">Income or Expense*</Label>
+              <ClickThroughSelect
+                value={selectedClass}
+                onValueChange={(val) => {
+                  updateFormData('categoryClass', val);
+                  updateFormData('accountDetail', '');
+                  updateFormData('parentAccountId', null);
+                }}
+                placeholder="Select Income or Expense"
+                triggerClassName="h-8 text-sm"
+                enableSearch={true}
               >
-                <SelectTrigger id="accountDetail" className="h-8 text-sm">
-                  <SelectValue placeholder={`Select type`} />
-                </SelectTrigger>
-                <SelectContent>
-                  {categoryTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {CLASS_OPTIONS.map((opt) => (
+                  <ClickThroughSelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
             </div>
 
             <div>
-              <Label htmlFor="parentCategory" className="text-xs mb-0.5">Parent (Optional)</Label>
-              <Select
-                value={formData.parentAccountId || 'none'}
-                onValueChange={(value) => updateFormData('parentAccountId', value === 'none' ? null : value)}
+              <Label className="text-xs mb-0.5">Category Type*</Label>
+              <ClickThroughSelect
+                value={formData.accountDetail || ''}
+                onValueChange={(val) => updateFormData('accountDetail', val)}
+                placeholder="Select type"
+                triggerClassName="h-8 text-sm"
+                enableSearch={true}
+                disabled={!selectedClass}
               >
-                <SelectTrigger id="parentCategory" className="h-8 text-sm">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">None</SelectItem>
-                  {existingCategories.map((cat) => (
-                    <SelectItem key={cat.id} value={cat.id}>
-                      {getDisplayName(cat)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                {categoryTypes.map((type) => (
+                  <ClickThroughSelectItem key={type.value} value={type.value}>
+                    {type.label}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            <div>
+              <Label className="text-xs mb-0.5">Parent (Optional)</Label>
+              <ClickThroughSelect
+                value={formData.parentAccountId || ''}
+                onValueChange={(val) => updateFormData('parentAccountId', val || null)}
+                placeholder="Select Parent"
+                triggerClassName="h-8 text-sm"
+                enableSearch={true}
+                disabled={!selectedClass}
+              >
+                {parentCategories.map((cat) => (
+                  <ClickThroughSelectItem key={cat.id} value={cat.id}>
+                    {getDisplayName(cat)}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
             </div>
 
             <div>
               <Label className="text-xs mb-0.5">Appearance</Label>
               <div className="flex items-center gap-2">
-                <IconPicker
-                  value={currentIcon}
-                  onValueChange={(icon) => {
+                <AppearancePicker
+                  color={currentColor}
+                  icon={currentIcon}
+                  onColorChange={(color) => updateFormData('color', color)}
+                  onIconChange={(icon) => {
                     updateFormData('icon', icon);
                     updateFormData('iconManuallySet', true);
                   }}
-                  triggerClassName="h-8 w-8"
                 />
-                <ColorPicker
-                  value={currentColor}
-                  onChange={(color) => updateFormData('color', color)}
-                  showLabel={false}
-                />
+                <span className="text-xs text-slate-500">Click to change</span>
               </div>
             </div>
           </div>
 
-          {/* Right Column - Preview Panel */}
           <div className="flex-1 border-l border-slate-200 pl-3 flex flex-col min-w-0">
             <div className="mb-2">
               <div className="text-xs font-medium text-slate-700">Category Preview</div>
-              <div className="text-xs text-slate-500">{existingCategories.length} existing</div>
             </div>
 
             <div className="flex-1 overflow-y-auto space-y-0.5">
-              {previewHierarchy.map((category) => {
-                const IconComponent = getIconComponent(category.icon);
-                return (
-                  <div key={category.id}>
-                    {/* Parent/Top-level category */}
-                    <div
-                      ref={category.isNew ? newItemRef : null}
-                      className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
-                        category.isNew
-                          ? category.isDuplicate
-                            ? 'bg-red-50 border border-red-200'
-                            : 'bg-blue-50 border border-blue-200'
-                          : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <IconComponent
-                        className="w-3 h-3 flex-shrink-0"
-                        style={{ color: category.color }}
-                      />
-                      <span className={`truncate ${category.isNew ? 'font-medium' : ''}`}>
-                        {category.displayName}
-                      </span>
-                      {category.isNew && category.isDuplicate && (
-                        <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
-                      )}
-                    </div>
-
-                    {/* Children */}
-                    {category.children && category.children.length > 0 && (
-                      <div className="ml-4 space-y-0.5 mt-0.5">
-                        {category.children.map((child) => {
-                          const ChildIcon = getIconComponent(child.icon);
-                          return (
-                            <div
-                              key={child.id}
-                              ref={child.isNew ? newItemRef : null}
-                              className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs ${
-                                child.isNew
-                                  ? child.isDuplicate
-                                    ? 'bg-red-50 border border-red-200'
-                                    : 'bg-blue-50 border border-blue-200'
-                                  : 'hover:bg-slate-50'
-                              }`}
-                            >
-                              <ChildIcon
-                                className="w-3 h-3 flex-shrink-0"
-                                style={{ color: child.color }}
-                              />
-                              <span className={`truncate ${child.isNew ? 'font-medium' : ''}`}>
-                                {child.displayName}
-                              </span>
-                              {child.isNew && child.isDuplicate && (
-                                <AlertCircle className="w-3 h-3 text-red-500 flex-shrink-0 ml-auto" />
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+              {incomeHierarchy.length > 0 && (
+                <>
+                  <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide px-2 py-1">Income</div>
+                  {incomeHierarchy.map(cat => renderCategoryRow(cat))}
+                </>
+              )}
+              {expenseHierarchy.length > 0 && (
+                <>
+                  <div className={`text-xs font-semibold text-slate-500 uppercase tracking-wide px-2 py-1 ${incomeHierarchy.length > 0 ? 'mt-2' : ''}`}>Expenses</div>
+                  {expenseHierarchy.map(cat => renderCategoryRow(cat))}
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/select";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
-import AddEditCategorySheet from '@/components/budgeting/AddEditCategorySheet';
+import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 import { Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as LucideIcons from 'lucide-react';
@@ -550,13 +550,18 @@ export default function AddBudgetItemSheet({
       </SheetContent>
     </Sheet>
 
-    <AddEditCategorySheet
+    <AccountCreationWizard
       open={showAddCategorySheet}
       onOpenChange={handleCategorySheetClose}
+      initialAccountType="budget"
+      initialClass={editingCategory ? editingCategory.class : "expense"}
+      initialCategoryName={searchTerm}
       editingCategory={editingCategory}
-      accountType={editingCategory ? editingCategory.class : "expense"}
-      initialName={searchTerm}
-      onCategoryCreated={handleCategoryCreated}
+      onAccountCreated={(result) => {
+        if (result?.account) {
+          handleCategoryCreated(result.account);
+        }
+      }}
     />
   </>
   );
