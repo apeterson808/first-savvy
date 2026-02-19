@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,8 +15,6 @@ import {
 } from "@/components/ui/sheet";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
-import ContactMatchDialog from './ContactMatchDialog';
-import ContactMatchConfirmDialog from './ContactMatchConfirmDialog';
 import { toast } from 'sonner';
 
 function formatPhoneNumber(value) {
@@ -47,33 +45,7 @@ export default function AddContactSheet({
     notes: '',
   });
   const [detectedUser, setDetectedUser] = useState(null);
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [matchDialogOpen, setMatchDialogOpen] = useState(false);
-  const [createdContact, setCreatedContact] = useState(null);
-  const [matchCount, setMatchCount] = useState(0);
-  const [applyingMatches, setApplyingMatches] = useState(false);
   const queryClient = useQueryClient();
-
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => firstsavvy.entities.Category.list('name')
-  });
-
-  const { data: allTransactions = [] } = useQuery({
-    queryKey: ['allTransactionsForMatching'],
-    queryFn: async () => {
-      const [pending, posted] = await Promise.all([
-        firstsavvy.entities.Transaction.filter({ status: 'pending' }, '-date', 10000),
-        firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date', 10000)
-      ]);
-      return [...pending, ...posted];
-    }
-  });
-
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['activeAccounts'],
-    queryFn: () => firstsavvy.entities.Account.filter({ is_active: true })
-  });
 
   useEffect(() => {
     if (open && initialName) {
@@ -81,47 +53,16 @@ export default function AddContactSheet({
     }
   }, [open, initialName]);
 
-  const getQuickMatchCount = (triggeringTxnId, transactions) => {
-    if (!triggeringTxnId || !transactions) return 0;
-
-    const triggeringTxn = transactions.find(t => t.id === triggeringTxnId);
-    if (!triggeringTxn || !triggeringTxn.original_description) return 0;
-
-    const bankDescription = triggeringTxn.original_description.toLowerCase().trim();
-    let count = 0;
-
-    for (const txn of transactions) {
-      if (txn.id === triggeringTxnId) continue;
-      if (!txn.original_description) continue;
-
-      if (txn.original_description.toLowerCase().trim() === bankDescription) {
-        count++;
-        if (count >= 2) break;
-      }
-    }
-
-    return count;
-  };
-
   const createMutation = useMutation({
     mutationFn: (data) => firstsavvy.entities.Contact.create(data),
     onSuccess: (newContact) => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact created successfully');
-
-      const count = getQuickMatchCount(triggeringTransactionId, allTransactions);
-
-      if (count > 0) {
-        setCreatedContact(newContact);
-        setMatchCount(count);
-        setConfirmDialogOpen(true);
-      } else {
-        if (onContactCreated) {
-          onContactCreated(newContact, triggeringTransactionId);
-        }
-        resetForm();
-        onOpenChange(false);
+      if (onContactCreated) {
+        onContactCreated(newContact, triggeringTransactionId);
       }
+      resetForm();
+      onOpenChange(false);
     },
     onError: (error) => {
       console.error('Create failed:', error);
@@ -140,67 +81,6 @@ export default function AddContactSheet({
       notes: '',
     });
     setDetectedUser(null);
-    setCreatedContact(null);
-    setMatchCount(0);
-    setConfirmDialogOpen(false);
-    setMatchDialogOpen(false);
-  };
-
-  const handleConfirmMatches = () => {
-    setConfirmDialogOpen(false);
-    setMatchDialogOpen(true);
-  };
-
-  const handleCancelMatches = () => {
-    setConfirmDialogOpen(false);
-
-    if (onContactCreated && createdContact) {
-      onContactCreated(createdContact, triggeringTransactionId);
-    }
-
-    resetForm();
-    onOpenChange(false);
-  };
-
-  const handleApplyMatches = async (transactionIds) => {
-    setApplyingMatches(true);
-
-    try {
-      await Promise.all(
-        transactionIds.map(id =>
-          firstsavvy.entities.Transaction.update(id, {
-            contact_id: createdContact.id
-          })
-        )
-      );
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['allTransactionsForMatching'] });
-
-      toast.success(`Contact applied to ${transactionIds.length} transaction${transactionIds.length !== 1 ? 's' : ''}`);
-
-      if (onContactCreated) {
-        onContactCreated(createdContact, triggeringTransactionId);
-      }
-
-      setMatchDialogOpen(false);
-      resetForm();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Failed to apply contact to transactions:', error);
-      toast.error('Failed to apply contact to some transactions');
-    } finally {
-      setApplyingMatches(false);
-    }
-  };
-
-  const handleMatchDialogClose = () => {
-    setMatchDialogOpen(false);
-
-    if (onContactCreated && createdContact) {
-      onContactCreated(createdContact, triggeringTransactionId);
-    }
   };
 
   const updateFormField = (field, value) => {
@@ -441,23 +321,6 @@ export default function AddContactSheet({
       </SheetContent>
     </Sheet>
 
-    <ContactMatchConfirmDialog
-      isOpen={confirmDialogOpen}
-      onConfirm={handleConfirmMatches}
-      onCancel={handleCancelMatches}
-      matchCount={matchCount}
-    />
-
-    <ContactMatchDialog
-      isOpen={matchDialogOpen}
-      onClose={handleMatchDialogClose}
-      contact={createdContact}
-      triggeringTransactionId={triggeringTransactionId}
-      allTransactions={allTransactions}
-      accounts={accounts}
-      onApply={handleApplyMatches}
-      isApplying={applyingMatches}
-    />
   </>
   );
 }
