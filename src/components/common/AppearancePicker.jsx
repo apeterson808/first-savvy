@@ -74,9 +74,8 @@ const DEFAULT_COLOR = '#52A5CE';
 export default function AppearancePicker({ color, icon, onColorChange, onIconChange, inline = false, showPreview = false, useTabs = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('color');
-  const [hasSelectedColor, setHasSelectedColor] = useState(false);
-  const [hasSelectedIcon, setHasSelectedIcon] = useState(false);
+  const [activeTab, setActiveTab] = useState('icon');
+  const [currentStep, setCurrentStep] = useState('icon');
   const closeTimeoutRef = useRef(null);
 
   const selectedColor = color || DEFAULT_COLOR;
@@ -88,10 +87,9 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
 
   useEffect(() => {
     if (!open) {
-      setHasSelectedColor(false);
-      setHasSelectedIcon(false);
       setSearch('');
-      setActiveTab('color');
+      setActiveTab('icon');
+      setCurrentStep('icon');
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
@@ -109,29 +107,23 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
 
   const handleColorSelect = (newColor) => {
     onColorChange?.(newColor);
-    setHasSelectedColor(true);
 
-    if (!inline && hasSelectedIcon) {
+    if (!inline) {
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
       }
       closeTimeoutRef.current = setTimeout(() => {
         setOpen(false);
-      }, 300);
+      }, 200);
     }
   };
 
   const handleIconSelect = (newIcon) => {
     onIconChange?.(newIcon);
-    setHasSelectedIcon(true);
 
-    if (!inline && hasSelectedColor) {
-      if (closeTimeoutRef.current) {
-        clearTimeout(closeTimeoutRef.current);
-      }
-      closeTimeoutRef.current = setTimeout(() => {
-        setOpen(false);
-      }, 300);
+    if (!inline) {
+      setCurrentStep('color');
+      setSearch('');
     }
   };
 
@@ -282,13 +274,41 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
       </div>
     )
   ) : (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="w-full grid grid-cols-2">
-        <TabsTrigger value="color">Color</TabsTrigger>
-        <TabsTrigger value="icon">Icon</TabsTrigger>
-      </TabsList>
+    <div className="w-full">
+      {currentStep === 'icon' ? (
+        <>
+          <Input
+            placeholder="Search icons..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-9 text-sm mb-3"
+          />
+          <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+            {filteredIcons.map((iconName) => {
+              const Icon = ICON_MAP[iconName];
+              if (!Icon) return null;
 
-      <TabsContent value="color" className="mt-4">
+              return (
+                <button
+                  key={iconName}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleIconSelect(iconName);
+                  }}
+                  onMouseDown={(e) => e.preventDefault()}
+                  className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
+                    icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                  }`}
+                >
+                  <Icon className="w-5 h-5" />
+                </button>
+              );
+            })}
+          </div>
+        </>
+      ) : (
         <div className="grid grid-cols-6 gap-2">
           {CUSTOM_COLOR_PALETTE.map((colorOption) => (
             <button
@@ -309,41 +329,8 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
             />
           ))}
         </div>
-      </TabsContent>
-
-      <TabsContent value="icon" className="mt-4">
-        <Input
-          placeholder="Search icons..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-9 text-sm mb-3"
-        />
-        <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
-          {filteredIcons.map((iconName) => {
-            const Icon = ICON_MAP[iconName];
-            if (!Icon) return null;
-
-            return (
-              <button
-                key={iconName}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  handleIconSelect(iconName);
-                }}
-                onMouseDown={(e) => e.preventDefault()}
-                className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
-                  icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
-                }`}
-              >
-                <Icon className="w-5 h-5" />
-              </button>
-            );
-          })}
-        </div>
-      </TabsContent>
-    </Tabs>
+      )}
+    </div>
   );
 
   if (inline) {
