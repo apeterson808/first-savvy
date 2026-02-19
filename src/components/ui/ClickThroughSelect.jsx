@@ -261,6 +261,9 @@ export function ClickThroughSelect({
       }
 
       if (searchTerm === '') {
+        // User cleared the text — clear selection and show placeholder
+        setSelectedValue('');
+        onValueChange?.('');
         // For Tab, allow natural focus movement
         if (e.key === 'Tab') {
           handleOpenChange(false);
@@ -373,9 +376,10 @@ export function ClickThroughSelect({
               setTimeout(() => {
                 if (!isSelectingRef.current && !isCancelingRef.current && isEditing && searchTerm === '') {
                   setSelectedValue('');
-                  onValueChange?.('');
+                  onValueChange?.(null);
                 }
                 setIsEditing(false);
+                setSearchTerm('');
               }, 150);
             }}
             onKeyDown={handleKeyDown}
