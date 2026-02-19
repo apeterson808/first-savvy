@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import {
   Sheet,
-  SheetContent,
+  SheetContentNoOverlay,
   SheetDescription,
   SheetHeader,
   SheetTitle,
@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 import AppearancePicker from '@/components/common/AppearancePicker';
@@ -171,7 +172,7 @@ export default function AddEditCategorySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent>
+      <SheetContentNoOverlay>
         <SheetHeader>
           <SheetTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</SheetTitle>
           <SheetDescription>
@@ -218,29 +219,28 @@ export default function AddEditCategorySheet({
 
           <div className="space-y-2">
             <Label htmlFor="parentAccount">Parent Category (Optional)</Label>
-            <Select
+            <ClickThroughSelect
               value={formData.parentAccountId || 'none'}
               onValueChange={(value) => setFormData(prev => ({
                 ...prev,
                 parentAccountId: value === 'none' ? null : value
               }))}
+              placeholder="None - Top Level Category"
+              triggerClassName="h-10"
+              enableSearch={true}
             >
-              <SelectTrigger id="parentAccount">
-                <SelectValue placeholder="None - Top Level Category" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None - Top Level Category</SelectItem>
-                {parentCategories.map((cat) => (
-                  <SelectItem
-                    key={cat.id}
-                    value={cat.id}
-                    disabled={editingCategory?.id === cat.id}
-                  >
-                    {cat.display_name || cat.account_detail}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <ClickThroughSelectItem value="none" data-display="None - Top Level Category">None - Top Level Category</ClickThroughSelectItem>
+              {parentCategories.map((cat) => (
+                <ClickThroughSelectItem
+                  key={cat.id}
+                  value={cat.id}
+                  data-display={cat.display_name || cat.account_detail}
+                  disabled={editingCategory?.id === cat.id}
+                >
+                  {cat.display_name || cat.account_detail}
+                </ClickThroughSelectItem>
+              ))}
+            </ClickThroughSelect>
             <p className="text-xs text-slate-500">
               Select a parent category to create a sub-category. Leave as "None" for a top-level category.
             </p>
@@ -285,7 +285,7 @@ export default function AddEditCategorySheet({
             </Button>
           </div>
         </form>
-      </SheetContent>
+      </SheetContentNoOverlay>
     </Sheet>
   );
 }
