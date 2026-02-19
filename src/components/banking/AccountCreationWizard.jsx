@@ -1237,10 +1237,13 @@ export default function AccountCreationWizard({
         return { category: newCategory, isUpdate: false };
       }
     },
-    onSuccess: ({ category, isUpdate }) => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] });
-      queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
+    onSuccess: async ({ category, isUpdate }) => {
+      // Refetch queries to update the preview list
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['categories'] }),
+        queryClient.invalidateQueries({ queryKey: ['user-chart-accounts'] }),
+        queryClient.invalidateQueries({ queryKey: ['chart-accounts'] })
+      ]);
 
       toast.success(isUpdate ? 'Category updated successfully!' : 'Category created successfully!');
 
