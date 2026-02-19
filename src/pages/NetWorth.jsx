@@ -89,15 +89,10 @@ export default function NetWorth() {
                 className="flex items-center justify-between p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: account.color ? `${account.color}20` : '#e2e8f0' }}
-                  >
-                    <AccountIcon
-                      className="w-5 h-5"
-                      style={{ color: account.color || '#64748b' }}
-                    />
-                  </div>
+                  <AccountIcon
+                    className="w-6 h-6 flex-shrink-0"
+                    style={{ color: account.color || '#64748b' }}
+                  />
                   <div className="min-w-0 flex-1">
                     <div className="font-semibold text-sm text-slate-900 truncate">
                       {account.display_name}

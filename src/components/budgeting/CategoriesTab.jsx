@@ -271,12 +271,7 @@ export default function CategoriesTab() {
             ) : (
               <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
             )}
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: `${category.color}20` }}
-            >
-              <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
-            </div>
+            <IconComponent className="w-5 h-5 flex-shrink-0" style={{ color: category.color }} />
             <span className={isChild ? 'text-slate-700' : ''}>
               {category.display_name}
             </span>
@@ -389,12 +384,7 @@ export default function CategoriesTab() {
             ) : (
               <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
             )}
-            <div
-              className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
-              style={{ backgroundColor: `${category.color}20` }}
-            >
-              <IconComponent className="w-3.5 h-3.5" style={{ color: category.color }} />
-            </div>
+            <IconComponent className="w-5 h-5 flex-shrink-0" style={{ color: category.color }} />
             <span className={isChild ? 'text-slate-700' : ''}>
               {category.display_name}
             </span>
