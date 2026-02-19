@@ -30,6 +30,14 @@ function lightenColor(hex, percent = 80) {
   return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
 }
 
+function adjustColorOpacity(hex, opacity = 0.5) {
+  const num = parseInt(hex.replace('#', ''), 16);
+  const r = num >> 16;
+  const g = (num >> 8) & 0x00FF;
+  const b = num & 0x0000FF;
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
+
 export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -430,14 +438,14 @@ export default function Dashboard() {
       const isNearLimit = percentage >= 80 && percentage < 100;
 
       const categoryColor = categoryData?.color || '#64748b';
-      let progressColor = categoryColor;
+      let progressColor = adjustColorOpacity(categoryColor, 0.5);
       let bgColor = lightenColor(categoryColor, 85);
 
       if (isOverBudget) {
-        progressColor = '#ef4444';
+        progressColor = 'rgba(239, 68, 68, 0.5)';
         bgColor = '#fee2e2';
       } else if (isNearLimit) {
-        progressColor = '#f59e0b';
+        progressColor = 'rgba(245, 158, 11, 0.5)';
         bgColor = '#fef3c7';
       }
 
@@ -671,7 +679,7 @@ export default function Dashboard() {
 
                     <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <IconComponent className="w-4 h-4 flex-shrink-0" style={{ color: item.categoryColor }} />
+                        <IconComponent className="w-4 h-4 flex-shrink-0 text-white" />
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className="font-semibold text-sm text-slate-900 truncate">
                             {item.categoryName}
