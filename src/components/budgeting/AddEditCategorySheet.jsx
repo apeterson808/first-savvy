@@ -220,16 +220,15 @@ export default function AddEditCategorySheet({
           <div className="space-y-2">
             <Label htmlFor="parentAccount">Parent Category (Optional)</Label>
             <ClickThroughSelect
-              value={formData.parentAccountId || 'none'}
+              value={formData.parentAccountId || ''}
               onValueChange={(value) => setFormData(prev => ({
                 ...prev,
-                parentAccountId: value === 'none' ? null : value
+                parentAccountId: value || null
               }))}
-              placeholder="None - Top Level Category"
+              placeholder="Select category"
               triggerClassName="h-10"
               enableSearch={true}
             >
-              <ClickThroughSelectItem value="none" data-display="None - Top Level Category">None - Top Level Category</ClickThroughSelectItem>
               {parentCategories.map((cat) => (
                 <ClickThroughSelectItem
                   key={cat.id}
