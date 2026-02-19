@@ -82,16 +82,19 @@ export default function InlineEditableAverage({
       enterPressedRef.current = true;
       const numericValue = parseValue(value);
       setIsEditing(false);
+      let resolvedAmount;
       if (!value || numericValue === 0) {
         if (suggestedAmount !== null && suggestedAmount !== undefined) {
           setValue(formatNumberWithCommas(suggestedAmount.toFixed(2)));
           if (onAmountChange) onAmountChange(suggestedAmount);
+          resolvedAmount = suggestedAmount;
         }
       } else {
         setValue(formatNumberWithCommas(numericValue.toFixed(2)));
         if (onAmountChange) onAmountChange(numericValue);
+        resolvedAmount = numericValue;
       }
-      if (onEnter) onEnter();
+      if (onEnter && resolvedAmount > 0) onEnter(resolvedAmount);
     } else if (e.key === 'Escape') {
       e.preventDefault();
       const amountToUse = currentAmount !== undefined && currentAmount !== null ? currentAmount : suggestedAmount;

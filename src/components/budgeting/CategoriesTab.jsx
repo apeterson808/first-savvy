@@ -163,8 +163,8 @@ export default function CategoriesTab() {
     }
   }, [categories, historicalAverages]);
 
-  const handleAddBudget = (categoryId) => {
-    const amount = categoryAmounts[categoryId] || historicalAverages[categoryId] || 0;
+  const handleAddBudget = (categoryId, explicitAmount) => {
+    const amount = explicitAmount !== undefined ? explicitAmount : (categoryAmounts[categoryId] || historicalAverages[categoryId] || 0);
 
     if (amount <= 0) {
       toast.error('Please enter a valid amount');
@@ -390,7 +390,7 @@ export default function CategoriesTab() {
           suggestedAmount={suggestedAmount}
           currentAmount={categoryAmounts[category.id]}
           onAmountChange={(newAmount) => handleAmountChange(category.id, newAmount)}
-          onEnter={() => handleAddBudget(category.id)}
+          onEnter={(amount) => handleAddBudget(category.id, amount)}
           isLoading={isCreating}
           hasBorder={true}
         />
