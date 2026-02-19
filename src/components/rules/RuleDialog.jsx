@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AddContactSheet from '../contacts/AddContactSheet';
-import { Plus, X, Loader2, AlertCircle, Info } from 'lucide-react';
+import { Plus, X, Loader2, Info } from 'lucide-react';
 import { ClickThroughSelect, ClickThroughSelectItem } from '../ui/ClickThroughSelect';
 import {
   Tooltip,
@@ -47,8 +47,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   const isPromoteMode = mode === 'promote';
 
   const [ruleName, setRuleName] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [checkingName, setCheckingName] = useState(false);
   const [ruleNameSearch, setRuleNameSearch] = useState('');
 
   const [moneyDirection, setMoneyDirection] = useState('both');
@@ -97,7 +95,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   useEffect(() => {
     if (!open) {
       setRuleName('');
-      setNameError('');
       setRuleNameSearch('');
       setMoneyDirection('both');
       setSelectedAccountIds([]);
@@ -170,7 +167,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       setSelectedAccountIds([]);
     } else {
       setRuleName('');
-      setNameError('');
       setMoneyDirection('both');
       setSelectedAccountIds([]);
       setConditionRows([{ field: 'bank_memo', operator: 'contains', value: '' }]);
@@ -184,47 +180,11 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     }
   }, [rule, transaction, open, isEditMode]);
 
-  const checkNameUniqueness = useCallback(async (name) => {
-    if (!name.trim()) {
-      setNameError('');
-      return;
-    }
-
-    setCheckingName(true);
-    try {
-      const isUnique = await transactionRulesApi.checkRuleNameUnique(
-        profileId,
-        name,
-        isEditMode ? rule?.id : null
-      );
-      if (!isUnique) {
-        setNameError('A rule with this name already exists');
-      } else {
-        setNameError('');
-      }
-    } catch (error) {
-      console.error('Error checking name:', error);
-    } finally {
-      setCheckingName(false);
-    }
-  }, [profileId, isEditMode, rule?.id]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (ruleName && (!isEditMode || ruleName !== rule?.name)) {
-        checkNameUniqueness(ruleName);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [ruleName, checkNameUniqueness, isEditMode, rule?.name]);
-
   const handleExistingRuleSelect = useCallback((selectedRuleId) => {
     const selected = existingRules.find(r => r.id === selectedRuleId);
     if (!selected) return;
 
     setRuleName(selected.name || '');
-    setNameError('A rule with this name already exists');
     setMoneyDirection(selected.match_money_direction || 'both');
     setSelectedAccountIds(selected.match_bank_account_ids || []);
     setMatchLogic(selected.match_conditions_logic || 'any');
@@ -419,11 +379,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       return;
     }
 
-    if (nameError) {
-      toast.error('Please fix the rule name error');
-      return;
-    }
-
     const hasConditions = conditionRows.some(row => row.value.trim());
     if (!hasConditions) {
       toast.error('Please specify at least one search condition');
@@ -590,7 +545,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   return (
     <>
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0">
+      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0 gap-0" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader className="px-6 pt-6 pb-4 flex-shrink-0">
           <DialogTitle>
             {isPromoteMode ? 'Promote Rule' : isEditMode ? 'Edit Rule' : 'Create Rule'}
@@ -598,54 +553,40 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
         </DialogHeader>
 
         <div className="px-6 flex-shrink-0">
-          <div className="space-y-2">
-            {isEditMode ? (
-              <Input
-                id="rule-name"
-                placeholder="Enter rule name*"
-                value={ruleName}
-                onChange={(e) => setRuleName(e.target.value)}
-                className={nameError ? 'border-red-500 h-10' : 'h-10'}
-              />
-            ) : (
-              <ClickThroughSelect
-                value={existingRules.find(r => r.name === ruleName)?.id || ''}
-                onValueChange={(val) => {
-                  if (val) {
-                    handleExistingRuleSelect(val);
-                  }
-                }}
-                onSearchTermChange={(term) => {
-                  setRuleNameSearch(term);
-                  setRuleName(term);
-                  if (!term) {
-                    setNameError('');
-                  }
-                }}
-                placeholder="Enter rule name*"
-                triggerClassName={nameError ? 'border-red-500 h-10 text-sm' : 'h-10 text-sm'}
-                enableSearch={true}
-              >
-                {existingRules
-                  .filter(r => !ruleNameSearch || r.name.toLowerCase().includes(ruleNameSearch.toLowerCase()))
-                  .map(r => (
-                    <ClickThroughSelectItem key={r.id} value={r.id} data-display={r.name}>
-                      {r.name}
-                    </ClickThroughSelectItem>
-                  ))
+          {isEditMode ? (
+            <Input
+              id="rule-name"
+              placeholder="Enter rule name*"
+              value={ruleName}
+              onChange={(e) => setRuleName(e.target.value)}
+              className="h-10"
+            />
+          ) : (
+            <ClickThroughSelect
+              value={existingRules.find(r => r.name === ruleName)?.id || ''}
+              onValueChange={(val) => {
+                if (val) {
+                  handleExistingRuleSelect(val);
                 }
-              </ClickThroughSelect>
-            )}
-            {nameError && (
-              <p className="text-xs text-red-500 flex items-center gap-1">
-                <AlertCircle className="w-3 h-3" />
-                {nameError}
-              </p>
-            )}
-            {checkingName && (
-              <p className="text-xs text-slate-500">Checking availability...</p>
-            )}
-          </div>
+              }}
+              onSearchTermChange={(term) => {
+                setRuleNameSearch(term);
+                setRuleName(term);
+              }}
+              placeholder="Enter rule name*"
+              triggerClassName="h-10 text-sm"
+              enableSearch={true}
+            >
+              {existingRules
+                .filter(r => !ruleNameSearch || r.name.toLowerCase().includes(ruleNameSearch.toLowerCase()))
+                .map(r => (
+                  <ClickThroughSelectItem key={r.id} value={r.id} data-display={r.name}>
+                    {r.name}
+                  </ClickThroughSelectItem>
+                ))
+              }
+            </ClickThroughSelect>
+          )}
         </div>
 
         <div className="space-y-4 px-6 flex-1 overflow-y-auto pt-4 pb-4">
@@ -992,7 +933,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
             </Button>
             <Button
               onClick={handleSubmit}
-              disabled={mutation.isPending || checkingName || !!nameError}
+              disabled={mutation.isPending}
             >
               {mutation.isPending ? (isPromoteMode ? 'Promoting...' : isEditMode ? 'Saving...' : 'Creating...') : (isPromoteMode ? 'Promote Rule' : isEditMode ? 'Save Changes' : 'Create')}
             </Button>
