@@ -83,13 +83,9 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
     const childBudgets = budgetsList.filter(b => b.chartAccount?.parent_account_id);
 
     const sortedBudgets = [...parentBudgets].sort((a, b) => {
-      const aActual = isIncome ? calculateIncomeWithChildren(a.chart_account_id) : calculateSpendingWithChildren(a.chart_account_id);
-      const bActual = isIncome ? calculateIncomeWithChildren(b.chart_account_id) : calculateSpendingWithChildren(b.chart_account_id);
-      const aBudgeted = convertCadence(parseFloat(a.allocated_amount || 0), a.cadence || 'monthly', 'monthly');
-      const bBudgeted = convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
-      const aPercentage = aBudgeted > 0 ? (aActual / aBudgeted) : 0;
-      const bPercentage = bBudgeted > 0 ? (bActual / bBudgeted) : 0;
-      return bPercentage - aPercentage;
+      const aName = (a.chartAccount?.display_name || '').toLowerCase();
+      const bName = (b.chartAccount?.display_name || '').toLowerCase();
+      return aName.localeCompare(bName);
     });
 
     return (
