@@ -166,6 +166,8 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
                     cy="50%"
                     innerRadius={78}
                     outerRadius={95}
+                    startAngle={90}
+                    endAngle={-270}
                     paddingAngle={2}
                     cornerRadius={5}
                     dataKey="value"
