@@ -374,12 +374,14 @@ export function ClickThroughSelect({
             }}
             onBlur={() => {
               setTimeout(() => {
-                if (!isSelectingRef.current && !isCancelingRef.current && isEditing && searchTerm === '') {
-                  setSelectedValue('');
-                  onValueChange?.('');
+                if (!isSelectingRef.current && !isCancelingRef.current) {
+                  if (isEditing && searchTerm === '' && selectedValue !== '') {
+                    setSelectedValue('');
+                    onValueChange?.('');
+                  }
+                  setIsEditing(false);
+                  setSearchTerm('');
                 }
-                setIsEditing(false);
-                setSearchTerm('');
               }, 150);
             }}
             onKeyDown={handleKeyDown}
