@@ -31,6 +31,7 @@ import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
 import AddContactSheet from '../contacts/AddContactSheet';
 import { Plus, X, Loader2, AlertCircle, Info } from 'lucide-react';
+import { ClickThroughSelect, ClickThroughSelectItem } from '../ui/ClickThroughSelect';
 import {
   Tooltip,
   TooltipContent,
@@ -48,6 +49,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   const [ruleName, setRuleName] = useState('');
   const [nameError, setNameError] = useState('');
   const [checkingName, setCheckingName] = useState(false);
+  const [ruleNameSearch, setRuleNameSearch] = useState('');
 
   const [moneyDirection, setMoneyDirection] = useState('both');
   const [selectedAccountIds, setSelectedAccountIds] = useState([]);
@@ -86,10 +88,17 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
     enabled: !!profileId && open
   });
 
+  const { data: existingRules = [] } = useQuery({
+    queryKey: ['transaction-rules', profileId],
+    queryFn: () => transactionRulesApi.listRules(profileId, { enabled: undefined }),
+    enabled: !!profileId && open && !isEditMode
+  });
+
   useEffect(() => {
     if (!open) {
       setRuleName('');
       setNameError('');
+      setRuleNameSearch('');
       setMoneyDirection('both');
       setSelectedAccountIds([]);
       setConditionRows([{ field: 'bank_memo', operator: 'contains', value: '' }]);
@@ -209,6 +218,40 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
     return () => clearTimeout(timer);
   }, [ruleName, checkNameUniqueness, isEditMode, rule?.name]);
+
+  const handleExistingRuleSelect = useCallback((selectedRuleId) => {
+    const selected = existingRules.find(r => r.id === selectedRuleId);
+    if (!selected) return;
+
+    setRuleName(selected.name || '');
+    setNameError('A rule with this name already exists');
+    setMoneyDirection(selected.match_money_direction || 'both');
+    setSelectedAccountIds(selected.match_bank_account_ids || []);
+    setMatchLogic(selected.match_conditions_logic || 'any');
+    setNewDescription(selected.action_set_description || '');
+    setCategoryId(selected.action_set_category_id || null);
+    setContactId(selected.action_set_contact_id || null);
+    setNotes(selected.action_add_note || '');
+    setAutoConfirmAndPost(selected.auto_confirm_and_post || false);
+
+    const rows = [];
+    if (selected.match_description_pattern) {
+      rows.push({ field: 'description', operator: selected.match_description_mode || 'contains', value: selected.match_description_pattern });
+    }
+    if (selected.match_original_description_pattern) {
+      rows.push({ field: 'bank_memo', operator: selected.match_description_mode || 'contains', value: selected.match_original_description_pattern });
+    }
+    if (selected.match_amount_exact !== null && selected.match_amount_exact !== undefined) {
+      rows.push({ field: 'amount', operator: 'exact', value: String(selected.match_amount_exact) });
+    } else if (selected.match_amount_min !== null && selected.match_amount_min !== undefined) {
+      rows.push({ field: 'amount', operator: 'greater_than', value: String(selected.match_amount_min) });
+    } else if (selected.match_amount_max !== null && selected.match_amount_max !== undefined) {
+      rows.push({ field: 'amount', operator: 'less_than', value: String(selected.match_amount_max) });
+    }
+    if (rows.length > 0) {
+      setConditionRows(rows);
+    }
+  }, [existingRules]);
 
   const loadPreview = useCallback(async () => {
     if (!open) return;
@@ -357,6 +400,7 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
   const resetForm = () => {
     setRuleName('');
     setNameError('');
+    setRuleNameSearch('');
     setMoneyDirection('both');
     setSelectedAccountIds([]);
     setConditionRows([{ field: 'bank_memo', operator: 'contains', value: '' }]);
@@ -555,13 +599,43 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
 
         <div className="px-6 flex-shrink-0">
           <div className="space-y-2">
-            <Input
-              id="rule-name"
-              placeholder="Enter rule name*"
-              value={ruleName}
-              onChange={(e) => setRuleName(e.target.value)}
-              className={nameError ? 'border-red-500 h-10' : 'h-10'}
-            />
+            {isEditMode ? (
+              <Input
+                id="rule-name"
+                placeholder="Enter rule name*"
+                value={ruleName}
+                onChange={(e) => setRuleName(e.target.value)}
+                className={nameError ? 'border-red-500 h-10' : 'h-10'}
+              />
+            ) : (
+              <ClickThroughSelect
+                value={existingRules.find(r => r.name === ruleName)?.id || ''}
+                onValueChange={(val) => {
+                  if (val) {
+                    handleExistingRuleSelect(val);
+                  }
+                }}
+                onSearchTermChange={(term) => {
+                  setRuleNameSearch(term);
+                  setRuleName(term);
+                  if (!term) {
+                    setNameError('');
+                  }
+                }}
+                placeholder="Enter rule name*"
+                triggerClassName={nameError ? 'border-red-500 h-10 text-sm' : 'h-10 text-sm'}
+                enableSearch={true}
+              >
+                {existingRules
+                  .filter(r => !ruleNameSearch || r.name.toLowerCase().includes(ruleNameSearch.toLowerCase()))
+                  .map(r => (
+                    <ClickThroughSelectItem key={r.id} value={r.id} data-display={r.name}>
+                      {r.name}
+                    </ClickThroughSelectItem>
+                  ))
+                }
+              </ClickThroughSelect>
+            )}
             {nameError && (
               <p className="text-xs text-red-500 flex items-center gap-1">
                 <AlertCircle className="w-3 h-3" />
