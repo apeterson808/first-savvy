@@ -442,7 +442,16 @@ export default function CategoriesTab() {
     const count = categories.length;
     const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
 
-    const parentCategories = categories.filter(c => !c.parent_account_id);
+    const parentCategories = categories.filter(c => {
+      if (!c.parent_account_id) return true;
+
+      if (!isBudgetedSection) {
+        const parentIsInThisSection = categories.some(cat => cat.id === c.parent_account_id);
+        return !parentIsInThisSection;
+      }
+
+      return false;
+    });
 
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
     const categoryColumnLabel = isBudgetedSection
