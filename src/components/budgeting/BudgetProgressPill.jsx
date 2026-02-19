@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { convertCadence } from '@/utils/cadenceUtils';
 
@@ -50,13 +50,22 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   const displayPercentage = Math.min(percentage, 100);
 
+  const [animatedWidth, setAnimatedWidth] = useState(0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnimatedWidth(displayPercentage);
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [displayPercentage]);
+
   return (
     <div className="group relative">
-      <div className="relative h-9 rounded-full overflow-hidden" style={{ backgroundColor: bgColor }}>
+      <div className="relative h-9 rounded-2xl overflow-hidden shadow-sm" style={{ backgroundColor: bgColor }}>
         <div
-          className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
+          className="absolute left-0 top-0 h-full transition-all duration-700 ease-out rounded-2xl"
           style={{
-            width: `${displayPercentage}%`,
+            width: `${animatedWidth}%`,
             backgroundColor: progressColor
           }}
         />

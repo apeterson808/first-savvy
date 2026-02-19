@@ -14,6 +14,7 @@ import { createPageUrl } from './utils';
 import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOfDay, endOfDay, addDays, startOfYear, subDays, startOfQuarter, endOfQuarter, subQuarters, subYears, startOfYear as getStartOfYear } from 'date-fns';
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
+import AnimatedProgressBar from '../components/dashboard/AnimatedProgressBar';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -662,50 +663,9 @@ export default function Dashboard() {
       <CardContent className="pt-2">
         {budgetUtilization.length > 0 ? (
           <div className="space-y-2.5">
-            {budgetUtilization.slice(0, 5).map((item, index) => {
-              const IconComponent = item.icon && Icons[item.icon] ? Icons[item.icon] : Icons.Circle;
-              const displayPercentage = Math.min(item.percentage, 100);
-
-              return (
-                <div key={index} className="group relative">
-                  <div className="relative h-9 rounded-full overflow-hidden" style={{ backgroundColor: item.bgColor }}>
-                    <div
-                      className="absolute left-0 top-0 h-full transition-all duration-500 ease-out rounded-full"
-                      style={{
-                        width: `${displayPercentage}%`,
-                        backgroundColor: item.progressColor
-                      }}
-                    />
-
-                    <div className="absolute inset-0 flex items-center justify-between px-4 z-10">
-                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <IconComponent className="w-4 h-4 flex-shrink-0 text-white" />
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className="font-semibold text-sm text-slate-900 truncate">
-                            {item.categoryName}
-                          </span>
-                          <span className="text-xs text-slate-400 font-normal flex-shrink-0">
-                            {item.percentage.toFixed(0)}%
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                        <div className="flex items-center gap-1.5 text-xs font-medium">
-                          <span className="text-slate-900">
-                            ${item.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                          <span className="text-slate-400">/</span>
-                          <span className="text-slate-600">
-                            ${item.limit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+            {budgetUtilization.slice(0, 5).map((item, index) => (
+              <AnimatedProgressBar key={index} item={item} />
+            ))}
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-8 px-4">
