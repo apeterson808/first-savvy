@@ -174,6 +174,7 @@ export function ClickThroughSelect({
     }
     onValueChange?.(val);
     handleOpenChange(false);
+    triggerInputRef.current?.blur();
     setTimeout(() => {
       isSelectingRef.current = false;
     }, 100);
