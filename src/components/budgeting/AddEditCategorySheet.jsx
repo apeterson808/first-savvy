@@ -172,8 +172,8 @@ export default function AddEditCategorySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContentNoOverlay>
-        <SheetHeader>
+      <SheetContentNoOverlay className="flex flex-col">
+        <SheetHeader className="flex-shrink-0">
           <SheetTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</SheetTitle>
           <SheetDescription>
             {editingCategory
@@ -183,7 +183,8 @@ export default function AddEditCategorySheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 mt-6">
+          <div className="flex-1 overflow-y-auto space-y-6 pr-1">
           <div className="space-y-2">
             <Label htmlFor="name">Category Name</Label>
             <Input
@@ -257,8 +258,9 @@ export default function AddEditCategorySheet({
               useTabs={true}
             />
           </div>
+          </div>
 
-          <div className="flex gap-3 pt-4">
+          <div className="flex gap-3 pt-4 flex-shrink-0">
             <Button
               type="button"
               variant="outline"
