@@ -501,7 +501,6 @@ export function ClickThroughSelect({
                     isHighlighted: currentVisibleIndex === highlightedIndex,
                     onSelect: (val, isAction) => handleSelect(val, isAction || child.props.isAction),
                     onMouseEnter: () => setHighlightedIndex(currentVisibleIndex),
-                    onItemMouseDown: () => { isSelectingRef.current = true; },
                     ref: (el) => {
                       if (el && child.props.value) {
                         itemRefs.current[child.props.value] = el;
@@ -525,7 +524,7 @@ export function ClickThroughSelect({
   );
 }
 
-export const ClickThroughSelectItem = React.forwardRef(({ value, children, className, isSelected, isHighlighted, onSelect, onMouseEnter, onItemMouseDown, isAction }, ref) => {
+export const ClickThroughSelectItem = React.forwardRef(({ value, children, className, isSelected, isHighlighted, onSelect, onMouseEnter, isAction }, ref) => {
   return (
     <div
       ref={ref}
@@ -536,7 +535,6 @@ export const ClickThroughSelectItem = React.forwardRef(({ value, children, class
       onMouseDown={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        onItemMouseDown?.();
       }}
       onMouseEnter={onMouseEnter}
       onClick={(e) => {
