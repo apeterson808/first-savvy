@@ -62,6 +62,8 @@ export function useBudgetData() {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
         .select('*')
+        .eq('profile_id', activeProfile.id)
+        .eq('is_active', true)
         .in('class', ['income', 'expense'])
         .order('display_name', { ascending: true });
       if (error) throw error;
