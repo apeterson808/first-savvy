@@ -60,6 +60,25 @@ export default function CategoriesTab() {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'parents', JSON.stringify([...expandedParents]));
   }, [expandedParents]);
 
+  useEffect(() => {
+    const budgetedCategoryIds = new Set(budgets.map(b => b.chart_account_id));
+
+    const unbudgetedChildrenWithBudgetedParents = [...availableIncomeCategories, ...availableExpenseCategories]
+      .filter(c => c.parent_account_id && budgetedCategoryIds.has(c.parent_account_id));
+
+    const parentsToExpand = new Set(
+      unbudgetedChildrenWithBudgetedParents.map(c => c.parent_account_id)
+    );
+
+    if (parentsToExpand.size > 0) {
+      setExpandedParents(prev => {
+        const newSet = new Set(prev);
+        parentsToExpand.forEach(id => newSet.add(id));
+        return newSet;
+      });
+    }
+  }, [availableIncomeCategories, availableExpenseCategories, budgets]);
+
   const toggleSection = (section) => {
     setCollapsedSections(prev => ({
       ...prev,
@@ -335,6 +354,7 @@ export default function CategoriesTab() {
     const IconComponent = Icons[category.icon] || Icons.Circle;
     const suggestedAmount = historicalAverages[category.id] || 0;
     const isCreating = creatingBudgetId === category.id;
+    const hasBudget = getBudgetForCategory(category.id);
 
     const children = allCategories.filter(c => c.parent_account_id === category.id);
     const hasChildren = children.length > 0;
@@ -342,8 +362,12 @@ export default function CategoriesTab() {
 
     const rows = [];
 
+    const rowClassName = hasBudget
+      ? `border-b border-slate-100 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'} opacity-50`
+      : `border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`;
+
     rows.push(
-      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+      <tr key={category.id} className={rowClassName}>
         <td className="px-4 font-medium border-r border-slate-200">
           <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
@@ -374,37 +398,51 @@ export default function CategoriesTab() {
             <span className={isChild ? 'text-slate-700' : ''}>
               {category.display_name}
             </span>
+            {hasBudget && (
+              <Badge variant="secondary" className="text-xs ml-2">Budgeted</Badge>
+            )}
           </div>
         </td>
         <td className="px-4 border-r border-slate-200">
-          {everUsed ? (
+          {hasBudget ? (
+            <span className="text-muted-foreground text-sm">-</span>
+          ) : everUsed ? (
             <Badge variant="secondary" className="text-xs">Yes</Badge>
           ) : (
             <span className="text-muted-foreground text-sm">No</span>
           )}
         </td>
         <td className="px-4 text-muted-foreground text-sm border-r border-slate-200">
-          {lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
+          {hasBudget ? '-' : lastUsed ? format(new Date(lastUsed), 'MMM d, yyyy') : '-'}
         </td>
-        <InlineEditableAverage
-          suggestedAmount={suggestedAmount}
-          currentAmount={categoryAmounts[category.id]}
-          onAmountChange={(newAmount) => handleAmountChange(category.id, newAmount)}
-          onEnter={(amount) => handleAddBudget(category.id, amount)}
-          isLoading={isCreating}
-          hasBorder={true}
-        />
-        <td className="px-4 text-right">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleAddBudget(category.id)}
-            disabled={isCreating || (categoryAmounts[category.id] || suggestedAmount) <= 0}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            Add
-          </Button>
-        </td>
+        {hasBudget ? (
+          <>
+            <td className="px-4 border-r border-slate-200 text-muted-foreground text-sm">-</td>
+            <td className="px-4 text-right"></td>
+          </>
+        ) : (
+          <>
+            <InlineEditableAverage
+              suggestedAmount={suggestedAmount}
+              currentAmount={categoryAmounts[category.id]}
+              onAmountChange={(newAmount) => handleAmountChange(category.id, newAmount)}
+              onEnter={(amount) => handleAddBudget(category.id, amount)}
+              isLoading={isCreating}
+              hasBorder={true}
+            />
+            <td className="px-4 text-right">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleAddBudget(category.id)}
+                disabled={isCreating || (categoryAmounts[category.id] || suggestedAmount) <= 0}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+            </td>
+          </>
+        )}
       </tr>
     );
 
@@ -442,16 +480,28 @@ export default function CategoriesTab() {
     const count = categories.length;
     const isBudgetedSection = renderRow === renderBudgetedCategoryRow;
 
-    const parentCategories = categories.filter(c => {
-      if (!c.parent_account_id) return true;
+    let parentCategories = categories.filter(c => !c.parent_account_id);
 
-      if (!isBudgetedSection) {
+    if (!isBudgetedSection) {
+      const childCategoriesWithBudgetedParents = categories.filter(c => {
+        if (!c.parent_account_id) return false;
         const parentIsInThisSection = categories.some(cat => cat.id === c.parent_account_id);
         return !parentIsInThisSection;
-      }
+      });
 
-      return false;
-    });
+      const budgetedParentIds = new Set(
+        childCategoriesWithBudgetedParents
+          .map(c => c.parent_account_id)
+          .filter(Boolean)
+      );
+
+      const allCategoriesInSystem = budgets.map(b => b.chartAccount).filter(Boolean);
+      const budgetedParentsToShow = allCategoriesInSystem.filter(c =>
+        budgetedParentIds.has(c.id)
+      );
+
+      parentCategories = [...parentCategories, ...budgetedParentsToShow];
+    }
 
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
     const categoryColumnLabel = isBudgetedSection
