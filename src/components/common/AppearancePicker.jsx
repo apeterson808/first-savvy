@@ -365,7 +365,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
           <SelectedIcon className="w-5 h-5 text-white" />
         </button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-4" align="start" onKeyDown={(e) => {
+      <PopoverContent className="w-72 p-4" align="start" onKeyDown={(e) => {
         if (e.key === 'Escape') {
           setOpen(false);
         }

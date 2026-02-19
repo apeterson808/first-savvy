@@ -172,8 +172,8 @@ export default function AddEditCategorySheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContentNoOverlay className="flex flex-col">
-        <SheetHeader className="flex-shrink-0">
+      <SheetContentNoOverlay>
+        <SheetHeader>
           <SheetTitle>{editingCategory ? 'Edit Category' : 'Add New Category'}</SheetTitle>
           <SheetDescription>
             {editingCategory
@@ -183,8 +183,7 @@ export default function AddEditCategorySheet({
           </SheetDescription>
         </SheetHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 mt-6">
-          <div className="flex-1 overflow-y-auto space-y-6 pr-1">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
           <div className="space-y-2">
             <Label htmlFor="name">Category Name</Label>
             <Input
@@ -248,19 +247,18 @@ export default function AddEditCategorySheet({
 
           <div className="space-y-2">
             <Label>Appearance</Label>
-            <AppearancePicker
-              color={formData.color}
-              icon={formData.icon}
-              onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
-              onIconChange={(icon) => setFormData(prev => ({ ...prev, icon }))}
-              inline={true}
-              showPreview={true}
-              useTabs={true}
-            />
-          </div>
+            <div className="flex items-center gap-3">
+              <AppearancePicker
+                color={formData.color}
+                icon={formData.icon}
+                onColorChange={(color) => setFormData(prev => ({ ...prev, color }))}
+                onIconChange={(icon) => setFormData(prev => ({ ...prev, icon }))}
+              />
+              <span className="text-sm text-slate-500">Click to change color &amp; icon</span>
+            </div>
           </div>
 
-          <div className="flex gap-3 pt-4 flex-shrink-0">
+          <div className="flex gap-3 pt-4">
             <Button
               type="button"
               variant="outline"
