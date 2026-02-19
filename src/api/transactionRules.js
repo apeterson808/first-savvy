@@ -19,12 +19,28 @@ export const transactionRulesApi = {
 
     query = query.order(sortField, { ascending: sortDirection });
 
-    const { data, error } = await query;
+    const [{ data, error }, { data: matchCounts }] = await Promise.all([
+      query,
+      supabase
+        .from('transactions')
+        .select('applied_rule_id')
+        .eq('profile_id', profileId)
+        .not('applied_rule_id', 'is', null)
+    ]);
 
     if (error) throw error;
 
-    const allRules = data || [];
-    const zeroMatchSuggested = allRules.filter(r => r.created_from_transaction_id && (r.times_matched || 0) === 0);
+    const countMap = {};
+    for (const tx of (matchCounts || [])) {
+      countMap[tx.applied_rule_id] = (countMap[tx.applied_rule_id] || 0) + 1;
+    }
+
+    const allRules = (data || []).map(r => ({
+      ...r,
+      times_matched: countMap[r.id] || 0
+    }));
+
+    const zeroMatchSuggested = allRules.filter(r => r.created_from_transaction_id && (countMap[r.id] || 0) === 0);
     if (zeroMatchSuggested.length > 0) {
       await supabase
         .from('transaction_rules')
