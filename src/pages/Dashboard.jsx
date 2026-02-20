@@ -435,24 +435,24 @@ export default function Dashboard() {
       const spent = spendingWithChildren(budget.chart_account_id);
       const percentage = budgetedAmount > 0 ? (spent / budgetedAmount) * 100 : 0;
 
-      const isOverBudget = spent > budgetedAmount;
+      const isOverBudget = percentage >= 100;
       const isNearLimit = percentage >= 75 && percentage < 100;
 
       // Status-based pastel color scheme
       let progressColor, bgColor;
 
       if (isOverBudget) {
-        // Red pastel for over budget (100%+)
-        progressColor = 'rgba(239, 68, 68, 0.7)';
-        bgColor = '#fee2e2';
+        // Very light pastel red for over budget (100%+)
+        progressColor = 'rgba(254, 202, 202, 0.85)';
+        bgColor = '#f8fafc';
       } else if (isNearLimit) {
-        // Amber pastel for approaching limit (75-99%)
-        progressColor = 'rgba(245, 158, 11, 0.7)';
-        bgColor = '#fef3c7';
+        // Very light pastel amber for approaching limit (75-99%)
+        progressColor = 'rgba(254, 243, 199, 0.85)';
+        bgColor = '#f8fafc';
       } else {
-        // Green pastel for on-track (0-74%)
-        progressColor = 'rgba(34, 197, 94, 0.7)';
-        bgColor = '#dcfce7';
+        // Very light pastel green for on-track (0-74%)
+        progressColor = 'rgba(220, 252, 231, 0.85)';
+        bgColor = '#f8fafc';
       }
 
       return {
