@@ -450,7 +450,7 @@ export function ClickThroughSelect({
             top: dropdownPosition.top,
             left: dropdownPosition.left,
             minWidth: Math.max(dropdownPosition.width, 160),
-            zIndex: 9999999,
+            zIndex: 999999,
             pointerEvents: 'auto'
           }}
           className="rounded-md border bg-popover text-popover-foreground shadow-md overflow-hidden"

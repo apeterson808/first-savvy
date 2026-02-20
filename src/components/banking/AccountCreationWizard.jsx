@@ -807,7 +807,7 @@ export default function AccountCreationWizard({
   };
 
   const handleBalanceCsvMapping = async (mappingConfig) => {
-    const { columnMappings, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn } = mappingConfig;
+    const { columnMappings, amountType, debitColumn, creditColumn } = mappingConfig;
 
     const accountClass = (selectedSubtype?.value === 'credit_card' || selectedCard?.id === 'loans') ? 'liability' : 'asset';
 
@@ -815,8 +815,6 @@ export default function AccountCreationWizard({
       balanceProcessedData,
       columnMappings,
       amountType,
-      amountColumn,
-      negativeValueMeaning,
       debitColumn,
       creditColumn,
       accountClass
@@ -885,7 +883,7 @@ export default function AccountCreationWizard({
   };
 
   const handleCsvMapping = async (mappingConfig) => {
-    const { columnMappings, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn, balanceColumn } = mappingConfig;
+    const { columnMappings, amountType, debitColumn, creditColumn, balanceColumn } = mappingConfig;
 
     const accountClass = (selectedSubtype?.value === 'credit_card' || selectedCard?.id === 'loans') ? 'liability' : 'asset';
 
@@ -893,8 +891,6 @@ export default function AccountCreationWizard({
       processedData,
       columnMappings,
       amountType,
-      amountColumn,
-      negativeValueMeaning,
       debitColumn,
       creditColumn,
       accountClass
@@ -3075,13 +3071,13 @@ export default function AccountCreationWizard({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'connect-bank' ? 'w-[500px] max-w-[90vw]' : currentStep === 'csv-mapping' ? 'max-w-[85vw] w-[900px]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'csv-mapping' ? 'max-h-[85vh]' : currentStep === 'bank-info' ? 'h-[480px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[520px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'connect-bank' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'bank-info' ? 'h-[480px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[520px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-2.5 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
 
-            <div className={`py-4 px-4 flex-1 ${currentStep === 'csv-mapping' ? 'overflow-y-auto' : 'overflow-y-auto'} ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`} style={currentStep === 'csv-mapping' ? { position: 'relative', zIndex: 1 } : undefined}>
+            <div className={`py-4 px-4 flex-1 overflow-y-auto ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'flex items-center justify-center' : ''}`}>
               {renderCurrentStep()}
             </div>
 
