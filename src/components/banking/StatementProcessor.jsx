@@ -121,6 +121,14 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
       } else if (amountType === 'always_income') {
         amount = Math.abs(rawAmount);
         type = 'income';
+      } else if (amountType === 'single_spent') {
+        // User indicated this column contains spent amounts
+        amount = Math.abs(rawAmount);
+        type = 'expense';
+      } else if (amountType === 'single_received') {
+        // User indicated this column contains received amounts
+        amount = Math.abs(rawAmount);
+        type = 'income';
       } else {
         amount = Math.abs(rawAmount);
         // For liabilities (credit cards): positive = expense (purchase), negative = income (payment)

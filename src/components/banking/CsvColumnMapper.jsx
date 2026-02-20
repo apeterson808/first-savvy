@@ -65,7 +65,12 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
     description: '',
     amount: '',
     type: '',
-    category: ''
+    category: '',
+    checkNumber: '',
+    referenceNumber: '',
+    balance: '',
+    memo: '',
+    extendedDescription: ''
   });
 
   const [dateFormat, setDateFormat] = useState('auto');
@@ -174,7 +179,12 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
     description: 'Description',
     amount: 'Amount',
     type: 'Transaction Type',
-    category: 'Category'
+    category: 'Category',
+    checkNumber: 'Check Number',
+    referenceNumber: 'Reference Number',
+    balance: 'Balance',
+    memo: 'Memo',
+    extendedDescription: 'Extended Description'
   };
 
   const handleMap = async () => {
@@ -283,29 +293,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         </div>
       )}
 
-      {/* Available CSV Columns */}
-      {headers.length > 0 && (
-        <div className="bg-slate-50/80 border border-slate-200 rounded-lg p-3">
-          <h3 className="text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">
-            Available CSV Columns ({headers.length})
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {headers.map((header, idx) => (
-              <Badge
-                key={idx}
-                variant="outline"
-                className="text-[10px] font-normal bg-white border-slate-300 text-slate-700 px-2 py-0.5"
-              >
-                {header}
-              </Badge>
-            ))}
-          </div>
-          <p className="text-[10px] text-slate-500 mt-2">
-            Map the columns below to import your data. Unmapped columns will be ignored.
-          </p>
-        </div>
-      )}
-
       {/* Column Mappings */}
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2.5">
@@ -368,7 +355,9 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             onValueChange={setAmountType}
             triggerClassName="h-8 text-xs bg-white"
           >
-            <ClickThroughSelectItem value="auto">Single Column (auto-detect)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="auto">Single Column (auto-detect sign)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="single_spent">Single Column (spent)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="single_received">Single Column (received)</ClickThroughSelectItem>
             <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit</ClickThroughSelectItem>
             <ClickThroughSelectItem value="always_expense">Single Column (all expenses)</ClickThroughSelectItem>
             <ClickThroughSelectItem value="always_income">Single Column (all income)</ClickThroughSelectItem>
@@ -450,6 +439,140 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             </ClickThroughSelect>
           </div>
         )}
+
+        {/* Optional Fields Section */}
+        <div className="pt-2 border-t border-slate-200">
+          <h3 className="text-[10px] font-semibold text-slate-600 mb-2.5 uppercase tracking-wider">
+            Optional Fields
+          </h3>
+          <div className="grid grid-cols-2 gap-2.5">
+            {/* Transaction Type */}
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Transaction Type</Label>
+              <ClickThroughSelect
+                value={columnMappings.type}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
+                placeholder="Select type column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            {/* Category */}
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Category</Label>
+              <ClickThroughSelect
+                value={columnMappings.category}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
+                placeholder="Select category column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            {/* Check Number */}
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Check Number</Label>
+              <ClickThroughSelect
+                value={columnMappings.checkNumber}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, checkNumber: val }))}
+                placeholder="Select check # column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            {/* Reference Number */}
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Reference Number</Label>
+              <ClickThroughSelect
+                value={columnMappings.referenceNumber}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, referenceNumber: val }))}
+                placeholder="Select reference # column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            {/* Balance */}
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Balance</Label>
+              <ClickThroughSelect
+                value={columnMappings.balance}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, balance: val }))}
+                placeholder="Select balance column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+
+            {/* Memo */}
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Memo</Label>
+              <ClickThroughSelect
+                value={columnMappings.memo}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, memo: val }))}
+                placeholder="Select memo column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
+            </div>
+          </div>
+
+          {/* Extended Description - Full Width */}
+          <div className="mt-2.5">
+            <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Extended Description</Label>
+            <ClickThroughSelect
+              value={columnMappings.extendedDescription}
+              onValueChange={(val) => setColumnMappings(prev => ({ ...prev, extendedDescription: val }))}
+              placeholder="Select extended description column"
+              triggerClassName="h-8 text-xs bg-white"
+            >
+              <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
+              {headers.map((header, idx) => (
+                <ClickThroughSelectItem key={idx} value={header}>
+                  {header}
+                </ClickThroughSelectItem>
+              ))}
+            </ClickThroughSelect>
+          </div>
+        </div>
 
       </div>
 
