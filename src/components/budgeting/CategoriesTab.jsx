@@ -242,7 +242,13 @@ export default function CategoriesTab() {
     const isUpdating = updatingBudgetId === budget.id;
     const IconComponent = Icons[category.icon] || Icons.Circle;
 
-    const children = allCategories.filter(c => c.parent_account_id === category.id);
+    const children = allCategories
+      .filter(c => c.parent_account_id === category.id)
+      .sort((a, b) => {
+        const nameA = (a.display_name || '').toLowerCase();
+        const nameB = (b.display_name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
     const hasChildren = children.length > 0;
     const isParentExpanded = expandedParents.has(category.id);
 
@@ -351,7 +357,13 @@ export default function CategoriesTab() {
     const isCreating = creatingBudgetId === category.id;
     const hasBudget = getBudgetForCategory(category.id);
 
-    const children = allCategories.filter(c => c.parent_account_id === category.id);
+    const children = allCategories
+      .filter(c => c.parent_account_id === category.id)
+      .sort((a, b) => {
+        const nameA = (a.display_name || '').toLowerCase();
+        const nameB = (b.display_name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
     const hasChildren = children.length > 0;
     const isParentExpanded = expandedParents.has(category.id);
 
@@ -492,6 +504,13 @@ export default function CategoriesTab() {
 
       parentCategories = [...parentCategories, ...budgetedParentsToShow];
     }
+
+    // Sort parent categories alphabetically by display_name
+    parentCategories.sort((a, b) => {
+      const nameA = (a.display_name || '').toLowerCase();
+      const nameB = (b.display_name || '').toLowerCase();
+      return nameA.localeCompare(nameB);
+    });
 
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
     const categoryColumnLabel = isBudgetedSection
