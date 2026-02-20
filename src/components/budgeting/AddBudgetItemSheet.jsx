@@ -327,14 +327,14 @@ export default function AddBudgetItemSheet({
 
     if (parentBudgetInfo && parentBudgetInfo.hasParentBudget) {
       if (newAmount > parentBudgetInfo.availableBudget) {
-        const parentCategory = availableCategories.find(c => c.id === selectedCategory.parent_account_id) ||
-          queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedCategory.parent_account_id);
+        const parentCategory = availableCategories.find(c => c.id === selectedAccount.parent_account_id) ||
+          queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedAccount.parent_account_id);
 
         const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
         const siblingBudgets = existingBudgets
           .filter(b => {
             const budgetCategory = availableCategories.find(c => c.id === b.chart_account_id);
-            return budgetCategory?.parent_account_id === selectedCategory.parent_account_id &&
+            return budgetCategory?.parent_account_id === selectedAccount.parent_account_id &&
                    b.chart_account_id !== selectedCategoryId;
           })
           .map(b => ({
@@ -344,7 +344,7 @@ export default function AddBudgetItemSheet({
 
         setParentBudgetDialogData({
           parentCategory,
-          childCategory: selectedCategory,
+          childCategory: selectedAccount,
           requestedAmount: newAmount,
           validationInfo: {
             parent_budget: parentBudgetInfo.parentBudget,
