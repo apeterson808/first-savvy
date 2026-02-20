@@ -208,6 +208,9 @@ export default function AddBudgetItemSheet({
     },
     onError: (error) => {
       console.error('Error creating budget:', error);
+      console.log('Error code:', error?.code);
+      console.log('Error message:', error?.message);
+      console.log('Full error object:', JSON.stringify(error, null, 2));
 
       // Check if this is a parent budget constraint violation (P0001)
       if (error?.code === 'P0001' && error?.message?.includes('Budget exceeds parent')) {
