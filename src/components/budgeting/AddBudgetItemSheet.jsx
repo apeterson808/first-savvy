@@ -23,7 +23,6 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
-import ParentBudgetAdjustmentDialog from './ParentBudgetAdjustmentDialog';
 import { Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as LucideIcons from 'lucide-react';
@@ -67,14 +66,6 @@ export default function AddBudgetItemSheet({
   const [hasParentCategory, setHasParentCategory] = useState(false);
   const [selectedParentCategoryId, setSelectedParentCategoryId] = useState('');
   const [parentCategories, setParentCategories] = useState([]);
-  const [showParentBudgetDialog, setShowParentBudgetDialog] = useState(false);
-  const [parentBudgetDialogData, setParentBudgetDialogData] = useState(null);
-
-  // Version check - this will show a toast when component first renders
-  useEffect(() => {
-    console.log('AddBudgetItemSheet VERSION: 2024-02-20-v3');
-    toast.info('Budget sheet loaded - v3', { duration: 2000 });
-  }, []);
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -212,82 +203,8 @@ export default function AddBudgetItemSheet({
       resetForm();
       onOpenChange(false);
     },
-    onError: async (error) => {
+    onError: (error) => {
       console.error('Error creating budget:', error);
-
-      // Add a temporary toast to verify new code is loaded
-      toast.info('NEW CODE LOADED - Error handler running');
-
-      // Check if this is a budget validation error from the database trigger
-      const errorMessage = error?.message || '';
-      const errorCode = error?.code;
-
-      console.log('Error message:', errorMessage);
-      console.log('Error code:', errorCode);
-      console.log('Checking condition:', errorMessage.includes('Budget exceeds parent'));
-
-      // Check for P0001 code (database exception) and budget-related message
-      if (errorCode === 'P0001' && (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category'))) {
-        toast.success('CONDITION MATCHED - Opening dialog');
-      } else {
-        toast.error(`CONDITION NOT MATCHED - Code: ${errorCode}, Has Message: ${!!errorMessage}`);
-      }
-
-      if (errorCode === 'P0001' && (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category'))) {
-        // Try to open the adjustment dialog even though the error already occurred
-        const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
-        const parentAccountId = selectedAccount?.parent_account_id;
-
-        if (parentAccountId) {
-          try {
-            // Re-fetch validation data to populate the dialog
-            const { data: validationData } = await firstsavvy.supabase.rpc(
-              'validate_child_budget_allocation',
-              {
-                p_child_account_id: selectedCategoryId,
-                p_proposed_amount: parseFloat(parseCurrency(limitAmount)) || 0,
-                p_profile_id: activeProfile.id,
-                p_budget_id: null
-              }
-            );
-
-            if (validationData && validationData.length > 0) {
-              const validation = validationData[0];
-              const parentCategory = availableCategories.find(c => c.id === parentAccountId) ||
-                queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === parentAccountId);
-
-              const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-              const siblingBudgets = existingBudgets
-                .filter(b => {
-                  const budgetCategory = availableCategories.find(c => c.id === b.chart_account_id);
-                  return budgetCategory?.parent_account_id === parentAccountId &&
-                         b.chart_account_id !== selectedCategoryId;
-                })
-                .map(b => ({
-                  name: b.chartAccount?.display_name || b.chartAccount?.account_detail || 'Unknown',
-                  amount: b.allocated_amount || 0
-                }));
-
-              setParentBudgetDialogData({
-                parentCategory,
-                childCategory: selectedAccount,
-                requestedAmount: parseFloat(parseCurrency(limitAmount)) || 0,
-                validationInfo: {
-                  parent_budget: validation.parent_budget,
-                  allocated_to_children: validation.allocated_to_children,
-                  available_budget: validation.available_budget,
-                  sibling_budgets: siblingBudgets
-                }
-              });
-              setShowParentBudgetDialog(true);
-              return;
-            }
-          } catch (validationError) {
-            console.error('Error fetching validation data:', validationError);
-          }
-        }
-      }
-
       toast.error('Failed to create budget item');
     }
   });
@@ -394,49 +311,6 @@ export default function AddBudgetItemSheet({
     setShowAddCategorySheet(isOpen);
     if (!isOpen) {
       setEditingCategory(null);
-    }
-  };
-
-  const handleParentBudgetAdjustment = async (newParentAmount) => {
-    if (!parentBudgetDialogData) return;
-
-    const { parentCategory, childCategory, requestedAmount } = parentBudgetDialogData;
-    const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-    const parentBudget = existingBudgets.find(b => b.chart_account_id === parentCategory.id);
-
-    if (!parentBudget) {
-      toast.error('Parent budget not found');
-      setShowParentBudgetDialog(false);
-      return;
-    }
-
-    try {
-      await firstsavvy.entities.Budget.update(parentBudget.id, {
-        allocated_amount: newParentAmount
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      toast.success(`Parent budget increased to $${newParentAmount.toFixed(2)}`);
-      setShowParentBudgetDialog(false);
-
-      setTimeout(() => {
-        const budgetData = {
-          chart_account_id: selectedCategoryId,
-          allocated_amount: requestedAmount,
-          cadence: selectedCadence,
-          is_active: true
-        };
-
-        if (isEditMode) {
-          updateBudgetMutation.mutate({ id: editingBudget.id, data: budgetData });
-        } else {
-          createBudgetMutation.mutate(budgetData);
-        }
-      }, 500);
-    } catch (error) {
-      console.error('Error updating parent budget:', error);
-      toast.error('Failed to update parent budget');
-      setShowParentBudgetDialog(false);
     }
   };
 
@@ -830,16 +704,6 @@ export default function AddBudgetItemSheet({
           handleCategoryCreated(result.account);
         }
       }}
-    />
-
-    <ParentBudgetAdjustmentDialog
-      open={showParentBudgetDialog}
-      onOpenChange={setShowParentBudgetDialog}
-      parentCategory={parentBudgetDialogData?.parentCategory}
-      childCategory={parentBudgetDialogData?.childCategory}
-      requestedAmount={parentBudgetDialogData?.requestedAmount}
-      validationInfo={parentBudgetDialogData?.validationInfo}
-      onConfirm={handleParentBudgetAdjustment}
     />
   </>
   );
