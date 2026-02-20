@@ -117,7 +117,8 @@ export default function InlineEditableAmountWithCadence({
   if (isEditing) {
     return (
       <td className={`text-left ${hasBorder ? 'border-r border-slate-200' : ''}`}>
-        <div className="flex items-center gap-1 px-4">
+        <div className="flex items-center gap-1 px-4 py-2">
+          <span className="text-slate-700">$</span>
           <input
             ref={inputRef}
             type="text"
@@ -125,12 +126,12 @@ export default function InlineEditableAmountWithCadence({
             onChange={handleInputChange}
             onBlur={handleBlur}
             onKeyDown={handleKeyDown}
-            className="flex-1 text-left bg-transparent py-0 focus:outline-none tabular-nums border-0"
+            className="flex-1 text-left bg-transparent py-0 focus:outline-none tabular-nums border-0 min-w-0"
           />
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 px-2 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+            className="h-6 px-2 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex-shrink-0"
             onClick={handleCadenceClick}
             type="button"
           >
@@ -152,19 +153,19 @@ export default function InlineEditableAmountWithCadence({
         <div className="flex items-center gap-2 px-4">
           <Loader2 className="h-4 w-4 animate-spin" />
           <div className="flex items-center justify-between w-full tabular-nums">
-            <span className={isZero ? 'font-semibold' : ''}>{formatted.sign}</span>
+            <span className={isZero ? 'font-semibold text-muted-foreground' : ''}>{formatted.sign}</span>
             <div className="flex items-center gap-1">
-              <span className={`text-right ${isZero ? 'font-semibold' : ''}`}>{formatted.amount}</span>
-              <span className="text-xs text-muted-foreground">{CADENCE_LABELS[displayCadence]}</span>
+              <span className={`text-right ${isZero ? 'font-semibold text-muted-foreground' : ''}`}>{formatted.amount}</span>
+              <span className={`text-xs ${isZero ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{CADENCE_LABELS[displayCadence]}</span>
             </div>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between px-4 tabular-nums">
-          <span className={isZero ? 'font-semibold' : ''}>{formatted.sign}</span>
+          <span className={isZero ? 'font-semibold text-muted-foreground' : ''}>{formatted.sign}</span>
           <div className="flex items-center gap-1">
-            <span className={`text-right ${isZero ? 'font-semibold' : ''}`}>{formatted.amount}</span>
-            <span className="text-xs text-muted-foreground">{CADENCE_LABELS[displayCadence]}</span>
+            <span className={`text-right ${isZero ? 'font-semibold text-muted-foreground' : ''}`}>{formatted.amount}</span>
+            <span className={`text-xs ${isZero ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{CADENCE_LABELS[displayCadence]}</span>
           </div>
         </div>
       )}
