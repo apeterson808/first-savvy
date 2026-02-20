@@ -43,7 +43,7 @@ const autoDetectMappings = (headers) => {
   const debitColumn = detectColumn(headers, DETECTION_PATTERNS.debit);
   const creditColumn = detectColumn(headers, DETECTION_PATTERNS.credit);
 
-  let detectedAmountType = 'auto';
+  let detectedAmountType = 'single_spent';
   if (debitColumn && creditColumn) {
     detectedAmountType = 'separate_columns';
   }
@@ -65,7 +65,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   });
 
   const [dateFormat, setDateFormat] = useState('auto');
-  const [amountType, setAmountType] = useState('auto');
+  const [amountType, setAmountType] = useState('single_spent');
   const [debitColumn, setDebitColumn] = useState('');
   const [creditColumn, setCreditColumn] = useState('');
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
@@ -91,7 +91,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           };
           setColumnMappings(cleanMappings);
           setDateFormat(savedConfig.date_format || 'auto');
-          setAmountType(savedConfig.amount_type || 'auto');
+          const loadedAmountType = savedConfig.amount_type === 'auto' ? 'single_spent' : savedConfig.amount_type;
+          setAmountType(loadedAmountType || 'single_spent');
           setDebitColumn(savedConfig.debit_column || '');
           setCreditColumn(savedConfig.credit_column || '');
 
@@ -240,7 +241,11 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   // Generate preview transactions using the same logic as actual import
   const previewTransactions = React.useMemo(() => {
     if (!columnMappings.date || !columnMappings.description) return [];
-    if (!columnMappings.amount && (!debitColumn || !creditColumn)) return [];
+
+    const hasAmountColumn = (amountType === 'separate_columns' && debitColumn && creditColumn) ||
+                           (amountType !== 'separate_columns' && (debitColumn || creditColumn));
+
+    if (!hasAmountColumn) return [];
 
     try {
       const previewData = { ...csvData, rows: sampleRows };
@@ -355,10 +360,9 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             onValueChange={setAmountType}
             triggerClassName="h-8 text-xs bg-white"
           >
-            <ClickThroughSelectItem value="auto">Single Column (auto-detect sign)</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="single_spent">Single Column (spent)</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="single_received">Single Column (received)</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="single_spent">Single Column - Spent</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="single_received">Single Column - Received</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="separate_columns">Separate Spent/Received Columns</ClickThroughSelectItem>
           </ClickThroughSelect>
         </div>
 
@@ -418,20 +422,16 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
               <Label className="text-[11px] font-medium text-slate-700">
                 {amountType === 'single_spent' ? 'Spent *' : amountType === 'single_received' ? 'Received *' : 'Amount *'}
               </Label>
-              {(debitColumn || creditColumn) && amountType !== 'separate_columns' && (
-                <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                  <Sparkles className="w-2 h-2 mr-0.5" />
-                  Auto
-                </Badge>
-              )}
             </div>
             <ClickThroughSelect
               value={amountType === 'single_spent' ? debitColumn : amountType === 'single_received' ? creditColumn : (debitColumn || creditColumn)}
               onValueChange={(val) => {
                 if (amountType === 'single_spent') {
                   setDebitColumn(val);
+                  setCreditColumn('');
                 } else if (amountType === 'single_received') {
                   setCreditColumn(val);
+                  setDebitColumn('');
                 } else {
                   setDebitColumn(val);
                   setCreditColumn('');
@@ -463,12 +463,11 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                 )}
               </div>
               <ClickThroughSelect
-                value={columnMappings.toFrom}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, toFrom: val }))}
-                placeholder="Select contact column"
+                value={columnMappings.toFrom || ''}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, toFrom: val || '' }))}
+                placeholder="Optional"
                 triggerClassName="h-8 text-xs bg-white"
               >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
                 {headers.map((header, idx) => (
                   <ClickThroughSelectItem key={idx} value={header}>
                     {header}
@@ -489,12 +488,11 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                 )}
               </div>
               <ClickThroughSelect
-                value={columnMappings.category}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
-                placeholder="Select category column"
+                value={columnMappings.category || ''}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val || '' }))}
+                placeholder="Optional"
                 triggerClassName="h-8 text-xs bg-white"
               >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
                 {headers.map((header, idx) => (
                   <ClickThroughSelectItem key={idx} value={header}>
                     {header}
