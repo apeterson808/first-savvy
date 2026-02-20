@@ -18,9 +18,12 @@ export default function InlineEditableAmount({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select();
+      // Only select all if the value is 0.00
+      if (value === 0) {
+        inputRef.current.select();
+      }
     }
-  }, [isEditing]);
+  }, [isEditing, value]);
 
   const handleClick = () => {
     if (isLoading) return;

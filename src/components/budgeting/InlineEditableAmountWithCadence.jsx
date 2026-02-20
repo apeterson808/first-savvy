@@ -33,9 +33,12 @@ export default function InlineEditableAmountWithCadence({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      inputRef.current.select();
+      // Only select all if the value is 0.00
+      if (displayAmount === 0) {
+        inputRef.current.select();
+      }
     }
-  }, [isEditing]);
+  }, [isEditing, displayAmount]);
 
   const handleClick = () => {
     if (isLoading) return;
@@ -141,6 +144,7 @@ export default function InlineEditableAmountWithCadence({
   };
 
   const isZero = displayAmount === 0;
+  const isSuggested = currentAmount === null && suggestedAmount > 0;
   const formatted = formatAccountingAmount(displayAmount);
 
   if (isEditing) {
@@ -184,19 +188,19 @@ export default function InlineEditableAmountWithCadence({
         <div className="flex items-center gap-2 px-4">
           <Loader2 className="h-4 w-4 animate-spin" />
           <div className="flex items-center justify-between w-full tabular-nums">
-            <span className={isZero ? 'font-semibold text-muted-foreground' : ''}>{formatted.sign}</span>
+            <span className={isZero ? 'font-semibold text-slate-400' : isSuggested ? 'text-slate-600' : ''}>{formatted.sign}</span>
             <div className="flex items-center gap-1">
-              <span className={`text-right ${isZero ? 'font-semibold text-muted-foreground' : ''}`}>{formatted.amount}</span>
-              <span className={`text-xs ${isZero ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{CADENCE_LABELS[displayCadence]}</span>
+              <span className={`text-right ${isZero ? 'font-semibold text-slate-400' : isSuggested ? 'text-slate-600' : ''}`}>{formatted.amount}</span>
+              <span className={`text-xs ${isZero ? 'text-slate-400' : isSuggested ? 'text-slate-600' : 'text-muted-foreground'}`}>{CADENCE_LABELS[displayCadence]}</span>
             </div>
           </div>
         </div>
       ) : (
         <div className="flex items-center justify-between px-4 tabular-nums">
-          <span className={isZero ? 'font-semibold text-muted-foreground' : ''}>{formatted.sign}</span>
+          <span className={isZero ? 'font-semibold text-slate-400' : isSuggested ? 'text-slate-600' : ''}>{formatted.sign}</span>
           <div className="flex items-center gap-1">
-            <span className={`text-right ${isZero ? 'font-semibold text-muted-foreground' : ''}`}>{formatted.amount}</span>
-            <span className={`text-xs ${isZero ? 'text-muted-foreground' : 'text-muted-foreground'}`}>{CADENCE_LABELS[displayCadence]}</span>
+            <span className={`text-right ${isZero ? 'font-semibold text-slate-400' : isSuggested ? 'text-slate-600' : ''}`}>{formatted.amount}</span>
+            <span className={`text-xs ${isZero ? 'text-slate-400' : isSuggested ? 'text-slate-600' : 'text-muted-foreground'}`}>{CADENCE_LABELS[displayCadence]}</span>
           </div>
         </div>
       )}
