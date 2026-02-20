@@ -526,10 +526,12 @@ export default function AccountCreationWizard({
 
   // Auto-recalculate beginning balance when ending balance changes in bank-info or details step
   useEffect(() => {
-    if ((currentStep === 'bank-info' || currentStep === 'details') && selectedSubtype?.value === 'credit_card' && formData.endingBalance && mappedTransactions.length > 0) {
+    const isBankingAccount = ['checking', 'savings', 'credit_card'].includes(selectedSubtype?.value);
+
+    if ((currentStep === 'bank-info' || currentStep === 'details') && isBankingAccount && formData.endingBalance && mappedTransactions.length > 0) {
       const endingBalance = parseFloat(formData.endingBalance) || 0;
-      const beginningDate = formData.beginningBalanceDate;
-      const endingDate = formData.endingBalanceDate;
+      const beginningDate = formData.beginningBalanceDate || formData.asOfDate;
+      const endingDate = formData.endingBalanceDate || formData.endingDate;
 
       // Filter transactions within the date range if dates are available
       let transactionsToCalculate = mappedTransactions;
@@ -546,23 +548,29 @@ export default function AccountCreationWizard({
         });
       }
 
-      // Calculate total charges and payments
-      let totalCharges = 0;
-      let totalPayments = 0;
+      let totalIncome = 0;
+      let totalExpenses = 0;
 
       transactionsToCalculate.forEach(txn => {
-        if (txn.type === 'expense') {
-          totalCharges += txn.amount;
-        } else if (txn.type === 'income') {
-          totalPayments += txn.amount;
+        if (txn.type === 'income') {
+          totalIncome += txn.amount;
+        } else if (txn.type === 'expense') {
+          totalExpenses += txn.amount;
         }
       });
 
-      // For credit cards: Beginning = Ending + Charges - Payments
-      const beginningBalance = endingBalance + totalCharges - totalPayments;
+      let beginningBalance;
+      if (selectedSubtype?.value === 'credit_card') {
+        // For credit cards (liability): Beginning = Ending + Expenses - Income
+        beginningBalance = endingBalance + totalExpenses - totalIncome;
+      } else {
+        // For checking/savings (asset): Beginning = Ending - Income + Expenses
+        beginningBalance = endingBalance - totalIncome + totalExpenses;
+      }
+
       updateFormData('beginningBalance', beginningBalance.toFixed(2));
     }
-  }, [formData.endingBalance, formData.beginningBalanceDate, formData.endingBalanceDate, currentStep, selectedSubtype?.value, mappedTransactions]);
+  }, [formData.endingBalance, formData.beginningBalanceDate, formData.endingBalanceDate, formData.asOfDate, formData.endingDate, currentStep, selectedSubtype?.value, mappedTransactions]);
 
   const handleCardSelect = (card) => {
     setSelectedCard(card);
@@ -907,11 +915,14 @@ export default function AccountCreationWizard({
     setProcessingStatus('success');
     setShowMappingSuccess(true);
 
-    // Auto-calculate dates and beginning balance for credit card accounts
-    if (selectedSubtype?.value === 'credit_card' && transactions.length > 0) {
+    // Auto-calculate dates and beginning balance for banking accounts
+    const isBankingAccount = ['checking', 'savings', 'credit_card'].includes(selectedSubtype?.value);
+    if (isBankingAccount && transactions.length > 0) {
       const dateRange = getTransactionDateRange(transactions);
       updateFormData('beginningBalanceDate', dateRange.startDate);
       updateFormData('endingBalanceDate', dateRange.endDate);
+      updateFormData('asOfDate', dateRange.startDate);
+      updateFormData('endingDate', dateRange.endDate);
 
       // If ending balance is already set, calculate beginning balance
       if (formData.endingBalance) {
@@ -929,20 +940,26 @@ export default function AccountCreationWizard({
           return txnDate >= startDate && txnDate <= endDate;
         });
 
-        // Calculate total charges and payments
-        let totalCharges = 0;
-        let totalPayments = 0;
+        let totalIncome = 0;
+        let totalExpenses = 0;
 
         transactionsInRange.forEach(txn => {
-          if (txn.type === 'expense') {
-            totalCharges += txn.amount;
-          } else if (txn.type === 'income') {
-            totalPayments += txn.amount;
+          if (txn.type === 'income') {
+            totalIncome += txn.amount;
+          } else if (txn.type === 'expense') {
+            totalExpenses += txn.amount;
           }
         });
 
-        // For credit cards: Beginning = Ending + Charges - Payments
-        const beginningBalance = endingBalance + totalCharges - totalPayments;
+        let beginningBalance;
+        if (selectedSubtype?.value === 'credit_card') {
+          // For credit cards (liability): Beginning = Ending + Expenses - Income
+          beginningBalance = endingBalance + totalExpenses - totalIncome;
+        } else {
+          // For checking/savings (asset): Beginning = Ending - Income + Expenses
+          beginningBalance = endingBalance - totalIncome + totalExpenses;
+        }
+
         updateFormData('beginningBalance', beginningBalance.toFixed(2));
       }
     }
