@@ -143,15 +143,15 @@ export default function InlineEditableAmount({
       {isLoading ? (
         <div className="flex items-center gap-2 px-4">
           <Loader2 className="h-4 w-4 animate-spin" />
-          <div className="flex justify-between w-full tabular-nums">
-            <span className={isZero ? 'font-semibold' : ''}>{formatted.sign}</span>
-            <span className={`text-right ${isZero ? 'font-semibold' : ''}`}>{formatted.amount}</span>
+          <div className={`flex justify-between w-full tabular-nums ${isMonthlyColumn ? 'font-medium' : ''}`}>
+            <span className={isZero && !isMonthlyColumn ? 'font-semibold' : ''}>{formatted.sign}</span>
+            <span className={`text-right ${isZero && !isMonthlyColumn ? 'font-semibold' : ''}`}>{formatted.amount}</span>
           </div>
         </div>
       ) : (
-        <div className="flex justify-between px-4 tabular-nums">
-          <span className={isZero ? 'font-semibold' : ''}>{formatted.sign}</span>
-          <span className={`text-right ${isZero ? 'font-semibold' : ''}`}>{formatted.amount}</span>
+        <div className={`flex justify-between px-4 tabular-nums ${isMonthlyColumn ? 'font-medium' : ''}`}>
+          <span className={isZero && !isMonthlyColumn ? 'font-semibold' : ''}>{formatted.sign}</span>
+          <span className={`text-right ${isZero && !isMonthlyColumn ? 'font-semibold' : ''}`}>{formatted.amount}</span>
         </div>
       )}
     </td>
