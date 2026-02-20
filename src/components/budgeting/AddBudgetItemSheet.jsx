@@ -23,7 +23,6 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
-import ParentBudgetAdjustmentDialog from './ParentBudgetAdjustmentDialog';
 import { Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as LucideIcons from 'lucide-react';
@@ -67,8 +66,6 @@ export default function AddBudgetItemSheet({
   const [hasParentCategory, setHasParentCategory] = useState(false);
   const [selectedParentCategoryId, setSelectedParentCategoryId] = useState('');
   const [parentCategories, setParentCategories] = useState([]);
-  const [showParentBudgetDialog, setShowParentBudgetDialog] = useState(false);
-  const [parentBudgetDialogData, setParentBudgetDialogData] = useState(null);
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -256,49 +253,6 @@ export default function AddBudgetItemSheet({
     }
   };
 
-  const handleParentBudgetAdjustment = async (newParentAmount) => {
-    if (!parentBudgetDialogData) return;
-
-    const { parentCategory, childCategory, requestedAmount } = parentBudgetDialogData;
-    const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-    const parentBudget = existingBudgets.find(b => b.chart_account_id === parentCategory.id);
-
-    if (!parentBudget) {
-      toast.error('Parent budget not found');
-      setShowParentBudgetDialog(false);
-      return;
-    }
-
-    try {
-      await firstsavvy.entities.Budget.update(parentBudget.id, {
-        allocated_amount: newParentAmount
-      });
-
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      toast.success(`Parent budget increased to $${newParentAmount.toFixed(2)}`);
-      setShowParentBudgetDialog(false);
-
-      setTimeout(() => {
-        const budgetData = {
-          chart_account_id: selectedCategoryId,
-          allocated_amount: requestedAmount,
-          cadence: selectedCadence,
-          is_active: true
-        };
-
-        if (isEditMode) {
-          updateBudgetMutation.mutate({ id: editingBudget.id, data: budgetData });
-        } else {
-          createBudgetMutation.mutate(budgetData);
-        }
-      }, 500);
-    } catch (error) {
-      console.error('Error updating parent budget:', error);
-      toast.error('Failed to update parent budget');
-      setShowParentBudgetDialog(false);
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -327,33 +281,12 @@ export default function AddBudgetItemSheet({
 
     if (parentBudgetInfo && parentBudgetInfo.hasParentBudget) {
       if (newAmount > parentBudgetInfo.availableBudget) {
-        const parentCategory = availableCategories.find(c => c.id === selectedCategory.parent_account_id) ||
-          queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedCategory.parent_account_id);
-
-        const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-        const siblingBudgets = existingBudgets
-          .filter(b => {
-            const budgetCategory = availableCategories.find(c => c.id === b.chart_account_id);
-            return budgetCategory?.parent_account_id === selectedCategory.parent_account_id &&
-                   b.chart_account_id !== selectedCategoryId;
-          })
-          .map(b => ({
-            name: b.chartAccount?.display_name || b.chartAccount?.account_detail || 'Unknown',
-            amount: b.allocated_amount || 0
-          }));
-
-        setParentBudgetDialogData({
-          parentCategory,
-          childCategory: selectedCategory,
-          requestedAmount: newAmount,
-          validationInfo: {
-            parent_budget: parentBudgetInfo.parentBudget,
-            allocated_to_children: parentBudgetInfo.allocatedToChildren,
-            available_budget: parentBudgetInfo.availableBudget,
-            sibling_budgets: siblingBudgets
-          }
-        });
-        setShowParentBudgetDialog(true);
+        const unallocated = parentBudgetInfo.parentBudget - parentBudgetInfo.allocatedToChildren;
+        toast.error(
+          `Budget allocation ($${newAmount.toFixed(2)}) exceeds available parent budget ($${unallocated.toFixed(2)}). ` +
+          `${parentBudgetInfo.parentName}: $${parentBudgetInfo.parentBudget.toFixed(2)} total, ` +
+          `$${parentBudgetInfo.allocatedToChildren.toFixed(2)} allocated to children.`
+        );
         return;
       }
     }
@@ -629,16 +562,6 @@ export default function AddBudgetItemSheet({
           handleCategoryCreated(result.account);
         }
       }}
-    />
-
-    <ParentBudgetAdjustmentDialog
-      open={showParentBudgetDialog}
-      onOpenChange={setShowParentBudgetDialog}
-      parentCategory={parentBudgetDialogData?.parentCategory}
-      childCategory={parentBudgetDialogData?.childCategory}
-      requestedAmount={parentBudgetDialogData?.requestedAmount}
-      validationInfo={parentBudgetDialogData?.validationInfo}
-      onConfirm={handleParentBudgetAdjustment}
     />
   </>
   );
