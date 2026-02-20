@@ -30,11 +30,11 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   const percentage = budgetedAmount > 0 ? (actualAmount / budgetedAmount) * 100 : 0;
   const remaining = budgetedAmount - actualAmount;
-  const isOverBudget = actualAmount > budgetedAmount;
+  const isOverBudget = percentage >= 100;
   const isNearLimit = percentage >= 75 && percentage < 100;
 
   // Pastel color scheme based on budget status
-  let progressColor, bgColor, statusIndicator;
+  let progressColor, bgColor;
 
   // Default: very light pastel colors based on status
   bgColor = '#f8fafc';
@@ -43,11 +43,9 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
     if (isOverBudget) {
       // Very light pastel red for over budget (100%+)
       progressColor = 'rgba(254, 202, 202, 0.85)';
-      statusIndicator = 'rgba(239, 68, 68, 0.9)';
     } else if (isNearLimit) {
       // Very light pastel amber for approaching limit (75-99%)
       progressColor = 'rgba(254, 243, 199, 0.85)';
-      statusIndicator = 'rgba(245, 158, 11, 0.8)';
     } else {
       // Very light pastel green for on-track (0-74%)
       progressColor = 'rgba(220, 252, 231, 0.85)';
@@ -78,13 +76,6 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
             backgroundColor: progressColor
           }}
         />
-
-        {statusIndicator && (
-          <div
-            className="absolute left-0 top-0 w-1 h-full transition-all duration-700 ease-out"
-            style={{ backgroundColor: statusIndicator }}
-          />
-        )}
 
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
           <div className="flex items-center gap-2 min-w-0 flex-1">
