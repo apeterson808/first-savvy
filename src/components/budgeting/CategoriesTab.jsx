@@ -9,11 +9,12 @@ import { Badge } from '@/components/ui/badge';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
 import BudgetAllocationDonut from './BudgetAllocationDonut';
 import InlineEditableAmount from './InlineEditableAmount';
-import InlineEditableAverage from './InlineEditableAverage';
+import InlineEditableAmountWithCadence from './InlineEditableAmountWithCadence';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
 import * as Icons from 'lucide-react';
+import { validateChildBudgetAgainstParent, formatValidationError, getCadenceLabel } from '@/utils/budgetValidation';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -174,7 +175,10 @@ export default function CategoriesTab() {
     const initialAmounts = {};
     categories.forEach(category => {
       if (!categoryAmounts[category.id]) {
-        initialAmounts[category.id] = historicalAverages[category.id] || 0;
+        initialAmounts[category.id] = {
+          amount: historicalAverages[category.id] || 0,
+          cadence: 'monthly'
+        };
       }
     });
     if (Object.keys(initialAmounts).length > 0) {
@@ -182,29 +186,60 @@ export default function CategoriesTab() {
     }
   }, [categories, historicalAverages]);
 
-  const handleAddBudget = (categoryId, explicitAmount) => {
-    const amount = explicitAmount !== undefined ? explicitAmount : (categoryAmounts[categoryId] || historicalAverages[categoryId] || 0);
+  const handleAddBudget = (categoryId, explicitAmount, explicitCadence) => {
+    const categoryData = categoryAmounts[categoryId] || { amount: historicalAverages[categoryId] || 0, cadence: 'monthly' };
+    const amount = explicitAmount !== undefined ? explicitAmount : categoryData.amount;
+    const cadence = explicitCadence || categoryData.cadence || 'monthly';
 
     if (amount <= 0) {
       toast.error('Please enter a valid amount');
       return;
     }
 
+    // Get the category to check for parent
+    const category = categories.find(c => c.id === categoryId);
+
+    // If category has a parent, validate against parent budget
+    if (category?.parent_account_id) {
+      const parentBudget = getBudgetForCategory(category.parent_account_id);
+      const siblingBudgets = budgets.filter(b =>
+        b.chart_account_id !== categoryId &&
+        categories.find(c => c.id === b.chart_account_id)?.parent_account_id === category.parent_account_id
+      );
+
+      const validation = validateChildBudgetAgainstParent(
+        amount,
+        cadence,
+        parentBudget,
+        siblingBudgets
+      );
+
+      if (!validation.isValid) {
+        const parentCategory = categories.find(c => c.id === category.parent_account_id);
+        const errorMessage = formatValidationError(validation, parentCategory?.display_name || 'Parent');
+        toast.error(errorMessage);
+        return;
+      }
+    }
+
     setCreatingBudgetId(categoryId);
     const budgetData = {
       chart_account_id: categoryId,
       allocated_amount: amount,
-      cadence: 'monthly',
+      cadence: cadence,
       is_active: true
     };
 
     createBudgetMutation.mutate(budgetData);
   };
 
-  const handleAmountChange = (categoryId, newAmount) => {
+  const handleAmountChange = (categoryId, newAmount, newCadence) => {
     setCategoryAmounts(prev => ({
       ...prev,
-      [categoryId]: newAmount
+      [categoryId]: {
+        amount: newAmount,
+        cadence: newCadence || 'monthly'
+      }
     }));
   };
 
@@ -224,6 +259,37 @@ export default function CategoriesTab() {
   };
 
   const handleUpdateBudgetAmount = async (budgetId, newAmount, editedCadence) => {
+    // Find the budget being updated
+    const budget = budgets.find(b => b.id === budgetId);
+    if (!budget) return;
+
+    // Find the category for this budget
+    const category = categories.find(c => c.id === budget.chart_account_id);
+    if (!category) return;
+
+    // If category has a parent, validate against parent budget
+    if (category.parent_account_id) {
+      const parentBudget = getBudgetForCategory(category.parent_account_id);
+      const siblingBudgets = budgets.filter(b =>
+        b.id !== budgetId &&
+        categories.find(c => c.id === b.chart_account_id)?.parent_account_id === category.parent_account_id
+      );
+
+      const validation = validateChildBudgetAgainstParent(
+        newAmount,
+        editedCadence,
+        parentBudget,
+        siblingBudgets
+      );
+
+      if (!validation.isValid) {
+        const parentCategory = categories.find(c => c.id === category.parent_account_id);
+        const errorMessage = formatValidationError(validation, parentCategory?.display_name || 'Parent');
+        toast.error(errorMessage);
+        return;
+      }
+    }
+
     setUpdatingBudgetId(budgetId);
     const updateData = {
       allocated_amount: newAmount,
@@ -424,11 +490,12 @@ export default function CategoriesTab() {
           </>
         ) : (
           <>
-            <InlineEditableAverage
+            <InlineEditableAmountWithCadence
               suggestedAmount={suggestedAmount}
-              currentAmount={categoryAmounts[category.id]}
-              onAmountChange={(newAmount) => handleAmountChange(category.id, newAmount)}
-              onEnter={(amount) => handleAddBudget(category.id, amount)}
+              currentAmount={categoryAmounts[category.id]?.amount}
+              currentCadence={categoryAmounts[category.id]?.cadence || 'monthly'}
+              onAmountChange={(newAmount, newCadence) => handleAmountChange(category.id, newAmount, newCadence)}
+              onEnter={(amount, cadence) => handleAddBudget(category.id, amount, cadence)}
               isLoading={isCreating}
               hasBorder={true}
             />
@@ -437,7 +504,7 @@ export default function CategoriesTab() {
                 variant="outline"
                 size="sm"
                 onClick={() => handleAddBudget(category.id)}
-                disabled={isCreating || (categoryAmounts[category.id] || suggestedAmount) <= 0}
+                disabled={isCreating || (categoryAmounts[category.id]?.amount || suggestedAmount) <= 0}
               >
                 <Plus className="h-4 w-4 mr-1" />
                 Add
