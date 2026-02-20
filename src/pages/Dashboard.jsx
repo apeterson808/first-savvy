@@ -461,7 +461,6 @@ export default function Dashboard() {
         spent,
         limit: budgetedAmount,
         percentage,
-        categoryColor,
         progressColor,
         bgColor
       };
