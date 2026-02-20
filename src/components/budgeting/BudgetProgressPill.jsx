@@ -72,7 +72,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-white" />
+            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-slate-700" />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="font-semibold text-sm text-slate-900 truncate">
                 {categoryData?.display_name || 'Unknown Category'}
