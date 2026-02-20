@@ -70,6 +70,12 @@ export default function AddBudgetItemSheet({
   const [showParentBudgetDialog, setShowParentBudgetDialog] = useState(false);
   const [parentBudgetDialogData, setParentBudgetDialogData] = useState(null);
 
+  // Version check - this will show a toast when component first renders
+  useEffect(() => {
+    console.log('AddBudgetItemSheet VERSION: 2024-02-20-v3');
+    toast.info('Budget sheet loaded - v3', { duration: 2000 });
+  }, []);
+
   useEffect(() => {
     if (editingBudget && open) {
       setSelectedCategoryId(editingBudget.chart_account_id || '');
