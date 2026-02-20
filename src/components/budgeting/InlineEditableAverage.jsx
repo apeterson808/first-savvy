@@ -35,6 +35,8 @@ export default function InlineEditableAverage({
 
   const handleClick = () => {
     if (!isLoading) {
+      // Start with 0.00 for calculator-style input
+      setValue('0.00');
       setIsEditing(true);
     }
   };
@@ -63,6 +65,8 @@ export default function InlineEditableAverage({
   };
 
   const handleChange = (e) => {
+    // Calculator-style input is handled in keyDown
+    // This is just for paste/other input events
     const input = e.target.value;
     const cleanValue = input.replace(/[^0-9.]/g, '');
 
@@ -72,11 +76,46 @@ export default function InlineEditableAverage({
     const parts = cleanValue.split('.');
     if (parts[1] && parts[1].length > 2) return;
 
-    const formatted = formatNumberWithCommas(cleanValue);
+    const numericValue = parseFloat(cleanValue) || 0;
+    const formatted = numericValue.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
     setValue(formatted);
   };
 
   const handleKeyDown = (e) => {
+    // Handle backspace to remove last digit
+    if (e.key === 'Backspace') {
+      e.preventDefault();
+      const cleanValue = value.replace(/,/g, '');
+      const cents = Math.round(parseFloat(cleanValue) * 100);
+      const newCents = Math.floor(cents / 10);
+      const newAmount = newCents / 100;
+      const formatted = newAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      setValue(formatted);
+      return;
+    }
+
+    // Handle numeric input (0-9)
+    if (/^\d$/.test(e.key)) {
+      e.preventDefault();
+      const digit = parseInt(e.key);
+      const cleanValue = value.replace(/,/g, '');
+      const cents = Math.round(parseFloat(cleanValue) * 100);
+      const newCents = (cents * 10) + digit;
+      const newAmount = newCents / 100;
+      const formatted = newAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      setValue(formatted);
+      return;
+    }
+
     if (e.key === 'Enter') {
       e.preventDefault();
       enterPressedRef.current = true;
