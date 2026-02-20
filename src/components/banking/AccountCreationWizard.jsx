@@ -3071,8 +3071,8 @@ export default function AccountCreationWizard({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className={`${currentStep === 'connect-bank' ? 'w-[500px] max-w-[90vw]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
-          <div className={`relative flex flex-col ${currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'bank-info' ? 'h-[480px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[520px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
+        <DialogContent className={`${currentStep === 'connect-bank' ? 'w-[500px] max-w-[90vw]' : currentStep === 'csv-mapping' ? 'max-w-[90vw] w-[1100px]' : 'w-[550px]'} p-0 ${(currentStep === 'select-type' || currentStep === 'select-subtype' || currentStep === 'connect-bank') ? 'bg-gradient-to-br from-slate-50 to-blue-50' : ''}`}>
+          <div className={`relative flex flex-col ${currentStep === 'connect-bank' ? 'h-[380px]' : currentStep === 'csv-mapping' ? 'max-h-[85vh]' : currentStep === 'bank-info' ? 'h-[480px]' : currentStep === 'details' && selectedCard?.id === 'banking' ? 'h-[520px]' : currentStep === 'details' ? 'h-[560px]' : 'h-[400px]'}`}>
             <DialogHeader className="pt-2.5 px-4 flex-shrink-0">
               <DialogTitle className="text-center text-base">{getStepTitle()}</DialogTitle>
             </DialogHeader>
