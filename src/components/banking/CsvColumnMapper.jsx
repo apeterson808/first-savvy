@@ -14,9 +14,11 @@ import { format } from 'date-fns';
 const DETECTION_PATTERNS = {
   date: ['date', 'trans date', 'transaction date', 'posted date', 'post date', 'posting date', 'value date', 'entry date'],
   description: ['description', 'merchant', 'payee', 'memo', 'details', 'transaction', 'trans desc', 'narrative', 'particulars'],
+  amount: ['amount', 'total', 'transaction amount', 'trans amount', 'value', 'sum'],
+  balance: ['balance', 'running balance', 'account balance', 'current balance'],
   debit: ['debit', 'withdrawal', 'withdrawals', 'payment', 'expense', 'dr', 'out', 'spent', 'paid'],
   credit: ['credit', 'deposit', 'deposits', 'income', 'receipt', 'cr', 'in', 'received'],
-  toFrom: ['payee', 'merchant', 'vendor', 'customer', 'from', 'to', 'counterparty', 'name', 'company', 'party', 'payor', 'recipient'],
+  type: ['type', 'transaction type', 'trans type', 'txn type', 'category', 'classification'],
   category: ['category', 'class', 'classification', 'group', 'expense category']
 };
 
@@ -36,26 +38,22 @@ const autoDetectMappings = (headers) => {
   const detectedMappings = {
     date: detectColumn(headers, DETECTION_PATTERNS.date),
     description: detectColumn(headers, DETECTION_PATTERNS.description),
-    toFrom: detectColumn(headers, DETECTION_PATTERNS.toFrom),
+    amount: detectColumn(headers, DETECTION_PATTERNS.amount),
+    type: detectColumn(headers, DETECTION_PATTERNS.type),
     category: detectColumn(headers, DETECTION_PATTERNS.category)
   };
 
   const debitColumn = detectColumn(headers, DETECTION_PATTERNS.debit);
   const creditColumn = detectColumn(headers, DETECTION_PATTERNS.credit);
 
-  let detectedAmountType = 'single_column';
-  let detectedAmountColumn = '';
-
+  let detectedAmountType = 'auto';
   if (debitColumn && creditColumn) {
     detectedAmountType = 'separate_columns';
-  } else if (debitColumn || creditColumn) {
-    detectedAmountColumn = debitColumn || creditColumn;
   }
 
   return {
     mappings: detectedMappings,
     amountType: detectedAmountType,
-    amountColumn: detectedAmountColumn,
     debitColumn: debitColumn || '',
     creditColumn: creditColumn || ''
   };
@@ -65,14 +63,13 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
-    toFrom: '',
+    amount: '',
+    type: '',
     category: ''
   });
 
   const [dateFormat, setDateFormat] = useState('auto');
-  const [amountType, setAmountType] = useState('single_column');
-  const [amountColumn, setAmountColumn] = useState('');
-  const [negativeValueMeaning, setNegativeValueMeaning] = useState('spent');
+  const [amountType, setAmountType] = useState('auto');
   const [debitColumn, setDebitColumn] = useState('');
   const [creditColumn, setCreditColumn] = useState('');
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
@@ -90,27 +87,16 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         const { data: savedConfig } = await getCsvMappingConfig(profileId, institutionName);
 
         if (savedConfig && savedConfig.column_mappings) {
-          const cleanMappings = {
-            date: savedConfig.column_mappings.date || '',
-            description: savedConfig.column_mappings.description || '',
-            toFrom: savedConfig.column_mappings.toFrom || '',
-            category: savedConfig.column_mappings.category || ''
-          };
-          setColumnMappings(cleanMappings);
+          setColumnMappings(savedConfig.column_mappings);
           setDateFormat(savedConfig.date_format || 'auto');
-          const loadedAmountType = savedConfig.amount_type === 'auto' ? 'single_column' : savedConfig.amount_type;
-          setAmountType(loadedAmountType || 'single_column');
-          setAmountColumn(savedConfig.amount_column || '');
-          setNegativeValueMeaning(savedConfig.negative_value_meaning || 'spent');
+          setAmountType(savedConfig.amount_type || 'auto');
           setDebitColumn(savedConfig.debit_column || '');
           setCreditColumn(savedConfig.credit_column || '');
 
           const detectedFieldsList = [];
-          Object.entries(cleanMappings).forEach(([field, value]) => {
+          Object.entries(savedConfig.column_mappings).forEach(([field, value]) => {
             if (value) detectedFieldsList.push(field);
           });
-          if (savedConfig.debit_column) detectedFieldsList.push('debit');
-          if (savedConfig.credit_column) detectedFieldsList.push('credit');
           setAutoDetectedFields(detectedFieldsList);
           setSavedMappingLoaded(true);
           setHasAutoDetected(true);
@@ -130,7 +116,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
 
         setColumnMappings(detected.mappings);
         setAmountType(detected.amountType);
-        setAmountColumn(detected.amountColumn);
         setDebitColumn(detected.debitColumn);
         setCreditColumn(detected.creditColumn);
         setAutoDetectedFields(detectedFieldsList);
@@ -153,15 +138,17 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           const credit = parseFloat(row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
           netChange += credit - debit;
         });
-      } else if (amountType === 'single_column' && amountColumn) {
+      } else if (columnMappings.amount) {
         csvData.rows.forEach(row => {
-          const amountStr = row[amountColumn]?.toString().replace(/[^0-9.-]/g, '') || '0';
-          const rawAmount = parseFloat(amountStr);
+          const amountStr = row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
+          const amount = parseFloat(amountStr);
 
-          if (negativeValueMeaning === 'spent') {
-            netChange += rawAmount;
+          if (amountType === 'always_expense') {
+            netChange -= Math.abs(amount);
+          } else if (amountType === 'always_income') {
+            netChange += Math.abs(amount);
           } else {
-            netChange -= rawAmount;
+            netChange += amount;
           }
         });
       }
@@ -172,10 +159,10 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       return calculatedBeginning.toFixed(2);
     };
 
-    if ((amountType === 'single_column' && amountColumn) || (amountType === 'separate_columns' && debitColumn && creditColumn)) {
+    if (columnMappings.amount || (debitColumn && creditColumn)) {
       setBeginningBalance(calculateBeginningBalance());
     }
-  }, [isFirstImport, suggestedBeginningBalance, endingBalance, csvData, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn]);
+  }, [isFirstImport, suggestedBeginningBalance, endingBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
 
 
   const handleResetToAutoDetect = () => {
@@ -187,12 +174,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
     description: 'Description',
     amount: 'Amount',
     type: 'Transaction Type',
-    category: 'Category',
-    checkNumber: 'Check Number',
-    referenceNumber: 'Reference Number',
-    balance: 'Balance',
-    memo: 'Memo',
-    extendedDescription: 'Extended Description'
+    category: 'Category'
   };
 
   const handleMap = async () => {
@@ -201,8 +183,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         columnMappings,
         dateFormat,
         amountType,
-        amountColumn,
-        negativeValueMeaning,
         debitColumn,
         creditColumn
       });
@@ -212,8 +192,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       columnMappings,
       dateFormat,
       amountType,
-      amountColumn,
-      negativeValueMeaning,
       debitColumn,
       creditColumn,
       beginningBalance: beginningBalance ? parseFloat(beginningBalance) : null,
@@ -225,8 +203,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   };
 
   const isValid = columnMappings.date && columnMappings.description &&
-    ((amountType === 'separate_columns' && debitColumn && creditColumn) ||
-     (amountType === 'single_column' && amountColumn));
+    (columnMappings.amount || (debitColumn && creditColumn));
 
   useEffect(() => {
     if (onValidationChange) {
@@ -253,11 +230,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   // Generate preview transactions using the same logic as actual import
   const previewTransactions = React.useMemo(() => {
     if (!columnMappings.date || !columnMappings.description) return [];
-
-    const hasAmountColumn = (amountType === 'separate_columns' && debitColumn && creditColumn) ||
-                           (amountType === 'single_column' && amountColumn);
-
-    if (!hasAmountColumn) return [];
+    if (!columnMappings.amount && (!debitColumn || !creditColumn)) return [];
 
     try {
       const previewData = { ...csvData, rows: sampleRows };
@@ -265,8 +238,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         previewData,
         columnMappings,
         amountType,
-        amountColumn,
-        negativeValueMeaning,
         debitColumn,
         creditColumn,
         accountClass
@@ -276,7 +247,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       console.error('Error generating preview:', error);
       return [];
     }
-  }, [csvData, sampleRows, columnMappings, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn, accountClass]);
+  }, [csvData, sampleRows, columnMappings, amountType, debitColumn, creditColumn, accountClass]);
 
   const requiredFieldsMapped = columnMappings.date && columnMappings.description;
   const optionalFieldsMapped = autoDetectedFields.filter(f => f === 'type' || f === 'category').length;
@@ -318,7 +289,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           {/* Date */}
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <Label className="text-[11px] font-medium text-slate-700">Date *</Label>
+              <Label className="text-[11px] font-medium text-slate-700">Date Column *</Label>
               {autoDetectedFields.includes('date') && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                   <Sparkles className="w-2 h-2 mr-0.5" />
@@ -343,7 +314,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           {/* Description */}
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <Label className="text-[11px] font-medium text-slate-700">Description *</Label>
+              <Label className="text-[11px] font-medium text-slate-700">Description Column *</Label>
               {autoDetectedFields.includes('description') && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                   <Sparkles className="w-2 h-2 mr-0.5" />
@@ -374,8 +345,10 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             onValueChange={setAmountType}
             triggerClassName="h-8 text-xs bg-white"
           >
-            <ClickThroughSelectItem value="single_column">Single Column (with + and -)</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="separate_columns">Separate Spent/Received Columns</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="auto">Single Column (auto-detect)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="always_expense">Single Column (all expenses)</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="always_income">Single Column (all income)</ClickThroughSelectItem>
           </ClickThroughSelect>
         </div>
 
@@ -384,7 +357,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Spent *</Label>
+                <Label className="text-[11px] font-medium text-slate-700">Spent Column *</Label>
                 {debitColumn && amountType === 'separate_columns' && (
                   <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                     <Sparkles className="w-2 h-2 mr-0.5" />
@@ -407,7 +380,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             </div>
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Received *</Label>
+                <Label className="text-[11px] font-medium text-slate-700">Received Column *</Label>
                 {creditColumn && amountType === 'separate_columns' && (
                   <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                     <Sparkles className="w-2 h-2 mr-0.5" />
@@ -430,96 +403,30 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             </div>
           </div>
         ) : (
-          <div className="space-y-2.5">
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Amount Column *</Label>
-                {amountColumn && (
-                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2 h-2 mr-0.5" />
-                    Auto
-                  </Badge>
-                )}
-              </div>
-              <ClickThroughSelect
-                value={amountColumn}
-                onValueChange={setAmountColumn}
-                placeholder="Select amount column"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
+          <div>
+            <div className="flex items-center gap-1 mb-1">
+              <Label className="text-[11px] font-medium text-slate-700">Amount Column *</Label>
+              {autoDetectedFields.includes('amount') && (
+                <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                  <Sparkles className="w-2 h-2 mr-0.5" />
+                  Auto
+                </Badge>
+              )}
             </div>
-            <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Negative values are *</Label>
-              <ClickThroughSelect
-                value={negativeValueMeaning}
-                onValueChange={setNegativeValueMeaning}
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="spent">Spent</ClickThroughSelectItem>
-                <ClickThroughSelectItem value="received">Received</ClickThroughSelectItem>
-              </ClickThroughSelect>
-            </div>
+            <ClickThroughSelect
+              value={columnMappings.amount}
+              onValueChange={(val) => setColumnMappings(prev => ({ ...prev, amount: val }))}
+              placeholder="Select amount column"
+              triggerClassName="h-8 text-xs bg-white"
+            >
+              {headers.map((header, idx) => (
+                <ClickThroughSelectItem key={idx} value={header}>
+                  {header}
+                </ClickThroughSelectItem>
+              ))}
+            </ClickThroughSelect>
           </div>
         )}
-
-        {/* Optional Fields */}
-        <div className="grid grid-cols-2 gap-2.5">
-            {/* To/From */}
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">To/From</Label>
-                {autoDetectedFields.includes('toFrom') && (
-                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2 h-2 mr-0.5" />
-                    Auto
-                  </Badge>
-                )}
-              </div>
-              <ClickThroughSelect
-                value={columnMappings.toFrom || ''}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, toFrom: val || '' }))}
-                placeholder="Optional"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            {/* Category */}
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Category</Label>
-                {autoDetectedFields.includes('category') && (
-                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
-                    <Sparkles className="w-2 h-2 mr-0.5" />
-                    Auto
-                  </Badge>
-                )}
-              </div>
-              <ClickThroughSelect
-                value={columnMappings.category || ''}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val || '' }))}
-                placeholder="Optional"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-        </div>
 
       </div>
 
@@ -528,85 +435,63 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         <h3 className="text-[9px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Preview (First 3 Rows)</h3>
         <Card className="overflow-hidden border-slate-200">
           <div className="overflow-x-auto">
-            <table className="w-full table-fixed">
+            <table className="w-full">
               <thead className="sticky top-0 bg-slate-100">
                 <tr className="bg-slate-100 h-8">
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs w-[90px]">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs">
                     Date
                   </th>
                   <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
                     Description
                   </th>
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs w-[100px]">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
                     Spent
                   </th>
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs w-[100px]">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
                     Received
                   </th>
-                  {columnMappings.toFrom && (
-                    <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs w-[120px]">
-                      To/From
-                    </th>
-                  )}
-                  {columnMappings.category && (
-                    <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs w-[120px]">
-                      Category
-                    </th>
-                  )}
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                    Category
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {previewTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={4 + (columnMappings.toFrom ? 1 : 0) + (columnMappings.category ? 1 : 0)} className="text-center py-4 text-slate-500 text-xs">
+                    <td colSpan={5} className="text-center py-4 text-slate-500 text-xs">
                       Map required fields to see preview
                     </td>
                   </tr>
                 ) : (
                   previewTransactions.map((transaction, idx) => (
                     <tr key={idx} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}>
-                      <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1 whitespace-nowrap">
-                        <div className="text-xs overflow-hidden text-ellipsis">
-                          {transaction.date && !isNaN(new Date(transaction.date).getTime())
-                            ? format(new Date(transaction.date), 'MM/dd/yy')
-                            : 'Invalid'}
-                        </div>
+                      <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
+                        {transaction.date && !isNaN(new Date(transaction.date).getTime())
+                          ? format(new Date(transaction.date), 'MM/dd/yy')
+                          : 'Invalid'}
                       </td>
                       <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                        <div className="text-xs px-1 overflow-hidden text-ellipsis whitespace-nowrap">{transaction.description || '—'}</div>
+                        <span className="text-xs px-1">{transaction.description || '—'}</span>
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                        <div className="text-xs overflow-hidden text-ellipsis">
-                          {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') ? (
-                            <span>
-                              ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : '—'}
-                        </div>
+                        {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                          <span>
+                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        )}
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                        <div className="text-xs overflow-hidden text-ellipsis">
-                          {transaction.type === 'income' ? (
-                            <span>
-                              ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </span>
-                          ) : '—'}
-                        </div>
+                        {transaction.type === 'income' && (
+                          <span>
+                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        )}
                       </td>
-                      {columnMappings.toFrom && (
-                        <td className="border-r border-slate-200 py-1 px-4 pl-2">
-                          <div className="text-xs px-1 text-slate-700 overflow-hidden text-ellipsis whitespace-nowrap">
-                            {transaction.contact_name || '—'}
-                          </div>
-                        </td>
-                      )}
-                      {columnMappings.category && (
-                        <td className="border-r border-slate-200 py-1 px-4 pl-2">
-                          <div className="text-xs px-1 text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">
-                            {transaction.csv_category || '—'}
-                          </div>
-                        </td>
-                      )}
+                      <td className="border-r border-slate-200 py-1 px-4 pl-2">
+                        <span className="text-xs px-1 text-slate-500">
+                          {transaction.category || 'Select category'}
+                        </span>
+                      </td>
                     </tr>
                   ))
                 )}

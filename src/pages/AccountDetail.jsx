@@ -724,7 +724,7 @@ export default function AccountDetail() {
   };
 
   const handleCsvMapping = async (mappingConfig) => {
-    const { columnMappings, dateFormat, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn, beginningBalance, endingBalance } = mappingConfig;
+    const { columnMappings, dateFormat, amountType, debitColumn, creditColumn, beginningBalance, endingBalance } = mappingConfig;
 
     const accountClass = account.account_class || account.class || 'asset';
 
@@ -732,8 +732,6 @@ export default function AccountDetail() {
       processedData,
       columnMappings,
       amountType,
-      amountColumn,
-      negativeValueMeaning,
       debitColumn,
       creditColumn,
       accountClass
