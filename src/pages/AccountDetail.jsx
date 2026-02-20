@@ -1749,6 +1749,7 @@ export default function AccountDetail() {
                 suggestedBeginningBalance={account?.current_balance || 0}
                 profileId={activeProfile?.id}
                 institutionName={account?.institution_name || account?.display_name || 'Unknown Bank'}
+                accountClass={account?.class || 'asset'}
               />
             )}
 

@@ -6,9 +6,10 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle2, Sparkles, RotateCcw } from 'lucide-react';
-import { parseDate } from './StatementProcessor';
+import { parseDate, mapCsvToTransactions } from './StatementProcessor';
 import { getCsvMappingConfig, saveCsvMappingConfig } from '@/api/csvMappingConfigs';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 
 const DETECTION_PATTERNS = {
   date: ['date', 'trans date', 'transaction date', 'posted date', 'post date', 'posting date', 'value date', 'entry date'],
@@ -58,7 +59,7 @@ const autoDetectMappings = (headers) => {
   };
 };
 
-const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false, profileId = null, institutionName = null, onValidationChange, hideFooter = false }, ref) {
+const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, onCancel, isImporting = false, isFirstImport = false, suggestedBeginningBalance = 0, isBalanceExtraction = false, profileId = null, institutionName = null, onValidationChange, hideFooter = false, accountClass = 'asset' }, ref) {
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
@@ -225,6 +226,28 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
     if (isNaN(num)) return value;
     return num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
+
+  // Generate preview transactions using the same logic as actual import
+  const previewTransactions = React.useMemo(() => {
+    if (!columnMappings.date || !columnMappings.description) return [];
+    if (!columnMappings.amount && (!debitColumn || !creditColumn)) return [];
+
+    try {
+      const previewData = { ...csvData, rows: sampleRows };
+      const transactions = mapCsvToTransactions(
+        previewData,
+        columnMappings,
+        amountType,
+        debitColumn,
+        creditColumn,
+        accountClass
+      );
+      return transactions;
+    } catch (error) {
+      console.error('Error generating preview:', error);
+      return [];
+    }
+  }, [csvData, sampleRows, columnMappings, amountType, debitColumn, creditColumn, accountClass]);
 
   const requiredFieldsMapped = columnMappings.date && columnMappings.description;
   const optionalFieldsMapped = autoDetectedFields.filter(f => f === 'type' || f === 'category').length;
@@ -407,57 +430,71 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
 
       </div>
 
-      {/* Preview - Compact */}
+      {/* Preview - Transaction Table Format */}
       <div>
         <h3 className="text-[9px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Preview (First 3 Rows)</h3>
         <Card className="overflow-hidden border-slate-200">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-slate-50 border-b border-slate-200">
-                <tr>
-                  {Object.entries(columnMappings).map(([field, column]) => {
-                    if (amountType === 'separate_columns' && field === 'amount') return null;
-                    // Hide type and category columns from preview
-                    if (field === 'category' || field === 'type') return null;
-                    if (!column) return null;
-                    return (
-                      <th key={field} className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">
-                        {FIELD_LABELS[field]}
-                      </th>
-                    );
-                  })}
-                  {amountType === 'separate_columns' && (
-                    <>
-                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Spent</th>
-                      <th className="px-2.5 py-1.5 text-left font-medium text-slate-600 text-[10px] whitespace-nowrap">Received</th>
-                    </>
-                  )}
+              <thead className="sticky top-0 bg-slate-100">
+                <tr className="bg-slate-100 h-8">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs">
+                    Date
+                  </th>
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                    Description
+                  </th>
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
+                    Spent
+                  </th>
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
+                    Received
+                  </th>
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                    Category
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
-                {sampleRows.map((row, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/30">
-                    {Object.entries(columnMappings).map(([field, column]) => {
-                      if (amountType === 'separate_columns' && field === 'amount') return null;
-                      // Hide type and category columns from preview
-                      if (field === 'category' || field === 'type') return null;
-                      if (!column) return null;
-                      const cellValue = row[column] || '-';
-                      const displayValue = field === 'amount' ? formatAmountValue(cellValue) : cellValue;
-                      return (
-                        <td key={field} className="px-2.5 py-1.5 text-slate-900 text-[11px] whitespace-nowrap overflow-hidden text-ellipsis max-w-[200px]" title={displayValue}>
-                          {displayValue}
-                        </td>
-                      );
-                    })}
-                    {amountType === 'separate_columns' && (
-                      <>
-                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px] whitespace-nowrap">{formatAmountValue(row[debitColumn])}</td>
-                        <td className="px-2.5 py-1.5 text-slate-900 text-[11px] whitespace-nowrap">{formatAmountValue(row[creditColumn])}</td>
-                      </>
-                    )}
+              <tbody>
+                {previewTransactions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4 text-slate-500 text-xs">
+                      Map required fields to see preview
+                    </td>
                   </tr>
-                ))}
+                ) : (
+                  previewTransactions.map((transaction, idx) => (
+                    <tr key={idx} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}>
+                      <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
+                        {transaction.date && !isNaN(new Date(transaction.date).getTime())
+                          ? format(new Date(transaction.date), 'MM/dd/yy')
+                          : 'Invalid'}
+                      </td>
+                      <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
+                        <span className="text-xs px-1">{transaction.description || '—'}</span>
+                      </td>
+                      <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                        {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                          <span>
+                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                        {transaction.type === 'income' && (
+                          <span>
+                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        )}
+                      </td>
+                      <td className="border-r border-slate-200 py-1 px-4 pl-2">
+                        <span className="text-xs px-1 text-slate-500">
+                          {transaction.category || 'Select category'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>

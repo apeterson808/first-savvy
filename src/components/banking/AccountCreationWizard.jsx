@@ -2740,6 +2740,7 @@ export default function AccountCreationWizard({
           hideFooter={true}
           profileId={activeProfile?.id}
           institutionName={formData.institutionName || 'Unknown Bank'}
+          accountClass={formData.categoryClass || 'asset'}
         />
       </div>
     );
@@ -3301,6 +3302,7 @@ export default function AccountCreationWizard({
             isBalanceExtraction={true}
             profileId={activeProfile?.id}
             institutionName={formData.institutionName || 'Unknown Bank'}
+            accountClass={formData.categoryClass || 'asset'}
           />
         )}
       </DialogContent>
