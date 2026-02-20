@@ -449,12 +449,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           </div>
         )}
 
-        {/* Optional Fields Section */}
-        <div className="pt-2 border-t border-slate-200">
-          <h3 className="text-[10px] font-semibold text-slate-600 mb-2.5 uppercase tracking-wider">
-            Optional Fields
-          </h3>
-          <div className="grid grid-cols-2 gap-2.5">
+        {/* Optional Fields */}
+        <div className="grid grid-cols-2 gap-2.5">
             {/* To/From */}
             <div>
               <div className="flex items-center gap-1 mb-1">
@@ -506,7 +502,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                 ))}
               </ClickThroughSelect>
             </div>
-          </div>
         </div>
 
       </div>
