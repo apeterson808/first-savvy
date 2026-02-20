@@ -43,14 +43,19 @@ const autoDetectMappings = (headers) => {
   const debitColumn = detectColumn(headers, DETECTION_PATTERNS.debit);
   const creditColumn = detectColumn(headers, DETECTION_PATTERNS.credit);
 
-  let detectedAmountType = 'single_spent';
+  let detectedAmountType = 'single_column';
+  let detectedAmountColumn = '';
+
   if (debitColumn && creditColumn) {
     detectedAmountType = 'separate_columns';
+  } else if (debitColumn || creditColumn) {
+    detectedAmountColumn = debitColumn || creditColumn;
   }
 
   return {
     mappings: detectedMappings,
     amountType: detectedAmountType,
+    amountColumn: detectedAmountColumn,
     debitColumn: debitColumn || '',
     creditColumn: creditColumn || ''
   };
@@ -65,7 +70,9 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   });
 
   const [dateFormat, setDateFormat] = useState('auto');
-  const [amountType, setAmountType] = useState('single_spent');
+  const [amountType, setAmountType] = useState('single_column');
+  const [amountColumn, setAmountColumn] = useState('');
+  const [negativeValueMeaning, setNegativeValueMeaning] = useState('spent');
   const [debitColumn, setDebitColumn] = useState('');
   const [creditColumn, setCreditColumn] = useState('');
   const [autoDetectedFields, setAutoDetectedFields] = useState([]);
@@ -91,8 +98,10 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           };
           setColumnMappings(cleanMappings);
           setDateFormat(savedConfig.date_format || 'auto');
-          const loadedAmountType = savedConfig.amount_type === 'auto' ? 'single_spent' : savedConfig.amount_type;
-          setAmountType(loadedAmountType || 'single_spent');
+          const loadedAmountType = savedConfig.amount_type === 'auto' ? 'single_column' : savedConfig.amount_type;
+          setAmountType(loadedAmountType || 'single_column');
+          setAmountColumn(savedConfig.amount_column || '');
+          setNegativeValueMeaning(savedConfig.negative_value_meaning || 'spent');
           setDebitColumn(savedConfig.debit_column || '');
           setCreditColumn(savedConfig.credit_column || '');
 
@@ -121,6 +130,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
 
         setColumnMappings(detected.mappings);
         setAmountType(detected.amountType);
+        setAmountColumn(detected.amountColumn);
         setDebitColumn(detected.debitColumn);
         setCreditColumn(detected.creditColumn);
         setAutoDetectedFields(detectedFieldsList);
@@ -143,17 +153,15 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           const credit = parseFloat(row[creditColumn]?.toString().replace(/[^0-9.-]/g, '') || 0);
           netChange += credit - debit;
         });
-      } else if (columnMappings.amount) {
+      } else if (amountType === 'single_column' && amountColumn) {
         csvData.rows.forEach(row => {
-          const amountStr = row[columnMappings.amount]?.toString().replace(/[^0-9.-]/g, '') || '0';
-          const amount = parseFloat(amountStr);
+          const amountStr = row[amountColumn]?.toString().replace(/[^0-9.-]/g, '') || '0';
+          const rawAmount = parseFloat(amountStr);
 
-          if (amountType === 'always_expense') {
-            netChange -= Math.abs(amount);
-          } else if (amountType === 'always_income') {
-            netChange += Math.abs(amount);
+          if (negativeValueMeaning === 'spent') {
+            netChange += rawAmount;
           } else {
-            netChange += amount;
+            netChange -= rawAmount;
           }
         });
       }
@@ -164,10 +172,10 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       return calculatedBeginning.toFixed(2);
     };
 
-    if (columnMappings.amount || (debitColumn && creditColumn)) {
+    if ((amountType === 'single_column' && amountColumn) || (amountType === 'separate_columns' && debitColumn && creditColumn)) {
       setBeginningBalance(calculateBeginningBalance());
     }
-  }, [isFirstImport, suggestedBeginningBalance, endingBalance, csvData, columnMappings.amount, amountType, debitColumn, creditColumn]);
+  }, [isFirstImport, suggestedBeginningBalance, endingBalance, csvData, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn]);
 
 
   const handleResetToAutoDetect = () => {
@@ -193,6 +201,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         columnMappings,
         dateFormat,
         amountType,
+        amountColumn,
+        negativeValueMeaning,
         debitColumn,
         creditColumn
       });
@@ -202,6 +212,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       columnMappings,
       dateFormat,
       amountType,
+      amountColumn,
+      negativeValueMeaning,
       debitColumn,
       creditColumn,
       beginningBalance: beginningBalance ? parseFloat(beginningBalance) : null,
@@ -214,7 +226,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
 
   const isValid = columnMappings.date && columnMappings.description &&
     ((amountType === 'separate_columns' && debitColumn && creditColumn) ||
-     (amountType !== 'separate_columns' && (debitColumn || creditColumn)));
+     (amountType === 'single_column' && amountColumn));
 
   useEffect(() => {
     if (onValidationChange) {
@@ -243,7 +255,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
     if (!columnMappings.date || !columnMappings.description) return [];
 
     const hasAmountColumn = (amountType === 'separate_columns' && debitColumn && creditColumn) ||
-                           (amountType !== 'separate_columns' && (debitColumn || creditColumn));
+                           (amountType === 'single_column' && amountColumn);
 
     if (!hasAmountColumn) return [];
 
@@ -253,6 +265,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         previewData,
         columnMappings,
         amountType,
+        amountColumn,
+        negativeValueMeaning,
         debitColumn,
         creditColumn,
         accountClass
@@ -262,7 +276,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       console.error('Error generating preview:', error);
       return [];
     }
-  }, [csvData, sampleRows, columnMappings, amountType, debitColumn, creditColumn, accountClass]);
+  }, [csvData, sampleRows, columnMappings, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn, accountClass]);
 
   const requiredFieldsMapped = columnMappings.date && columnMappings.description;
   const optionalFieldsMapped = autoDetectedFields.filter(f => f === 'type' || f === 'category').length;
@@ -360,8 +374,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             onValueChange={setAmountType}
             triggerClassName="h-8 text-xs bg-white"
           >
-            <ClickThroughSelectItem value="single_spent">Single Column - Spent</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="single_received">Single Column - Received</ClickThroughSelectItem>
+            <ClickThroughSelectItem value="single_column">Single Column (with + and -)</ClickThroughSelectItem>
             <ClickThroughSelectItem value="separate_columns">Separate Spent/Received Columns</ClickThroughSelectItem>
           </ClickThroughSelect>
         </div>
@@ -417,35 +430,41 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             </div>
           </div>
         ) : (
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <Label className="text-[11px] font-medium text-slate-700">
-                {amountType === 'single_spent' ? 'Spent *' : amountType === 'single_received' ? 'Received *' : 'Amount *'}
-              </Label>
+          <div className="space-y-2.5">
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-700">Amount Column *</Label>
+                {amountColumn && (
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
+                    Auto
+                  </Badge>
+                )}
+              </div>
+              <ClickThroughSelect
+                value={amountColumn}
+                onValueChange={setAmountColumn}
+                placeholder="Select amount column"
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                {headers.map((header, idx) => (
+                  <ClickThroughSelectItem key={idx} value={header}>
+                    {header}
+                  </ClickThroughSelectItem>
+                ))}
+              </ClickThroughSelect>
             </div>
-            <ClickThroughSelect
-              value={amountType === 'single_spent' ? debitColumn : amountType === 'single_received' ? creditColumn : (debitColumn || creditColumn)}
-              onValueChange={(val) => {
-                if (amountType === 'single_spent') {
-                  setDebitColumn(val);
-                  setCreditColumn('');
-                } else if (amountType === 'single_received') {
-                  setCreditColumn(val);
-                  setDebitColumn('');
-                } else {
-                  setDebitColumn(val);
-                  setCreditColumn('');
-                }
-              }}
-              placeholder={`Select ${amountType === 'single_spent' ? 'spent' : amountType === 'single_received' ? 'received' : 'amount'} column`}
-              triggerClassName="h-8 text-xs bg-white"
-            >
-              {headers.map((header, idx) => (
-                <ClickThroughSelectItem key={idx} value={header}>
-                  {header}
-                </ClickThroughSelectItem>
-              ))}
-            </ClickThroughSelect>
+            <div>
+              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Negative values are *</Label>
+              <ClickThroughSelect
+                value={negativeValueMeaning}
+                onValueChange={setNegativeValueMeaning}
+                triggerClassName="h-8 text-xs bg-white"
+              >
+                <ClickThroughSelectItem value="spent">Spent</ClickThroughSelectItem>
+                <ClickThroughSelectItem value="received">Received</ClickThroughSelectItem>
+              </ClickThroughSelect>
+            </div>
           </div>
         )}
 

@@ -89,7 +89,7 @@ export const parseDate = (dateStr) => {
   return null;
 };
 
-export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn, accountClass = 'asset') => {
+export const mapCsvToTransactions = (csvData, columnMappings, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn, accountClass = 'asset') => {
   const allTransactions = csvData.rows.map(row => {
     let amount = 0;
     let type = 'expense';
@@ -105,23 +105,14 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
         amount = Math.abs(credit);
         type = 'income';
       }
-    } else {
-      const amountColumn = amountType === 'single_spent' ? debitColumn : amountType === 'single_received' ? creditColumn : debitColumn || creditColumn;
+    } else if (amountType === 'single_column') {
       const rawAmount = parseFloat(row[amountColumn]?.replace(/[^0-9.-]/g, '') || 0);
+      amount = Math.abs(rawAmount);
 
-      if (amountType === 'single_spent') {
-        amount = Math.abs(rawAmount);
-        type = 'expense';
-      } else if (amountType === 'single_received') {
-        amount = Math.abs(rawAmount);
-        type = 'income';
+      if (negativeValueMeaning === 'spent') {
+        type = rawAmount < 0 ? 'expense' : 'income';
       } else {
-        amount = Math.abs(rawAmount);
-        if (accountClass === 'liability') {
-          type = rawAmount >= 0 ? 'expense' : 'income';
-        } else {
-          type = rawAmount < 0 ? 'expense' : 'income';
-        }
+        type = rawAmount < 0 ? 'income' : 'expense';
       }
     }
 
