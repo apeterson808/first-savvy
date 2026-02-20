@@ -89,7 +89,7 @@ export const parseDate = (dateStr) => {
   return null;
 };
 
-export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitColumn, creditColumn, accountClass = 'asset') => {
+export const mapCsvToTransactions = (csvData, columnMappings, amountType, amountColumn, negativeValueMeaning, debitColumn, creditColumn, accountClass = 'asset') => {
   const allTransactions = csvData.rows.map(row => {
     let amount = 0;
     let type = 'expense';
@@ -98,50 +98,37 @@ export const mapCsvToTransactions = (csvData, columnMappings, amountType, debitC
       const debit = parseFloat(row[debitColumn]?.replace(/[^0-9.-]/g, '') || 0);
       const credit = parseFloat(row[creditColumn]?.replace(/[^0-9.-]/g, '') || 0);
 
-      // For credit cards with separate debit/credit columns:
-      // - Debit column = purchases/charges (always positive) → Spent
-      // - Credit column = payments and refunds (always negative) → Received
-      //   All credit column items are income (will be matched as transfers later)
-
       if (Math.abs(debit) > 0) {
-        // Debit column has a value = this is a purchase (expense)
         amount = Math.abs(debit);
         type = 'expense';
       } else if (Math.abs(credit) > 0) {
-        // Credit column has a value = payment or refund (income)
         amount = Math.abs(credit);
         type = 'income';
       }
-    } else {
-      const rawAmount = parseFloat(row[columnMappings.amount]?.replace(/[^0-9.-]/g, '') || 0);
+    } else if (amountType === 'single_column') {
+      const rawAmount = parseFloat(row[amountColumn]?.replace(/[^0-9.-]/g, '') || 0);
+      amount = Math.abs(rawAmount);
 
-      if (amountType === 'always_expense') {
-        amount = Math.abs(rawAmount);
-        type = 'expense';
-      } else if (amountType === 'always_income') {
-        amount = Math.abs(rawAmount);
-        type = 'income';
+      if (negativeValueMeaning === 'spent') {
+        type = rawAmount < 0 ? 'expense' : 'income';
       } else {
-        amount = Math.abs(rawAmount);
-        // For liabilities (credit cards): positive = expense (purchase), negative = income (payment)
-        // For assets (bank accounts): negative = expense (withdrawal), positive = income (deposit)
-        if (accountClass === 'liability') {
-          type = rawAmount >= 0 ? 'expense' : 'income';
-        } else {
-          type = rawAmount < 0 ? 'expense' : 'income';
-        }
+        type = rawAmount < 0 ? 'income' : 'expense';
       }
     }
 
     const originalDescription = row[columnMappings.description] || 'Unknown';
     const parsedDate = parseDate(row[columnMappings.date]);
+    const toFrom = columnMappings.toFrom ? (row[columnMappings.toFrom] || '') : '';
+    const category = columnMappings.category ? (row[columnMappings.category] || '') : '';
 
     return {
       date: parsedDate,
       description: originalDescription,
       original_description: originalDescription,
       amount,
-      type
+      type,
+      contact_name: toFrom,
+      csv_category: category
     };
   });
 
