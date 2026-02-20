@@ -213,7 +213,18 @@ export default function AddBudgetItemSheet({
       console.log('Full error object:', JSON.stringify(error, null, 2));
 
       // Extract the actual error (could be nested in different ways)
-      const actualError = error?.body || error;
+      // If error.body is a string, parse it as JSON
+      let actualError = error;
+      if (error?.body && typeof error.body === 'string') {
+        try {
+          actualError = JSON.parse(error.body);
+        } catch (e) {
+          actualError = error;
+        }
+      } else if (error?.body && typeof error.body === 'object') {
+        actualError = error.body;
+      }
+
       const errorCode = actualError?.code || error?.code;
       const errorMessage = actualError?.message || error?.message || '';
 
