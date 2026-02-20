@@ -320,30 +320,13 @@ export default function AddBudgetItemSheet({
       return;
     }
 
-    // Check if this category has a parent in the chart of accounts
-    const hasParentInChart = !!selectedAccount?.parent_account_id;
+    if (parentBudgetInfo && !parentBudgetInfo.hasParentBudget) {
+      toast.error(`Create a budget for ${parentBudgetInfo.parentName} first`);
+      return;
+    }
 
-    console.log('Budget validation check:', {
-      hasParentInChart,
-      selectedAccount: selectedAccount?.display_name,
-      parentAccountId: selectedAccount?.parent_account_id,
-      newAmount,
-      parentBudgetInfo
-    });
-
-    if (hasParentInChart) {
-      const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-      const parentBudget = existingBudgets.find(b => b.chart_account_id === selectedAccount.parent_account_id);
-
-      if (!parentBudget) {
-        const parentCategory = availableCategories.find(c => c.id === selectedAccount.parent_account_id) ||
-          queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedAccount.parent_account_id);
-        toast.error(`Create a budget for ${parentCategory?.display_name || 'the parent category'} first`);
-        return;
-      }
-
-      // Check if child budget exceeds parent available budget
-      if (parentBudgetInfo && parentBudgetInfo.hasParentBudget && newAmount > parentBudgetInfo.availableBudget) {
+    if (parentBudgetInfo && parentBudgetInfo.hasParentBudget) {
+      if (newAmount > parentBudgetInfo.availableBudget) {
         const parentCategory = availableCategories.find(c => c.id === selectedAccount.parent_account_id) ||
           queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedAccount.parent_account_id);
 
