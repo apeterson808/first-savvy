@@ -208,72 +208,7 @@ export default function AddBudgetItemSheet({
     },
     onError: (error) => {
       console.error('Error creating budget:', error);
-      console.log('Error code:', error?.code);
-      console.log('Error message:', error?.message);
-      console.log('Full error object:', JSON.stringify(error, null, 2));
-
-      // Extract the actual error (could be nested in different ways)
-      // If error.body is a string, parse it as JSON
-      let actualError = error;
-      if (error?.body && typeof error.body === 'string') {
-        try {
-          actualError = JSON.parse(error.body);
-        } catch (e) {
-          actualError = error;
-        }
-      } else if (error?.body && typeof error.body === 'object') {
-        actualError = error.body;
-      }
-
-      const errorCode = actualError?.code || error?.code;
-      const errorMessage = actualError?.message || error?.message || '';
-
-      console.log('Extracted error code:', errorCode);
-      console.log('Extracted error message:', errorMessage);
-
-      // Check if this is a parent budget constraint violation (P0001)
-      if (errorCode === 'P0001' && errorMessage.includes('Budget exceeds parent')) {
-        // Parse the error message to extract details
-        // Example: "Budget exceeds parent: \"Gifts\" requests $100.00, but parent has $15.00 available ($0 allocated to siblings)"
-        const match = errorMessage.match(/requests \$?([\d,]+\.?\d*)/);
-        const requestedAmount = match ? parseFloat(match[1].replace(/,/g, '')) : parseFloat(parseCurrency(limitAmount));
-
-        const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
-        const parentAccountId = selectedAccount?.parent_account_id;
-
-        if (parentAccountId) {
-          const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-          const parentBudget = existingBudgets.find(b => b.chart_account_id === parentAccountId);
-          const parentCategory = availableCategories.find(c => c.id === parentAccountId) ||
-            queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === parentAccountId);
-
-          if (parentBudget && parentCategory) {
-            // Calculate sibling budgets
-            const siblingBudgets = existingBudgets
-              .filter(b => {
-                const budgetCategory = availableCategories.find(c => c.id === b.chart_account_id);
-                return budgetCategory?.parent_account_id === parentAccountId && b.chart_account_id !== selectedCategoryId;
-              })
-              .map(b => ({
-                name: b.chartAccount?.display_name || b.chartAccount?.account_detail || 'Unknown',
-                amount: b.allocated_amount || 0
-              }));
-
-            setParentBudgetDialogData({
-              parentCategory,
-              childCategory: selectedAccount,
-              parentCurrentBudget: parentBudget.allocated_amount || 0,
-              childRequestedAmount: requestedAmount,
-              siblingBudgets,
-              onConfirm: handleParentBudgetAdjustment
-            });
-            setShowParentBudgetDialog(true);
-            return;
-          }
-        }
-      }
-
-      toast.error(errorMessage || 'Failed to create budget item');
+      toast.error('Failed to create budget item');
     }
   });
 
@@ -385,30 +320,13 @@ export default function AddBudgetItemSheet({
       return;
     }
 
-    // Check if this category has a parent in the chart of accounts
-    const hasParentInChart = !!selectedAccount?.parent_account_id;
+    if (parentBudgetInfo && !parentBudgetInfo.hasParentBudget) {
+      toast.error(`Create a budget for ${parentBudgetInfo.parentName} first`);
+      return;
+    }
 
-    console.log('Budget validation check:', {
-      hasParentInChart,
-      selectedAccount: selectedAccount?.display_name,
-      parentAccountId: selectedAccount?.parent_account_id,
-      newAmount,
-      parentBudgetInfo
-    });
-
-    if (hasParentInChart) {
-      const existingBudgets = queryClient.getQueryData(['budgets', activeProfile.id]) || [];
-      const parentBudget = existingBudgets.find(b => b.chart_account_id === selectedAccount.parent_account_id);
-
-      if (!parentBudget) {
-        const parentCategory = availableCategories.find(c => c.id === selectedAccount.parent_account_id) ||
-          queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedAccount.parent_account_id);
-        toast.error(`Create a budget for ${parentCategory?.display_name || 'the parent category'} first`);
-        return;
-      }
-
-      // Check if child budget exceeds parent available budget
-      if (parentBudgetInfo && parentBudgetInfo.hasParentBudget && newAmount > parentBudgetInfo.availableBudget) {
+    if (parentBudgetInfo && parentBudgetInfo.hasParentBudget) {
+      if (newAmount > parentBudgetInfo.availableBudget) {
         const parentCategory = availableCategories.find(c => c.id === selectedAccount.parent_account_id) ||
           queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === selectedAccount.parent_account_id);
 
