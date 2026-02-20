@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { Trash2, Plus } from 'lucide-react';
 import * as transactionService from '@/api/transactionService';
 import { format } from 'date-fns';
+import CalculatorAmountInput from '../common/CalculatorAmountInput';
 
 export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess }) {
   const [loading, setLoading] = useState(false);
@@ -216,13 +217,11 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={line.debit_amount}
-                          onChange={(e) => {
-                            updateLine(index, 'debit_amount', e.target.value);
-                            if (e.target.value) {
+                        <CalculatorAmountInput
+                          value={parseFloat(line.debit_amount) || 0}
+                          onChange={(value) => {
+                            updateLine(index, 'debit_amount', value.toString());
+                            if (value) {
                               updateLine(index, 'credit_amount', '');
                             }
                           }}
@@ -231,13 +230,11 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
                         />
                       </td>
                       <td className="px-3 py-2">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={line.credit_amount}
-                          onChange={(e) => {
-                            updateLine(index, 'credit_amount', e.target.value);
-                            if (e.target.value) {
+                        <CalculatorAmountInput
+                          value={parseFloat(line.credit_amount) || 0}
+                          onChange={(value) => {
+                            updateLine(index, 'credit_amount', value.toString());
+                            if (value) {
                               updateLine(index, 'debit_amount', '');
                             }
                           }}

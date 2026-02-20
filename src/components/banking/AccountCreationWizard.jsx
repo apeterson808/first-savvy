@@ -29,6 +29,7 @@ import { useTemplateAccountTypesByClass, useTemplateAccountDetailsByType } from 
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useQuery } from '@tanstack/react-query';
+import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 import {
   Building2,
   Wallet,
@@ -2159,20 +2160,12 @@ export default function AccountCreationWizard({
             </div>
             <div>
               <Label htmlFor="currentValue" className="text-sm mb-1">Estimated Value*</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                <Input
-                  id="currentValue"
-                  type="text"
-                  value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
-                  onChange={(e) => handleAmountChange('currentValue', e.target.value)}
-                  onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
-                  onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
-                  placeholder="0.00"
-                  className="pl-7 h-9"
-                  required
-                />
-              </div>
+              <CalculatorAmountInput
+                value={parseFloat(formData.currentValue) || 0}
+                onChange={(value) => updateFormData('currentValue', value.toFixed(2))}
+                placeholder="0.00"
+                className="h-9"
+              />
             </div>
           </div>
           <div className="flex items-center space-x-2 pt-1">
@@ -2304,20 +2297,12 @@ export default function AccountCreationWizard({
             </div>
             <div>
               <Label htmlFor="currentValue" className="text-sm mb-1">Current Value*</Label>
-              <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-                <Input
-                  id="currentValue"
-                  type="text"
-                  value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
-                  onChange={(e) => handleAmountChange('currentValue', e.target.value)}
-                  onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
-                  onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
-                  placeholder="0.00"
-                  className="pl-7 h-9"
-                  required
-                />
-              </div>
+              <CalculatorAmountInput
+                value={parseFloat(formData.currentValue) || 0}
+                onChange={(value) => updateFormData('currentValue', value.toFixed(2))}
+                placeholder="0.00"
+                className="h-9"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2385,20 +2370,11 @@ export default function AccountCreationWizard({
           </div>
           <div>
             <Label htmlFor="currentValue">Current Value*</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <Input
-                id="currentValue"
-                type="text"
-                value={formatAmountField('currentValue', formData.currentValue, focusedFields.currentValue)}
-                onChange={(e) => handleAmountChange('currentValue', e.target.value)}
-                onFocus={() => setFocusedFields(prev => ({ ...prev, currentValue: true }))}
-                onBlur={(e) => handleAmountBlur('currentValue', e.target.value)}
-                placeholder="0.00"
-                className="pl-7"
-                required
-              />
-            </div>
+            <CalculatorAmountInput
+              value={parseFloat(formData.currentValue) || 0}
+              onChange={(value) => updateFormData('currentValue', value.toFixed(2))}
+              placeholder="0.00"
+            />
           </div>
         </div>
       );
@@ -2417,20 +2393,11 @@ export default function AccountCreationWizard({
           </div>
           <div>
             <Label htmlFor="currentBalance">Current Balance*</Label>
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-              <Input
-                id="currentBalance"
-                type="text"
-                value={formatAmountField('currentBalance', formData.currentBalance, focusedFields.currentBalance)}
-                onChange={(e) => handleAmountChange('currentBalance', e.target.value)}
-                onFocus={() => setFocusedFields(prev => ({ ...prev, currentBalance: true }))}
-                onBlur={(e) => handleAmountBlur('currentBalance', e.target.value)}
-                placeholder="0.00"
-                className="pl-7"
-                required
-              />
-            </div>
+            <CalculatorAmountInput
+              value={parseFloat(formData.currentBalance) || 0}
+              onChange={(value) => updateFormData('currentBalance', value.toFixed(2))}
+              placeholder="0.00"
+            />
           </div>
           <div>
             <Label htmlFor="lenderName">Lender/Creditor Name*</Label>
@@ -2826,36 +2793,19 @@ export default function AccountCreationWizard({
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="loanBalance">Current Balance*</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-            <Input
-              id="loanBalance"
-              type="text"
-              value={formatAmountField('loanBalance', formData.loanBalance, focusedFields.loanBalance)}
-              onChange={(e) => handleAmountChange('loanBalance', e.target.value)}
-              onFocus={() => setFocusedFields(prev => ({ ...prev, loanBalance: true }))}
-              onBlur={(e) => handleAmountBlur('loanBalance', e.target.value)}
-              placeholder="0.00"
-              className="pl-7"
-              required
-            />
-          </div>
+          <CalculatorAmountInput
+            value={parseFloat(formData.loanBalance) || 0}
+            onChange={(value) => updateFormData('loanBalance', value.toFixed(2))}
+            placeholder="0.00"
+          />
         </div>
         <div>
           <Label htmlFor="originalLoanAmount">Original Amount</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-            <Input
-              id="originalLoanAmount"
-              type="text"
-              value={formatAmountField('originalLoanAmount', formData.originalLoanAmount, focusedFields.originalLoanAmount)}
-              onChange={(e) => handleAmountChange('originalLoanAmount', e.target.value)}
-              onFocus={() => setFocusedFields(prev => ({ ...prev, originalLoanAmount: true }))}
-              onBlur={(e) => handleAmountBlur('originalLoanAmount', e.target.value)}
-              placeholder="0.00"
-              className="pl-7"
-            />
-          </div>
+          <CalculatorAmountInput
+            value={parseFloat(formData.originalLoanAmount) || 0}
+            onChange={(value) => updateFormData('originalLoanAmount', value.toFixed(2))}
+            placeholder="0.00"
+          />
         </div>
         <div>
           <Label htmlFor="interestRate">Interest Rate (%)</Label>
@@ -2875,17 +2825,11 @@ export default function AccountCreationWizard({
       <div className="grid grid-cols-3 gap-4">
         <div>
           <Label htmlFor="monthlyPayment">Monthly Payment</Label>
-          <div className="relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
-            <Input
-              id="monthlyPayment"
-              type="text"
-              value={formData.monthlyPayment || ''}
-              onChange={(e) => updateFormData('monthlyPayment', e.target.value.replace(/[^0-9.]/g, ''))}
-              placeholder="0.00"
-              className="pl-7"
-            />
-          </div>
+          <CalculatorAmountInput
+            value={parseFloat(formData.monthlyPayment) || 0}
+            onChange={(value) => updateFormData('monthlyPayment', value.toFixed(2))}
+            placeholder="0.00"
+          />
         </div>
         <div>
           <Label htmlFor="paymentDueDate">Due Date (Day)</Label>

@@ -10,6 +10,7 @@ import { validateAmount } from '../utils/validation';
 import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { getAccountDisplayName } from '../utils/constants';
+import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 
 export default function EditAccountDialog({ open, onOpenChange, account, onSuccess }) {
   const [formData, setFormData] = useState({});
@@ -112,12 +113,9 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
           {showBalance && (
             <div>
               <Label htmlFor="balance">Current Balance</Label>
-              <Input
-                id="balance"
-                type="number"
-                step="0.01"
-                value={formData.current_balance || ''}
-                onChange={(e) => setFormData({ ...formData, current_balance: e.target.value })}
+              <CalculatorAmountInput
+                value={parseFloat(formData.current_balance) || 0}
+                onChange={(value) => setFormData({ ...formData, current_balance: value })}
                 placeholder="0.00"
               />
             </div>

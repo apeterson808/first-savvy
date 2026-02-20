@@ -48,6 +48,7 @@ import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getTransactionSplits, createTransactionSplits, updateTransactionSplits, deleteTransactionSplits } from '@/api/transactionSplits';
+import CalculatorAmountInput from '../common/CalculatorAmountInput';
 import { Trash2 } from 'lucide-react';
 import * as transactionService from '@/api/transactionService';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
@@ -2522,11 +2523,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   className="h-8 text-xs"
                                                   placeholder="Description"
                                                 />
-                                                <Input
-                                                  type="number"
-                                                  step="0.01"
-                                                  value={line.amount || ''}
-                                                  onChange={(e) => updateSplitLine(transaction.id, lineIndex, 'amount', e.target.value)}
+                                                <CalculatorAmountInput
+                                                  value={parseFloat(line.amount) || 0}
+                                                  onChange={(value) => updateSplitLine(transaction.id, lineIndex, 'amount', value)}
                                                   className="h-8 text-xs"
                                                   placeholder={(() => {
                                                     const remaining = getRemainingAmount(transaction, lineIndex);
@@ -3021,65 +3020,55 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </div>
                                                 <div className="w-32">
                                                   <Label className="text-xs mb-1 block">Min</Label>
-                                                  <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">$</span>
-                                                    <Input
-                                                      type="number"
-                                                      step="0.01"
-                                                      placeholder="0.00"
-                                                      value={filterInputs.amountMin || ''}
-                                                      onChange={(e) => {
-                                                        setManualMatchFilterInputs(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: {
-                                                            ...prev[transaction.id],
-                                                            amountMin: e.target.value
-                                                          }
-                                                        }));
-                                                      }}
-                                                      onBlur={(e) => {
-                                                        setManualMatchFilters(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: {
-                                                            ...prev[transaction.id],
-                                                            amountMin: e.target.value
-                                                          }
-                                                        }));
-                                                      }}
-                                                      className="h-8 text-xs pl-5"
-                                                    />
-                                                  </div>
+                                                  <CalculatorAmountInput
+                                                    value={parseFloat(filterInputs.amountMin) || 0}
+                                                    onChange={(value) => {
+                                                      setManualMatchFilterInputs(prev => ({
+                                                        ...prev,
+                                                        [transaction.id]: {
+                                                          ...prev[transaction.id],
+                                                          amountMin: value.toString()
+                                                        }
+                                                      }));
+                                                    }}
+                                                    onBlur={(value) => {
+                                                      setManualMatchFilters(prev => ({
+                                                        ...prev,
+                                                        [transaction.id]: {
+                                                          ...prev[transaction.id],
+                                                          amountMin: value.toString()
+                                                        }
+                                                      }));
+                                                    }}
+                                                    className="h-8 text-xs"
+                                                    placeholder="0.00"
+                                                  />
                                                 </div>
                                                 <div className="w-32">
                                                   <Label className="text-xs mb-1 block">Max</Label>
-                                                  <div className="relative">
-                                                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-slate-500 text-xs">$</span>
-                                                    <Input
-                                                      type="number"
-                                                      step="0.01"
-                                                      placeholder="0.00"
-                                                      value={filterInputs.amountMax || ''}
-                                                      onChange={(e) => {
-                                                        setManualMatchFilterInputs(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: {
-                                                            ...prev[transaction.id],
-                                                            amountMax: e.target.value
-                                                          }
-                                                        }));
-                                                      }}
-                                                      onBlur={(e) => {
-                                                        setManualMatchFilters(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: {
-                                                            ...prev[transaction.id],
-                                                            amountMax: e.target.value
-                                                          }
-                                                        }));
-                                                      }}
-                                                      className="h-8 text-xs pl-5"
-                                                    />
-                                                  </div>
+                                                  <CalculatorAmountInput
+                                                    value={parseFloat(filterInputs.amountMax) || 0}
+                                                    onChange={(value) => {
+                                                      setManualMatchFilterInputs(prev => ({
+                                                        ...prev,
+                                                        [transaction.id]: {
+                                                          ...prev[transaction.id],
+                                                          amountMax: value.toString()
+                                                        }
+                                                      }));
+                                                    }}
+                                                    onBlur={(value) => {
+                                                      setManualMatchFilters(prev => ({
+                                                        ...prev,
+                                                        [transaction.id]: {
+                                                          ...prev[transaction.id],
+                                                          amountMax: value.toString()
+                                                        }
+                                                      }));
+                                                    }}
+                                                    className="h-8 text-xs"
+                                                    placeholder="0.00"
+                                                  />
                                                 </div>
                                                 <div className="w-36">
                                                   <Label className="text-xs mb-1 block">Date From</Label>

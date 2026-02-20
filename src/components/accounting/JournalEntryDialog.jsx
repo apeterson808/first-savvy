@@ -19,6 +19,7 @@ import { FileText, Calendar, User, CheckCircle2, AlertCircle, Edit2, X, Save } f
 import { getIconComponent } from '@/components/utils/iconMapper';
 import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
+import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 
 export default function JournalEntryDialog({ entryId, open, onClose }) {
   const { currentProfile } = useProfile();
@@ -293,11 +294,9 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                       </TableCell>
                       <TableCell className="text-right">
                         {isEditMode ? (
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.debit_amount || ''}
-                            onChange={(e) => handleLineAmountChange(index, 'debit_amount', e.target.value)}
+                          <CalculatorAmountInput
+                            value={parseFloat(line.debit_amount) || 0}
+                            onChange={(value) => handleLineAmountChange(index, 'debit_amount', value.toString())}
                             className="h-8 text-right font-mono"
                             placeholder="0.00"
                           />
@@ -309,11 +308,9 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                       </TableCell>
                       <TableCell className="text-right">
                         {isEditMode ? (
-                          <Input
-                            type="number"
-                            step="0.01"
-                            value={line.credit_amount || ''}
-                            onChange={(e) => handleLineAmountChange(index, 'credit_amount', e.target.value)}
+                          <CalculatorAmountInput
+                            value={parseFloat(line.credit_amount) || 0}
+                            onChange={(value) => handleLineAmountChange(index, 'credit_amount', value.toString())}
                             className="h-8 text-right font-mono"
                             placeholder="0.00"
                           />

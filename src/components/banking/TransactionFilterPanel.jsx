@@ -7,6 +7,7 @@ import { X } from 'lucide-react';
 import DatePresetDropdown from '../common/DatePresetDropdown';
 import TransactionTypeDropdown from '../common/TransactionTypeDropdown';
 import PaymentMethodDropdown from '../common/PaymentMethodDropdown';
+import CalculatorAmountInput from '../common/CalculatorAmountInput';
 
 export default function TransactionFilterPanel({ 
   isOpen, 
@@ -189,20 +190,18 @@ export default function TransactionFilterPanel({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs text-slate-500">Min</Label>
-                  <Input 
-                    type="number" 
+                  <CalculatorAmountInput
+                    value={parseFloat(localFilters.amountMin) || 0}
+                    onChange={(value) => setLocalFilters(prev => ({ ...prev, amountMin: value.toString() }))}
                     placeholder="0.00"
-                    value={localFilters.amountMin}
-                    onChange={(e) => setLocalFilters(prev => ({ ...prev, amountMin: e.target.value }))}
                   />
                 </div>
                 <div>
                   <Label className="text-xs text-slate-500">Max</Label>
-                  <Input 
-                    type="number" 
+                  <CalculatorAmountInput
+                    value={parseFloat(localFilters.amountMax) || 0}
+                    onChange={(value) => setLocalFilters(prev => ({ ...prev, amountMax: value.toString() }))}
                     placeholder="0.00"
-                    value={localFilters.amountMax}
-                    onChange={(e) => setLocalFilters(prev => ({ ...prev, amountMax: e.target.value }))}
                   />
                 </div>
               </div>

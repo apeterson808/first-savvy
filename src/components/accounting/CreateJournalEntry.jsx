@@ -20,6 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import ChartAccountDropdown from '@/components/common/ChartAccountDropdown';
 import { cn } from '@/lib/utils';
+import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 
 export default function CreateJournalEntry({ onClose, onSuccess }) {
   const { user } = useAuth();
@@ -232,27 +233,23 @@ export default function CreateJournalEntry({ onClose, onSuccess }) {
                     />
                   </TableCell>
                   <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={line.debitAmount}
-                      onChange={(e) => {
-                        updateLine(index, 'debitAmount', e.target.value);
-                        if (e.target.value) updateLine(index, 'creditAmount', '');
+                    <CalculatorAmountInput
+                      value={parseFloat(line.debitAmount) || 0}
+                      onChange={(value) => {
+                        updateLine(index, 'debitAmount', value.toString());
+                        if (value) updateLine(index, 'creditAmount', '');
                       }}
+                      placeholder="0.00"
                     />
                   </TableCell>
                   <TableCell>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={line.creditAmount}
-                      onChange={(e) => {
-                        updateLine(index, 'creditAmount', e.target.value);
-                        if (e.target.value) updateLine(index, 'debitAmount', '');
+                    <CalculatorAmountInput
+                      value={parseFloat(line.creditAmount) || 0}
+                      onChange={(value) => {
+                        updateLine(index, 'creditAmount', value.toString());
+                        if (value) updateLine(index, 'debitAmount', '');
                       }}
+                      placeholder="0.00"
                     />
                   </TableCell>
                   <TableCell>

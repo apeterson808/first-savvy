@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle } from 'lucide-react';
+import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 
 export default function BudgetConflictDialog({
   open,
@@ -154,12 +155,12 @@ export default function BudgetConflictDialog({
                     </span>
                     <div className="flex items-center">
                       <span className="text-xs text-slate-500 mr-1">-$</span>
-                      <Input
-                        type="number"
-                        value={reduction || ''}
-                        placeholder="0"
-                        onChange={(e) => handleAdjustment(budget.id, parseFloat(e.target.value) || 0)}
+                      <CalculatorAmountInput
+                        value={parseFloat(reduction) || 0}
+                        onChange={(value) => handleAdjustment(budget.id, value)}
                         className="w-20 h-7 text-xs text-right px-2"
+                        showDollarSign={false}
+                        placeholder="0"
                       />
                     </div>
                   </div>
@@ -185,12 +186,12 @@ export default function BudgetConflictDialog({
                       </span>
                       <div className="flex items-center">
                         <span className="text-xs text-slate-500 mr-1">+$</span>
-                        <Input
-                          type="number"
-                          value={increase || ''}
-                          placeholder="0"
-                          onChange={(e) => handleIncomeAdjustment(budget.id, parseFloat(e.target.value) || 0)}
+                        <CalculatorAmountInput
+                          value={parseFloat(increase) || 0}
+                          onChange={(value) => handleIncomeAdjustment(budget.id, value)}
                           className="w-20 h-7 text-xs text-right px-2"
+                          showDollarSign={false}
+                          placeholder="0"
                         />
                       </div>
                     </div>

@@ -15,6 +15,7 @@ import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { toast } from 'sonner';
 import { Label } from '../ui/label';
 import { calculateBeginningBalanceFromCurrent } from './StatementProcessor';
+import CalculatorAmountInput from '../common/CalculatorAmountInput';
 
 export function TransactionReviewDialog({
   open,
@@ -432,11 +433,9 @@ export function TransactionReviewDialog({
                         />
                       </td>
                       <td className="p-3">
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={txn.amount}
-                          onChange={(e) => updateTransaction(txn.id, 'amount', e.target.value)}
+                        <CalculatorAmountInput
+                          value={parseFloat(txn.amount) || 0}
+                          onChange={(value) => updateTransaction(txn.id, 'amount', value)}
                           className="h-8 text-sm"
                         />
                       </td>
