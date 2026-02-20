@@ -42,11 +42,16 @@ export default function InlineEditableAmountWithCadence({
 
   const handleClick = () => {
     if (isLoading) return;
-    const formatted = displayAmount.toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-    setInputValue(formatted);
+    // If clicking on 0.00, start with empty input for easier typing
+    if (displayAmount === 0) {
+      setInputValue('');
+    } else {
+      const formatted = displayAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      setInputValue(formatted);
+    }
     setSelectedCadence(displayCadence);
     setIsEditing(true);
   };
