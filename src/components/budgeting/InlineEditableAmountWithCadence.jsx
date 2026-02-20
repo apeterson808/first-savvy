@@ -39,8 +39,11 @@ export default function InlineEditableAmountWithCadence({
 
   const handleClick = () => {
     if (isLoading) return;
-    const numericValue = displayAmount.toFixed(2);
-    setInputValue(numericValue);
+    const formatted = displayAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    setInputValue(formatted);
     setSelectedCadence(displayCadence);
     setIsEditing(true);
   };
@@ -57,7 +60,8 @@ export default function InlineEditableAmountWithCadence({
     if (e.key === 'Enter') {
       e.preventDefault();
       if (onEnter) {
-        const numericValue = parseFloat(inputValue);
+        const cleanValue = inputValue.replace(/,/g, '');
+        const numericValue = parseFloat(cleanValue);
         if (!isNaN(numericValue) && numericValue >= 0) {
           onEnter(numericValue, selectedCadence);
           setIsEditing(false);
@@ -74,7 +78,8 @@ export default function InlineEditableAmountWithCadence({
   };
 
   const handleSave = () => {
-    const numericValue = parseFloat(inputValue);
+    const cleanValue = inputValue.replace(/,/g, '');
+    const numericValue = parseFloat(cleanValue);
 
     if (isNaN(numericValue) || numericValue < 0) {
       setIsEditing(false);
@@ -94,8 +99,16 @@ export default function InlineEditableAmountWithCadence({
 
   const handleInputChange = (e) => {
     const value = e.target.value;
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-      setInputValue(value);
+    const cleanValue = value.replace(/,/g, '');
+
+    if (cleanValue === '' || /^\d*\.?\d{0,2}$/.test(cleanValue)) {
+      const parts = cleanValue.split('.');
+      if (parts[0]) {
+        const formatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        setInputValue(parts[1] !== undefined ? `${formatted}.${parts[1]}` : formatted);
+      } else {
+        setInputValue(value);
+      }
     }
   };
 
@@ -108,10 +121,15 @@ export default function InlineEditableAmountWithCadence({
     const nextCadence = CADENCE_CYCLE[nextIndex];
 
     // Convert the current input value to the new cadence
-    const currentInputAmount = parseFloat(inputValue);
+    const cleanValue = inputValue.replace(/,/g, '');
+    const currentInputAmount = parseFloat(cleanValue);
     if (!isNaN(currentInputAmount)) {
       const convertedAmount = convertCadence(currentInputAmount, selectedCadence, nextCadence);
-      setInputValue(convertedAmount.toFixed(2));
+      const formatted = convertedAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      setInputValue(formatted);
     }
 
     setSelectedCadence(nextCadence);

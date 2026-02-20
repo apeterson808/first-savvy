@@ -24,8 +24,11 @@ export default function InlineEditableAmount({
 
   const handleClick = () => {
     if (isLoading) return;
-    const numericValue = value.toFixed(2);
-    setInputValue(numericValue);
+    const formatted = value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    setInputValue(formatted);
     setIsEditing(true);
   };
 
@@ -44,7 +47,8 @@ export default function InlineEditableAmount({
   };
 
   const handleSave = async () => {
-    const numericValue = parseFloat(inputValue);
+    const cleanValue = inputValue.replace(/,/g, '');
+    const numericValue = parseFloat(cleanValue);
 
     if (isNaN(numericValue) || numericValue < 0) {
       setIsEditing(false);
@@ -65,8 +69,16 @@ export default function InlineEditableAmount({
 
   const handleInputChange = (e) => {
     const value = e.target.value;
-    if (value === '' || /^\d*\.?\d{0,2}$/.test(value)) {
-      setInputValue(value);
+    const cleanValue = value.replace(/,/g, '');
+
+    if (cleanValue === '' || /^\d*\.?\d{0,2}$/.test(cleanValue)) {
+      const parts = cleanValue.split('.');
+      if (parts[0]) {
+        const formatted = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        setInputValue(parts[1] !== undefined ? `${formatted}.${parts[1]}` : formatted);
+      } else {
+        setInputValue(value);
+      }
     }
   };
 
