@@ -3,7 +3,7 @@ import { supabase } from './supabaseClient';
 export const creditCardPaymentDetectionAPI = {
   async detectPayments(profileId, transactionIds = null) {
     try {
-      const { data, error } = await supabase.rpc('auto_detect_credit_card_payments', {
+      const { data, error } = await supabase.rpc('auto_detect_credit_card_payments_optimized', {
         p_profile_id: profileId,
         p_transaction_ids: transactionIds
       });
