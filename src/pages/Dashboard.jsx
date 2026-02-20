@@ -436,18 +436,23 @@ export default function Dashboard() {
       const percentage = budgetedAmount > 0 ? (spent / budgetedAmount) * 100 : 0;
 
       const isOverBudget = spent > budgetedAmount;
-      const isNearLimit = percentage >= 80 && percentage < 100;
+      const isNearLimit = percentage >= 75 && percentage < 100;
 
-      const categoryColor = categoryData?.color || '#64748b';
-      let progressColor = adjustColorOpacity(categoryColor, 0.5);
-      let bgColor = lightenColor(categoryColor, 85);
+      // Status-based pastel color scheme
+      let progressColor, bgColor;
 
       if (isOverBudget) {
-        progressColor = 'rgba(239, 68, 68, 0.5)';
+        // Red pastel for over budget (100%+)
+        progressColor = 'rgba(239, 68, 68, 0.7)';
         bgColor = '#fee2e2';
       } else if (isNearLimit) {
-        progressColor = 'rgba(245, 158, 11, 0.5)';
+        // Amber pastel for approaching limit (75-99%)
+        progressColor = 'rgba(245, 158, 11, 0.7)';
         bgColor = '#fef3c7';
+      } else {
+        // Green pastel for on-track (0-74%)
+        progressColor = 'rgba(34, 197, 94, 0.7)';
+        bgColor = '#dcfce7';
       }
 
       return {

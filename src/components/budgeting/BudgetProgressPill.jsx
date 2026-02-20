@@ -31,21 +31,29 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   const percentage = budgetedAmount > 0 ? (actualAmount / budgetedAmount) * 100 : 0;
   const remaining = budgetedAmount - actualAmount;
   const isOverBudget = actualAmount > budgetedAmount;
-  const isNearLimit = percentage >= 80 && percentage < 100;
+  const isNearLimit = percentage >= 75 && percentage < 100;
 
-  const categoryColor = categoryData?.color || '#64748b';
-
-  let progressColor = adjustColorOpacity(categoryColor, 0.5);
-  let bgColor = lightenColor(categoryColor, 85);
+  // Status-based pastel color scheme
+  let progressColor, bgColor;
 
   if (!isIncome && !isChild) {
     if (isOverBudget) {
-      progressColor = 'rgba(239, 68, 68, 0.5)';
+      // Red pastel for over budget (100%+)
+      progressColor = 'rgba(239, 68, 68, 0.7)';
       bgColor = '#fee2e2';
     } else if (isNearLimit) {
-      progressColor = 'rgba(245, 158, 11, 0.5)';
+      // Amber pastel for approaching limit (75-99%)
+      progressColor = 'rgba(245, 158, 11, 0.7)';
       bgColor = '#fef3c7';
+    } else {
+      // Green pastel for on-track (0-74%)
+      progressColor = 'rgba(34, 197, 94, 0.7)';
+      bgColor = '#dcfce7';
     }
+  } else {
+    // For income and child categories, use neutral gray
+    progressColor = 'rgba(100, 116, 139, 0.7)';
+    bgColor = '#f1f5f9';
   }
 
   const displayPercentage = Math.min(percentage, 100);
@@ -72,7 +80,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-slate-700" />
+            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-white" />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="font-semibold text-sm text-slate-900 truncate">
                 {categoryData?.display_name || 'Unknown Category'}
