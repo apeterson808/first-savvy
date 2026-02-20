@@ -210,7 +210,9 @@ export default function AddBudgetItemSheet({
       console.error('Error creating budget:', error);
 
       // Check if this is a budget validation error from the database trigger
-      const errorMessage = error?.message || '';
+      // Supabase errors can be in different places
+      const errorMessage = error?.message || error?.error?.message || error?.details || JSON.stringify(error);
+      console.log('Error message:', errorMessage);
 
       if (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category')) {
         // Try to open the adjustment dialog even though the error already occurred
@@ -283,7 +285,9 @@ export default function AddBudgetItemSheet({
       console.error('Error updating budget:', error);
 
       // Check if this is a budget validation error from the database trigger
-      const errorMessage = error?.message || '';
+      // Supabase errors can be in different places
+      const errorMessage = error?.message || error?.error?.message || error?.details || JSON.stringify(error);
+      console.log('Error message:', errorMessage);
 
       if (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category')) {
         // Try to open the adjustment dialog even though the error already occurred
@@ -444,6 +448,13 @@ export default function AddBudgetItemSheet({
     if (parentAccountId) {
       // Run synchronous validation check before attempting database insert
       try {
+        console.log('Running validation for child budget:', {
+          selectedCategoryId,
+          newAmount,
+          parentAccountId,
+          profileId: activeProfile.id
+        });
+
         const { data: validationData, error: validationError } = await firstsavvy.supabase.rpc(
           'validate_child_budget_allocation',
           {
@@ -454,6 +465,8 @@ export default function AddBudgetItemSheet({
           }
         );
 
+        console.log('Validation result:', { validationData, validationError });
+
         if (validationError) {
           console.error('Validation error:', validationError);
           toast.error('Failed to validate budget allocation');
@@ -462,9 +475,11 @@ export default function AddBudgetItemSheet({
 
         if (validationData && validationData.length > 0) {
           const validation = validationData[0];
+          console.log('Validation object:', validation);
 
           // If validation failed, open the adjustment dialog
           if (!validation.is_valid) {
+            console.log('Validation failed, opening dialog');
             const parentCategory = availableCategories.find(c => c.id === parentAccountId) ||
               queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === parentAccountId);
 
