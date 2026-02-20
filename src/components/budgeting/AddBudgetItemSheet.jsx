@@ -209,6 +209,9 @@ export default function AddBudgetItemSheet({
     onError: async (error) => {
       console.error('Error creating budget:', error);
 
+      // Add a temporary toast to verify new code is loaded
+      toast.info('NEW CODE LOADED - Error handler running');
+
       // Check if this is a budget validation error from the database trigger
       const errorMessage = error?.message || '';
       const errorCode = error?.code;
@@ -218,6 +221,12 @@ export default function AddBudgetItemSheet({
       console.log('Checking condition:', errorMessage.includes('Budget exceeds parent'));
 
       // Check for P0001 code (database exception) and budget-related message
+      if (errorCode === 'P0001' && (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category'))) {
+        toast.success('CONDITION MATCHED - Opening dialog');
+      } else {
+        toast.error(`CONDITION NOT MATCHED - Code: ${errorCode}, Has Message: ${!!errorMessage}`);
+      }
+
       if (errorCode === 'P0001' && (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category'))) {
         // Try to open the adjustment dialog even though the error already occurred
         const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
