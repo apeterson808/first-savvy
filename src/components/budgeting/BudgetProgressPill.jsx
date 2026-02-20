@@ -33,27 +33,22 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   const isOverBudget = actualAmount > budgetedAmount;
   const isNearLimit = percentage >= 75 && percentage < 100;
 
-  // Status-based pastel color scheme
-  let progressColor, bgColor;
+  // Neutral base with subtle status indicators
+  let progressColor, bgColor, statusIndicator;
 
+  // Default: neutral slate for all items
+  progressColor = 'rgba(100, 116, 139, 0.5)';
+  bgColor = '#f8fafc';
+
+  // Only show warning colors for expenses that are concerning
   if (!isIncome && !isChild) {
     if (isOverBudget) {
-      // Red pastel for over budget (100%+)
-      progressColor = 'rgba(239, 68, 68, 0.7)';
-      bgColor = '#fee2e2';
+      // Subtle red indicator for over budget
+      statusIndicator = 'rgba(239, 68, 68, 0.9)';
     } else if (isNearLimit) {
-      // Amber pastel for approaching limit (75-99%)
-      progressColor = 'rgba(245, 158, 11, 0.7)';
-      bgColor = '#fef3c7';
-    } else {
-      // Green pastel for on-track (0-74%)
-      progressColor = 'rgba(34, 197, 94, 0.7)';
-      bgColor = '#dcfce7';
+      // Subtle amber indicator for approaching limit
+      statusIndicator = 'rgba(245, 158, 11, 0.8)';
     }
-  } else {
-    // For income and child categories, use neutral gray
-    progressColor = 'rgba(100, 116, 139, 0.7)';
-    bgColor = '#f1f5f9';
   }
 
   const displayPercentage = Math.min(percentage, 100);
@@ -69,7 +64,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   return (
     <div className="group relative">
-      <div className="relative h-7 rounded-lg overflow-hidden shadow-sm" style={{ backgroundColor: bgColor }}>
+      <div className="relative h-7 rounded-lg overflow-hidden shadow-sm border border-slate-200" style={{ backgroundColor: bgColor }}>
         <div
           className="absolute left-0 top-0 h-full transition-all duration-700 ease-out"
           style={{
@@ -78,9 +73,16 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
           }}
         />
 
+        {statusIndicator && (
+          <div
+            className="absolute left-0 top-0 w-1 h-full transition-all duration-700 ease-out"
+            style={{ backgroundColor: statusIndicator }}
+          />
+        )}
+
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-white" />
+            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="font-semibold text-sm text-slate-900 truncate">
                 {categoryData?.display_name || 'Unknown Category'}
