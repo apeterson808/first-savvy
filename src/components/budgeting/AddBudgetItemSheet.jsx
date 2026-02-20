@@ -212,11 +212,19 @@ export default function AddBudgetItemSheet({
       console.log('Error message:', error?.message);
       console.log('Full error object:', JSON.stringify(error, null, 2));
 
+      // Extract the actual error (could be nested in different ways)
+      const actualError = error?.body || error;
+      const errorCode = actualError?.code || error?.code;
+      const errorMessage = actualError?.message || error?.message || '';
+
+      console.log('Extracted error code:', errorCode);
+      console.log('Extracted error message:', errorMessage);
+
       // Check if this is a parent budget constraint violation (P0001)
-      if (error?.code === 'P0001' && error?.message?.includes('Budget exceeds parent')) {
+      if (errorCode === 'P0001' && errorMessage.includes('Budget exceeds parent')) {
         // Parse the error message to extract details
         // Example: "Budget exceeds parent: \"Gifts\" requests $100.00, but parent has $15.00 available ($0 allocated to siblings)"
-        const match = error.message.match(/requests \$?([\d,]+\.?\d*)/);
+        const match = errorMessage.match(/requests \$?([\d,]+\.?\d*)/);
         const requestedAmount = match ? parseFloat(match[1].replace(/,/g, '')) : parseFloat(parseCurrency(limitAmount));
 
         const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
@@ -254,7 +262,7 @@ export default function AddBudgetItemSheet({
         }
       }
 
-      toast.error(error?.message || 'Failed to create budget item');
+      toast.error(errorMessage || 'Failed to create budget item');
     }
   });
 
