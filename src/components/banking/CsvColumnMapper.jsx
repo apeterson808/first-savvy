@@ -283,6 +283,29 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         </div>
       )}
 
+      {/* Available CSV Columns */}
+      {headers.length > 0 && (
+        <div className="bg-slate-50/80 border border-slate-200 rounded-lg p-3">
+          <h3 className="text-[10px] font-semibold text-slate-600 mb-2 uppercase tracking-wider">
+            Available CSV Columns ({headers.length})
+          </h3>
+          <div className="flex flex-wrap gap-1.5">
+            {headers.map((header, idx) => (
+              <Badge
+                key={idx}
+                variant="outline"
+                className="text-[10px] font-normal bg-white border-slate-300 text-slate-700 px-2 py-0.5"
+              >
+                {header}
+              </Badge>
+            ))}
+          </div>
+          <p className="text-[10px] text-slate-500 mt-2">
+            Map the columns below to import your data. Unmapped columns will be ignored.
+          </p>
+        </div>
+      )}
+
       {/* Column Mappings */}
       <div className="space-y-3">
         <div className="grid grid-cols-2 gap-2.5">
@@ -435,22 +458,22 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         <h3 className="text-[9px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">Preview (First 3 Rows)</h3>
         <Card className="overflow-hidden border-slate-200">
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full table-fixed">
               <thead className="sticky top-0 bg-slate-100">
                 <tr className="bg-slate-100 h-8">
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2 text-xs w-[90px]">
                     Date
                   </th>
                   <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
                     Description
                   </th>
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs w-[100px]">
                     Spent
                   </th>
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs w-[100px]">
                     Received
                   </th>
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs">
+                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs w-[150px]">
                     Category
                   </th>
                 </tr>
@@ -466,28 +489,34 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                   previewTransactions.map((transaction, idx) => (
                     <tr key={idx} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}>
                       <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1 whitespace-nowrap">
-                        {transaction.date && !isNaN(new Date(transaction.date).getTime())
-                          ? format(new Date(transaction.date), 'MM/dd/yy')
-                          : 'Invalid'}
+                        <div className="text-xs overflow-hidden text-ellipsis">
+                          {transaction.date && !isNaN(new Date(transaction.date).getTime())
+                            ? format(new Date(transaction.date), 'MM/dd/yy')
+                            : 'Invalid'}
+                        </div>
                       </td>
-                      <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 max-w-[300px]">
+                      <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
                         <div className="text-xs px-1 overflow-hidden text-ellipsis whitespace-nowrap">{transaction.description || '—'}</div>
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                        {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
-                          <span>
-                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        )}
+                        <div className="text-xs overflow-hidden text-ellipsis">
+                          {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                            <span>
+                              ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                        {transaction.type === 'income' && (
-                          <span>
-                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
-                        )}
+                        <div className="text-xs overflow-hidden text-ellipsis">
+                          {transaction.type === 'income' && (
+                            <span>
+                              ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                          )}
+                        </div>
                       </td>
-                      <td className="border-r border-slate-200 py-1 px-4 pl-2 max-w-[200px]">
+                      <td className="border-r border-slate-200 py-1 px-4 pl-2">
                         <div className="text-xs px-1 text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">
                           {transaction.category || 'Select category'}
                         </div>
