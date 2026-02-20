@@ -11,14 +11,12 @@ import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetTrackerContainer from '../components/budgeting/BudgetTrackerContainer';
 import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import CategoriesTab from '../components/budgeting/CategoriesTab';
-import ParentBudgetAdjustmentDialog from '../components/budgeting/ParentBudgetAdjustmentDialog';
 
 export default function Budgeting() {
   const queryClient = useQueryClient();
   const { user, connectionError } = useAuth();
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
-  const [showParentDialog, setShowParentDialog] = useState(false);
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || 'overview';
@@ -77,47 +75,8 @@ export default function Budgeting() {
     );
   }
 
-  const sampleParentCategory = {
-    display_name: 'Housing',
-    account_detail: 'Housing'
-  };
-
-  const sampleChildCategory = {
-    display_name: 'Rent',
-    account_detail: 'Rent'
-  };
-
-  const sampleValidationInfo = {
-    parent_budget: 2000,
-    allocated_to_children: 1500,
-    available_budget: 500,
-    sibling_budgets: [
-      { name: 'Utilities', amount: 300 },
-      { name: 'Insurance', amount: 200 },
-      { name: 'HOA Fees', amount: 1000 }
-    ]
-  };
-
-  const sampleRequestedAmount = 1200;
-
-  const handleConfirm = (newAmount) => {
-    console.log('New parent budget amount:', newAmount);
-    setShowParentDialog(false);
-  };
-
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-4">
-        <Button
-          onClick={() => setShowParentDialog(true)}
-          variant="outline"
-          className="border-amber-500 text-amber-600 hover:bg-amber-50"
-        >
-          <AlertCircle className="w-4 h-4 mr-2" />
-          Demo Parent Budget Dialog
-        </Button>
-      </div>
-
       {connectionError && (
         <Alert variant="destructive" className="mb-6">
           <AlertCircle className="h-4 w-4" />
@@ -195,16 +154,6 @@ export default function Budgeting() {
           editingBudget={editingBudget}
         />
       )}
-
-      <ParentBudgetAdjustmentDialog
-        open={showParentDialog}
-        onOpenChange={setShowParentDialog}
-        parentCategory={sampleParentCategory}
-        childCategory={sampleChildCategory}
-        requestedAmount={sampleRequestedAmount}
-        validationInfo={sampleValidationInfo}
-        onConfirm={handleConfirm}
-      />
     </div>
   );
 }
