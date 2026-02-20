@@ -33,22 +33,28 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   const isOverBudget = actualAmount > budgetedAmount;
   const isNearLimit = percentage >= 75 && percentage < 100;
 
-  // Neutral base with subtle status indicators
+  // Pastel color scheme based on budget status
   let progressColor, bgColor, statusIndicator;
 
-  // Default: neutral slate for all items
-  progressColor = 'rgba(100, 116, 139, 0.5)';
+  // Default: very light pastel colors based on status
   bgColor = '#f8fafc';
 
-  // Only show warning colors for expenses that are concerning
   if (!isIncome && !isChild) {
     if (isOverBudget) {
-      // Subtle red indicator for over budget
+      // Very light pastel red for over budget (100%+)
+      progressColor = 'rgba(254, 202, 202, 0.85)';
       statusIndicator = 'rgba(239, 68, 68, 0.9)';
     } else if (isNearLimit) {
-      // Subtle amber indicator for approaching limit
+      // Very light pastel amber for approaching limit (75-99%)
+      progressColor = 'rgba(254, 243, 199, 0.85)';
       statusIndicator = 'rgba(245, 158, 11, 0.8)';
+    } else {
+      // Very light pastel green for on-track (0-74%)
+      progressColor = 'rgba(220, 252, 231, 0.85)';
     }
+  } else {
+    // For income and child categories, use neutral gray
+    progressColor = 'rgba(241, 245, 249, 0.85)';
   }
 
   const displayPercentage = Math.min(percentage, 100);
