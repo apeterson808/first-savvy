@@ -38,7 +38,6 @@ import {
   Edit,
   Trash2,
   Copy,
-  TrendingUp,
   Filter,
   FileText,
   Play,
@@ -146,13 +145,6 @@ export default function RulesTab() {
 
   const manualRules = rules.filter(r => !r.created_from_transaction_id);
   const suggestedRules = rules.filter(r => !!r.created_from_transaction_id);
-
-  const enabledRules = manualRules.filter(r => r.is_enabled).length;
-  const disabledRules = manualRules.filter(r => !r.is_enabled).length;
-  const totalMatches = manualRules.reduce((sum, r) => sum + (r.times_matched || 0), 0);
-  const avgAcceptanceRate = manualRules.length > 0
-    ? manualRules.reduce((sum, r) => sum + (r.acceptance_rate || 0), 0) / manualRules.length
-    : 0;
 
   if (!activeProfile) {
     return (
@@ -311,60 +303,6 @@ export default function RulesTab() {
           <Plus className="w-4 h-4 mr-2" />
           Create Rule
         </Button>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Rules</CardDescription>
-            <CardTitle className="text-3xl">{manualRules.length}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-2 text-sm text-slate-600">
-              <Badge variant="secondary" className="bg-green-100 text-green-700">
-                {enabledRules} enabled
-              </Badge>
-              <Badge variant="secondary" className="bg-slate-100 text-slate-700">
-                {disabledRules} disabled
-              </Badge>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Total Matches</CardDescription>
-            <CardTitle className="text-3xl">{totalMatches}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600">Across all rules</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Avg. Acceptance</CardDescription>
-            <CardTitle className="text-3xl">{avgAcceptanceRate.toFixed(0)}%</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-1 text-sm text-green-600">
-              <TrendingUp className="w-4 h-4" />
-              Rule quality
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardDescription>Most Effective</CardDescription>
-            <CardTitle className="text-3xl">
-              {manualRules.filter(r => r.acceptance_rate >= 75 && r.times_matched > 5).length}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-slate-600">Acceptance ≥ 75%</p>
-          </CardContent>
-        </Card>
       </div>
 
       <Card>
