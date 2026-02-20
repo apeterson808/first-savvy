@@ -45,7 +45,11 @@ export default function InlineEditableAmountWithCadence({
     setIsEditing(true);
   };
 
-  const handleBlur = () => {
+  const handleBlur = (e) => {
+    // Don't close if clicking on the cadence button
+    if (e.relatedTarget && e.relatedTarget.closest('[data-cadence-button]')) {
+      return;
+    }
     handleSave();
   };
 
@@ -96,7 +100,9 @@ export default function InlineEditableAmountWithCadence({
   };
 
   const handleCadenceClick = (e) => {
+    e.preventDefault();
     e.stopPropagation();
+
     const currentIndex = CADENCE_CYCLE.indexOf(selectedCadence);
     const nextIndex = (currentIndex + 1) % CADENCE_CYCLE.length;
     const nextCadence = CADENCE_CYCLE[nextIndex];
@@ -109,6 +115,11 @@ export default function InlineEditableAmountWithCadence({
     }
 
     setSelectedCadence(nextCadence);
+
+    // Keep focus on input after changing cadence
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
   };
 
   const isZero = displayAmount === 0;
@@ -133,7 +144,9 @@ export default function InlineEditableAmountWithCadence({
             size="sm"
             className="h-6 px-2 text-xs text-slate-600 hover:text-slate-900 hover:bg-slate-100 flex-shrink-0"
             onClick={handleCadenceClick}
+            onMouseDown={(e) => e.preventDefault()}
             type="button"
+            data-cadence-button
           >
             {CADENCE_LABELS[selectedCadence]}
           </Button>

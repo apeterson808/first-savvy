@@ -115,10 +115,16 @@ export function getAllCadenceValues(amount, sourceCadence) {
 
 export function formatAccountingAmount(amount) {
   if (typeof amount !== 'number' || isNaN(amount)) {
-    return { sign: '$', amount: '0' };
+    return { sign: '$', amount: '0.00' };
   }
 
   const roundedAmount = Math.round(amount);
+
+  // If the amount is 0, show "0.00" instead of "0"
+  if (roundedAmount === 0) {
+    return { sign: '$', amount: '0.00' };
+  }
+
   const formattedNumber = roundedAmount.toLocaleString('en-US');
 
   return {
