@@ -33,8 +33,8 @@ export default function InlineEditableAmountWithCadence({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      // Only select all if the value is 0.00
-      if (displayAmount === 0) {
+      // Auto-select all text if there's an actual amount (not 0.00)
+      if (displayAmount !== 0) {
         inputRef.current.select();
       }
     }
