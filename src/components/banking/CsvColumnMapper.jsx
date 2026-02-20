@@ -14,11 +14,9 @@ import { format } from 'date-fns';
 const DETECTION_PATTERNS = {
   date: ['date', 'trans date', 'transaction date', 'posted date', 'post date', 'posting date', 'value date', 'entry date'],
   description: ['description', 'merchant', 'payee', 'memo', 'details', 'transaction', 'trans desc', 'narrative', 'particulars'],
-  amount: ['amount', 'total', 'transaction amount', 'trans amount', 'value', 'sum'],
-  balance: ['balance', 'running balance', 'account balance', 'current balance'],
   debit: ['debit', 'withdrawal', 'withdrawals', 'payment', 'expense', 'dr', 'out', 'spent', 'paid'],
   credit: ['credit', 'deposit', 'deposits', 'income', 'receipt', 'cr', 'in', 'received'],
-  type: ['type', 'transaction type', 'trans type', 'txn type', 'category', 'classification'],
+  toFrom: ['payee', 'merchant', 'vendor', 'customer', 'from', 'to', 'counterparty', 'name', 'company', 'party', 'payor', 'recipient'],
   category: ['category', 'class', 'classification', 'group', 'expense category']
 };
 
@@ -38,8 +36,7 @@ const autoDetectMappings = (headers) => {
   const detectedMappings = {
     date: detectColumn(headers, DETECTION_PATTERNS.date),
     description: detectColumn(headers, DETECTION_PATTERNS.description),
-    amount: detectColumn(headers, DETECTION_PATTERNS.amount),
-    type: detectColumn(headers, DETECTION_PATTERNS.type),
+    toFrom: detectColumn(headers, DETECTION_PATTERNS.toFrom),
     category: detectColumn(headers, DETECTION_PATTERNS.category)
   };
 
@@ -63,14 +60,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   const [columnMappings, setColumnMappings] = useState({
     date: '',
     description: '',
-    amount: '',
-    type: '',
-    category: '',
-    checkNumber: '',
-    referenceNumber: '',
-    balance: '',
-    memo: '',
-    extendedDescription: ''
+    toFrom: '',
+    category: ''
   });
 
   const [dateFormat, setDateFormat] = useState('auto');
@@ -92,16 +83,24 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         const { data: savedConfig } = await getCsvMappingConfig(profileId, institutionName);
 
         if (savedConfig && savedConfig.column_mappings) {
-          setColumnMappings(savedConfig.column_mappings);
+          const cleanMappings = {
+            date: savedConfig.column_mappings.date || '',
+            description: savedConfig.column_mappings.description || '',
+            toFrom: savedConfig.column_mappings.toFrom || '',
+            category: savedConfig.column_mappings.category || ''
+          };
+          setColumnMappings(cleanMappings);
           setDateFormat(savedConfig.date_format || 'auto');
           setAmountType(savedConfig.amount_type || 'auto');
           setDebitColumn(savedConfig.debit_column || '');
           setCreditColumn(savedConfig.credit_column || '');
 
           const detectedFieldsList = [];
-          Object.entries(savedConfig.column_mappings).forEach(([field, value]) => {
+          Object.entries(cleanMappings).forEach(([field, value]) => {
             if (value) detectedFieldsList.push(field);
           });
+          if (savedConfig.debit_column) detectedFieldsList.push('debit');
+          if (savedConfig.credit_column) detectedFieldsList.push('credit');
           setAutoDetectedFields(detectedFieldsList);
           setSavedMappingLoaded(true);
           setHasAutoDetected(true);
@@ -213,7 +212,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
   };
 
   const isValid = columnMappings.date && columnMappings.description &&
-    (columnMappings.amount || (debitColumn && creditColumn));
+    ((amountType === 'separate_columns' && debitColumn && creditColumn) ||
+     (amountType !== 'separate_columns' && (debitColumn || creditColumn)));
 
   useEffect(() => {
     if (onValidationChange) {
@@ -299,7 +299,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           {/* Date */}
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <Label className="text-[11px] font-medium text-slate-700">Date Column *</Label>
+              <Label className="text-[11px] font-medium text-slate-700">Date *</Label>
               {autoDetectedFields.includes('date') && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                   <Sparkles className="w-2 h-2 mr-0.5" />
@@ -324,7 +324,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           {/* Description */}
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <Label className="text-[11px] font-medium text-slate-700">Description Column *</Label>
+              <Label className="text-[11px] font-medium text-slate-700">Description *</Label>
               {autoDetectedFields.includes('description') && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                   <Sparkles className="w-2 h-2 mr-0.5" />
@@ -359,8 +359,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             <ClickThroughSelectItem value="single_spent">Single Column (spent)</ClickThroughSelectItem>
             <ClickThroughSelectItem value="single_received">Single Column (received)</ClickThroughSelectItem>
             <ClickThroughSelectItem value="separate_columns">Separate Debit/Credit</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="always_expense">Single Column (all expenses)</ClickThroughSelectItem>
-            <ClickThroughSelectItem value="always_income">Single Column (all income)</ClickThroughSelectItem>
           </ClickThroughSelect>
         </div>
 
@@ -369,7 +367,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
           <div className="grid grid-cols-2 gap-2.5">
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Spent Column *</Label>
+                <Label className="text-[11px] font-medium text-slate-700">Spent *</Label>
                 {debitColumn && amountType === 'separate_columns' && (
                   <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                     <Sparkles className="w-2 h-2 mr-0.5" />
@@ -392,7 +390,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             </div>
             <div>
               <div className="flex items-center gap-1 mb-1">
-                <Label className="text-[11px] font-medium text-slate-700">Received Column *</Label>
+                <Label className="text-[11px] font-medium text-slate-700">Received *</Label>
                 {creditColumn && amountType === 'separate_columns' && (
                   <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                     <Sparkles className="w-2 h-2 mr-0.5" />
@@ -417,8 +415,10 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
         ) : (
           <div>
             <div className="flex items-center gap-1 mb-1">
-              <Label className="text-[11px] font-medium text-slate-700">Amount Column *</Label>
-              {autoDetectedFields.includes('amount') && (
+              <Label className="text-[11px] font-medium text-slate-700">
+                {amountType === 'single_spent' ? 'Spent *' : amountType === 'single_received' ? 'Received *' : 'Amount *'}
+              </Label>
+              {(debitColumn || creditColumn) && amountType !== 'separate_columns' && (
                 <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
                   <Sparkles className="w-2 h-2 mr-0.5" />
                   Auto
@@ -426,9 +426,18 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
               )}
             </div>
             <ClickThroughSelect
-              value={columnMappings.amount}
-              onValueChange={(val) => setColumnMappings(prev => ({ ...prev, amount: val }))}
-              placeholder="Select amount column"
+              value={amountType === 'single_spent' ? debitColumn : amountType === 'single_received' ? creditColumn : (debitColumn || creditColumn)}
+              onValueChange={(val) => {
+                if (amountType === 'single_spent') {
+                  setDebitColumn(val);
+                } else if (amountType === 'single_received') {
+                  setCreditColumn(val);
+                } else {
+                  setDebitColumn(val);
+                  setCreditColumn('');
+                }
+              }}
+              placeholder={`Select ${amountType === 'single_spent' ? 'spent' : amountType === 'single_received' ? 'received' : 'amount'} column`}
               triggerClassName="h-8 text-xs bg-white"
             >
               {headers.map((header, idx) => (
@@ -446,13 +455,21 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
             Optional Fields
           </h3>
           <div className="grid grid-cols-2 gap-2.5">
-            {/* Transaction Type */}
+            {/* To/From */}
             <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Transaction Type</Label>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-700">To/From</Label>
+                {autoDetectedFields.includes('toFrom') && (
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
+                    Auto
+                  </Badge>
+                )}
+              </div>
               <ClickThroughSelect
-                value={columnMappings.type}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, type: val }))}
-                placeholder="Select type column"
+                value={columnMappings.toFrom}
+                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, toFrom: val }))}
+                placeholder="Select contact column"
                 triggerClassName="h-8 text-xs bg-white"
               >
                 <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
@@ -466,7 +483,15 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
 
             {/* Category */}
             <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Category</Label>
+              <div className="flex items-center gap-1 mb-1">
+                <Label className="text-[11px] font-medium text-slate-700">Category</Label>
+                {autoDetectedFields.includes('category') && (
+                  <Badge variant="secondary" className="h-3.5 px-1 text-[8px] font-normal bg-blue-50 text-blue-600 border-blue-200">
+                    <Sparkles className="w-2 h-2 mr-0.5" />
+                    Auto
+                  </Badge>
+                )}
+              </div>
               <ClickThroughSelect
                 value={columnMappings.category}
                 onValueChange={(val) => setColumnMappings(prev => ({ ...prev, category: val }))}
@@ -481,96 +506,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                 ))}
               </ClickThroughSelect>
             </div>
-
-            {/* Check Number */}
-            <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Check Number</Label>
-              <ClickThroughSelect
-                value={columnMappings.checkNumber}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, checkNumber: val }))}
-                placeholder="Select check # column"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            {/* Reference Number */}
-            <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Reference Number</Label>
-              <ClickThroughSelect
-                value={columnMappings.referenceNumber}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, referenceNumber: val }))}
-                placeholder="Select reference # column"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            {/* Balance */}
-            <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Balance</Label>
-              <ClickThroughSelect
-                value={columnMappings.balance}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, balance: val }))}
-                placeholder="Select balance column"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-
-            {/* Memo */}
-            <div>
-              <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Memo</Label>
-              <ClickThroughSelect
-                value={columnMappings.memo}
-                onValueChange={(val) => setColumnMappings(prev => ({ ...prev, memo: val }))}
-                placeholder="Select memo column"
-                triggerClassName="h-8 text-xs bg-white"
-              >
-                <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-                {headers.map((header, idx) => (
-                  <ClickThroughSelectItem key={idx} value={header}>
-                    {header}
-                  </ClickThroughSelectItem>
-                ))}
-              </ClickThroughSelect>
-            </div>
-          </div>
-
-          {/* Extended Description - Full Width */}
-          <div className="mt-2.5">
-            <Label className="text-[11px] font-medium text-slate-700 mb-1 block">Extended Description</Label>
-            <ClickThroughSelect
-              value={columnMappings.extendedDescription}
-              onValueChange={(val) => setColumnMappings(prev => ({ ...prev, extendedDescription: val }))}
-              placeholder="Select extended description column"
-              triggerClassName="h-8 text-xs bg-white"
-            >
-              <ClickThroughSelectItem value="">None</ClickThroughSelectItem>
-              {headers.map((header, idx) => (
-                <ClickThroughSelectItem key={idx} value={header}>
-                  {header}
-                </ClickThroughSelectItem>
-              ))}
-            </ClickThroughSelect>
           </div>
         </div>
 
@@ -596,15 +531,22 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                   <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap text-xs w-[100px]">
                     Received
                   </th>
-                  <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs w-[150px]">
-                    Category
-                  </th>
+                  {columnMappings.toFrom && (
+                    <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs w-[120px]">
+                      To/From
+                    </th>
+                  )}
+                  {columnMappings.category && (
+                    <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left px-4 pl-2 py-2 text-xs w-[120px]">
+                      Category
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
                 {previewTransactions.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-slate-500 text-xs">
+                    <td colSpan={4 + (columnMappings.toFrom ? 1 : 0) + (columnMappings.category ? 1 : 0)} className="text-center py-4 text-slate-500 text-xs">
                       Map required fields to see preview
                     </td>
                   </tr>
@@ -623,27 +565,36 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                         <div className="text-xs overflow-hidden text-ellipsis">
-                          {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                          {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') ? (
                             <span>
                               ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                          )}
+                          ) : '—'}
                         </div>
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                         <div className="text-xs overflow-hidden text-ellipsis">
-                          {transaction.type === 'income' && (
+                          {transaction.type === 'income' ? (
                             <span>
                               ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                          )}
+                          ) : '—'}
                         </div>
                       </td>
-                      <td className="border-r border-slate-200 py-1 px-4 pl-2">
-                        <div className="text-xs px-1 text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">
-                          {transaction.category || 'Select category'}
-                        </div>
-                      </td>
+                      {columnMappings.toFrom && (
+                        <td className="border-r border-slate-200 py-1 px-4 pl-2">
+                          <div className="text-xs px-1 text-slate-700 overflow-hidden text-ellipsis whitespace-nowrap">
+                            {transaction.contact_name || '—'}
+                          </div>
+                        </td>
+                      )}
+                      {columnMappings.category && (
+                        <td className="border-r border-slate-200 py-1 px-4 pl-2">
+                          <div className="text-xs px-1 text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">
+                            {transaction.csv_category || '—'}
+                          </div>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}
