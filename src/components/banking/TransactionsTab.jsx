@@ -1066,10 +1066,37 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   // Calculate match confidence percentage
   const calculateMatchConfidence = (transaction, match) => {
+    const amountDiff = Math.abs(Math.abs(transaction.amount) - Math.abs(match.amount));
+    const tDate = new Date(transaction.date);
+    const mDate = new Date(match.date);
+    const daysDiff = Math.abs((tDate - mDate) / (1000 * 60 * 60 * 24));
+
+    // Check if this is a potential credit card payment match
+    const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
+    const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id);
+
+    const isCCPaymentPair =
+      transAccount && matchAccount &&
+      (
+        (transAccount.account_detail === 'CreditCard' &&
+         ['Checking', 'Savings', 'MoneyMarket'].includes(matchAccount.account_detail)) ||
+        (matchAccount.account_detail === 'CreditCard' &&
+         ['Checking', 'Savings', 'MoneyMarket'].includes(transAccount.account_detail))
+      ) &&
+      Math.abs(transaction.amount + match.amount) < 0.01; // Opposite signs, matching amounts
+
+    // For CC payment pairs with matching amounts, use simplified high-confidence scoring
+    if (isCCPaymentPair && amountDiff < 0.01) {
+      if (daysDiff === 0) return 95;
+      if (daysDiff <= 1) return 90;
+      if (daysDiff <= 5) return 85;
+      return 75;
+    }
+
+    // Original calculation for other matches
     let confidence = 0;
 
     // Amount match (40 points for exact, scaled down for differences)
-    const amountDiff = Math.abs(transaction.amount - match.amount);
     if (amountDiff < 0.01) {
       confidence += 40;
     } else {
@@ -1077,9 +1104,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
 
     // Date proximity (30 points, decreasing with distance)
-    const tDate = new Date(transaction.date);
-    const mDate = new Date(match.date);
-    const daysDiff = Math.abs((tDate - mDate) / (1000 * 60 * 60 * 24));
     if (daysDiff === 0) {
       confidence += 30;
     } else if (daysDiff <= 1) {
@@ -3158,7 +3182,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                       <tbody>
                                                         {matches.filter(match => !currentlyPaired || match.id !== currentlyPaired.id).map(match => {
                                                           const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
-                                                          const confidence = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters ? 100 : calculateMatchConfidence(transaction, match);
+
+                                                          // Use stored confidence from auto-detection if available, otherwise calculate
+                                                          let confidence;
+                                                          if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters) {
+                                                            confidence = 100;
+                                                          } else if (match.cc_payment_match_confidence && match.cc_payment_pair_id === transaction.cc_payment_pair_id) {
+                                                            // Use stored confidence for auto-detected CC payment matches
+                                                            confidence = match.cc_payment_match_confidence;
+                                                          } else if (match.transfer_match_confidence && match.transfer_pair_id === transaction.transfer_pair_id) {
+                                                            // Use stored confidence for auto-detected transfer matches
+                                                            confidence = match.transfer_match_confidence;
+                                                          } else {
+                                                            // Calculate confidence for manual suggestions
+                                                            confidence = calculateMatchConfidence(transaction, match);
+                                                          }
+
                                                           const isSelected = selectedMatches[transaction.id] === match.id;
                                                           const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
                                                           const matchCategory = chartAccounts.find(c => c.id === match.category_account_id);
