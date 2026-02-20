@@ -119,7 +119,7 @@ export default function InlineEditableAmount({
 
   if (isEditing) {
     return (
-      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''}`}>
+      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''}`}>
         <input
           ref={inputRef}
           type="text"
@@ -137,7 +137,7 @@ export default function InlineEditableAmount({
     <td
       className={`cursor-pointer hover:bg-slate-50/70 transition-colors ${
         isLoading ? 'opacity-50' : ''
-      } ${hasBorder ? 'border-r border-slate-100' : ''}`}
+      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''}`}
       onClick={handleClick}
     >
       {isLoading ? (

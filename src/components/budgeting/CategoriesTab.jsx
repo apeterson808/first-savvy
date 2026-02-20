@@ -615,7 +615,7 @@ export default function CategoriesTab() {
                         </th>
                         <th className="py-2 px-4 text-left font-normal w-[14%]">Daily</th>
                         <th className="py-2 px-4 text-left font-normal w-[14%]">Weekly</th>
-                        <th className="py-2 px-4 text-left font-medium w-[14%]">Monthly</th>
+                        <th className="py-2 px-4 text-left font-medium w-[14%] bg-slate-50/50">Monthly</th>
                         <th className="py-2 px-4 text-left font-normal w-[14%]">Yearly</th>
                         <th className="py-2 px-4 text-right font-bold w-[14%]">Action</th>
                       </>
@@ -659,7 +659,7 @@ export default function CategoriesTab() {
                           <span className={`text-right ${totals.weekly === 0 ? 'font-semibold' : ''}`}>{weeklyFormatted.amount}</span>
                         </div>
                       </td>
-                      <td className="px-4 py-2 border-r border-slate-100">
+                      <td className="px-4 py-2 border-r border-slate-100 bg-slate-50/50">
                         <div className="flex justify-between tabular-nums font-medium">
                           <span>{monthlyFormatted.sign}</span>
                           <span className="text-right">{monthlyFormatted.amount}</span>
