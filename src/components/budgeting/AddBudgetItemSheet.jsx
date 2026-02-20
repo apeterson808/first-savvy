@@ -210,23 +210,15 @@ export default function AddBudgetItemSheet({
       console.error('Error creating budget:', error);
 
       // Check if this is a budget validation error from the database trigger
-      // Supabase errors can be in different places
-      let errorMessage = error?.message || '';
-
-      // If the message is empty, try to parse from other error properties
-      if (!errorMessage && error?.details) {
-        errorMessage = error.details;
-      }
-
-      // Sometimes the error code is P0001 for database exceptions
-      if (!errorMessage && error?.code === 'P0001' && error?.hint) {
-        errorMessage = error.hint;
-      }
+      const errorMessage = error?.message || '';
+      const errorCode = error?.code;
 
       console.log('Error message:', errorMessage);
-      console.log('Error code:', error?.code);
+      console.log('Error code:', errorCode);
+      console.log('Checking condition:', errorMessage.includes('Budget exceeds parent'));
 
-      if (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category')) {
+      // Check for P0001 code (database exception) and budget-related message
+      if (errorCode === 'P0001' && (errorMessage.includes('Budget exceeds parent') || errorMessage.includes('Cannot create budget for child category'))) {
         // Try to open the adjustment dialog even though the error already occurred
         const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
         const parentAccountId = selectedAccount?.parent_account_id;
