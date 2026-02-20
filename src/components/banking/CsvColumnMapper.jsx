@@ -465,7 +465,7 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                 ) : (
                   previewTransactions.map((transaction, idx) => (
                     <tr key={idx} className={`${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}>
-                      <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
+                      <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1 whitespace-nowrap">
                         {transaction.date && !isNaN(new Date(transaction.date).getTime())
                           ? format(new Date(transaction.date), 'MM/dd/yy')
                           : 'Invalid'}
@@ -487,10 +487,10 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                           </span>
                         )}
                       </td>
-                      <td className="border-r border-slate-200 py-1 px-4 pl-2">
-                        <span className="text-xs px-1 text-slate-500">
+                      <td className="border-r border-slate-200 py-1 px-4 pl-2 max-w-[200px]">
+                        <div className="text-xs px-1 text-slate-500 overflow-hidden text-ellipsis whitespace-nowrap">
                           {transaction.category || 'Select category'}
-                        </span>
+                        </div>
                       </td>
                     </tr>
                   ))
