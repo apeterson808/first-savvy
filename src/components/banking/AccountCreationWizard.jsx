@@ -1610,6 +1610,54 @@ export default function AccountCreationWizard({
     return true;
   };
 
+  const handleImportTransactions = async () => {
+    if (!selectedAccountId || mappedTransactions.length === 0) {
+      toast.error('Account and transactions are required');
+      return;
+    }
+
+    setIsCreatingAccount(true);
+
+    try {
+      const transactionsWithAccount = mappedTransactions.map(txn => ({
+        profile_id: activeProfile.id,
+        user_id: user?.id,
+        bank_account_id: selectedAccountId,
+        date: txn.date,
+        description: txn.description,
+        original_description: txn.original_description || txn.description,
+        amount: txn.type === 'expense' ? -Math.abs(txn.amount) : Math.abs(txn.amount),
+        type: txn.type,
+        status: 'pending',
+        source: 'csv',
+        include_in_reports: true
+      }));
+
+      const { error: importError } = await firstsavvy
+        .from('transactions')
+        .insert(transactionsWithAccount);
+
+      if (importError) {
+        throw importError;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      await queryClient.invalidateQueries({ queryKey: ['transactions'] });
+
+      toast.success(`Successfully imported ${mappedTransactions.length} transactions!`);
+      onOpenChange(false);
+
+      setTimeout(() => {
+        navigate(`/Banking/account/${selectedAccountId}`);
+      }, 100);
+    } catch (error) {
+      console.error('Error importing transactions:', error);
+      showErrorToast(error);
+    } finally {
+      setIsCreatingAccount(false);
+    }
+  };
+
   const handleCreateAccountAndImportTransactions = async () => {
     if (!formData.displayName || mappedTransactions.length === 0) {
       toast.error('Display name and transactions are required');
@@ -1728,7 +1776,7 @@ export default function AccountCreationWizard({
           setCurrentStep('bank-info');
         }
       } else if (currentStep === 'bank-info') {
-        await handleImportTransactions();
+        await handleSubmit();
       } else if (currentStep === 'balance') {
         await handleSubmit();
       }
