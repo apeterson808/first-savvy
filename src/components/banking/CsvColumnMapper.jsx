@@ -470,8 +470,8 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
                           ? format(new Date(transaction.date), 'MM/dd/yy')
                           : 'Invalid'}
                       </td>
-                      <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2">
-                        <span className="text-xs px-1">{transaction.description || '—'}</span>
+                      <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 max-w-[300px]">
+                        <div className="text-xs px-1 overflow-hidden text-ellipsis whitespace-nowrap">{transaction.description || '—'}</div>
                       </td>
                       <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
                         {(transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
