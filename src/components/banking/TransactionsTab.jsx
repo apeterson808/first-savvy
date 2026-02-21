@@ -1080,6 +1080,26 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
     const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id);
 
+    // Debug logging
+    console.log('Match Confidence Debug:', {
+      transAccount: transAccount ? {
+        id: transAccount.id,
+        name: transAccount.account_name,
+        account_detail: transAccount.account_detail,
+        account_type: transAccount.account_type,
+        class: transAccount.class
+      } : null,
+      matchAccount: matchAccount ? {
+        id: matchAccount.id,
+        name: matchAccount.account_name,
+        account_detail: matchAccount.account_detail,
+        account_type: matchAccount.account_type,
+        class: matchAccount.class
+      } : null,
+      amountsCancelOut,
+      daysDiff
+    });
+
     // Determine if this is a credit card payment pair
     // One must be a credit card, the other must be a bank account (checking, savings, money market)
     const bankAccountTypes = ['Checking', 'Savings', 'MoneyMarket'];
