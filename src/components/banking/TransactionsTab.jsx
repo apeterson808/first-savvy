@@ -520,6 +520,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           ...a,
           account_name: a.display_name || a.account_name,
           institution: a.institution_name,
+          // Preserve account_detail from database (e.g., 'CreditCard', 'Checking', 'Savings')
+          // This is critical for CC payment matching logic
           entityType: a.account_type === 'credit_card' ? 'CreditCard' :
                       a.class === 'asset' ? 'Asset' :
                       a.class === 'liability' ? 'Liability' : 'BankAccount'
@@ -1065,40 +1067,60 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   // Calculate match confidence percentage
+  // This mirrors the server-side detection logic in auto_detect_credit_card_payments_optimized
   const calculateMatchConfidence = (transaction, match) => {
-    const amountDiff = Math.abs(Math.abs(transaction.amount) - Math.abs(match.amount));
     const tDate = new Date(transaction.date);
     const mDate = new Date(match.date);
     const daysDiff = Math.abs((tDate - mDate) / (1000 * 60 * 60 * 24));
 
-    // Check if this is a potential credit card payment match
+    // Check if amounts cancel out (opposite signs, equal magnitude)
+    const amountsCancelOut = Math.abs(transaction.amount + match.amount) < 0.01;
+
+    // Get account details for both transactions
     const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
     const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id);
 
-    const isCCPaymentPair =
-      transAccount && matchAccount &&
-      (
-        (transAccount.account_detail === 'CreditCard' && ['Checking', 'Savings', 'MoneyMarket'].includes(matchAccount.account_detail)) ||
-        (matchAccount.account_detail === 'CreditCard' && ['Checking', 'Savings', 'MoneyMarket'].includes(transAccount.account_detail))
-      ) &&
-      Math.abs(transaction.amount + match.amount) < 0.01; // Opposite signs, matching amounts
+    // Determine if this is a credit card payment pair
+    // One must be a credit card, the other must be a bank account (checking, savings, money market)
+    const bankAccountTypes = ['Checking', 'Savings', 'MoneyMarket'];
+    const isCCPaymentPair = transAccount && matchAccount && amountsCancelOut && (
+      (transAccount.account_detail === 'CreditCard' && bankAccountTypes.includes(matchAccount.account_detail)) ||
+      (matchAccount.account_detail === 'CreditCard' && bankAccountTypes.includes(transAccount.account_detail))
+    );
 
-    // For CC payment pairs with matching amounts, use simplified high-confidence scoring
-    if (isCCPaymentPair && amountDiff < 0.01) {
-      if (daysDiff === 0) return 95;
-      if (daysDiff <= 1) return 90;
-      if (daysDiff <= 5) return 85;
-      return 75;
+    // For credit card payment pairs, use high-confidence scoring based on date proximity
+    // This matches the server-side auto_detect_credit_card_payments_optimized function
+    if (isCCPaymentPair) {
+      if (daysDiff === 0) return 95;  // Same day
+      if (daysDiff <= 1) return 90;   // Within 1 day
+      if (daysDiff <= 5) return 85;   // Within 5 days
+      return 75;                       // Fallback
     }
 
-    // Original calculation for other matches
+    // For transfer pairs (asset-to-asset or asset-to-liability), also use high confidence if amounts match
+    const isTransferPair = transAccount && matchAccount &&
+                           amountsCancelOut &&
+                           ['asset', 'liability'].includes(transAccount.class) &&
+                           ['asset', 'liability'].includes(matchAccount.class);
+
+    if (isTransferPair) {
+      if (daysDiff === 0) return 95;  // Same day
+      if (daysDiff <= 1) return 90;   // Within 1 day
+      if (daysDiff <= 3) return 85;   // Within 3 days (more restrictive than CC)
+      return 75;                       // Fallback
+    }
+
+    // Fallback: Composite scoring for other types of matches
+    // This handles edge cases where account details might not be available
     let confidence = 0;
+
+    const amountDiff = Math.abs(Math.abs(transaction.amount) - Math.abs(match.amount));
 
     // Amount match (40 points for exact, scaled down for differences)
     if (amountDiff < 0.01) {
       confidence += 40;
-    } else {
-      confidence += Math.max(0, 40 - amountDiff * 10);
+    } else if (amountDiff < 10) {
+      confidence += Math.max(0, 40 - amountDiff * 4);
     }
 
     // Date proximity (30 points, decreasing with distance)
@@ -1108,15 +1130,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       confidence += 25;
     } else if (daysDiff <= 3) {
       confidence += 15;
-    } else {
+    } else if (daysDiff <= 7) {
       confidence += Math.max(0, 10 - daysDiff);
     }
 
     // Description similarity (30 points)
-    const desc1 = (transaction.description || '').toLowerCase();
-    const desc2 = (match.description || '').toLowerCase();
-    const commonWords = desc1.split(' ').filter(word => desc2.includes(word)).length;
-    confidence += Math.min(30, commonWords * 5);
+    const desc1 = (transaction.description || '').toLowerCase().trim();
+    const desc2 = (match.description || '').toLowerCase().trim();
+    if (desc1 && desc2) {
+      const words1 = desc1.split(/\s+/).filter(w => w.length > 2);
+      const words2 = desc2.split(/\s+/).filter(w => w.length > 2);
+      const commonWords = words1.filter(word => words2.includes(word)).length;
+      confidence += Math.min(30, commonWords * 5);
+    }
 
     return Math.min(100, Math.round(confidence));
   };
