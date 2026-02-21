@@ -1078,10 +1078,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const isCCPaymentPair =
       transAccount && matchAccount &&
       (
-        (transAccount.account_type === 'credit_card' &&
-         ['checking', 'savings', 'money_market'].includes(matchAccount.account_type)) ||
-        (matchAccount.account_type === 'credit_card' &&
-         ['checking', 'savings', 'money_market'].includes(transAccount.account_type))
+        (transAccount.account_type === 'credit_card' && matchAccount.account_type === 'bank_account') ||
+        (matchAccount.account_type === 'credit_card' && transAccount.account_type === 'bank_account')
       ) &&
       Math.abs(transaction.amount + match.amount) < 0.01; // Opposite signs, matching amounts
 
