@@ -3006,6 +3006,46 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           matches = [suggestedMatch, ...matches];
                                         }
 
+                                        // Auto-select highest confidence match if not already selected
+                                        if (!hasFilters && matches.length > 0 && !selectedMatches[transaction.id]) {
+                                          const topMatch = matches[0];
+                                          const confidence = calculateMatchConfidence(transaction, topMatch);
+
+                                          // Auto-select if confidence is 85% or higher
+                                          if (confidence >= 85) {
+                                            // Use setTimeout to avoid state update during render
+                                            setTimeout(() => {
+                                              setSelectedMatches(prev => {
+                                                // Double-check it's still not selected
+                                                if (!prev[transaction.id]) {
+                                                  // Pre-fill contact and category from matched transaction
+                                                  const updates = {};
+                                                  if (topMatch.contact_id && !transaction.contact_id) {
+                                                    updates.contact_id = topMatch.contact_id;
+                                                  }
+                                                  if (topMatch.category_account_id && !transaction.category_account_id) {
+                                                    updates.category_account_id = topMatch.category_account_id;
+                                                  }
+
+                                                  // Apply updates if needed
+                                                  if (Object.keys(updates).length > 0) {
+                                                    updateMutation.mutate({
+                                                      id: transaction.id,
+                                                      data: updates
+                                                    });
+                                                  }
+
+                                                  return {
+                                                    ...prev,
+                                                    [transaction.id]: topMatch.id
+                                                  };
+                                                }
+                                                return prev;
+                                              });
+                                            }, 0);
+                                          }
+                                        }
+
                                         const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
 
                                         return (
