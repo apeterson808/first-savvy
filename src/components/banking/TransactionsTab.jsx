@@ -987,165 +987,56 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const findPotentialMatches = (transaction) => {
     if (!transaction) return [];
 
-    // For credit card payments - look for income transactions on credit cards
-    if (transaction.type === 'credit_card_payment') {
-      return transactions.filter(t => {
-        if (t.id === transaction.id) return false;
-        if (t.type !== 'income') return false;
-        if (t.status === 'excluded') return false;
-        if (!activeAccountIds.includes(t.bank_account_id)) return false;
-        
-        // Must be on a credit card account
-        const tAccount = accounts.find(a => a.id === t.bank_account_id);
-        if (!tAccount || tAccount.account_type !== 'credit_card') return false;
+    // Unified search: find transactions with same absolute amount, opposite signs, different accounts, within 10 days
+    return transactions.filter(t => {
+      // Must not be the same transaction
+      if (t.id === transaction.id) return false;
 
-        // Check if amounts match (both should be positive for this comparison)
-        const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01;
+      // Must not be excluded
+      if (t.status === 'excluded') return false;
 
-        // Check if dates are close (within 7 days)
-        const tDate = new Date(t.date);
-        const txDate = new Date(transaction.date);
-        const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
-        const dateMatch = daysDiff <= 7;
+      // Must be in an active account
+      if (!activeAccountIds.includes(t.bank_account_id)) return false;
 
-        return amountMatch && dateMatch;
-      });
-    }
+      // Must be different bank account
+      if (t.bank_account_id === transaction.bank_account_id) return false;
 
-    // For transfers, look for opposite amount transfers
-    if (transaction.type === 'transfer') {
-      return transactions.filter(t => {
-        if (t.id === transaction.id) return false;
-        if (t.type !== 'transfer') return false;
-        if (t.status === 'excluded') return false;
-        if (!activeAccountIds.includes(t.bank_account_id)) return false;
+      // Check if amounts are opposite (one positive, one negative, same magnitude)
+      const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
+                         (t.amount > 0) !== (transaction.amount > 0);
 
-        // Check if amounts are opposite (one positive, one negative, same magnitude)
-        const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
-                           (t.amount > 0) !== (transaction.amount > 0);
+      if (!amountMatch) return false;
 
-        // Check if dates are close (within 7 days)
-        const tDate = new Date(t.date);
-        const txDate = new Date(transaction.date);
-        const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
-        const dateMatch = daysDiff <= 7;
+      // Check if dates are close (within 10 days)
+      const tDate = new Date(t.date);
+      const txDate = new Date(transaction.date);
+      const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
+      const dateMatch = daysDiff <= 10;
 
-        return amountMatch && dateMatch;
-      });
-    }
-
-    // For income/expense, look for transfer-like patterns (opposite amounts, different accounts)
-    // in addition to regular income/expense matches
-    if (transaction.type === 'income' || transaction.type === 'expense') {
-      // Check for transfer-like patterns (opposite amounts, different accounts)
-      const transferLikeMatches = transactions.filter(t => {
-        if (t.id === transaction.id) return false;
-        if (t.status === 'excluded') return false;
-        if (!activeAccountIds.includes(t.bank_account_id)) return false;
-        if (t.bank_account_id === transaction.bank_account_id) return false; // Must be different account
-
-        // Must be income, expense, or transfer
-        if (!['transfer', 'income', 'expense'].includes(t.type)) return false;
-
-        // Check if amounts are opposite (one positive, one negative, same magnitude)
-        const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
-                           (t.amount > 0) !== (transaction.amount > 0);
-
-        // Check if dates are close (within 7 days)
-        const tDate = new Date(t.date);
-        const txDate = new Date(transaction.date);
-        const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
-        const dateMatch = daysDiff <= 7;
-
-        return amountMatch && dateMatch;
-      });
-
-      return transferLikeMatches;
-    }
-
-    return [];
+      return dateMatch;
+    });
   };
 
-  // Calculate match confidence percentage
-  // This mirrors the server-side detection logic in auto_detect_credit_card_payments_optimized
+  // Calculate match confidence based purely on date proximity
   const calculateMatchConfidence = (transaction, match) => {
     const tDate = new Date(transaction.date);
     const mDate = new Date(match.date);
     const daysDiff = Math.abs((tDate - mDate) / (1000 * 60 * 60 * 24));
 
-    // Check if amounts cancel out (opposite signs, equal magnitude)
-    const amountsCancelOut = Math.abs(transaction.amount + match.amount) < 0.01;
+    // Pure date-based scoring
+    if (daysDiff === 0) return 100;  // Same day
+    if (daysDiff === 1) return 95;   // 1 day apart
+    if (daysDiff === 2) return 90;   // 2 days apart
+    if (daysDiff === 3) return 85;   // 3 days apart
+    if (daysDiff === 4) return 80;   // 4 days apart
+    if (daysDiff === 5) return 75;   // 5 days apart
+    if (daysDiff === 6) return 70;   // 6 days apart
+    if (daysDiff === 7) return 65;   // 7 days apart
+    if (daysDiff === 8) return 60;   // 8 days apart
+    if (daysDiff === 9) return 55;   // 9 days apart
+    if (daysDiff === 10) return 50;  // 10 days apart
 
-    // Get account details for both transactions
-    const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
-    const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id);
-
-    // Determine if this is a credit card payment pair
-    // One must be a credit card, the other must be a bank account (checking, savings, money market)
-    const creditCardTypes = ['personal_credit_card', 'business_credit_card', 'credit_card'];
-    const bankAccountTypes = ['checking_account', 'savings_account', 'money_market_account'];
-    const isCCPaymentPair = transAccount && matchAccount && amountsCancelOut && (
-      (creditCardTypes.includes(transAccount.account_detail) && bankAccountTypes.includes(matchAccount.account_detail)) ||
-      (creditCardTypes.includes(matchAccount.account_detail) && bankAccountTypes.includes(transAccount.account_detail))
-    );
-
-    // For credit card payment pairs, use high-confidence scoring based on date proximity
-    // This matches the server-side auto_detect_credit_card_payments_optimized function
-    if (isCCPaymentPair) {
-      if (daysDiff === 0) return 95;  // Same day
-      if (daysDiff <= 1) return 90;   // Within 1 day
-      if (daysDiff <= 5) return 85;   // Within 5 days
-      return 75;                       // Fallback
-    }
-
-    // For transfer pairs (asset-to-asset or asset-to-liability), also use high confidence if amounts match
-    const isTransferPair = transAccount && matchAccount &&
-                           amountsCancelOut &&
-                           ['asset', 'liability'].includes(transAccount.class) &&
-                           ['asset', 'liability'].includes(matchAccount.class);
-
-    if (isTransferPair) {
-      if (daysDiff === 0) return 95;  // Same day
-      if (daysDiff <= 1) return 90;   // Within 1 day
-      if (daysDiff <= 3) return 85;   // Within 3 days (more restrictive than CC)
-      return 75;                       // Fallback
-    }
-
-    // Fallback: Composite scoring for other types of matches
-    // This handles edge cases where account details might not be available
-    let confidence = 0;
-
-    const amountDiff = Math.abs(Math.abs(transaction.amount) - Math.abs(match.amount));
-
-    // Amount match (40 points for exact, scaled down for differences)
-    if (amountDiff < 0.01) {
-      confidence += 40;
-    } else if (amountDiff < 10) {
-      confidence += Math.max(0, 40 - amountDiff * 4);
-    }
-
-    // Date proximity (30 points, decreasing with distance)
-    if (daysDiff === 0) {
-      confidence += 30;
-    } else if (daysDiff <= 1) {
-      confidence += 25;
-    } else if (daysDiff <= 3) {
-      confidence += 15;
-    } else if (daysDiff <= 7) {
-      confidence += Math.max(0, 10 - daysDiff);
-    }
-
-    // Description similarity (30 points)
-    const desc1 = (transaction.description || '').toLowerCase().trim();
-    const desc2 = (match.description || '').toLowerCase().trim();
-    if (desc1 && desc2) {
-      const words1 = desc1.split(/\s+/).filter(w => w.length > 2);
-      const words2 = desc2.split(/\s+/).filter(w => w.length > 2);
-      const commonWords = words1.filter(word => words2.includes(word)).length;
-      confidence += Math.min(30, commonWords * 5);
-    }
-
-    return Math.min(100, Math.round(confidence));
+    return 50; // Fallback (shouldn't reach here with 10-day limit)
   };
 
   // Unified function to post transaction(s) - handles both single transactions and transfer pairs atomically
@@ -1367,25 +1258,46 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         return;
       }
 
-      const pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
-      const txn1Id = transaction.id;
-      const txn2Id = matchedTransaction.id;
+      // Get account details for both transactions
+      const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
+      const matchAccount = allActiveAccounts.find(a => a.id === matchedTransaction.bank_account_id);
+
+      // Determine if this is a credit card payment pair by checking account_type
+      const isCreditCardPayment = transAccount && matchAccount &&
+        ((transAccount.account_type === 'credit_card' && matchAccount.account_type === 'bank_account') ||
+         (matchAccount.account_type === 'credit_card' && transAccount.account_type === 'bank_account'));
+
+      let pairId;
+      let pairType;
+      let pairIdField;
+
+      if (isCreditCardPayment) {
+        // This is a credit card payment
+        pairId = transaction.cc_payment_pair_id || matchedTransaction?.cc_payment_pair_id || `cc_payment_${Date.now()}`;
+        pairType = 'credit_card_payment';
+        pairIdField = 'cc_payment_pair_id';
+      } else {
+        // This is a regular transfer
+        pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
+        pairType = 'transfer';
+        pairIdField = 'transfer_pair_id';
+      }
 
       try {
-        // Link both transactions first
+        // Link both transactions with the appropriate pair ID and type
         await Promise.all([
           updateMutation.mutateAsync({
             id: transaction.id,
             data: {
-              transfer_pair_id: pairId,
-              type: 'transfer'
+              [pairIdField]: pairId,
+              type: pairType
             }
           }),
           updateMutation.mutateAsync({
             id: matchedTransaction.id,
             data: {
-              transfer_pair_id: pairId,
-              type: 'transfer'
+              [pairIdField]: pairId,
+              type: pairType
             }
           })
         ]);
@@ -1401,13 +1313,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           return next;
         });
         setExpandedTransactionId(null);
-        toast.success('Transfer linked - review before posting');
+
+        if (isCreditCardPayment) {
+          toast.success('Credit card payment linked - review before posting');
+        } else {
+          toast.success('Transfer linked - review before posting');
+        }
 
         // Refresh in the background (don't await)
         queryClient.invalidateQueries({ queryKey: ['transactions'] });
       } catch (error) {
-        console.error('Failed to link transfer:', error);
-        toast.error('Failed to link transfer. Please try again.');
+        console.error('Failed to link transactions:', error);
+        toast.error('Failed to link transactions. Please try again.');
       }
     } else {
       const matches = findPotentialMatches(transaction);
@@ -3034,41 +2951,35 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         // Auto-select highest confidence match if not already selected
                                         if (!hasFilters && matches.length > 0 && !selectedMatches[transaction.id]) {
                                           const topMatch = matches[0];
-                                          const confidence = calculateMatchConfidence(transaction, topMatch);
 
-                                          // Auto-select if confidence is 85% or higher
-                                          if (confidence >= 85) {
-                                            // Use setTimeout to avoid state update during render
-                                            setTimeout(() => {
-                                              setSelectedMatches(prev => {
-                                                // Double-check it's still not selected
-                                                if (!prev[transaction.id]) {
-                                                  // Pre-fill contact and category from matched transaction
-                                                  const updates = {};
-                                                  if (topMatch.contact_id && !transaction.contact_id) {
-                                                    updates.contact_id = topMatch.contact_id;
-                                                  }
-                                                  if (topMatch.category_account_id && !transaction.category_account_id) {
-                                                    updates.category_account_id = topMatch.category_account_id;
-                                                  }
-
-                                                  // Apply updates if needed
-                                                  if (Object.keys(updates).length > 0) {
-                                                    updateMutation.mutate({
-                                                      id: transaction.id,
-                                                      data: updates
-                                                    });
-                                                  }
-
-                                                  return {
-                                                    ...prev,
-                                                    [transaction.id]: topMatch.id
-                                                  };
+                                          // Always auto-select the highest confidence match
+                                          // Use setTimeout to avoid state update during render
+                                          setTimeout(() => {
+                                            setSelectedMatches(prev => {
+                                              // Double-check it's still not selected
+                                              if (!prev[transaction.id]) {
+                                                // Pre-fill contact from matched transaction
+                                                const updates = {};
+                                                if (topMatch.contact_id && !transaction.contact_id) {
+                                                  updates.contact_id = topMatch.contact_id;
                                                 }
-                                                return prev;
-                                              });
-                                            }, 0);
-                                          }
+
+                                                // Apply updates if needed
+                                                if (Object.keys(updates).length > 0) {
+                                                  updateMutation.mutate({
+                                                    id: transaction.id,
+                                                    data: updates
+                                                  });
+                                                }
+
+                                                return {
+                                                  ...prev,
+                                                  [transaction.id]: topMatch.id
+                                                };
+                                              }
+                                              return prev;
+                                            });
+                                          }, 0);
                                         }
 
                                         const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
