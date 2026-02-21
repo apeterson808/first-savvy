@@ -140,6 +140,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return splitModeTransactions.has(transactionId);
   };
 
+  // Helper function to determine if a match should be a credit card payment vs transfer
+  const determineMatchType = (transactionAccountId, matchAccountId, accountsList) => {
+    const transAccount = accountsList.find(a => a.id === transactionAccountId);
+    const matchAccount = accountsList.find(a => a.id === matchAccountId);
+
+    // If either account is a credit card, it's a credit card payment
+    if (transAccount?.account_type === 'credit_card' || matchAccount?.account_type === 'credit_card') {
+      return 'credit_card_payment';
+    }
+
+    return 'transfer';
+  };
+
   const initializeSplitMode = async (transaction) => {
     setSplitModeTransactions(prev => new Set(prev).add(transaction.id));
 
@@ -1889,6 +1902,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
                                 return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
                               }
+                              // If no paired transaction found but transfer_to_bank_account_id is set, show that account
+                              if (transaction.transfer_to_bank_account_id) {
+                                const toAccount = allActiveAccounts.find(a => a.id === transaction.transfer_to_bank_account_id) || accounts.find(a => a.id === transaction.transfer_to_bank_account_id);
+                                return <span className="text-xs px-1">{toAccount ? getAccountDisplayName(toAccount) : '—'}</span>;
+                              }
                             }
 
                             // For regular transactions, show editable contact dropdown (or read-only in posted)
@@ -2958,10 +2976,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             setSelectedMatches(prev => {
                                               // Double-check it's still not selected
                                               if (!prev[transaction.id]) {
-                                                // Pre-fill contact from matched transaction
+                                                // Pre-fill contact and account from matched transaction
                                                 const updates = {};
                                                 if (topMatch.contact_id && !transaction.contact_id) {
                                                   updates.contact_id = topMatch.contact_id;
+                                                }
+
+                                                // Set the "To Account" to the matched transaction's account
+                                                if (topMatch.bank_account_id) {
+                                                  updates.transfer_to_bank_account_id = topMatch.bank_account_id;
                                                 }
 
                                                 // Apply updates if needed
@@ -3191,6 +3214,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                   const pairId = crypto.randomUUID();
 
                                                                   try {
+                                                                    // Set transfer_to_bank_account_id on both transactions bidirectionally
                                                                     await Promise.all([
                                                                       updateMutation.mutateAsync({
                                                                         id: transaction.id,
@@ -3198,7 +3222,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                           transfer_pair_id: pairId,
                                                                           type: 'transfer',
                                                                           original_type: transaction.original_type || transaction.type,
-                                                                          category_account_id: null
+                                                                          category_account_id: null,
+                                                                          transfer_to_bank_account_id: match.bank_account_id
                                                                         }
                                                                       }),
                                                                       updateMutation.mutateAsync({
@@ -3207,7 +3232,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                           transfer_pair_id: pairId,
                                                                           type: 'transfer',
                                                                           original_type: match.original_type || match.type,
-                                                                          category_account_id: null
+                                                                          category_account_id: null,
+                                                                          transfer_to_bank_account_id: transaction.bank_account_id
                                                                         }
                                                                       })
                                                                     ]);
@@ -3238,7 +3264,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                         data: {
                                                                           transfer_pair_id: null,
                                                                           type: originalType1,
-                                                                          original_type: null
+                                                                          original_type: null,
+                                                                          transfer_to_bank_account_id: null
                                                                         }
                                                                       }),
                                                                       updateMutation.mutateAsync({
@@ -3246,7 +3273,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                         data: {
                                                                           transfer_pair_id: null,
                                                                           type: originalType2,
-                                                                          original_type: null
+                                                                          original_type: null,
+                                                                          transfer_to_bank_account_id: null
                                                                         }
                                                                       })
                                                                     ]);
