@@ -1080,32 +1080,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
     const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id);
 
-    // Debug logging
-    console.log('Match Confidence Debug:', {
-      transAccount: transAccount ? {
-        id: transAccount.id,
-        name: transAccount.account_name,
-        account_detail: transAccount.account_detail,
-        account_type: transAccount.account_type,
-        class: transAccount.class
-      } : null,
-      matchAccount: matchAccount ? {
-        id: matchAccount.id,
-        name: matchAccount.account_name,
-        account_detail: matchAccount.account_detail,
-        account_type: matchAccount.account_type,
-        class: matchAccount.class
-      } : null,
-      amountsCancelOut,
-      daysDiff
-    });
-
     // Determine if this is a credit card payment pair
     // One must be a credit card, the other must be a bank account (checking, savings, money market)
-    const bankAccountTypes = ['Checking', 'Savings', 'MoneyMarket'];
+    const creditCardTypes = ['personal_credit_card', 'business_credit_card', 'credit_card'];
+    const bankAccountTypes = ['checking_account', 'savings_account', 'money_market_account'];
     const isCCPaymentPair = transAccount && matchAccount && amountsCancelOut && (
-      (transAccount.account_detail === 'CreditCard' && bankAccountTypes.includes(matchAccount.account_detail)) ||
-      (matchAccount.account_detail === 'CreditCard' && bankAccountTypes.includes(transAccount.account_detail))
+      (creditCardTypes.includes(transAccount.account_detail) && bankAccountTypes.includes(matchAccount.account_detail)) ||
+      (creditCardTypes.includes(matchAccount.account_detail) && bankAccountTypes.includes(transAccount.account_detail))
     );
 
     // For credit card payment pairs, use high-confidence scoring based on date proximity
