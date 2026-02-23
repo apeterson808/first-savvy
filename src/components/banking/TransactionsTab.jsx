@@ -1952,40 +1952,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-blue-600 font-medium">Split</span>;
                             }
 
-                            const isInMatchMode = statusFilter === 'pending' && (
-                              manualActionOverrides[transaction.id] === 'match' || (
-                                !manualActionOverrides[transaction.id] &&
-                                (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') &&
-                                findPairedTransfer(transaction)
-                              )
-                            );
-
-                            if (isInMatchMode) {
-                              return (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <ClickThroughSelect
-                                    value={transaction.type}
-                                    onValueChange={(newType) => {
-                                      if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                      updateMutation.mutate({
-                                        id: transaction.id,
-                                        data: { type: newType }
-                                      });
-                                    }}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    triggerClassName="h-7 border-slate-300 text-xs"
-                                    placeholder="Select type"
-                                  >
-                                    <ClickThroughSelectItem value="transfer">
-                                      Transfer
-                                    </ClickThroughSelectItem>
-                                    <ClickThroughSelectItem value="credit_card_payment">
-                                      Credit Card Payment
-                                    </ClickThroughSelectItem>
-                                  </ClickThroughSelect>
-                                </div>
-                              );
-                            }
 
                             // For refunds, show refund indicator
                             if (transaction.type === 'income' && transaction.original_type === 'expense') {
