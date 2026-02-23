@@ -2828,10 +2828,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             setSelectedMatches(prev => {
                                               // Double-check it's still not selected
                                               if (!prev[transaction.id]) {
-                                                // Pre-fill contact and account from matched transaction
+                                                // Pre-fill contact, category from matched transaction
                                                 const updates = {};
                                                 if (topMatch.contact_id && !transaction.contact_id) {
                                                   updates.contact_id = topMatch.contact_id;
+                                                }
+                                                if (topMatch.category_account_id && !transaction.category_account_id) {
+                                                  updates.category_account_id = topMatch.category_account_id;
                                                 }
 
                                                 // Apply updates if needed
