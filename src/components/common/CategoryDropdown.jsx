@@ -171,30 +171,9 @@ export default function CategoryDropdown({
               <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
                 + Add new{searchTerm ? `: "${searchTerm}"` : ''}
               </ClickThroughSelectItem>
-              <ClickThroughSelectSeparator />
             </>
           )}
 
-          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
-            Transfer
-          </div>
-          <ClickThroughSelectItem
-            value="transfer"
-            data-display="Bank Transfer"
-            className="flex items-center gap-2 whitespace-nowrap"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-            <span className="truncate flex-1">Bank Transfer</span>
-          </ClickThroughSelectItem>
-          <ClickThroughSelectItem
-            value="credit_card_payment"
-            data-display="Credit Card Payment"
-            className="flex items-center gap-2 whitespace-nowrap"
-          >
-            <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-            <span className="truncate flex-1">Credit Card Payment</span>
-          </ClickThroughSelectItem>
-          <ClickThroughSelectSeparator />
           {suggestedAccount && (
             <>
               <ClickThroughSelectItem
@@ -209,7 +188,6 @@ export default function CategoryDropdown({
                 </span>
                 <Sparkles className="w-3 h-3 text-blue-500 ml-2 flex-shrink-0" />
               </ClickThroughSelectItem>
-              <ClickThroughSelectSeparator />
             </>
           )}
 
@@ -302,6 +280,26 @@ export default function CategoryDropdown({
           })}
         </>
       )}
+
+      <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+        Transfer
+      </div>
+      <ClickThroughSelectItem
+        value="transfer"
+        data-display="Bank Transfer"
+        className="flex items-center gap-2 whitespace-nowrap"
+      >
+        <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+        <span className="truncate flex-1">Bank Transfer</span>
+      </ClickThroughSelectItem>
+      <ClickThroughSelectItem
+        value="credit_card_payment"
+        data-display="Credit Card Payment"
+        className="flex items-center gap-2 whitespace-nowrap"
+      >
+        <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+        <span className="truncate flex-1">Credit Card Payment</span>
+      </ClickThroughSelectItem>
         </>
       )}
     </ClickThroughSelect>
