@@ -40,7 +40,6 @@ import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
-import MatchTypeDropdown from '../common/MatchTypeDropdown';
 import TransferMatchDialog from './TransferMatchDialog';
 import TransferPostPreviewDialog from './TransferPostPreviewDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
@@ -1945,64 +1944,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                         </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
                           {(() => {
-                            if (isMatched(transaction)) {
-                              const currentMatchType = transaction.cc_payment_pair_id ? 'credit_card_payment' : 'transfer';
-                              const pairId = transaction.cc_payment_pair_id || transaction.transfer_pair_id;
-
-                              return (
-                                <div onClick={(e) => e.stopPropagation()}>
-                                  <MatchTypeDropdown
-                                    value={currentMatchType}
-                                    onChange={async (newType) => {
-                                      if (!pairId) return;
-
-                                      try {
-                                        if (currentMatchType === newType) return;
-
-                                        if (currentMatchType === 'credit_card_payment' && newType === 'transfer') {
-                                          await supabase
-                                            .from('transactions')
-                                            .update({
-                                              transfer_pair_id: pairId,
-                                              cc_payment_pair_id: null,
-                                              type: 'transfer',
-                                              cc_payment_reviewed: false,
-                                              cc_payment_auto_detected: false,
-                                              cc_payment_match_confidence: null,
-                                              cc_payment_pattern_id: null
-                                            })
-                                            .eq('cc_payment_pair_id', pairId);
-                                        } else if (currentMatchType === 'transfer' && newType === 'credit_card_payment') {
-                                          await supabase
-                                            .from('transactions')
-                                            .update({
-                                              cc_payment_pair_id: pairId,
-                                              transfer_pair_id: null,
-                                              type: 'credit_card_payment',
-                                              transfer_reviewed: false,
-                                              transfer_auto_detected: false,
-                                              transfer_match_confidence: null,
-                                              transfer_pattern_id: null
-                                            })
-                                            .eq('transfer_pair_id', pairId);
-                                        }
-
-                                        queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                                        queryClient.invalidateQueries({ queryKey: ['accounts'] });
-
-                                        toast.success('Match type updated');
-                                      } catch (error) {
-                                        console.error('Failed to update match type:', error);
-                                        toast.error('Failed to update match type');
-                                      }
-                                    }}
-                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                  />
-                                </div>
-                              );
-                            }
-
                             if (isSplitMode(transaction.id)) {
                               return <span className="text-xs px-1 text-blue-600 font-medium">Split</span>;
                             }
@@ -2051,127 +1992,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>;
                             }
 
-                            // For matched transactions, show match type dropdown
-                            if (transaction.transfer_pair_id || transaction.cc_payment_pair_id ||
-                                transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
-                              const pairedTransaction = transaction.transfer_pair_id ? findPairedTransfer(transaction) : null;
-                              const currentMatchType = transaction.cc_payment_pair_id ? 'credit_card_payment' : 'transfer';
-
-                              return (
-                                <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
-                                  <div className="flex-1 min-w-0">
-                                    <MatchTypeDropdown
-                                      value={currentMatchType}
-                                      onValueChange={async (newType) => {
-                                        if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-                                        if (currentMatchType === newType) return;
-
-                                        try {
-                                          const pairId = transaction.cc_payment_pair_id || transaction.transfer_pair_id;
-
-                                          if (currentMatchType === 'credit_card_payment' && newType === 'transfer') {
-                                            // Convert from CC payment to transfer
-                                            await supabase
-                                              .from('transactions')
-                                              .update({
-                                                transfer_pair_id: pairId,
-                                                cc_payment_pair_id: null,
-                                                type: 'transfer',
-                                                cc_payment_reviewed: false,
-                                                cc_payment_auto_detected: false,
-                                                cc_payment_match_confidence: null,
-                                                cc_payment_pattern_id: null
-                                              })
-                                              .eq('cc_payment_pair_id', pairId);
-                                          } else if (currentMatchType === 'transfer' && newType === 'credit_card_payment') {
-                                            // Convert from transfer to CC payment
-                                            await supabase
-                                              .from('transactions')
-                                              .update({
-                                                cc_payment_pair_id: pairId,
-                                                transfer_pair_id: null,
-                                                type: 'credit_card_payment',
-                                                transfer_reviewed: false,
-                                                transfer_auto_detected: false,
-                                                transfer_match_confidence: null,
-                                                transfer_pattern_id: null
-                                              })
-                                              .eq('transfer_pair_id', pairId);
-                                          }
-
-                                          queryClient.invalidateQueries({ queryKey: ['transactions'] });
-                                          queryClient.invalidateQueries({ queryKey: ['accounts'] });
-                                          toast.success('Match type updated');
-                                        } catch (error) {
-                                          console.error('Failed to update match type:', error);
-                                          toast.error('Failed to update match type');
-                                        }
-                                      }}
-                                      triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                      disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    />
-                                  </div>
-                                  {transaction.transfer_pair_id && pairedTransaction && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-5 w-5 p-0 hover:bg-slate-100 flex-shrink-0"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-
-                                        updateMutation.mutate({
-                                          id: transaction.id,
-                                          data: { transfer_pair_id: null, type: null }
-                                        });
-                                        updateMutation.mutate({
-                                          id: pairedTransaction.id,
-                                          data: { transfer_pair_id: null, type: null }
-                                        });
-                                      }}
-                                      disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    >
-                                      <Unlink className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                  {transaction.cc_payment_pair_id && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      className="h-5 w-5 p-0 hover:bg-slate-100 flex-shrink-0"
-                                      onClick={async (e) => {
-                                        e.stopPropagation();
-                                        if (!activeAccountIds.includes(transaction.bank_account_id)) return;
-
-                                        const { data: pairedCCPayment } = await firstsavvy
-                                          .from('transactions')
-                                          .select('*')
-                                          .eq('cc_payment_pair_id', transaction.cc_payment_pair_id)
-                                          .neq('id', transaction.id)
-                                          .maybeSingle();
-
-                                        if (pairedCCPayment) {
-                                          updateMutation.mutate({
-                                            id: pairedCCPayment.id,
-                                            data: { cc_payment_pair_id: null, type: null }
-                                          });
-                                        }
-                                        updateMutation.mutate({
-                                          id: transaction.id,
-                                          data: { cc_payment_pair_id: null, type: null }
-                                        });
-                                      }}
-                                      disabled={!activeAccountIds.includes(transaction.bank_account_id)}
-                                    >
-                                      <Unlink className="h-3 w-3" />
-                                    </Button>
-                                  )}
-                                </div>
-                              );
-                            }
 
                             // For regular transactions, show editable category dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
+                              if (transaction.type === 'transfer') {
+                                return <span className="text-xs px-1">Bank Transfer</span>;
+                              } else if (transaction.type === 'credit_card_payment') {
+                                return <span className="text-xs px-1">Credit Card Payment</span>;
+                              }
                               const category = chartAccounts.find(c => c.id === transaction.category_account_id);
                               const displayName = category?.display_name || '—';
                               return <span className="text-xs px-1">{displayName}</span>;
@@ -2186,9 +2014,73 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 )}
                                 <div className="flex-1 min-w-0">
                                   <CategoryDropdown
-                                    value={transaction.category_account_id}
+                                    value={transaction.type === 'transfer' || transaction.type === 'credit_card_payment' ? transaction.type : transaction.category_account_id}
                                     onValueChange={async (value) => {
                                       if (!activeAccountIds.includes(transaction.bank_account_id)) return;
+
+                                      if (value === 'transfer' || value === 'credit_card_payment') {
+                                        const updateData = { type: value, category_account_id: null };
+                                        const pairId = transaction.cc_payment_pair_id || transaction.transfer_pair_id;
+
+                                        if (transaction.type === 'credit_card_payment' && value === 'transfer') {
+                                          updateData.transfer_pair_id = transaction.cc_payment_pair_id;
+                                          updateData.cc_payment_pair_id = null;
+                                          updateData.cc_payment_review_status = null;
+
+                                          if (pairId) {
+                                            const { data: paired } = await firstsavvy
+                                              .from('transactions')
+                                              .select('*')
+                                              .eq('cc_payment_pair_id', pairId)
+                                              .neq('id', transaction.id)
+                                              .maybeSingle();
+
+                                            if (paired) {
+                                              updateMutation.mutate({
+                                                id: paired.id,
+                                                data: {
+                                                  transfer_pair_id: pairId,
+                                                  cc_payment_pair_id: null,
+                                                  type: 'transfer',
+                                                  cc_payment_review_status: null
+                                                }
+                                              });
+                                            }
+                                          }
+                                        } else if (transaction.type === 'transfer' && value === 'credit_card_payment') {
+                                          updateData.cc_payment_pair_id = transaction.transfer_pair_id;
+                                          updateData.transfer_pair_id = null;
+                                          updateData.cc_payment_review_status = 'unreviewed';
+
+                                          if (pairId) {
+                                            const { data: paired } = await firstsavvy
+                                              .from('transactions')
+                                              .select('*')
+                                              .eq('transfer_pair_id', pairId)
+                                              .neq('id', transaction.id)
+                                              .maybeSingle();
+
+                                            if (paired) {
+                                              updateMutation.mutate({
+                                                id: paired.id,
+                                                data: {
+                                                  cc_payment_pair_id: pairId,
+                                                  transfer_pair_id: null,
+                                                  type: 'credit_card_payment',
+                                                  cc_payment_review_status: 'unreviewed'
+                                                }
+                                              });
+                                            }
+                                          }
+                                        }
+
+                                        updateMutation.mutate({
+                                          id: transaction.id,
+                                          data: updateData
+                                        });
+                                        return;
+                                      }
+
                                       const categoryValue = value === '' ? null : value;
 
                                       await queryClient.refetchQueries({ queryKey: ['user-chart-accounts'] });
@@ -2199,15 +2091,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                                   chartAccounts;
                                       const selectedCategory = categoryValue ? updatedChartAccounts.find(c => c.id === categoryValue) : null;
 
+                                      const updateData = { category_account_id: categoryValue };
+
+                                      if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
+                                        updateData.type = null;
+                                        updateData.transfer_pair_id = null;
+                                        updateData.cc_payment_pair_id = null;
+                                        updateData.cc_payment_review_status = null;
+                                      }
+
                                       updateMutation.mutate({
                                         id: transaction.id,
-                                        data: {
-                                          category_account_id: categoryValue
-                                        }
+                                        data: updateData
                                       });
                                     }}
                                     transactionType={transaction.type}
-                                    disabled={!activeAccountIds.includes(transaction.bank_account_id) || isMatched(transaction)}
+                                    disabled={!activeAccountIds.includes(transaction.bank_account_id)}
                                     onAddNew={(searchTerm) => {
                                       setCategorySearchTerm(searchTerm);
                                       setTriggeringTransactionId(transaction.id);
@@ -2869,7 +2768,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           )}
                                         </div>
 
-                                        {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment' || isMatched(transaction)) && (
+                                        {(transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
                                           <div className="grid grid-cols-2 gap-3">
                                             <div>
                                               <Label className="text-xs mb-1 block">From Account</Label>

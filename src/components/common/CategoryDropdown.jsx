@@ -90,6 +90,10 @@ export default function CategoryDropdown({
   let displayValue;
   if (isMatchedTransfer && matchedAccountName) {
     displayValue = matchedAccountName;
+  } else if (value === 'transfer') {
+    displayValue = 'Bank Transfer';
+  } else if (value === 'credit_card_payment') {
+    displayValue = 'Credit Card Payment';
   } else if (selectedAccount) {
     displayValue = getDisplayName(selectedAccount);
   } else {
@@ -170,6 +174,27 @@ export default function CategoryDropdown({
               <ClickThroughSelectSeparator />
             </>
           )}
+
+          <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+            Transfer
+          </div>
+          <ClickThroughSelectItem
+            value="transfer"
+            data-display="Bank Transfer"
+            className="flex items-center gap-2 whitespace-nowrap"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+            <span className="truncate flex-1">Bank Transfer</span>
+          </ClickThroughSelectItem>
+          <ClickThroughSelectItem
+            value="credit_card_payment"
+            data-display="Credit Card Payment"
+            className="flex items-center gap-2 whitespace-nowrap"
+          >
+            <ArrowLeftRight className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
+            <span className="truncate flex-1">Credit Card Payment</span>
+          </ClickThroughSelectItem>
+          <ClickThroughSelectSeparator />
           {suggestedAccount && (
             <>
               <ClickThroughSelectItem
