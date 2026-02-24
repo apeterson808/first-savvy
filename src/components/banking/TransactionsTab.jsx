@@ -100,6 +100,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [transferPostPreviewOpen, setTransferPostPreviewOpen] = useState(false);
   const [matchingTransfer, setMatchingTransfer] = useState(null);
   const [pairedTransfer, setPairedTransfer] = useState(null);
+  const [currentMatchType, setCurrentMatchType] = useState('transfer');
   const [ccPaymentDialogOpen, setCCPaymentDialogOpen] = useState(false);
   const [matchingCCPayment, setMatchingCCPayment] = useState(null);
   const [pairedCCPayment, setPairedCCPayment] = useState(null);
@@ -1172,12 +1173,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           return;
         } else if (isTransfer && !transaction.transfer_reviewed) {
           // Transfer not yet reviewed - open preview dialog
+          const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+          setCurrentMatchType(matchType);
           setMatchingTransfer(transaction);
           setPairedTransfer(paired);
           setTransferPostPreviewOpen(true);
           return;
         } else {
           // Already reviewed - just open preview
+          const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+          setCurrentMatchType(matchType);
           setMatchingTransfer(transaction);
           setPairedTransfer(paired);
           setTransferPostPreviewOpen(true);
@@ -1197,6 +1202,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
 
     // Found potential match but not yet linked - open match dialog to confirm
+    const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+    setCurrentMatchType(matchType);
     setMatchingTransfer(transaction);
     setPairedTransfer(paired);
     setTransferMatchDialogOpen(true);
@@ -3574,6 +3581,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             pairedTransaction={pairedTransfer}
                             accounts={accounts}
                             onConfirm={handleConfirmTransferMatch}
+                            matchType={currentMatchType}
                           />
 
                           <TransferPostPreviewDialog
@@ -3589,6 +3597,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             toAccount={pairedTransfer ? accounts.find(a => a.id === pairedTransfer.bank_account_id) : null}
                             onPost={handlePostTransferFromPreview}
                             isPosting={isPostingTransfer}
+                            matchType={currentMatchType}
                           />
 
                           <CreditCardPaymentMatchDialog

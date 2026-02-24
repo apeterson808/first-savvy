@@ -24,7 +24,8 @@ export default function TransferPostPreviewDialog({
   fromAccount,
   toAccount,
   onPost,
-  isPosting
+  isPosting,
+  matchType = 'transfer'
 }) {
   if (!transaction || !pairedTransaction) return null;
 
@@ -43,9 +44,13 @@ export default function TransferPostPreviewDialog({
             <div className="flex items-center gap-3">
               <FileText className="h-6 w-6 text-muted-foreground" />
               <div>
-                <DialogTitle className="text-2xl">Post Transfer</DialogTitle>
+                <DialogTitle className="text-2xl">
+                  {matchType === 'credit_card_payment' ? 'Post Credit Card Payment' : 'Post Bank Transfer'}
+                </DialogTitle>
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline">Transfer</Badge>
+                  <Badge variant="outline">
+                    {matchType === 'credit_card_payment' ? 'Credit Card Payment' : 'Bank Transfer'}
+                  </Badge>
                   <div className="flex items-center gap-1 text-sm text-muted-foreground">
                     <Calendar className="h-3 w-3" />
                     {date}
@@ -158,7 +163,7 @@ export default function TransferPostPreviewDialog({
             onClick={onPost}
             disabled={isPosting}
           >
-            {isPosting ? 'Posting...' : 'Post Transfer'}
+            {isPosting ? 'Posting...' : (matchType === 'credit_card_payment' ? 'Post Credit Card Payment' : 'Post Bank Transfer')}
           </Button>
         </DialogFooter>
       </DialogContent>

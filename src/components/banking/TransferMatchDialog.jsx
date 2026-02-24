@@ -14,13 +14,14 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import { ArrowRight } from 'lucide-react';
 import { getAccountDisplayName } from '../utils/constants';
 
-export default function TransferMatchDialog({ 
-  isOpen, 
-  onClose, 
-  transaction, 
+export default function TransferMatchDialog({
+  isOpen,
+  onClose,
+  transaction,
   pairedTransaction,
   accounts,
-  onConfirm 
+  onConfirm,
+  matchType = 'transfer'
 }) {
   const [selectedToAccount, setSelectedToAccount] = React.useState(
     pairedTransaction?.bank_account_id || ''
@@ -41,7 +42,9 @@ export default function TransferMatchDialog({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Match Transfer</DialogTitle>
+          <DialogTitle>
+            {matchType === 'credit_card_payment' ? 'Match Credit Card Payment' : 'Match Bank Transfer'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 py-4">
