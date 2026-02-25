@@ -14,7 +14,7 @@ const WORKER_ID = `worker-${crypto.randomUUID()}`;
 interface DetectionJob {
   id: string;
   profile_id: string;
-  job_type: 'transfer' | 'cc_payment' | 'ai_category' | 'ai_contact';
+  job_type: 'transfer' | 'cc_payment' | 'matching' | 'ai_category' | 'ai_contact';
   batch_id: string;
   transaction_ids: string[];
   status: string;
@@ -71,6 +71,11 @@ Deno.serve(async (req: Request) => {
           let suggestionsCreated = 0;
 
           switch (job.job_type) {
+            case 'matching':
+              const matchingResult = await processUnifiedMatching(supabase, job);
+              matchesFound = matchingResult.matchCount;
+              break;
+
             case 'transfer':
               const transferResult = await processTransferDetection(supabase, job);
               matchesFound = transferResult.matchCount;
@@ -155,6 +160,21 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+async function processUnifiedMatching(supabase: any, job: DetectionJob) {
+  const { data, error } = await supabase.rpc('auto_detect_matches_unified', {
+    p_profile_id: job.profile_id,
+    p_transaction_ids: job.transaction_ids
+  });
+
+  if (error) {
+    throw new Error(`Unified matching failed: ${error.message}`);
+  }
+
+  return {
+    matchCount: data?.[0]?.pair_count || 0
+  };
+}
 
 async function processTransferDetection(supabase: any, job: DetectionJob) {
   const { data, error } = await supabase.rpc('auto_detect_transfers_optimized', {

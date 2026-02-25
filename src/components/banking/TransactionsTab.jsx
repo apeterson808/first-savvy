@@ -58,7 +58,10 @@ import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetec
 import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
+import { matchingAPI } from '@/api/matchingAPI';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedMatching } from '@/hooks/useUnifiedMatching';
+import * as matchCompat from '@/utils/matchingCompatibility';
 import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
 import { autoLearnRule } from '@/utils/autoLearnRule';
 import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
@@ -133,7 +136,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const isMatched = (transaction) => {
-    return transaction && (transaction.transfer_pair_id != null || transaction.cc_payment_pair_id != null);
+    return matchCompat.isMatched(transaction);
   };
 
   const isSplitMode = (transactionId) => {
