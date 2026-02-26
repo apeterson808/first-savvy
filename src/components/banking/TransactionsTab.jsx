@@ -92,6 +92,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
+  const [manualActionOverrides, setManualActionOverrides] = useState({});
   const [quickRuleDialogOpen, setQuickRuleDialogOpen] = useState(false);
   const [ruleSourceTransaction, setRuleSourceTransaction] = useState(null);
   const [editingRule, setEditingRule] = useState(null);
@@ -108,7 +109,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const isMatched = (transaction) => {
-    return matchCompat.isMatched(transaction);
+    return false;
   };
 
   const isSplitMode = (transactionId) => {
@@ -827,59 +828,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   // Find potential matches for a transaction (checks both pending and posted)
+  // Removed: matching functionality no longer supported
   const findPotentialMatches = (transaction) => {
-    if (!transaction) return [];
-
-    // Unified search: find transactions with same absolute amount, opposite signs, different accounts, within 10 days
-    return transactions.filter(t => {
-      // Must not be the same transaction
-      if (t.id === transaction.id) return false;
-
-      // Must not be excluded
-      if (t.status === 'excluded') return false;
-
-      // Must be in an active account
-      if (!activeAccountIds.includes(t.bank_account_id)) return false;
-
-      // Must be different bank account
-      if (t.bank_account_id === transaction.bank_account_id) return false;
-
-      // Check if amounts are opposite (one positive, one negative, same magnitude)
-      const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
-                         (t.amount > 0) !== (transaction.amount > 0);
-
-      if (!amountMatch) return false;
-
-      // Check if dates are close (within 10 days)
-      const tDate = new Date(t.date);
-      const txDate = new Date(transaction.date);
-      const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
-      const dateMatch = daysDiff <= 10;
-
-      return dateMatch;
-    });
+    return [];
   };
 
   // Calculate match confidence based purely on date proximity
+  // Removed: matching functionality no longer supported
   const calculateMatchConfidence = (transaction, match) => {
-    const tDate = new Date(transaction.date);
-    const mDate = new Date(match.date);
-    const daysDiff = Math.abs((tDate - mDate) / (1000 * 60 * 60 * 24));
-
-    // Pure date-based scoring
-    if (daysDiff === 0) return 100;  // Same day
-    if (daysDiff === 1) return 95;   // 1 day apart
-    if (daysDiff === 2) return 90;   // 2 days apart
-    if (daysDiff === 3) return 85;   // 3 days apart
-    if (daysDiff === 4) return 80;   // 4 days apart
-    if (daysDiff === 5) return 75;   // 5 days apart
-    if (daysDiff === 6) return 70;   // 6 days apart
-    if (daysDiff === 7) return 65;   // 7 days apart
-    if (daysDiff === 8) return 60;   // 8 days apart
-    if (daysDiff === 9) return 55;   // 9 days apart
-    if (daysDiff === 10) return 50;  // 10 days apart
-
-    return 50; // Fallback (shouldn't reach here with 10-day limit)
+    return 0;
   };
 
   // Unified function to post transaction(s)
