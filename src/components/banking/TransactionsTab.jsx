@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2 } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -988,27 +988,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                   <span className="text-sm text-slate-600">
                     {selectedTransactions.length} selected
                   </span>
-                  {selectedTransactions.length === 2 && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const [id1, id2] = selectedTransactions;
-                          await linkTransferPair(id1, id2);
-                          toast.success('Transactions matched successfully');
-                          setSelectedTransactions([]);
-                        } catch (error) {
-                          console.error('Match error:', error);
-                          toast.error('Failed to match transactions');
-                        }
-                      }}
-                      className="gap-1.5"
-                    >
-                      <Link2 className="h-4 w-4" />
-                      Match as Transfer
-                    </Button>
-                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1418,10 +1397,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       setMatchDialogOpen(true);
                                     };
                                   } else {
-                                    actionText = 'Post';
-                                    actionHandler = () => {
-                                      setExpandedTransactionId(transaction.id);
-                                    };
+                                    if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
+                                      const paired = findPairedTransfer(transaction);
+                                      actionText = paired ? 'Match' : 'Post';
+                                      actionHandler = () => handleTransferMatch(transaction);
+                                    } else {
+                                      const matches = findPotentialMatches(transaction);
+                                      actionText = matches.length > 0 ? 'Match' : 'Post';
+                                      actionHandler = () => handleMatchClick(transaction);
+                                    }
                                   }
 
                                   return (
@@ -1698,35 +1682,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                     {/* Tab Content Section */}
                                     <div className="px-4 pb-4 space-y-2">
-
-                                    {/* Post/Match Toggle for Transfers and Credit Card Payments */}
-                                    {statusFilter === 'pending' && (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !isSplitMode(transaction.id) && (
-                                      <div className="flex items-center gap-2 mb-3">
-                                        <Tabs
-                                          value={manualActionOverrides[transaction.id] || 'post'}
-                                          onValueChange={(val) => {
-                                            setManualActionOverrides(prev => ({
-                                              ...prev,
-                                              [transaction.id]: val
-                                            }));
-                                          }}
-                                          className="h-8"
-                                        >
-                                          <TabsList className="h-8">
-                                            <TabsTrigger
-                                              value="post"
-                                              className="h-7 text-xs"
-                                            >
-                                              Post
-                                            </TabsTrigger>
-                                            <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
-                                          </TabsList>
-                                        </Tabs>
-                                      </div>
-                                    )}
-
                                     {/* Categorize Tab Content */}
-                                    {!isSplitMode(transaction.id) && manualActionOverrides[transaction.id] !== 'match' && (
+                                    {!isSplitMode(transaction.id) && (
                                       <div className="space-y-3">
                                         <div className="grid grid-cols-2 gap-3">
                                           {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
@@ -1806,214 +1763,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </div>
                                     )}
 
-                                    {/* Match Tab Content - Manual matching for transfers and credit card payments */}
-                                    {!isSplitMode(transaction.id) && manualActionOverrides[transaction.id] === 'match' && (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
-                                      <div className="space-y-3">
-                                        <p className="text-xs text-slate-600">Filter transactions to find a match:</p>
-                                        <div className="flex gap-2">
-                                          <div className="flex-1">
-                                            <Label className="text-xs mb-1 block">Account</Label>
-                                            <AccountDropdown
-                                              value={manualMatchFilterInputs[transaction.id]?.account || 'all'}
-                                              onValueChange={(val) => {
-                                                const newVal = val === 'all' ? null : val;
-                                                setManualMatchFilterInputs(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: {
-                                                    ...prev[transaction.id],
-                                                    account: newVal
-                                                  }
-                                                }));
-                                                setManualMatchFilters(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: {
-                                                    ...prev[transaction.id],
-                                                    account: newVal
-                                                  }
-                                                }));
-                                              }}
-                                              showAllOption={true}
-                                              showPendingCounts={false}
-                                              triggerClassName="h-8 text-xs"
-                                              placeholder="All Accounts"
-                                            />
-                                          </div>
-                                          <div className="w-32">
-                                            <Label className="text-xs mb-1 block">Min Amount</Label>
-                                            <CalculatorAmountInput
-                                              value={parseFloat(manualMatchFilterInputs[transaction.id]?.amountMin) || 0}
-                                              onChange={(value) => {
-                                                setManualMatchFilterInputs(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: {
-                                                    ...prev[transaction.id],
-                                                    amountMin: value.toString()
-                                                  }
-                                                }));
-                                              }}
-                                              onBlur={(value) => {
-                                                setManualMatchFilters(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: {
-                                                    ...prev[transaction.id],
-                                                    amountMin: value.toString()
-                                                  }
-                                                }));
-                                              }}
-                                              className="h-8 text-xs"
-                                              placeholder="0.00"
-                                            />
-                                          </div>
-                                          <div className="w-32">
-                                            <Label className="text-xs mb-1 block">Max Amount</Label>
-                                            <CalculatorAmountInput
-                                              value={parseFloat(manualMatchFilterInputs[transaction.id]?.amountMax) || 0}
-                                              onChange={(value) => {
-                                                setManualMatchFilterInputs(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: {
-                                                    ...prev[transaction.id],
-                                                    amountMax: value.toString()
-                                                  }
-                                                }));
-                                              }}
-                                              onBlur={(value) => {
-                                                setManualMatchFilters(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: {
-                                                    ...prev[transaction.id],
-                                                    amountMax: value.toString()
-                                                  }
-                                                }));
-                                              }}
-                                              className="h-8 text-xs"
-                                              placeholder="0.00"
-                                            />
-                                          </div>
-                                        </div>
-
-                                        {/* Manual Match Results */}
-                                        {(() => {
-                                          const filters = manualMatchFilters[transaction.id] || {};
-                                          const hasFilters = filters.account || filters.amountMin || filters.amountMax;
-
-                                          const matches = hasFilters ? transactions.filter(t => {
-                                            if (t.id === transaction.id) return false;
-                                            if (t.status !== 'pending') return false;
-                                            if (!activeAccountIds.includes(t.bank_account_id)) return false;
-
-                                            if (filters.account && t.bank_account_id !== filters.account) return false;
-                                            if (filters.amountMin && Math.abs(t.amount) < parseFloat(filters.amountMin)) return false;
-                                            if (filters.amountMax && Math.abs(t.amount) > parseFloat(filters.amountMax)) return false;
-
-                                            return true;
-                                          }) : [];
-
-                                          return (
-                                            <div>
-                                              {hasFilters && (
-                                                <>
-                                                  <div className="flex items-center justify-between mb-2">
-                                                    <p className="text-xs font-medium text-slate-700">
-                                                      {matches.length} transaction{matches.length !== 1 ? 's' : ''} found
-                                                    </p>
-                                                    <Button
-                                                      variant="ghost"
-                                                      size="sm"
-                                                      className="h-7 text-xs"
-                                                      onClick={() => {
-                                                        setManualMatchFilters(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: {}
-                                                        }));
-                                                        setManualMatchFilterInputs(prev => ({
-                                                          ...prev,
-                                                          [transaction.id]: {}
-                                                        }));
-                                                      }}
-                                                    >
-                                                      Clear Filters
-                                                    </Button>
-                                                  </div>
-
-                                                  {matches.length > 0 && (
-                                                    <div className="border border-slate-200 rounded-md overflow-hidden max-h-64 overflow-y-auto">
-                                                      <table className="w-full text-xs">
-                                                        <thead className="bg-slate-100 sticky top-0">
-                                                          <tr>
-                                                            <th className="border-r border-slate-200 py-1 px-2 text-left text-xs font-medium">Date</th>
-                                                            {selectedAccount === 'all' && (
-                                                              <th className="border-r border-slate-200 py-1 px-2 text-left text-xs font-medium">Account</th>
-                                                            )}
-                                                            <th className="border-r border-slate-200 py-1 px-2 text-left text-xs font-medium">Description</th>
-                                                            <th className="border-r border-slate-200 py-1 px-2 text-left text-xs font-medium">Amount</th>
-                                                            <th className="py-1 px-2 text-left text-xs font-medium">Action</th>
-                                                          </tr>
-                                                        </thead>
-                                                        <tbody>
-                                                          {matches.map((match) => {
-                                                            const matchAccount = accounts.find(a => a.id === match.bank_account_id);
-                                                            return (
-                                                              <tr key={match.id} className="bg-white hover:bg-slate-50">
-                                                                <td className="border-r border-t border-slate-200 py-1 px-2">
-                                                                  {format(parseISO(match.date), 'MM/dd/yy')}
-                                                                </td>
-                                                                {selectedAccount === 'all' && (
-                                                                  <td className="border-r border-t border-slate-200 py-1 px-2 truncate">
-                                                                    {getAccountDisplayName(matchAccount)}
-                                                                  </td>
-                                                                )}
-                                                                <td className="border-r border-t border-slate-200 py-1 px-2">
-                                                                  {formatTransactionDescription(match.description)}
-                                                                </td>
-                                                                <td className="border-r border-t border-slate-200 py-1 px-2 text-right">
-                                                                  ${Math.abs(match.amount).toFixed(2)}
-                                                                </td>
-                                                                <td className="border-t border-slate-200 py-1 px-2 text-center">
-                                                                  <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    className="h-6 text-xs text-blue-600 hover:text-blue-700"
-                                                                    onClick={async () => {
-                                                                      try {
-                                                                        await linkTransferPair(transaction.id, match.id);
-                                                                        toast.success('Transactions matched successfully');
-                                                                        setManualActionOverrides(prev => {
-                                                                          const updated = { ...prev };
-                                                                          delete updated[transaction.id];
-                                                                          return updated;
-                                                                        });
-                                                                      } catch (error) {
-                                                                        console.error('Match error:', error);
-                                                                        toast.error('Failed to match transactions');
-                                                                      }
-                                                                    }}
-                                                                  >
-                                                                    Match
-                                                                  </Button>
-                                                                </td>
-                                                              </tr>
-                                                            );
-                                                          })}
-                                                        </tbody>
-                                                      </table>
-                                                    </div>
-                                                  )}
-                                                </>
-                                              )}
-                                              {!hasFilters && (
-                                                <p className="text-xs text-slate-500 text-center py-4">
-                                                  Set filters above to find matching transactions
-                                                </p>
-                                              )}
-                                            </div>
-                                          );
-                                        })()}
-                                      </div>
-                                    )}
-
-                                    {/* OLD Match Tab Content - Keep disabled */}
-                                    {false && (
+                                    {/* Match Tab Content - REMOVED: Matching functionality no longer supported */}
+                                    {false && !isSplitMode(transaction.id) && (() => {
+                                      const override = manualActionOverrides[transaction.id];
+                                      if (override === 'post') return false;
+                                      if (override === 'match') return true;
+                                      // Check default - show Match tab if already paired OR if potential matches exist
+                                      return !!findPairedTransfer(transaction) || findPotentialMatches(transaction).length > 0;
+                                    })() && (
                                       <>
 
                                         {/* Potential Matches */}
