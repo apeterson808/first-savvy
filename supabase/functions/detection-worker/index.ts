@@ -72,18 +72,11 @@ Deno.serve(async (req: Request) => {
 
           switch (job.job_type) {
             case 'matching':
-              const matchingResult = await processUnifiedMatching(supabase, job);
-              matchesFound = matchingResult.matchCount;
-              break;
-
             case 'transfer':
-              const transferResult = await processTransferDetection(supabase, job);
-              matchesFound = transferResult.matchCount;
-              break;
-
             case 'cc_payment':
-              const ccResult = await processCCPaymentDetection(supabase, job);
-              matchesFound = ccResult.matchCount;
+              // Automatic matching is disabled
+              console.log(`[${WORKER_ID}] Skipping ${job.job_type} - automatic matching is disabled`);
+              matchesFound = 0;
               break;
 
             case 'ai_category':

@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink, ScanSearch } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -54,17 +54,13 @@ import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { RuleDialog } from '../rules/RuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
-import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
-import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
 import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
-import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
 import { matchingAPI } from '@/api/matchingAPI';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUnifiedMatching } from '@/hooks/useUnifiedMatching';
 import * as matchCompat from '@/utils/matchingCompatibility';
 import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
 import { autoLearnRule } from '@/utils/autoLearnRule';
-import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -104,9 +100,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [matchingTransfer, setMatchingTransfer] = useState(null);
   const [pairedTransfer, setPairedTransfer] = useState(null);
   const [currentMatchType, setCurrentMatchType] = useState('transfer');
-  const [ccPaymentDialogOpen, setCCPaymentDialogOpen] = useState(false);
-  const [matchingCCPayment, setMatchingCCPayment] = useState(null);
-  const [pairedCCPayment, setPairedCCPayment] = useState(null);
   const [isPostingTransfer, setIsPostingTransfer] = useState(false);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [manualActionOverrides, setManualActionOverrides] = useState({});
@@ -325,42 +318,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
-  const handleScanForMatches = async () => {
-    if (!activeProfile?.id || isScanningRef.current) return;
-
-    isScanningRef.current = true;
-    setIsScanning(true);
-    const toastId = toast.loading('Scanning transactions for matches...');
-
-    try {
-      const [transferResult, paymentResult] = await Promise.all([
-        scanTransfers(),
-        scanPayments()
-      ]);
-
-      const transferMatches = transferResult?.matchedCount || 0;
-      const paymentMatches = paymentResult?.matchedCount || 0;
-      const totalMatches = transferMatches + paymentMatches;
-
-      queryClient.invalidateQueries({ queryKey: ['transactions', activeProfile.id] });
-
-      if (totalMatches > 0) {
-        const parts = [];
-        if (transferMatches > 0) parts.push(`${transferMatches} transfer${transferMatches === 1 ? '' : 's'}`);
-        if (paymentMatches > 0) parts.push(`${paymentMatches} payment${paymentMatches === 1 ? '' : 's'}`);
-
-        toast.success(`Found ${parts.join(' and ')}`, { id: toastId });
-      } else {
-        toast.info('No new matches found', { id: toastId });
-      }
-    } catch (error) {
-      console.error('Error scanning for matches:', error);
-      toast.error('Failed to scan for matches', { id: toastId });
-    } finally {
-      isScanningRef.current = false;
-      setIsScanning(false);
-    }
-  };
 
   const handlePostWithSplit = async (transaction) => {
     if (isSplitMode(transaction.id)) {
@@ -476,8 +433,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
-  const isScanningRef = React.useRef(false);
-  const [isScanning, setIsScanning] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: fullPendingTransactions = [] } = useQuery({
@@ -513,15 +468,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
   }));
 
-  const { detectNewTransactions, scanAllPendingTransactions: scanTransfers } = useAutomaticTransferDetection(
-    activeProfile?.id,
-    fullPendingTransactions
-  );
-
-  const { detectNewPayments, scanAllPendingTransactions: scanPayments } = useAutomaticCreditCardPaymentDetection(
-    activeProfile?.id,
-    fullPendingTransactions
-  );
 
   // Fetch all active accounts for Match tab dropdown (from unified chart of accounts)
   const { data: allActiveAccounts = [] } = useQuery({
@@ -1167,30 +1113,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       const paired = findPairedTransfer(transaction);
 
       if (paired) {
-        // Already matched - check if reviewed
-        if (isCCPayment && !transaction.cc_payment_reviewed) {
-          // Credit card payment not yet reviewed - open dialog to accept/reject
-          setMatchingCCPayment(transaction);
-          setPairedCCPayment(paired);
-          setCCPaymentDialogOpen(true);
-          return;
-        } else if (isTransfer && !transaction.transfer_reviewed) {
-          // Transfer not yet reviewed - open preview dialog
-          const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
-          setCurrentMatchType(matchType);
-          setMatchingTransfer(transaction);
-          setPairedTransfer(paired);
-          setTransferPostPreviewOpen(true);
-          return;
-        } else {
-          // Already reviewed - just open preview
-          const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
-          setCurrentMatchType(matchType);
-          setMatchingTransfer(transaction);
-          setPairedTransfer(paired);
-          setTransferPostPreviewOpen(true);
-          return;
-        }
+        // Already matched - open preview
+        const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+        setCurrentMatchType(matchType);
+        setMatchingTransfer(transaction);
+        setPairedTransfer(paired);
+        setTransferPostPreviewOpen(true);
+        return;
       }
     }
 
@@ -1453,33 +1382,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
-  const handleAcceptCCPayment = async (paymentPairId) => {
-    try {
-      const { error } = await creditCardPaymentDetectionAPI.acceptPayment(paymentPairId);
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      toast.success('Credit card payment accepted');
-    } catch (error) {
-      console.error('Error accepting credit card payment:', error);
-      toast.error('Failed to accept credit card payment');
-    }
-  };
-
-  const handleRejectCCPayment = async (paymentPairId) => {
-    try {
-      const { error } = await creditCardPaymentDetectionAPI.rejectPayment(paymentPairId);
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      toast.success('Credit card payment rejected');
-    } catch (error) {
-      console.error('Error rejecting credit card payment:', error);
-      toast.error('Failed to reject credit card payment');
-    }
-  };
 
   const startResize = (column, e) => {
     e.preventDefault();
@@ -1654,25 +1556,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={handleScanForMatches}
-                        disabled={isScanning}
-                      >
-                        {isScanning
-                          ? <Loader2 className="w-4 h-4 animate-spin" />
-                          : <ScanSearch className="w-4 h-4" />
-                        }
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Scan for matches</TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
@@ -1689,28 +1572,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     <ClickThroughDropdownMenuItem onClick={handleResetViewSettings}>
                       Reset View Settings
                     </ClickThroughDropdownMenuItem>
-                    {statusFilter === 'posted' && (
-                      <ClickThroughDropdownMenuItem onClick={async () => {
-                        toast.info('Detecting credit card payments...');
-                        await creditCardPaymentDetectionAPI.detectPayments(activeProfile?.id);
-                        await refetchUnreviewedPayments();
-                        queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-                        toast.success('Detection complete');
-                      }}>
-                        Detect CC Payments
-                      </ClickThroughDropdownMenuItem>
-                    )}
-                    {statusFilter === 'pending' && (
-                      <ClickThroughDropdownMenuItem onClick={async () => {
-                        toast.info('Detecting transfers...');
-                        await transferAutoDetectionAPI.detectTransfers(activeProfile?.id);
-                        await refetchUnreviewedTransfers();
-                        queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-                        toast.success('Detection complete');
-                      }}>
-                        Detect Transfers
-                      </ClickThroughDropdownMenuItem>
-                    )}
                   </ClickThroughDropdownMenuContent>
                 </ClickThroughDropdownMenu>
               </div>
@@ -3601,23 +3462,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             onPost={handlePostTransferFromPreview}
                             isPosting={isPostingTransfer}
                             matchType={currentMatchType}
-                          />
-
-                          <CreditCardPaymentMatchDialog
-                            isOpen={ccPaymentDialogOpen}
-                            onClose={() => {
-                              setCCPaymentDialogOpen(false);
-                              setMatchingCCPayment(null);
-                              setPairedCCPayment(null);
-                            }}
-                            transaction={matchingCCPayment}
-                            pairedTransaction={pairedCCPayment}
-                            accounts={allActiveAccounts}
-                            onConfirm={async () => {
-                              if (matchingCCPayment?.cc_payment_pair_id) {
-                                await handleAcceptCCPayment(matchingCCPayment.cc_payment_pair_id);
-                              }
-                            }}
                           />
 
                           <TransactionReviewDialog

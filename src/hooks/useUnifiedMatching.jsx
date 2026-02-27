@@ -135,34 +135,8 @@ export function useUnifiedMatching(profileId, userId) {
   }, [profileId, userId, queryClient]);
 
   const detectMatches = useCallback(async (transactionIds = null) => {
-    if (!profileId) return { success: false };
-
-    setIsProcessing(true);
-    try {
-      const { data, error } = await matchingAPI.detectMatches(profileId, transactionIds);
-
-      if (error) {
-        toast.error('Failed to detect matches');
-        return { success: false, error };
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-
-      if (data?.pair_count > 0) {
-        toast.success(`Found ${data.pair_count} potential match${data.pair_count === 1 ? '' : 'es'}`);
-      } else {
-        toast.info('No matches found');
-      }
-
-      return { success: true, data };
-    } catch (err) {
-      console.error('Error detecting matches:', err);
-      toast.error('Failed to detect matches');
-      return { success: false, error: err };
-    } finally {
-      setIsProcessing(false);
-    }
-  }, [profileId, queryClient]);
+    return { success: false };
+  }, []);
 
   const determineMatchType = useCallback((transaction, match, accounts) => {
     const transAccount = accounts.find(a => a.id === transaction.bank_account_id);

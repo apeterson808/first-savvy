@@ -6,12 +6,11 @@ import { Checkbox } from '../ui/checkbox';
 import { Badge } from '../ui/badge';
 import { Alert, AlertDescription } from '../ui/alert';
 import { ScrollArea } from '../ui/scroll-area';
-import { Loader2, CheckCircle2, AlertCircle, Info, Sparkles, Brain, Calendar, Filter } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertCircle, Info, Brain, Calendar, Filter } from 'lucide-react';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import { formatCurrency } from '../utils/formatters';
 import { supabase } from '../../api/supabaseClient';
 import { format } from 'date-fns';
-import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 import { toast } from 'sonner';
 import { Label } from '../ui/label';
 import { calculateBeginningBalanceFromCurrent } from './StatementProcessor';
@@ -162,32 +161,10 @@ export function TransactionReviewDialog({
       if (insertError) throw insertError;
 
       if (insertedTransactions && insertedTransactions.length > 0) {
-        const transactionIds = insertedTransactions.map(t => t.id);
-
-        // Phase 2: Enqueue background detection jobs instead of running client-side
-        try {
-          const { detectionQueueAPI } = await import('../../api/detectionQueue');
-          const { batchId, error: queueError } = await detectionQueueAPI.enqueueDetection(
-            profileId,
-            transactionIds,
-            'csv_import'
-          );
-
-          if (!queueError && batchId) {
-            // Trigger worker to start processing immediately
-            detectionQueueAPI.triggerWorker().catch(() => {
-              // Silently fail if worker trigger fails
-            });
-          }
-        } catch (err) {
-          // Detection queue not available, continue without it
-        }
-
-        const successMessage = `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported. Detection running in background.`;
+        const successMessage = `${insertedTransactions.length} transaction${insertedTransactions.length !== 1 ? 's' : ''} imported successfully.`;
 
         toast.success(successMessage, {
-          duration: 5000,
-          icon: categorizedCount > 0 ? <Sparkles className="w-4 h-4" /> : undefined
+          duration: 5000
         });
       }
 
