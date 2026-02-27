@@ -27,7 +27,6 @@ export function TransactionReviewDialog({
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState('');
-  const [bulkAccountId, setBulkAccountId] = useState(null);
   const [filterStartDate, setFilterStartDate] = useState(null);
   const [showDateFilter, setShowDateFilter] = useState(false);
 
@@ -48,10 +47,6 @@ export function TransactionReviewDialog({
         }));
 
         let processedTxns = txns;
-
-        if (extractedData.suggestedAccountId) {
-          setBulkAccountId(extractedData.suggestedAccountId);
-        }
 
         if (extractedData.suggestedAccountId) {
           processedTxns = txns.map(t => ({
@@ -105,16 +100,6 @@ export function TransactionReviewDialog({
       }
       return txn;
     }));
-  };
-
-  const applyBulkAccount = () => {
-    if (bulkAccountId) {
-      setTransactions(prev => prev.map(txn =>
-        selectedIds.has(txn.id)
-          ? { ...txn, chartAccountId: bulkAccountId }
-          : txn
-      ));
-    }
   };
 
   const handleImport = async () => {
@@ -345,25 +330,6 @@ export function TransactionReviewDialog({
                 onCheckedChange={toggleSelectAll}
               />
               <span className="text-sm font-medium">Select All ({filteredTransactions.length})</span>
-            </div>
-
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-sm text-gray-600">Bulk assign account:</span>
-              <ChartAccountDropdown
-                value={bulkAccountId}
-                onChange={setBulkAccountId}
-                profileId={profileId}
-                className="w-[250px]"
-                filterClass="asset"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={applyBulkAccount}
-                disabled={!bulkAccountId || selectedIds.size === 0}
-              >
-                Apply to Selected
-              </Button>
             </div>
           </div>
 
