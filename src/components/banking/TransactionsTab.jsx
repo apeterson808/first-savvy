@@ -297,6 +297,43 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
+  const handleScanForMatches = async () => {
+    if (!activeProfile?.id || isScanningRef.current) return;
+
+    isScanningRef.current = true;
+    setIsScanning(true);
+    const toastId = toast.loading('Scanning transactions for matches...');
+
+    try {
+      const [transferResult, paymentResult] = await Promise.all([
+        scanTransfers(),
+        scanPayments()
+      ]);
+
+      const transferMatches = transferResult?.matchedCount || 0;
+      const paymentMatches = paymentResult?.matchedCount || 0;
+      const totalMatches = transferMatches + paymentMatches;
+
+      queryClient.invalidateQueries({ queryKey: ['transactions', activeProfile.id] });
+
+      if (totalMatches > 0) {
+        const parts = [];
+        if (transferMatches > 0) parts.push(`${transferMatches} transfer${transferMatches === 1 ? '' : 's'}`);
+        if (paymentMatches > 0) parts.push(`${paymentMatches} payment${paymentMatches === 1 ? '' : 's'}`);
+
+        toast.success(`Found ${parts.join(' and ')}`, { id: toastId });
+      } else {
+        toast.info('No new matches found', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Error scanning for matches:', error);
+      toast.error('Failed to scan for matches', { id: toastId });
+    } finally {
+      isScanningRef.current = false;
+      setIsScanning(false);
+    }
+  };
+
   const handlePostWithSplit = async (transaction) => {
     if (isSplitMode(transaction.id)) {
       const lines = splitLineItems[transaction.id] || [];
@@ -411,6 +448,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
   const [resizing, setResizing] = useState(null);
   const tableContainerRef = React.useRef(null);
+  const isScanningRef = React.useRef(false);
+  const [isScanning, setIsScanning] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: fullPendingTransactions = [] } = useQuery({
@@ -445,6 +484,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     institution: acc.institution_name,
     entityType: acc.account_type === 'credit_card' ? 'CreditCard' : 'BankAccount'
   }));
+
+  const { detectNewTransactions, scanAllPendingTransactions: scanTransfers } = useAutomaticTransferDetection(
+    activeProfile?.id,
+    fullPendingTransactions
+  );
+
+  const { detectNewPayments, scanAllPendingTransactions: scanPayments } = useAutomaticCreditCardPaymentDetection(
+    activeProfile?.id,
+    fullPendingTransactions
+  );
 
   // Fetch all active accounts for Match tab dropdown (from unified chart of accounts)
   const { data: allActiveAccounts = [] } = useQuery({
@@ -517,6 +566,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
+
+      if (createdTransaction?.id) {
+        detectNewTransactions([createdTransaction.id]);
+        if (createdTransaction.status === 'posted') {
+          detectNewPayments([createdTransaction.id]);
+        }
+      }
     },
     onError: (error) => {
       logError(error, { action: 'createTransaction' });
@@ -613,6 +669,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
+
+      if (!error && updatedTransaction?.id && variables?.data?.status === 'posted') {
+        detectNewPayments([updatedTransaction.id]);
+      }
 
       if (!error && variables?.data?.category_account_id) {
         const allTxns = [
@@ -1115,6 +1175,25 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               <div className="flex-1"></div>
 
               <div className="flex items-center gap-1">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={handleScanForMatches}
+                        disabled={isScanning}
+                      >
+                        {isScanning
+                          ? <Loader2 className="w-4 h-4 animate-spin" />
+                          : <ScanSearch className="w-4 h-4" />
+                        }
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Scan for matches</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <Button variant="ghost" size="icon" className="h-8 w-8">
                   <Printer className="w-4 h-4" />
                 </Button>
@@ -1131,6 +1210,28 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     <ClickThroughDropdownMenuItem onClick={handleResetViewSettings}>
                       Reset View Settings
                     </ClickThroughDropdownMenuItem>
+                    {statusFilter === 'posted' && (
+                      <ClickThroughDropdownMenuItem onClick={async () => {
+                        toast.info('Detecting credit card payments...');
+                        await creditCardPaymentDetectionAPI.detectPayments(activeProfile?.id);
+                        await refetchUnreviewedPayments();
+                        queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+                        toast.success('Detection complete');
+                      }}>
+                        Detect CC Payments
+                      </ClickThroughDropdownMenuItem>
+                    )}
+                    {statusFilter === 'pending' && (
+                      <ClickThroughDropdownMenuItem onClick={async () => {
+                        toast.info('Detecting transfers...');
+                        await transferAutoDetectionAPI.detectTransfers(activeProfile?.id);
+                        await refetchUnreviewedTransfers();
+                        queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+                        toast.success('Detection complete');
+                      }}>
+                        Detect Transfers
+                      </ClickThroughDropdownMenuItem>
+                    )}
                   </ClickThroughDropdownMenuContent>
                 </ClickThroughDropdownMenu>
               </div>
