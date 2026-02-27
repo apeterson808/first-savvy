@@ -129,7 +129,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const isMatched = (transaction) => {
-    return matchCompat.isMatched(transaction);
+    return false;
   };
 
   const isSplitMode = (transactionId) => {
@@ -848,26 +848,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return isFromActiveAccount && matchesAccount;
   }).length;
 
-  // Find paired transfer or credit card payment transaction
   const findPairedTransfer = (transaction) => {
-    if (!transaction) return null;
-
-    // Check for transfer pair
-    if (transaction.transfer_pair_id) {
-      return transactions.find(t =>
-        t.id !== transaction.id &&
-        t.transfer_pair_id === transaction.transfer_pair_id
-      );
-    }
-
-    // Check for credit card payment pair
-    if (transaction.cc_payment_pair_id) {
-      return transactions.find(t =>
-        t.id !== transaction.id &&
-        t.cc_payment_pair_id === transaction.cc_payment_pair_id
-      );
-    }
-
     return null;
   };
 
@@ -945,38 +926,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   };
 
-  // Find potential matches for a transaction (checks both pending and posted)
   const findPotentialMatches = (transaction) => {
-    if (!transaction) return [];
-
-    // Unified search: find transactions with same absolute amount, opposite signs, different accounts, within 10 days
-    return transactions.filter(t => {
-      // Must not be the same transaction
-      if (t.id === transaction.id) return false;
-
-      // Must not be excluded
-      if (t.status === 'excluded') return false;
-
-      // Must be in an active account
-      if (!activeAccountIds.includes(t.bank_account_id)) return false;
-
-      // Must be different bank account
-      if (t.bank_account_id === transaction.bank_account_id) return false;
-
-      // Check if amounts are opposite (one positive, one negative, same magnitude)
-      const amountMatch = Math.abs(Math.abs(t.amount) - Math.abs(transaction.amount)) < 0.01 &&
-                         (t.amount > 0) !== (transaction.amount > 0);
-
-      if (!amountMatch) return false;
-
-      // Check if dates are close (within 10 days)
-      const tDate = new Date(t.date);
-      const txDate = new Date(transaction.date);
-      const daysDiff = Math.abs((txDate - tDate) / (1000 * 60 * 60 * 24));
-      const dateMatch = daysDiff <= 10;
-
-      return dateMatch;
-    });
+    return [];
   };
 
   // Calculate match confidence based purely on date proximity
@@ -1008,8 +959,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     if (!canPost) return false;
 
     // Validate category requirement (except for transfers and credit card payments)
-    const isTransfer = transaction.type === 'transfer' || transaction.transfer_pair_id;
-    const isCCPayment = transaction.type === 'credit_card_payment' || transaction.cc_payment_pair_id;
+    const isTransfer = transaction.type === 'transfer';
+    const isCCPayment = transaction.type === 'credit_card_payment';
     const isSplit = transaction.is_split;
 
     if (!isTransfer && !isCCPayment && !isSplit && !transaction.category_account_id) {
@@ -1017,80 +968,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return false;
     }
 
-    // Check if this transaction is part of a transfer pair
-    if (transaction.transfer_pair_id) {
-      const pairedTransaction = transactions.find(
-        t => t.transfer_pair_id === transaction.transfer_pair_id && t.id !== transaction.id
-      );
-
-      // If we found a paired transaction that's not yet posted, post both atomically
-      if (pairedTransaction) {
-        if (pairedTransaction.status === 'excluded') {
-          toast.error('Cannot post transfer: paired transaction is excluded');
-          return false;
-        }
-
-        if (pairedTransaction.status !== 'posted') {
-          try {
-            // CRITICAL: Post SEQUENTIALLY to avoid race condition
-            // First transaction posts -> trigger skips (paired not posted yet)
-            const result1 = await transactionService.postTransaction(pairedTransaction.id);
-            if (result1.error) {
-              console.error('Failed to post paired transaction:', result1.error);
-              toast.error('Failed to post transfer. Please try again.');
-              return false;
-            }
-
-            // Second transaction posts -> trigger creates journal entry (paired is now posted)
-            const result2 = await transactionService.postTransaction(transaction.id);
-            if (result2.error) {
-              console.error('Failed to post transaction:', result2.error);
-              toast.error('Failed to post transfer. Please try again.');
-              return false;
-            }
-
-            // Invalidate queries to refresh the UI
-            queryClient.invalidateQueries(['fullPendingTransactions']);
-            queryClient.invalidateQueries(['fullPostedTransactions']);
-
-            toast.success('Transfer posted (both sides)');
-            return true;
-          } catch (error) {
-            console.error('Failed to post transfer:', error);
-            toast.error('Failed to post transfer. Please try again.');
-            return false;
-          }
-        } else {
-          // Paired transaction already posted, just post this one
-          const result = await transactionService.postTransaction(transaction.id);
-          if (result.error) {
-            console.error('Failed to post transaction:', result.error);
-            toast.error('Failed to post transaction. Please try again.');
-            return false;
-          }
-
-          queryClient.invalidateQueries(['fullPendingTransactions']);
-          queryClient.invalidateQueries(['fullPostedTransactions']);
-          toast.success('Transaction posted');
-          return true;
-        }
-      } else {
-        // transfer_pair_id exists but no paired transaction found - post anyway
-        const result = await transactionService.postTransaction(transaction.id);
-        if (result.error) {
-          console.error('Failed to post transaction:', result.error);
-          toast.error('Failed to post transaction. Please try again.');
-          return false;
-        }
-
-        queryClient.invalidateQueries(['fullPendingTransactions']);
-        queryClient.invalidateQueries(['fullPostedTransactions']);
-        toast.success('Transaction posted');
-        return true;
-      }
-    }
-
-    // No transfer pair - post single transaction
+    // Post single transaction
     const result = await transactionService.postTransaction(transaction.id);
     if (result.error) {
       console.error('Failed to post transaction:', result.error);
@@ -1105,40 +983,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   };
 
   const handleTransferMatch = async (transaction) => {
-    const isCCPayment = transaction.type === 'credit_card_payment' || transaction.cc_payment_pair_id;
-    const isTransfer = transaction.type === 'transfer' || transaction.transfer_pair_id;
-
-    // Check if transaction is already matched
-    if (transaction.transfer_pair_id || transaction.cc_payment_pair_id) {
-      const paired = findPairedTransfer(transaction);
-
-      if (paired) {
-        // Already matched - open preview
-        const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
-        setCurrentMatchType(matchType);
-        setMatchingTransfer(transaction);
-        setPairedTransfer(paired);
-        setTransferPostPreviewOpen(true);
-        return;
-      }
-    }
-
-    // Not matched yet - check if we can find potential matches using findPotentialMatches
-    const potentialMatches = findPotentialMatches(transaction);
-    const paired = potentialMatches.length > 0 ? potentialMatches[0] : null;
-
-    if (!paired) {
-      // No potential match found - this might be a regular transaction or unmatched transfer
-      await postTransaction(transaction);
-      return;
-    }
-
-    // Found potential match but not yet linked - open match dialog to confirm
-    const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
-    setCurrentMatchType(matchType);
-    setMatchingTransfer(transaction);
-    setPairedTransfer(paired);
-    setTransferMatchDialogOpen(true);
+    toast.error('Matching is disabled');
   };
 
   const handleConfirmTransferMatch = async (toAccountId) => {
