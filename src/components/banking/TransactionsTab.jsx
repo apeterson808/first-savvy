@@ -29,7 +29,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus } from 'lucide-react';
+import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink, ScanSearch } from 'lucide-react';
 import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
@@ -40,6 +40,8 @@ import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
+import TransferMatchDialog from './TransferMatchDialog';
+import TransferPostPreviewDialog from './TransferPostPreviewDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
@@ -48,12 +50,21 @@ import { getTransactionSplits, createTransactionSplits, updateTransactionSplits,
 import CalculatorAmountInput from '../common/CalculatorAmountInput';
 import { Trash2 } from 'lucide-react';
 import * as transactionService from '@/api/transactionService';
+import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { RuleDialog } from '../rules/RuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
+import { useAutomaticTransferDetection } from '@/hooks/useAutomaticTransferDetection';
+import { useAutomaticCreditCardPaymentDetection } from '@/hooks/useAutomaticCreditCardPaymentDetection';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
+import { creditCardPaymentDetectionAPI } from '@/api/creditCardPaymentDetection';
+import { matchingAPI } from '@/api/matchingAPI';
 import { useAuth } from '@/contexts/AuthContext';
+import { useUnifiedMatching } from '@/hooks/useUnifiedMatching';
+import * as matchCompat from '@/utils/matchingCompatibility';
 import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
 import { autoLearnRule } from '@/utils/autoLearnRule';
+import CreditCardPaymentMatchDialog from './CreditCardPaymentMatchDialog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -88,10 +99,27 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
+  const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
+  const [transferPostPreviewOpen, setTransferPostPreviewOpen] = useState(false);
+  const [matchingTransfer, setMatchingTransfer] = useState(null);
+  const [pairedTransfer, setPairedTransfer] = useState(null);
+  const [currentMatchType, setCurrentMatchType] = useState('transfer');
+  const [ccPaymentDialogOpen, setCCPaymentDialogOpen] = useState(false);
+  const [matchingCCPayment, setMatchingCCPayment] = useState(null);
+  const [pairedCCPayment, setPairedCCPayment] = useState(null);
+  const [isPostingTransfer, setIsPostingTransfer] = useState(false);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
+  const [manualActionOverrides, setManualActionOverrides] = useState({});
+  const [selectedMatches, setSelectedMatches] = useState({});
+  const [manualMatchSearch, setManualMatchSearch] = useState({});
+  const [manualMatchFilters, setManualMatchFilters] = useState({});
+  const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
+  const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
+  const [extractedData, setExtractedData] = useState(null);
+  const [suggestedMatches, setSuggestedMatches] = useState({});
   const [quickRuleDialogOpen, setQuickRuleDialogOpen] = useState(false);
   const [ruleSourceTransaction, setRuleSourceTransaction] = useState(null);
   const [editingRule, setEditingRule] = useState(null);
@@ -875,15 +903,100 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   }).length;
 
   // Find paired transfer or credit card payment transaction
-  // Removed: matching/pairing functionality no longer supported
   const findPairedTransfer = (transaction) => {
+    if (!transaction) return null;
+
+    // Check for transfer pair
+    if (transaction.transfer_pair_id) {
+      return transactions.find(t =>
+        t.id !== transaction.id &&
+        t.transfer_pair_id === transaction.transfer_pair_id
+      );
+    }
+
+    // Check for credit card payment pair
+    if (transaction.cc_payment_pair_id) {
+      return transactions.find(t =>
+        t.id !== transaction.id &&
+        t.cc_payment_pair_id === transaction.cc_payment_pair_id
+      );
+    }
+
     return null;
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleUnmatch = async (transaction) => {
-    toast.error('Matching functionality has been removed');
-    return;
+    if (!isMatched(transaction)) {
+      toast.error('Transaction is not matched');
+      return;
+    }
+
+    if (statusFilter === 'posted') {
+      toast.error('Move transaction to Pending to unmatch');
+      return;
+    }
+
+    const pairedTransaction = findPairedTransfer(transaction);
+
+    if (!pairedTransaction) {
+      toast.error('Cannot find paired transaction');
+      return;
+    }
+
+    try {
+      toast.info('Unmatching transaction...');
+
+      const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+      const originalType2 = pairedTransaction.original_type || (pairedTransaction.amount > 0 ? 'income' : 'expense');
+
+      const updateData1 = {
+        type: originalType1,
+        original_type: null
+      };
+
+      const updateData2 = {
+        type: originalType2,
+        original_type: null
+      };
+
+      if (transaction.transfer_pair_id) {
+        updateData1.transfer_pair_id = null;
+        updateData2.transfer_pair_id = null;
+      }
+
+      if (transaction.cc_payment_pair_id) {
+        updateData1.cc_payment_pair_id = null;
+        updateData2.cc_payment_pair_id = null;
+      }
+
+      updateMutation.mutate({
+        id: transaction.id,
+        data: updateData1
+      });
+
+      updateMutation.mutate({
+        id: pairedTransaction.id,
+        data: updateData2
+      });
+
+      setSelectedMatches(prev => {
+        const next = { ...prev };
+        delete next[transaction.id];
+        delete next[pairedTransaction.id];
+        return next;
+      });
+
+      setSuggestedMatches(prev => ({
+        ...prev,
+        [transaction.id]: pairedTransaction.id,
+        [pairedTransaction.id]: transaction.id
+      }));
+
+      toast.success('Transactions unmatched');
+    } catch (err) {
+      console.error('Error unmatching transactions:', err);
+      toast.error('Failed to unmatch transactions');
+    }
   };
 
   // Find potential matches for a transaction (checks both pending and posted)
@@ -942,15 +1055,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return 50; // Fallback (shouldn't reach here with 10-day limit)
   };
 
-  // Unified function to post transaction(s)
+  // Unified function to post transaction(s) - handles both single transactions and transfer pairs atomically
   const postTransaction = async (transaction) => {
     // Validate splits first
     const canPost = await handlePostWithSplit(transaction);
     if (!canPost) return false;
 
     // Validate category requirement (except for transfers and credit card payments)
-    const isTransfer = transaction.type === 'transfer';
-    const isCCPayment = transaction.type === 'credit_card_payment';
+    const isTransfer = transaction.type === 'transfer' || transaction.transfer_pair_id;
+    const isCCPayment = transaction.type === 'credit_card_payment' || transaction.cc_payment_pair_id;
     const isSplit = transaction.is_split;
 
     if (!isTransfer && !isCCPayment && !isSplit && !transaction.category_account_id) {
@@ -958,7 +1071,80 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return false;
     }
 
-    // Post single transaction
+    // Check if this transaction is part of a transfer pair
+    if (transaction.transfer_pair_id) {
+      const pairedTransaction = transactions.find(
+        t => t.transfer_pair_id === transaction.transfer_pair_id && t.id !== transaction.id
+      );
+
+      // If we found a paired transaction that's not yet posted, post both atomically
+      if (pairedTransaction) {
+        if (pairedTransaction.status === 'excluded') {
+          toast.error('Cannot post transfer: paired transaction is excluded');
+          return false;
+        }
+
+        if (pairedTransaction.status !== 'posted') {
+          try {
+            // CRITICAL: Post SEQUENTIALLY to avoid race condition
+            // First transaction posts -> trigger skips (paired not posted yet)
+            const result1 = await transactionService.postTransaction(pairedTransaction.id);
+            if (result1.error) {
+              console.error('Failed to post paired transaction:', result1.error);
+              toast.error('Failed to post transfer. Please try again.');
+              return false;
+            }
+
+            // Second transaction posts -> trigger creates journal entry (paired is now posted)
+            const result2 = await transactionService.postTransaction(transaction.id);
+            if (result2.error) {
+              console.error('Failed to post transaction:', result2.error);
+              toast.error('Failed to post transfer. Please try again.');
+              return false;
+            }
+
+            // Invalidate queries to refresh the UI
+            queryClient.invalidateQueries(['fullPendingTransactions']);
+            queryClient.invalidateQueries(['fullPostedTransactions']);
+
+            toast.success('Transfer posted (both sides)');
+            return true;
+          } catch (error) {
+            console.error('Failed to post transfer:', error);
+            toast.error('Failed to post transfer. Please try again.');
+            return false;
+          }
+        } else {
+          // Paired transaction already posted, just post this one
+          const result = await transactionService.postTransaction(transaction.id);
+          if (result.error) {
+            console.error('Failed to post transaction:', result.error);
+            toast.error('Failed to post transaction. Please try again.');
+            return false;
+          }
+
+          queryClient.invalidateQueries(['fullPendingTransactions']);
+          queryClient.invalidateQueries(['fullPostedTransactions']);
+          toast.success('Transaction posted');
+          return true;
+        }
+      } else {
+        // transfer_pair_id exists but no paired transaction found - post anyway
+        const result = await transactionService.postTransaction(transaction.id);
+        if (result.error) {
+          console.error('Failed to post transaction:', result.error);
+          toast.error('Failed to post transaction. Please try again.');
+          return false;
+        }
+
+        queryClient.invalidateQueries(['fullPendingTransactions']);
+        queryClient.invalidateQueries(['fullPostedTransactions']);
+        toast.success('Transaction posted');
+        return true;
+      }
+    }
+
+    // No transfer pair - post single transaction
     const result = await transactionService.postTransaction(transaction.id);
     if (result.error) {
       console.error('Failed to post transaction:', result.error);
@@ -972,46 +1158,327 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return true;
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleTransferMatch = async (transaction) => {
-    // Just post the transaction directly
-    await postTransaction(transaction);
+    const isCCPayment = transaction.type === 'credit_card_payment' || transaction.cc_payment_pair_id;
+    const isTransfer = transaction.type === 'transfer' || transaction.transfer_pair_id;
+
+    // Check if transaction is already matched
+    if (transaction.transfer_pair_id || transaction.cc_payment_pair_id) {
+      const paired = findPairedTransfer(transaction);
+
+      if (paired) {
+        // Already matched - check if reviewed
+        if (isCCPayment && !transaction.cc_payment_reviewed) {
+          // Credit card payment not yet reviewed - open dialog to accept/reject
+          setMatchingCCPayment(transaction);
+          setPairedCCPayment(paired);
+          setCCPaymentDialogOpen(true);
+          return;
+        } else if (isTransfer && !transaction.transfer_reviewed) {
+          // Transfer not yet reviewed - open preview dialog
+          const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+          setCurrentMatchType(matchType);
+          setMatchingTransfer(transaction);
+          setPairedTransfer(paired);
+          setTransferPostPreviewOpen(true);
+          return;
+        } else {
+          // Already reviewed - just open preview
+          const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+          setCurrentMatchType(matchType);
+          setMatchingTransfer(transaction);
+          setPairedTransfer(paired);
+          setTransferPostPreviewOpen(true);
+          return;
+        }
+      }
+    }
+
+    // Not matched yet - check if we can find potential matches using findPotentialMatches
+    const potentialMatches = findPotentialMatches(transaction);
+    const paired = potentialMatches.length > 0 ? potentialMatches[0] : null;
+
+    if (!paired) {
+      // No potential match found - this might be a regular transaction or unmatched transfer
+      await postTransaction(transaction);
+      return;
+    }
+
+    // Found potential match but not yet linked - open match dialog to confirm
+    const matchType = determineMatchType(transaction.bank_account_id, paired.bank_account_id, allActiveAccounts);
+    setCurrentMatchType(matchType);
+    setMatchingTransfer(transaction);
+    setPairedTransfer(paired);
+    setTransferMatchDialogOpen(true);
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleConfirmTransferMatch = async (toAccountId) => {
-    toast.error('Matching functionality has been removed');
+    if (!matchingTransfer || !pairedTransfer) return;
+
+    try {
+      // Link the two transactions as a transfer pair
+      const result = await transferAutoDetectionAPI.linkTransferPair(
+        matchingTransfer.id,
+        pairedTransfer.id,
+        activeProfile.id
+      );
+
+      if (result.error) {
+        throw result.error;
+      }
+
+      // Close match dialog and open preview dialog (state already set)
+      setTransferMatchDialogOpen(false);
+      setTransferPostPreviewOpen(true);
+      toast.success('Transfer linked - review before posting');
+
+      // Refresh transactions in the background
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    } catch (error) {
+      console.error('Error linking transfers:', error);
+      toast.error('Failed to link transfers');
+    }
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handlePostTransferFromPreview = async () => {
-    toast.error('Matching functionality has been removed');
+    if (!matchingTransfer || !pairedTransfer) return;
+
+    setIsPostingTransfer(true);
+    try {
+      // postTransaction handles posting both sides internally
+      const success = await postTransaction(matchingTransfer);
+      if (success) {
+        setTransferPostPreviewOpen(false);
+        setMatchingTransfer(null);
+        setPairedTransfer(null);
+      }
+    } catch (error) {
+      console.error('Error posting transfer:', error);
+      toast.error('Failed to post transfer');
+    } finally {
+      setIsPostingTransfer(false);
+    }
   };
 
-  // Removed: matching/pairing functionality no longer supported
+
+  const handleImportComplete = () => {
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    queryClient.invalidateQueries({ queryKey: ['accounts'] });
+    toast.success('Transactions imported successfully');
+    setReviewDialogOpen(false);
+    setExtractedData(null);
+  };
+
   const handleMatchClick = async (transaction) => {
-    // Just post the transaction directly
-    await postTransaction(transaction);
+    const selectedMatch = selectedMatches[transaction.id];
+
+    if (selectedMatch) {
+      const matchedTransaction = transactions.find(t => t.id === selectedMatch);
+
+      if (!matchedTransaction) {
+        toast.error('Matched transaction not found');
+        return;
+      }
+
+      // Get account details for both transactions
+      const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
+      const matchAccount = allActiveAccounts.find(a => a.id === matchedTransaction.bank_account_id);
+
+      // Determine if this is a credit card payment pair by checking account_type
+      const isCreditCardPayment = transAccount && matchAccount &&
+        ((transAccount.account_type === 'credit_card' && matchAccount.account_type === 'bank_account') ||
+         (matchAccount.account_type === 'credit_card' && transAccount.account_type === 'bank_account'));
+
+      let pairId;
+      let pairType;
+      let pairIdField;
+
+      if (isCreditCardPayment) {
+        // This is a credit card payment
+        pairId = transaction.cc_payment_pair_id || matchedTransaction?.cc_payment_pair_id || `cc_payment_${Date.now()}`;
+        pairType = 'credit_card_payment';
+        pairIdField = 'cc_payment_pair_id';
+      } else {
+        // This is a regular transfer
+        pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
+        pairType = 'transfer';
+        pairIdField = 'transfer_pair_id';
+      }
+
+      try {
+        // Link both transactions with the appropriate pair ID and type
+        await Promise.all([
+          updateMutation.mutateAsync({
+            id: transaction.id,
+            data: {
+              [pairIdField]: pairId,
+              type: pairType
+            }
+          }),
+          updateMutation.mutateAsync({
+            id: matchedTransaction.id,
+            data: {
+              [pairIdField]: pairId,
+              type: pairType
+            }
+          })
+        ]);
+
+        // Set state BEFORE invalidating queries to open preview dialog
+        setMatchingTransfer(transaction);
+        setPairedTransfer(matchedTransaction);
+        setTransferPostPreviewOpen(true);
+
+        setSelectedMatches(prev => {
+          const next = { ...prev };
+          delete next[transaction.id];
+          return next;
+        });
+        setExpandedTransactionId(null);
+
+        if (isCreditCardPayment) {
+          toast.success('Credit card payment linked - review before posting');
+        } else {
+          toast.success('Transfer linked - review before posting');
+        }
+
+        // Refresh in the background (don't await)
+        queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      } catch (error) {
+        console.error('Failed to link transactions:', error);
+        toast.error('Failed to link transactions. Please try again.');
+      }
+    } else {
+      const matches = findPotentialMatches(transaction);
+      if (matches.length === 0) {
+        // Use unified postTransaction function to handle transfer pairs atomically
+        await postTransaction(transaction);
+      }
+    }
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleMatchSelectedAsTransfer = async () => {
-    toast.error('Matching functionality has been removed');
+    if (selectedTransactions.length !== 2) {
+      toast.error('Please select exactly 2 transactions to match');
+      return;
+    }
+
+    const txn1 = transactions.find(t => t.id === selectedTransactions[0]);
+    const txn2 = transactions.find(t => t.id === selectedTransactions[1]);
+
+    if (!txn1 || !txn2) {
+      toast.error('Selected transactions not found');
+      return;
+    }
+
+    if (txn1.bank_account_id === txn2.bank_account_id) {
+      toast.error('Cannot match transactions from the same account');
+      return;
+    }
+
+    if (Math.abs(txn1.amount) !== Math.abs(txn2.amount)) {
+      toast.error('Transaction amounts must be equal');
+      return;
+    }
+
+    if (Math.sign(txn1.amount) === Math.sign(txn2.amount)) {
+      toast.error('Transaction amounts must have opposite signs (one positive, one negative)');
+      return;
+    }
+
+    if (txn1.transfer_pair_id || txn2.transfer_pair_id) {
+      toast.error('One or both transactions are already paired');
+      return;
+    }
+
+    try {
+      const { data, error } = await transferAutoDetectionAPI.linkTransferPair(
+        selectedTransactions[0],
+        selectedTransactions[1],
+        activeProfile?.id
+      );
+
+      if (error) throw error;
+
+      // Set state BEFORE invalidating queries to open preview dialog
+      setMatchingTransfer(txn1);
+      setPairedTransfer(txn2);
+      setTransferPostPreviewOpen(true);
+
+      setSelectedTransactions([]);
+      toast.success('Transfer linked - review before posting');
+
+      // Refresh in the background (don't await)
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+    } catch (error) {
+      console.error('Error linking transactions:', error);
+      toast.error(error.message || 'Failed to link transfer');
+    }
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleUnmatchSelectedTransfer = async () => {
-    toast.error('Matching functionality has been removed');
+    if (selectedTransactions.length === 0) {
+      toast.error('Please select a transaction to unmatch');
+      return;
+    }
+
+    const txn = transactions.find(t => t.id === selectedTransactions[0]);
+
+    if (!txn) {
+      toast.error('Selected transaction not found');
+      return;
+    }
+
+    if (!txn.transfer_pair_id) {
+      toast.error('Transaction is not part of a transfer pair');
+      return;
+    }
+
+    try {
+      const { error } = await transferAutoDetectionAPI.unlinkTransferPair(
+        selectedTransactions[0],
+        activeProfile?.id
+      );
+
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setSelectedTransactions([]);
+      toast.success('Transfer pair unmatched');
+    } catch (error) {
+      console.error('Error unmatching transfer:', error);
+      toast.error(error.message || 'Failed to unmatch transfer');
+    }
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleAcceptCCPayment = async (paymentPairId) => {
-    toast.error('Matching functionality has been removed');
+    try {
+      const { error } = await creditCardPaymentDetectionAPI.acceptPayment(paymentPairId);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Credit card payment accepted');
+    } catch (error) {
+      console.error('Error accepting credit card payment:', error);
+      toast.error('Failed to accept credit card payment');
+    }
   };
 
-  // Removed: matching/pairing functionality no longer supported
   const handleRejectCCPayment = async (paymentPairId) => {
-    toast.error('Matching functionality has been removed');
+    try {
+      const { error } = await creditCardPaymentDetectionAPI.rejectPayment(paymentPairId);
+      if (error) throw error;
+
+      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Credit card payment rejected');
+    } catch (error) {
+      console.error('Error rejecting credit card payment:', error);
+      toast.error('Failed to reject credit card payment');
+    }
   };
 
   const startResize = (column, e) => {
@@ -1137,6 +1604,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                     >
                       <Link2 className="h-4 w-4" />
                       Match as Transfer
+                    </Button>
+                  )}
+                  {selectedTransactions.length === 1 &&
+                   transactions.find(t => t.id === selectedTransactions[0])?.transfer_pair_id && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleUnmatchSelectedTransfer}
+                      className="gap-1.5"
+                    >
+                      <Unlink className="h-4 w-4" />
+                      Unmatch Transfer
                     </Button>
                   )}
                   <Button
@@ -1409,7 +1888,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     </td>
                         <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
                           {(() => {
-                            // Transfers and credit card payments no longer support pairing
+                            // For transfers/credit card payments that are actually paired, show the paired account name (not editable)
+                            if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (transaction.transfer_pair_id || transaction.cc_payment_pair_id)) {
+                              const paired = findPairedTransfer(transaction);
+                              if (paired) {
+                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
+                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
+                              }
+                            }
 
                             const isInMatchMode = statusFilter === 'pending' && (
                               manualActionOverrides[transaction.id] === 'match' || (
@@ -1505,6 +1991,60 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                       if (value === 'transfer' || value === 'credit_card_payment') {
                                         const updateData = { type: value, category_account_id: null };
+                                        const pairId = transaction.cc_payment_pair_id || transaction.transfer_pair_id;
+
+                                        if (transaction.type === 'credit_card_payment' && value === 'transfer') {
+                                          updateData.transfer_pair_id = transaction.cc_payment_pair_id;
+                                          updateData.cc_payment_pair_id = null;
+                                          updateData.cc_payment_review_status = null;
+
+                                          if (pairId) {
+                                            const { data: paired } = await firstsavvy
+                                              .from('transactions')
+                                              .select('*')
+                                              .eq('cc_payment_pair_id', pairId)
+                                              .neq('id', transaction.id)
+                                              .maybeSingle();
+
+                                            if (paired) {
+                                              updateMutation.mutate({
+                                                id: paired.id,
+                                                data: {
+                                                  transfer_pair_id: pairId,
+                                                  cc_payment_pair_id: null,
+                                                  type: 'transfer',
+                                                  cc_payment_review_status: null
+                                                }
+                                              });
+                                            }
+                                          }
+                                        } else if (transaction.type === 'transfer' && value === 'credit_card_payment') {
+                                          updateData.cc_payment_pair_id = transaction.transfer_pair_id;
+                                          updateData.transfer_pair_id = null;
+                                          updateData.cc_payment_review_status = 'unreviewed';
+
+                                          if (pairId) {
+                                            const { data: paired } = await firstsavvy
+                                              .from('transactions')
+                                              .select('*')
+                                              .eq('transfer_pair_id', pairId)
+                                              .neq('id', transaction.id)
+                                              .maybeSingle();
+
+                                            if (paired) {
+                                              updateMutation.mutate({
+                                                id: paired.id,
+                                                data: {
+                                                  cc_payment_pair_id: pairId,
+                                                  transfer_pair_id: null,
+                                                  type: 'credit_card_payment',
+                                                  cc_payment_review_status: 'unreviewed'
+                                                }
+                                              });
+                                            }
+                                          }
+                                        }
+
                                         updateMutation.mutate({
                                           id: transaction.id,
                                           data: updateData
@@ -1526,6 +2066,9 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                       if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
                                         updateData.type = null;
+                                        updateData.transfer_pair_id = null;
+                                        updateData.cc_payment_pair_id = null;
+                                        updateData.cc_payment_review_status = null;
                                       }
 
                                       updateMutation.mutate({
@@ -1564,7 +2107,21 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 {(() => {
                                   if (isMatched(transaction)) {
                                     return (
-                                      <span className="text-xs text-slate-400 italic">Matched</span>
+                                      <button
+                                        className="text-xs text-blue-600 hover:underline"
+                                        onClick={(e) => {
+                                          e?.stopPropagation();
+                                          // Transaction is already matched - open preview dialog
+                                          const paired = findPairedTransfer(transaction);
+                                          if (paired) {
+                                            setMatchingTransfer(transaction);
+                                            setPairedTransfer(paired);
+                                            setTransferPostPreviewOpen(true);
+                                          }
+                                        }}
+                                      >
+                                        Match
+                                      </button>
                                     );
                                   }
 
@@ -1935,7 +2492,197 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     )}
                                     </div>
 
-                                    {/* Matched Transaction Row - Removed: matching/pairing functionality no longer supported */}
+                                    {/* Matched Transaction Row */}
+                                    {(() => {
+                                      const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
+                                      if (!currentlyPaired) return null;
+
+                                      const isTransfer = transaction.transfer_pair_id != null;
+                                      const isCCPayment = transaction.cc_payment_pair_id != null;
+
+                                      return (
+                                        <>
+                                          <div className="pt-2 pb-1 px-4">
+                                            <p className="text-xs text-slate-600">Suggested Match</p>
+                                          </div>
+                                          <div className="bg-blue-50/50">
+                                            <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                              <colgroup>
+                                                <col style={{ width: 32, minWidth: 32 }} />
+                                                <col style={{ width: 70, minWidth: 70 }} />
+                                                {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                                <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                                <col style={{ width: 1 }} />
+                                                <col style={{ width: 1 }} />
+                                                <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                                <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                                <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
+                                              </colgroup>
+                                              <tbody>
+                                                <tr>
+                                                  {/* Checkbox */}
+                                                  <td className="border-r border-blue-200 text-center">
+                                                    <input
+                                                      type="checkbox"
+                                                      checked={true}
+                                                      onChange={async (e) => {
+                                                        e.stopPropagation();
+
+                                                        const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                        const originalType2 = currentlyPaired.original_type || (currentlyPaired.amount > 0 ? 'income' : 'expense');
+
+                                                        const updateData1 = {
+                                                          type: originalType1,
+                                                          original_type: null
+                                                        };
+
+                                                        const updateData2 = {
+                                                          type: originalType2,
+                                                          original_type: null
+                                                        };
+
+                                                        if (transaction.transfer_pair_id) {
+                                                          updateData1.transfer_pair_id = null;
+                                                          updateData2.transfer_pair_id = null;
+                                                        }
+
+                                                        if (transaction.cc_payment_pair_id) {
+                                                          updateData1.cc_payment_pair_id = null;
+                                                          updateData2.cc_payment_pair_id = null;
+                                                        }
+
+                                                        try {
+                                                          await Promise.all([
+                                                            updateMutation.mutateAsync({
+                                                              id: transaction.id,
+                                                              data: updateData1
+                                                            }),
+                                                            updateMutation.mutateAsync({
+                                                              id: currentlyPaired.id,
+                                                              data: updateData2
+                                                            })
+                                                          ]);
+
+                                                          setSelectedMatches(prev => {
+                                                            const next = { ...prev };
+                                                            delete next[transaction.id];
+                                                            delete next[currentlyPaired.id];
+                                                            return next;
+                                                          });
+
+                                                          setManualActionOverrides(prev => ({
+                                                            ...prev,
+                                                            [transaction.id]: 'match',
+                                                            [currentlyPaired.id]: 'match'
+                                                          }));
+
+                                                          setSuggestedMatches(prev => ({
+                                                            ...prev,
+                                                            [transaction.id]: currentlyPaired.id,
+                                                            [currentlyPaired.id]: transaction.id
+                                                          }));
+
+                                                          toast.success('Transfer unmatched');
+                                                        } catch (error) {
+                                                          console.error('Failed to unmatch transfer:', error);
+                                                          toast.error('Failed to unmatch transfer. Please try again.');
+                                                        }
+                                                      }}
+                                                      className="rounded w-3.5 h-3.5"
+                                                    />
+                                                  </td>
+
+                                                  {/* Date */}
+                                                  <td className="border-r border-blue-200 py-1 pl-2 pr-1 text-xs">
+                                                    {format(parseISO(currentlyPaired.date), 'MM/dd/yy')}
+                                                  </td>
+
+                                                  {/* Account (if showing all) */}
+                                                  {selectedAccount === 'all' && (
+                                                    <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                      {getAccountDisplayName(accounts.find(a => a.id === currentlyPaired.bank_account_id))}
+                                                    </td>
+                                                  )}
+
+                                                  {/* Description - Editable */}
+                                                  <td className="border-r border-blue-200 py-1 px-4 pl-2 text-xs" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
+                                                    <Input
+                                                      defaultValue={currentlyPaired.description || ''}
+                                                      className="h-6 text-xs border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                                      onBlur={(e) => {
+                                                        if (e.target.value !== (currentlyPaired.description || '')) {
+                                                          updateMutation.mutate({
+                                                            id: currentlyPaired.id,
+                                                            data: { description: e.target.value }
+                                                          });
+                                                        }
+                                                      }}
+                                                      onClick={(e) => e.stopPropagation()}
+                                                    />
+                                                  </td>
+
+                                                {/* Spent */}
+                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                  {(currentlyPaired.type === 'expense' || currentlyPaired.type === 'transfer' || currentlyPaired.type === 'credit_card_payment') && (
+                                                    <span className="font-medium">
+                                                      ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                  )}
+                                                </td>
+
+                                                {/* Received */}
+                                                <td className="border-r border-blue-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                  {currentlyPaired.type === 'income' && (
+                                                    <span className="font-medium">
+                                                      ${Math.abs(currentlyPaired.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    </span>
+                                                  )}
+                                                </td>
+
+                                                {/* From/To */}
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                  {(() => {
+                                                    if (currentlyPaired.type === 'transfer') {
+                                                      const otherAccount = accounts.find(a => a.id === transaction.bank_account_id);
+                                                      return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                    }
+                                                    const contact = contacts.find(c => c.id === currentlyPaired.contact_id);
+                                                    return contact ? contact.display_name : '—';
+                                                  })()}
+                                                </td>
+
+                                                {/* Category */}
+                                                <td className="border-r border-blue-200 py-1 px-4 pl-2 truncate text-xs">
+                                                  {(() => {
+                                                    const transactionAccount = chartAccounts.find(a => a.id === transaction.bank_account_id);
+                                                    const pairedAccount = chartAccounts.find(a => a.id === currentlyPaired.bank_account_id);
+
+                                                    if (transactionAccount && pairedAccount) {
+                                                      const isCreditCard = transactionAccount.account_type === 'credit_card' || pairedAccount.account_type === 'credit_card';
+                                                      if (isCreditCard) {
+                                                        return 'Credit Card Payment';
+                                                      }
+                                                      return 'Transfer';
+                                                    }
+
+                                                    if (currentlyPaired.type === 'transfer') return 'Transfer';
+                                                    if (currentlyPaired.type === 'credit_card_payment') return 'Credit Card Payment';
+                                                    const category = chartAccounts.find(c => c.id === currentlyPaired.category_account_id);
+                                                    return category?.display_name || '—';
+                                                  })()}
+                                                </td>
+
+                                                {/* Matched Badge */}
+                                                <td className="py-1 text-xs text-blue-600 font-medium whitespace-nowrap text-center">
+                                                  ✓
+                                                </td>
+                                              </tr>
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                        </>
+                                      );
+                                    })()}
 
                                     {/* Tab Content Section */}
                                     <div className="px-4 pb-4 space-y-2">
@@ -2068,6 +2815,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         }) : [];
 
                                         let matches = hasFilters ? manualMatches : autoMatches;
+
+                                        // Check if there's a suggested match (previously unmatched transaction)
+                                        const suggestedMatchId = suggestedMatches[transaction.id];
+                                        const suggestedMatch = suggestedMatchId ? transactions.find(t => t.id === suggestedMatchId) : null;
+
+                                        // If there's a suggested match, prioritize it at the top
+                                        if (suggestedMatch && !hasFilters) {
+                                          // Remove from matches if it's already there
+                                          matches = matches.filter(m => m.id !== suggestedMatch.id);
+                                          // Add to the beginning
+                                          matches = [suggestedMatch, ...matches];
+                                        }
 
                                         // Auto-select highest confidence match if not already selected
                                         if (!hasFilters && matches.length > 0 && !selectedMatches[transaction.id]) {
@@ -2283,11 +3042,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                         {matches.filter(match => !currentlyPaired || match.id !== currentlyPaired.id).map(match => {
                                                           const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
 
-                                                          // Calculate confidence for suggestions
+                                                          // Use stored confidence from auto-detection if available, otherwise calculate
                                                           let confidence;
                                                           if ((transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !hasFilters) {
                                                             confidence = 100;
+                                                          } else if (match.cc_payment_match_confidence && match.cc_payment_pair_id === transaction.cc_payment_pair_id) {
+                                                            // Use stored confidence for auto-detected CC payment matches
+                                                            confidence = match.cc_payment_match_confidence;
+                                                          } else if (match.transfer_match_confidence && match.transfer_pair_id === transaction.transfer_pair_id) {
+                                                            // Use stored confidence for auto-detected transfer matches
+                                                            confidence = match.transfer_match_confidence;
                                                           } else {
+                                                            // Calculate confidence for manual suggestions
                                                             confidence = calculateMatchConfidence(transaction, match);
                                                           }
 
@@ -2304,8 +3070,88 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                               onClick={async () => {
                                                                 const willBeSelected = !isSelected;
 
-                                                                // Matching functionality removed
-                                                                toast.error('Matching functionality has been removed');
+                                                                if (willBeSelected) {
+                                                                  const pairId = crypto.randomUUID();
+
+                                                                  // Determine if this is a credit card payment or regular transfer
+                                                                  const matchType = determineMatchType(transaction.bank_account_id, match.bank_account_id, chartAccounts);
+                                                                  const isCreditCardPayment = matchType === 'credit_card_payment';
+
+                                                                  try {
+                                                                    // Set appropriate pair_id and type based on account types
+                                                                    await Promise.all([
+                                                                      updateMutation.mutateAsync({
+                                                                        id: transaction.id,
+                                                                        data: {
+                                                                          ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
+                                                                          type: matchType,
+                                                                          original_type: transaction.original_type || transaction.type,
+                                                                          category_account_id: null
+                                                                        }
+                                                                      }),
+                                                                      updateMutation.mutateAsync({
+                                                                        id: match.id,
+                                                                        data: {
+                                                                          ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
+                                                                          type: matchType,
+                                                                          original_type: match.original_type || match.type,
+                                                                          category_account_id: null
+                                                                        }
+                                                                      })
+                                                                    ]);
+
+                                                                    setSelectedMatches(prev => ({
+                                                                      ...prev,
+                                                                      [transaction.id]: match.id
+                                                                    }));
+
+                                                                    setSuggestedMatches(prev => {
+                                                                      const next = { ...prev };
+                                                                      delete next[transaction.id];
+                                                                      delete next[match.id];
+                                                                      return next;
+                                                                    });
+                                                                  } catch (error) {
+                                                                    console.error('Failed to match transactions:', error);
+                                                                    toast.error('Failed to match transactions. Please try again.');
+                                                                  }
+                                                                } else {
+                                                                  const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                                  const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
+
+                                                                  try {
+                                                                    await Promise.all([
+                                                                      updateMutation.mutateAsync({
+                                                                        id: transaction.id,
+                                                                        data: {
+                                                                          transfer_pair_id: null,
+                                                                          cc_payment_pair_id: null,
+                                                                          type: originalType1,
+                                                                          original_type: null
+                                                                        }
+                                                                      }),
+                                                                      updateMutation.mutateAsync({
+                                                                        id: match.id,
+                                                                        data: {
+                                                                          transfer_pair_id: null,
+                                                                          cc_payment_pair_id: null,
+                                                                          type: originalType2,
+                                                                          original_type: null
+                                                                        }
+                                                                      })
+                                                                    ]);
+
+                                                                    setSelectedMatches(prev => {
+                                                                      const next = { ...prev };
+                                                                      delete next[transaction.id];
+                                                                      delete next[match.id];
+                                                                      return next;
+                                                                    });
+                                                                  } catch (error) {
+                                                                    console.error('Failed to unmatch transactions:', error);
+                                                                    toast.error('Failed to unmatch transactions. Please try again.');
+                                                                  }
+                                                                }
                                                               }}
                                                             >
                                                               {/* Checkbox */}
@@ -2725,6 +3571,61 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               setContactSearchTerm('');
                               setTriggeringContactTransactionId(null);
                             }}
+                          />
+
+                          <TransferMatchDialog
+                            isOpen={transferMatchDialogOpen}
+                            onClose={() => {
+                              setTransferMatchDialogOpen(false);
+                              setMatchingTransfer(null);
+                              setPairedTransfer(null);
+                            }}
+                            transaction={matchingTransfer}
+                            pairedTransaction={pairedTransfer}
+                            accounts={accounts}
+                            onConfirm={handleConfirmTransferMatch}
+                            matchType={currentMatchType}
+                          />
+
+                          <TransferPostPreviewDialog
+                            isOpen={transferPostPreviewOpen}
+                            onClose={() => {
+                              setTransferPostPreviewOpen(false);
+                              setMatchingTransfer(null);
+                              setPairedTransfer(null);
+                            }}
+                            transaction={matchingTransfer}
+                            pairedTransaction={pairedTransfer}
+                            fromAccount={matchingTransfer ? accounts.find(a => a.id === matchingTransfer.bank_account_id) : null}
+                            toAccount={pairedTransfer ? accounts.find(a => a.id === pairedTransfer.bank_account_id) : null}
+                            onPost={handlePostTransferFromPreview}
+                            isPosting={isPostingTransfer}
+                            matchType={currentMatchType}
+                          />
+
+                          <CreditCardPaymentMatchDialog
+                            isOpen={ccPaymentDialogOpen}
+                            onClose={() => {
+                              setCCPaymentDialogOpen(false);
+                              setMatchingCCPayment(null);
+                              setPairedCCPayment(null);
+                            }}
+                            transaction={matchingCCPayment}
+                            pairedTransaction={pairedCCPayment}
+                            accounts={allActiveAccounts}
+                            onConfirm={async () => {
+                              if (matchingCCPayment?.cc_payment_pair_id) {
+                                await handleAcceptCCPayment(matchingCCPayment.cc_payment_pair_id);
+                              }
+                            }}
+                          />
+
+                          <TransactionReviewDialog
+                            open={reviewDialogOpen}
+                            onOpenChange={setReviewDialogOpen}
+                            extractedData={extractedData}
+                            profileId={activeProfile?.id}
+                            onImportComplete={handleImportComplete}
                           />
 
                           <RuleDialog

@@ -72,6 +72,7 @@ import {
   getAccountTransactions
 } from '@/api/bankSimulation';
 import { createJournalEntry, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
+import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
 
 const VEHICLE_TYPES = [
   'Car',
