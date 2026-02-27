@@ -93,9 +93,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
   const [manualActionOverrides, setManualActionOverrides] = useState({});
-  const [selectedMatches, setSelectedMatches] = useState({});
-  const [manualMatchFilters, setManualMatchFilters] = useState({});
-  const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [quickRuleDialogOpen, setQuickRuleDialogOpen] = useState(false);
   const [ruleSourceTransaction, setRuleSourceTransaction] = useState(null);
   const [editingRule, setEditingRule] = useState(null);
@@ -947,6 +944,46 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   }, [selectedAccount]);
 
+  // Set match mode when expanded if there are potential matches or existing relationship
+  React.useEffect(() => {
+    if (expandedTransactionId) {
+      const transaction = transactions.find(t => t.id === expandedTransactionId);
+      if (transaction) {
+        // Only set defaults if user hasn't manually overridden for this transaction
+        const hasManualOverride = manualActionOverrides[expandedTransactionId];
+
+        if (!hasManualOverride) {
+          // Check for existing database relationship first (using isMatched)
+          if (isMatched(transaction)) {
+            const paired = findPairedTransfer(transaction);
+
+            if (paired) {
+              setManualActionOverrides(prev => ({
+                ...prev,
+                [expandedTransactionId]: 'match'
+              }));
+              setSelectedMatches(prev => ({
+                ...prev,
+                [expandedTransactionId]: paired.id
+              }));
+            }
+          } else {
+            // No existing relationship - check for potential matches
+            const potentialMatches = findPotentialMatches(transaction);
+            if (potentialMatches.length > 0) {
+              // Set to match mode to show the suggestions
+              setManualActionOverrides(prev => ({
+                ...prev,
+                [expandedTransactionId]: 'match'
+              }));
+            }
+          }
+        }
+      }
+    }
+  }, [expandedTransactionId]);
+
+
   return (
       <>
         <Card className="shadow-sm border-slate-200">
@@ -988,6 +1025,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                   <span className="text-sm text-slate-600">
                     {selectedTransactions.length} selected
                   </span>
+                  {selectedTransactions.length === 2 && (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleMatchSelectedAsTransfer}
+                      className="gap-1.5"
+                    >
+                      <Link2 className="h-4 w-4" />
+                      Match as Transfer
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="sm"
@@ -1675,7 +1723,72 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           </div>
                                         </div>
                                       </div>
-                                    ) : null}
+                                    ) : (
+                                      <>
+                                        {statusFilter === 'pending' && (
+                                          <div className="flex items-center gap-2">
+                                            <Tabs
+                                              value={(() => {
+                                                if (isMatched(transaction)) return 'match';
+                                                if (manualActionOverrides[transaction.id]) return manualActionOverrides[transaction.id];
+                                                if (transaction.type === 'transfer') {
+                                                  return findPairedTransfer(transaction) ? 'match' : 'post';
+                                                }
+                                                const matches = findPotentialMatches(transaction);
+                                                return matches.length > 0 ? 'match' : 'post';
+                                              })()}
+                                              onValueChange={(val) => {
+                                                if (isMatched(transaction) && val === 'post') {
+                                                  const pairedTransaction = findPairedTransfer(transaction);
+                                                  if (pairedTransaction) {
+                                                    setManualActionOverrides(prev => ({
+                                                      ...prev,
+                                                      [transaction.id]: 'post',
+                                                      [pairedTransaction.id]: 'post'
+                                                    }));
+                                                  } else {
+                                                    setManualActionOverrides(prev => ({
+                                                      ...prev,
+                                                      [transaction.id]: 'post'
+                                                    }));
+                                                  }
+                                                  handleUnmatch(transaction);
+                                                  return;
+                                                }
+                                                setManualActionOverrides(prev => ({
+                                                  ...prev,
+                                                  [transaction.id]: val
+                                                }));
+                                              }}
+                                              className="h-8"
+                                            >
+                                              <TabsList className="h-8">
+                                                <TooltipProvider>
+                                                  <Tooltip>
+                                                    <TooltipTrigger asChild>
+                                                      <div>
+                                                        <TabsTrigger
+                                                          value="post"
+                                                          className="h-7 text-xs"
+                                                        >
+                                                          Categorize
+                                                        </TabsTrigger>
+                                                      </div>
+                                                    </TooltipTrigger>
+                                                    {isMatched(transaction) && (
+                                                      <TooltipContent>
+                                                        <p>Click to unmatch</p>
+                                                      </TooltipContent>
+                                                    )}
+                                                  </Tooltip>
+                                                </TooltipProvider>
+                                                <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
+                                              </TabsList>
+                                            </Tabs>
+                                          </div>
+                                        )}
+                                      </>
+                                    )}
                                     </div>
 
                                     {/* Matched Transaction Row - Removed: matching/pairing functionality no longer supported */}
@@ -1683,7 +1796,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     {/* Tab Content Section */}
                                     <div className="px-4 pb-4 space-y-2">
                                     {/* Categorize Tab Content */}
-                                    {!isSplitMode(transaction.id) && (
+                                    {!isSplitMode(transaction.id) && (() => {
+                                      const override = manualActionOverrides[transaction.id];
+                                      if (override === 'match') return false;
+                                      if (override === 'post') return true;
+                                      // Check default
+                                      if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
+                                        return !findPairedTransfer(transaction);
+                                      }
+                                      return findPotentialMatches(transaction).length === 0;
+                                    })() && (
                                       <div className="space-y-3">
                                         <div className="grid grid-cols-2 gap-3">
                                           {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
@@ -1763,8 +1885,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </div>
                                     )}
 
-                                    {/* Match Tab Content - REMOVED: Matching functionality no longer supported */}
-                                    {false && !isSplitMode(transaction.id) && (() => {
+                                    {/* Match Tab Content */}
+                                    {!isSplitMode(transaction.id) && (() => {
                                       const override = manualActionOverrides[transaction.id];
                                       if (override === 'post') return false;
                                       if (override === 'match') return true;
