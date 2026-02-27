@@ -9,12 +9,11 @@ export function useUnifiedMatching(profileId, userId) {
   const [isProcessing, setIsProcessing] = useState(false);
 
   const isPaired = useCallback((transaction) => {
-    return transaction && transaction.paired_transaction_id != null;
+    return false;
   }, []);
 
   const findPair = useCallback((transaction, allTransactions) => {
-    if (!transaction?.paired_transaction_id) return null;
-    return allTransactions.find(t => t.id === transaction.paired_transaction_id);
+    return null;
   }, []);
 
   const getSuggestedMatches = useCallback(async (transactionId) => {
