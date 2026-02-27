@@ -997,45 +997,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   }, [selectedAccount]);
 
   // Set match mode when expanded if there are potential matches or existing relationship
-  React.useEffect(() => {
-    if (expandedTransactionId) {
-      const transaction = transactions.find(t => t.id === expandedTransactionId);
-      if (transaction) {
-        // Only set defaults if user hasn't manually overridden for this transaction
-        const hasManualOverride = manualActionOverrides[expandedTransactionId];
-
-        if (!hasManualOverride) {
-          // Check for existing database relationship first (using isMatched)
-          if (isMatched(transaction)) {
-            const paired = findPairedTransfer(transaction);
-
-            if (paired) {
-              setManualActionOverrides(prev => ({
-                ...prev,
-                [expandedTransactionId]: 'match'
-              }));
-              setSelectedMatches(prev => ({
-                ...prev,
-                [expandedTransactionId]: paired.id
-              }));
-            }
-          } else {
-            // No existing relationship - check for potential matches
-            const potentialMatches = findPotentialMatches(transaction);
-            if (potentialMatches.length > 0) {
-              // Set to match mode to show the suggestions
-              setManualActionOverrides(prev => ({
-                ...prev,
-                [expandedTransactionId]: 'match'
-              }));
-            }
-          }
-        }
-      }
-    }
-  }, [expandedTransactionId]);
-
-
   return (
       <>
         <Card className="shadow-sm border-slate-200">
@@ -1315,22 +1276,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               }
                             }
 
-                            const isInMatchMode = statusFilter === 'pending' && (
-                              manualActionOverrides[transaction.id] === 'match' || (
-                                !manualActionOverrides[transaction.id] &&
-                                (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') &&
-                                findPairedTransfer(transaction)
-                              )
-                            );
-
-                            if (isInMatchMode) {
-                              const paired = findPairedTransfer(transaction);
-                              if (paired) {
-                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
-                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
-                              }
-                            }
-
                             // For regular transactions, show editable contact dropdown (or read-only in posted)
                             if (statusFilter === 'posted') {
                               const contact = contacts.find(c => c.id === transaction.contact_id);
@@ -1522,71 +1467,15 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           if (statusFilter === 'pending') {
                             return (
                               <div className="flex items-center justify-start gap-1 pl-1">
-                                {(() => {
-                                  if (isMatched(transaction)) {
-                                    return (
-                                      <button
-                                        className="text-xs text-blue-600 hover:underline"
-                                        onClick={(e) => {
-                                          e?.stopPropagation();
-                                          // Transaction is already matched - open preview dialog
-                                          const paired = findPairedTransfer(transaction);
-                                          if (paired) {
-                                            setMatchingTransfer(transaction);
-                                            setPairedTransfer(paired);
-                                            setTransferPostPreviewOpen(true);
-                                          }
-                                        }}
-                                      >
-                                        Match
-                                      </button>
-                                    );
-                                  }
-
-                                  const manualAction = manualActionOverrides[transaction.id];
-
-                                  let actionText, actionHandler;
-
-                                  if (manualAction === 'post') {
-                                    actionText = 'Post';
-                                    actionHandler = async () => {
-                                      // Use unified postTransaction function to handle transfer pairs atomically
-                                      await postTransaction(transaction);
-                                    };
-                                  } else if (manualAction === 'match') {
-                                    actionText = 'Match';
-                                    actionHandler = () => {
-                                      const matches = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')
-                                        ? [findPairedTransfer(transaction)].filter(Boolean)
-                                        : findPotentialMatches(transaction);
-                                      setMatchingTransaction(transaction);
-                                      setPotentialMatches(matches);
-                                      setMatchDialogOpen(true);
-                                    };
-                                  } else {
-                                    if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
-                                      const paired = findPairedTransfer(transaction);
-                                      actionText = paired ? 'Match' : 'Post';
-                                      actionHandler = () => handleTransferMatch(transaction);
-                                    } else {
-                                      const matches = findPotentialMatches(transaction);
-                                      actionText = matches.length > 0 ? 'Match' : 'Post';
-                                      actionHandler = () => handleMatchClick(transaction);
-                                    }
-                                  }
-
-                                  return (
-                                    <button
-                                      className="text-xs text-blue-600 hover:underline"
-                                      onClick={(e) => {
-                                        e?.stopPropagation();
-                                        actionHandler();
-                                      }}
-                                    >
-                                      {actionText}
-                                    </button>
-                                  );
-                                })()}
+                                <button
+                                  className="text-xs text-blue-600 hover:underline"
+                                  onClick={(e) => {
+                                    e?.stopPropagation();
+                                    postTransaction(transaction);
+                                  }}
+                                >
+                                  Post
+                                </button>
                                   <div className="border-l border-slate-300 h-4" />
                                   <div data-dropdown-menu className="px-2">
                                     <ClickThroughDropdownMenu>
@@ -2004,72 +1893,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       <div className="flex items-center gap-2">
                                         {statusFilter === 'pending' && (
                                           <>
-                                            {(() => {
-                                              const manualAction = manualActionOverrides[transaction.id];
-
-                                              let actionText, actionHandler;
-
-                                              if (manualAction === 'post') {
-                                                actionText = 'Post';
-                                                actionHandler = async () => {
-                                                  // Use unified postTransaction function to handle transfer pairs atomically
-                                                  await postTransaction(transaction);
-                                                  setExpandedTransactionId(null);
-                                                };
-                                              } else if (manualAction === 'match') {
-                                                actionText = 'Match';
-                                                actionHandler = () => {
-                                                  const matches = transaction.type === 'transfer'
-                                                    ? [findPairedTransfer(transaction)].filter(Boolean)
-                                                    : findPotentialMatches(transaction);
-                                                  setMatchingTransaction(transaction);
-                                                  setPotentialMatches(matches);
-                                                  setMatchDialogOpen(true);
-                                                  setExpandedTransactionId(null);
-                                                };
-                                              } else {
-                                                if (transaction.type === 'transfer') {
-                                                  const paired = findPairedTransfer(transaction);
-                                                  actionText = paired ? 'Match' : 'Post';
-                                                  actionHandler = () => {
-                                                    handleTransferMatch(transaction);
-                                                    setExpandedTransactionId(null);
-                                                  };
-                                                } else {
-                                                  const matches = findPotentialMatches(transaction);
-                                                  actionText = matches.length > 0 ? 'Match' : 'Post';
-                                                  actionHandler = () => {
-                                                    handleMatchClick(transaction);
-                                                    setExpandedTransactionId(null);
-                                                  };
-                                                }
-                                              }
-
-                                              const matches = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')
-                                                ? [findPairedTransfer(transaction)].filter(Boolean)
-                                                : findPotentialMatches(transaction);
-                                              const hasSelection = selectedMatches[transaction.id];
-
-                                              return (
-                                                <Button
-                                                  size="sm"
-                                                  variant="outline"
-                                                  className="h-7 text-xs bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
-                                                  onClick={(e) => {
-                                                    e?.stopPropagation();
-                                                    if (actionText === 'Match') {
-                                                      if (hasSelection || matches.length === 0) {
-                                                        handleMatchClick(transaction);
-                                                      }
-                                                    } else {
-                                                      actionHandler();
-                                                    }
-                                                  }}
-                                                >
-                                                  {actionText}
-                                                </Button>
-                                              );
-                                              })()}
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              className="h-7 text-xs bg-blue-600 text-white hover:bg-blue-700 hover:text-white"
+                                              onClick={async (e) => {
+                                                e?.stopPropagation();
+                                                await postTransaction(transaction);
+                                                setExpandedTransactionId(null);
+                                              }}
+                                            >
+                                              Post
+                                            </Button>
                                             <Button
                                               size="sm"
                                               variant={isSplitMode(transaction.id) ? "default" : "outline"}
