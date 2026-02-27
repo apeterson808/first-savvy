@@ -1418,19 +1418,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       setMatchDialogOpen(true);
                                     };
                                   } else {
-                                    if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
-                                      actionText = 'Post';
-                                      actionHandler = () => {
-                                        setExpandedTransactionId(transaction.id);
-                                        setManualActionOverrides(prev => ({
-                                          ...prev,
-                                          [transaction.id]: 'match'
-                                        }));
-                                      };
-                                    } else {
-                                      actionText = 'Post';
-                                      actionHandler = () => handleMatchClick(transaction);
-                                    }
+                                    actionText = 'Post';
+                                    actionHandler = () => {
+                                      setExpandedTransactionId(transaction.id);
+                                    };
                                   }
 
                                   return (
@@ -1700,40 +1691,40 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           </div>
                                         </div>
                                       </div>
-                                    ) : (
-                                      <>
-                                        {statusFilter === 'pending' && (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
-                                          <div className="flex items-center gap-2">
-                                            <Tabs
-                                              value={manualActionOverrides[transaction.id] || 'post'}
-                                              onValueChange={(val) => {
-                                                setManualActionOverrides(prev => ({
-                                                  ...prev,
-                                                  [transaction.id]: val
-                                                }));
-                                              }}
-                                              className="h-8"
-                                            >
-                                              <TabsList className="h-8">
-                                                <TabsTrigger
-                                                  value="post"
-                                                  className="h-7 text-xs"
-                                                >
-                                                  Categorize
-                                                </TabsTrigger>
-                                                <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
-                                              </TabsList>
-                                            </Tabs>
-                                          </div>
-                                        )}
-                                      </>
-                                    )}
+                                    ) : null}
                                     </div>
 
                                     {/* Matched Transaction Row - Removed: matching/pairing functionality no longer supported */}
 
                                     {/* Tab Content Section */}
                                     <div className="px-4 pb-4 space-y-2">
+
+                                    {/* Post/Match Toggle for Transfers and Credit Card Payments */}
+                                    {statusFilter === 'pending' && (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && !isSplitMode(transaction.id) && (
+                                      <div className="flex items-center gap-2 mb-3">
+                                        <Tabs
+                                          value={manualActionOverrides[transaction.id] || 'post'}
+                                          onValueChange={(val) => {
+                                            setManualActionOverrides(prev => ({
+                                              ...prev,
+                                              [transaction.id]: val
+                                            }));
+                                          }}
+                                          className="h-8"
+                                        >
+                                          <TabsList className="h-8">
+                                            <TabsTrigger
+                                              value="post"
+                                              className="h-7 text-xs"
+                                            >
+                                              Post
+                                            </TabsTrigger>
+                                            <TabsTrigger value="match" className="h-7 text-xs">Match</TabsTrigger>
+                                          </TabsList>
+                                        </Tabs>
+                                      </div>
+                                    )}
+
                                     {/* Categorize Tab Content */}
                                     {!isSplitMode(transaction.id) && manualActionOverrides[transaction.id] !== 'match' && (
                                       <div className="space-y-3">
