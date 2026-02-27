@@ -79,7 +79,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     '-date',
     activeProfile?.id
   );
-  const [selectedTransactions, setSelectedTransactions] = useState([]);
   const [selectedAccount, setSelectedAccount] = usePersistedViewState(
     'transactions_account',
     'all',
@@ -103,10 +102,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [isPostingTransfer, setIsPostingTransfer] = useState(false);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [manualActionOverrides, setManualActionOverrides] = useState({});
-  const [selectedMatches, setSelectedMatches] = useState({});
-  const [manualMatchSearch, setManualMatchSearch] = useState({});
-  const [manualMatchFilters, setManualMatchFilters] = useState({});
-  const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
@@ -807,22 +802,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return matchesSearch && matchesAccount && matchesDate && matchesCategory && matchesType && matchesAmount && matchesPaymentMethod;
   });
 
-  const toggleSelectAll = () => {
-    if (selectedTransactions.length === filteredTransactions.length) {
-      setSelectedTransactions([]);
-    } else {
-      setSelectedTransactions(filteredTransactions.map(t => t.id));
-    }
-  };
-
-  const toggleSelect = (id) => {
-    if (selectedTransactions.includes(id)) {
-      setSelectedTransactions(selectedTransactions.filter(tid => tid !== id));
-    } else {
-      setSelectedTransactions([...selectedTransactions, id]);
-    }
-  };
-
   // Group categories by type for display
   const expenseCategories = chartAccounts.filter(c => c.class === 'expense');
   const incomeCategories = chartAccounts.filter(c => c.class === 'income');
@@ -1043,191 +1022,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     setExtractedData(null);
   };
 
-  const handleMatchClick = async (transaction) => {
-    const selectedMatch = selectedMatches[transaction.id];
-
-    if (selectedMatch) {
-      const matchedTransaction = transactions.find(t => t.id === selectedMatch);
-
-      if (!matchedTransaction) {
-        toast.error('Matched transaction not found');
-        return;
-      }
-
-      // Get account details for both transactions
-      const transAccount = allActiveAccounts.find(a => a.id === transaction.bank_account_id);
-      const matchAccount = allActiveAccounts.find(a => a.id === matchedTransaction.bank_account_id);
-
-      // Determine if this is a credit card payment pair by checking account_type
-      const isCreditCardPayment = transAccount && matchAccount &&
-        ((transAccount.account_type === 'credit_card' && matchAccount.account_type === 'bank_account') ||
-         (matchAccount.account_type === 'credit_card' && transAccount.account_type === 'bank_account'));
-
-      let pairId;
-      let pairType;
-      let pairIdField;
-
-      if (isCreditCardPayment) {
-        // This is a credit card payment
-        pairId = transaction.cc_payment_pair_id || matchedTransaction?.cc_payment_pair_id || `cc_payment_${Date.now()}`;
-        pairType = 'credit_card_payment';
-        pairIdField = 'cc_payment_pair_id';
-      } else {
-        // This is a regular transfer
-        pairId = transaction.transfer_pair_id || matchedTransaction?.transfer_pair_id || `transfer_${Date.now()}`;
-        pairType = 'transfer';
-        pairIdField = 'transfer_pair_id';
-      }
-
-      try {
-        // Link both transactions with the appropriate pair ID and type
-        await Promise.all([
-          updateMutation.mutateAsync({
-            id: transaction.id,
-            data: {
-              [pairIdField]: pairId,
-              type: pairType
-            }
-          }),
-          updateMutation.mutateAsync({
-            id: matchedTransaction.id,
-            data: {
-              [pairIdField]: pairId,
-              type: pairType
-            }
-          })
-        ]);
-
-        // Set state BEFORE invalidating queries to open preview dialog
-        setMatchingTransfer(transaction);
-        setPairedTransfer(matchedTransaction);
-        setTransferPostPreviewOpen(true);
-
-        setSelectedMatches(prev => {
-          const next = { ...prev };
-          delete next[transaction.id];
-          return next;
-        });
-        setExpandedTransactionId(null);
-
-        if (isCreditCardPayment) {
-          toast.success('Credit card payment linked - review before posting');
-        } else {
-          toast.success('Transfer linked - review before posting');
-        }
-
-        // Refresh in the background (don't await)
-        queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      } catch (error) {
-        console.error('Failed to link transactions:', error);
-        toast.error('Failed to link transactions. Please try again.');
-      }
-    } else {
-      const matches = findPotentialMatches(transaction);
-      if (matches.length === 0) {
-        // Use unified postTransaction function to handle transfer pairs atomically
-        await postTransaction(transaction);
-      }
-    }
-  };
-
-  const handleMatchSelectedAsTransfer = async () => {
-    if (selectedTransactions.length !== 2) {
-      toast.error('Please select exactly 2 transactions to match');
-      return;
-    }
-
-    const txn1 = transactions.find(t => t.id === selectedTransactions[0]);
-    const txn2 = transactions.find(t => t.id === selectedTransactions[1]);
-
-    if (!txn1 || !txn2) {
-      toast.error('Selected transactions not found');
-      return;
-    }
-
-    if (txn1.bank_account_id === txn2.bank_account_id) {
-      toast.error('Cannot match transactions from the same account');
-      return;
-    }
-
-    if (Math.abs(txn1.amount) !== Math.abs(txn2.amount)) {
-      toast.error('Transaction amounts must be equal');
-      return;
-    }
-
-    if (Math.sign(txn1.amount) === Math.sign(txn2.amount)) {
-      toast.error('Transaction amounts must have opposite signs (one positive, one negative)');
-      return;
-    }
-
-    if (txn1.transfer_pair_id || txn2.transfer_pair_id) {
-      toast.error('One or both transactions are already paired');
-      return;
-    }
-
-    try {
-      const { data, error } = await transferAutoDetectionAPI.linkTransferPair(
-        selectedTransactions[0],
-        selectedTransactions[1],
-        activeProfile?.id
-      );
-
-      if (error) throw error;
-
-      // Set state BEFORE invalidating queries to open preview dialog
-      setMatchingTransfer(txn1);
-      setPairedTransfer(txn2);
-      setTransferPostPreviewOpen(true);
-
-      setSelectedTransactions([]);
-      toast.success('Transfer linked - review before posting');
-
-      // Refresh in the background (don't await)
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    } catch (error) {
-      console.error('Error linking transactions:', error);
-      toast.error(error.message || 'Failed to link transfer');
-    }
-  };
-
-  const handleUnmatchSelectedTransfer = async () => {
-    if (selectedTransactions.length === 0) {
-      toast.error('Please select a transaction to unmatch');
-      return;
-    }
-
-    const txn = transactions.find(t => t.id === selectedTransactions[0]);
-
-    if (!txn) {
-      toast.error('Selected transaction not found');
-      return;
-    }
-
-    if (!txn.transfer_pair_id) {
-      toast.error('Transaction is not part of a transfer pair');
-      return;
-    }
-
-    try {
-      const { error } = await transferAutoDetectionAPI.unlinkTransferPair(
-        selectedTransactions[0],
-        activeProfile?.id
-      );
-
-      if (error) throw error;
-
-      queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setSelectedTransactions([]);
-      toast.success('Transfer pair unmatched');
-    } catch (error) {
-      console.error('Error unmatching transfer:', error);
-      toast.error(error.message || 'Failed to unmatch transfer');
-    }
-  };
-
-
   const startResize = (column, e) => {
     e.preventDefault();
     setResizing({ column, startX: e.clientX, startWidth: columnWidths[column] });
@@ -1337,43 +1131,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                 </TabsList>
               </Tabs>
 
-              {selectedTransactions.length > 0 && (
-                <div className="flex items-center gap-2 ml-2">
-                  <span className="text-sm text-slate-600">
-                    {selectedTransactions.length} selected
-                  </span>
-                  {selectedTransactions.length === 2 && (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={handleMatchSelectedAsTransfer}
-                      className="gap-1.5"
-                    >
-                      <Link2 className="h-4 w-4" />
-                      Match as Transfer
-                    </Button>
-                  )}
-                  {selectedTransactions.length === 1 &&
-                   transactions.find(t => t.id === selectedTransactions[0])?.transfer_pair_id && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleUnmatchSelectedTransfer}
-                      className="gap-1.5"
-                    >
-                      <Unlink className="h-4 w-4" />
-                      Unmatch Transfer
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedTransactions([])}
-                  >
-                    Clear Selection
-                  </Button>
-                </div>
-              )}
               <div className="relative w-64">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
                 <Input
@@ -1439,14 +1196,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               </colgroup>
               <thead className="sticky top-0 z-30 bg-slate-100 shadow-sm">
                 <tr className="bg-slate-100 h-8">
-                  <th className="border-r border-slate-200 text-center w-8 min-w-8 max-w-8 bg-slate-100 font-semibold text-slate-700 py-2 px-0">
-                                           <input
-                                             type="checkbox"
-                                             checked={selectedTransactions.length === filteredTransactions.length && filteredTransactions.length > 0}
-                                             onChange={toggleSelectAll}
-                                             className="rounded w-3.5 h-3.5"
-                                           />
-                                          </th>
                   <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2">
                    Date
                   </th>
@@ -1502,7 +1251,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                   filteredTransactions.map((transaction, index) => {
                     const transactionAccountId = getTransactionAccountId(transaction);
                     const account = accounts.find(a => a.id === transactionAccountId);
-                    const isSelected = selectedTransactions.includes(transaction.id);
                     return (
                       <React.Fragment key={transaction.id}>
                         <tr
@@ -1517,25 +1265,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             setExpandedTransactionId(newExpandedId);
                           }}
                         >
-                          <td className="border-r border-slate-200 py-1 text-center w-8 min-w-8 max-w-8 px-0">
-                            <div className="flex flex-col items-center gap-0.5">
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => { e.stopPropagation(); toggleSelect(transaction.id); }}
-                                className="rounded w-3.5 h-3.5"
-                              />
-                              {transaction.cleared_status === 'reconciled' && (
-                                <div className="w-1.5 h-1.5 rounded-full bg-green-500" title="Reconciled" />
-                              )}
-                              {transaction.cleared_status === 'cleared' && (
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-500" title="Cleared" />
-                              )}
-                              {(!transaction.cleared_status || transaction.cleared_status === 'uncleared') && transaction.status === 'posted' && (
-                                <div className="w-1.5 h-1.5 rounded-full bg-slate-300" title="Uncleared" />
-                              )}
-                            </div>
-                          </td>
                           <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
                             {transaction.date && !isNaN(new Date(transaction.date).getTime())
                               ? format(parseISO(transaction.date), 'MM/dd/yy')
