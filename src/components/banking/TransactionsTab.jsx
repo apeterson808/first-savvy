@@ -2343,17 +2343,29 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           onClick={() => {
                                                             const willBeSelected = !isSelected;
 
+                                                            console.log('Checkbox clicked:', {
+                                                              transactionId: transaction.id,
+                                                              matchId: match.id,
+                                                              willBeSelected,
+                                                              currentSelectedMatches: selectedMatches
+                                                            });
+
                                                             if (willBeSelected) {
-                                                              setSelectedMatches(prev => ({
-                                                                ...prev,
-                                                                [transaction.id]: match.id,
-                                                                [match.id]: transaction.id
-                                                              }));
+                                                              setSelectedMatches(prev => {
+                                                                const newState = {
+                                                                  ...prev,
+                                                                  [transaction.id]: match.id,
+                                                                  [match.id]: transaction.id
+                                                                };
+                                                                console.log('Setting selected matches:', newState);
+                                                                return newState;
+                                                              });
                                                             } else {
                                                               setSelectedMatches(prev => {
                                                                 const next = { ...prev };
                                                                 delete next[transaction.id];
                                                                 delete next[match.id];
+                                                                console.log('Clearing selected matches:', next);
                                                                 return next;
                                                               });
                                                             }
