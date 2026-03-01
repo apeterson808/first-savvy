@@ -1373,10 +1373,45 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             if (isInMatchMode) {
                               const paired = findPairedTransfer(transaction);
-                              if (paired) {
-                                const pairedAccount = allActiveAccounts.find(a => a.id === paired.bank_account_id) || accounts.find(a => a.id === paired.bank_account_id);
-                                return <span className="text-xs px-1">{pairedAccount ? getAccountDisplayName(pairedAccount) : '—'}</span>;
+                              const pairedTransactionId = selectedMatches[transaction.id];
+                              const pairedTransaction = pairedTransactionId ? allPendingTransactions.find(t => t.id === pairedTransactionId) : null;
+
+                              // If there's a matched pair, show the account dropdown to select which account
+                              if (paired || pairedTransaction) {
+                                const currentPairedAccountId = paired?.bank_account_id || pairedTransaction?.bank_account_id;
+
+                                return (
+                                  <div onClick={(e) => e.stopPropagation()}>
+                                    <AccountDropdown
+                                      value={currentPairedAccountId || ''}
+                                      onValueChange={(accountId) => {
+                                        // This will be handled when they click Post to link the transactions
+                                        // For now, just show the selection
+                                      }}
+                                      accounts={allActiveAccounts}
+                                      disabled={true}
+                                      triggerClassName="h-7 border-transparent bg-transparent shadow-none text-xs pointer-events-none"
+                                      placeholder="Select account"
+                                    />
+                                  </div>
+                                );
                               }
+
+                              // If in match mode but no pair selected, show account dropdown
+                              return (
+                                <div onClick={(e) => e.stopPropagation()}>
+                                  <AccountDropdown
+                                    value={''}
+                                    onValueChange={(accountId) => {
+                                      // Account selection handled through checkboxes in match suggestions
+                                    }}
+                                    accounts={allActiveAccounts}
+                                    disabled={true}
+                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                    placeholder="Select account"
+                                  />
+                                </div>
+                              );
                             }
 
                             // For regular transactions, show editable contact dropdown (or read-only in posted)
