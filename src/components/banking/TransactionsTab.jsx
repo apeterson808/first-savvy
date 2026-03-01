@@ -1384,13 +1384,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               const pairedTransactionId = selectedMatches[transaction.id];
                               const pairedTransaction = pairedTransactionId ? transactions.find(t => t.id === pairedTransactionId) : null;
 
-                              console.log('Match mode check:', {
-                                transactionId: transaction.id,
-                                pairedTransactionId,
-                                hasPairedTransaction: !!pairedTransaction,
-                                pairedAccountId: pairedTransaction?.bank_account_id
-                              });
-
                               // If there's a matched pair (checkbox selected), show the paired account automatically
                               if (pairedTransaction) {
                                 const pairedAccountId = pairedTransaction.bank_account_id;
@@ -2343,29 +2336,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           onClick={() => {
                                                             const willBeSelected = !isSelected;
 
-                                                            console.log('Checkbox clicked:', {
-                                                              transactionId: transaction.id,
-                                                              matchId: match.id,
-                                                              willBeSelected,
-                                                              currentSelectedMatches: selectedMatches
-                                                            });
-
                                                             if (willBeSelected) {
-                                                              setSelectedMatches(prev => {
-                                                                const newState = {
-                                                                  ...prev,
-                                                                  [transaction.id]: match.id,
-                                                                  [match.id]: transaction.id
-                                                                };
-                                                                console.log('Setting selected matches:', newState);
-                                                                return newState;
-                                                              });
+                                                              setSelectedMatches(prev => ({
+                                                                ...prev,
+                                                                [transaction.id]: match.id,
+                                                                [match.id]: transaction.id
+                                                              }));
                                                             } else {
                                                               setSelectedMatches(prev => {
                                                                 const next = { ...prev };
                                                                 delete next[transaction.id];
                                                                 delete next[match.id];
-                                                                console.log('Clearing selected matches:', next);
                                                                 return next;
                                                               });
                                                             }
