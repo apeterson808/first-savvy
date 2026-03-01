@@ -2822,6 +2822,89 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </>
                                     )}
 
+                                    {/* Payment Method, Bank Memo, and From/To fields - shown for both categorize and match tabs */}
+                                    {!isSplitMode(transaction.id) && (() => {
+                                      const override = manualActionOverrides[transaction.id];
+                                      const isInMatchTab = override === 'match' || (override !== 'post' && (!!findPairedTransfer(transaction) || findPotentialMatches(transaction).length > 0 || findOppositeAmountMatches(transaction).length > 0));
+
+                                      // Don't show these fields for already matched transfers/cc payments in categorize tab
+                                      if (!isInMatchTab && (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')) {
+                                        return false;
+                                      }
+
+                                      return (
+                                        <div className="space-y-3 mb-3">
+                                          <div className="grid grid-cols-2 gap-3">
+                                            {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
+                                              <div>
+                                                <Label className="text-xs mb-1 block">Payment Method</Label>
+                                                {getAccountDetails(transaction.bank_account_id)?.account_type === 'credit_card' ? (
+                                                  <Input value="Credit Card" readOnly className="h-8 text-xs bg-slate-50" />
+                                                ) : (
+                                                  <ClickThroughSelect
+                                                    value={transaction.payment_method || 'debit_card'}
+                                                    onValueChange={(val) => {
+                                                      updateMutation.mutate({
+                                                        id: transaction.id,
+                                                        data: { payment_method: val }
+                                                      });
+                                                    }}
+                                                    triggerClassName="h-8 text-xs"
+                                                  >
+                                                    <ClickThroughSelectItem value="cash">Cash</ClickThroughSelectItem>
+                                                    <ClickThroughSelectItem value="debit_card">Debit Card</ClickThroughSelectItem>
+                                                    <ClickThroughSelectItem value="bank_transfer">ACH / Bank Transfer</ClickThroughSelectItem>
+                                                    <ClickThroughSelectItem value="check">Check</ClickThroughSelectItem>
+                                                    <ClickThroughSelectItem value="online_bank_payment">Online Bank Payment</ClickThroughSelectItem>
+                                                    <ClickThroughSelectItem value="other">Other</ClickThroughSelectItem>
+                                                  </ClickThroughSelect>
+                                                )}
+                                              </div>
+                                            )}
+
+                                            {transaction.type !== 'transfer' && transaction.type !== 'credit_card_payment' && (
+                                              <div>
+                                                <Label className="text-xs mb-1 block">Bank Memo</Label>
+                                                <Input
+                                                  value={transaction.original_description || 'No bank memo'}
+                                                  readOnly
+                                                  className="h-8 text-xs bg-slate-50 text-slate-600"
+                                                  title={transaction.original_description || 'No bank memo'}
+                                                />
+                                              </div>
+                                            )}
+                                          </div>
+
+                                          {/* Show "Payment to" (account dropdown) when in Match mode */}
+                                          {isInMatchTab && (
+                                            <div className="grid grid-cols-2 gap-3">
+                                              <div>
+                                                <Label className="text-xs mb-1 block">Payment to</Label>
+                                                <AccountDropdown
+                                                  value={(() => {
+                                                    const pairedTransactionId = selectedMatches[transaction.id];
+                                                    const pairedTransaction = pairedTransactionId ? allPendingTransactions.find(t => t.id === pairedTransactionId) : null;
+                                                    const paired = findPairedTransfer(transaction);
+                                                    return (pairedTransaction?.bank_account_id || paired?.bank_account_id || '');
+                                                  })()}
+                                                  onValueChange={(val) => {
+                                                    // Read-only, account is selected via checkbox
+                                                  }}
+                                                  accounts={allActiveAccounts}
+                                                  showAllOption={false}
+                                                  showPendingCounts={false}
+                                                  triggerClassName="h-8 text-xs bg-slate-50"
+                                                  placeholder="Select account..."
+                                                  filterAccounts={(acc) => acc.id !== transaction.bank_account_id}
+                                                  disabled={true}
+                                                />
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })()}
+
                                     <div className="grid grid-cols-2 gap-3">
                                       <div>
                                         <Label className="text-xs mb-1 block">Notes</Label>
