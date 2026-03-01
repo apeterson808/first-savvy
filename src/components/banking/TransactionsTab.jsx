@@ -913,6 +913,32 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return [];
   };
 
+  const findOppositeAmountMatches = (transaction) => {
+    const targetAmount = -transaction.amount;
+    const transactionDate = new Date(transaction.date);
+
+    return transactions.filter(t => {
+      if (t.id === transaction.id) return false;
+      if (t.status === 'excluded') return false;
+      if (!activeAccountIds.includes(t.bank_account_id)) return false;
+      if (t.bank_account_id === transaction.bank_account_id) return false;
+
+      const amountMatch = Math.abs(t.amount - targetAmount) < 0.01;
+      if (!amountMatch) return false;
+
+      const tDate = new Date(t.date);
+      const daysDiff = Math.abs((transactionDate - tDate) / (1000 * 60 * 60 * 24));
+
+      return daysDiff <= 10;
+    }).sort((a, b) => {
+      const aDate = new Date(a.date);
+      const bDate = new Date(b.date);
+      const aDiff = Math.abs((transactionDate - aDate) / (1000 * 60 * 60 * 24));
+      const bDiff = Math.abs((transactionDate - bDate) / (1000 * 60 * 60 * 24));
+      return aDiff - bDiff;
+    });
+  };
+
   // Calculate match confidence based purely on date proximity
   const calculateMatchConfidence = (transaction, match) => {
     const tDate = new Date(transaction.date);
@@ -1874,7 +1900,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   return findPairedTransfer(transaction) ? 'match' : 'post';
                                                 }
                                                 const matches = findPotentialMatches(transaction);
-                                                return matches.length > 0 ? 'match' : 'post';
+                                                const oppositeMatches = findOppositeAmountMatches(transaction);
+                                                return (matches.length > 0 || oppositeMatches.length > 0) ? 'match' : 'post';
                                               })()}
                                               onValueChange={(val) => {
                                                 if (isMatched(transaction) && val === 'post') {
@@ -2219,10 +2246,186 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       const override = manualActionOverrides[transaction.id];
                                       if (override === 'post') return false;
                                       if (override === 'match') return true;
-                                      // Check default - show Match tab if already paired OR if potential matches exist
-                                      return !!findPairedTransfer(transaction) || findPotentialMatches(transaction).length > 0;
+                                      // Check default - show Match tab if already paired OR if potential matches exist OR if opposite amount matches exist
+                                      return !!findPairedTransfer(transaction) || findPotentialMatches(transaction).length > 0 || findOppositeAmountMatches(transaction).length > 0;
                                     })() && (
                                       <>
+                                        {/* Opposite Amount Suggested Matches */}
+                                        {(() => {
+                                          const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
+                                          if (currentlyPaired) return null;
+
+                                          const oppositeMatches = findOppositeAmountMatches(transaction);
+                                          if (oppositeMatches.length === 0) return null;
+
+                                          return (
+                                            <div className="mb-3">
+                                              <p className="text-xs font-semibold text-slate-700 mb-2">Suggested Matches (Opposite Amount)</p>
+                                              <div className="bg-amber-50/50 border border-amber-200 rounded p-2 max-h-48 overflow-y-auto">
+                                                <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
+                                                  <colgroup>
+                                                    <col style={{ width: 32, minWidth: 32 }} />
+                                                    <col style={{ width: 70, minWidth: 70 }} />
+                                                    {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
+                                                    <col style={{ width: columnWidths.description, minWidth: 100 }} />
+                                                    <col style={{ width: 1 }} />
+                                                    <col style={{ width: 1 }} />
+                                                    <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                                                    <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                                                    <col style={{ width: 30, minWidth: 30, maxWidth: 30 }} />
+                                                  </colgroup>
+                                                  <tbody>
+                                                    {oppositeMatches.map(match => {
+                                                      const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
+                                                      const confidence = calculateMatchConfidence(transaction, match);
+                                                      const isSelected = selectedMatches[transaction.id] === match.id;
+                                                      const matchCategory = chartAccounts.find(c => c.id === match.category_account_id);
+
+                                                      return (
+                                                        <tr
+                                                          key={match.id}
+                                                          className={`cursor-pointer transition-colors ${
+                                                            isSelected ? 'bg-blue-100' : 'bg-white hover:bg-amber-100'
+                                                          }`}
+                                                          onClick={async () => {
+                                                            const willBeSelected = !isSelected;
+
+                                                            if (willBeSelected) {
+                                                              const pairId = crypto.randomUUID();
+                                                              const matchType = determineMatchType(transaction.bank_account_id, match.bank_account_id, chartAccounts);
+                                                              const isCreditCardPayment = matchType === 'credit_card_payment';
+
+                                                              try {
+                                                                await Promise.all([
+                                                                  updateMutation.mutateAsync({
+                                                                    id: transaction.id,
+                                                                    data: {
+                                                                      ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
+                                                                      type: matchType,
+                                                                      original_type: transaction.original_type || transaction.type,
+                                                                      category_account_id: null
+                                                                    }
+                                                                  }),
+                                                                  updateMutation.mutateAsync({
+                                                                    id: match.id,
+                                                                    data: {
+                                                                      ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
+                                                                      type: matchType,
+                                                                      original_type: match.original_type || match.type,
+                                                                      category_account_id: null
+                                                                    }
+                                                                  })
+                                                                ]);
+
+                                                                setSelectedMatches(prev => ({
+                                                                  ...prev,
+                                                                  [transaction.id]: match.id
+                                                                }));
+
+                                                                toast.success('Transactions matched');
+                                                              } catch (error) {
+                                                                console.error('Failed to match transactions:', error);
+                                                                toast.error('Failed to match transactions. Please try again.');
+                                                              }
+                                                            } else {
+                                                              const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
+                                                              const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
+
+                                                              try {
+                                                                await Promise.all([
+                                                                  updateMutation.mutateAsync({
+                                                                    id: transaction.id,
+                                                                    data: {
+                                                                      transfer_pair_id: null,
+                                                                      cc_payment_pair_id: null,
+                                                                      type: originalType1,
+                                                                      original_type: null
+                                                                    }
+                                                                  }),
+                                                                  updateMutation.mutateAsync({
+                                                                    id: match.id,
+                                                                    data: {
+                                                                      transfer_pair_id: null,
+                                                                      cc_payment_pair_id: null,
+                                                                      type: originalType2,
+                                                                      original_type: null
+                                                                    }
+                                                                  })
+                                                                ]);
+
+                                                                setSelectedMatches(prev => {
+                                                                  const next = { ...prev };
+                                                                  delete next[transaction.id];
+                                                                  delete next[match.id];
+                                                                  return next;
+                                                                });
+
+                                                                toast.success('Transactions unmatched');
+                                                              } catch (error) {
+                                                                console.error('Failed to unmatch transactions:', error);
+                                                                toast.error('Failed to unmatch transactions. Please try again.');
+                                                              }
+                                                            }
+                                                          }}
+                                                        >
+                                                          <td className="border-r border-amber-200 text-center">
+                                                            <input
+                                                              type="checkbox"
+                                                              checked={isSelected}
+                                                              onChange={() => {}}
+                                                              className="rounded w-3.5 h-3.5"
+                                                            />
+                                                          </td>
+                                                          <td className="border-r border-amber-200 py-1 pl-2 pr-1 text-xs">
+                                                            {format(parseISO(match.date), 'MM/dd/yy')}
+                                                          </td>
+                                                          {selectedAccount === 'all' && (
+                                                            <td className="border-r border-amber-200 py-1 px-4 pl-2 truncate text-xs">
+                                                              {getAccountDisplayName(matchAccount)}
+                                                            </td>
+                                                          )}
+                                                          <td className="border-r border-amber-200 py-1 px-4 pl-2 text-xs truncate">
+                                                            {match.description || '—'}
+                                                          </td>
+                                                          <td className="border-r border-amber-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                            {(match.type === 'expense' || match.type === 'transfer' || match.type === 'credit_card_payment') && (
+                                                              <span className="font-medium">
+                                                                ${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                              </span>
+                                                            )}
+                                                          </td>
+                                                          <td className="border-r border-amber-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                                            {match.type === 'income' && (
+                                                              <span className="font-medium">
+                                                                ${Math.abs(match.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                              </span>
+                                                            )}
+                                                          </td>
+                                                          <td className="border-r border-amber-200 py-1 px-4 pl-2 truncate text-xs">
+                                                            {(() => {
+                                                              if (match.type === 'transfer' || match.type === 'credit_card_payment') {
+                                                                const otherAccount = accounts.find(a => a.id === match.bank_account_id);
+                                                                return otherAccount ? getAccountDisplayName(otherAccount) : '—';
+                                                              }
+                                                              const contact = contacts.find(c => c.id === match.contact_id);
+                                                              return contact ? contact.display_name : '—';
+                                                            })()}
+                                                          </td>
+                                                          <td className="border-r border-amber-200 py-1 px-4 pl-2 truncate text-xs">
+                                                            {matchCategory?.display_name || '—'}
+                                                          </td>
+                                                          <td className="py-1 text-xs text-slate-600 font-medium whitespace-nowrap text-center">
+                                                            {confidence}%
+                                                          </td>
+                                                        </tr>
+                                                      );
+                                                    })}
+                                                  </tbody>
+                                                </table>
+                                              </div>
+                                            </div>
+                                          );
+                                        })()}
 
                                         {/* Potential Matches */}
                                         {(() => {
