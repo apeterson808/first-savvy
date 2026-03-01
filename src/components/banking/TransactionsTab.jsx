@@ -1592,15 +1592,21 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                   const manualAction = manualActionOverrides[transaction.id];
 
+                                  // Determine current tab
+                                  const currentTab = (() => {
+                                    if (isMatched(transaction)) return 'match';
+                                    if (manualActionOverrides[transaction.id]) return manualActionOverrides[transaction.id];
+                                    if (transaction.type === 'transfer') {
+                                      return findPairedTransfer(transaction) ? 'match' : 'post';
+                                    }
+                                    const matches = findPotentialMatches(transaction);
+                                    const oppositeMatches = findOppositeAmountMatches(transaction);
+                                    return (matches.length > 0 || oppositeMatches.length > 0) ? 'match' : 'post';
+                                  })();
+
                                   let actionText, actionHandler;
 
-                                  if (manualAction === 'post') {
-                                    actionText = 'Post';
-                                    actionHandler = async () => {
-                                      // Use unified postTransaction function to handle transfer pairs atomically
-                                      await postTransaction(transaction);
-                                    };
-                                  } else if (manualAction === 'match') {
+                                  if (currentTab === 'match') {
                                     actionText = 'Match';
                                     actionHandler = () => {
                                       const matches = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')
@@ -1611,15 +1617,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       setMatchDialogOpen(true);
                                     };
                                   } else {
-                                    if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
-                                      const paired = findPairedTransfer(transaction);
-                                      actionText = paired ? 'Match' : 'Post';
-                                      actionHandler = () => handleTransferMatch(transaction);
-                                    } else {
-                                      const matches = findPotentialMatches(transaction);
-                                      actionText = matches.length > 0 ? 'Match' : 'Post';
-                                      actionHandler = () => handleMatchClick(transaction);
-                                    }
+                                    actionText = 'Post';
+                                    actionHandler = async () => {
+                                      // Use unified postTransaction function to handle transfer pairs atomically
+                                      await postTransaction(transaction);
+                                    };
                                   }
 
                                   return (
@@ -2985,19 +2987,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             {(() => {
                                               const manualAction = manualActionOverrides[transaction.id];
 
+                                              // Determine current tab
+                                              const currentTab = (() => {
+                                                if (isMatched(transaction)) return 'match';
+                                                if (manualActionOverrides[transaction.id]) return manualActionOverrides[transaction.id];
+                                                if (transaction.type === 'transfer') {
+                                                  return findPairedTransfer(transaction) ? 'match' : 'post';
+                                                }
+                                                const matches = findPotentialMatches(transaction);
+                                                const oppositeMatches = findOppositeAmountMatches(transaction);
+                                                return (matches.length > 0 || oppositeMatches.length > 0) ? 'match' : 'post';
+                                              })();
+
                                               let actionText, actionHandler;
 
-                                              if (manualAction === 'post') {
-                                                actionText = 'Post';
-                                                actionHandler = async () => {
-                                                  // Use unified postTransaction function to handle transfer pairs atomically
-                                                  await postTransaction(transaction);
-                                                  setExpandedTransactionId(null);
-                                                };
-                                              } else if (manualAction === 'match') {
+                                              if (currentTab === 'match') {
                                                 actionText = 'Match';
                                                 actionHandler = () => {
-                                                  const matches = transaction.type === 'transfer'
+                                                  const matches = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')
                                                     ? [findPairedTransfer(transaction)].filter(Boolean)
                                                     : findPotentialMatches(transaction);
                                                   setMatchingTransaction(transaction);
@@ -3006,21 +3013,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                   setExpandedTransactionId(null);
                                                 };
                                               } else {
-                                                if (transaction.type === 'transfer') {
-                                                  const paired = findPairedTransfer(transaction);
-                                                  actionText = paired ? 'Match' : 'Post';
-                                                  actionHandler = () => {
-                                                    handleTransferMatch(transaction);
-                                                    setExpandedTransactionId(null);
-                                                  };
-                                                } else {
-                                                  const matches = findPotentialMatches(transaction);
-                                                  actionText = matches.length > 0 ? 'Match' : 'Post';
-                                                  actionHandler = () => {
-                                                    handleMatchClick(transaction);
-                                                    setExpandedTransactionId(null);
-                                                  };
-                                                }
+                                                actionText = 'Post';
+                                                actionHandler = async () => {
+                                                  // Use unified postTransaction function to handle transfer pairs atomically
+                                                  await postTransaction(transaction);
+                                                  setExpandedTransactionId(null);
+                                                };
                                               }
 
                                               const matches = (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')
