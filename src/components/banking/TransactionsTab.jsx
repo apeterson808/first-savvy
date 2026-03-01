@@ -1382,7 +1382,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                             if (isInMatchMode) {
                               const pairedTransactionId = selectedMatches[transaction.id];
-                              const pairedTransaction = pairedTransactionId ? allPendingTransactions.find(t => t.id === pairedTransactionId) : null;
+                              const pairedTransaction = pairedTransactionId ? transactions.find(t => t.id === pairedTransactionId) : null;
 
                               // If there's a matched pair (checkbox selected), show the paired account automatically
                               if (pairedTransaction) {
