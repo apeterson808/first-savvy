@@ -1184,7 +1184,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
             <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
               <colgroup>
-                <col style={{ width: 32, minWidth: 32 }} />
                 <col style={{ width: 70, minWidth: 70 }} />
                 {selectedAccount === 'all' && <col style={{ width: columnWidths.account, minWidth: 50 }} />}
                 <col style={{ width: columnWidths.description, minWidth: 100 }} />
