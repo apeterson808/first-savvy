@@ -1398,6 +1398,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         // For now, just show the selection
                                       }}
                                       accounts={allActiveAccounts}
+                                      showAllOption={false}
                                       disabled={true}
                                       triggerClassName="h-7 border-transparent bg-transparent shadow-none text-xs pointer-events-none"
                                       placeholder="Select account"
@@ -1415,6 +1416,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       // Account selection handled through checkboxes in match suggestions
                                     }}
                                     accounts={allActiveAccounts}
+                                    showAllOption={false}
                                     disabled={true}
                                     triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                     placeholder="Select account"
