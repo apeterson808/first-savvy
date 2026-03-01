@@ -1106,7 +1106,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
               }));
               setSelectedMatches(prev => ({
                 ...prev,
-                [expandedTransactionId]: paired.id
+                [expandedTransactionId]: paired.id,
+                [paired.id]: expandedTransactionId
               }));
             }
           } else {
@@ -2320,7 +2321,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                                 setSelectedMatches(prev => ({
                                                                   ...prev,
-                                                                  [transaction.id]: match.id
+                                                                  [transaction.id]: match.id,
+                                                                  [match.id]: transaction.id
                                                                 }));
 
                                                                 toast.success('Transactions matched');
@@ -2496,7 +2498,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                 return {
                                                   ...prev,
-                                                  [transaction.id]: topMatch.id
+                                                  [transaction.id]: topMatch.id,
+                                                  [topMatch.id]: transaction.id
                                                 };
                                               }
                                               return prev;
@@ -2761,7 +2764,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                                     setSelectedMatches(prev => ({
                                                                       ...prev,
-                                                                      [transaction.id]: match.id
+                                                                      [transaction.id]: match.id,
+                                                                      [match.id]: transaction.id
                                                                     }));
 
                                                                     setSuggestedMatches(prev => {
