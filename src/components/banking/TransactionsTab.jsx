@@ -1381,21 +1381,19 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             })();
 
                             if (isInMatchMode) {
-                              const paired = findPairedTransfer(transaction);
                               const pairedTransactionId = selectedMatches[transaction.id];
                               const pairedTransaction = pairedTransactionId ? allPendingTransactions.find(t => t.id === pairedTransactionId) : null;
 
-                              // If there's a matched pair, show the account dropdown to select which account
-                              if (paired || pairedTransaction) {
-                                const currentPairedAccountId = paired?.bank_account_id || pairedTransaction?.bank_account_id;
+                              // If there's a matched pair (checkbox selected), show the paired account automatically
+                              if (pairedTransaction) {
+                                const pairedAccountId = pairedTransaction.bank_account_id;
 
                                 return (
                                   <div onClick={(e) => e.stopPropagation()}>
                                     <AccountDropdown
-                                      value={currentPairedAccountId || ''}
+                                      value={pairedAccountId || ''}
                                       onValueChange={(accountId) => {
-                                        // This will be handled when they click Post to link the transactions
-                                        // For now, just show the selection
+                                        // Account is automatically determined by the paired transaction
                                       }}
                                       accounts={allActiveAccounts}
                                       showAllOption={false}
