@@ -102,6 +102,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [isPostingTransfer, setIsPostingTransfer] = useState(false);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [manualActionOverrides, setManualActionOverrides] = useState({});
+  const [selectedMatches, setSelectedMatches] = useState({});
+  const [manualMatchSearch, setManualMatchSearch] = useState({});
+  const [manualMatchFilters, setManualMatchFilters] = useState({});
+  const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
