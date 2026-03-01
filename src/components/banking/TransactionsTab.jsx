@@ -106,6 +106,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [manualMatchSearch, setManualMatchSearch] = useState({});
   const [manualMatchFilters, setManualMatchFilters] = useState({});
   const [manualMatchFilterInputs, setManualMatchFilterInputs] = useState({});
+  const [showMatchFilters, setShowMatchFilters] = useState({});
   const [splitModeTransactions, setSplitModeTransactions] = useState(new Set());
   const [splitLineItems, setSplitLineItems] = useState({});
   const [loadingSplits, setLoadingSplits] = useState(new Set());
@@ -2260,7 +2261,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                           return (
                                             <div className="mb-3">
-                                              <p className="text-xs font-semibold text-slate-700 mb-2">Suggested Matches (Opposite Amount)</p>
+                                              <p className="text-xs font-semibold text-slate-700 mb-2">Suggested Matches</p>
                                               <div className="bg-amber-50/50 border border-amber-200 rounded p-2 max-h-48 overflow-y-auto">
                                                 <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
                                                   <colgroup>
@@ -2272,12 +2273,10 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     <col style={{ width: 1 }} />
                                                     <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
                                                     <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
-                                                    <col style={{ width: 30, minWidth: 30, maxWidth: 30 }} />
                                                   </colgroup>
                                                   <tbody>
                                                     {oppositeMatches.map(match => {
                                                       const matchAccount = allActiveAccounts.find(a => a.id === match.bank_account_id) || accounts.find(a => a.id === match.bank_account_id);
-                                                      const confidence = calculateMatchConfidence(transaction, match);
                                                       const isSelected = selectedMatches[transaction.id] === match.id;
                                                       const matchCategory = chartAccounts.find(c => c.id === match.category_account_id);
 
@@ -2411,11 +2410,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                               return contact ? contact.display_name : '—';
                                                             })()}
                                                           </td>
-                                                          <td className="border-r border-amber-200 py-1 px-4 pl-2 truncate text-xs">
+                                                          <td className="py-1 px-4 pl-2 truncate text-xs">
                                                             {matchCategory?.display_name || '—'}
-                                                          </td>
-                                                          <td className="py-1 text-xs text-slate-600 font-medium whitespace-nowrap text-center">
-                                                            {confidence}%
                                                           </td>
                                                         </tr>
                                                       );
@@ -2513,7 +2509,24 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             {!currentlyPaired && (
                                               <>
                                                 <div className="mb-3">
-                                                  <p className="text-xs text-slate-600 mb-2">Filter transactions to find a match:</p>
+                                                  <Button
+                                                    size="sm"
+                                                    variant="outline"
+                                                    className="h-7 text-xs"
+                                                    onClick={() => {
+                                                      setShowMatchFilters(prev => ({
+                                                        ...prev,
+                                                        [transaction.id]: !prev[transaction.id]
+                                                      }));
+                                                    }}
+                                                  >
+                                                    <Search className="w-3 h-3 mr-1" />
+                                                    {showMatchFilters[transaction.id] ? 'Hide Search' : 'Search for Other Transactions'}
+                                                  </Button>
+                                                </div>
+
+                                                {showMatchFilters[transaction.id] && (
+                                                <div className="mb-3">
                                                   <div className="flex gap-2">
                                                 <div className="flex-1">
                                                   <Label className="text-xs mb-1 block">Account</Label>
@@ -2648,8 +2661,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                 </div>
                                               </div>
                                             </div>
+                                                )}
 
                                             {/* Always show heading and results section in Match mode */}
+                                            {showMatchFilters[transaction.id] && (
+                                              <>
                                             <div className="mb-2">
                                               <p className="text-xs font-semibold text-slate-700 mb-2">
                                                 {hasFilters ? 'Filtered Results:' : (autoMatches.length > 0 || suggestedMatch) ? 'Suggested Matches:' : 'No Matches Found'}
@@ -2662,8 +2678,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                             </div>
 
                                             {(autoMatches.length > 0 || hasFilters || suggestedMatch) && (
-                                              <>
-                                                <div className="max-h-64 overflow-y-auto">
+                                                <>
+                                                  <div className="max-h-64 overflow-y-auto">
                                                   {matches.length === 0 && hasFilters ? (
                                                     <p className="text-slate-500 text-center py-2">No transactions found matching filters</p>
                                                   ) : (
@@ -2878,6 +2894,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     </table>
                                                   )}
                                                 </div>
+                                                </>
+                                              )}
                                               </>
                                             )}
                                               </>
