@@ -1384,6 +1384,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               const pairedTransactionId = selectedMatches[transaction.id];
                               const pairedTransaction = pairedTransactionId ? transactions.find(t => t.id === pairedTransactionId) : null;
 
+                              console.log('Match mode check:', {
+                                transactionId: transaction.id,
+                                pairedTransactionId,
+                                hasPairedTransaction: !!pairedTransaction,
+                                pairedAccountId: pairedTransaction?.bank_account_id
+                              });
+
                               // If there's a matched pair (checkbox selected), show the paired account automatically
                               if (pairedTransaction) {
                                 const pairedAccountId = pairedTransaction.bank_account_id;
