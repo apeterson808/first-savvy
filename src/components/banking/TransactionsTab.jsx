@@ -2289,85 +2289,22 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           className={`cursor-pointer transition-colors ${
                                                             isSelected ? 'bg-blue-100' : 'bg-white hover:bg-amber-100'
                                                           }`}
-                                                          onClick={async () => {
+                                                          onClick={() => {
                                                             const willBeSelected = !isSelected;
 
                                                             if (willBeSelected) {
-                                                              const pairId = crypto.randomUUID();
-                                                              const matchType = determineMatchType(transaction.bank_account_id, match.bank_account_id, chartAccounts);
-                                                              const isCreditCardPayment = matchType === 'credit_card_payment';
-
-                                                              try {
-                                                                await Promise.all([
-                                                                  updateMutation.mutateAsync({
-                                                                    id: transaction.id,
-                                                                    data: {
-                                                                      ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
-                                                                      type: matchType,
-                                                                      original_type: transaction.original_type || transaction.type,
-                                                                      category_account_id: null
-                                                                    }
-                                                                  }),
-                                                                  updateMutation.mutateAsync({
-                                                                    id: match.id,
-                                                                    data: {
-                                                                      ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
-                                                                      type: matchType,
-                                                                      original_type: match.original_type || match.type,
-                                                                      category_account_id: null
-                                                                    }
-                                                                  })
-                                                                ]);
-
-                                                                setSelectedMatches(prev => ({
-                                                                  ...prev,
-                                                                  [transaction.id]: match.id,
-                                                                  [match.id]: transaction.id
-                                                                }));
-
-                                                                toast.success('Transactions matched');
-                                                              } catch (error) {
-                                                                console.error('Failed to match transactions:', error);
-                                                                toast.error('Failed to match transactions. Please try again.');
-                                                              }
+                                                              setSelectedMatches(prev => ({
+                                                                ...prev,
+                                                                [transaction.id]: match.id,
+                                                                [match.id]: transaction.id
+                                                              }));
                                                             } else {
-                                                              const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-                                                              const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
-
-                                                              try {
-                                                                await Promise.all([
-                                                                  updateMutation.mutateAsync({
-                                                                    id: transaction.id,
-                                                                    data: {
-                                                                      transfer_pair_id: null,
-                                                                      cc_payment_pair_id: null,
-                                                                      type: originalType1,
-                                                                      original_type: null
-                                                                    }
-                                                                  }),
-                                                                  updateMutation.mutateAsync({
-                                                                    id: match.id,
-                                                                    data: {
-                                                                      transfer_pair_id: null,
-                                                                      cc_payment_pair_id: null,
-                                                                      type: originalType2,
-                                                                      original_type: null
-                                                                    }
-                                                                  })
-                                                                ]);
-
-                                                                setSelectedMatches(prev => {
-                                                                  const next = { ...prev };
-                                                                  delete next[transaction.id];
-                                                                  delete next[match.id];
-                                                                  return next;
-                                                                });
-
-                                                                toast.success('Transactions unmatched');
-                                                              } catch (error) {
-                                                                console.error('Failed to unmatch transactions:', error);
-                                                                toast.error('Failed to unmatch transactions. Please try again.');
-                                                              }
+                                                              setSelectedMatches(prev => {
+                                                                const next = { ...prev };
+                                                                delete next[transaction.id];
+                                                                delete next[match.id];
+                                                                return next;
+                                                              });
                                                             }
                                                           }}
                                                         >
@@ -2729,91 +2666,29 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                               className={`cursor-pointer transition-colors ${
                                                                 isSelected ? 'bg-blue-50' : 'bg-white hover:bg-slate-50'
                                                               }`}
-                                                              onClick={async () => {
+                                                              onClick={() => {
                                                                 const willBeSelected = !isSelected;
 
                                                                 if (willBeSelected) {
-                                                                  const pairId = crypto.randomUUID();
+                                                                  setSelectedMatches(prev => ({
+                                                                    ...prev,
+                                                                    [transaction.id]: match.id,
+                                                                    [match.id]: transaction.id
+                                                                  }));
 
-                                                                  // Determine if this is a credit card payment or regular transfer
-                                                                  const matchType = determineMatchType(transaction.bank_account_id, match.bank_account_id, chartAccounts);
-                                                                  const isCreditCardPayment = matchType === 'credit_card_payment';
-
-                                                                  try {
-                                                                    // Set appropriate pair_id and type based on account types
-                                                                    await Promise.all([
-                                                                      updateMutation.mutateAsync({
-                                                                        id: transaction.id,
-                                                                        data: {
-                                                                          ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
-                                                                          type: matchType,
-                                                                          original_type: transaction.original_type || transaction.type,
-                                                                          category_account_id: null
-                                                                        }
-                                                                      }),
-                                                                      updateMutation.mutateAsync({
-                                                                        id: match.id,
-                                                                        data: {
-                                                                          ...(isCreditCardPayment ? { cc_payment_pair_id: pairId } : { transfer_pair_id: pairId }),
-                                                                          type: matchType,
-                                                                          original_type: match.original_type || match.type,
-                                                                          category_account_id: null
-                                                                        }
-                                                                      })
-                                                                    ]);
-
-                                                                    setSelectedMatches(prev => ({
-                                                                      ...prev,
-                                                                      [transaction.id]: match.id,
-                                                                      [match.id]: transaction.id
-                                                                    }));
-
-                                                                    setSuggestedMatches(prev => {
-                                                                      const next = { ...prev };
-                                                                      delete next[transaction.id];
-                                                                      delete next[match.id];
-                                                                      return next;
-                                                                    });
-                                                                  } catch (error) {
-                                                                    console.error('Failed to match transactions:', error);
-                                                                    toast.error('Failed to match transactions. Please try again.');
-                                                                  }
+                                                                  setSuggestedMatches(prev => {
+                                                                    const next = { ...prev };
+                                                                    delete next[transaction.id];
+                                                                    delete next[match.id];
+                                                                    return next;
+                                                                  });
                                                                 } else {
-                                                                  const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-                                                                  const originalType2 = match.original_type || (match.amount > 0 ? 'income' : 'expense');
-
-                                                                  try {
-                                                                    await Promise.all([
-                                                                      updateMutation.mutateAsync({
-                                                                        id: transaction.id,
-                                                                        data: {
-                                                                          transfer_pair_id: null,
-                                                                          cc_payment_pair_id: null,
-                                                                          type: originalType1,
-                                                                          original_type: null
-                                                                        }
-                                                                      }),
-                                                                      updateMutation.mutateAsync({
-                                                                        id: match.id,
-                                                                        data: {
-                                                                          transfer_pair_id: null,
-                                                                          cc_payment_pair_id: null,
-                                                                          type: originalType2,
-                                                                          original_type: null
-                                                                        }
-                                                                      })
-                                                                    ]);
-
-                                                                    setSelectedMatches(prev => {
-                                                                      const next = { ...prev };
-                                                                      delete next[transaction.id];
-                                                                      delete next[match.id];
-                                                                      return next;
-                                                                    });
-                                                                  } catch (error) {
-                                                                    console.error('Failed to unmatch transactions:', error);
-                                                                    toast.error('Failed to unmatch transactions. Please try again.');
-                                                                  }
+                                                                  setSelectedMatches(prev => {
+                                                                    const next = { ...prev };
+                                                                    delete next[transaction.id];
+                                                                    delete next[match.id];
+                                                                    return next;
+                                                                  });
                                                                 }
                                                               }}
                                                             >
