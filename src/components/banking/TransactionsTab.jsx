@@ -1168,6 +1168,46 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     });
   }, [suggestedMatches, transactions, updateMutation]);
 
+  // One-time check on mount to select any already-suggested matches
+  React.useEffect(() => {
+    if (Object.keys(suggestedMatches).length === 0) return;
+
+    setSelectedMatches(prev => {
+      const updates = { ...prev };
+      let hasChanges = false;
+
+      Object.entries(suggestedMatches).forEach(([transId, matchId]) => {
+        if (!prev[transId]) {
+          const transaction = transactions.find(t => t.id === transId);
+          const match = transactions.find(t => t.id === matchId);
+
+          if (transaction && match) {
+            updates[transId] = matchId;
+            updates[matchId] = transId;
+            hasChanges = true;
+
+            const categoryUpdates = {};
+            if (match.contact_id && !transaction.contact_id) {
+              categoryUpdates.contact_id = match.contact_id;
+            }
+            if (match.category_account_id && !transaction.category_account_id) {
+              categoryUpdates.category_account_id = match.category_account_id;
+            }
+
+            if (Object.keys(categoryUpdates).length > 0) {
+              updateMutation.mutate({
+                id: transaction.id,
+                data: categoryUpdates
+              });
+            }
+          }
+        }
+      });
+
+      return hasChanges ? updates : prev;
+    });
+  }, []);
+
 
   return (
       <>
