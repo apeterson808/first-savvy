@@ -1168,9 +1168,14 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     });
   }, [suggestedMatches, transactions, updateMutation]);
 
-  // One-time check on mount to select any already-suggested matches
+  // One-time check to select any already-suggested matches when data loads
+  const hasRunInitialCheck = React.useRef(false);
   React.useEffect(() => {
+    if (hasRunInitialCheck.current) return;
     if (Object.keys(suggestedMatches).length === 0) return;
+    if (transactions.length === 0) return;
+
+    hasRunInitialCheck.current = true;
 
     setSelectedMatches(prev => {
       const updates = { ...prev };
@@ -1206,7 +1211,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       return hasChanges ? updates : prev;
     });
-  }, []);
+  }, [suggestedMatches, transactions]);
 
 
   return (
