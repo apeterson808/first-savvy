@@ -1129,12 +1129,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   // Auto-select suggested matches when they become available
   React.useEffect(() => {
     Object.entries(suggestedMatches).forEach(([transId, matchId]) => {
-      // Only auto-select if not already selected
-      if (!selectedMatches[transId]) {
-        const transaction = transactions.find(t => t.id === transId);
-        const match = transactions.find(t => t.id === matchId);
+      const transaction = transactions.find(t => t.id === transId);
+      const match = transactions.find(t => t.id === matchId);
 
-        if (transaction && match) {
+      if (transaction && match) {
+        // Check if already selected by reading current state
+        setSelectedMatches(prev => {
+          // Skip if already selected
+          if (prev[transId]) {
+            return prev;
+          }
+
           // Pre-fill contact, category from matched transaction
           const updates = {};
           if (match.contact_id && !transaction.contact_id) {
@@ -1152,16 +1157,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             });
           }
 
-          // Set the selected match
-          setSelectedMatches(prev => ({
+          // Return new selected matches state
+          return {
             ...prev,
             [transId]: matchId,
             [matchId]: transId
-          }));
-        }
+          };
+        });
       }
     });
-  }, [suggestedMatches, selectedMatches, transactions, updateMutation]);
+  }, [suggestedMatches, transactions, updateMutation]);
 
 
   return (
