@@ -1171,25 +1171,38 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   // One-time check to select any already-suggested matches when data loads
   const hasRunInitialCheck = React.useRef(false);
   React.useEffect(() => {
+    console.log('🔍 Initial check effect running', {
+      hasRun: hasRunInitialCheck.current,
+      suggestedMatchesCount: Object.keys(suggestedMatches).length,
+      transactionsCount: transactions.length,
+      suggestedMatches
+    });
+
     if (hasRunInitialCheck.current) return;
     if (Object.keys(suggestedMatches).length === 0) return;
     if (transactions.length === 0) return;
 
     hasRunInitialCheck.current = true;
+    console.log('✅ Running initial check');
 
     setSelectedMatches(prev => {
       const updates = { ...prev };
       let hasChanges = false;
 
       Object.entries(suggestedMatches).forEach(([transId, matchId]) => {
+        console.log('🔍 Checking pair', { transId, matchId, alreadySelected: !!prev[transId] });
+
         if (!prev[transId]) {
           const transaction = transactions.find(t => t.id === transId);
           const match = transactions.find(t => t.id === matchId);
+
+          console.log('Found transactions?', { transaction: !!transaction, match: !!match });
 
           if (transaction && match) {
             updates[transId] = matchId;
             updates[matchId] = transId;
             hasChanges = true;
+            console.log('✅ Auto-selecting match', { transId, matchId });
 
             const categoryUpdates = {};
             if (match.contact_id && !transaction.contact_id) {
@@ -1200,6 +1213,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             }
 
             if (Object.keys(categoryUpdates).length > 0) {
+              console.log('Applying category updates', categoryUpdates);
               updateMutation.mutate({
                 id: transaction.id,
                 data: categoryUpdates
@@ -1209,6 +1223,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         }
       });
 
+      console.log('Final result', { hasChanges, updates });
       return hasChanges ? updates : prev;
     });
   }, [suggestedMatches, transactions]);
