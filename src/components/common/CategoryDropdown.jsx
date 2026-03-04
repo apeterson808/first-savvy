@@ -22,7 +22,8 @@ export default function CategoryDropdown({
   isMatchedTransfer = false,
   onUnmatchTransfer,
   matchedAccountName = null,
-  matchedAccounts = []
+  matchedAccounts = [],
+  matchMode = false
 }) {
   const { activeProfile } = useProfile();
   const queryClient = useQueryClient();
@@ -166,7 +167,7 @@ export default function CategoryDropdown({
         </>
       ) : (
         <>
-          {onAddNew && (
+          {!matchMode && onAddNew && (
             <>
               <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
                 + Add new{searchTerm ? `: "${searchTerm}"` : ''}
@@ -174,7 +175,7 @@ export default function CategoryDropdown({
             </>
           )}
 
-          {suggestedAccount && (
+          {!matchMode && suggestedAccount && (
             <>
               <ClickThroughSelectItem
                 key={`suggested-${suggestedAccount.id}`}
@@ -191,7 +192,7 @@ export default function CategoryDropdown({
             </>
           )}
 
-      {incomeAccounts.length > 0 && (
+      {!matchMode && incomeAccounts.length > 0 && (
         <>
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Income
@@ -236,7 +237,7 @@ export default function CategoryDropdown({
         </>
       )}
 
-      {expenseAccounts.length > 0 && (
+      {!matchMode && expenseAccounts.length > 0 && (
         <>
           <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
             Expenses

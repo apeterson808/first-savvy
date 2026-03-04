@@ -1496,6 +1496,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 <div className="flex-1 min-w-0">
                                   <CategoryDropdown
                                     value={transaction.type === 'transfer' || transaction.type === 'credit_card_payment' ? transaction.type : transaction.category_account_id}
+                                    matchMode={isInMatchMode}
                                     onValueChange={async (value) => {
                                       if (!activeAccountIds.includes(transaction.bank_account_id)) return;
 
