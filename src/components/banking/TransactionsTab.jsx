@@ -1188,7 +1188,58 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     });
   }, [suggestedMatches, transactions, updateMutation]);
 
+  // Auto-select suggested match when transaction is expanded in Match mode
+  React.useEffect(() => {
+    if (!expandedTransactionId) return;
 
+    const transaction = transactions.find(t => t.id === expandedTransactionId);
+    if (!transaction) return;
+
+    const suggestedMatchId = suggestedMatches[expandedTransactionId];
+    if (!suggestedMatchId) return;
+
+    const match = transactions.find(t => t.id === suggestedMatchId);
+    if (!match) return;
+
+    console.log('🟢 Transaction expanded with suggested match, auto-selecting:', {
+      transactionId: expandedTransactionId,
+      matchId: suggestedMatchId
+    });
+
+    // Auto-select the match pair
+    setSelectedMatches(prev => {
+      // Skip if already selected
+      if (prev[expandedTransactionId] === suggestedMatchId) {
+        console.log('🟢 Already selected');
+        return prev;
+      }
+
+      console.log('🟢 Auto-selecting on expand');
+
+      // Pre-fill contact, category from matched transaction
+      const updates = {};
+      if (match.contact_id && !transaction.contact_id) {
+        updates.contact_id = match.contact_id;
+      }
+      if (match.category_account_id && !transaction.category_account_id) {
+        updates.category_account_id = match.category_account_id;
+      }
+
+      // Apply updates if needed
+      if (Object.keys(updates).length > 0) {
+        updateMutation.mutate({
+          id: transaction.id,
+          data: updates
+        });
+      }
+
+      return {
+        ...prev,
+        [expandedTransactionId]: suggestedMatchId,
+        [suggestedMatchId]: expandedTransactionId
+      };
+    });
+  }, [expandedTransactionId, suggestedMatches, transactions, updateMutation]);
 
   return (
       <>
