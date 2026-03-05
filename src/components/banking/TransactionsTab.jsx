@@ -2748,6 +2748,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
                                                           const matchCategory = chartAccounts.find(c => c.id === match.category_account_id);
 
+                                                          if (isSuggestedMatch) {
+                                                            console.log('🟡 Rendering suggested match:', {
+                                                              transactionId: transaction.id,
+                                                              matchId: match.id,
+                                                              isSelected,
+                                                              selectedMatchesForThis: selectedMatches[transaction.id],
+                                                              allSelectedMatches: selectedMatches
+                                                            });
+                                                          }
+
                                                           return (
                                                             <tr
                                                               key={match.id}
