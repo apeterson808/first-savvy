@@ -135,57 +135,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const findPotentialMatches = () => [];
 
-  const [matchSuggestions, setMatchSuggestions] = React.useState({});
-
-  React.useEffect(() => {
-    const fetchSuggestions = async () => {
-      if (!currentProfile?.id) return;
-
-      const transferTransactions = transactions.filter(t =>
-        t.type === 'transfer' &&
-        t.status === 'pending' &&
-        !t.paired_transfer_id
-      );
-
-      const suggestions = {};
-
-      for (const transaction of transferTransactions) {
-        try {
-          const matches = await transferMatchingService.findTransferMatches(
-            transaction.id,
-            currentProfile.id
-          );
-          if (matches.length > 0) {
-            suggestions[transaction.id] = matches;
-          }
-        } catch (error) {
-          console.error('Error fetching matches for transaction:', transaction.id, error);
-        }
-      }
-
-      setMatchSuggestions(suggestions);
-    };
-
-    fetchSuggestions();
-  }, [transactions, currentProfile?.id]);
-
-  const findOppositeAmountMatches = (transaction) => {
-    if (!transaction || transaction.type !== 'transfer' || transaction.status !== 'pending') {
-      return [];
-    }
-
-    if (isMatched(transaction)) {
-      return [];
-    }
-
-    const suggestions = matchSuggestions[transaction.id] || [];
-
-    return suggestions.map(s => {
-      const matchTxn = transactions.find(t => t.id === s.match_transaction_id);
-      return matchTxn;
-    }).filter(Boolean);
-  };
-
   const calculateMatchConfidence = () => 0;
 
   const handleUnmatch = async (transaction) => {
@@ -573,6 +522,69 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   });
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
+
+  const [matchSuggestions, setMatchSuggestions] = React.useState({});
+
+  React.useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!activeProfile?.id) return;
+
+      const transferTransactions = transactions.filter(t =>
+        t.type === 'transfer' &&
+        t.status === 'pending' &&
+        !t.paired_transfer_id
+      );
+
+      if (transferTransactions.length === 0) {
+        setMatchSuggestions({});
+        return;
+      }
+
+      const suggestions = {};
+
+      for (const transaction of transferTransactions) {
+        try {
+          const matches = await transferMatchingService.findTransferMatches(
+            transaction.id,
+            activeProfile.id
+          );
+          if (matches.length > 0) {
+            suggestions[transaction.id] = matches;
+          }
+        } catch (error) {
+          console.error('Error fetching matches for transaction:', transaction.id, error);
+        }
+      }
+
+      setMatchSuggestions(suggestions);
+    };
+
+    fetchSuggestions();
+  }, [fullPendingTransactions, activeProfile?.id]);
+
+  const findOppositeAmountMatches = (transaction) => {
+    if (!transaction || transaction.type !== 'transfer' || transaction.status !== 'pending') {
+      return [];
+    }
+
+    if (isMatched(transaction)) {
+      return [];
+    }
+
+    const suggestions = matchSuggestions[transaction.id] || [];
+
+    return suggestions.map(s => {
+      const matchTxn = transactions.find(t => t.id === s.match_transaction_id);
+      if (matchTxn) {
+        return {
+          ...matchTxn,
+          confidence_score: s.confidence_score,
+          match_reasons: s.match_reasons
+        };
+      }
+      return null;
+    }).filter(Boolean);
+  };
 
   const { data: fetchedAccounts = [] } = useQuery({
     queryKey: ['activeAccounts', activeProfile?.id],
@@ -1123,6 +1135,32 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       </span>
                                     )}
                                   </Button>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-9 w-9"
+                      onClick={async () => {
+                        if (!activeProfile?.id) return;
+                        try {
+                          await transferMatchingService.refreshMatches(activeProfile.id);
+                          queryClient.invalidateQueries(['fullPendingTransactions']);
+                        } catch (error) {
+                          toast.error('Failed to run auto-match: ' + error.message);
+                        }
+                      }}
+                    >
+                      <Link2 className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Run Auto-Match for Transfers</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
               <div className="flex-1"></div>
 
@@ -2324,7 +2362,21 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                             </td>
                                                           )}
                                                           <td className="border-r border-amber-200 py-1 px-4 pl-2 text-xs truncate">
-                                                            {match.description || '—'}
+                                                            <div className="flex items-center gap-2">
+                                                              <span>{match.description || '—'}</span>
+                                                              {match.confidence_score && (
+                                                                <Badge
+                                                                  variant={match.confidence_score >= 90 ? "default" : "secondary"}
+                                                                  className={`text-[10px] px-1.5 py-0 h-4 ${
+                                                                    match.confidence_score >= 90
+                                                                      ? 'bg-green-600'
+                                                                      : 'bg-amber-600'
+                                                                  }`}
+                                                                >
+                                                                  {Math.round(match.confidence_score)}%
+                                                                </Badge>
+                                                              )}
+                                                            </div>
                                                           </td>
                                                           <td className="border-r border-amber-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
                                                             {(match.type === 'expense' || match.type === 'transfer' || match.type === 'credit_card_payment') && (
