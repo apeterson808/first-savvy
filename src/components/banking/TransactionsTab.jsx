@@ -1126,120 +1126,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   }, [expandedTransactionId]);
 
-  // Populate suggestedMatches from transactions' suggested_match_id field
-  React.useEffect(() => {
-    if (transactions.length === 0) return;
-
-    setSuggestedMatches(prev => {
-      const newMatches = {};
-      transactions.forEach(t => {
-        if (t.suggested_match_id) {
-          newMatches[t.id] = t.suggested_match_id;
-        }
-      });
-
-      // Only update if different
-      const hasChanges = Object.keys(newMatches).length !== Object.keys(prev).length ||
-        Object.entries(newMatches).some(([k, v]) => prev[k] !== v);
-
-      return hasChanges ? newMatches : prev;
-    });
-  }, [transactions]);
-
-  // Auto-select suggested matches when they become available
-  React.useEffect(() => {
-    Object.entries(suggestedMatches).forEach(([transId, matchId]) => {
-      const transaction = transactions.find(t => t.id === transId);
-      const match = transactions.find(t => t.id === matchId);
-
-      if (transaction && match) {
-        // Check if already selected by reading current state
-        setSelectedMatches(prev => {
-          // Skip if already selected
-          if (prev[transId]) {
-            return prev;
-          }
-
-          // Pre-fill contact, category from matched transaction
-          const updates = {};
-          if (match.contact_id && !transaction.contact_id) {
-            updates.contact_id = match.contact_id;
-          }
-          if (match.category_account_id && !transaction.category_account_id) {
-            updates.category_account_id = match.category_account_id;
-          }
-
-          // Apply updates if needed
-          if (Object.keys(updates).length > 0) {
-            updateMutation.mutate({
-              id: transaction.id,
-              data: updates
-            });
-          }
-
-          // Return new selected matches state
-          return {
-            ...prev,
-            [transId]: matchId,
-            [matchId]: transId
-          };
-        });
-      }
-    });
-  }, [suggestedMatches, transactions, updateMutation]);
-
-  // Auto-select suggested match when transaction is expanded in Match mode
-  React.useEffect(() => {
-    if (!expandedTransactionId) return;
-
-    const transaction = transactions.find(t => t.id === expandedTransactionId);
-    if (!transaction) return;
-
-    const suggestedMatchId = suggestedMatches[expandedTransactionId];
-    if (!suggestedMatchId) return;
-
-    const match = transactions.find(t => t.id === suggestedMatchId);
-    if (!match) return;
-
-    console.log('🟢 Transaction expanded with suggested match, auto-selecting:', {
-      transactionId: expandedTransactionId,
-      matchId: suggestedMatchId
-    });
-
-    // Auto-select the match pair
-    setSelectedMatches(prev => {
-      // Skip if already selected
-      if (prev[expandedTransactionId] === suggestedMatchId) {
-        console.log('🟢 Already selected');
-        return prev;
-      }
-
-      console.log('🟢 Auto-selecting on expand');
-
-      // Pre-fill contact, category from matched transaction
-      const updates = {};
-      if (match.contact_id && !transaction.contact_id) {
-        updates.contact_id = match.contact_id;
-      }
-      if (match.category_account_id && !transaction.category_account_id) {
-        updates.category_account_id = match.category_account_id;
-      }
-
-      // Apply updates if needed
-      if (Object.keys(updates).length > 0) {
-        updateMutation.mutate({
-          id: transaction.id,
-          data: updates
-        });
-      }
-
-      return {
-        ...prev,
-        [expandedTransactionId]: suggestedMatchId,
-        [suggestedMatchId]: expandedTransactionId
-      };
-    });
-  }, [expandedTransactionId, suggestedMatches, transactions, updateMutation]);
 
   return (
       <>
@@ -2582,6 +2468,43 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           matches = [suggestedMatch, ...matches];
                                         }
 
+                                        // Auto-select highest confidence match if not already selected
+                                        if (!hasFilters && matches.length > 0 && !selectedMatches[transaction.id]) {
+                                          const topMatch = matches[0];
+
+                                          // Always auto-select the highest confidence match
+                                          // Use setTimeout to avoid state update during render
+                                          setTimeout(() => {
+                                            setSelectedMatches(prev => {
+                                              // Double-check it's still not selected
+                                              if (!prev[transaction.id]) {
+                                                // Pre-fill contact, category from matched transaction
+                                                const updates = {};
+                                                if (topMatch.contact_id && !transaction.contact_id) {
+                                                  updates.contact_id = topMatch.contact_id;
+                                                }
+                                                if (topMatch.category_account_id && !transaction.category_account_id) {
+                                                  updates.category_account_id = topMatch.category_account_id;
+                                                }
+
+                                                // Apply updates if needed
+                                                if (Object.keys(updates).length > 0) {
+                                                  updateMutation.mutate({
+                                                    id: transaction.id,
+                                                    data: updates
+                                                  });
+                                                }
+
+                                                return {
+                                                  ...prev,
+                                                  [transaction.id]: topMatch.id,
+                                                  [topMatch.id]: transaction.id
+                                                };
+                                              }
+                                              return prev;
+                                            });
+                                          }, 0);
+                                        }
 
                                         const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
 
@@ -2798,16 +2721,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                           const isSelected = selectedMatches[transaction.id] === match.id;
                                                           const isSuggestedMatch = suggestedMatch && match.id === suggestedMatch.id;
                                                           const matchCategory = chartAccounts.find(c => c.id === match.category_account_id);
-
-                                                          if (isSuggestedMatch) {
-                                                            console.log('🟡 Rendering suggested match:', {
-                                                              transactionId: transaction.id,
-                                                              matchId: match.id,
-                                                              isSelected,
-                                                              selectedMatchesForThis: selectedMatches[transaction.id],
-                                                              allSelectedMatches: selectedMatches
-                                                            });
-                                                          }
 
                                                           return (
                                                             <tr
