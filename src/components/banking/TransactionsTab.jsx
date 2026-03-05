@@ -48,6 +48,7 @@ import { getTransactionSplits, createTransactionSplits, updateTransactionSplits,
 import CalculatorAmountInput from '../common/CalculatorAmountInput';
 import { Trash2 } from 'lucide-react';
 import * as transactionService from '@/api/transactionService';
+import * as transferMatchingService from '@/api/transferMatching';
 import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { RuleDialog } from '../rules/RuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
@@ -134,6 +135,40 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const findPotentialMatches = () => [];
 
+  const [matchSuggestions, setMatchSuggestions] = React.useState({});
+
+  React.useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (!currentProfile?.id) return;
+
+      const transferTransactions = transactions.filter(t =>
+        t.type === 'transfer' &&
+        t.status === 'pending' &&
+        !t.paired_transfer_id
+      );
+
+      const suggestions = {};
+
+      for (const transaction of transferTransactions) {
+        try {
+          const matches = await transferMatchingService.findTransferMatches(
+            transaction.id,
+            currentProfile.id
+          );
+          if (matches.length > 0) {
+            suggestions[transaction.id] = matches;
+          }
+        } catch (error) {
+          console.error('Error fetching matches for transaction:', transaction.id, error);
+        }
+      }
+
+      setMatchSuggestions(suggestions);
+    };
+
+    fetchSuggestions();
+  }, [transactions, currentProfile?.id]);
+
   const findOppositeAmountMatches = (transaction) => {
     if (!transaction || transaction.type !== 'transfer' || transaction.status !== 'pending') {
       return [];
@@ -143,29 +178,12 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return [];
     }
 
-    const targetAmount = transaction.amount * -1;
-    const targetDate = parseISO(transaction.date);
+    const suggestions = matchSuggestions[transaction.id] || [];
 
-    return transactions.filter(t => {
-      if (t.id === transaction.id) return false;
-      if (t.type !== 'transfer') return false;
-      if (t.status !== 'pending') return false;
-      if (t.bank_account_id === transaction.bank_account_id) return false;
-      if (t.amount !== targetAmount) return false;
-      if (isMatched(t)) return false;
-
-      const tDate = parseISO(t.date);
-      const daysDiff = Math.abs(differenceInDays(tDate, targetDate));
-      if (daysDiff > 7) return false;
-
-      return true;
-    }).sort((a, b) => {
-      const aDate = parseISO(a.date);
-      const bDate = parseISO(b.date);
-      const aDiff = Math.abs(differenceInDays(aDate, targetDate));
-      const bDiff = Math.abs(differenceInDays(bDate, targetDate));
-      return aDiff - bDiff;
-    }).slice(0, 10);
+    return suggestions.map(s => {
+      const matchTxn = transactions.find(t => t.id === s.match_transaction_id);
+      return matchTxn;
+    }).filter(Boolean);
   };
 
   const calculateMatchConfidence = () => 0;
