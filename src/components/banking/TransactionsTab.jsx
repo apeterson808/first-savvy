@@ -30,7 +30,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Search, ChevronDown, SlidersHorizontal, Printer, Download, Settings, Loader2, Info, Plus, Link2, Unlink } from 'lucide-react';
-import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format } from 'date-fns';
+import { subDays, subMonths, startOfMonth, endOfMonth, startOfQuarter, endOfQuarter, startOfYear, endOfYear, isWithinInterval, parseISO, format, differenceInDays } from 'date-fns';
 import TransactionFilterPanel from './TransactionFilterPanel';
 import AccountCreationWizard from './AccountCreationWizard';
 import { validateAmount, sanitizeForLLM, validateDate } from '../utils/validation';
@@ -122,14 +122,132 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return splitModeTransactions.has(transactionId);
   };
 
-  // Stub functions for removed matching functionality
-  const isMatched = () => false;
-  const findPairedTransfer = () => null;
+  // Transfer matching functions
+  const isMatched = (transaction) => {
+    return transaction?.paired_transfer_id != null;
+  };
+
+  const findPairedTransfer = (transaction) => {
+    if (!transaction?.paired_transfer_id) return null;
+    return transactions.find(t => t.id === transaction.paired_transfer_id);
+  };
+
   const findPotentialMatches = () => [];
-  const findOppositeAmountMatches = () => [];
+
+  const findOppositeAmountMatches = (transaction) => {
+    if (!transaction || transaction.type !== 'transfer' || transaction.status !== 'pending') {
+      return [];
+    }
+
+    if (isMatched(transaction)) {
+      return [];
+    }
+
+    const targetAmount = transaction.amount * -1;
+    const targetDate = parseISO(transaction.date);
+
+    return transactions.filter(t => {
+      if (t.id === transaction.id) return false;
+      if (t.type !== 'transfer') return false;
+      if (t.status !== 'pending') return false;
+      if (t.bank_account_id === transaction.bank_account_id) return false;
+      if (t.amount !== targetAmount) return false;
+      if (isMatched(t)) return false;
+
+      const tDate = parseISO(t.date);
+      const daysDiff = Math.abs(differenceInDays(tDate, targetDate));
+      if (daysDiff > 7) return false;
+
+      return true;
+    }).sort((a, b) => {
+      const aDate = parseISO(a.date);
+      const bDate = parseISO(b.date);
+      const aDiff = Math.abs(differenceInDays(aDate, targetDate));
+      const bDiff = Math.abs(differenceInDays(bDate, targetDate));
+      return aDiff - bDiff;
+    }).slice(0, 10);
+  };
+
   const calculateMatchConfidence = () => 0;
-  const handleUnmatch = async () => {
-    toast.error('Matching functionality has been removed');
+
+  const handleUnmatch = async (transaction) => {
+    try {
+      const pairedTransaction = findPairedTransfer(transaction);
+      if (!pairedTransaction) {
+        toast.error('No paired transaction found');
+        return;
+      }
+
+      await updateMutation.mutateAsync({
+        id: transaction.id,
+        data: {
+          paired_transfer_id: null,
+          is_transfer_pair: false
+        }
+      });
+
+      await updateMutation.mutateAsync({
+        id: pairedTransaction.id,
+        data: {
+          paired_transfer_id: null,
+          is_transfer_pair: false
+        }
+      });
+
+      toast.success('Transfer pairing removed');
+    } catch (error) {
+      console.error('Error unmatching transfers:', error);
+      toast.error('Failed to remove transfer pairing');
+    }
+  };
+
+  const handleMatchClick = async (transaction) => {
+    try {
+      const selectedMatchId = selectedMatches[transaction.id];
+
+      if (!selectedMatchId) {
+        toast.error('Please select a transaction to match');
+        return;
+      }
+
+      const matchedTransaction = transactions.find(t => t.id === selectedMatchId);
+      if (!matchedTransaction) {
+        toast.error('Selected match not found');
+        return;
+      }
+
+      await updateMutation.mutateAsync({
+        id: transaction.id,
+        data: {
+          paired_transfer_id: matchedTransaction.id,
+          is_transfer_pair: true
+        }
+      });
+
+      await updateMutation.mutateAsync({
+        id: matchedTransaction.id,
+        data: {
+          paired_transfer_id: transaction.id,
+          is_transfer_pair: true
+        }
+      });
+
+      setSelectedMatches(prev => {
+        const next = { ...prev };
+        delete next[transaction.id];
+        delete next[matchedTransaction.id];
+        return next;
+      });
+
+      await postTransaction(transaction);
+      await postTransaction(matchedTransaction);
+
+      setExpandedTransactionId(null);
+      toast.success('Transfers matched and posted');
+    } catch (error) {
+      console.error('Error matching and posting transfers:', error);
+      toast.error('Failed to match transfers');
+    }
   };
 
   const initializeSplitMode = async (transaction) => {
