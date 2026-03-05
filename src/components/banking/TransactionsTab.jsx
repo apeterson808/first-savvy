@@ -122,6 +122,16 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return splitModeTransactions.has(transactionId);
   };
 
+  // Stub functions for removed matching functionality
+  const isMatched = () => false;
+  const findPairedTransfer = () => null;
+  const findPotentialMatches = () => [];
+  const findOppositeAmountMatches = () => [];
+  const calculateMatchConfidence = () => 0;
+  const handleUnmatch = async () => {
+    toast.error('Matching functionality has been removed');
+  };
+
   const initializeSplitMode = async (transaction) => {
     setSplitModeTransactions(prev => new Set(prev).add(transaction.id));
 
