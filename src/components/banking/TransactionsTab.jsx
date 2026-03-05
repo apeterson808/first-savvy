@@ -1486,23 +1486,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1">{displayName}</span>;
                             }
 
-                            // Determine if we're in Match mode
-                            const isInMatchMode = statusFilter === 'pending' && (() => {
-                              const override = manualActionOverrides[transaction.id];
-                              if (override === 'match') return true;
-                              if (override === 'post') return false;
-
-                              // Default logic
-                              if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
-                                return !!findPairedTransfer(transaction);
-                              }
-
-                              // Check if there are potential matches
-                              const matches = findPotentialMatches(transaction);
-                              const oppositeMatches = findOppositeAmountMatches(transaction);
-                              return matches.length > 0 || oppositeMatches.length > 0;
-                            })();
-
                             return (
                               <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
                                 {transaction.applied_rule_id && !autoLearnedRuleIds.has(transaction.applied_rule_id) && categoryRuleIds.has(transaction.applied_rule_id) && (
@@ -2468,51 +2451,42 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                           matches = [suggestedMatch, ...matches];
                                         }
 
-                                        // Auto-select suggested match or highest confidence match if not already selected
-                                        if (!hasFilters && !selectedMatches[transaction.id]) {
-                                          let matchToSelect = null;
+                                        // Auto-select highest confidence match if not already selected
+                                        if (!hasFilters && matches.length > 0 && !selectedMatches[transaction.id]) {
+                                          const topMatch = matches[0];
 
-                                          // Prioritize suggested match
-                                          if (suggestedMatch) {
-                                            matchToSelect = suggestedMatch;
-                                          } else if (matches.length > 0) {
-                                            matchToSelect = matches[0];
-                                          }
-
-                                          // Always auto-select the match
+                                          // Always auto-select the highest confidence match
                                           // Use setTimeout to avoid state update during render
-                                          if (matchToSelect) {
-                                            setTimeout(() => {
-                                              setSelectedMatches(prev => {
-                                                // Double-check it's still not selected
-                                                if (!prev[transaction.id]) {
-                                                  // Pre-fill contact, category from matched transaction
-                                                  const updates = {};
-                                                  if (matchToSelect.contact_id && !transaction.contact_id) {
-                                                    updates.contact_id = matchToSelect.contact_id;
-                                                  }
-                                                  if (matchToSelect.category_account_id && !transaction.category_account_id) {
-                                                    updates.category_account_id = matchToSelect.category_account_id;
-                                                  }
-
-                                                  // Apply updates if needed
-                                                  if (Object.keys(updates).length > 0) {
-                                                    updateMutation.mutate({
-                                                      id: transaction.id,
-                                                      data: updates
-                                                    });
-                                                  }
-
-                                                  return {
-                                                    ...prev,
-                                                    [transaction.id]: matchToSelect.id,
-                                                    [matchToSelect.id]: transaction.id
-                                                  };
+                                          setTimeout(() => {
+                                            setSelectedMatches(prev => {
+                                              // Double-check it's still not selected
+                                              if (!prev[transaction.id]) {
+                                                // Pre-fill contact, category from matched transaction
+                                                const updates = {};
+                                                if (topMatch.contact_id && !transaction.contact_id) {
+                                                  updates.contact_id = topMatch.contact_id;
                                                 }
-                                                return prev;
-                                              });
-                                            }, 0);
-                                          }
+                                                if (topMatch.category_account_id && !transaction.category_account_id) {
+                                                  updates.category_account_id = topMatch.category_account_id;
+                                                }
+
+                                                // Apply updates if needed
+                                                if (Object.keys(updates).length > 0) {
+                                                  updateMutation.mutate({
+                                                    id: transaction.id,
+                                                    data: updates
+                                                  });
+                                                }
+
+                                                return {
+                                                  ...prev,
+                                                  [transaction.id]: topMatch.id,
+                                                  [topMatch.id]: transaction.id
+                                                };
+                                              }
+                                              return prev;
+                                            });
+                                          }, 0);
                                         }
 
                                         const currentlyPaired = isMatched(transaction) ? findPairedTransfer(transaction) : null;
