@@ -1486,6 +1486,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               return <span className="text-xs px-1">{displayName}</span>;
                             }
 
+                            // Determine if we're in Match mode
+                            const isInMatchMode = statusFilter === 'pending' && (() => {
+                              const override = manualActionOverrides[transaction.id];
+                              if (override === 'match') return true;
+                              if (override === 'post') return false;
+
+                              // Default logic
+                              if (transaction.type === 'transfer' || transaction.type === 'credit_card_payment') {
+                                return !!findPairedTransfer(transaction);
+                              }
+
+                              // Check if there are potential matches
+                              const matches = findPotentialMatches(transaction);
+                              const oppositeMatches = findOppositeAmountMatches(transaction);
+                              return matches.length > 0 || oppositeMatches.length > 0;
+                            })();
+
                             return (
                               <div onClick={(e) => e.stopPropagation()} className="flex items-center gap-1 w-full min-w-0">
                                 {transaction.applied_rule_id && !autoLearnedRuleIds.has(transaction.applied_rule_id) && categoryRuleIds.has(transaction.applied_rule_id) && (
