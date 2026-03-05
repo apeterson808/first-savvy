@@ -40,8 +40,6 @@ import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import AccountDropdown from '../common/AccountDropdown';
 import ContactDropdown from '../common/ContactDropdown';
 import CategoryDropdown from '../common/CategoryDropdown';
-import TransferMatchDialog from './TransferMatchDialog';
-import TransferPostPreviewDialog from './TransferPostPreviewDialog';
 import AddContactSheet from '../contacts/AddContactSheet';
 import { getAccountDisplayName } from '../utils/constants';
 import { toast } from 'sonner';
@@ -54,11 +52,7 @@ import { TransactionReviewDialog } from './TransactionReviewDialog';
 import { RuleDialog } from '../rules/RuleDialog';
 import { usePersistedViewState } from '@/hooks/usePersistedViewState';
 import { deleteViewPreferences } from '@/api/viewPreferences';
-import { transferAutoDetectionAPI } from '@/api/transferAutoDetection';
-import { matchingAPI } from '@/api/matchingAPI';
 import { useAuth } from '@/contexts/AuthContext';
-import { useUnifiedMatching } from '@/hooks/useUnifiedMatching';
-import * as matchCompat from '@/utils/matchingCompatibility';
 import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
 import { autoLearnRule } from '@/utils/autoLearnRule';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
@@ -94,10 +88,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const [contactSearchTerm, setContactSearchTerm] = useState('');
   const [triggeringContactTransactionId, setTriggeringContactTransactionId] = useState(null);
   const [autoContactSuggestionIds, setAutoContactSuggestionIds] = useState(new Set());
-  const [transferMatchDialogOpen, setTransferMatchDialogOpen] = useState(false);
-  const [transferPostPreviewOpen, setTransferPostPreviewOpen] = useState(false);
-  const [matchingTransfer, setMatchingTransfer] = useState(null);
-  const [pairedTransfer, setPairedTransfer] = useState(null);
   const [currentMatchType, setCurrentMatchType] = useState('transfer');
   const [isPostingTransfer, setIsPostingTransfer] = useState(false);
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
@@ -128,25 +118,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return accounts.find(acc => acc.id === accountId);
   };
 
-  const isMatched = (transaction) => {
-    return false;
-  };
-
   const isSplitMode = (transactionId) => {
     return splitModeTransactions.has(transactionId);
-  };
-
-  // Helper function to determine if a match should be a credit card payment vs transfer
-  const determineMatchType = (transactionAccountId, matchAccountId, accountsList) => {
-    const transAccount = accountsList.find(a => a.id === transactionAccountId);
-    const matchAccount = accountsList.find(a => a.id === matchAccountId);
-
-    // If either account is a credit card, it's a credit card payment
-    if (transAccount?.account_type === 'credit_card' || matchAccount?.account_type === 'credit_card') {
-      return 'credit_card_payment';
-    }
-
-    return 'transfer';
   };
 
   const initializeSplitMode = async (transaction) => {
@@ -832,135 +805,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     return isFromActiveAccount && matchesAccount;
   }).length;
 
-  const findPairedTransfer = (transaction) => {
-    return null;
-  };
-
-  const handleUnmatch = async (transaction) => {
-    if (!isMatched(transaction)) {
-      toast.error('Transaction is not matched');
-      return;
-    }
-
-    if (statusFilter === 'posted') {
-      toast.error('Move transaction to Pending to unmatch');
-      return;
-    }
-
-    const pairedTransaction = findPairedTransfer(transaction);
-
-    if (!pairedTransaction) {
-      toast.error('Cannot find paired transaction');
-      return;
-    }
-
-    try {
-      toast.info('Unmatching transaction...');
-
-      const originalType1 = transaction.original_type || (transaction.amount > 0 ? 'income' : 'expense');
-      const originalType2 = pairedTransaction.original_type || (pairedTransaction.amount > 0 ? 'income' : 'expense');
-
-      const updateData1 = {
-        type: originalType1,
-        original_type: null
-      };
-
-      const updateData2 = {
-        type: originalType2,
-        original_type: null
-      };
-
-      if (transaction.transfer_pair_id) {
-        updateData1.transfer_pair_id = null;
-        updateData2.transfer_pair_id = null;
-      }
-
-      if (transaction.cc_payment_pair_id) {
-        updateData1.cc_payment_pair_id = null;
-        updateData2.cc_payment_pair_id = null;
-      }
-
-      updateMutation.mutate({
-        id: transaction.id,
-        data: updateData1
-      });
-
-      updateMutation.mutate({
-        id: pairedTransaction.id,
-        data: updateData2
-      });
-
-      setSelectedMatches(prev => {
-        const next = { ...prev };
-        delete next[transaction.id];
-        delete next[pairedTransaction.id];
-        return next;
-      });
-
-      setSuggestedMatches(prev => ({
-        ...prev,
-        [transaction.id]: pairedTransaction.id,
-        [pairedTransaction.id]: transaction.id
-      }));
-
-      toast.success('Transactions unmatched');
-    } catch (err) {
-      console.error('Error unmatching transactions:', err);
-      toast.error('Failed to unmatch transactions');
-    }
-  };
-
-  const findPotentialMatches = (transaction) => {
-    return [];
-  };
-
-  const findOppositeAmountMatches = (transaction) => {
-    const targetAmount = -transaction.amount;
-    const transactionDate = new Date(transaction.date);
-
-    return transactions.filter(t => {
-      if (t.id === transaction.id) return false;
-      if (t.status === 'excluded') return false;
-      if (!activeAccountIds.includes(t.bank_account_id)) return false;
-      if (t.bank_account_id === transaction.bank_account_id) return false;
-
-      const amountMatch = Math.abs(t.amount - targetAmount) < 0.01;
-      if (!amountMatch) return false;
-
-      const tDate = new Date(t.date);
-      const daysDiff = Math.abs((transactionDate - tDate) / (1000 * 60 * 60 * 24));
-
-      return daysDiff <= 10;
-    }).sort((a, b) => {
-      const aDate = new Date(a.date);
-      const bDate = new Date(b.date);
-      const aDiff = Math.abs((transactionDate - aDate) / (1000 * 60 * 60 * 24));
-      const bDiff = Math.abs((transactionDate - bDate) / (1000 * 60 * 60 * 24));
-      return aDiff - bDiff;
-    });
-  };
-
-  // Calculate match confidence based purely on date proximity
-  const calculateMatchConfidence = (transaction, match) => {
-    const tDate = new Date(transaction.date);
-    const mDate = new Date(match.date);
-    const daysDiff = Math.abs((tDate - mDate) / (1000 * 60 * 60 * 24));
-
-    // Pure date-based scoring
-    if (daysDiff === 0) return 100;  // Same day
-    if (daysDiff === 1) return 95;   // 1 day apart
-    if (daysDiff === 2) return 90;   // 2 days apart
-    if (daysDiff === 3) return 85;   // 3 days apart
-    if (daysDiff === 4) return 80;   // 4 days apart
-    if (daysDiff === 5) return 75;   // 5 days apart
-    if (daysDiff === 6) return 70;   // 6 days apart
-    if (daysDiff === 7) return 65;   // 7 days apart
-    if (daysDiff === 8) return 60;   // 8 days apart
-    if (daysDiff === 9) return 55;   // 9 days apart
-    if (daysDiff === 10) return 50;  // 10 days apart
-
-    return 50; // Fallback (shouldn't reach here with 10-day limit)
-  };
 
   // Unified function to post transaction(s) - handles both single transactions and transfer pairs atomically
   const postTransaction = async (transaction) => {
@@ -991,59 +835,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     toast.success('Transaction posted');
     return true;
   };
-
-  const handleTransferMatch = async (transaction) => {
-    toast.error('Matching is disabled');
-  };
-
-  const handleConfirmTransferMatch = async (toAccountId) => {
-    if (!matchingTransfer || !pairedTransfer) return;
-
-    try {
-      // Link the two transactions as a transfer pair
-      const result = await transferAutoDetectionAPI.linkTransferPair(
-        matchingTransfer.id,
-        pairedTransfer.id,
-        activeProfile.id
-      );
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      // Close match dialog and open preview dialog (state already set)
-      setTransferMatchDialogOpen(false);
-      setTransferPostPreviewOpen(true);
-      toast.success('Transfer linked - review before posting');
-
-      // Refresh transactions in the background
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-    } catch (error) {
-      console.error('Error linking transfers:', error);
-      toast.error('Failed to link transfers');
-    }
-  };
-
-  const handlePostTransferFromPreview = async () => {
-    if (!matchingTransfer || !pairedTransfer) return;
-
-    setIsPostingTransfer(true);
-    try {
-      // postTransaction handles posting both sides internally
-      const success = await postTransaction(matchingTransfer);
-      if (success) {
-        setTransferPostPreviewOpen(false);
-        setMatchingTransfer(null);
-        setPairedTransfer(null);
-      }
-    } catch (error) {
-      console.error('Error posting transfer:', error);
-      toast.error('Failed to post transfer');
-    } finally {
-      setIsPostingTransfer(false);
-    }
-  };
-
 
   const handleImportComplete = () => {
     queryClient.invalidateQueries({ queryKey: ['transactions'] });
@@ -3169,36 +2960,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               setContactSearchTerm('');
                               setTriggeringContactTransactionId(null);
                             }}
-                          />
-
-                          <TransferMatchDialog
-                            isOpen={transferMatchDialogOpen}
-                            onClose={() => {
-                              setTransferMatchDialogOpen(false);
-                              setMatchingTransfer(null);
-                              setPairedTransfer(null);
-                            }}
-                            transaction={matchingTransfer}
-                            pairedTransaction={pairedTransfer}
-                            accounts={accounts}
-                            onConfirm={handleConfirmTransferMatch}
-                            matchType={currentMatchType}
-                          />
-
-                          <TransferPostPreviewDialog
-                            isOpen={transferPostPreviewOpen}
-                            onClose={() => {
-                              setTransferPostPreviewOpen(false);
-                              setMatchingTransfer(null);
-                              setPairedTransfer(null);
-                            }}
-                            transaction={matchingTransfer}
-                            pairedTransaction={pairedTransfer}
-                            fromAccount={matchingTransfer ? accounts.find(a => a.id === matchingTransfer.bank_account_id) : null}
-                            toAccount={pairedTransfer ? accounts.find(a => a.id === pairedTransfer.bank_account_id) : null}
-                            onPost={handlePostTransferFromPreview}
-                            isPosting={isPostingTransfer}
-                            matchType={currentMatchType}
                           />
 
                           <TransactionReviewDialog
