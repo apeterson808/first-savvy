@@ -892,7 +892,7 @@ export default function AccountDetail() {
                   onClick={handleImport}
                   className="gap-1.5 h-8 px-2.5"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Upload className="w-3.5 h-3.5" />
                   Import
                 </Button>
                 <Button
@@ -901,7 +901,7 @@ export default function AccountDetail() {
                   onClick={handleExport}
                   className="gap-1.5 h-8 px-2.5"
                 >
-                  <Upload className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5" />
                   Export
                 </Button>
                 <Button
