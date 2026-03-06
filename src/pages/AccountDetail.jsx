@@ -1375,16 +1375,6 @@ export default function AccountDetail() {
                 <p className="text-lg font-bold text-primary">{formatCurrency(endingBalance)}</p>
               </div>
             </div>
-
-            {analytics.firstTransaction && analytics.lastTransaction && (
-              <div className="mt-3 pt-3 border-t text-xs text-slate-600">
-                <p>
-                  Period: <span className="font-medium">{format(parseISO(analytics.firstTransaction), 'MMM d, yyyy')}</span>
-                  {' '} to {' '}
-                  <span className="font-medium">{format(parseISO(analytics.lastTransaction), 'MMM d, yyyy')}</span>
-                </p>
-              </div>
-            )}
           </CardContent>
         </Card>
 
