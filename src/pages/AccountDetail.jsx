@@ -1125,49 +1125,82 @@ export default function AccountDetail() {
                 <div className="text-right">
                   <TooltipProvider>
                     <div className="space-y-1">
-                      <div className="flex items-center justify-end gap-2">
-                        <span className="text-xs text-slate-500">Bank Balance</span>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={`text-lg font-semibold cursor-help ${
+                      {account.entityType === 'Equity' ? (
+                        <>
+                          {!isOpeningBalanceEquity && beginningBalance !== null && (
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-slate-500">Beginning Balance</span>
+                              <span className="text-base font-medium text-slate-700">
+                                {formatCurrency(beginningBalance)}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-slate-500">
+                              {isOpeningBalanceEquity ? 'Total Opening Balances' : 'Current Balance'}
+                            </span>
+                            <span className="text-2xl font-bold text-blue-600">
+                              {formatCurrency(endingBalance)}
+                            </span>
+                          </div>
+                          {!isOpeningBalanceEquity && beginningBalance !== null && (
+                            <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                              <span className="text-xs text-slate-500">Net Change</span>
+                              <span className={`text-base font-semibold ${
+                                (endingBalance - beginningBalance) >= 0 ? 'text-forest-green' : 'text-burgundy'
+                              }`}>
+                                {formatCurrency(endingBalance - beginningBalance)}
+                              </span>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <>
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-slate-500">Bank Balance</span>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className={`text-lg font-semibold cursor-help ${
+                                  account.entityType === 'Asset' ? 'text-forest-green' :
+                                  account.entityType === 'Liability' ? 'text-burgundy' :
+                                  'text-slate-900'
+                                }`}>
+                                  {account.bank_balance !== null && account.bank_balance !== undefined
+                                    ? formatCurrency(account.bank_balance)
+                                    : 'Not synced'}
+                                </span>
+                              </TooltipTrigger>
+                              {account.last_synced_at && (
+                                <TooltipContent>
+                                  <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
+                                </TooltipContent>
+                              )}
+                            </Tooltip>
+                          </div>
+                          <div className="flex items-center justify-end gap-2">
+                            <span className="text-xs text-slate-500">Savvy Balance</span>
+                            <span className={`text-lg font-semibold ${
                               account.entityType === 'Asset' ? 'text-forest-green' :
                               account.entityType === 'Liability' ? 'text-burgundy' :
                               'text-slate-900'
                             }`}>
-                              {account.bank_balance !== null && account.bank_balance !== undefined
-                                ? formatCurrency(account.bank_balance)
-                                : 'Not synced'}
+                              {formatCurrency(endingBalance)}
                             </span>
-                          </TooltipTrigger>
-                          {account.last_synced_at && (
-                            <TooltipContent>
-                              <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
-                            </TooltipContent>
-                          )}
-                        </Tooltip>
-                      </div>
-                      <div className="flex items-center justify-end gap-2">
-                        <span className="text-xs text-slate-500">Savvy Balance</span>
-                        <span className={`text-lg font-semibold ${
-                          account.entityType === 'Asset' ? 'text-forest-green' :
-                          account.entityType === 'Liability' ? 'text-burgundy' :
-                          'text-slate-900'
-                        }`}>
-                          {formatCurrency(endingBalance)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-end gap-2 pt-1 border-t">
-                        <span className="text-xs text-slate-500">Difference</span>
-                        <span className={`text-base font-bold ${
-                          account.bank_balance !== null && account.bank_balance !== undefined
-                            ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
-                            : 'text-slate-400'
-                        }`}>
-                          {account.bank_balance !== null && account.bank_balance !== undefined
-                            ? formatCurrency(account.bank_balance - endingBalance)
-                            : '—'}
-                        </span>
-                      </div>
+                          </div>
+                          <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                            <span className="text-xs text-slate-500">Difference</span>
+                            <span className={`text-base font-bold ${
+                              account.bank_balance !== null && account.bank_balance !== undefined
+                                ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
+                                : 'text-slate-400'
+                            }`}>
+                              {account.bank_balance !== null && account.bank_balance !== undefined
+                                ? formatCurrency(account.bank_balance - endingBalance)
+                                : '—'}
+                            </span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   </TooltipProvider>
                 </div>
@@ -1240,6 +1273,49 @@ export default function AccountDetail() {
                             <p className="text-sm">{account.interest_rate}%</p>
                           </div>
                         </div>
+                      )}
+                    </>
+                  ) : account.entityType === 'Equity' ? (
+                    <>
+                      {isOpeningBalanceEquity ? (
+                        <div className="col-span-full">
+                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <p className="text-sm text-slate-700">
+                              This system account tracks all opening balance entries from your asset and liability accounts.
+                              It automatically maintains the accounting equation: Assets = Liabilities + Equity.
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {totalJournalLines > 0 && (
+                            <div className="flex items-start gap-2.5">
+                              <FileText className="w-4 h-4 text-slate-400 mt-0.5" />
+                              <div>
+                                <p className="text-xs font-medium text-slate-500">Total Entries</p>
+                                <p className="text-sm">{totalJournalLines.toLocaleString()} journal entries</p>
+                              </div>
+                            </div>
+                          )}
+                          {!isOpeningBalanceEquity && analytics.totalDebits > 0 && (
+                            <div className="flex items-start gap-2.5">
+                              <TrendingUp className="w-4 h-4 text-forest-green mt-0.5" />
+                              <div>
+                                <p className="text-xs font-medium text-slate-500">Total Increases</p>
+                                <p className="text-sm font-semibold text-forest-green">{formatCurrency(analytics.totalDebits)}</p>
+                              </div>
+                            </div>
+                          )}
+                          {!isOpeningBalanceEquity && analytics.totalCredits > 0 && (
+                            <div className="flex items-start gap-2.5">
+                              <TrendingDown className="w-4 h-4 text-burgundy mt-0.5" />
+                              <div>
+                                <p className="text-xs font-medium text-slate-500">Total Decreases</p>
+                                <p className="text-sm font-semibold text-burgundy">{formatCurrency(analytics.totalCredits)}</p>
+                              </div>
+                            </div>
+                          )}
+                        </>
                       )}
                     </>
                   ) : (
