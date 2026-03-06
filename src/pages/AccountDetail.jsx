@@ -54,7 +54,7 @@ export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
-  const [datePreset, setDatePreset] = useState('all');
+  const [datePreset, setDatePreset] = useState('thisMonth');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);

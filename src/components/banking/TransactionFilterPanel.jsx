@@ -21,7 +21,7 @@ export default function TransactionFilterPanel({
   incomeCategories = []
 }) {
   const [localFilters, setLocalFilters] = useState({
-    datePreset: 'all',
+    datePreset: 'thisMonth',
     dateFrom: '',
     dateTo: '',
     account: 'all',
@@ -45,7 +45,7 @@ export default function TransactionFilterPanel({
 
   const handleReset = () => {
     const resetFilters = {
-      datePreset: 'all',
+      datePreset: 'thisMonth',
       dateFrom: '',
       dateTo: '',
       account: 'all',
