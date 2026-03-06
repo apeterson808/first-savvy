@@ -88,7 +88,6 @@ export const ProfileProvider = ({ children }) => {
         .maybeSingle();
 
       if (tabError && tabError.code !== 'PGRST116') {
-        console.error('Error loading active tab:', tabError);
       }
 
       let activeProfileToSet = null;
@@ -112,7 +111,6 @@ export const ProfileProvider = ({ children }) => {
           .eq('profile_id', activeProfileToSet.id);
 
         if (activateError) {
-          console.error('Error setting default active tab:', activateError);
         }
       }
 
@@ -127,7 +125,6 @@ export const ProfileProvider = ({ children }) => {
 
       setLoading(false);
     } catch (err) {
-      console.error('Error loading profiles:', err);
       setError(err.message);
       setLoading(false);
     }
@@ -141,7 +138,6 @@ export const ProfileProvider = ({ children }) => {
 
       return data;
     } catch (err) {
-      console.error('Error ensuring complete provisioning:', err);
       return null;
     }
   };
@@ -154,7 +150,6 @@ export const ProfileProvider = ({ children }) => {
 
       return data;
     } catch (err) {
-      console.error('Error verifying user provisioning:', err);
       return null;
     }
   };
@@ -173,7 +168,6 @@ export const ProfileProvider = ({ children }) => {
         .eq('owner_user_id', user.id);
 
       if (deactivateError) {
-        console.error('Error deactivating tabs:', deactivateError);
       }
 
       const { error: activateError } = await firstsavvy
@@ -183,7 +177,6 @@ export const ProfileProvider = ({ children }) => {
         .eq('profile_id', profile.id);
 
       if (activateError) {
-        console.error('Error activating tab:', activateError);
       }
 
       setActiveProfile(prev => {
@@ -194,7 +187,6 @@ export const ProfileProvider = ({ children }) => {
 
       window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
     } catch (err) {
-      console.error('Error switching profile:', err);
       throw err;
     }
   }, [user]);

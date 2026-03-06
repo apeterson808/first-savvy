@@ -51,7 +51,6 @@ export async function createPropertyAsset(propertyData, profileId) {
         p_account_class: data.class
       });
     } catch (journalError) {
-      console.error('Failed to create opening balance journal entry:', journalError);
     }
   }
 
@@ -103,7 +102,6 @@ export async function createMortgage(mortgageData, profileId) {
         p_account_class: data.class
       });
     } catch (journalError) {
-      console.error('Failed to create opening balance journal entry:', journalError);
     }
   }
 

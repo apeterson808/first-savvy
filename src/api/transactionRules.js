@@ -112,7 +112,6 @@ export const transactionRulesApi = {
       .single();
 
     if (error) {
-      console.error('[API] createRule - Error:', error);
       throw error;
     }
     return data;
@@ -343,7 +342,6 @@ export const transactionRulesApi = {
             break;
           }
         } catch (error) {
-          console.error(`Error applying rule ${rule.id} to transaction ${transaction.id}:`, error);
         }
       }
 

@@ -141,7 +141,6 @@ export default function AddBudgetItemSheet({
         if (error) throw error;
         setParentCategories(data || []);
       } catch (error) {
-        console.error('Error fetching parent categories:', error);
         setParentCategories([]);
       }
     };
@@ -159,7 +158,6 @@ export default function AddBudgetItemSheet({
       onOpenChange(false);
     },
     onError: (error) => {
-      console.error('Error creating budget:', error);
       toast.error('Failed to create budget item');
     }
   });
@@ -173,7 +171,6 @@ export default function AddBudgetItemSheet({
       onOpenChange(false);
     },
     onError: (error) => {
-      console.error('Error updating budget:', error);
       toast.error('Failed to update budget item');
     }
   });
@@ -361,7 +358,6 @@ export default function AddBudgetItemSheet({
       setShowBudgetAlert(false);
       setBudgetAlertData(null);
     } catch (error) {
-      console.error('Error updating parent budget:', error);
       toast.error('Failed to update parent budget');
     }
   };

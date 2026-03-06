@@ -131,7 +131,6 @@ export default function Dashboard() {
           sessionStorage.setItem('profileSetupShown', 'true');
         }
       } catch (error) {
-        console.error('Error checking profile setup:', error);
       }
     };
 

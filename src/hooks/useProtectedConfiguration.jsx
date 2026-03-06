@@ -27,7 +27,6 @@ export function useProtectedConfiguration(configName) {
       }
     } catch (err) {
       setError(err.message);
-      console.error('Failed to load protected configuration:', err);
     } finally {
       setLoading(false);
     }
@@ -111,7 +110,6 @@ export function useConfigurationManagement() {
       setConfigurations(configs);
     } catch (err) {
       setError(err.message);
-      console.error('Failed to load configurations:', err);
     } finally {
       setLoading(false);
     }

@@ -30,13 +30,11 @@ export async function postTransaction(transactionId) {
     });
 
     if (error) {
-      console.error('Error posting transaction:', error);
       return { data: null, error };
     }
 
     return { data, error: null };
   } catch (err) {
-    console.error('Exception posting transaction:', err);
     return { data: null, error: err };
   }
 }
@@ -56,7 +54,6 @@ export async function getJournalEntry(entryId) {
       .single();
 
     if (entryError) {
-      console.error('Error fetching journal entry:', entryError);
       return { data: null, error: entryError };
     }
 
@@ -76,7 +73,6 @@ export async function getJournalEntry(entryId) {
       .order('line_number');
 
     if (linesError) {
-      console.error('Error fetching journal entry lines:', linesError);
       return { data: null, error: linesError };
     }
 
@@ -88,7 +84,6 @@ export async function getJournalEntry(entryId) {
       error: null
     };
   } catch (err) {
-    console.error('Exception fetching journal entry:', err);
     return { data: null, error: err };
   }
 }
@@ -113,13 +108,11 @@ export async function editJournalEntry(entryId, description, lines, reason = nul
     });
 
     if (error) {
-      console.error('Error editing journal entry:', error);
       return { data: null, error };
     }
 
     return { data, error: null };
   } catch (err) {
-    console.error('Exception editing journal entry:', err);
     return { data: null, error: err };
   }
 }

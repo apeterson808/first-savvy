@@ -46,7 +46,6 @@ export default function Layout({ children, currentPageName }) {
           setUserProfile(profile);
         }
       } catch (error) {
-        console.error('Error loading user data:', error);
       }
     };
 

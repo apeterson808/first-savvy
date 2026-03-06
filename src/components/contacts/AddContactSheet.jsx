@@ -65,7 +65,6 @@ export default function AddContactSheet({
       onOpenChange(false);
     },
     onError: (error) => {
-      console.error('Create failed:', error);
       toast.error(`Failed to create contact: ${error.message}`);
     }
   });
@@ -116,7 +115,6 @@ export default function AddContactSheet({
       setDetectedUser(user);
       toast.success('Connection request sent!');
     } catch (error) {
-      console.error('Failed to send connection request:', error);
       toast.error('Failed to send connection request');
     }
   };
@@ -147,7 +145,6 @@ export default function AddContactSheet({
       toast.success(`Invitation sent to ${value}!`);
       return invitation;
     } catch (error) {
-      console.error('Failed to send invitation:', error);
       toast.error('Failed to send invitation');
     }
   };

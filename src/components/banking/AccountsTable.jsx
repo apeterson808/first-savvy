@@ -228,7 +228,6 @@ export default function AccountsTable() {
       toast.success('Account deleted successfully');
     },
     onError: (error) => {
-      console.error('Error deleting account:', error);
       toast.error('Failed to delete account. Please try again.');
     }
   });

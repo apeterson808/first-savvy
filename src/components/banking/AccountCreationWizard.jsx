@@ -305,7 +305,6 @@ const getNextAccountNumber = async (profileId, templateAccountNumber) => {
     .limit(1);
 
   if (error) {
-    console.error('Error fetching existing accounts:', error);
     return templateAccountNumber;
   }
 
@@ -377,7 +376,6 @@ export default function AccountCreationWizard({
         .select('*')
         .order('class, sort_order, account_number');
       if (error) {
-        console.error('Error fetching chart account templates:', error);
         return [];
       }
       return data || [];
@@ -401,7 +399,6 @@ export default function AccountCreationWizard({
         .eq('profile_id', activeProfile.id)
         .order('account_number');
       if (error) {
-        console.error('Error fetching user chart accounts:', error);
         return [];
       }
       return data || [];
@@ -422,8 +419,7 @@ export default function AccountCreationWizard({
         .in('account_detail', ['checking_account', 'savings_account', 'credit_card'])
         .order('display_name');
       if (error) {
-        console.error('Error fetching existing accounts:', error);
-        return [];
+            return [];
       }
       return (data || []).map(account => ({
         ...account,
@@ -806,7 +802,6 @@ export default function AccountCreationWizard({
         setBalanceImportStep('mapping');
       }
     } catch (error) {
-      console.error('Error processing balance file:', error);
       toast.error(error.message || 'Failed to process file');
     } finally {
       setIsProcessingBalance(false);
@@ -879,7 +874,6 @@ export default function AccountCreationWizard({
         setCurrentStep('csv-mapping');
       }
     } catch (error) {
-      console.error('Error processing file:', error);
       toast.error(error.message || 'Failed to process file');
       setUploadedFile(null);
       setProcessedData(null);
@@ -1070,7 +1064,6 @@ export default function AccountCreationWizard({
             accountClass: newAccount.class
           });
         } catch (error) {
-          console.error('Failed to create opening balance journal entry:', error);
           toast.error('Account created but failed to create opening balance entry');
         }
       }
@@ -1102,7 +1095,6 @@ export default function AccountCreationWizard({
               .insert(transactionsWithAccount);
 
             if (importError) {
-              console.error('Failed to import transactions:', importError);
               toast.error(`Account created but failed to import ${transactionsToImport.length} transactions`);
             } else {
               const endingBalanceValue = parseFloat(formData.endingBalance);
@@ -1122,7 +1114,6 @@ export default function AccountCreationWizard({
                   .eq('id', newAccount.id);
 
                 if (balanceError) {
-                  console.error('Error updating bank balance:', balanceError);
                 }
               }
 
@@ -1132,7 +1123,6 @@ export default function AccountCreationWizard({
             toast.warning(`Account created but no transactions matched the date filter. ${mappedTransactions.length} transactions were before ${startDate}`);
           }
         } catch (error) {
-          console.error('Error importing transactions:', error);
           toast.error('Account created but transaction import failed');
         }
       } else {
@@ -1490,7 +1480,6 @@ export default function AccountCreationWizard({
         });
       }
     } catch (error) {
-      console.error('Error creating account:', error);
       toast.error(error.message || 'Failed to create account. Please try again.');
     }
   };
@@ -1650,7 +1639,6 @@ export default function AccountCreationWizard({
         navigate(`/Banking/account/${selectedAccountId}`);
       }, 100);
     } catch (error) {
-      console.error('Error importing transactions:', error);
       showErrorToast(error);
     } finally {
       setIsCreatingAccount(false);
@@ -1752,7 +1740,6 @@ export default function AccountCreationWizard({
         navigate(`/Banking/account/${newAccount.id}`);
       }, 100);
     } catch (error) {
-      console.error('Error creating account and importing transactions:', error);
       showErrorToast(error);
     } finally {
       setIsCreatingAccount(false);

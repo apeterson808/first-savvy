@@ -49,7 +49,6 @@ export function TestRuleDialog({ open, onOpenChange, rule, profileId }) {
       const results = await transactionRulesApi.getMatchPreview(profileId, conditions, 10);
       setPreview(results);
     } catch (error) {
-      console.error('Error loading preview:', error);
     } finally {
       setLoading(false);
     }

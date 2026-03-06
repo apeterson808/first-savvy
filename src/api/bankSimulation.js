@@ -8,7 +8,6 @@ export async function getAvailableInstitutions() {
     .order('sort_order');
 
   if (error) {
-    console.error('Error fetching institutions:', error);
     throw error;
   }
 
@@ -23,7 +22,6 @@ export async function getInstitutionById(institutionId) {
     .maybeSingle();
 
   if (error) {
-    console.error('Error fetching institution:', error);
     throw error;
   }
 

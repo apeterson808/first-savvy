@@ -57,7 +57,6 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
       })));
     } catch (error) {
       toast.error('Failed to load journal entry');
-      console.error(error);
     } finally {
       setLoadingEntry(false);
     }
@@ -158,7 +157,6 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
       onOpenChange(false);
     } catch (error) {
       toast.error('Failed to save changes');
-      console.error(error);
     } finally {
       setLoading(false);
     }

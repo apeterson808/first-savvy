@@ -43,7 +43,6 @@ export default function ProfileTab() {
           });
         }
       } catch (error) {
-        console.error('Error loading profile:', error);
         toast.error('Failed to load profile');
       } finally {
         setIsLoading(false);
@@ -117,7 +116,6 @@ export default function ProfileTab() {
       toast.success('Profile photo updated');
       window.dispatchEvent(new CustomEvent('profileUpdated'));
     } catch (error) {
-      console.error('Error uploading avatar:', error);
       toast.error('Failed to upload profile photo');
     } finally {
       setIsUploadingAvatar(false);
@@ -154,7 +152,6 @@ export default function ProfileTab() {
       toast.success('Profile updated successfully');
       window.dispatchEvent(new CustomEvent('profileUpdated'));
     } catch (error) {
-      console.error('Error saving profile:', error);
       toast.error('Failed to save profile');
     } finally {
       setIsSaving(false);

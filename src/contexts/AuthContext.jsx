@@ -24,7 +24,6 @@ export const AuthProvider = ({ children }) => {
         setConnectionError(null);
       })
       .catch((error) => {
-        console.error('Auth connection error:', error);
         setUser(null);
         setLoading(false);
         setConnectionError(error.message || 'Unable to connect to Supabase');

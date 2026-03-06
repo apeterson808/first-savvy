@@ -62,7 +62,6 @@ export function usePersistedViewState(viewName, defaultValue, profileId, overrid
         lastSavedValueRef.current = defaultValue;
       }
     } catch (err) {
-      console.error('Error loading preferences:', err);
       if (mountedRef.current) {
         setValue(defaultValue);
         lastSavedValueRef.current = defaultValue;
@@ -113,10 +112,8 @@ export function usePersistedViewState(viewName, defaultValue, profileId, overrid
           if (!error && mountedRef.current) {
             lastSavedValueRef.current = newValue;
           } else if (error) {
-            console.error('Failed to save preferences:', error);
           }
         } catch (err) {
-          console.error('Exception saving preferences:', err);
         }
       }, 500);
     },

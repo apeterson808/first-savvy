@@ -53,7 +53,6 @@ export const saveCsvMappingConfig = async (profileId, institutionName, mappingDa
       return { data, error: null };
     }
   } catch (error) {
-    console.error('Error saving CSV mapping config:', error);
     return { data: null, error };
   }
 };
@@ -77,7 +76,6 @@ export const getCsvMappingConfig = async (profileId, institutionName) => {
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
-    console.error('Error fetching CSV mapping config:', error);
     return { data: null, error };
   }
 };
@@ -94,7 +92,6 @@ export const getAllCsvMappingConfigs = async (profileId) => {
     if (error) throw error;
     return { data, error: null };
   } catch (error) {
-    console.error('Error fetching all CSV mapping configs:', error);
     return { data: null, error };
   }
 };
@@ -109,7 +106,6 @@ export const deleteCsvMappingConfig = async (configId) => {
     if (error) throw error;
     return { error: null };
   } catch (error) {
-    console.error('Error deleting CSV mapping config:', error);
     return { error };
   }
 };

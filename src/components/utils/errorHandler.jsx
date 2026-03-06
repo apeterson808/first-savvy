@@ -65,10 +65,9 @@ export function logError(error, context = {}) {
     url: window.location.href,
     online: navigator.onLine
   };
-  
+
   // In production, send to monitoring service
-  console.error('[Error Log]', errorLog);
-  
+
   // Store in sessionStorage for debugging (last 10 errors)
   try {
     const storedErrors = JSON.parse(sessionStorage.getItem('errorLog') || '[]');

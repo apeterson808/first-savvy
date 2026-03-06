@@ -106,7 +106,6 @@ export default function CategoriesTab() {
       toast.success('Budget removed successfully');
     },
     onError: (error) => {
-      console.error('Error deleting budget:', error);
       toast.error('Failed to remove budget');
     }
   });
@@ -119,7 +118,6 @@ export default function CategoriesTab() {
       toast.success('Budget updated successfully');
     },
     onError: (error) => {
-      console.error('Error updating budget:', error);
       setUpdatingBudgetId(null);
       toast.error('Failed to update budget');
     }
@@ -133,7 +131,6 @@ export default function CategoriesTab() {
       toast.success('Budget created successfully');
     },
     onError: (error) => {
-      console.error('Error creating budget:', error);
       setCreatingBudgetId(null);
       toast.error('Failed to create budget');
     }

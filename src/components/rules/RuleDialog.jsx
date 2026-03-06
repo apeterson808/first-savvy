@@ -274,7 +274,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       const preview = await transactionRulesApi.getMatchPreview(profileId, conditions, 100);
       setPreviewTransactions(preview);
     } catch (error) {
-      console.error('Error loading preview:', error);
       setPreviewTransactions([]);
     } finally {
       setPreviewLoading(false);
@@ -306,7 +305,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       toast.success('Rule created and applied to all matching transactions!');
     },
     onError: (error) => {
-      console.error('Error creating rule:', error);
       const errorMessage = error.message || '';
       const statusCode = error.code || error.status;
 
@@ -358,7 +356,6 @@ export function RuleDialog({ open, onOpenChange, mode = 'create', rule = null, t
       if (isPromoteMode && onPromoteSuccess) onPromoteSuccess();
     },
     onError: (error) => {
-      console.error('Error updating rule:', error);
       const errorMessage = error.message || '';
       const statusCode = error.code || error.status;
 

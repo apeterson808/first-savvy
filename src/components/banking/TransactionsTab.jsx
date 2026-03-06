@@ -163,7 +163,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       toast.success('Transfer pairing removed');
     } catch (error) {
-      console.error('Error unmatching transfers:', error);
       toast.error('Failed to remove transfer pairing');
     }
   };
@@ -212,7 +211,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       setExpandedTransactionId(null);
       toast.success('Transfers matched and posted');
     } catch (error) {
-      console.error('Error matching and posting transfers:', error);
       toast.error('Failed to match transfers');
     }
   };
@@ -234,7 +232,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
           }))
         }));
       } catch (error) {
-        console.error('Error loading splits:', error);
         toast.error('Failed to load split data');
       } finally {
         setLoadingSplits(prev => {
@@ -274,7 +271,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         queryClient.invalidateQueries({ queryKey: ['fullExcludedTransactions'] });
         toast.success('Split removed');
       } catch (error) {
-        console.error('Error removing split:', error);
         toast.error('Failed to remove split');
         return;
       }
@@ -381,7 +377,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
       toast.success('View settings reset to defaults');
     } catch (error) {
-      console.error('Error resetting view settings:', error);
       toast.error('Failed to reset view settings');
     }
   };
@@ -413,7 +408,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         cancelSplitMode(transaction.id, transaction);
         return true;
       } catch (error) {
-        console.error('Error saving split:', error);
         toast.error('Failed to save split');
         return false;
       }
@@ -552,7 +546,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
             suggestions[transaction.id] = matches;
           }
         } catch (error) {
-          console.error('Error fetching matches for transaction:', transaction.id, error);
         }
       }
 
@@ -746,14 +739,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       return { previousPending, previousPosted, previousExcluded };
     },
     onError: (error, variables, context) => {
-      console.error('Transaction update failed:', {
-        error,
-        message: error?.message,
-        details: error?.details,
-        hint: error?.hint,
-        code: error?.code,
-        variables
-      });
       if (context?.previousPending) {
         queryClient.setQueryData(['fullPendingTransactions'], context.previousPending);
       }
@@ -983,7 +968,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     // Post single transaction
     const result = await transactionService.postTransaction(transaction.id);
     if (result.error) {
-      console.error('Failed to post transaction:', result.error);
       toast.error('Failed to post transaction. Please try again.');
       return false;
     }
@@ -1737,7 +1721,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                               setRuleSourceTransaction(transaction);
                                               setQuickRuleDialogOpen(true);
                                             } catch (error) {
-                                              console.error('Failed to load rule:', error);
                                               toast.error('Failed to load rule');
                                             }
                                           } else {
@@ -2090,7 +2073,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
                                                           toast.success('Transfer unmatched');
                                                         } catch (error) {
-                                                          console.error('Failed to unmatch transfer:', error);
                                                           toast.error('Failed to unmatch transfer. Please try again.');
                                                         }
                                                       }}
@@ -3013,8 +2995,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                                     setRuleSourceTransaction(transaction);
                                                     setQuickRuleDialogOpen(true);
                                                   } catch (error) {
-                                                    console.error('Failed to load rule:', error);
-                                                    toast.error('Failed to load rule');
+                                                          toast.error('Failed to load rule');
                                                   }
                                                 } else {
                                                   setRuleMode('create');

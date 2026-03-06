@@ -305,7 +305,6 @@ export const autoMatchTransfers = async (newTransactions) => {
 
     return matchedCount;
   } catch (err) {
-    console.error('Error auto-matching transfers:', err);
     return 0;
   }
 };

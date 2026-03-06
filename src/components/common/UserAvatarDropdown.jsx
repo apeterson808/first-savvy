@@ -61,7 +61,6 @@ export function UserAvatarDropdown() {
         setProfile(userProfile);
       }
     } catch (error) {
-      console.error('Error loading user data:', error);
     } finally {
       setLoading(false);
     }
@@ -72,7 +71,6 @@ export function UserAvatarDropdown() {
       await supabase.auth.signOut();
       navigate('/login');
     } catch (error) {
-      console.error('Error signing out:', error);
     }
   };
 
@@ -108,7 +106,6 @@ export function UserAvatarDropdown() {
 
       window.location.reload();
     } catch (error) {
-      console.error('Error resetting financial data:', error);
       toast.error(error.message || 'Failed to reset financial data');
     } finally {
       setResetting(false);
@@ -147,7 +144,6 @@ export function UserAvatarDropdown() {
 
       window.location.reload();
     } catch (error) {
-      console.error('Error resetting data:', error);
       toast.error(error.message || 'Failed to reset data');
     } finally {
       setResetting(false);

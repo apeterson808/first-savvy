@@ -14,7 +14,6 @@ export const accountDetectionService = {
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking email:', error);
         return { found: false, user: null, error };
       }
 
@@ -32,7 +31,6 @@ export const accountDetectionService = {
 
       return { found: false, user: null };
     } catch (err) {
-      console.error('Exception checking email:', err);
       return { found: false, user: null, error: err };
     }
   },
@@ -55,7 +53,6 @@ export const accountDetectionService = {
         .maybeSingle();
 
       if (error) {
-        console.error('Error checking phone:', error);
         return { found: false, user: null, error };
       }
 
@@ -74,7 +71,6 @@ export const accountDetectionService = {
 
       return { found: false, user: null };
     } catch (err) {
-      console.error('Exception checking phone:', err);
       return { found: false, user: null, error: err };
     }
   },
@@ -92,7 +88,6 @@ export const accountDetectionService = {
         .maybeSingle();
 
       if (error && error.code !== 'PGRST116') {
-        console.error('Error checking connection:', error);
         return { exists: false, relationship: null, error };
       }
 
@@ -101,7 +96,6 @@ export const accountDetectionService = {
         relationship: data
       };
     } catch (err) {
-      console.error('Exception checking connection:', err);
       return { exists: false, relationship: null, error: err };
     }
   }

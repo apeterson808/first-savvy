@@ -85,7 +85,6 @@ export default function ContactDetail() {
       toast.success('Contact updated successfully');
     },
     onError: (error) => {
-      console.error('Update failed:', error);
       toast.error(`Failed to update contact: ${error.message}`);
     }
   });
@@ -127,7 +126,6 @@ export default function ContactDetail() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Connection request sent!');
     } catch (error) {
-      console.error('Failed to send connection request:', error);
       toast.error('Failed to send connection request');
     }
   };
@@ -165,7 +163,6 @@ export default function ContactDetail() {
       toast.success(`Invitation sent to ${value}!`);
       return invitation;
     } catch (error) {
-      console.error('Failed to send invitation:', error);
       toast.error('Failed to send invitation');
     }
   };

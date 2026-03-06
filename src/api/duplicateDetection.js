@@ -13,7 +13,6 @@ export async function detectDuplicateTransactions(accountId, newTransactions) {
       .order('date', { ascending: false });
 
     if (error) {
-      console.error('Error fetching existing transactions:', error);
       return { duplicates: [], uniqueTransactions: newTransactions };
     }
 
@@ -44,7 +43,6 @@ export async function detectDuplicateTransactions(accountId, newTransactions) {
 
     return { duplicates, uniqueTransactions };
   } catch (error) {
-    console.error('Error in duplicate detection:', error);
     return { duplicates: [], uniqueTransactions: newTransactions };
   }
 }

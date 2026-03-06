@@ -158,7 +158,6 @@ export function TransactionReviewDialog({
       onOpenChange(false);
 
     } catch (err) {
-      console.error('Import error:', err);
       setError(err.message || 'Failed to import transactions');
       setImporting(false);
     }

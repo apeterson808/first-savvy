@@ -244,7 +244,6 @@ const CsvColumnMapper = forwardRef(function CsvColumnMapper({ csvData, onMap, on
       );
       return transactions;
     } catch (error) {
-      console.error('Error generating preview:', error);
       return [];
     }
   }, [csvData, sampleRows, columnMappings, amountType, debitColumn, creditColumn, accountClass]);

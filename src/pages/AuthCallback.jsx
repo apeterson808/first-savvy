@@ -20,7 +20,6 @@ export default function AuthCallback() {
           setTimeout(() => navigate('/login'), 2000);
         }
       } catch (err) {
-        console.error('Auth callback error:', err);
         setError(err.message);
         setTimeout(() => navigate('/login'), 2000);
       }

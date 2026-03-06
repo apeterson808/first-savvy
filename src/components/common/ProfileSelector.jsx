@@ -21,7 +21,6 @@ export function ProfileSelector({ open, onOpenChange }) {
       onOpenChange(false);
       toast.success(`Switched to ${profile.display_name}`);
     } catch (error) {
-      console.error('Error switching profile:', error);
       toast.error('Failed to switch profile');
     }
   };

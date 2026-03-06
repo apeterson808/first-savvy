@@ -247,7 +247,6 @@ export default function AccountDetail() {
       toast.success('Account updated successfully');
     },
     onError: (error) => {
-      console.error('Update failed:', error);
       toast.error(`Failed to update account: ${error.message}`);
     }
   });
@@ -267,7 +266,6 @@ export default function AccountDetail() {
       navigate(`/Banking${returnUrl}`);
     },
     onError: (error) => {
-      console.error('Delete failed:', error);
       toast.error(`Failed to delete account: ${error.message}`);
     }
   });
@@ -611,7 +609,6 @@ export default function AccountDetail() {
         setImportStep('mapping');
       }
     } catch (error) {
-      console.error('Error processing file:', error);
       toast.error(error.message || 'Failed to process file');
       setUploadedFile(null);
     }
@@ -650,7 +647,6 @@ export default function AccountDetail() {
               accountClass: account.account_class
             });
           } catch (error) {
-            console.error('Error creating opening balance:', error);
             toast.error('Failed to create opening balance journal entry');
             setIsImporting(false);
             return;
@@ -695,7 +691,6 @@ export default function AccountDetail() {
           .eq('id', account.id);
 
         if (bankBalanceError) {
-          console.error('Error updating bank balance:', bankBalanceError);
         }
       }
 
@@ -716,7 +711,6 @@ export default function AccountDetail() {
       setMappedTransactions([]);
       setImportStep('upload');
     } catch (error) {
-      console.error('Error importing transactions:', error);
       toast.error(error.message || 'Failed to import transactions');
     } finally {
       setIsImporting(false);
@@ -769,7 +763,6 @@ export default function AccountDetail() {
               accountClass: account.account_class
             });
           } catch (error) {
-            console.error('Error creating opening balance:', error);
             toast.error('Failed to create opening balance journal entry');
             setIsImporting(false);
             return;
@@ -814,7 +807,6 @@ export default function AccountDetail() {
           .eq('id', account.id);
 
         if (bankBalanceError) {
-          console.error('Error updating bank balance:', bankBalanceError);
         }
       }
 
@@ -835,7 +827,6 @@ export default function AccountDetail() {
       setMappedTransactions([]);
       setImportStep('upload');
     } catch (error) {
-      console.error('Error importing transactions:', error);
       toast.error(error.message || 'Failed to import transactions');
     } finally {
       setIsImporting(false);
