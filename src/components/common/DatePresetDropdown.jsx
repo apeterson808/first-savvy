@@ -7,22 +7,12 @@ export default function DatePresetDropdown({
   triggerClassName = "w-full hover:bg-slate-50"
 }) {
   const presets = [
-    { value: 'all', label: 'All dates' },
     { value: 'today', label: 'Today' },
-    { value: 'yesterday', label: 'Yesterday' },
-    { value: 'last7', label: 'Last 7 days' },
-    { value: 'last30', label: 'Last 30 days' },
+    { value: 'thisMonth', label: 'This Month' },
+    { value: 'thisYear', label: 'This Year' },
     { value: 'last3months', label: 'Last 3 months' },
     { value: 'last6months', label: 'Last 6 months' },
-    { value: 'last12months', label: 'Last 12 months' },
-    { value: 'mtd', label: 'MTD (Month to Date)' },
-    { value: 'qtd', label: 'QTD (Quarter to Date)' },
-    { value: 'ytd', label: 'YTD (Year to Date)' },
-    { value: 'thisMonth', label: 'This month' },
-    { value: 'lastMonth', label: 'Last month' },
-    { value: 'thisQuarter', label: 'This quarter' },
-    { value: 'thisYear', label: 'This year' },
-    { value: 'custom', label: 'Custom range' }
+    { value: 'last12months', label: 'Last 12 months' }
   ];
 
   return (
