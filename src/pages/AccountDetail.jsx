@@ -138,6 +138,12 @@ export default function AccountDetail() {
     return accountClass === 'asset' || accountClass === 'liability';
   }, [account]);
 
+  const isOpeningBalanceEquity = useMemo(() => {
+    if (!account) return false;
+    const accountDetail = account.account_detail;
+    return accountDetail === 'opening_balance_equity';
+  }, [account]);
+
   // NOTE: Pending transactions are NOT shown in the register (QuickBooks behavior)
   // Transactions only appear in the register after they've been posted to journal entries
 
@@ -283,12 +289,6 @@ export default function AccountDetail() {
       return bankDetails.includes(accountDetail);
     }
     return false;
-  }, [account]);
-
-  const isOpeningBalanceEquity = useMemo(() => {
-    if (!account) return false;
-    const accountDetail = account.account_detail;
-    return accountDetail === 'opening_balance_equity';
   }, [account]);
 
   const isActive = account?.is_active !== false;
