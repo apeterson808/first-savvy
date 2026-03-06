@@ -150,14 +150,14 @@ export default function AccountDetail() {
     isLoading: journalLinesLoading,
     error: journalLinesError
   } = useInfiniteQuery({
-    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset],
+    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset, isOpeningBalanceEquity],
     queryFn: async ({ pageParam = 0 }) => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountJournalLinesPaginated({
         profileId: activeProfile.id,
         accountId: id,
-        startDate: formatDateForDb(dateRange.start),
-        endDate: formatDateForDb(dateRange.end),
+        startDate: isOpeningBalanceEquity ? null : formatDateForDb(dateRange.start),
+        endDate: isOpeningBalanceEquity ? null : formatDateForDb(dateRange.end),
         limit: 100,
         offset: pageParam
       });
