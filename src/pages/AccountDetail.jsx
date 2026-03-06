@@ -285,6 +285,12 @@ export default function AccountDetail() {
     return false;
   }, [account]);
 
+  const isOpeningBalanceEquity = useMemo(() => {
+    if (!account) return false;
+    const accountDetail = account.account_detail;
+    return accountDetail === 'opening_balance_equity';
+  }, [account]);
+
   const isActive = account?.is_active !== false;
   const accountClass = account?.account_class || account?.class || 'Asset';
 
@@ -1300,64 +1306,68 @@ export default function AccountDetail() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader className="pb-3 pt-4">
-            <div className="flex items-center justify-between flex-wrap gap-3">
-              <h2 className="text-base font-semibold">Period Summary</h2>
-              <div className="flex items-center gap-2">
-                <DatePresetDropdown
-                  value={datePreset}
-                  onValueChange={setDatePreset}
-                  triggerClassName="w-40 h-8"
-                />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-              <div className="p-3 bg-soft-green/20 rounded-lg">
-                <div className="flex items-center gap-1.5 text-forest-green mb-0.5">
-                  <TrendingUp className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Money In</p>
+        {!isOpeningBalanceEquity && (
+          <Card>
+            <CardHeader className="pb-3 pt-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <h2 className="text-base font-semibold">Period Summary</h2>
+                <div className="flex items-center gap-2">
+                  <DatePresetDropdown
+                    value={datePreset}
+                    onValueChange={setDatePreset}
+                    triggerClassName="w-40 h-8"
+                  />
                 </div>
-                <p className="text-lg font-bold text-forest-green">{formatCurrency(analytics.totalDebits)}</p>
               </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
+                <div className="p-3 bg-soft-green/20 rounded-lg">
+                  <div className="flex items-center gap-1.5 text-forest-green mb-0.5">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    <p className="text-xs font-medium">Money In</p>
+                  </div>
+                  <p className="text-lg font-bold text-forest-green">{formatCurrency(analytics.totalDebits)}</p>
+                </div>
 
-              <div className="p-3 bg-light-blue/20 rounded-lg">
-                <div className="flex items-center gap-1.5 text-sky-blue mb-0.5">
-                  <TrendingDown className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Money Out</p>
+                <div className="p-3 bg-light-blue/20 rounded-lg">
+                  <div className="flex items-center gap-1.5 text-sky-blue mb-0.5">
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    <p className="text-xs font-medium">Money Out</p>
+                  </div>
+                  <p className="text-lg font-bold text-sky-blue">{formatCurrency(analytics.totalCredits)}</p>
                 </div>
-                <p className="text-lg font-bold text-sky-blue">{formatCurrency(analytics.totalCredits)}</p>
-              </div>
 
-              <div className="p-3 bg-burgundy/10 rounded-lg">
-                <div className="flex items-center gap-1.5 text-burgundy mb-0.5">
-                  <TrendingDown className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Net Change</p>
+                <div className="p-3 bg-burgundy/10 rounded-lg">
+                  <div className="flex items-center gap-1.5 text-burgundy mb-0.5">
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    <p className="text-xs font-medium">Net Change</p>
+                  </div>
+                  <p className={`text-lg font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
+                    {formatCurrency(analytics.netChange)}
+                  </p>
                 </div>
-                <p className={`text-lg font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
-                  {formatCurrency(analytics.netChange)}
-                </p>
-              </div>
 
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
-                  <Hash className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Transactions</p>
+                <div className="p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
+                    <Hash className="w-3.5 h-3.5" />
+                    <p className="text-xs font-medium">Transactions</p>
+                  </div>
+                  <p className="text-lg font-bold">{analytics.transactionCount}</p>
                 </div>
-                <p className="text-lg font-bold">{analytics.transactionCount}</p>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardHeader className="pb-2 pt-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
               <div>
                 <h2 className="text-base font-semibold">
-                  {isTransactionBasedAccount ? 'Account Register' : 'General Ledger Activity'}
+                  {isOpeningBalanceEquity
+                    ? 'Opening Balance Entries'
+                    : (isTransactionBasedAccount ? 'Account Register' : 'General Ledger Activity')}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
@@ -1374,129 +1384,231 @@ export default function AccountDetail() {
             </div>
           </CardHeader>
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="w-full justify-start mb-3">
-                <TabsTrigger value="register" className="flex items-center gap-1.5">
-                  <FileText className="w-3.5 h-3.5" />
-                  Register
-                </TabsTrigger>
-                <TabsTrigger value="audit" className="flex items-center gap-1.5">
-                  <History className="w-3.5 h-3.5" />
-                  Audit History
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="register" className="mt-0">
-            {journalLinesLoading ? (
-              <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
-            ) : journalLinesError ? (
-              <div className="text-center py-6 space-y-2">
-                <p className="text-sm text-red-600">Failed to load register data</p>
-                <p className="text-xs text-slate-500">{journalLinesError.message}</p>
-              </div>
-            ) : allActivity.length === 0 ? (
-              <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
-            ) : (
-              <div className="rounded-md border overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="h-8 bg-slate-100">
-                      <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                      <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                      <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                      <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
-                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
-                      <TableHead className="w-[40px] py-1.5"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {allActivity.map((activity, index) => (
-                      <TableRow
-                        key={`${activity.id || index}`}
-                        className={`h-7 ${
-                          index % 2 === 0
-                            ? 'bg-white hover:bg-slate-50'
-                            : 'bg-slate-50/50 hover:bg-slate-100'
-                        }`}
-                      >
-                        <TableCell className="whitespace-nowrap text-[11px] py-1">
-                          {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                        </TableCell>
-                        <TableCell className="py-1">
-                          <span
-                            className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                            onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+            {isOpeningBalanceEquity ? (
+              <div className="mt-0">
+                {journalLinesLoading ? (
+                  <p className="text-center text-slate-500 py-3 text-sm">Loading entries...</p>
+                ) : journalLinesError ? (
+                  <div className="text-center py-6 space-y-2">
+                    <p className="text-sm text-red-600">Failed to load entries</p>
+                    <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+                  </div>
+                ) : allActivity.length === 0 ? (
+                  <p className="text-center text-slate-500 py-6 text-sm">No opening balance entries found</p>
+                ) : (
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="h-8 bg-slate-100">
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                          <TableHead className="w-[40px] py-1.5"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allActivity.map((activity, index) => (
+                          <TableRow
+                            key={`${activity.id || index}`}
+                            className={`h-7 ${
+                              index % 2 === 0
+                                ? 'bg-white hover:bg-slate-50'
+                                : 'bg-slate-50/50 hover:bg-slate-100'
+                            }`}
                           >
-                            {activity.entryNumber}
-                          </span>
-                        </TableCell>
-                        <TableCell className="py-1 max-w-[300px]">
-                          <div className="text-[11px] truncate">{activity.displayDescription}</div>
-                        </TableCell>
-                        <TableCell className="text-[11px] text-slate-600 py-1">
-                          {activity.offsettingAccounts || '—'}
-                        </TableCell>
-                        <TableCell className="text-right text-[11px] py-1">
-                          {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                        </TableCell>
-                        <TableCell className="text-right text-[11px] py-1">
-                          {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-[11px] py-1">
-                          {formatCurrency(activity.runningBalance)}
-                        </TableCell>
-                        <TableCell className="py-1">
-                          <div className="flex items-center gap-1">
-                            {activity.journalEntryId && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                className="h-6 w-6 p-0"
-                                title="View Journal Entry"
+                            <TableCell className="whitespace-nowrap text-[11px] py-1">
+                              {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <span
+                                className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
                               >
-                                <ExternalLink className="w-3 h-3 text-slate-400" />
-                              </Button>
-                            )}
-                            {activity.transactionId && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                className="h-6 w-6 p-0"
-                                title="View Audit History"
-                              >
-                                <History className="w-3 h-3 text-slate-400" />
-                              </Button>
-                            )}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                    {isFetchingNextPage && (
-                      <TableRow>
-                        <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
-                          Loading more transactions...
-                        </TableCell>
-                      </TableRow>
+                                {activity.entryNumber}
+                              </span>
+                            </TableCell>
+                            <TableCell className="py-1 max-w-[300px]">
+                              <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                            </TableCell>
+                            <TableCell className="text-[11px] text-slate-600 py-1">
+                              {activity.offsettingAccounts || '—'}
+                            </TableCell>
+                            <TableCell className="text-right text-[11px] py-1">
+                              {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                            </TableCell>
+                            <TableCell className="text-right text-[11px] py-1">
+                              {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                            </TableCell>
+                            <TableCell className="text-right font-semibold text-[11px] py-1">
+                              {formatCurrency(activity.runningBalance)}
+                            </TableCell>
+                            <TableCell className="py-1">
+                              <div className="flex items-center gap-1">
+                                {activity.journalEntryId && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                    className="h-6 w-6 p-0"
+                                    title="View Journal Entry"
+                                  >
+                                    <ExternalLink className="w-3 h-3 text-slate-400" />
+                                  </Button>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                        {isFetchingNextPage && (
+                          <TableRow>
+                            <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                              Loading more entries...
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {hasNextPage && !isFetchingNextPage && (
+                          <TableRow ref={loadMoreRef}>
+                            <TableCell colSpan={8} className="h-4"></TableCell>
+                          </TableRow>
+                        )}
+                      </TableBody>
+                    </Table>
+                    {totalJournalLines > 0 && (
+                      <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                        Showing {allActivity.length} of {totalJournalLines} entries
+                      </div>
                     )}
-                    {hasNextPage && !isFetchingNextPage && (
-                      <TableRow ref={loadMoreRef}>
-                        <TableCell colSpan={8} className="h-4"></TableCell>
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-                {totalJournalLines > 0 && (
-                  <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                    Showing {allActivity.length} of {totalJournalLines} transactions
                   </div>
                 )}
               </div>
-            )}
-              </TabsContent>
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="w-full justify-start mb-3">
+                  <TabsTrigger value="register" className="flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5" />
+                    Register
+                  </TabsTrigger>
+                  <TabsTrigger value="audit" className="flex items-center gap-1.5">
+                    <History className="w-3.5 h-3.5" />
+                    Audit History
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="register" className="mt-0">
+                  {journalLinesLoading ? (
+                    <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
+                  ) : journalLinesError ? (
+                    <div className="text-center py-6 space-y-2">
+                      <p className="text-sm text-red-600">Failed to load register data</p>
+                      <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+                    </div>
+                  ) : allActivity.length === 0 ? (
+                    <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
+                  ) : (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="h-8 bg-slate-100">
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            <TableHead className="w-[40px] py-1.5"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allActivity.map((activity, index) => (
+                            <TableRow
+                              key={`${activity.id || index}`}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <span
+                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                                >
+                                  {activity.entryNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-1 max-w-[300px]">
+                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                              </TableCell>
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                {activity.offsettingAccounts || '—'}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1">
+                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1">
+                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-[11px] py-1">
+                                {formatCurrency(activity.runningBalance)}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <div className="flex items-center gap-1">
+                                  {activity.journalEntryId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                      className="h-6 w-6 p-0"
+                                      title="View Journal Entry"
+                                    >
+                                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                                    </Button>
+                                  )}
+                                  {activity.transactionId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                      className="h-6 w-6 p-0"
+                                      title="View Audit History"
+                                    >
+                                      <History className="w-3 h-3 text-slate-400" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                          {isFetchingNextPage && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                                Loading more transactions...
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {hasNextPage && !isFetchingNextPage && (
+                            <TableRow ref={loadMoreRef}>
+                              <TableCell colSpan={8} className="h-4"></TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                      {totalJournalLines > 0 && (
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                          Showing {allActivity.length} of {totalJournalLines} transactions
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
 
               <TabsContent value="audit" className="mt-0">
                 <div className="mb-2 px-1">
@@ -1622,7 +1734,8 @@ export default function AccountDetail() {
                   </div>
                 )}
               </TabsContent>
-            </Tabs>
+              </Tabs>
+            )}
           </CardContent>
         </Card>
 
