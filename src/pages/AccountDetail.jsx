@@ -385,8 +385,8 @@ export default function AccountDetail() {
       totalCredits,
       netChange,
       avgTransaction: combined.length > 0 ? Math.abs(totalDebits + totalCredits) / combined.length : 0,
-      firstTransaction: combined.length > 0 ? combined[0].displayDate : null,
-      lastTransaction: combined.length > 0 ? combined[combined.length - 1].displayDate : null
+      firstTransaction: combined.length > 0 ? combined[combined.length - 1].displayDate : null,
+      lastTransaction: combined.length > 0 ? combined[0].displayDate : null
     };
 
     return {
