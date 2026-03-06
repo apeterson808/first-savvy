@@ -1315,16 +1315,6 @@ export default function AccountDetail() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-              {beginningBalance !== null && (
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    <p className="text-xs font-medium">Beginning Balance</p>
-                  </div>
-                  <p className="text-lg font-bold">{formatCurrency(beginningBalance)}</p>
-                </div>
-              )}
-
               <div className="p-3 bg-soft-green/20 rounded-lg">
                 <div className="flex items-center gap-1.5 text-forest-green mb-0.5">
                   <TrendingUp className="w-3.5 h-3.5" />
@@ -1357,22 +1347,6 @@ export default function AccountDetail() {
                   <p className="text-xs font-medium">Transactions</p>
                 </div>
                 <p className="text-lg font-bold">{analytics.transactionCount}</p>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Avg Transaction</p>
-                </div>
-                <p className="text-lg font-bold">{formatCurrency(analytics.avgTransaction)}</p>
-              </div>
-
-              <div className="p-3 bg-primary/10 rounded-lg col-span-2">
-                <div className="flex items-center gap-1.5 text-primary mb-0.5">
-                  <Calendar className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Ending Balance</p>
-                </div>
-                <p className="text-lg font-bold text-primary">{formatCurrency(endingBalance)}</p>
               </div>
             </div>
           </CardContent>
