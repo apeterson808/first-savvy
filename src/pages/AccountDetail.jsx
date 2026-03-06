@@ -559,7 +559,7 @@ export default function AccountDetail() {
 
   const handleExport = () => {
     const csvContent = [
-      ['Date', 'Description', 'Reference', 'Offsetting Account', 'Debit', 'Credit', 'Balance'].join(','),
+      ['Date', 'Description', 'Reference', 'Offsetting Account', 'Money In', 'Money Out', 'Balance'].join(','),
       ...allActivity.map(activity => [
         format(new Date(activity.displayDate), 'yyyy-MM-dd'),
         `"${activity.displayDescription}"`,
@@ -1325,20 +1325,20 @@ export default function AccountDetail() {
                 </div>
               )}
 
-              <div className="p-3 bg-light-blue/20 rounded-lg">
-                <div className="flex items-center gap-1.5 text-sky-blue mb-0.5">
-                  <DollarSign className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Total Debits</p>
-                </div>
-                <p className="text-lg font-bold text-sky-blue">{formatCurrency(analytics.totalDebits)}</p>
-              </div>
-
               <div className="p-3 bg-soft-green/20 rounded-lg">
                 <div className="flex items-center gap-1.5 text-forest-green mb-0.5">
                   <TrendingUp className="w-3.5 h-3.5" />
-                  <p className="text-xs font-medium">Total Credits</p>
+                  <p className="text-xs font-medium">Money In</p>
                 </div>
-                <p className="text-lg font-bold text-forest-green">{formatCurrency(analytics.totalCredits)}</p>
+                <p className="text-lg font-bold text-forest-green">{formatCurrency(analytics.totalDebits)}</p>
+              </div>
+
+              <div className="p-3 bg-light-blue/20 rounded-lg">
+                <div className="flex items-center gap-1.5 text-sky-blue mb-0.5">
+                  <TrendingDown className="w-3.5 h-3.5" />
+                  <p className="text-xs font-medium">Money Out</p>
+                </div>
+                <p className="text-lg font-bold text-sky-blue">{formatCurrency(analytics.totalCredits)}</p>
               </div>
 
               <div className="p-3 bg-burgundy/10 rounded-lg">
@@ -1441,8 +1441,8 @@ export default function AccountDetail() {
                       <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                       <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
                       <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
-                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Debit</TableHead>
-                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Credit</TableHead>
+                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                      <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                       <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
                       <TableHead className="w-[40px] py-1.5"></TableHead>
                     </TableRow>
@@ -1560,8 +1560,8 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
-                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Debit</TableHead>
-                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Credit</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
                       </TableHeader>
