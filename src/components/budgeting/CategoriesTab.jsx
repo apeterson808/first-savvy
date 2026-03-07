@@ -574,7 +574,11 @@ export default function CategoriesTab() {
                 allIncomeCategories,
                 'income'
               )}
+            </CardContent>
+          </Card>
 
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="px-6 pb-4 pt-6">
               {renderSection(
                 'Expense Categories',
                 allExpenseCategories,
