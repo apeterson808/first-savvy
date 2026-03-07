@@ -395,27 +395,6 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
             </div>
           )}
 
-          {!isLocked && (
-            <div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                onChange={handleFileSelect}
-                className="hidden"
-                accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingFile}
-              >
-                <Upload className="h-4 w-4 mr-2" />
-                {uploadingFile ? 'Uploading...' : 'Add Attachment'}
-              </Button>
-            </div>
-          )}
-
           <Separator />
 
           <div>
@@ -559,11 +538,33 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                 </div>
                 {getStatusBadge(entry.status)}
               </div>
-              {entry.edited_at && (
-                <div className="text-sm text-muted-foreground">
-                  Last edited {format(new Date(entry.edited_at), 'MMM d, yyyy')}
-                </div>
-              )}
+              <div className="flex items-center gap-3">
+                {entry.edited_at && (
+                  <div className="text-sm text-muted-foreground">
+                    Last edited {format(new Date(entry.edited_at), 'MMM d, yyyy')}
+                  </div>
+                )}
+                {!isLocked && (
+                  <>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploadingFile}
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {uploadingFile ? 'Uploading...' : 'Add Attachment'}
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>
