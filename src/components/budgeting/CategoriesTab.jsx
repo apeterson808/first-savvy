@@ -451,7 +451,7 @@ export default function CategoriesTab() {
             No categories available
           </div>
         ) : (
-          <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm bg-white px-4">
+          <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm bg-white">
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/30">
