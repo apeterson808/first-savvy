@@ -9,7 +9,9 @@ export default function InlineEditableAmount({
   onUpdate,
   isLoading = false,
   hasBorder = false,
-  isMonthlyColumn = false
+  isMonthlyColumn = false,
+  disabled = false,
+  className = ''
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -26,7 +28,7 @@ export default function InlineEditableAmount({
   }, [isEditing, value]);
 
   const handleClick = () => {
-    if (isLoading) return;
+    if (isLoading || disabled) return;
     // Start with 0.00 for calculator-style input
     setInputValue('0.00');
     setIsEditing(true);
@@ -135,9 +137,9 @@ export default function InlineEditableAmount({
 
   return (
     <td
-      className={`cursor-pointer hover:bg-slate-50/70 transition-colors ${
+      className={`${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50/70'} transition-colors ${
         isLoading ? 'opacity-50' : ''
-      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''}`}
+      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''} ${className}`}
       onClick={handleClick}
     >
       {isLoading ? (

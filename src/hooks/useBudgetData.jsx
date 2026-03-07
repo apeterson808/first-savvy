@@ -25,7 +25,6 @@ export function useBudgetData() {
             parent_account_id
           )
         `)
-        .eq('is_active', true)
         .order('order', { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data || [];
@@ -148,11 +147,11 @@ export function useBudgetData() {
     const totalSpent = Object.values(spendingByCategory).reduce((sum, amt) => sum + amt, 0);
 
     const budgetedIncome = budgets
-      .filter(b => b.chartAccount?.class === 'income')
+      .filter(b => b.chartAccount?.class === 'income' && b.is_active === true)
       .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
     const totalBudgeted = budgets
-      .filter(b => b.chartAccount?.class === 'expense')
+      .filter(b => b.chartAccount?.class === 'expense' && b.is_active === true)
       .reduce((sum, b) => sum + (b.allocated_amount || 0), 0);
 
     const categoryUsage = transactions.reduce((acc, t) => {
@@ -172,45 +171,52 @@ export function useBudgetData() {
       return acc;
     }, {});
 
-    const budgetedCategoryIds = new Set(budgets.map(b => b.chart_account_id));
+    const budgetMap = budgets.reduce((map, b) => {
+      map[b.chart_account_id] = b;
+      return map;
+    }, {});
 
-    const budgetedIncomeCategories = categories
-      .filter(c => c.class === 'income' && budgetedCategoryIds.has(c.id))
-      .sort((a, b) => a.display_name.localeCompare(b.display_name));
-
-    const budgetedExpenseCategories = categories
-      .filter(c => c.class === 'expense' && budgetedCategoryIds.has(c.id))
-      .sort((a, b) => a.display_name.localeCompare(b.display_name));
-
-    const availableIncomeCategories = categories
-      .filter(c => c.class === 'income' && !budgetedCategoryIds.has(c.id))
+    const allIncomeCategories = categories
+      .filter(c => c.class === 'income')
+      .map(category => {
+        const budget = budgetMap[category.id];
+        return {
+          ...category,
+          budget,
+          budgetStatus: budget ? (budget.is_active ? 'active' : 'inactive') : 'none'
+        };
+      })
       .sort((a, b) => {
+        if (a.budgetStatus === 'active' && b.budgetStatus !== 'active') return -1;
+        if (a.budgetStatus !== 'active' && b.budgetStatus === 'active') return 1;
+        if (a.budgetStatus === 'inactive' && b.budgetStatus === 'none') return -1;
+        if (a.budgetStatus === 'none' && b.budgetStatus === 'inactive') return 1;
         const aUsage = categoryUsage[a.id];
         const bUsage = categoryUsage[b.id];
         if (aUsage?.everUsed && !bUsage?.everUsed) return -1;
         if (!aUsage?.everUsed && bUsage?.everUsed) return 1;
-        if (aUsage?.everUsed && bUsage?.everUsed) {
-          const aDate = new Date(aUsage.lastUsed);
-          const bDate = new Date(bUsage.lastUsed);
-          if (aDate > bDate) return -1;
-          if (aDate < bDate) return 1;
-        }
         return a.display_name.localeCompare(b.display_name);
       });
 
-    const availableExpenseCategories = categories
-      .filter(c => c.class === 'expense' && !budgetedCategoryIds.has(c.id))
+    const allExpenseCategories = categories
+      .filter(c => c.class === 'expense')
+      .map(category => {
+        const budget = budgetMap[category.id];
+        return {
+          ...category,
+          budget,
+          budgetStatus: budget ? (budget.is_active ? 'active' : 'inactive') : 'none'
+        };
+      })
       .sort((a, b) => {
+        if (a.budgetStatus === 'active' && b.budgetStatus !== 'active') return -1;
+        if (a.budgetStatus !== 'active' && b.budgetStatus === 'active') return 1;
+        if (a.budgetStatus === 'inactive' && b.budgetStatus === 'none') return -1;
+        if (a.budgetStatus === 'none' && b.budgetStatus === 'inactive') return 1;
         const aUsage = categoryUsage[a.id];
         const bUsage = categoryUsage[b.id];
         if (aUsage?.everUsed && !bUsage?.everUsed) return -1;
         if (!aUsage?.everUsed && bUsage?.everUsed) return 1;
-        if (aUsage?.everUsed && bUsage?.everUsed) {
-          const aDate = new Date(aUsage.lastUsed);
-          const bDate = new Date(bUsage.lastUsed);
-          if (aDate > bDate) return -1;
-          if (aDate < bDate) return 1;
-        }
         return a.display_name.localeCompare(b.display_name);
       });
 
@@ -225,10 +231,8 @@ export function useBudgetData() {
       }, {});
     };
 
-    const budgetedIncomeByType = groupCategoriesByType(budgetedIncomeCategories);
-    const budgetedExpenseByType = groupCategoriesByType(budgetedExpenseCategories);
-    const availableIncomeByType = groupCategoriesByType(availableIncomeCategories);
-    const availableExpenseByType = groupCategoriesByType(availableExpenseCategories);
+    const allIncomeByType = groupCategoriesByType(allIncomeCategories);
+    const allExpenseByType = groupCategoriesByType(allExpenseCategories);
 
     return {
       spendingByCategory,
@@ -245,14 +249,10 @@ export function useBudgetData() {
       refundTransactions,
       regularIncomeTransactions,
       categoryUsage,
-      budgetedIncomeCategories,
-      budgetedExpenseCategories,
-      availableIncomeCategories,
-      availableExpenseCategories,
-      budgetedIncomeByType,
-      budgetedExpenseByType,
-      availableIncomeByType,
-      availableExpenseByType
+      allIncomeCategories,
+      allExpenseCategories,
+      allIncomeByType,
+      allExpenseByType
     };
   }, [transactions, accounts, budgets, categories]);
 
@@ -264,14 +264,10 @@ export function useBudgetData() {
     isLoading,
     hasSetupStarted: budgets.length > 0,
     categoryUsage: calculatedData.categoryUsage,
-    budgetedIncomeCategories: calculatedData.budgetedIncomeCategories,
-    budgetedExpenseCategories: calculatedData.budgetedExpenseCategories,
-    availableIncomeCategories: calculatedData.availableIncomeCategories,
-    availableExpenseCategories: calculatedData.availableExpenseCategories,
-    budgetedIncomeByType: calculatedData.budgetedIncomeByType,
-    budgetedExpenseByType: calculatedData.budgetedExpenseByType,
-    availableIncomeByType: calculatedData.availableIncomeByType,
-    availableExpenseByType: calculatedData.availableExpenseByType,
+    allIncomeCategories: calculatedData.allIncomeCategories,
+    allExpenseCategories: calculatedData.allExpenseCategories,
+    allIncomeByType: calculatedData.allIncomeByType,
+    allExpenseByType: calculatedData.allExpenseByType,
     ...calculatedData
   };
 }
