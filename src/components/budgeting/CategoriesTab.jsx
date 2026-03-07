@@ -235,9 +235,9 @@ export default function CategoriesTab() {
     const isUpdating = updatingBudgetId === budget?.id;
 
     rows.push(
-      <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-0 pl-2 border-r border-slate-100 border-l-2 border-l-slate-300">
-          <div className="flex items-center gap-2">
+      <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${isChild ? 'bg-slate-50/30' : 'bg-white'}`}>
+        <td className="px-4 py-1 border-l-2 border-slate-200">
+          <div className={`flex items-center gap-2 ${!isChild ? 'pl-12' : 'pl-12'}`}>
             {!isChild && hasChildren ? (
               <Button
                 variant="ghost"
@@ -249,16 +249,16 @@ export default function CategoriesTab() {
                 }}
               >
                 {isParentExpanded ? (
-                  <ChevronDown className="h-3.5 w-3.5 text-slate-600" />
+                  <ChevronDown className="h-3.5 w-3.5 text-slate-500" />
                 ) : (
-                  <ChevronRight className="h-3.5 w-3.5 text-slate-600" />
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-500" />
                 )}
               </Button>
             ) : (
               <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
             )}
-            <IconComponent className={`w-5 h-5 flex-shrink-0 ${textColorClass}`} style={{ color: isDisabled ? undefined : categoryWithBudget.color }} />
-            <span className={`${isChild ? 'text-slate-700' : ''} ${textColorClass}`}>
+            <IconComponent className={`w-4 h-4 flex-shrink-0 ${textColorClass}`} style={{ color: isDisabled ? undefined : categoryWithBudget.color }} />
+            <span className={`text-sm ${isChild ? 'text-slate-600' : 'text-slate-700'} ${textColorClass} truncate`}>
               {categoryWithBudget.display_name}
             </span>
           </div>
@@ -271,7 +271,6 @@ export default function CategoriesTab() {
               isActiveCadence={false}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
@@ -282,7 +281,6 @@ export default function CategoriesTab() {
               isActiveCadence={false}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
@@ -293,7 +291,6 @@ export default function CategoriesTab() {
               isActiveCadence={true}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               isMonthlyColumn={true}
               disabled={true}
               className="text-slate-500 italic"
@@ -305,7 +302,6 @@ export default function CategoriesTab() {
               isActiveCadence={false}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
@@ -313,10 +309,10 @@ export default function CategoriesTab() {
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-0 border-r border-slate-100 text-slate-400">-</td>
-            <td className="px-0 border-r border-slate-100 text-slate-400">-</td>
-            <td className="px-0 border-r border-slate-100 text-slate-400 bg-slate-50/50">-</td>
-            <td className="px-0 border-r border-slate-100 text-slate-400">-</td>
+            <td className="px-4 py-1 text-center text-slate-400">-</td>
+            <td className="px-4 py-1 text-center text-slate-400">-</td>
+            <td className="px-4 py-1 text-center text-slate-400 bg-slate-50/50">-</td>
+            <td className="px-4 py-1 text-center text-slate-400">-</td>
           </>
         ) : (
           <>
@@ -326,7 +322,6 @@ export default function CategoriesTab() {
               isActiveCadence={cadence === 'daily'}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               disabled={isDisabled}
               className={textColorClass}
             />
@@ -336,7 +331,6 @@ export default function CategoriesTab() {
               isActiveCadence={cadence === 'weekly'}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               disabled={isDisabled}
               className={textColorClass}
             />
@@ -346,7 +340,6 @@ export default function CategoriesTab() {
               isActiveCadence={cadence === 'monthly'}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               isMonthlyColumn={true}
               disabled={isDisabled}
               className={textColorClass}
@@ -357,25 +350,24 @@ export default function CategoriesTab() {
               isActiveCadence={cadence === 'yearly'}
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
-              hasBorder={true}
               disabled={isDisabled}
               className={textColorClass}
             />
           </>
         )}
-        <td className="px-0 pr-2 text-right border-r-2 border-r-slate-300">
+        <td className="px-4 py-1 text-right border-r-2 border-slate-200">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleToggleBudget(categoryWithBudget)}
-              className="h-8 w-8 p-0"
+              className="h-7 w-7 p-0 hover:bg-slate-100"
               disabled={isToggling}
             >
               {budgetStatus === 'active' ? (
-                <Minus className="h-4 w-4" />
+                <Minus className="h-3.5 w-3.5 text-slate-600" />
               ) : (
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5 text-slate-600" />
               )}
             </Button>
             {budget && (
@@ -383,9 +375,9 @@ export default function CategoriesTab() {
                 variant="ghost"
                 size="sm"
                 onClick={() => handleEditBudget(budget)}
-                className="h-8 w-8 p-0"
+                className="h-7 w-7 p-0 hover:bg-slate-100"
               >
-                <Pencil className="h-4 w-4" />
+                <Pencil className="h-3.5 w-3.5 text-slate-600" />
               </Button>
             )}
           </div>
@@ -459,24 +451,24 @@ export default function CategoriesTab() {
             No categories available
           </div>
         ) : (
-          <div className="overflow-x-auto border-2 border-slate-300 rounded-lg shadow-md bg-white px-4">
-            <table className="w-full table-fixed border-separate border-spacing-0">
+          <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm bg-white px-4">
+            <table className="w-full table-fixed">
               <thead>
-                <tr className="border-b-2 border-slate-300 bg-white">
+                <tr className="border-b border-slate-200 bg-slate-50/30">
                   <th
-                    className="py-2.5 px-0 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-slate-300 pl-2"
+                    className="py-2 px-4 text-left font-normal text-sm text-slate-700 w-[30%] cursor-pointer hover:bg-slate-100/50 transition-colors"
                     onClick={() => toggleSection(sectionKey)}
                   >
                     <div className="flex items-center gap-2">
-                      {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                      {isCollapsed ? <ChevronRight className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
                       {categoryColumnLabel}
                     </div>
                   </th>
-                  <th className="py-2.5 px-0 text-left font-normal w-[14%]">Daily</th>
-                  <th className="py-2.5 px-0 text-left font-normal w-[14%]">Weekly</th>
-                  <th className="py-2.5 px-0 text-left font-medium w-[14%]">Monthly</th>
-                  <th className="py-2.5 px-0 text-left font-normal w-[14%]">Yearly</th>
-                  <th className="py-2.5 px-0 pr-2 text-right font-bold w-[14%] border-r-2 border-slate-300">Action</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Daily</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Weekly</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-700 w-[14%]">Monthly</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Yearly</th>
+                  <th className="py-2 px-4 text-right font-normal text-sm text-slate-700 w-[14%]">Action</th>
                 </tr>
               </thead>
               {!isCollapsed && sortedTypes.map(accountType => {
@@ -491,17 +483,16 @@ export default function CategoriesTab() {
                 });
 
                 return (
-                  <tbody key={accountType}>
-                    <tr className="bg-slate-150 border-b border-slate-300">
+                  <tbody key={accountType} className="relative">
+                    <tr className="bg-slate-50/50">
                       <td
                         colSpan={6}
-                        className="px-0 pl-2 pr-2 py-2 cursor-pointer hover:bg-slate-200 transition-colors border-l-2 border-r-2 border-slate-300"
+                        className="px-4 py-1 cursor-pointer hover:bg-slate-100/50 transition-colors border-l-2 border-r-2 border-b border-slate-200 relative"
                         onClick={() => toggleType(typeKey)}
                       >
-                        <div className="flex items-center gap-2">
-                          {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-700" /> : <ChevronDown className="h-4 w-4 text-slate-700" />}
-                          <span className="text-sm font-semibold text-slate-800">{getAccountTypeLabel(accountType)}</span>
-                          <span className="text-xs text-slate-600 ml-2">({typeCategories.length})</span>
+                        <div className="flex items-center gap-2 pl-6">
+                          {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
+                          <span className="text-sm font-medium text-slate-700 truncate">{getAccountTypeLabel(accountType)}</span>
                         </div>
                       </td>
                     </tr>
@@ -510,33 +501,33 @@ export default function CategoriesTab() {
                 );
               })}
               <tbody>
-                <tr className="border-t-2 border-slate-300 bg-white">
-                  <td className="px-0 pl-2 py-2.5 border-r border-slate-300 font-semibold border-l-2 border-l-slate-300">{totalLabel}</td>
-                  <td className="px-0 py-2.5 border-r border-slate-200">
-                    <div className="flex justify-between tabular-nums">
-                      <span className={totals.daily === 0 ? 'font-semibold' : ''}>{dailyFormatted.sign}</span>
-                      <span className={`text-right ${totals.daily === 0 ? 'font-semibold' : ''}`}>{dailyFormatted.amount}</span>
+                <tr className="border-t border-slate-200 bg-slate-50/30">
+                  <td className="px-4 py-2.5 font-medium text-slate-700">{totalLabel}</td>
+                  <td className="px-4 py-2.5 text-center">
+                    <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
+                      <span>{dailyFormatted.sign}</span>
+                      <span>{dailyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-0 py-2.5 border-r border-slate-200">
-                    <div className="flex justify-between tabular-nums">
-                      <span className={totals.weekly === 0 ? 'font-semibold' : ''}>{weeklyFormatted.sign}</span>
-                      <span className={`text-right ${totals.weekly === 0 ? 'font-semibold' : ''}`}>{weeklyFormatted.amount}</span>
+                  <td className="px-4 py-2.5 text-center">
+                    <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
+                      <span>{weeklyFormatted.sign}</span>
+                      <span>{weeklyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-0 py-2.5 border-r border-slate-200">
-                    <div className="flex justify-between tabular-nums font-medium">
+                  <td className="px-4 py-2.5 text-center">
+                    <div className="inline-flex items-center gap-1 tabular-nums font-medium text-slate-700">
                       <span>{monthlyFormatted.sign}</span>
-                      <span className="text-right">{monthlyFormatted.amount}</span>
+                      <span>{monthlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-0 py-2.5 border-r border-slate-200">
-                    <div className="flex justify-between tabular-nums">
-                      <span className={totals.yearly === 0 ? 'font-semibold' : ''}>{yearlyFormatted.sign}</span>
-                      <span className={`text-right ${totals.yearly === 0 ? 'font-semibold' : ''}`}>{yearlyFormatted.amount}</span>
+                  <td className="px-4 py-2.5 text-center">
+                    <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
+                      <span>{yearlyFormatted.sign}</span>
+                      <span>{yearlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-0 pr-2 py-2.5 border-r-2 border-r-slate-300"></td>
+                  <td className="px-4 py-2.5"></td>
                 </tr>
               </tbody>
             </table>
