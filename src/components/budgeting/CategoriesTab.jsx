@@ -318,9 +318,9 @@ export default function CategoriesTab() {
     const rows = [];
 
     rows.push(
-      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-100/80' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
+      <tr key={category.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
         <td className="px-4 border-r border-slate-100">
-          <div className={`flex items-center gap-2 ${isChild ? 'ml-8' : ''}`}>
+          <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
               <Button
                 variant="ghost"
@@ -338,7 +338,7 @@ export default function CategoriesTab() {
                 )}
               </Button>
             ) : (
-              <div className="w-5 flex-shrink-0"></div>
+              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
             )}
             <IconComponent className="w-5 h-5 flex-shrink-0" style={{ color: category.color }} />
             <span className={isChild ? 'text-slate-700' : ''}>
@@ -433,13 +433,13 @@ export default function CategoriesTab() {
     const rows = [];
 
     const rowClassName = hasBudget
-      ? `border-b border-slate-100 ${isChild ? 'bg-slate-100/80' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'} opacity-50`
-      : `border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-100/80' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`;
+      ? `border-b border-slate-100 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'} opacity-50`
+      : `border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`;
 
     rows.push(
       <tr key={category.id} className={rowClassName}>
         <td className="px-4 font-medium border-r border-slate-200">
-          <div className={`flex items-center gap-2 ${isChild ? 'ml-8' : ''}`}>
+          <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
               <Button
                 variant="ghost"
@@ -457,7 +457,7 @@ export default function CategoriesTab() {
                 )}
               </Button>
             ) : (
-              <div className="w-5 flex-shrink-0"></div>
+              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
             )}
             <IconComponent className="w-5 h-5 flex-shrink-0" style={{ color: category.color }} />
             <span className={isChild ? 'text-slate-700' : ''}>
