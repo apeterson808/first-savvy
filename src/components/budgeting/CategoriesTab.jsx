@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useBudgetData } from '@/hooks/useBudgetData';
-import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Plus, Minus, Pencil } from 'lucide-react';
 import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
@@ -564,26 +563,18 @@ export default function CategoriesTab() {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        <div className="space-y-4">
-          <Card className="shadow-sm border-slate-200">
-            <CardContent className="px-6 pb-4 pt-6">
-              {renderSection(
-                'Income Categories',
-                allIncomeCategories,
-                'income'
-              )}
-            </CardContent>
-          </Card>
+        <div className="space-y-6">
+          {renderSection(
+            'Income Categories',
+            allIncomeCategories,
+            'income'
+          )}
 
-          <Card className="shadow-sm border-slate-200">
-            <CardContent className="px-6 pb-4 pt-6">
-              {renderSection(
-                'Expense Categories',
-                allExpenseCategories,
-                'expense'
-              )}
-            </CardContent>
-          </Card>
+          {renderSection(
+            'Expense Categories',
+            allExpenseCategories,
+            'expense'
+          )}
         </div>
 
         <div className="lg:sticky lg:top-4 lg:self-start">
