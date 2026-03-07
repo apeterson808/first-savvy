@@ -195,16 +195,15 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-3 py-2 text-left text-sm font-medium">Account</th>
-                    <th className="px-3 py-2 text-center text-sm font-medium w-24">Type</th>
-                    <th className="px-3 py-2 text-right text-sm font-medium w-32">Amount</th>
+                    <th className="px-3 py-2 text-right text-sm font-medium">Amount</th>
                     <th className="px-3 py-2 text-left text-sm font-medium">Description</th>
                     <th className="px-3 py-2 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
                   {lines.map((line, index) => {
-                    const lineType = parseFloat(line.debit_amount) > 0 ? 'debit' : 'credit';
-                    const amount = lineType === 'debit' ? line.debit_amount : line.credit_amount;
+                    const isDebit = parseFloat(line.debit_amount) > 0;
+                    const amount = isDebit ? line.debit_amount : line.credit_amount;
 
                     return (
                       <tr key={index} className="border-t">
@@ -220,48 +219,39 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
                           />
                         </td>
                         <td className="px-3 py-2">
-                          <div className="flex gap-1 justify-center">
-                            <Button
-                              size="sm"
-                              variant={lineType === 'debit' ? 'default' : 'outline'}
-                              className="h-7 px-2 text-xs"
-                              onClick={() => {
+                          <div className="flex items-center justify-end gap-2">
+                            <select
+                              className="h-8 w-12 border rounded px-1 text-sm"
+                              value={isDebit ? '+' : '-'}
+                              onChange={(e) => {
                                 const currentAmount = parseFloat(line.credit_amount || line.debit_amount || 0);
-                                updateLine(index, 'debit_amount', currentAmount.toString());
-                                updateLine(index, 'credit_amount', '');
+                                if (e.target.value === '+') {
+                                  updateLine(index, 'debit_amount', currentAmount.toString());
+                                  updateLine(index, 'credit_amount', '');
+                                } else {
+                                  updateLine(index, 'credit_amount', currentAmount.toString());
+                                  updateLine(index, 'debit_amount', '');
+                                }
                               }}
                             >
-                              DR
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={lineType === 'credit' ? 'default' : 'outline'}
-                              className="h-7 px-2 text-xs"
-                              onClick={() => {
-                                const currentAmount = parseFloat(line.debit_amount || line.credit_amount || 0);
-                                updateLine(index, 'credit_amount', currentAmount.toString());
-                                updateLine(index, 'debit_amount', '');
+                              <option value="+">+</option>
+                              <option value="-">−</option>
+                            </select>
+                            <CalculatorAmountInput
+                              value={parseFloat(amount) || 0}
+                              onChange={(value) => {
+                                if (isDebit) {
+                                  updateLine(index, 'debit_amount', value.toString());
+                                  updateLine(index, 'credit_amount', '');
+                                } else {
+                                  updateLine(index, 'credit_amount', value.toString());
+                                  updateLine(index, 'debit_amount', '');
+                                }
                               }}
-                            >
-                              CR
-                            </Button>
+                              placeholder="0.00"
+                              className="text-right w-32"
+                            />
                           </div>
-                        </td>
-                        <td className="px-3 py-2">
-                          <CalculatorAmountInput
-                            value={parseFloat(amount) || 0}
-                            onChange={(value) => {
-                              if (lineType === 'debit') {
-                                updateLine(index, 'debit_amount', value.toString());
-                                updateLine(index, 'credit_amount', '');
-                              } else {
-                                updateLine(index, 'credit_amount', value.toString());
-                                updateLine(index, 'debit_amount', '');
-                              }
-                            }}
-                            placeholder="0.00"
-                            className="text-right"
-                          />
                         </td>
                         <td className="px-3 py-2">
                           <Input
@@ -286,9 +276,9 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
                 </tbody>
                 <tfoot className="border-t bg-muted/50">
                   <tr>
-                    <td className="px-3 py-2 text-sm font-medium" colSpan={2}>Totals</td>
+                    <td className="px-3 py-2 text-sm font-medium">Total</td>
                     <td className="px-3 py-2 text-right text-sm font-medium">
-                      ${totalDebits.toFixed(2)} / ${totalCredits.toFixed(2)}
+                      ${(totalDebits - totalCredits).toFixed(2)}
                     </td>
                     <td className="px-3 py-2">
                       {balanced ? (

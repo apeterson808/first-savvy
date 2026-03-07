@@ -208,15 +208,14 @@ export default function CreateJournalEntry({ onClose, onSuccess }) {
                 <TableHead className="w-12">#</TableHead>
                 <TableHead>Account</TableHead>
                 <TableHead>Description</TableHead>
-                <TableHead className="w-24 text-center">Type</TableHead>
-                <TableHead className="w-32 text-right">Amount</TableHead>
+                <TableHead className="text-right">Amount</TableHead>
                 <TableHead className="w-12"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {lines.map((line, index) => {
-                const lineType = parseFloat(line.debitAmount) > 0 ? 'debit' : 'credit';
-                const amount = lineType === 'debit' ? line.debitAmount : line.creditAmount;
+                const isDebit = parseFloat(line.debitAmount) > 0;
+                const amount = isDebit ? line.debitAmount : line.creditAmount;
 
                 return (
                   <TableRow key={index}>
@@ -236,48 +235,40 @@ export default function CreateJournalEntry({ onClose, onSuccess }) {
                         onChange={(e) => updateLine(index, 'description', e.target.value)}
                       />
                     </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex gap-1 justify-center">
-                        <Button
-                          size="sm"
-                          variant={lineType === 'debit' ? 'default' : 'outline'}
-                          className="h-7 px-2 text-xs"
-                          onClick={() => {
-                            const currentAmount = parseFloat(line.creditAmount || line.debitAmount || 0);
-                            updateLine(index, 'debitAmount', currentAmount.toString());
-                            updateLine(index, 'creditAmount', '');
-                          }}
-                        >
-                          DR
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={lineType === 'credit' ? 'default' : 'outline'}
-                          className="h-7 px-2 text-xs"
-                          onClick={() => {
-                            const currentAmount = parseFloat(line.debitAmount || line.creditAmount || 0);
-                            updateLine(index, 'creditAmount', currentAmount.toString());
-                            updateLine(index, 'debitAmount', '');
-                          }}
-                        >
-                          CR
-                        </Button>
-                      </div>
-                    </TableCell>
                     <TableCell>
-                      <CalculatorAmountInput
-                        value={parseFloat(amount) || 0}
-                        onChange={(value) => {
-                          if (lineType === 'debit') {
-                            updateLine(index, 'debitAmount', value.toString());
-                            updateLine(index, 'creditAmount', '');
-                          } else {
-                            updateLine(index, 'creditAmount', value.toString());
-                            updateLine(index, 'debitAmount', '');
-                          }
-                        }}
-                        placeholder="0.00"
-                      />
+                      <div className="flex items-center justify-end gap-2">
+                        <select
+                          className="h-10 w-12 border rounded px-1 text-sm"
+                          value={isDebit ? '+' : '-'}
+                          onChange={(e) => {
+                            const currentAmount = parseFloat(line.creditAmount || line.debitAmount || 0);
+                            if (e.target.value === '+') {
+                              updateLine(index, 'debitAmount', currentAmount.toString());
+                              updateLine(index, 'creditAmount', '');
+                            } else {
+                              updateLine(index, 'creditAmount', currentAmount.toString());
+                              updateLine(index, 'debitAmount', '');
+                            }
+                          }}
+                        >
+                          <option value="+">+</option>
+                          <option value="-">−</option>
+                        </select>
+                        <CalculatorAmountInput
+                          value={parseFloat(amount) || 0}
+                          onChange={(value) => {
+                            if (isDebit) {
+                              updateLine(index, 'debitAmount', value.toString());
+                              updateLine(index, 'creditAmount', '');
+                            } else {
+                              updateLine(index, 'creditAmount', value.toString());
+                              updateLine(index, 'debitAmount', '');
+                            }
+                          }}
+                          placeholder="0.00"
+                          className="w-40"
+                        />
+                      </div>
                     </TableCell>
                     <TableCell>
                       <Button
@@ -293,8 +284,8 @@ export default function CreateJournalEntry({ onClose, onSuccess }) {
                 );
               })}
               <TableRow className="font-bold border-t-2">
-                <TableCell colSpan={4} className="text-right">Total Debits / Credits</TableCell>
-                <TableCell className="text-right">{formatCurrency(totalDebits)} / {formatCurrency(totalCredits)}</TableCell>
+                <TableCell colSpan={3} className="text-right">Total</TableCell>
+                <TableCell className="text-right">{formatCurrency(totalDebits - totalCredits)}</TableCell>
                 <TableCell></TableCell>
               </TableRow>
             </TableBody>

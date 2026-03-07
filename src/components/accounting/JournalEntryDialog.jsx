@@ -405,7 +405,6 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead className="w-24 text-center">Type</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
@@ -414,7 +413,6 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   const Icon = line.account_icon ? getIconComponent(line.account_icon) : null;
                   const isDebit = parseFloat(line.debit_amount || 0) > 0;
                   const amount = isDebit ? line.debit_amount : line.credit_amount;
-                  const currentType = isEditMode ? (parseFloat(editedLines[index]?.debit_amount || 0) > 0 ? 'debit' : 'credit') : (isDebit ? 'debit' : 'credit');
 
                   return (
                     <TableRow key={line.id}>
@@ -443,59 +441,44 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                           <span className="text-muted-foreground">{line.description || '—'}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-center">
-                        {isEditMode ? (
-                          <div className="flex gap-1 justify-center">
-                            <Button
-                              size="sm"
-                              variant={currentType === 'debit' ? 'default' : 'outline'}
-                              className="h-7 px-2 text-xs"
-                              onClick={() => {
-                                const currentAmount = parseFloat(line.credit_amount || line.debit_amount || 0);
-                                handleLineAmountChange(index, 'debit_amount', currentAmount.toString());
-                                handleLineAmountChange(index, 'credit_amount', '0');
-                              }}
-                            >
-                              DR
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant={currentType === 'credit' ? 'default' : 'outline'}
-                              className="h-7 px-2 text-xs"
-                              onClick={() => {
-                                const currentAmount = parseFloat(line.debit_amount || line.credit_amount || 0);
-                                handleLineAmountChange(index, 'credit_amount', currentAmount.toString());
-                                handleLineAmountChange(index, 'debit_amount', '0');
-                              }}
-                            >
-                              CR
-                            </Button>
-                          </div>
-                        ) : (
-                          <Badge variant={isDebit ? 'default' : 'secondary'} className="text-xs">
-                            {isDebit ? 'DR' : 'CR'}
-                          </Badge>
-                        )}
-                      </TableCell>
                       <TableCell className="text-right">
                         {isEditMode ? (
-                          <CalculatorAmountInput
-                            value={parseFloat(amount) || 0}
-                            onChange={(value) => {
-                              if (currentType === 'debit') {
-                                handleLineAmountChange(index, 'debit_amount', value.toString());
-                                handleLineAmountChange(index, 'credit_amount', '0');
-                              } else {
-                                handleLineAmountChange(index, 'credit_amount', value.toString());
-                                handleLineAmountChange(index, 'debit_amount', '0');
-                              }
-                            }}
-                            className="h-8 text-right font-mono"
-                            placeholder="0.00"
-                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <select
+                              className="h-8 w-12 border rounded px-1 text-sm"
+                              value={isDebit ? '+' : '-'}
+                              onChange={(e) => {
+                                const currentAmount = parseFloat(line.credit_amount || line.debit_amount || 0);
+                                if (e.target.value === '+') {
+                                  handleLineAmountChange(index, 'debit_amount', currentAmount.toString());
+                                  handleLineAmountChange(index, 'credit_amount', '0');
+                                } else {
+                                  handleLineAmountChange(index, 'credit_amount', currentAmount.toString());
+                                  handleLineAmountChange(index, 'debit_amount', '0');
+                                }
+                              }}
+                            >
+                              <option value="+">+</option>
+                              <option value="-">−</option>
+                            </select>
+                            <CalculatorAmountInput
+                              value={parseFloat(amount) || 0}
+                              onChange={(value) => {
+                                if (isDebit) {
+                                  handleLineAmountChange(index, 'debit_amount', value.toString());
+                                  handleLineAmountChange(index, 'credit_amount', '0');
+                                } else {
+                                  handleLineAmountChange(index, 'credit_amount', value.toString());
+                                  handleLineAmountChange(index, 'debit_amount', '0');
+                                }
+                              }}
+                              className="h-8 text-right font-mono w-32"
+                              placeholder="0.00"
+                            />
+                          </div>
                         ) : (
                           <span className="font-mono">
-                            {amount ? formatCurrency(amount) : ''}
+                            {isDebit ? '+' : '−'}{amount ? formatCurrency(amount) : '$0.00'}
                           </span>
                         )}
                       </TableCell>
@@ -503,20 +486,20 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   );
                 })}
                 <TableRow className="font-bold border-t-2">
-                  <TableCell colSpan={4} className="text-right">
-                    Total Debits / Credits
+                  <TableCell colSpan={3} className="text-right">
+                    Total
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {formatCurrency(totalDebits)} / {formatCurrency(totalCredits)}
+                    {formatCurrency(totalDebits - totalCredits)}
                   </TableCell>
                 </TableRow>
-                {isEditMode && (
+                {isEditMode && !isBalanced && (
                   <TableRow className="bg-muted/30">
-                    <TableCell colSpan={4} className="text-right text-sm">
-                      Difference
+                    <TableCell colSpan={3} className="text-right text-sm">
+                      <span className="text-destructive">Out of Balance</span>
                     </TableCell>
                     <TableCell className="text-right font-mono">
-                      <span className={isBalanced ? 'text-green-600' : 'text-destructive'}>
+                      <span className="text-destructive">
                         {formatCurrency(Math.abs(totalDebits - totalCredits))}
                       </span>
                     </TableCell>
