@@ -58,11 +58,14 @@ export default function Budgeting() {
     incomeByCategory,
     monthStart,
     monthEnd,
-    availableIncomeCategories,
-    availableExpenseCategories
+    allIncomeCategories,
+    allExpenseCategories
   } = useBudgetData();
 
-  const availableCategories = [...availableIncomeCategories, ...availableExpenseCategories];
+  const availableCategories = categories.filter(c =>
+    !allIncomeCategories.some(ic => ic.id === c.id && ic.budgetStatus === 'active') &&
+    !allExpenseCategories.some(ec => ec.id === c.id && ec.budgetStatus === 'active')
+  );
 
   if (isLoading) {
     return (
