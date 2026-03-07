@@ -230,7 +230,9 @@ export default function CategoriesTab() {
 
     const cadence = budget?.cadence || 'monthly';
     const amount = budget?.allocated_amount || 0;
-    const values = budget ? getAllCadenceValues(amount, cadence) : { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
+    const values = budget ? getAllCadenceValues(amount, cadence) :
+      hasSuggestion ? getAllCadenceValues(suggestedAmount, 'monthly') :
+      { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;
 
     rows.push(
@@ -264,17 +266,51 @@ export default function CategoriesTab() {
         </td>
         {hasSuggestion ? (
           <>
-            <td className="px-4 border-r border-slate-100" colSpan="3">
-              <div className="flex flex-col">
-                <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 w-fit mb-0.5">
-                  suggested
-                </Badge>
-                <span className="text-sm text-slate-500">
-                  {formatAccountingAmount(suggestedAmount).sign} {formatAccountingAmount(suggestedAmount).amount}/mo
-                </span>
-              </div>
-            </td>
-            <td className="px-4 border-r border-slate-100"></td>
+            <InlineEditableAmount
+              value={values.daily}
+              cadence="daily"
+              isActiveCadence={false}
+              onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
+              isLoading={isUpdating}
+              hasBorder={true}
+              disabled={true}
+              className="text-slate-500 italic"
+              isSuggested={true}
+            />
+            <InlineEditableAmount
+              value={values.weekly}
+              cadence="weekly"
+              isActiveCadence={false}
+              onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
+              isLoading={isUpdating}
+              hasBorder={true}
+              disabled={true}
+              className="text-slate-500 italic"
+              isSuggested={true}
+            />
+            <InlineEditableAmount
+              value={values.monthly}
+              cadence="monthly"
+              isActiveCadence={true}
+              onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
+              isLoading={isUpdating}
+              hasBorder={true}
+              isMonthlyColumn={true}
+              disabled={true}
+              className="text-slate-500 italic"
+              isSuggested={true}
+            />
+            <InlineEditableAmount
+              value={values.yearly}
+              cadence="yearly"
+              isActiveCadence={false}
+              onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
+              isLoading={isUpdating}
+              hasBorder={true}
+              disabled={true}
+              className="text-slate-500 italic"
+              isSuggested={true}
+            />
           </>
         ) : isNoBudget ? (
           <>

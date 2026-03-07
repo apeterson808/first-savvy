@@ -1,6 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { formatAccountingAmount } from '@/utils/cadenceUtils';
 import { Loader2 } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 export default function InlineEditableAmount({
   value,
@@ -11,7 +17,8 @@ export default function InlineEditableAmount({
   hasBorder = false,
   isMonthlyColumn = false,
   disabled = false,
-  className = ''
+  className = '',
+  isSuggested = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -135,7 +142,7 @@ export default function InlineEditableAmount({
     );
   }
 
-  return (
+  const cellContent = (
     <td
       className={`${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50/70'} transition-colors ${
         isLoading ? 'opacity-50' : ''
@@ -158,4 +165,21 @@ export default function InlineEditableAmount({
       )}
     </td>
   );
+
+  if (isSuggested) {
+    return (
+      <TooltipProvider>
+        <Tooltip delayDuration={200}>
+          <TooltipTrigger asChild>
+            {cellContent}
+          </TooltipTrigger>
+          <TooltipContent>
+            <p className="text-xs">Suggested amount based on historical spending</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return cellContent;
 }
