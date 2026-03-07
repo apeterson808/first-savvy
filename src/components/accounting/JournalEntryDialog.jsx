@@ -192,7 +192,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-start justify-between">
+          <div className="flex items-start justify-between pr-8">
             <div className="flex items-center gap-3">
               <FileText className="h-6 w-6 text-muted-foreground" />
               <div>
@@ -213,9 +213,9 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <div className="text-right text-sm text-muted-foreground mr-2">
-                <div className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+              <div className="text-right text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
                   {format(new Date(entry.entry_date), 'MMMM d, yyyy')}
                 </div>
               </div>
