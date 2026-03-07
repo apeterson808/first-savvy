@@ -6,6 +6,7 @@ import { ChevronDown, ChevronRight, Plus, Pencil, Trash2 } from 'lucide-react';
 import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import AddBudgetItemSheet from './AddBudgetItemSheet';
 import BudgetAllocationDonut from './BudgetAllocationDonut';
 import InlineEditableAmount from './InlineEditableAmount';
@@ -53,6 +54,11 @@ export default function CategoriesTab() {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
+  const [viewMode, setViewMode] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'viewMode');
+    return saved || 'budgeted';
+  });
+
   const [addBudgetSheetOpen, setAddBudgetSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
@@ -70,6 +76,10 @@ export default function CategoriesTab() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'parents', JSON.stringify([...expandedParents]));
   }, [expandedParents]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'viewMode', viewMode);
+  }, [viewMode]);
 
   useEffect(() => {
     const budgetedCategoryIds = new Set(budgets.map(b => b.chart_account_id));
@@ -752,46 +762,54 @@ export default function CategoriesTab() {
         <div className="space-y-4">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-3 pt-4 px-6">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</p>
+              <div className="flex items-center justify-between">
+                <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value)}>
+                  <ToggleGroupItem value="budgeted" aria-label="Show budgeted categories" className="data-[state=on]:bg-slate-900 data-[state=on]:text-white">
+                    Budgeted
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="notBudgeted" aria-label="Show not budgeted categories" className="data-[state=on]:bg-slate-900 data-[state=on]:text-white">
+                    Not Budgeted
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
             </CardHeader>
             <CardContent className="px-6 pb-4">
-              {renderSection(
-                'Income Categories',
-                budgetedIncomeCategories,
-                'budgetedIncome',
-                renderBudgetedCategoryRow,
-                'No income categories have been budgeted yet. Add a budget to get started.'
-              )}
+              {viewMode === 'budgeted' ? (
+                <>
+                  {renderSection(
+                    'Income Categories',
+                    budgetedIncomeCategories,
+                    'budgetedIncome',
+                    renderBudgetedCategoryRow,
+                    'No income categories have been budgeted yet. Add a budget to get started.'
+                  )}
 
-              {renderSection(
-                'Expense Categories',
-                budgetedExpenseCategories,
-                'budgetedExpense',
-                renderBudgetedCategoryRow,
-                'No expense categories have been budgeted yet. Add a budget to get started.'
-              )}
-            </CardContent>
-          </Card>
+                  {renderSection(
+                    'Expense Categories',
+                    budgetedExpenseCategories,
+                    'budgetedExpense',
+                    renderBudgetedCategoryRow,
+                    'No expense categories have been budgeted yet. Add a budget to get started.'
+                  )}
+                </>
+              ) : (
+                <>
+                  {renderSection(
+                    'Available Income Categories',
+                    availableIncomeCategories,
+                    'availableIncome',
+                    renderAvailableCategoryRow,
+                    'All income categories have been budgeted.'
+                  )}
 
-          <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-3 pt-4 px-6">
-              <CardTitle className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Not Budgeted</CardTitle>
-            </CardHeader>
-            <CardContent className="px-6 pb-4">
-              {renderSection(
-                'Available Income Categories',
-                availableIncomeCategories,
-                'availableIncome',
-                renderAvailableCategoryRow,
-                'All income categories have been budgeted.'
-              )}
-
-              {renderSection(
-                'Available Expense Categories',
-                availableExpenseCategories,
-                'availableExpense',
-                renderAvailableCategoryRow,
-                'All expense categories have been budgeted.'
+                  {renderSection(
+                    'Available Expense Categories',
+                    availableExpenseCategories,
+                    'availableExpense',
+                    renderAvailableCategoryRow,
+                    'All expense categories have been budgeted.'
+                  )}
+                </>
               )}
             </CardContent>
           </Card>
