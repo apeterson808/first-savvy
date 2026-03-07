@@ -338,10 +338,18 @@ export default function CategoriesTab() {
                 )}
               </Button>
             ) : (
-              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+              <div className="w-5 flex-shrink-0"></div>
+            )}
+            {isChild && (
+              <div className="flex items-center mr-2 text-slate-400">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                  <path d="M4 8 L12 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M8 8 L8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
             )}
             <IconComponent className="w-5 h-5 flex-shrink-0" style={{ color: category.color }} />
-            <span className={isChild ? 'text-slate-700' : ''}>
+            <span className={isChild ? 'text-slate-700 ml-2' : ''}>
               {category.display_name}
             </span>
           </div>
@@ -457,10 +465,18 @@ export default function CategoriesTab() {
                 )}
               </Button>
             ) : (
-              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+              <div className="w-5 flex-shrink-0"></div>
+            )}
+            {isChild && (
+              <div className="flex items-center mr-2 text-slate-400">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="flex-shrink-0">
+                  <path d="M4 8 L12 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M8 8 L8 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                </svg>
+              </div>
             )}
             <IconComponent className="w-5 h-5 flex-shrink-0" style={{ color: category.color }} />
-            <span className={isChild ? 'text-slate-700' : ''}>
+            <span className={isChild ? 'text-slate-700 ml-2' : ''}>
               {category.display_name}
             </span>
             {hasBudget && (
