@@ -490,7 +490,7 @@ export default function CategoriesTab() {
                         className="px-4 py-2 cursor-pointer hover:bg-slate-100/50 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 pl-6">
                           {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
                           <span className="text-sm font-medium text-slate-700">{getAccountTypeLabel(accountType)}</span>
                           <span className="text-xs text-slate-500 ml-2">({typeCategories.length})</span>
