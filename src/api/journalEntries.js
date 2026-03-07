@@ -190,17 +190,86 @@ export async function updateJournalEntryWithLines({
   entryId,
   profileId,
   description,
+  memo,
   lines
 }) {
   const { data, error } = await supabase.rpc('update_journal_entry_with_lines', {
     p_entry_id: entryId,
     p_profile_id: profileId,
     p_description: description,
+    p_memo: memo,
     p_lines: lines
   });
 
   if (error) throw error;
   return data;
+}
+
+export async function getJournalEntryAttachments(journalEntryId) {
+  const { data, error } = await supabase
+    .from('journal_entry_attachments')
+    .select('*')
+    .eq('journal_entry_id', journalEntryId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function uploadJournalEntryAttachment({
+  journalEntryId,
+  profileId,
+  file
+}) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+  const filePath = `journal-attachments/${profileId}/${journalEntryId}/${fileName}`;
+
+  const { data: uploadData, error: uploadError } = await supabase.storage
+    .from('documents')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data, error } = await supabase
+    .from('journal_entry_attachments')
+    .insert({
+      journal_entry_id: journalEntryId,
+      profile_id: profileId,
+      file_name: file.name,
+      file_size: file.size,
+      file_type: file.type,
+      storage_path: filePath,
+      uploaded_by: (await supabase.auth.getUser()).data.user.id
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteJournalEntryAttachment(attachmentId, storagePath) {
+  const { error: storageError } = await supabase.storage
+    .from('documents')
+    .remove([storagePath]);
+
+  if (storageError) throw storageError;
+
+  const { error } = await supabase
+    .from('journal_entry_attachments')
+    .delete()
+    .eq('id', attachmentId);
+
+  if (error) throw error;
+}
+
+export async function getAttachmentUrl(storagePath) {
+  const { data } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(storagePath, 3600);
+
+  return data?.signedUrl;
 }
 
 export async function diagnoseAccountJournalLines(accountId) {

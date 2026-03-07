@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Dialog,
@@ -14,24 +14,42 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Separator } from '@/components/ui/separator';
 import { format } from 'date-fns';
 import { formatCurrency } from '@/components/utils/formatters';
-import { getJournalEntryWithLines, updateJournalEntryWithLines } from '@/api/journalEntries';
-import { FileText, Calendar, User, CheckCircle2, AlertCircle, Edit2, X, Save } from 'lucide-react';
+import {
+  getJournalEntryWithLines,
+  updateJournalEntryWithLines,
+  getJournalEntryAttachments,
+  uploadJournalEntryAttachment,
+  deleteJournalEntryAttachment,
+  getAttachmentUrl
+} from '@/api/journalEntries';
+import { FileText, Calendar, User, CheckCircle2, AlertCircle, Edit2, X, Save, Upload, Paperclip, Download, Trash2, Lock } from 'lucide-react';
 import { getIconComponent } from '@/components/utils/iconMapper';
 import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
+import { useAuth } from '@/contexts/AuthContext';
 import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 
 export default function JournalEntryDialog({ entryId, open, onClose }) {
   const { currentProfile } = useProfile();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedDescription, setEditedDescription] = useState('');
+  const [editedMemo, setEditedMemo] = useState('');
   const [editedLines, setEditedLines] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [uploadingFile, setUploadingFile] = useState(false);
 
   const { data: entry, isLoading } = useQuery({
     queryKey: ['journal-entry', entryId],
     queryFn: () => getJournalEntryWithLines(entryId),
+    enabled: open && !!entryId
+  });
+
+  const { data: attachments = [], isLoading: attachmentsLoading } = useQuery({
+    queryKey: ['journal-entry-attachments', entryId],
+    queryFn: () => getJournalEntryAttachments(entryId),
     enabled: open && !!entryId
   });
 
@@ -52,6 +70,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
   useEffect(() => {
     if (entry && !isEditMode) {
       setEditedDescription(entry.description || '');
+      setEditedMemo(entry.memo || '');
       setEditedLines(entry.lines || []);
       setHasUnsavedChanges(false);
     }
@@ -92,10 +111,16 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
     : { totalDebits: entry.total_debits, totalCredits: entry.total_credits };
 
   const isBalanced = Math.abs(totalDebits - totalCredits) < 0.01;
-  const canEdit = entry.source === 'manual' || entry.source === 'opening_balance';
+  const isLocked = entry.status === 'locked';
+  const canEdit = !isLocked && (entry.source === 'manual' || entry.source === 'opening_balance');
 
   const handleEditClick = () => {
+    if (isLocked) {
+      toast.error('Cannot edit locked journal entry');
+      return;
+    }
     setEditedDescription(entry.description || '');
+    setEditedMemo(entry.memo || '');
     setEditedLines(JSON.parse(JSON.stringify(entry.lines || [])));
     setIsEditMode(true);
     setHasUnsavedChanges(false);
@@ -128,8 +153,60 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
       entryId: entry.id,
       profileId: currentProfile.id,
       description: editedDescription,
+      memo: editedMemo,
       lines
     });
+  };
+
+  const handleFileSelect = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File size must be less than 10MB');
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      await uploadJournalEntryAttachment({
+        journalEntryId: entry.id,
+        profileId: currentProfile.id,
+        file
+      });
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-attachments', entry.id] });
+      toast.success('File uploaded successfully');
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload file');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleDeleteAttachment = async (attachment) => {
+    if (!window.confirm(`Delete ${attachment.file_name}?`)) return;
+
+    try {
+      await deleteJournalEntryAttachment(attachment.id, attachment.storage_path);
+      queryClient.invalidateQueries({ queryKey: ['journal-entry-attachments', entry.id] });
+      toast.success('File deleted');
+    } catch (error) {
+      toast.error(error.message || 'Failed to delete file');
+    }
+  };
+
+  const handleDownloadAttachment = async (attachment) => {
+    try {
+      const url = await getAttachmentUrl(attachment.storage_path);
+      if (url) {
+        window.open(url, '_blank');
+      }
+    } catch (error) {
+      toast.error('Failed to download file');
+    }
   };
 
   const handleLineAmountChange = (lineIndex, field, value) => {
@@ -155,6 +232,11 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
 
   const handleDescriptionChange = (value) => {
     setEditedDescription(value);
+    setHasUnsavedChanges(true);
+  };
+
+  const handleMemoChange = (value) => {
+    setEditedMemo(value);
     setHasUnsavedChanges(true);
   };
 
@@ -187,6 +269,23 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
 
   const displayLines = isEditMode ? editedLines : entry.lines;
   const displayDescription = isEditMode ? editedDescription : entry.description;
+  const displayMemo = isEditMode ? editedMemo : entry.memo;
+
+  const getStatusBadge = (status) => {
+    if (status === 'locked') {
+      return (
+        <Badge variant="destructive" className="gap-1">
+          <Lock className="h-3 w-3" />
+          Locked
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="default" className="bg-green-600 hover:bg-green-700">
+        Posted
+      </Badge>
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -203,9 +302,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   <Badge variant="outline">
                     {getEntryTypeLabel(entry.entry_type)}
                   </Badge>
-                  <Badge variant="outline">
-                    {entry.source}
-                  </Badge>
+                  {getStatusBadge(entry.status)}
                   {isEditMode && (
                     <Badge variant="secondary">Editing</Badge>
                   )}
@@ -247,6 +344,81 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
               <div className="text-muted-foreground">{displayDescription}</div>
             )}
           </div>
+
+          <div>
+            <div className="text-sm font-medium mb-1">Memo</div>
+            {isEditMode ? (
+              <Textarea
+                value={displayMemo || ''}
+                onChange={(e) => handleMemoChange(e.target.value)}
+                className="min-h-[50px]"
+                placeholder="Optional memo or notes"
+              />
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                {displayMemo || 'No memo'}
+              </div>
+            )}
+          </div>
+
+          {attachments.length > 0 && (
+            <div>
+              <div className="text-sm font-medium mb-2">Attachments</div>
+              <div className="space-y-2">
+                {attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center justify-between p-2 rounded border bg-muted/30"
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Paperclip className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm truncate">{attachment.file_name}</span>
+                      <span className="text-xs text-muted-foreground flex-shrink-0">
+                        ({(attachment.file_size / 1024).toFixed(1)} KB)
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownloadAttachment(attachment)}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteAttachment(attachment)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {!isLocked && (
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                accept=".pdf,.jpg,.jpeg,.png,.gif,.doc,.docx,.xls,.xlsx"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadingFile ? 'Uploading...' : 'Add Attachment'}
+              </Button>
+            </div>
+          )}
 
           <Separator />
 
@@ -353,12 +525,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
           {isEditMode ? (
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                {isBalanced ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="font-medium text-sm">Entry is balanced</span>
-                  </>
-                ) : (
+                {!isBalanced && (
                   <>
                     <AlertCircle className="h-5 w-5 text-destructive" />
                     <span className="font-medium text-destructive text-sm">
@@ -386,25 +553,18 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
               </div>
             </div>
           ) : (
-            <div className="flex items-center justify-between p-4 rounded-lg bg-muted/50">
-              <div className="flex items-center gap-2">
-                {isBalanced ? (
-                  <>
-                    <CheckCircle2 className="h-5 w-5 text-green-600" />
-                    <span className="font-medium">Entry is balanced</span>
-                  </>
-                ) : (
-                  <>
-                    <AlertCircle className="h-5 w-5 text-destructive" />
-                    <span className="font-medium text-destructive">
-                      Entry is out of balance by {formatCurrency(Math.abs(totalDebits - totalCredits))}
-                    </span>
-                  </>
-                )}
-              </div>
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
               <div className="text-sm text-muted-foreground">
                 Created {format(new Date(entry.created_at), 'MMM d, yyyy')}
+                {entry.user_id && user && (
+                  <> by {user.email?.split('@')[0] || 'User'}</>
+                )}
               </div>
+              {entry.edited_at && (
+                <div className="text-sm text-muted-foreground">
+                  Last edited {format(new Date(entry.edited_at), 'MMM d, yyyy')}
+                </div>
+              )}
             </div>
           )}
         </div>
