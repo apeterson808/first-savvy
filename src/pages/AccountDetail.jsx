@@ -1274,16 +1274,7 @@ export default function AccountDetail() {
                     </>
                   ) : account.entityType === 'Equity' ? (
                     <>
-                      {isOpeningBalanceEquity ? (
-                        <div className="col-span-full">
-                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                            <p className="text-sm text-slate-700">
-                              This system account tracks all opening balance entries from your asset and liability accounts.
-                              It automatically maintains the accounting equation: Assets = Liabilities + Equity.
-                            </p>
-                          </div>
-                        </div>
-                      ) : (
+                      {!isOpeningBalanceEquity && (
                         <>
                           {totalJournalLines > 0 && (
                             <div className="flex items-start gap-2.5">
@@ -1294,7 +1285,7 @@ export default function AccountDetail() {
                               </div>
                             </div>
                           )}
-                          {!isOpeningBalanceEquity && analytics.totalDebits > 0 && (
+                          {analytics.totalDebits > 0 && (
                             <div className="flex items-start gap-2.5">
                               <TrendingUp className="w-4 h-4 text-forest-green mt-0.5" />
                               <div>
@@ -1303,7 +1294,7 @@ export default function AccountDetail() {
                               </div>
                             </div>
                           )}
-                          {!isOpeningBalanceEquity && analytics.totalCredits > 0 && (
+                          {analytics.totalCredits > 0 && (
                             <div className="flex items-start gap-2.5">
                               <TrendingDown className="w-4 h-4 text-burgundy mt-0.5" />
                               <div>
