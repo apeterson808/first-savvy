@@ -1092,7 +1092,7 @@ export default function AccountDetail() {
             ) : (
               <div className="flex items-start justify-between">
                 <div className="space-y-2">
-                  {/* Line 1: Name, Account Number, Active Badge */}
+                  {/* Line 1: Name, Account Number */}
                   <div className="flex items-center gap-3 flex-wrap">
                     <h1 className="text-lg font-semibold">{account.display_name || account.name}</h1>
                     {account.account_number && (
@@ -1100,9 +1100,6 @@ export default function AccountDetail() {
                         ({account.account_number})
                       </span>
                     )}
-                    <Badge variant={isActive ? "default" : "secondary"}>
-                      {isActive ? 'Active' : 'Inactive'}
-                    </Badge>
                   </div>
 
                   {/* Line 2: Class, Account Type, Account Detail */}
