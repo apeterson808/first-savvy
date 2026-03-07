@@ -236,7 +236,7 @@ export default function CategoriesTab() {
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${isChild ? 'bg-slate-50/30' : 'bg-white'}`}>
-        <td className="px-4 py-1 border-l-2 border-slate-200">
+        <td className="px-4 py-1">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-12' : 'pl-12'}`}>
             {!isChild && hasChildren ? (
               <Button
@@ -355,7 +355,7 @@ export default function CategoriesTab() {
             />
           </>
         )}
-        <td className="px-4 py-1 text-right border-r-2 border-slate-200">
+        <td className="px-4 py-1 text-right">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
@@ -483,11 +483,11 @@ export default function CategoriesTab() {
                 });
 
                 return (
-                  <tbody key={accountType} className="relative">
-                    <tr className="bg-slate-50/50">
+                  <tbody key={accountType}>
+                    <tr className="bg-slate-50/50 border-b border-slate-200">
                       <td
                         colSpan={6}
-                        className="px-4 py-1 cursor-pointer hover:bg-slate-100/50 transition-colors border-l-2 border-r-2 border-b border-slate-200 relative"
+                        className="px-4 py-1 cursor-pointer hover:bg-slate-100/50 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
                         <div className="flex items-center gap-2 pl-6">
