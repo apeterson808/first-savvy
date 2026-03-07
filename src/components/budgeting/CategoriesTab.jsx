@@ -454,19 +454,19 @@ export default function CategoriesTab() {
     const yearlyFormatted = formatAccountingAmount(totals.yearly);
 
     return (
-      <>
+      <div className="mb-6">
         {categories.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No categories available
           </div>
         ) : (
-          <>
-            <div className="bg-white px-6 border-b-2 border-slate-200">
+          <div className="border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <thead>
-                  <tr>
+                  <tr className="border-b-2 border-slate-200 bg-slate-100/60">
                     <th
-                      className="py-3 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-50"
+                      className="py-2 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-100"
                       onClick={() => toggleSection(sectionKey)}
                     >
                       <div className="flex items-center gap-2">
@@ -474,90 +474,78 @@ export default function CategoriesTab() {
                         {categoryColumnLabel}
                       </div>
                     </th>
-                    <th className="py-3 px-4 text-left font-normal w-[14%]">Daily</th>
-                    <th className="py-3 px-4 text-left font-normal w-[14%]">Weekly</th>
-                    <th className="py-3 px-4 text-left font-medium w-[14%]">Monthly</th>
-                    <th className="py-3 px-4 text-left font-normal w-[14%]">Yearly</th>
-                    <th className="py-3 px-4 text-right font-bold w-[14%]">Action</th>
+                    <th className="py-2 px-4 text-left font-normal w-[14%]">Daily</th>
+                    <th className="py-2 px-4 text-left font-normal w-[14%]">Weekly</th>
+                    <th className="py-2 px-4 text-left font-medium w-[14%] bg-slate-50/50">Monthly</th>
+                    <th className="py-2 px-4 text-left font-normal w-[14%]">Yearly</th>
+                    <th className="py-2 px-4 text-right font-bold w-[14%]">Action</th>
                   </tr>
                 </thead>
-              </table>
-            </div>
+                {!isCollapsed && sortedTypes.map(accountType => {
+                  const typeCategories = groupedByType[accountType];
+                  const typeKey = `${sectionKey}_${accountType}`;
+                  const isTypeCollapsed = collapsedTypes[typeKey];
 
-            {!isCollapsed && (
-              <div className="overflow-x-auto">
-                <table className="w-full table-fixed">
-                  {sortedTypes.map(accountType => {
-                    const typeCategories = groupedByType[accountType];
-                    const typeKey = `${sectionKey}_${accountType}`;
-                    const isTypeCollapsed = collapsedTypes[typeKey];
+                  const sortedTypeCategories = [...typeCategories].sort((a, b) => {
+                    const nameA = (a.display_name || '').toLowerCase();
+                    const nameB = (b.display_name || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  });
 
-                    const sortedTypeCategories = [...typeCategories].sort((a, b) => {
-                      const nameA = (a.display_name || '').toLowerCase();
-                      const nameB = (b.display_name || '').toLowerCase();
-                      return nameA.localeCompare(nameB);
-                    });
-
-                    return (
-                      <tbody key={accountType}>
-                        <tr className="bg-slate-100/80 border-b border-slate-200">
-                          <td
-                            colSpan={6}
-                            className="px-4 py-2 cursor-pointer hover:bg-slate-200/60 transition-colors"
-                            onClick={() => toggleType(typeKey)}
-                          >
-                            <div className="flex items-center gap-2">
-                              {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
-                              <span className="text-sm font-semibold text-slate-700">{getAccountTypeLabel(accountType)}</span>
-                              <span className="text-xs text-slate-500 ml-2">({typeCategories.length})</span>
-                            </div>
-                          </td>
-                        </tr>
-                        {!isTypeCollapsed && sortedTypeCategories.map((category, index) => renderUnifiedCategoryRow(category, index, false, categories))}
-                      </tbody>
-                    );
-                  })}
-                </table>
-              </div>
-            )}
-
-            <div className="bg-white px-6 border-t-2 border-slate-200">
-              <table className="w-full table-fixed">
+                  return (
+                    <tbody key={accountType}>
+                      <tr className="bg-slate-100/80 border-b border-slate-200">
+                        <td
+                          colSpan={6}
+                          className="px-4 py-2 cursor-pointer hover:bg-slate-200/60 transition-colors"
+                          onClick={() => toggleType(typeKey)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
+                            <span className="text-sm font-semibold text-slate-700">{getAccountTypeLabel(accountType)}</span>
+                            <span className="text-xs text-slate-500 ml-2">({typeCategories.length})</span>
+                          </div>
+                        </td>
+                      </tr>
+                      {!isTypeCollapsed && sortedTypeCategories.map((category, index) => renderUnifiedCategoryRow(category, index, false, categories))}
+                    </tbody>
+                  );
+                })}
                 <tbody>
-                  <tr>
-                    <td className="px-4 py-3 border-r border-slate-200 w-[30%] font-semibold">{totalLabel}</td>
-                    <td className="px-4 py-3 border-r border-slate-100 w-[14%]">
+                  <tr className="border-t-2 border-slate-200 bg-slate-100/60">
+                    <td className="px-4 py-2 border-r border-slate-200">{totalLabel}</td>
+                    <td className="px-4 py-2 border-r border-slate-100">
                       <div className="flex justify-between tabular-nums">
                         <span className={totals.daily === 0 ? 'font-semibold' : ''}>{dailyFormatted.sign}</span>
                         <span className={`text-right ${totals.daily === 0 ? 'font-semibold' : ''}`}>{dailyFormatted.amount}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-r border-slate-100 w-[14%]">
+                    <td className="px-4 py-2 border-r border-slate-100">
                       <div className="flex justify-between tabular-nums">
                         <span className={totals.weekly === 0 ? 'font-semibold' : ''}>{weeklyFormatted.sign}</span>
                         <span className={`text-right ${totals.weekly === 0 ? 'font-semibold' : ''}`}>{weeklyFormatted.amount}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-r border-slate-100 w-[14%] font-medium">
-                      <div className="flex justify-between tabular-nums">
+                    <td className="px-4 py-2 border-r border-slate-100 bg-slate-50/50">
+                      <div className="flex justify-between tabular-nums font-medium">
                         <span>{monthlyFormatted.sign}</span>
                         <span className="text-right">{monthlyFormatted.amount}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 border-r border-slate-100 w-[14%]">
+                    <td className="px-4 py-2 border-r border-slate-100">
                       <div className="flex justify-between tabular-nums">
                         <span className={totals.yearly === 0 ? 'font-semibold' : ''}>{yearlyFormatted.sign}</span>
                         <span className={`text-right ${totals.yearly === 0 ? 'font-semibold' : ''}`}>{yearlyFormatted.amount}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 w-[14%]"></td>
+                    <td className="px-4 py-2"></td>
                   </tr>
                 </tbody>
               </table>
             </div>
-          </>
+          </div>
         )}
-      </>
+      </div>
     );
   };
 
@@ -579,20 +567,24 @@ export default function CategoriesTab() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
-            {renderSection(
-              'Income Categories',
-              allIncomeCategories,
-              'income'
-            )}
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="px-6 pb-4 pt-6">
+              {renderSection(
+                'Income Categories',
+                allIncomeCategories,
+                'income'
+              )}
+            </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-slate-200 overflow-hidden">
-            {renderSection(
-              'Expense Categories',
-              allExpenseCategories,
-              'expense'
-            )}
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="px-6 pb-4 pt-6">
+              {renderSection(
+                'Expense Categories',
+                allExpenseCategories,
+                'expense'
+              )}
+            </CardContent>
           </Card>
         </div>
 
