@@ -214,6 +214,22 @@ export function useBudgetData() {
         return a.display_name.localeCompare(b.display_name);
       });
 
+    const groupCategoriesByType = (categoriesList) => {
+      return categoriesList.reduce((acc, category) => {
+        const type = category.account_type || 'uncategorized';
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(category);
+        return acc;
+      }, {});
+    };
+
+    const budgetedIncomeByType = groupCategoriesByType(budgetedIncomeCategories);
+    const budgetedExpenseByType = groupCategoriesByType(budgetedExpenseCategories);
+    const availableIncomeByType = groupCategoriesByType(availableIncomeCategories);
+    const availableExpenseByType = groupCategoriesByType(availableExpenseCategories);
+
     return {
       spendingByCategory,
       spendingWithChildren,
@@ -232,7 +248,11 @@ export function useBudgetData() {
       budgetedIncomeCategories,
       budgetedExpenseCategories,
       availableIncomeCategories,
-      availableExpenseCategories
+      availableExpenseCategories,
+      budgetedIncomeByType,
+      budgetedExpenseByType,
+      availableIncomeByType,
+      availableExpenseByType
     };
   }, [transactions, accounts, budgets, categories]);
 
@@ -248,6 +268,10 @@ export function useBudgetData() {
     budgetedExpenseCategories: calculatedData.budgetedExpenseCategories,
     availableIncomeCategories: calculatedData.availableIncomeCategories,
     availableExpenseCategories: calculatedData.availableExpenseCategories,
+    budgetedIncomeByType: calculatedData.budgetedIncomeByType,
+    budgetedExpenseByType: calculatedData.budgetedExpenseByType,
+    availableIncomeByType: calculatedData.availableIncomeByType,
+    availableExpenseByType: calculatedData.availableExpenseByType,
     ...calculatedData
   };
 }

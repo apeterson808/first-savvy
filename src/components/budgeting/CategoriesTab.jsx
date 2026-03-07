@@ -15,6 +15,7 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
 import * as Icons from 'lucide-react';
 import { validateChildBudgetAgainstParent, formatValidationError, getCadenceLabel } from '@/utils/budgetValidation';
+import { getAccountTypeLabel, getAccountTypeOrder } from '@/utils/accountTypeLabels';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -42,6 +43,11 @@ export default function CategoriesTab() {
     };
   });
 
+  const [collapsedTypes, setCollapsedTypes] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'types');
+    return saved ? JSON.parse(saved) : {};
+  });
+
   const [expandedParents, setExpandedParents] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'parents');
     return saved ? new Set(JSON.parse(saved)) : new Set();
@@ -56,6 +62,10 @@ export default function CategoriesTab() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'sections', JSON.stringify(collapsedSections));
   }, [collapsedSections]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_PREFIX + 'types', JSON.stringify(collapsedTypes));
+  }, [collapsedTypes]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'parents', JSON.stringify([...expandedParents]));
@@ -84,6 +94,13 @@ export default function CategoriesTab() {
     setCollapsedSections(prev => ({
       ...prev,
       [section]: !prev[section]
+    }));
+  };
+
+  const toggleType = (typeKey) => {
+    setCollapsedTypes(prev => ({
+      ...prev,
+      [typeKey]: !prev[typeKey]
     }));
   };
 
@@ -541,6 +558,18 @@ export default function CategoriesTab() {
     }, { daily: 0, weekly: 0, monthly: 0, yearly: 0 });
   };
 
+  const groupCategoriesByType = (categoriesList) => {
+    const grouped = {};
+    categoriesList.forEach(category => {
+      const accountType = category.account_type || 'uncategorized';
+      if (!grouped[accountType]) {
+        grouped[accountType] = [];
+      }
+      grouped[accountType].push(category);
+    });
+    return grouped;
+  };
+
   const renderSection = (title, categories, sectionKey, renderRow, emptyMessage) => {
     const isCollapsed = collapsedSections[sectionKey];
     const count = categories.length;
@@ -569,11 +598,9 @@ export default function CategoriesTab() {
       parentCategories = [...parentCategories, ...budgetedParentsToShow];
     }
 
-    // Sort parent categories alphabetically by display_name
-    parentCategories.sort((a, b) => {
-      const nameA = (a.display_name || '').toLowerCase();
-      const nameB = (b.display_name || '').toLowerCase();
-      return nameA.localeCompare(nameB);
+    const groupedByType = groupCategoriesByType(parentCategories);
+    const sortedTypes = Object.keys(groupedByType).sort((a, b) => {
+      return getAccountTypeOrder(a) - getAccountTypeOrder(b);
     });
 
     const totals = isBudgetedSection && categories.length > 0 ? calculateTotals(categories) : null;
@@ -635,11 +662,36 @@ export default function CategoriesTab() {
                     )}
                   </tr>
                 </thead>
-                {!isCollapsed && (
-                  <tbody>
-                    {parentCategories.map((category, index) => renderRow(category, index, false, categories))}
-                  </tbody>
-                )}
+                {!isCollapsed && sortedTypes.map(accountType => {
+                  const typeCategories = groupedByType[accountType];
+                  const typeKey = `${sectionKey}_${accountType}`;
+                  const isTypeCollapsed = collapsedTypes[typeKey];
+
+                  const sortedTypeCategories = [...typeCategories].sort((a, b) => {
+                    const nameA = (a.display_name || '').toLowerCase();
+                    const nameB = (b.display_name || '').toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  });
+
+                  return (
+                    <tbody key={accountType}>
+                      <tr className="bg-slate-100/80 border-b border-slate-200">
+                        <td
+                          colSpan={isBudgetedSection ? 6 : 5}
+                          className="px-4 py-2 cursor-pointer hover:bg-slate-200/60 transition-colors"
+                          onClick={() => toggleType(typeKey)}
+                        >
+                          <div className="flex items-center gap-2">
+                            {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
+                            <span className="text-sm font-semibold text-slate-700">{getAccountTypeLabel(accountType)}</span>
+                            <span className="text-xs text-slate-500 ml-2">({typeCategories.length})</span>
+                          </div>
+                        </td>
+                      </tr>
+                      {!isTypeCollapsed && sortedTypeCategories.map((category, index) => renderRow(category, index, false, categories))}
+                    </tbody>
+                  );
+                })}
                 {totals && (
                   <tbody>
                     <tr className="border-t-2 border-slate-200 bg-slate-100/60">
