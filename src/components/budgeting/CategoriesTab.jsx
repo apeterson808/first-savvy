@@ -236,7 +236,7 @@ export default function CategoriesTab() {
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-4 border-r border-slate-100">
+        <td className="px-0 border-r border-slate-100">
           <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
               <Button
@@ -313,10 +313,10 @@ export default function CategoriesTab() {
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-4 border-r border-slate-100 text-slate-400">-</td>
-            <td className="px-4 border-r border-slate-100 text-slate-400">-</td>
-            <td className="px-4 border-r border-slate-100 text-slate-400 bg-slate-50/50">-</td>
-            <td className="px-4 border-r border-slate-100 text-slate-400">-</td>
+            <td className="px-0 border-r border-slate-100 text-slate-400">-</td>
+            <td className="px-0 border-r border-slate-100 text-slate-400">-</td>
+            <td className="px-0 border-r border-slate-100 text-slate-400 bg-slate-50/50">-</td>
+            <td className="px-0 border-r border-slate-100 text-slate-400">-</td>
           </>
         ) : (
           <>
@@ -363,7 +363,7 @@ export default function CategoriesTab() {
             />
           </>
         )}
-        <td className="px-4 text-right">
+        <td className="px-0 text-right">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
@@ -459,12 +459,12 @@ export default function CategoriesTab() {
             No categories available
           </div>
         ) : (
-          <div className="overflow-x-auto border-2 border-slate-300 rounded-lg shadow-md bg-white">
+          <div className="overflow-x-auto border-2 border-slate-300 rounded-lg shadow-md bg-white px-4">
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b-2 border-slate-300 bg-white">
                   <th
-                    className="py-2.5 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-50 transition-colors"
+                    className="py-2.5 px-0 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => toggleSection(sectionKey)}
                   >
                     <div className="flex items-center gap-2">
@@ -472,11 +472,11 @@ export default function CategoriesTab() {
                       {categoryColumnLabel}
                     </div>
                   </th>
-                  <th className="py-2.5 px-4 text-left font-normal w-[14%]">Daily</th>
-                  <th className="py-2.5 px-4 text-left font-normal w-[14%]">Weekly</th>
-                  <th className="py-2.5 px-4 text-left font-medium w-[14%]">Monthly</th>
-                  <th className="py-2.5 px-4 text-left font-normal w-[14%]">Yearly</th>
-                  <th className="py-2.5 px-4 text-right font-bold w-[14%]">Action</th>
+                  <th className="py-2.5 px-0 text-left font-normal w-[14%]">Daily</th>
+                  <th className="py-2.5 px-0 text-left font-normal w-[14%]">Weekly</th>
+                  <th className="py-2.5 px-0 text-left font-medium w-[14%]">Monthly</th>
+                  <th className="py-2.5 px-0 text-left font-normal w-[14%]">Yearly</th>
+                  <th className="py-2.5 px-0 text-right font-bold w-[14%]">Action</th>
                 </tr>
               </thead>
               {!isCollapsed && sortedTypes.map(accountType => {
@@ -495,7 +495,7 @@ export default function CategoriesTab() {
                     <tr className="bg-slate-150 border-b border-slate-300">
                       <td
                         colSpan={6}
-                        className="px-4 py-2 cursor-pointer hover:bg-slate-200 transition-colors"
+                        className="px-0 py-2 cursor-pointer hover:bg-slate-200 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
                         <div className="flex items-center gap-2">
@@ -511,32 +511,32 @@ export default function CategoriesTab() {
               })}
               <tbody>
                 <tr className="border-t-2 border-slate-300 bg-white">
-                  <td className="px-4 py-2.5 border-r border-slate-300 font-semibold">{totalLabel}</td>
-                  <td className="px-4 py-2.5 border-r border-slate-200">
+                  <td className="px-0 py-2.5 border-r border-slate-300 font-semibold">{totalLabel}</td>
+                  <td className="px-0 py-2.5 border-r border-slate-200">
                     <div className="flex justify-between tabular-nums">
                       <span className={totals.daily === 0 ? 'font-semibold' : ''}>{dailyFormatted.sign}</span>
                       <span className={`text-right ${totals.daily === 0 ? 'font-semibold' : ''}`}>{dailyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-200">
+                  <td className="px-0 py-2.5 border-r border-slate-200">
                     <div className="flex justify-between tabular-nums">
                       <span className={totals.weekly === 0 ? 'font-semibold' : ''}>{weeklyFormatted.sign}</span>
                       <span className={`text-right ${totals.weekly === 0 ? 'font-semibold' : ''}`}>{weeklyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-200">
+                  <td className="px-0 py-2.5 border-r border-slate-200">
                     <div className="flex justify-between tabular-nums font-medium">
                       <span>{monthlyFormatted.sign}</span>
                       <span className="text-right">{monthlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-200">
+                  <td className="px-0 py-2.5 border-r border-slate-200">
                     <div className="flex justify-between tabular-nums">
                       <span className={totals.yearly === 0 ? 'font-semibold' : ''}>{yearlyFormatted.sign}</span>
                       <span className={`text-right ${totals.yearly === 0 ? 'font-semibold' : ''}`}>{yearlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5"></td>
+                  <td className="px-0 py-2.5"></td>
                 </tr>
               </tbody>
             </table>
