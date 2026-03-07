@@ -108,28 +108,33 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
 
               return (
                 <div key={budget.id}>
-                  <div className="relative">
+                  <div className="relative flex items-center gap-1">
                     {hasChildren && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleParent(budget.id);
                         }}
-                        className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 p-1.5 hover:opacity-70 flex items-center justify-center transition-all duration-200"
+                        className="flex-shrink-0 p-0.5 hover:bg-slate-100 rounded transition-colors duration-200"
                       >
                         {isExpanded ? (
-                          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                          <ChevronDown className="w-4 h-4 text-slate-600" />
                         ) : (
-                          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                          <ChevronRight className="w-4 h-4 text-slate-600" />
                         )}
                       </button>
                     )}
-                    <BudgetProgressPill
-                      budget={budget}
-                      actualAmount={isIncome ? calculateIncomeWithChildren(budget.chart_account_id) : calculateSpendingWithChildren(budget.chart_account_id)}
-                      isIncome={isIncome}
-                      isParent={hasChildren}
-                    />
+                    {hasChildren && (
+                      <div className="w-1" />
+                    )}
+                    <div className="flex-1">
+                      <BudgetProgressPill
+                        budget={budget}
+                        actualAmount={isIncome ? calculateIncomeWithChildren(budget.chart_account_id) : calculateSpendingWithChildren(budget.chart_account_id)}
+                        isIncome={isIncome}
+                        isParent={hasChildren}
+                      />
+                    </div>
                   </div>
                   {hasChildren && isExpanded && (
                     <div className="ml-4 mt-2 space-y-2">
