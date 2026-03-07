@@ -478,7 +478,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                           </div>
                         ) : (
                           <span className="font-mono">
-                            {isDebit ? '+' : '−'}{amount ? formatCurrency(amount) : '$0.00'}
+                            {!isDebit && '−'}{amount ? formatCurrency(amount) : '$0.00'}
                           </span>
                         )}
                       </TableCell>
