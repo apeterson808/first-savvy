@@ -405,13 +405,17 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   <TableHead className="w-12">#</TableHead>
                   <TableHead>Account</TableHead>
                   <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Debit</TableHead>
-                  <TableHead className="text-right">Credit</TableHead>
+                  <TableHead className="w-24 text-center">Type</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {displayLines && displayLines.map((line, index) => {
                   const Icon = line.account_icon ? getIconComponent(line.account_icon) : null;
+                  const isDebit = parseFloat(line.debit_amount || 0) > 0;
+                  const amount = isDebit ? line.debit_amount : line.credit_amount;
+                  const currentType = isEditMode ? (parseFloat(editedLines[index]?.debit_amount || 0) > 0 ? 'debit' : 'credit') : (isDebit ? 'debit' : 'credit');
+
                   return (
                     <TableRow key={line.id}>
                       <TableCell className="text-muted-foreground">
@@ -439,31 +443,59 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                           <span className="text-muted-foreground">{line.description || '—'}</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         {isEditMode ? (
-                          <CalculatorAmountInput
-                            value={parseFloat(line.debit_amount) || 0}
-                            onChange={(value) => handleLineAmountChange(index, 'debit_amount', value.toString())}
-                            className="h-8 text-right font-mono"
-                            placeholder="0.00"
-                          />
+                          <div className="flex gap-1 justify-center">
+                            <Button
+                              size="sm"
+                              variant={currentType === 'debit' ? 'default' : 'outline'}
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                const currentAmount = parseFloat(line.credit_amount || line.debit_amount || 0);
+                                handleLineAmountChange(index, 'debit_amount', currentAmount.toString());
+                                handleLineAmountChange(index, 'credit_amount', '0');
+                              }}
+                            >
+                              DR
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={currentType === 'credit' ? 'default' : 'outline'}
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                const currentAmount = parseFloat(line.debit_amount || line.credit_amount || 0);
+                                handleLineAmountChange(index, 'credit_amount', currentAmount.toString());
+                                handleLineAmountChange(index, 'debit_amount', '0');
+                              }}
+                            >
+                              CR
+                            </Button>
+                          </div>
                         ) : (
-                          <span className="font-mono">
-                            {line.debit_amount ? formatCurrency(line.debit_amount) : ''}
-                          </span>
+                          <Badge variant={isDebit ? 'default' : 'secondary'} className="text-xs">
+                            {isDebit ? 'DR' : 'CR'}
+                          </Badge>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
                         {isEditMode ? (
                           <CalculatorAmountInput
-                            value={parseFloat(line.credit_amount) || 0}
-                            onChange={(value) => handleLineAmountChange(index, 'credit_amount', value.toString())}
+                            value={parseFloat(amount) || 0}
+                            onChange={(value) => {
+                              if (currentType === 'debit') {
+                                handleLineAmountChange(index, 'debit_amount', value.toString());
+                                handleLineAmountChange(index, 'credit_amount', '0');
+                              } else {
+                                handleLineAmountChange(index, 'credit_amount', value.toString());
+                                handleLineAmountChange(index, 'debit_amount', '0');
+                              }
+                            }}
                             className="h-8 text-right font-mono"
                             placeholder="0.00"
                           />
                         ) : (
                           <span className="font-mono">
-                            {line.credit_amount ? formatCurrency(line.credit_amount) : ''}
+                            {amount ? formatCurrency(amount) : ''}
                           </span>
                         )}
                       </TableCell>
@@ -471,22 +503,19 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   );
                 })}
                 <TableRow className="font-bold border-t-2">
-                  <TableCell colSpan={3} className="text-right">
-                    Totals
+                  <TableCell colSpan={4} className="text-right">
+                    Total Debits / Credits
                   </TableCell>
                   <TableCell className="text-right font-mono">
-                    {formatCurrency(totalDebits)}
-                  </TableCell>
-                  <TableCell className="text-right font-mono">
-                    {formatCurrency(totalCredits)}
+                    {formatCurrency(totalDebits)} / {formatCurrency(totalCredits)}
                   </TableCell>
                 </TableRow>
                 {isEditMode && (
                   <TableRow className="bg-muted/30">
-                    <TableCell colSpan={3} className="text-right text-sm">
+                    <TableCell colSpan={4} className="text-right text-sm">
                       Difference
                     </TableCell>
-                    <TableCell colSpan={2} className="text-right font-mono">
+                    <TableCell className="text-right font-mono">
                       <span className={isBalanced ? 'text-green-600' : 'text-destructive'}>
                         {formatCurrency(Math.abs(totalDebits - totalCredits))}
                       </span>

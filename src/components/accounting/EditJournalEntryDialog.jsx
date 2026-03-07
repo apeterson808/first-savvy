@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import ChartAccountDropdown from '../common/ChartAccountDropdown';
 import { toast } from 'sonner';
 import { Trash2, Plus } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import * as transactionService from '@/api/transactionService';
 import { format } from 'date-fns';
 import CalculatorAmountInput from '../common/CalculatorAmountInput';
@@ -194,80 +195,100 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
                 <thead className="bg-muted">
                   <tr>
                     <th className="px-3 py-2 text-left text-sm font-medium">Account</th>
-                    <th className="px-3 py-2 text-right text-sm font-medium w-32">Debit</th>
-                    <th className="px-3 py-2 text-right text-sm font-medium w-32">Credit</th>
+                    <th className="px-3 py-2 text-center text-sm font-medium w-24">Type</th>
+                    <th className="px-3 py-2 text-right text-sm font-medium w-32">Amount</th>
                     <th className="px-3 py-2 text-left text-sm font-medium">Description</th>
                     <th className="px-3 py-2 w-10"></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {lines.map((line, index) => (
-                    <tr key={index} className="border-t">
-                      <td className="px-3 py-2">
-                        <ChartAccountDropdown
-                          value={line.account_id}
-                          onChange={(accountId, account) => {
-                            updateLine(index, 'account_id', accountId);
-                            updateLine(index, 'account', account);
-                          }}
-                          showChartOfAccountsNumber={false}
-                          includeInactive={false}
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <CalculatorAmountInput
-                          value={parseFloat(line.debit_amount) || 0}
-                          onChange={(value) => {
-                            updateLine(index, 'debit_amount', value.toString());
-                            if (value) {
-                              updateLine(index, 'credit_amount', '');
-                            }
-                          }}
-                          placeholder="0.00"
-                          className="text-right"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <CalculatorAmountInput
-                          value={parseFloat(line.credit_amount) || 0}
-                          onChange={(value) => {
-                            updateLine(index, 'credit_amount', value.toString());
-                            if (value) {
-                              updateLine(index, 'debit_amount', '');
-                            }
-                          }}
-                          placeholder="0.00"
-                          className="text-right"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Input
-                          value={line.description}
-                          onChange={(e) => updateLine(index, 'description', e.target.value)}
-                          placeholder="Line description"
-                        />
-                      </td>
-                      <td className="px-3 py-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeLine(index)}
-                          disabled={lines.length <= 2}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                  {lines.map((line, index) => {
+                    const lineType = parseFloat(line.debit_amount) > 0 ? 'debit' : 'credit';
+                    const amount = lineType === 'debit' ? line.debit_amount : line.credit_amount;
+
+                    return (
+                      <tr key={index} className="border-t">
+                        <td className="px-3 py-2">
+                          <ChartAccountDropdown
+                            value={line.account_id}
+                            onChange={(accountId, account) => {
+                              updateLine(index, 'account_id', accountId);
+                              updateLine(index, 'account', account);
+                            }}
+                            showChartOfAccountsNumber={false}
+                            includeInactive={false}
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <div className="flex gap-1 justify-center">
+                            <Button
+                              size="sm"
+                              variant={lineType === 'debit' ? 'default' : 'outline'}
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                const currentAmount = parseFloat(line.credit_amount || line.debit_amount || 0);
+                                updateLine(index, 'debit_amount', currentAmount.toString());
+                                updateLine(index, 'credit_amount', '');
+                              }}
+                            >
+                              DR
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant={lineType === 'credit' ? 'default' : 'outline'}
+                              className="h-7 px-2 text-xs"
+                              onClick={() => {
+                                const currentAmount = parseFloat(line.debit_amount || line.credit_amount || 0);
+                                updateLine(index, 'credit_amount', currentAmount.toString());
+                                updateLine(index, 'debit_amount', '');
+                              }}
+                            >
+                              CR
+                            </Button>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2">
+                          <CalculatorAmountInput
+                            value={parseFloat(amount) || 0}
+                            onChange={(value) => {
+                              if (lineType === 'debit') {
+                                updateLine(index, 'debit_amount', value.toString());
+                                updateLine(index, 'credit_amount', '');
+                              } else {
+                                updateLine(index, 'credit_amount', value.toString());
+                                updateLine(index, 'debit_amount', '');
+                              }
+                            }}
+                            placeholder="0.00"
+                            className="text-right"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Input
+                            value={line.description}
+                            onChange={(e) => updateLine(index, 'description', e.target.value)}
+                            placeholder="Line description"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeLine(index)}
+                            disabled={lines.length <= 2}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
                 <tfoot className="border-t bg-muted/50">
                   <tr>
-                    <td className="px-3 py-2 text-sm font-medium">Totals</td>
+                    <td className="px-3 py-2 text-sm font-medium" colSpan={2}>Totals</td>
                     <td className="px-3 py-2 text-right text-sm font-medium">
-                      ${totalDebits.toFixed(2)}
-                    </td>
-                    <td className="px-3 py-2 text-right text-sm font-medium">
-                      ${totalCredits.toFixed(2)}
+                      ${totalDebits.toFixed(2)} / ${totalCredits.toFixed(2)}
                     </td>
                     <td className="px-3 py-2">
                       {balanced ? (
