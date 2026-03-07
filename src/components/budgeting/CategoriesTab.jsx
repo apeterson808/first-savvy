@@ -462,9 +462,9 @@ export default function CategoriesTab() {
           <div className="overflow-x-auto border-2 border-slate-300 rounded-lg shadow-md bg-white">
             <table className="w-full table-fixed">
               <thead>
-                <tr className="border-b-2 border-slate-300 bg-slate-200">
+                <tr className="border-b-2 border-slate-300 bg-slate-100">
                   <th
-                    className="py-2.5 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-300/60 transition-colors"
+                    className="py-2.5 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-200/60 transition-colors"
                     onClick={() => toggleSection(sectionKey)}
                   >
                     <div className="flex items-center gap-2">
@@ -474,7 +474,7 @@ export default function CategoriesTab() {
                   </th>
                   <th className="py-2.5 px-4 text-left font-normal w-[14%]">Daily</th>
                   <th className="py-2.5 px-4 text-left font-normal w-[14%]">Weekly</th>
-                  <th className="py-2.5 px-4 text-left font-medium w-[14%] bg-slate-100">Monthly</th>
+                  <th className="py-2.5 px-4 text-left font-medium w-[14%] bg-slate-50">Monthly</th>
                   <th className="py-2.5 px-4 text-left font-normal w-[14%]">Yearly</th>
                   <th className="py-2.5 px-4 text-right font-bold w-[14%]">Action</th>
                 </tr>
@@ -510,7 +510,7 @@ export default function CategoriesTab() {
                 );
               })}
               <tbody>
-                <tr className="border-t-2 border-slate-300 bg-slate-200">
+                <tr className="border-t-2 border-slate-300 bg-slate-100">
                   <td className="px-4 py-2.5 border-r border-slate-300 font-semibold">{totalLabel}</td>
                   <td className="px-4 py-2.5 border-r border-slate-200">
                     <div className="flex justify-between tabular-nums">
@@ -524,7 +524,7 @@ export default function CategoriesTab() {
                       <span className={`text-right ${totals.weekly === 0 ? 'font-semibold' : ''}`}>{weeklyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 border-r border-slate-200 bg-slate-100">
+                  <td className="px-4 py-2.5 border-r border-slate-200 bg-slate-50">
                     <div className="flex justify-between tabular-nums font-medium">
                       <span>{monthlyFormatted.sign}</span>
                       <span className="text-right">{monthlyFormatted.amount}</span>
