@@ -298,15 +298,11 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                 <DialogTitle className="text-2xl">
                   Journal Entry {entry.entry_number}
                 </DialogTitle>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline">
-                    {getEntryTypeLabel(entry.entry_type)}
-                  </Badge>
-                  {getStatusBadge(entry.status)}
-                  {isEditMode && (
+                {isEditMode && (
+                  <div className="flex items-center gap-2 mt-2">
                     <Badge variant="secondary">Editing</Badge>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -554,11 +550,14 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
             </div>
           ) : (
             <div className="flex items-center justify-between p-3 rounded-lg bg-muted/30">
-              <div className="text-sm text-muted-foreground">
-                Created {format(new Date(entry.created_at), 'MMM d, yyyy')}
-                {entry.user_id && user && (
-                  <> by {user.email?.split('@')[0] || 'User'}</>
-                )}
+              <div className="flex items-center gap-3">
+                <div className="text-sm text-muted-foreground">
+                  Created {format(new Date(entry.created_at), 'MMM d, yyyy')}
+                  {entry.user_id && user && (
+                    <> by {user.email?.split('@')[0] || 'User'}</>
+                  )}
+                </div>
+                {getStatusBadge(entry.status)}
               </div>
               {entry.edited_at && (
                 <div className="text-sm text-muted-foreground">
