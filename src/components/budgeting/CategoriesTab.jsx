@@ -236,7 +236,7 @@ export default function CategoriesTab() {
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-4 py-2 border-r border-slate-100 relative after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200">
+        <td className="px-4 border-r border-slate-100">
           <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
               <Button
@@ -275,7 +275,6 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
-              showVerticalLine={true}
             />
             <InlineEditableAmount
               value={values.weekly}
@@ -287,7 +286,6 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
-              showVerticalLine={true}
             />
             <InlineEditableAmount
               value={values.monthly}
@@ -300,7 +298,6 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
-              showVerticalLine={true}
             />
             <InlineEditableAmount
               value={values.yearly}
@@ -312,15 +309,14 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
-              showVerticalLine={true}
             />
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-4 py-2 border-r border-slate-100 text-slate-400 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200">-</td>
-            <td className="px-4 py-2 border-r border-slate-100 text-slate-400 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200">-</td>
-            <td className="px-4 py-2 border-r border-slate-100 text-slate-400 bg-slate-50/50 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200">-</td>
-            <td className="px-4 py-2 border-r border-slate-100 text-slate-400 relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200">-</td>
+            <td className="px-4 border-r border-slate-100 text-slate-400">-</td>
+            <td className="px-4 border-r border-slate-100 text-slate-400">-</td>
+            <td className="px-4 border-r border-slate-100 text-slate-400 bg-slate-50/50">-</td>
+            <td className="px-4 border-r border-slate-100 text-slate-400">-</td>
           </>
         ) : (
           <>
@@ -333,7 +329,6 @@ export default function CategoriesTab() {
               hasBorder={true}
               disabled={isDisabled}
               className={textColorClass}
-              showVerticalLine={true}
             />
             <InlineEditableAmount
               value={values.weekly}
@@ -344,7 +339,6 @@ export default function CategoriesTab() {
               hasBorder={true}
               disabled={isDisabled}
               className={textColorClass}
-              showVerticalLine={true}
             />
             <InlineEditableAmount
               value={values.monthly}
@@ -356,7 +350,6 @@ export default function CategoriesTab() {
               isMonthlyColumn={true}
               disabled={isDisabled}
               className={textColorClass}
-              showVerticalLine={true}
             />
             <InlineEditableAmount
               value={values.yearly}
@@ -367,11 +360,10 @@ export default function CategoriesTab() {
               hasBorder={true}
               disabled={isDisabled}
               className={textColorClass}
-              showVerticalLine={true}
             />
           </>
         )}
-        <td className="px-4 py-2 text-right relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200">
+        <td className="px-4 text-right">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
