@@ -128,7 +128,7 @@ export default function InlineEditableAmount({
 
   if (isEditing) {
     return (
-      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''}`}>
+      <td className={`text-center ${isMonthlyColumn ? 'bg-slate-50/50' : ''}`}>
         <input
           ref={inputRef}
           type="text"
@@ -136,7 +136,7 @@ export default function InlineEditableAmount({
           onChange={handleInputChange}
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
-          className="w-full text-left bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0"
+          className="w-full text-center bg-transparent px-4 py-0 focus:outline-none tabular-nums border-0"
         />
       </td>
     );
@@ -144,23 +144,23 @@ export default function InlineEditableAmount({
 
   const cellContent = (
     <td
-      className={`${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50/70'} transition-colors ${
+      className={`text-center ${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50/70'} transition-colors ${
         isLoading ? 'opacity-50' : ''
-      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''} ${className}`}
+      } ${isMonthlyColumn ? 'bg-slate-50/50' : ''} ${className}`}
       onClick={handleClick}
     >
       {isLoading ? (
-        <div className="flex items-center gap-2 px-4">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <div className={`flex justify-between w-full tabular-nums ${isMonthlyColumn ? 'font-medium' : ''}`}>
-            <span className={isZero && !isMonthlyColumn ? 'font-semibold' : ''}>{formatted.sign}</span>
-            <span className={`text-right ${isZero && !isMonthlyColumn ? 'font-semibold' : ''}`}>{formatted.amount}</span>
+        <div className="flex items-center justify-center gap-2 px-4">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <div className={`inline-flex items-center gap-1 tabular-nums ${isMonthlyColumn ? 'font-medium' : ''}`}>
+            <span>{formatted.sign}</span>
+            <span>{formatted.amount}</span>
           </div>
         </div>
       ) : (
-        <div className={`flex justify-between px-4 tabular-nums ${isMonthlyColumn ? 'font-medium' : ''}`}>
-          <span className={isZero && !isMonthlyColumn ? 'font-semibold' : ''}>{formatted.sign}</span>
-          <span className={`text-right ${isZero && !isMonthlyColumn ? 'font-semibold' : ''}`}>{formatted.amount}</span>
+        <div className={`inline-flex items-center gap-1 tabular-nums text-sm ${isMonthlyColumn ? 'font-medium' : ''}`}>
+          <span>{formatted.sign}</span>
+          <span>{formatted.amount}</span>
         </div>
       )}
     </td>
