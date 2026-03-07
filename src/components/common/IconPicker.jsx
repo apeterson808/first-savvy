@@ -15,7 +15,29 @@ import {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby,
+  Sandwich, Salad, Soup, Wine, CupSoda, Cherry, Carrot, Croissant, Milk,
+  ChefHat, UtensilsCrossed, CookingPot, ConciergeBell,
+  Truck, Ship, Sailboat, Rocket, Ambulance,
+  Navigation, MapPin, Compass,
+  Sofa, Bed, Bath, Refrigerator, WashingMachine, AirVent, Heater, Fan,
+  Drill, PaintRoller, Ruler, Shovel, Key,
+  Flame, Thermometer, BatteryCharging,
+  ShoppingBasket, Ticket, Receipt, Banknote, Coins, HandCoins,
+  Barcode, QrCode, Percent, BadgeDollarSign,
+  Syringe, Glasses, Bandage,
+  Droplets, Wind, TreePine,
+  Popcorn, Guitar, Piano,
+  Mountain, Tent, Footprints,
+  TrendingDown, Calculator, FileText, ChartBar, ChartLine, ChartPie,
+  Globe, Handshake, Users, UserPlus, Building2,
+  Smile, Flower,
+  School, BookOpen, Bookmark, Library, Pencil, PenTool, NotebookPen,
+  Repeat, RefreshCw, Calendar, Bell, Newspaper,
+  MessageCircle, Send, Monitor,
+  Rabbit, Squirrel,
+  AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
+  Cigarette
 } from 'lucide-react';
 
 // Map icon names to components
@@ -32,7 +54,29 @@ const ICON_MAP = {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby,
+  Sandwich, Salad, Soup, Wine, CupSoda, Cherry, Carrot, Croissant, Milk,
+  ChefHat, UtensilsCrossed, CookingPot, ConciergeBell,
+  Truck, Ship, Sailboat, Rocket, Ambulance,
+  Navigation, MapPin, Compass,
+  Sofa, Bed, Bath, Refrigerator, WashingMachine, AirVent, Heater, Fan,
+  Drill, PaintRoller, Ruler, Shovel, Key,
+  Flame, Thermometer, BatteryCharging,
+  ShoppingBasket, Ticket, Receipt, Banknote, Coins, HandCoins,
+  Barcode, QrCode, Percent, BadgeDollarSign,
+  Syringe, Glasses, Bandage,
+  Droplets, Wind, TreePine,
+  Popcorn, Guitar, Piano,
+  Mountain, Tent, Footprints,
+  TrendingDown, Calculator, FileText, ChartBar, ChartLine, ChartPie,
+  Globe, Handshake, Users, UserPlus, Building2,
+  Smile, Flower,
+  School, BookOpen, Bookmark, Library, Pencil, PenTool, NotebookPen,
+  Repeat, RefreshCw, Calendar, Bell, Newspaper,
+  MessageCircle, Send, Monitor,
+  Rabbit, Squirrel,
+  AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
+  Cigarette
 };
 
 const ICON_NAMES = Object.keys(ICON_MAP);
