@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { convertCadence } from '@/utils/cadenceUtils';
 
 function lightenColor(hex, percent = 80) {
@@ -18,7 +19,7 @@ function adjustColorOpacity(hex, opacity = 0.5) {
   return `rgba(${r}, ${g}, ${b}, ${opacity})`;
 }
 
-export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false, isChild = false, isParent = false, allocatedAmount = null }) {
+export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false, isChild = false, isParent = false, allocatedAmount = null, isExpanded = false, onToggle = null }) {
   const categoryData = budget.chartAccount;
   const IconComponent = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Icons.Circle;
   const iconColor = categoryData?.color || '#64748b';
@@ -80,6 +81,21 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
           <div className="flex items-center gap-2 min-w-0 flex-1">
+            {isParent && onToggle ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggle();
+                }}
+                className="flex-shrink-0 -ml-1 p-0.5 hover:bg-slate-200/50 rounded transition-colors duration-200"
+              >
+                {isExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-slate-600" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
+                )}
+              </button>
+            ) : null}
             <IconComponent className="w-3.5 h-3.5 flex-shrink-0" style={{ color: iconColor }} />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="font-semibold text-sm text-slate-900 truncate">

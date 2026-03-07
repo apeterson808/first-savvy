@@ -108,36 +108,18 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
 
               return (
                 <div key={budget.id}>
-                  <div className="relative flex items-center gap-1">
-                    {hasChildren && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleParent(budget.id);
-                        }}
-                        className="flex-shrink-0 p-0.5 hover:bg-slate-100 rounded transition-colors duration-200"
-                      >
-                        {isExpanded ? (
-                          <ChevronDown className="w-4 h-4 text-slate-600" />
-                        ) : (
-                          <ChevronRight className="w-4 h-4 text-slate-600" />
-                        )}
-                      </button>
-                    )}
-                    {hasChildren && (
-                      <div className="w-1" />
-                    )}
-                    <div className="flex-1">
-                      <BudgetProgressPill
-                        budget={budget}
-                        actualAmount={isIncome ? calculateIncomeWithChildren(budget.chart_account_id) : calculateSpendingWithChildren(budget.chart_account_id)}
-                        isIncome={isIncome}
-                        isParent={hasChildren}
-                      />
-                    </div>
+                  <div className="relative">
+                    <BudgetProgressPill
+                      budget={budget}
+                      actualAmount={isIncome ? calculateIncomeWithChildren(budget.chart_account_id) : calculateSpendingWithChildren(budget.chart_account_id)}
+                      isIncome={isIncome}
+                      isParent={hasChildren}
+                      isExpanded={isExpanded}
+                      onToggle={hasChildren ? () => toggleParent(budget.id) : undefined}
+                    />
                   </div>
                   {hasChildren && isExpanded && (
-                    <div className="ml-4 mt-2 space-y-2">
+                    <div className="ml-6 mt-2 space-y-2">
                       {children.map(childBudget => (
                         <div key={childBudget.id}>
                           <BudgetProgressPill
