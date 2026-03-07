@@ -763,11 +763,19 @@ export default function CategoriesTab() {
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-3 pt-4 px-6">
               <div className="flex items-center justify-between">
-                <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value)}>
-                  <ToggleGroupItem value="budgeted" aria-label="Show budgeted categories" className="data-[state=on]:bg-slate-900 data-[state=on]:text-white">
+                <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value)} className="h-7">
+                  <ToggleGroupItem
+                    value="budgeted"
+                    aria-label="Show budgeted categories"
+                    className="h-7 px-3 text-xs data-[state=on]:bg-slate-100 data-[state=on]:text-slate-900"
+                  >
                     Budgeted
                   </ToggleGroupItem>
-                  <ToggleGroupItem value="notBudgeted" aria-label="Show not budgeted categories" className="data-[state=on]:bg-slate-900 data-[state=on]:text-white">
+                  <ToggleGroupItem
+                    value="notBudgeted"
+                    aria-label="Show not budgeted categories"
+                    className="h-7 px-3 text-xs data-[state=on]:bg-slate-100 data-[state=on]:text-slate-900"
+                  >
                     Not Budgeted
                   </ToggleGroupItem>
                 </ToggleGroup>
