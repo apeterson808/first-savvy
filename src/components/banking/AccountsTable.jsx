@@ -778,14 +778,9 @@ export default function AccountsTable() {
                                     <span className="font-semibold text-slate-700 text-xs">
                                       {account.bank_balance < 0 ? `-$${Math.abs(account.bank_balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `$${account.bank_balance.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                                     </span>
-                                    {account.last_synced_at && (
-                                      <span className="text-[10px] text-slate-400">
-                                        {new Date(account.last_synced_at).toLocaleDateString()}
-                                      </span>
-                                    )}
                                   </div>
                                 ) : (
-                                  <span className="text-xs text-slate-400">Not synced</span>
+                                  <span className="text-xs text-slate-400">—</span>
                                 )}
                               </td>
                             )}
