@@ -18,8 +18,7 @@ export default function InlineEditableAmount({
   isMonthlyColumn = false,
   disabled = false,
   className = '',
-  isSuggested = false,
-  showVerticalLine = false
+  isSuggested = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -129,7 +128,7 @@ export default function InlineEditableAmount({
 
   if (isEditing) {
     return (
-      <td className={`text-left py-2 ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''} ${showVerticalLine ? 'relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200' : ''}`}>
+      <td className={`text-left ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''}`}>
         <input
           ref={inputRef}
           type="text"
@@ -145,9 +144,9 @@ export default function InlineEditableAmount({
 
   const cellContent = (
     <td
-      className={`py-2 ${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50/70'} transition-colors ${
+      className={`${disabled ? 'cursor-default' : 'cursor-pointer hover:bg-slate-50/70'} transition-colors ${
         isLoading ? 'opacity-50' : ''
-      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''} ${className} ${showVerticalLine ? 'relative before:absolute before:left-0 before:top-0 before:bottom-0 before:w-px before:bg-slate-200 after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-slate-200' : ''}`}
+      } ${hasBorder ? 'border-r border-slate-100' : ''} ${isMonthlyColumn ? 'bg-slate-50/50' : ''} ${className}`}
       onClick={handleClick}
     >
       {isLoading ? (
