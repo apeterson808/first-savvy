@@ -460,32 +460,26 @@ export default function CategoriesTab() {
             No categories available
           </div>
         ) : (
-          <div className="border border-slate-200 rounded-lg shadow-sm overflow-hidden bg-white">
+          <div className="border border-slate-200 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full table-fixed">
                 <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50">
+                  <tr className="border-b-2 border-slate-200 bg-slate-100/60">
                     <th
-                      className="py-3 px-4 text-left font-bold cursor-pointer hover:bg-slate-100/80"
+                      className="py-2 px-4 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-100"
                       onClick={() => toggleSection(sectionKey)}
-                      colSpan={6}
                     >
                       <div className="flex items-center gap-2">
                         {isCollapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
                         {categoryColumnLabel}
                       </div>
                     </th>
+                    <th className="py-2 px-4 text-left font-normal w-[14%]">Daily</th>
+                    <th className="py-2 px-4 text-left font-normal w-[14%]">Weekly</th>
+                    <th className="py-2 px-4 text-left font-medium w-[14%] bg-slate-50/50">Monthly</th>
+                    <th className="py-2 px-4 text-left font-normal w-[14%]">Yearly</th>
+                    <th className="py-2 px-4 text-right font-bold w-[14%]">Action</th>
                   </tr>
-                  {!isCollapsed && (
-                    <tr className="border-b border-slate-200 bg-slate-50/50">
-                      <th className="py-2 px-4 text-left font-normal w-[30%]"></th>
-                      <th className="py-2 px-4 text-left font-normal w-[14%]">Daily</th>
-                      <th className="py-2 px-4 text-left font-normal w-[14%]">Weekly</th>
-                      <th className="py-2 px-4 text-left font-medium w-[14%]">Monthly</th>
-                      <th className="py-2 px-4 text-left font-normal w-[14%]">Yearly</th>
-                      <th className="py-2 px-4 text-right font-bold w-[14%]">Action</th>
-                    </tr>
-                  )}
                 </thead>
                 {!isCollapsed && sortedTypes.map(accountType => {
                   const typeCategories = groupedByType[accountType];
@@ -573,17 +567,25 @@ export default function CategoriesTab() {
     <div className="space-y-4">
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <div className="space-y-4">
-          {renderSection(
-            'Income Categories',
-            allIncomeCategories,
-            'income'
-          )}
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="px-6 pb-4 pt-6">
+              {renderSection(
+                'Income Categories',
+                allIncomeCategories,
+                'income'
+              )}
+            </CardContent>
+          </Card>
 
-          {renderSection(
-            'Expense Categories',
-            allExpenseCategories,
-            'expense'
-          )}
+          <Card className="shadow-sm border-slate-200">
+            <CardContent className="px-6 pb-4 pt-6">
+              {renderSection(
+                'Expense Categories',
+                allExpenseCategories,
+                'expense'
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="lg:sticky lg:top-4 lg:self-start">
