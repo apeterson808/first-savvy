@@ -236,7 +236,7 @@ export default function CategoriesTab() {
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 ${isChild ? 'bg-slate-50/50' : index % 2 === 0 ? 'bg-background' : 'bg-slate-50/30'}`}>
-        <td className="px-0 border-r border-slate-100">
+        <td className="px-0 pl-2 border-r border-slate-100 border-l-2 border-l-slate-300">
           <div className="flex items-center gap-2">
             {!isChild && hasChildren ? (
               <Button
@@ -363,7 +363,7 @@ export default function CategoriesTab() {
             />
           </>
         )}
-        <td className="px-0 text-right">
+        <td className="px-0 pr-2 text-right border-r-2 border-r-slate-300">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
@@ -460,11 +460,11 @@ export default function CategoriesTab() {
           </div>
         ) : (
           <div className="overflow-x-auto border-2 border-slate-300 rounded-lg shadow-md bg-white px-4">
-            <table className="w-full table-fixed">
+            <table className="w-full table-fixed border-separate border-spacing-0">
               <thead>
                 <tr className="border-b-2 border-slate-300 bg-white">
                   <th
-                    className="py-2.5 px-0 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-50 transition-colors"
+                    className="py-2.5 px-0 text-left font-bold w-[30%] cursor-pointer hover:bg-slate-50 transition-colors border-l-2 border-slate-300 pl-2"
                     onClick={() => toggleSection(sectionKey)}
                   >
                     <div className="flex items-center gap-2">
@@ -476,7 +476,7 @@ export default function CategoriesTab() {
                   <th className="py-2.5 px-0 text-left font-normal w-[14%]">Weekly</th>
                   <th className="py-2.5 px-0 text-left font-medium w-[14%]">Monthly</th>
                   <th className="py-2.5 px-0 text-left font-normal w-[14%]">Yearly</th>
-                  <th className="py-2.5 px-0 text-right font-bold w-[14%]">Action</th>
+                  <th className="py-2.5 px-0 pr-2 text-right font-bold w-[14%] border-r-2 border-slate-300">Action</th>
                 </tr>
               </thead>
               {!isCollapsed && sortedTypes.map(accountType => {
@@ -495,7 +495,7 @@ export default function CategoriesTab() {
                     <tr className="bg-slate-150 border-b border-slate-300">
                       <td
                         colSpan={6}
-                        className="px-0 py-2 cursor-pointer hover:bg-slate-200 transition-colors"
+                        className="px-0 pl-2 pr-2 py-2 cursor-pointer hover:bg-slate-200 transition-colors border-l-2 border-r-2 border-slate-300"
                         onClick={() => toggleType(typeKey)}
                       >
                         <div className="flex items-center gap-2">
@@ -511,7 +511,7 @@ export default function CategoriesTab() {
               })}
               <tbody>
                 <tr className="border-t-2 border-slate-300 bg-white">
-                  <td className="px-0 py-2.5 border-r border-slate-300 font-semibold">{totalLabel}</td>
+                  <td className="px-0 pl-2 py-2.5 border-r border-slate-300 font-semibold border-l-2 border-l-slate-300">{totalLabel}</td>
                   <td className="px-0 py-2.5 border-r border-slate-200">
                     <div className="flex justify-between tabular-nums">
                       <span className={totals.daily === 0 ? 'font-semibold' : ''}>{dailyFormatted.sign}</span>
@@ -536,7 +536,7 @@ export default function CategoriesTab() {
                       <span className={`text-right ${totals.yearly === 0 ? 'font-semibold' : ''}`}>{yearlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-0 py-2.5"></td>
+                  <td className="px-0 pr-2 py-2.5 border-r-2 border-r-slate-300"></td>
                 </tr>
               </tbody>
             </table>
