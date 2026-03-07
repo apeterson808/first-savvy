@@ -236,7 +236,7 @@ export default function CategoriesTab() {
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${isChild ? 'bg-slate-50/30' : 'bg-white'}`}>
-        <td className="px-4 py-1 border-l-2 border-slate-200">
+        <td className="px-4 py-0.5 border-l-2 border-slate-200">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-12' : 'pl-12'}`}>
             {!isChild && hasChildren ? (
               <Button
@@ -309,10 +309,10 @@ export default function CategoriesTab() {
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
-            <td className="px-4 py-1 text-center text-slate-400 bg-slate-50/50">-</td>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400 bg-slate-50/50">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
           </>
         ) : (
           <>
@@ -355,7 +355,7 @@ export default function CategoriesTab() {
             />
           </>
         )}
-        <td className="px-4 py-1 text-right border-r-2 border-slate-200">
+        <td className="px-4 py-0.5 text-right border-r-2 border-slate-200">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
@@ -454,9 +454,9 @@ export default function CategoriesTab() {
           <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm bg-white px-4">
             <table className="w-full table-fixed">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/30">
+                <tr className="bg-slate-50/30">
                   <th
-                    className="py-2 px-4 text-left font-normal text-sm text-slate-700 w-[30%] cursor-pointer hover:bg-slate-100/50 transition-colors"
+                    className="py-2 px-4 text-left font-normal text-sm text-slate-700 w-[30%] cursor-pointer hover:bg-slate-100/50 transition-colors border-l-2 border-b-2 border-slate-200"
                     onClick={() => toggleSection(sectionKey)}
                   >
                     <div className="flex items-center gap-2">
@@ -464,11 +464,11 @@ export default function CategoriesTab() {
                       {categoryColumnLabel}
                     </div>
                   </th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Daily</th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Weekly</th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-700 w-[14%]">Monthly</th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Yearly</th>
-                  <th className="py-2 px-4 text-right font-normal text-sm text-slate-700 w-[14%]">Action</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%] border-b-2 border-slate-200">Daily</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%] border-b-2 border-slate-200">Weekly</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-700 w-[14%] border-b-2 border-slate-200">Monthly</th>
+                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%] border-b-2 border-slate-200">Yearly</th>
+                  <th className="py-2 px-4 text-right font-normal text-sm text-slate-700 w-[14%] border-r-2 border-b-2 border-slate-200">Action</th>
                 </tr>
               </thead>
               {!isCollapsed && sortedTypes.map(accountType => {
@@ -501,33 +501,33 @@ export default function CategoriesTab() {
                 );
               })}
               <tbody>
-                <tr className="border-t border-slate-200 bg-slate-50/30">
-                  <td className="px-4 py-2.5 font-medium text-slate-700">{totalLabel}</td>
-                  <td className="px-4 py-2.5 text-center">
+                <tr className="bg-slate-50/30">
+                  <td className="px-4 py-2.5 font-medium text-slate-700 border-l-2 border-t-2 border-slate-200">{totalLabel}</td>
+                  <td className="px-4 py-2.5 text-center border-t-2 border-slate-200">
                     <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
                       <span>{dailyFormatted.sign}</span>
                       <span>{dailyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="px-4 py-2.5 text-center border-t-2 border-slate-200">
                     <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
                       <span>{weeklyFormatted.sign}</span>
                       <span>{weeklyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="px-4 py-2.5 text-center border-t-2 border-slate-200">
                     <div className="inline-flex items-center gap-1 tabular-nums font-medium text-slate-700">
                       <span>{monthlyFormatted.sign}</span>
                       <span>{monthlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5 text-center">
+                  <td className="px-4 py-2.5 text-center border-t-2 border-slate-200">
                     <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
                       <span>{yearlyFormatted.sign}</span>
                       <span>{yearlyFormatted.amount}</span>
                     </div>
                   </td>
-                  <td className="px-4 py-2.5"></td>
+                  <td className="px-4 py-2.5 border-r-2 border-t-2 border-slate-200"></td>
                 </tr>
               </tbody>
             </table>
