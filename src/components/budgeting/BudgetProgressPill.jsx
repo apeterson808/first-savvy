@@ -21,6 +21,7 @@ function adjustColorOpacity(hex, opacity = 0.5) {
 export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false, isChild = false, isParent = false, allocatedAmount = null }) {
   const categoryData = budget.chartAccount;
   const IconComponent = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Icons.Circle;
+  const iconColor = categoryData?.color || '#64748b';
 
   const budgetedAmount = allocatedAmount !== null ? allocatedAmount : convertCadence(
     parseFloat(budget.allocated_amount || 0),
@@ -79,7 +80,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            <IconComponent className="w-3.5 h-3.5 flex-shrink-0 text-slate-500" />
+            <IconComponent className="w-3.5 h-3.5 flex-shrink-0" style={{ color: iconColor }} />
             <div className="flex items-center gap-2 min-w-0 flex-1">
               <span className="font-semibold text-sm text-slate-900 truncate">
                 {categoryData?.display_name || 'Unknown Category'}

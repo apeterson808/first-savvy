@@ -117,14 +117,11 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                         }}
                         className="absolute -left-3 top-1/2 -translate-y-1/2 z-20 p-1.5 hover:opacity-70 flex items-center justify-center transition-all duration-200"
                       >
-                        <div
-                          className={`w-1.5 h-1.5 rounded-full bg-slate-400 transition-all duration-200 ${
-                            isExpanded ? 'scale-125' : ''
-                          }`}
-                          style={{
-                            boxShadow: isExpanded ? '0 0 0 3px rgba(148, 163, 184, 0.2)' : 'none'
-                          }}
-                        />
+                        {isExpanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+                        )}
                       </button>
                     )}
                     <BudgetProgressPill
@@ -135,10 +132,9 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                     />
                   </div>
                   {hasChildren && isExpanded && (
-                    <div className="ml-4 mt-2 space-y-2 pl-2">
+                    <div className="ml-4 mt-2 space-y-2">
                       {children.map(childBudget => (
-                        <div key={childBudget.id} className="relative pl-3">
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1 rounded-full bg-slate-300" />
+                        <div key={childBudget.id}>
                           <BudgetProgressPill
                             budget={childBudget}
                             actualAmount={actualByCategory[childBudget.chart_account_id] || 0}
