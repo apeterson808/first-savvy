@@ -216,7 +216,7 @@ export default function CategoriesTab() {
       { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;
 
-    const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
+    const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-100/80';
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 transition-colors ${
@@ -479,7 +479,7 @@ export default function CategoriesTab() {
                 const typeMonthlyFormatted = formatAccountingAmount(typeTotals.monthly);
                 const typeYearlyFormatted = formatAccountingAmount(typeTotals.yearly);
 
-                const typeHeaderRowBg = globalRowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
+                const typeHeaderRowBg = globalRowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-100/80';
                 globalRowIndex++;
 
                 return (
