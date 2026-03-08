@@ -12,6 +12,12 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
 import * as Icons from 'lucide-react';
 import { getAccountTypeLabel, getAccountTypeOrder } from '@/utils/accountTypeLabels';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -341,19 +347,28 @@ export default function CategoriesTab() {
         )}
         <td className="px-4 py-0.5 text-right">
           <div className="flex items-center justify-end gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleToggleBudget(categoryWithBudget)}
-              className="h-7 w-7 p-0 hover:bg-slate-100"
-              disabled={isToggling}
-            >
-              {budgetStatus === 'active' ? (
-                <Minus className="h-3.5 w-3.5 text-slate-600" />
-              ) : (
-                <Plus className="h-3.5 w-3.5 text-slate-600" />
-              )}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleToggleBudget(categoryWithBudget)}
+                    className="h-7 w-7 p-0 hover:bg-slate-100"
+                    disabled={isToggling}
+                  >
+                    {budgetStatus === 'active' ? (
+                      <Minus className="h-3.5 w-3.5 text-slate-600" />
+                    ) : (
+                      <Plus className="h-3.5 w-3.5 text-slate-600" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{budgetStatus === 'active' ? 'Remove from budget' : 'Add to budget'}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <Button
               variant="ghost"
               size="sm"
