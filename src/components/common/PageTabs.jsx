@@ -41,7 +41,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
     if (config?.type === 'dropdown') {
       return (
         <DropdownMenu key={tab}>
-          <div className="inline-flex items-center">
+          <div className="relative inline-flex items-center">
             <button
               disabled={isDisabled}
               onClick={() => {
@@ -50,7 +50,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
                 window.history.pushState({}, '', newUrl);
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-l-md px-3 py-1.5 text-sm font-medium transition-all ${
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md pl-3 pr-7 py-1.5 text-sm font-medium transition-all ${
                 isActive
                   ? 'bg-background text-foreground shadow-sm'
                   : isDisabled
@@ -63,12 +63,12 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
             <DropdownMenuTrigger asChild>
               <button
                 disabled={isDisabled}
-                className={`inline-flex items-center justify-center rounded-r-md px-1.5 py-1.5 text-sm font-medium transition-all border-l ${
+                className={`absolute right-0.5 top-1/2 -translate-y-1/2 inline-flex items-center justify-center rounded px-1 py-1 text-sm transition-all ${
                   isActive
-                    ? 'bg-background text-foreground shadow-sm border-muted'
+                    ? 'text-foreground hover:bg-muted'
                     : isDisabled
-                    ? 'text-muted-foreground/50 cursor-not-allowed border-transparent'
-                    : 'text-muted-foreground hover:bg-background/60 hover:text-foreground border-transparent hover:border-muted'
+                    ? 'text-muted-foreground/50 cursor-not-allowed'
+                    : 'text-muted-foreground hover:bg-muted/60'
                 }`}
                 onClick={(e) => e.stopPropagation()}
               >
