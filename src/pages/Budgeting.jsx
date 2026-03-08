@@ -102,7 +102,7 @@ export default function Budgeting() {
       )}
 
       <PageTabs
-        tabs={['overview', 'categories']}
+        tabs={['overview', 'modify_budget']}
       />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
@@ -130,7 +130,7 @@ export default function Budgeting() {
           )}
         </TabsContent>
 
-        <TabsContent value="categories" className="mt-0">
+        <TabsContent value="modify_budget" className="mt-0">
           <CategoriesTab />
         </TabsContent>
       </Tabs>
