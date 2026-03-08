@@ -427,8 +427,6 @@ export default function CategoriesTab() {
     const monthlyFormatted = formatAccountingAmount(totals.monthly);
     const yearlyFormatted = formatAccountingAmount(totals.yearly);
 
-    let globalRowIndex = 0;
-
     return (
       <div className="mb-6">
         {categories.length === 0 ? (
@@ -479,12 +477,11 @@ export default function CategoriesTab() {
                 const typeMonthlyFormatted = formatAccountingAmount(typeTotals.monthly);
                 const typeYearlyFormatted = formatAccountingAmount(typeTotals.yearly);
 
-                const typeHeaderRowBg = globalRowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-100/80';
-                globalRowIndex++;
+                let typeRowIndex = 0;
 
                 return (
                   <tbody key={accountType}>
-                    <tr className={`border-b border-slate-200 ${typeHeaderRowBg}`}>
+                    <tr className={`border-b border-slate-200 bg-slate-50/30`}>
                       <td
                         className="px-4 py-2 cursor-pointer hover:bg-slate-100/70 transition-colors"
                         onClick={() => toggleType(typeKey)}
@@ -527,8 +524,8 @@ export default function CategoriesTab() {
                       )}
                     </tr>
                     {!isTypeCollapsed && sortedTypeCategories.map((category) => {
-                      const rows = renderUnifiedCategoryRow(category, globalRowIndex, false, categories);
-                      globalRowIndex += rows.length;
+                      const rows = renderUnifiedCategoryRow(category, typeRowIndex, false, categories);
+                      typeRowIndex += rows.length;
                       return rows;
                     })}
                   </tbody>
