@@ -103,14 +103,6 @@ export default function Budgeting() {
 
       <PageTabs
         tabs={['overview', 'categories']}
-        actions={
-          activeTab === 'overview' && hasSetupStarted && (
-            <Button onClick={() => setAddSheetOpen(true)} size="sm" className="bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Budget
-            </Button>
-          )
-        }
       />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
