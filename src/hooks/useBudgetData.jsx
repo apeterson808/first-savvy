@@ -4,7 +4,7 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { startOfMonth, endOfMonth } from 'date-fns';
 import { useProfile } from '@/contexts/ProfileContext';
 
-export function useBudgetData() {
+export function useBudgetData(selectedMonth = null) {
   const { activeProfile } = useProfile();
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
@@ -96,9 +96,9 @@ export function useBudgetData() {
   const isLoading = budgetsLoading || transactionsLoading || accountsLoading || categoriesLoading;
 
   const calculatedData = useMemo(() => {
-    const today = new Date();
-    const monthStart = startOfMonth(today);
-    const monthEnd = endOfMonth(today);
+    const referenceDate = selectedMonth || new Date();
+    const monthStart = startOfMonth(referenceDate);
+    const monthEnd = endOfMonth(referenceDate);
 
     const activeAccountIds = accounts.map(a => a.id);
 
@@ -254,7 +254,7 @@ export function useBudgetData() {
       allIncomeByType,
       allExpenseByType
     };
-  }, [transactions, accounts, budgets, categories]);
+  }, [transactions, accounts, budgets, categories, selectedMonth]);
 
   return {
     budgets: budgetsWithParentInfo,
