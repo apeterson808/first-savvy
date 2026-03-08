@@ -216,10 +216,12 @@ export default function CategoriesTab() {
       { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;
 
+    const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
+
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 transition-colors ${
-        isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-50/50'
-      } ${isChild ? 'bg-slate-50/50' : 'bg-white'}`}>
+        isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-100/70'
+      } ${rowBg}`}>
         <td className="px-4 py-1">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-2' : 'pl-2'}`}>
             {!isChild && hasChildren ? (
