@@ -481,9 +481,9 @@ export default function CategoriesTab() {
 
                 return (
                   <tbody key={accountType}>
-                    <tr className={`border-b border-slate-200 bg-slate-50/30`}>
+                    <tr className={`border-b border-slate-200 bg-slate-200/60`}>
                       <td
-                        className="px-4 py-2 cursor-pointer hover:bg-slate-100/70 transition-colors"
+                        className="px-4 py-2 cursor-pointer hover:bg-slate-200/80 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
                         <div className="flex items-center gap-2">
