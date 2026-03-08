@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { format, subMonths, startOfMonth } from 'date-fns';
 
-export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions }) {
+export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions, dynamicTabConfig }) {
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || defaultTab;
@@ -25,15 +33,16 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
     };
   }, [defaultTab]);
 
-  return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="inline-flex items-center rounded-lg bg-muted p-1">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab;
-          const isDisabled = disabledTabs.includes(tab);
-          return (
+  const renderTab = (tab) => {
+    const isActive = activeTab === tab;
+    const isDisabled = disabledTabs.includes(tab);
+    const config = dynamicTabConfig?.[tab];
+
+    if (config?.type === 'dropdown') {
+      return (
+        <DropdownMenu key={tab}>
+          <div className="inline-flex items-center">
             <button
-              key={tab}
               disabled={isDisabled}
               onClick={() => {
                 if (isDisabled) return;
@@ -41,7 +50,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
                 window.history.pushState({}, '', newUrl);
                 window.dispatchEvent(new PopStateEvent('popstate'));
               }}
-              className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+              className={`inline-flex items-center justify-center whitespace-nowrap rounded-l-md px-3 py-1.5 text-sm font-medium transition-all ${
                 isActive
                   ? 'bg-background text-foreground shadow-sm'
                   : isDisabled
@@ -49,10 +58,65 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
                   : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
               }`}
             >
-              {tab.replace(/_/g, ' ')}
+              {config.label || tab.replace(/_/g, ' ')}
             </button>
-          );
-        })}
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={isDisabled}
+                className={`inline-flex items-center justify-center rounded-r-md px-1.5 py-1.5 text-sm font-medium transition-all border-l ${
+                  isActive
+                    ? 'bg-background text-foreground shadow-sm border-muted'
+                    : isDisabled
+                    ? 'text-muted-foreground/50 cursor-not-allowed border-transparent'
+                    : 'text-muted-foreground hover:bg-background/60 hover:text-foreground border-transparent hover:border-muted'
+                }`}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+              </button>
+            </DropdownMenuTrigger>
+          </div>
+          <DropdownMenuContent align="start" className="w-48">
+            {config.options?.map((option) => (
+              <DropdownMenuItem
+                key={option.value}
+                onClick={() => config.onSelect?.(option.value)}
+              >
+                {option.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      );
+    }
+
+    return (
+      <button
+        key={tab}
+        disabled={isDisabled}
+        onClick={() => {
+          if (isDisabled) return;
+          const newUrl = `${window.location.pathname}?tab=${tab}`;
+          window.history.pushState({}, '', newUrl);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+        }}
+        className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+          isActive
+            ? 'bg-background text-foreground shadow-sm'
+            : isDisabled
+            ? 'text-muted-foreground/50 cursor-not-allowed'
+            : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
+        }`}
+      >
+        {tab.replace(/_/g, ' ')}
+      </button>
+    );
+  };
+
+  return (
+    <div className="flex items-center justify-between mb-4">
+      <div className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
+        {tabs.map((tab) => renderTab(tab))}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>

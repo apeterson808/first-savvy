@@ -6,6 +6,7 @@ import { Plus, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageTabs } from '@/components/common/PageTabs';
+import { format, subMonths, startOfMonth } from 'date-fns';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetTrackerContainer from '../components/budgeting/BudgetTrackerContainer';
@@ -17,6 +18,7 @@ export default function Budgeting() {
   const { user, connectionError } = useAuth();
   const [addSheetOpen, setAddSheetOpen] = useState(false);
   const [editingBudget, setEditingBudget] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(() => startOfMonth(new Date()));
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || 'overview';
@@ -103,6 +105,22 @@ export default function Budgeting() {
 
       <PageTabs
         tabs={['overview', 'modify_budget']}
+        dynamicTabConfig={{
+          overview: {
+            type: 'dropdown',
+            label: format(selectedMonth, 'MMMM'),
+            options: Array.from({ length: 12 }, (_, i) => {
+              const monthDate = subMonths(startOfMonth(new Date()), i);
+              return {
+                value: monthDate.toISOString(),
+                label: format(monthDate, 'MMMM yyyy'),
+              };
+            }),
+            onSelect: (value) => {
+              setSelectedMonth(new Date(value));
+            },
+          },
+        }}
       />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
