@@ -166,8 +166,10 @@ export default function CategoriesTab() {
     }
   };
 
-  const handleEditCategory = () => {
-    navigate('/settings?tab=protected');
+  const handleEditCategory = (category) => {
+    if (category?.id) {
+      navigate(`/Banking/account/${category.id}`);
+    }
   };
 
   const handleUpdateBudgetAmount = async (budgetId, newAmount, editedCadence) => {
@@ -355,7 +357,7 @@ export default function CategoriesTab() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleEditCategory}
+              onClick={() => handleEditCategory(categoryWithBudget)}
               className="h-7 w-7 p-0 hover:bg-slate-100"
             >
               <Pencil className="h-3.5 w-3.5 text-slate-600" />
