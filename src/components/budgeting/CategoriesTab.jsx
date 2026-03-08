@@ -456,11 +456,28 @@ export default function CategoriesTab() {
                   return nameA.localeCompare(nameB);
                 });
 
+                const typeTotals = sortedTypeCategories.reduce((totals, category) => {
+                  if (category.budgetStatus !== 'active' || !category.budget) return totals;
+                  const cadence = category.budget.cadence || 'monthly';
+                  const amount = category.budget.allocated_amount || 0;
+                  const values = getAllCadenceValues(amount, cadence);
+                  return {
+                    daily: totals.daily + values.daily,
+                    weekly: totals.weekly + values.weekly,
+                    monthly: totals.monthly + values.monthly,
+                    yearly: totals.yearly + values.yearly
+                  };
+                }, { daily: 0, weekly: 0, monthly: 0, yearly: 0 });
+
+                const typeDailyFormatted = formatAccountingAmount(typeTotals.daily);
+                const typeWeeklyFormatted = formatAccountingAmount(typeTotals.weekly);
+                const typeMonthlyFormatted = formatAccountingAmount(typeTotals.monthly);
+                const typeYearlyFormatted = formatAccountingAmount(typeTotals.yearly);
+
                 return (
                   <tbody key={accountType}>
                     <tr className="bg-slate-50/50 border-b border-slate-200">
                       <td
-                        colSpan={6}
                         className="px-4 py-1 cursor-pointer hover:bg-slate-100/50 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
@@ -469,6 +486,37 @@ export default function CategoriesTab() {
                           <span className="text-sm font-medium text-slate-700 truncate">{getAccountTypeLabel(accountType)}</span>
                         </div>
                       </td>
+                      {isTypeCollapsed ? (
+                        <>
+                          <td className="px-4 py-1 text-center">
+                            <div className="inline-flex items-center gap-1 tabular-nums text-slate-600 text-sm">
+                              <span>{typeDailyFormatted.sign}</span>
+                              <span>{typeDailyFormatted.amount}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-1 text-center">
+                            <div className="inline-flex items-center gap-1 tabular-nums text-slate-600 text-sm">
+                              <span>{typeWeeklyFormatted.sign}</span>
+                              <span>{typeWeeklyFormatted.amount}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-1 text-center bg-slate-50/50">
+                            <div className="inline-flex items-center gap-1 tabular-nums text-slate-700 text-sm font-medium">
+                              <span>{typeMonthlyFormatted.sign}</span>
+                              <span>{typeMonthlyFormatted.amount}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-1 text-center">
+                            <div className="inline-flex items-center gap-1 tabular-nums text-slate-600 text-sm">
+                              <span>{typeYearlyFormatted.sign}</span>
+                              <span>{typeYearlyFormatted.amount}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-1"></td>
+                        </>
+                      ) : (
+                        <td colSpan={5}></td>
+                      )}
                     </tr>
                     {!isTypeCollapsed && sortedTypeCategories.map((category, index) => renderUnifiedCategoryRow(category, index, false, categories))}
                   </tbody>
