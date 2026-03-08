@@ -27,13 +27,6 @@ export default function CategoriesTab() {
     isLoading
   } = useBudgetData();
 
-  const [collapsedSections, setCollapsedSections] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'sections');
-    return saved ? JSON.parse(saved) : {
-      income: false,
-      expense: false
-    };
-  });
 
   const [collapsedTypes, setCollapsedTypes] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_PREFIX + 'types');
@@ -51,23 +44,12 @@ export default function CategoriesTab() {
   const [togglingBudgetId, setTogglingBudgetId] = useState(null);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_PREFIX + 'sections', JSON.stringify(collapsedSections));
-  }, [collapsedSections]);
-
-  useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'types', JSON.stringify(collapsedTypes));
   }, [collapsedTypes]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'parents', JSON.stringify([...expandedParents]));
   }, [expandedParents]);
-
-  const toggleSection = (section) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
 
   const toggleType = (typeKey) => {
     setCollapsedTypes(prev => ({
@@ -426,8 +408,6 @@ export default function CategoriesTab() {
   };
 
   const renderSection = (title, categories, sectionKey) => {
-    const isCollapsed = collapsedSections[sectionKey];
-
     const parentCategories = categories.filter(c => !c.parent_account_id);
 
     const groupedByType = groupCategoriesByType(parentCategories);
@@ -455,14 +435,8 @@ export default function CategoriesTab() {
             <table className="w-full table-fixed">
               <thead>
                 <tr className="border-b border-slate-200 bg-slate-50/30">
-                  <th
-                    className="py-2 px-4 text-left font-normal text-sm text-slate-700 w-[30%] cursor-pointer hover:bg-slate-100/50 transition-colors"
-                    onClick={() => toggleSection(sectionKey)}
-                  >
-                    <div className="flex items-center gap-2">
-                      {isCollapsed ? <ChevronRight className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
-                      {categoryColumnLabel}
-                    </div>
+                  <th className="py-2 px-4 text-left font-normal text-sm text-slate-700 w-[30%]">
+                    {categoryColumnLabel}
                   </th>
                   <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Daily</th>
                   <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Weekly</th>
@@ -471,7 +445,7 @@ export default function CategoriesTab() {
                   <th className="py-2 px-4 text-right font-normal text-sm text-slate-700 w-[14%]">Action</th>
                 </tr>
               </thead>
-              {!isCollapsed && sortedTypes.map(accountType => {
+              {sortedTypes.map(accountType => {
                 const typeCategories = groupedByType[accountType];
                 const typeKey = `${sectionKey}_${accountType}`;
                 const isTypeCollapsed = collapsedTypes[typeKey];
