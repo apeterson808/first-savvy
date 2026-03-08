@@ -352,16 +352,15 @@ export default function CategoriesTab() {
                 <Plus className="h-3.5 w-3.5 text-slate-600" />
               )}
             </Button>
-            {budget && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleEditBudget(budget)}
-                className="h-7 w-7 p-0 hover:bg-slate-100"
-              >
-                <Pencil className="h-3.5 w-3.5 text-slate-600" />
-              </Button>
-            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => budget && handleEditBudget(budget)}
+              className="h-7 w-7 p-0 hover:bg-slate-100"
+              disabled={!budget}
+            >
+              <Pencil className="h-3.5 w-3.5 text-slate-600" />
+            </Button>
           </div>
         </td>
       </tr>
