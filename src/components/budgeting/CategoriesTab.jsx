@@ -216,12 +216,10 @@ export default function CategoriesTab() {
       { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;
 
-    const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-100/80';
-
     rows.push(
-      <tr key={categoryWithBudget.id} className={`border-b border-slate-100 transition-colors ${
-        isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-100/70'
-      } ${rowBg}`}>
+      <tr key={categoryWithBudget.id} className={`border-b border-slate-200 transition-colors ${
+        isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-50'
+      }`}>
         <td className="px-4 py-0.5">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-2' : 'pl-2'}`}>
             {!isChild && hasChildren ? (
@@ -481,9 +479,9 @@ export default function CategoriesTab() {
 
                 return (
                   <tbody key={accountType}>
-                    <tr className={`border-b border-slate-200 bg-slate-200/60`}>
+                    <tr className={`border-b border-slate-200`}>
                       <td
-                        className="px-4 py-2 cursor-pointer hover:bg-slate-200/80 transition-colors"
+                        className="px-4 py-2 cursor-pointer hover:bg-slate-50 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
                         <div className="flex items-center gap-2">
@@ -532,7 +530,7 @@ export default function CategoriesTab() {
                 );
               })}
               <tbody>
-                <tr className="border-t border-slate-200 bg-slate-50/30">
+                <tr className="border-t border-slate-200">
                   <td className="px-4 py-2 font-medium text-slate-700">{totalLabel}</td>
                   <td className="px-4 py-2 text-center">
                     <div className="inline-flex items-center gap-1 tabular-nums text-slate-700">
