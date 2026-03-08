@@ -217,7 +217,9 @@ export default function CategoriesTab() {
     const isUpdating = updatingBudgetId === budget?.id;
 
     rows.push(
-      <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${isChild ? 'bg-slate-50/30' : 'bg-white'}`}>
+      <tr key={categoryWithBudget.id} className={`border-b border-slate-100 transition-colors ${
+        isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-50/50'
+      } ${isChild ? 'bg-slate-50/50' : 'bg-white'}`}>
         <td className="px-4 py-1">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-2' : 'pl-2'}`}>
             {!isChild && hasChildren ? (
