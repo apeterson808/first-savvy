@@ -206,7 +206,7 @@ export default function CategoriesTab() {
     const isNoBudget = budgetStatus === 'none';
     const isDisabled = isInactive || isNoBudget;
 
-    const textColorClass = isDisabled ? 'text-slate-400' : '';
+    const textColorClass = isDisabled ? 'text-slate-300' : '';
     const isToggling = togglingBudgetId === (budget?.id || categoryWithBudget.id);
 
     const cadence = budget?.cadence || 'monthly';
@@ -216,7 +216,7 @@ export default function CategoriesTab() {
       { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;
 
-    const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/60';
+    const rowBg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
 
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 transition-colors ${
@@ -427,6 +427,8 @@ export default function CategoriesTab() {
     const monthlyFormatted = formatAccountingAmount(totals.monthly);
     const yearlyFormatted = formatAccountingAmount(totals.yearly);
 
+    let globalRowIndex = 0;
+
     return (
       <div className="mb-6">
         {categories.length === 0 ? (
@@ -477,11 +479,14 @@ export default function CategoriesTab() {
                 const typeMonthlyFormatted = formatAccountingAmount(typeTotals.monthly);
                 const typeYearlyFormatted = formatAccountingAmount(typeTotals.yearly);
 
+                const typeHeaderRowBg = globalRowIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50/70';
+                globalRowIndex++;
+
                 return (
                   <tbody key={accountType}>
-                    <tr className="bg-slate-50/50 border-b border-slate-200">
+                    <tr className={`border-b border-slate-200 ${typeHeaderRowBg}`}>
                       <td
-                        className="px-4 py-1 cursor-pointer hover:bg-slate-100/50 transition-colors"
+                        className="px-4 py-1 cursor-pointer hover:bg-slate-100/70 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
                         <div className="flex items-center gap-2">
@@ -503,7 +508,7 @@ export default function CategoriesTab() {
                               <span>{typeWeeklyFormatted.amount}</span>
                             </div>
                           </td>
-                          <td className="px-4 py-1 text-center bg-slate-50/50">
+                          <td className="px-4 py-1 text-center">
                             <div className="inline-flex items-center gap-1 tabular-nums text-slate-700 text-sm font-medium">
                               <span>{typeMonthlyFormatted.sign}</span>
                               <span>{typeMonthlyFormatted.amount}</span>
@@ -521,7 +526,11 @@ export default function CategoriesTab() {
                         <td colSpan={5}></td>
                       )}
                     </tr>
-                    {!isTypeCollapsed && sortedTypeCategories.map((category, index) => renderUnifiedCategoryRow(category, index, false, categories))}
+                    {!isTypeCollapsed && sortedTypeCategories.map((category) => {
+                      const rows = renderUnifiedCategoryRow(category, globalRowIndex, false, categories);
+                      globalRowIndex += rows.length;
+                      return rows;
+                    })}
                   </tbody>
                 );
               })}
