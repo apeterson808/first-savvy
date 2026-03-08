@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Plus, Minus, Pencil } from 'lucide-react';
 import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
 import { Badge } from '@/components/ui/badge';
-import AddBudgetItemSheet from './AddBudgetItemSheet';
 import BudgetAllocationDonut from './BudgetAllocationDonut';
 import InlineEditableAmount from './InlineEditableAmount';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +17,7 @@ const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
 export default function CategoriesTab() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const {
     budgets,
     transactions,
@@ -38,8 +39,6 @@ export default function CategoriesTab() {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
-  const [addBudgetSheetOpen, setAddBudgetSheetOpen] = useState(false);
-  const [editingBudget, setEditingBudget] = useState(null);
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
   const [togglingBudgetId, setTogglingBudgetId] = useState(null);
 
@@ -167,9 +166,8 @@ export default function CategoriesTab() {
     }
   };
 
-  const handleEditBudget = (budget) => {
-    setEditingBudget(budget);
-    setAddBudgetSheetOpen(true);
+  const handleEditCategory = () => {
+    navigate('/settings?tab=protected');
   };
 
   const handleUpdateBudgetAmount = async (budgetId, newAmount, editedCadence) => {
@@ -357,9 +355,8 @@ export default function CategoriesTab() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => budget && handleEditBudget(budget)}
+              onClick={handleEditCategory}
               className="h-7 w-7 p-0 hover:bg-slate-100"
-              disabled={!budget}
             >
               <Pencil className="h-3.5 w-3.5 text-slate-600" />
             </Button>
@@ -605,13 +602,6 @@ export default function CategoriesTab() {
           />
         </div>
       </div>
-
-      <AddBudgetItemSheet
-        open={addBudgetSheetOpen}
-        onOpenChange={setAddBudgetSheetOpen}
-        availableCategories={categories}
-        editingBudget={editingBudget}
-      />
     </div>
   );
 }
