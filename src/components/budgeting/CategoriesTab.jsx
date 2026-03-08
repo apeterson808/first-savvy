@@ -237,7 +237,7 @@ export default function CategoriesTab() {
     rows.push(
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 hover:bg-slate-50/50 transition-colors ${isChild ? 'bg-slate-50/30' : 'bg-white'}`}>
         <td className="px-4 py-1">
-          <div className={`flex items-center gap-2 ${!isChild ? 'pl-12' : 'pl-12'}`}>
+          <div className={`flex items-center gap-2 ${!isChild ? 'pl-2' : 'pl-2'}`}>
             {!isChild && hasChildren ? (
               <Button
                 variant="ghost"
@@ -255,7 +255,7 @@ export default function CategoriesTab() {
                 )}
               </Button>
             ) : (
-              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-5' : ''}`}></div>
+              <div className={`w-5 flex-shrink-0 ${isChild ? 'ml-6' : ''}`}></div>
             )}
             <IconComponent className={`w-4 h-4 flex-shrink-0 ${textColorClass}`} style={{ color: isDisabled ? undefined : categoryWithBudget.color }} />
             <span className={`text-sm ${isChild ? 'text-slate-600' : 'text-slate-700'} ${textColorClass} truncate`}>
@@ -490,7 +490,7 @@ export default function CategoriesTab() {
                         className="px-4 py-1 cursor-pointer hover:bg-slate-100/50 transition-colors"
                         onClick={() => toggleType(typeKey)}
                       >
-                        <div className="flex items-center gap-2 pl-6">
+                        <div className="flex items-center gap-2">
                           {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
                           <span className="text-sm font-medium text-slate-700 truncate">{getAccountTypeLabel(accountType)}</span>
                         </div>
