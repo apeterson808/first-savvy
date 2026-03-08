@@ -435,15 +435,15 @@ export default function CategoriesTab() {
           <div className="overflow-x-auto border border-slate-200 rounded-lg shadow-sm bg-white">
             <table className="w-full table-fixed">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/30">
-                  <th className="py-2 px-4 text-left font-normal text-sm text-slate-700 w-[30%]">
+                <tr className="border-b border-slate-200">
+                  <th className="py-2 px-4 text-left font-medium text-sm text-slate-700 w-[30%]">
                     {categoryColumnLabel}
                   </th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Daily</th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Weekly</th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-700 w-[14%]">Monthly</th>
-                  <th className="py-2 px-4 text-center font-normal text-sm text-slate-600 w-[14%]">Yearly</th>
-                  <th className="py-2 px-4 text-right font-normal text-sm text-slate-700 w-[14%]">Action</th>
+                  <th className="py-2 px-4 text-center font-medium text-sm text-slate-700 w-[14%]">Daily</th>
+                  <th className="py-2 px-4 text-center font-medium text-sm text-slate-700 w-[14%]">Weekly</th>
+                  <th className="py-2 px-4 text-center font-medium text-sm text-slate-700 w-[14%]">Monthly</th>
+                  <th className="py-2 px-4 text-center font-medium text-sm text-slate-700 w-[14%]">Yearly</th>
+                  <th className="py-2 px-4 text-right font-medium text-sm text-slate-700 w-[14%]">Action</th>
                 </tr>
               </thead>
               {sortedTypes.map(accountType => {
