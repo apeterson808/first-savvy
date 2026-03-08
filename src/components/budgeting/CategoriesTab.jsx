@@ -222,7 +222,7 @@ export default function CategoriesTab() {
       <tr key={categoryWithBudget.id} className={`border-b border-slate-100 transition-colors ${
         isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-100/70'
       } ${rowBg}`}>
-        <td className="px-4 py-1">
+        <td className="px-4 py-0.5">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-2' : 'pl-2'}`}>
             {!isChild && hasChildren ? (
               <Button
@@ -295,10 +295,10 @@ export default function CategoriesTab() {
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
-            <td className="px-4 py-1 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
           </>
         ) : (
           <>
@@ -341,7 +341,7 @@ export default function CategoriesTab() {
             />
           </>
         )}
-        <td className="px-4 py-1 text-right">
+        <td className="px-4 py-0.5 text-right">
           <div className="flex items-center justify-end gap-1">
             <Button
               variant="ghost"
