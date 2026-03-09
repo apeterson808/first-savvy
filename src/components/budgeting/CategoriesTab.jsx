@@ -212,7 +212,7 @@ export default function CategoriesTab() {
     const isNoBudget = budgetStatus === 'none';
     const isDisabled = isInactive || isNoBudget;
 
-    const textColorClass = isInactive ? 'text-slate-300' : '';
+    const textColorClass = isInactive ? 'text-slate-700' : '';
     const isToggling = togglingBudgetId === (budget?.id || categoryWithBudget.id);
 
     const cadence = budget?.cadence || 'monthly';
