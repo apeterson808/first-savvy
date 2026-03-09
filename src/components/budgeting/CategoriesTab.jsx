@@ -329,7 +329,7 @@ export default function CategoriesTab() {
     const isNoBudget = budgetStatus === 'none';
     const isDisabled = isInactive || isNoBudget;
 
-    const textColorClass = isInactive ? 'text-slate-700' : '';
+    const textColorClass = (isInactive || hasSuggestion || isNoBudget) ? 'text-slate-500 italic opacity-40' : 'text-slate-900';
     const isToggling = togglingBudgetId === (budget?.id || categoryWithBudget.id);
 
     const cadence = budget?.cadence || 'monthly';
@@ -340,9 +340,7 @@ export default function CategoriesTab() {
     const isUpdating = updatingBudgetId === budget?.id;
 
     const rowContent = (
-      <tr key={categoryWithBudget.id} className={`border-b border-slate-200 transition-colors ${
-        isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-50'
-      }`}>
+      <tr key={categoryWithBudget.id} className={`border-b border-slate-200 transition-colors hover:bg-slate-50`}>
         <td className="px-4 py-0.5">
           <div className={`flex items-center gap-2 ${!isChild ? 'pl-2' : 'pl-2'}`}>
             {!isChild && hasChildren ? (
@@ -379,7 +377,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-700 italic"
+              className="text-slate-500 italic opacity-40"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -390,7 +388,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-700 italic"
+              className="text-slate-500 italic opacity-40"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -402,7 +400,7 @@ export default function CategoriesTab() {
               isLoading={isUpdating}
               isMonthlyColumn={true}
               disabled={true}
-              className="text-slate-700 italic"
+              className="text-slate-500 italic opacity-40"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -413,17 +411,17 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-700 italic"
+              className="text-slate-500 italic opacity-40"
               isSuggested={true}
               suppressTooltip={true}
             />
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
-            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
-            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
-            <td className="px-4 py-0.5 text-center text-slate-400">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
           </>
         ) : (
           <>
@@ -434,7 +432,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={isDisabled}
-              className={textColorClass}
+              className={isInactive ? 'text-slate-500 italic opacity-40' : 'text-slate-900'}
             />
             <InlineEditableAmount
               value={values.weekly}
@@ -443,7 +441,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={isDisabled}
-              className={textColorClass}
+              className={isInactive ? 'text-slate-500 italic opacity-40' : 'text-slate-900'}
             />
             <InlineEditableAmount
               value={values.monthly}
@@ -453,7 +451,7 @@ export default function CategoriesTab() {
               isLoading={isUpdating}
               isMonthlyColumn={true}
               disabled={isDisabled}
-              className={textColorClass}
+              className={isInactive ? 'text-slate-500 italic opacity-40' : 'text-slate-900'}
             />
             <InlineEditableAmount
               value={values.yearly}
@@ -462,7 +460,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={isDisabled}
-              className={textColorClass}
+              className={isInactive ? 'text-slate-500 italic opacity-40' : 'text-slate-900'}
             />
           </>
         )}

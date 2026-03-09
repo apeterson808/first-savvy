@@ -153,13 +153,13 @@ export default function InlineEditableAmount({
       {isLoading ? (
         <div className="flex items-center justify-center gap-2 px-4">
           <Loader2 className="h-3 w-3 animate-spin" />
-          <div className={`inline-flex items-center gap-1 tabular-nums ${isMonthlyColumn ? 'font-medium' : ''}`}>
+          <div className={`inline-flex items-center gap-1 tabular-nums ${isMonthlyColumn ? 'font-medium' : ''} ${className}`}>
             <span>{formatted.sign}</span>
             <span>{formatted.amount}</span>
           </div>
         </div>
       ) : (
-        <div className={`inline-flex items-center gap-1 tabular-nums text-sm ${isMonthlyColumn ? 'font-medium' : ''}`}>
+        <div className={`inline-flex items-center gap-1 tabular-nums text-sm ${isMonthlyColumn ? 'font-medium' : ''} ${className}`}>
           <span>{formatted.sign}</span>
           <span>{formatted.amount}</span>
         </div>
