@@ -174,6 +174,51 @@ export default function CategoriesTab() {
         toast.error('No historical data to create budget suggestion');
         return;
       }
+
+      if (categoryWithBudget.parent_account_id) {
+        const parentCategory = categories.find(c => c.id === categoryWithBudget.parent_account_id);
+        const parentBudget = budgets.find(b => b.chart_account_id === categoryWithBudget.parent_account_id);
+
+        const siblingBudgets = budgets.filter(b => {
+          const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+          return siblingCategory?.parent_account_id === categoryWithBudget.parent_account_id;
+        });
+
+        const validation = validateChildBudgetAgainstParent(
+          suggestedAmount,
+          'monthly',
+          parentBudget,
+          siblingBudgets,
+          null
+        );
+
+        const totalSiblingsAmount = siblingBudgets
+          .reduce((sum, b) => {
+            return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', 'monthly');
+          }, 0);
+
+        setParentBudgetDialog({
+          open: true,
+          parentCategory,
+          parentBudget,
+          childCategory: categoryWithBudget,
+          requestedAmount: suggestedAmount,
+          requestedCadence: 'monthly',
+          totalSiblingsAmount,
+          overflow: validation.overflow,
+          pendingUpdate: {
+            isNewBudget: true,
+            budgetData: {
+              chart_account_id: categoryWithBudget.id,
+              allocated_amount: suggestedAmount,
+              cadence: 'monthly',
+              is_active: true
+            }
+          }
+        });
+        return;
+      }
+
       setTogglingBudgetId(categoryWithBudget.id);
       const budgetData = {
         chart_account_id: categoryWithBudget.id,
@@ -263,14 +308,19 @@ export default function CategoriesTab() {
       await queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
       if (pendingUpdate) {
-        setUpdatingBudgetId(pendingUpdate.budgetId);
-        updateBudgetMutation.mutate({
-          id: pendingUpdate.budgetId,
-          data: {
-            allocated_amount: pendingUpdate.newAmount,
-            cadence: pendingUpdate.editedCadence
-          }
-        });
+        if (pendingUpdate.isNewBudget) {
+          setTogglingBudgetId(pendingUpdate.budgetData.chart_account_id);
+          createBudgetMutation.mutate(pendingUpdate.budgetData);
+        } else {
+          setUpdatingBudgetId(pendingUpdate.budgetId);
+          updateBudgetMutation.mutate({
+            id: pendingUpdate.budgetId,
+            data: {
+              allocated_amount: pendingUpdate.newAmount,
+              cadence: pendingUpdate.editedCadence
+            }
+          });
+        }
       }
 
       setParentBudgetDialog({
@@ -285,7 +335,7 @@ export default function CategoriesTab() {
         pendingUpdate: null
       });
 
-      toast.success(parentBudget ? 'Parent budget increased' : 'Parent budget created');
+      toast.success(parentBudget ? 'Parent budget updated' : 'Parent budget created');
     } catch (error) {
       toast.error('Failed to update parent budget');
       console.error(error);
