@@ -58,6 +58,7 @@ export default function CategoriesTab() {
     requestedCadence: 'monthly',
     totalSiblingsAmount: 0,
     overflow: 0,
+    siblingBudgets: [],
     pendingUpdate: null
   });
 
@@ -183,16 +184,29 @@ export default function CategoriesTab() {
         const parentCategory = categories.find(c => c.id === categoryWithBudget.parent_account_id);
         const parentBudget = budgets.find(b => b.chart_account_id === categoryWithBudget.parent_account_id);
 
-        const siblingBudgets = budgets.filter(b => {
-          const siblingCategory = categories.find(c => c.id === b.chart_account_id);
-          return siblingCategory?.parent_account_id === categoryWithBudget.parent_account_id;
-        });
+        const siblingBudgets = budgets
+          .filter(b => {
+            const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+            return siblingCategory?.parent_account_id === categoryWithBudget.parent_account_id;
+          })
+          .map(b => {
+            const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+            return {
+              id: b.id,
+              categoryName: siblingCategory?.display_name || 'Unknown',
+              allocated_amount: b.allocated_amount,
+              cadence: b.cadence
+            };
+          });
 
         const validation = validateChildBudgetAgainstParent(
           suggestedAmount,
           'monthly',
           parentBudget,
-          siblingBudgets,
+          budgets.filter(b => {
+            const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+            return siblingCategory?.parent_account_id === categoryWithBudget.parent_account_id;
+          }),
           null
         );
 
@@ -210,6 +224,7 @@ export default function CategoriesTab() {
           requestedCadence: 'monthly',
           totalSiblingsAmount,
           overflow: validation.overflow,
+          siblingBudgets,
           pendingUpdate: {
             isNewBudget: true,
             budgetData: {
@@ -251,21 +266,33 @@ export default function CategoriesTab() {
       const parentCategory = categories.find(c => c.id === category.parent_account_id);
       const parentBudget = budgets.find(b => b.chart_account_id === category.parent_account_id);
 
-      const siblingBudgets = budgets.filter(b => {
-        const siblingCategory = categories.find(c => c.id === b.chart_account_id);
-        return siblingCategory?.parent_account_id === category.parent_account_id;
-      });
+      const siblingBudgets = budgets
+        .filter(b => {
+          const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+          return siblingCategory?.parent_account_id === category.parent_account_id && b.id !== budgetId;
+        })
+        .map(b => {
+          const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+          return {
+            id: b.id,
+            categoryName: siblingCategory?.display_name || 'Unknown',
+            allocated_amount: b.allocated_amount,
+            cadence: b.cadence
+          };
+        });
 
       const validation = validateChildBudgetAgainstParent(
         newAmount,
         editedCadence,
         parentBudget,
-        siblingBudgets,
+        budgets.filter(b => {
+          const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+          return siblingCategory?.parent_account_id === category.parent_account_id;
+        }),
         budgetId
       );
 
       const totalSiblingsAmount = siblingBudgets
-        .filter(b => b.id !== budgetId)
         .reduce((sum, b) => {
           return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', editedCadence);
         }, 0);
@@ -279,6 +306,7 @@ export default function CategoriesTab() {
         requestedCadence: editedCadence,
         totalSiblingsAmount,
         overflow: validation.overflow,
+        siblingBudgets,
         pendingUpdate: { budgetId, newAmount, editedCadence }
       });
       return;
@@ -292,21 +320,39 @@ export default function CategoriesTab() {
     updateBudgetMutation.mutate({ id: budgetId, data: updateData });
   };
 
-  const handleParentBudgetConfirm = async (editedAmount) => {
-    const { parentCategory, parentBudget, pendingUpdate } = parentBudgetDialog;
+  const handleParentBudgetConfirm = async (result) => {
+    const { parentCategory, parentBudget, pendingUpdate, siblingBudgets } = parentBudgetDialog;
+    const { parentAmount, childAmount, siblingAmounts } = result;
 
     try {
+      const parentCadence = parentBudget?.cadence || 'monthly';
+
       if (parentBudget) {
         await firstsavvy.entities.Budget.update(parentBudget.id, {
-          allocated_amount: editedAmount
+          allocated_amount: parentAmount
         });
       } else {
         await firstsavvy.entities.Budget.create({
           chart_account_id: parentCategory.id,
-          allocated_amount: editedAmount,
+          allocated_amount: parentAmount,
           cadence: 'monthly',
           is_active: true
         });
+      }
+
+      for (const siblingBudget of siblingBudgets || []) {
+        const editedAmount = parseFloat(siblingAmounts[siblingBudget.id]);
+        const originalAmount = convertCadence(
+          siblingBudget.allocated_amount,
+          siblingBudget.cadence,
+          parentCadence
+        );
+
+        if (!isNaN(editedAmount) && editedAmount !== originalAmount) {
+          await firstsavvy.entities.Budget.update(siblingBudget.id, {
+            allocated_amount: convertCadence(editedAmount, parentCadence, siblingBudget.cadence)
+          });
+        }
       }
 
       await queryClient.invalidateQueries({ queryKey: ['budgets'] });
@@ -314,14 +360,19 @@ export default function CategoriesTab() {
       if (pendingUpdate) {
         if (pendingUpdate.isNewBudget) {
           setTogglingBudgetId(pendingUpdate.budgetData.chart_account_id);
-          createBudgetMutation.mutate(pendingUpdate.budgetData);
+          createBudgetMutation.mutate({
+            ...pendingUpdate.budgetData,
+            allocated_amount: convertCadence(childAmount, parentCadence, 'monthly')
+          });
         } else {
           setUpdatingBudgetId(pendingUpdate.budgetId);
+          const budget = budgets.find(b => b.id === pendingUpdate.budgetId);
+          const targetCadence = budget?.cadence || 'monthly';
           updateBudgetMutation.mutate({
             id: pendingUpdate.budgetId,
             data: {
-              allocated_amount: pendingUpdate.newAmount,
-              cadence: pendingUpdate.editedCadence
+              allocated_amount: convertCadence(childAmount, parentCadence, targetCadence),
+              cadence: targetCadence
             }
           });
         }
@@ -336,6 +387,7 @@ export default function CategoriesTab() {
         requestedCadence: 'monthly',
         totalSiblingsAmount: 0,
         overflow: 0,
+        siblingBudgets: [],
         pendingUpdate: null
       });
 
@@ -806,6 +858,7 @@ export default function CategoriesTab() {
         requestedCadence={parentBudgetDialog.requestedCadence}
         totalSiblingsAmount={parentBudgetDialog.totalSiblingsAmount}
         overflow={parentBudgetDialog.overflow}
+        siblingBudgets={parentBudgetDialog.siblingBudgets}
         onConfirm={handleParentBudgetConfirm}
         onCancel={() => setParentBudgetDialog(prev => ({ ...prev, open: false }))}
       />
