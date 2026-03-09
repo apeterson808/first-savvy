@@ -18,7 +18,8 @@ export default function InlineEditableAmount({
   isMonthlyColumn = false,
   disabled = false,
   className = '',
-  isSuggested = false
+  isSuggested = false,
+  suppressTooltip = false
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState('');
@@ -166,7 +167,7 @@ export default function InlineEditableAmount({
     </td>
   );
 
-  if (isSuggested) {
+  if (isSuggested && !suppressTooltip) {
     return (
       <TooltipProvider>
         <Tooltip delayDuration={200}>

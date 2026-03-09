@@ -222,7 +222,7 @@ export default function CategoriesTab() {
       { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;
 
-    rows.push(
+    const rowContent = (
       <tr key={categoryWithBudget.id} className={`border-b border-slate-200 transition-colors ${
         isInactive ? 'opacity-40 hover:opacity-60' : 'hover:bg-slate-50'
       }`}>
@@ -264,6 +264,7 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
+              suppressTooltip={true}
             />
             <InlineEditableAmount
               value={values.weekly}
@@ -274,6 +275,7 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
+              suppressTooltip={true}
             />
             <InlineEditableAmount
               value={values.monthly}
@@ -285,6 +287,7 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
+              suppressTooltip={true}
             />
             <InlineEditableAmount
               value={values.yearly}
@@ -295,6 +298,7 @@ export default function CategoriesTab() {
               disabled={true}
               className="text-slate-500 italic"
               isSuggested={true}
+              suppressTooltip={true}
             />
           </>
         ) : isNoBudget ? (
@@ -381,6 +385,23 @@ export default function CategoriesTab() {
         </td>
       </tr>
     );
+
+    if (hasSuggestion) {
+      rows.push(
+        <TooltipProvider key={`tooltip-${categoryWithBudget.id}`}>
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              {rowContent}
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Suggested amount based on historical spending</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    } else {
+      rows.push(rowContent);
+    }
 
     if (hasChildren && isParentExpanded) {
       children.forEach((childCategory, childIndex) => {
