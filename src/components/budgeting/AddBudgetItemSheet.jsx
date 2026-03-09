@@ -20,19 +20,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
+import ParentBudgetDialog from '@/components/budgeting/ParentBudgetDialog';
 import { Plus, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as LucideIcons from 'lucide-react';
@@ -77,8 +68,16 @@ export default function AddBudgetItemSheet({
   const [hasParentCategory, setHasParentCategory] = useState(false);
   const [selectedParentCategoryId, setSelectedParentCategoryId] = useState('');
   const [parentCategories, setParentCategories] = useState([]);
-  const [showBudgetAlert, setShowBudgetAlert] = useState(false);
-  const [budgetAlertData, setBudgetAlertData] = useState(null);
+  const [budgetAlertData, setBudgetAlertData] = useState({
+    open: false,
+    parentCategory: null,
+    parentBudget: null,
+    childCategory: null,
+    requestedAmount: 0,
+    requestedCadence: 'monthly',
+    totalSiblingsAmount: 0,
+    overflow: 0
+  });
 
   useEffect(() => {
     if (editingBudget && open) {
@@ -299,25 +298,21 @@ export default function AddBudgetItemSheet({
         queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === parentAccountId);
 
       if (!validation.isValid) {
-        const totalNeededInParentCadence = convertCadence(
-          validation.totalSiblings,
-          selectedCadence,
-          parentBudget?.cadence || 'monthly'
-        );
+        const totalSiblingsAmount = siblingBudgets
+          .reduce((sum, b) => {
+            return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', selectedCadence);
+          }, 0);
 
         setBudgetAlertData({
+          open: true,
           parentCategory,
+          parentBudget,
           childCategory: selectedAccount,
           requestedAmount: newAmount,
           requestedCadence: selectedCadence,
-          totalNeeded: validation.totalSiblings,
-          totalNeededInParentCadence,
-          overflow: validation.overflow,
-          parentBudgetId: parentBudget?.id,
-          hasParentBudget: !!parentBudget,
-          parentCadence: parentBudget?.cadence || 'monthly'
+          totalSiblingsAmount,
+          overflow: validation.overflow
         });
-        setShowBudgetAlert(true);
         return;
       }
     }
@@ -325,38 +320,45 @@ export default function AddBudgetItemSheet({
     await saveBudget(selectedAccount, newAmount);
   };
 
-  const handleBudgetAlertConfirm = async () => {
+  const handleBudgetAlertConfirm = async (editedAmount) => {
     if (!budgetAlertData) return;
 
-    const { parentCategory, totalNeededInParentCadence, parentBudgetId, hasParentBudget, parentCadence, requestedCadence } = budgetAlertData;
+    const { parentCategory, parentBudget } = budgetAlertData;
 
     try {
-      if (hasParentBudget) {
-        await firstsavvy.entities.Budget.update(parentBudgetId, {
-          allocated_amount: totalNeededInParentCadence
+      if (parentBudget) {
+        await firstsavvy.entities.Budget.update(parentBudget.id, {
+          allocated_amount: editedAmount
         });
-        const cadenceLabel = getCadenceLabel(parentCadence);
-        toast.success(`Increased ${parentCategory.display_name || parentCategory.account_detail} budget to $${Math.round(totalNeededInParentCadence).toLocaleString()}${cadenceLabel}`);
+        const cadenceLabel = getCadenceLabel(parentBudget.cadence);
+        toast.success(`Increased ${parentCategory.display_name || parentCategory.account_detail} budget to $${Math.round(editedAmount).toLocaleString()}${cadenceLabel}`);
       } else {
         await firstsavvy.entities.Budget.create({
           chart_account_id: parentCategory.id,
-          allocated_amount: totalNeededInParentCadence,
-          cadence: requestedCadence,
+          allocated_amount: editedAmount,
+          cadence: 'monthly',
           is_active: true
         });
-        const cadenceLabel = getCadenceLabel(requestedCadence);
-        toast.success(`Created parent budget for ${parentCategory.display_name || parentCategory.account_detail} at $${Math.round(totalNeededInParentCadence).toLocaleString()}${cadenceLabel}`);
+        toast.success(`Created parent budget for ${parentCategory.display_name || parentCategory.account_detail} at $${Math.round(editedAmount).toLocaleString()}/mo`);
       }
 
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      await queryClient.invalidateQueries({ queryKey: ['budgets'] });
 
       const selectedAccount = availableCategories.find(a => a.id === selectedCategoryId);
       const newAmount = parseFloat(parseCurrency(limitAmount)) || 0;
 
       await saveBudget(selectedAccount, newAmount);
 
-      setShowBudgetAlert(false);
-      setBudgetAlertData(null);
+      setBudgetAlertData({
+        open: false,
+        parentCategory: null,
+        parentBudget: null,
+        childCategory: null,
+        requestedAmount: 0,
+        requestedCadence: 'monthly',
+        totalSiblingsAmount: 0,
+        overflow: 0
+      });
     } catch (error) {
       toast.error('Failed to update parent budget');
     }
@@ -568,33 +570,28 @@ export default function AddBudgetItemSheet({
       }}
     />
 
-    <AlertDialog open={showBudgetAlert} onOpenChange={setShowBudgetAlert}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            {budgetAlertData?.hasParentBudget ? 'Increase Parent Budget?' : 'Create Parent Budget?'}
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            {budgetAlertData?.hasParentBudget ? (
-              <>
-                This exceeds the parent budget by <strong>${Math.round(budgetAlertData?.overflow || 0).toLocaleString()}{getCadenceLabel(budgetAlertData?.requestedCadence || 'monthly')}</strong>.
-                Would you like me to increase the <strong>{budgetAlertData?.parentCategory?.display_name || budgetAlertData?.parentCategory?.account_detail}</strong> budget to <strong>${Math.round(budgetAlertData?.totalNeededInParentCadence || 0).toLocaleString()}{getCadenceLabel(budgetAlertData?.parentCadence || 'monthly')}</strong>?
-              </>
-            ) : (
-              <>
-                Would you like me to create a parent budget of <strong>${Math.round(budgetAlertData?.totalNeededInParentCadence || 0).toLocaleString()}{getCadenceLabel(budgetAlertData?.requestedCadence || 'monthly')}</strong> for <strong>{budgetAlertData?.parentCategory?.display_name || budgetAlertData?.parentCategory?.account_detail}</strong>?
-              </>
-            )}
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>No</AlertDialogCancel>
-          <AlertDialogAction onClick={handleBudgetAlertConfirm} className="bg-blue-600 hover:bg-blue-700">
-            Yes
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
+    <ParentBudgetDialog
+      open={budgetAlertData.open}
+      onOpenChange={(isOpen) => setBudgetAlertData(prev => ({ ...prev, open: isOpen }))}
+      parentCategory={budgetAlertData.parentCategory}
+      parentBudget={budgetAlertData.parentBudget}
+      childCategory={budgetAlertData.childCategory}
+      requestedAmount={budgetAlertData.requestedAmount}
+      requestedCadence={budgetAlertData.requestedCadence}
+      totalSiblingsAmount={budgetAlertData.totalSiblingsAmount}
+      overflow={budgetAlertData.overflow}
+      onConfirm={handleBudgetAlertConfirm}
+      onCancel={() => setBudgetAlertData({
+        open: false,
+        parentCategory: null,
+        parentBudget: null,
+        childCategory: null,
+        requestedAmount: 0,
+        requestedCadence: 'monthly',
+        totalSiblingsAmount: 0,
+        overflow: 0
+      })}
+    />
   </>
   );
 }
