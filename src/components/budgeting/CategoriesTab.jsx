@@ -18,7 +18,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import { CursorTooltip } from '@/components/ui/cursor-tooltip';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -389,12 +388,16 @@ export default function CategoriesTab() {
 
     if (hasSuggestion) {
       rows.push(
-        <CursorTooltip
-          key={`tooltip-${categoryWithBudget.id}`}
-          content={<p className="text-xs">Suggested amount based on historical spending</p>}
-        >
-          {rowContent}
-        </CursorTooltip>
+        <TooltipProvider key={`tooltip-${categoryWithBudget.id}`}>
+          <Tooltip delayDuration={200}>
+            <TooltipTrigger asChild>
+              {rowContent}
+            </TooltipTrigger>
+            <TooltipContent>
+              <p className="text-xs">Suggested amount based on historical spending</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       );
     } else {
       rows.push(rowContent);
