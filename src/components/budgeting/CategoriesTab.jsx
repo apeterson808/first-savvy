@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { Button } from '@/components/ui/button';
 import { ChevronDown, ChevronRight, Plus, Minus, Pencil } from 'lucide-react';
-import { formatAccountingAmount, getAllCadenceValues } from '@/utils/cadenceUtils';
+import { formatAccountingAmount, getAllCadenceValues, convertCadence } from '@/utils/cadenceUtils';
 import { Badge } from '@/components/ui/badge';
 import BudgetAllocationDonut from './BudgetAllocationDonut';
 import InlineEditableAmount from './InlineEditableAmount';
@@ -18,6 +18,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import { validateChildBudgetAgainstParent } from '@/utils/budgetValidation';
+import ParentBudgetDialog from './ParentBudgetDialog';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -47,6 +49,17 @@ export default function CategoriesTab() {
 
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
   const [togglingBudgetId, setTogglingBudgetId] = useState(null);
+  const [parentBudgetDialog, setParentBudgetDialog] = useState({
+    open: false,
+    parentCategory: null,
+    parentBudget: null,
+    childCategory: null,
+    requestedAmount: 0,
+    requestedCadence: 'monthly',
+    totalSiblingsAmount: 0,
+    overflow: 0,
+    pendingUpdate: null
+  });
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'types', JSON.stringify(collapsedTypes));
@@ -182,12 +195,109 @@ export default function CategoriesTab() {
     const budget = budgets.find(b => b.id === budgetId);
     if (!budget) return;
 
+    const category = categories.find(c => c.id === budget.chart_account_id);
+    if (!category) return;
+
+    if (category.parent_account_id) {
+      const parentCategory = categories.find(c => c.id === category.parent_account_id);
+      const parentBudget = budgets.find(b => b.chart_account_id === category.parent_account_id);
+
+      const siblingBudgets = budgets.filter(b => {
+        const siblingCategory = categories.find(c => c.id === b.chart_account_id);
+        return siblingCategory?.parent_account_id === category.parent_account_id;
+      });
+
+      const validation = validateChildBudgetAgainstParent(
+        newAmount,
+        editedCadence,
+        parentBudget,
+        siblingBudgets,
+        budgetId
+      );
+
+      if (!validation.isValid) {
+        const totalSiblingsAmount = siblingBudgets
+          .filter(b => b.id !== budgetId)
+          .reduce((sum, b) => {
+            return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', editedCadence);
+          }, 0);
+
+        setParentBudgetDialog({
+          open: true,
+          parentCategory,
+          parentBudget,
+          childCategory: category,
+          requestedAmount: newAmount,
+          requestedCadence: editedCadence,
+          totalSiblingsAmount,
+          overflow: validation.overflow,
+          pendingUpdate: { budgetId, newAmount, editedCadence }
+        });
+        return;
+      }
+    }
+
     setUpdatingBudgetId(budgetId);
     const updateData = {
       allocated_amount: newAmount,
       cadence: editedCadence
     };
     updateBudgetMutation.mutate({ id: budgetId, data: updateData });
+  };
+
+  const handleParentBudgetConfirm = async () => {
+    const { parentCategory, parentBudget, requestedAmount, requestedCadence, overflow, pendingUpdate } = parentBudgetDialog;
+
+    try {
+      if (parentBudget) {
+        const overflowInParentCadence = convertCadence(overflow, requestedCadence, parentBudget.cadence);
+        const newParentAmount = parentBudget.allocated_amount + overflowInParentCadence;
+
+        await firstsavvy.entities.Budget.update(parentBudget.id, {
+          allocated_amount: newParentAmount
+        });
+      } else {
+        const totalNeeded = parentBudgetDialog.totalSiblingsAmount + requestedAmount;
+        const parentAmountInMonthly = convertCadence(totalNeeded, requestedCadence, 'monthly');
+
+        await firstsavvy.entities.Budget.create({
+          chart_account_id: parentCategory.id,
+          allocated_amount: parentAmountInMonthly,
+          cadence: 'monthly',
+          is_active: true
+        });
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['budgets'] });
+
+      if (pendingUpdate) {
+        setUpdatingBudgetId(pendingUpdate.budgetId);
+        updateBudgetMutation.mutate({
+          id: pendingUpdate.budgetId,
+          data: {
+            allocated_amount: pendingUpdate.newAmount,
+            cadence: pendingUpdate.editedCadence
+          }
+        });
+      }
+
+      setParentBudgetDialog({
+        open: false,
+        parentCategory: null,
+        parentBudget: null,
+        childCategory: null,
+        requestedAmount: 0,
+        requestedCadence: 'monthly',
+        totalSiblingsAmount: 0,
+        overflow: 0,
+        pendingUpdate: null
+      });
+
+      toast.success(parentBudget ? 'Parent budget increased' : 'Parent budget created');
+    } catch (error) {
+      toast.error('Failed to update parent budget');
+      console.error(error);
+    }
   };
 
   const renderUnifiedCategoryRow = (categoryWithBudget, index, isChild = false, allCategories = []) => {
@@ -640,6 +750,20 @@ export default function CategoriesTab() {
           />
         </div>
       </div>
+
+      <ParentBudgetDialog
+        open={parentBudgetDialog.open}
+        onOpenChange={(open) => setParentBudgetDialog(prev => ({ ...prev, open }))}
+        parentCategory={parentBudgetDialog.parentCategory}
+        parentBudget={parentBudgetDialog.parentBudget}
+        childCategory={parentBudgetDialog.childCategory}
+        requestedAmount={parentBudgetDialog.requestedAmount}
+        requestedCadence={parentBudgetDialog.requestedCadence}
+        totalSiblingsAmount={parentBudgetDialog.totalSiblingsAmount}
+        overflow={parentBudgetDialog.overflow}
+        onConfirm={handleParentBudgetConfirm}
+        onCancel={() => setParentBudgetDialog(prev => ({ ...prev, open: false }))}
+      />
     </div>
   );
 }
