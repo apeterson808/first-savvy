@@ -59,6 +59,23 @@ export default function InlineEditableAmountWithCadence({
   };
 
   const handleKeyDown = (e) => {
+    // Check if text is selected
+    const input = inputRef.current;
+    const hasSelection = input && input.selectionStart !== input.selectionEnd;
+
+    // If text is selected and user types a digit, replace the selection
+    if (hasSelection && /^\d$/.test(e.key)) {
+      e.preventDefault();
+      const digit = parseInt(e.key);
+      const newAmount = digit / 100;
+      const formatted = newAmount.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      setInputValue(formatted);
+      return;
+    }
+
     // Handle backspace to remove last digit
     if (e.key === 'Backspace') {
       e.preventDefault();
