@@ -175,7 +175,11 @@ export default function CategoriesTab() {
         return;
       }
 
+      console.log('handleToggleBudget - categoryWithBudget:', categoryWithBudget);
+      console.log('handleToggleBudget - parent_account_id:', categoryWithBudget.parent_account_id);
+
       if (categoryWithBudget.parent_account_id) {
+        console.log('Has parent - showing dialog');
         const parentCategory = categories.find(c => c.id === categoryWithBudget.parent_account_id);
         const parentBudget = budgets.find(b => b.chart_account_id === categoryWithBudget.parent_account_id);
 
