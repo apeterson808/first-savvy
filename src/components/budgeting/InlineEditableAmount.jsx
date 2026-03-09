@@ -28,17 +28,19 @@ export default function InlineEditableAmount({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      // Only select all if the value is 0.00
-      if (value === 0) {
-        inputRef.current.select();
-      }
+      // Always select all text
+      inputRef.current.select();
     }
   }, [isEditing, value]);
 
   const handleClick = () => {
     if (isLoading || disabled) return;
-    // Start with 0.00 for calculator-style input
-    setInputValue('0.00');
+    // Start with the current value, formatted
+    const formatted = value.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    setInputValue(formatted);
     setIsEditing(true);
   };
 

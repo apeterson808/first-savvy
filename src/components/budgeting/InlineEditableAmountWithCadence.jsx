@@ -33,17 +33,19 @@ export default function InlineEditableAmountWithCadence({
   useEffect(() => {
     if (isEditing && inputRef.current) {
       inputRef.current.focus();
-      // Auto-select all text if there's an actual amount (not 0.00)
-      if (displayAmount !== 0) {
-        inputRef.current.select();
-      }
+      // Always select all text
+      inputRef.current.select();
     }
   }, [isEditing, displayAmount]);
 
   const handleClick = () => {
     if (isLoading) return;
-    // Start with 0.00 for calculator-style input
-    setInputValue('0.00');
+    // Start with the current value, formatted
+    const formatted = displayAmount.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
+    setInputValue(formatted);
     setSelectedCadence(displayCadence);
     setIsEditing(true);
   };
