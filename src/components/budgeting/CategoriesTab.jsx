@@ -252,24 +252,18 @@ export default function CategoriesTab() {
     updateBudgetMutation.mutate({ id: budgetId, data: updateData });
   };
 
-  const handleParentBudgetConfirm = async () => {
-    const { parentCategory, parentBudget, requestedAmount, requestedCadence, overflow, pendingUpdate } = parentBudgetDialog;
+  const handleParentBudgetConfirm = async (editedAmount) => {
+    const { parentCategory, parentBudget, pendingUpdate } = parentBudgetDialog;
 
     try {
       if (parentBudget) {
-        const overflowInParentCadence = convertCadence(overflow, requestedCadence, parentBudget.cadence);
-        const newParentAmount = parentBudget.allocated_amount + overflowInParentCadence;
-
         await firstsavvy.entities.Budget.update(parentBudget.id, {
-          allocated_amount: newParentAmount
+          allocated_amount: editedAmount
         });
       } else {
-        const totalNeeded = parentBudgetDialog.totalSiblingsAmount + requestedAmount;
-        const parentAmountInMonthly = convertCadence(totalNeeded, requestedCadence, 'monthly');
-
         await firstsavvy.entities.Budget.create({
           chart_account_id: parentCategory.id,
-          allocated_amount: parentAmountInMonthly,
+          allocated_amount: editedAmount,
           cadence: 'monthly',
           is_active: true
         });

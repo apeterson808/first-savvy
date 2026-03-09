@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { AlertTriangle } from 'lucide-react';
 import { convertCadence, formatCadenceAmount } from '@/utils/cadenceUtils';
 import { getCadenceLabel } from '@/utils/budgetValidation';
@@ -19,17 +21,34 @@ export default function ParentBudgetDialog({
   onCancel
 }) {
   const [isCreating, setIsCreating] = useState(false);
+  const [editedParentAmount, setEditedParentAmount] = useState('');
 
   useEffect(() => {
     if (open) {
       setIsCreating(false);
+      const parentCadence = parentBudget?.cadence || 'monthly';
+      const parentAmount = parentBudget?.allocated_amount || 0;
+      const totalNeeded = totalSiblingsAmount + requestedAmount;
+      const overflowInParentCadence = convertCadence(overflow, requestedCadence, parentCadence);
+      const newParentAmount = parentAmount + overflowInParentCadence;
+
+      const calculatedAmount = parentBudget
+        ? newParentAmount
+        : convertCadence(totalNeeded, requestedCadence, 'monthly');
+
+      setEditedParentAmount(calculatedAmount.toFixed(2));
     }
-  }, [open]);
+  }, [open, parentBudget, requestedAmount, requestedCadence, totalSiblingsAmount, overflow]);
 
   const handleConfirm = async () => {
+    const amount = parseFloat(editedParentAmount);
+    if (isNaN(amount) || amount < minimumRequired) {
+      return;
+    }
+
     setIsCreating(true);
     try {
-      await onConfirm();
+      await onConfirm(amount);
     } finally {
       setIsCreating(false);
     }
@@ -46,6 +65,10 @@ export default function ParentBudgetDialog({
   const overflowInParentCadence = convertCadence(overflow, requestedCadence, parentCadence);
   const newParentAmount = parentAmount + overflowInParentCadence;
 
+  const minimumRequired = parentBudget
+    ? totalNeededInParentCadence
+    : convertCadence(totalNeeded, requestedCadence, 'monthly');
+
   const formatAmount = (amount, cadence) => {
     const formatted = formatCadenceAmount(amount, cadence);
     const label = getCadenceLabel(cadence);
@@ -53,6 +76,10 @@ export default function ParentBudgetDialog({
   };
 
   const hasParentBudget = !!parentBudget;
+
+  const enteredAmount = parseFloat(editedParentAmount);
+  const isValidAmount = !isNaN(enteredAmount) && enteredAmount >= minimumRequired;
+  const showError = editedParentAmount !== '' && !isValidAmount;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -96,10 +123,10 @@ export default function ParentBudgetDialog({
                 </div>
               </div>
 
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <div className="border-t border-slate-200 pt-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-slate-700 font-medium">New parent budget:</span>
-                  <span className="font-semibold text-blue-700">{formatAmount(newParentAmount, parentCadence)}</span>
+                  <span className="text-slate-600">Minimum required:</span>
+                  <span className="font-medium text-slate-900">{formatAmount(totalNeededInParentCadence, parentCadence)}</span>
                 </div>
               </div>
             </>
@@ -110,25 +137,45 @@ export default function ParentBudgetDialog({
                   <span className="text-slate-600">Child budget requested:</span>
                   <span className="font-medium">{formatAmount(requestedAmount, requestedCadence)}</span>
                 </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-700 font-medium">Parent budget to create:</span>
-                  <span className="font-semibold text-blue-700">
-                    {formatAmount(convertCadence(totalNeeded, requestedCadence, 'monthly'), 'monthly')}
-                  </span>
+                <div className="border-t border-slate-200 pt-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-slate-600">Minimum required:</span>
+                    <span className="font-medium text-slate-900">{formatAmount(minimumRequired, 'monthly')}</span>
+                  </div>
                 </div>
               </div>
             </>
           )}
 
-          <p className="text-xs text-slate-500">
-            {hasParentBudget
-              ? `The parent budget will be automatically increased to accommodate all child budgets.`
-              : `A new budget will be created for the parent category with enough allocation for the child.`
-            }
-          </p>
+          <div className="space-y-2">
+            <Label htmlFor="parent-budget-amount" className="text-sm font-medium text-slate-700">
+              {hasParentBudget ? 'New parent budget amount' : 'Parent budget amount'}
+            </Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">$</span>
+              <Input
+                id="parent-budget-amount"
+                type="number"
+                step="0.01"
+                min={minimumRequired}
+                value={editedParentAmount}
+                onChange={(e) => setEditedParentAmount(e.target.value)}
+                className={`pl-7 ${showError ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                placeholder="0.00"
+              />
+            </div>
+            {showError && (
+              <p className="text-xs text-red-600">
+                Amount must be at least {formatAmount(minimumRequired, hasParentBudget ? parentCadence : 'monthly')}
+              </p>
+            )}
+            <p className="text-xs text-slate-500">
+              {hasParentBudget
+                ? `Enter the new ${getCadenceLabel(parentCadence)} budget for ${parentCategory.display_name}`
+                : `Enter the monthly budget for ${parentCategory.display_name}`
+              }
+            </p>
+          </div>
         </div>
 
         <DialogFooter>
@@ -137,7 +184,7 @@ export default function ParentBudgetDialog({
           </Button>
           <Button
             onClick={handleConfirm}
-            disabled={isCreating}
+            disabled={isCreating || !isValidAmount}
             className="bg-blue-600 hover:bg-blue-700"
           >
             {isCreating ? 'Processing...' : (hasParentBudget ? 'Increase Parent Budget' : 'Create Parent Budget')}
