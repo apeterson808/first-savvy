@@ -125,6 +125,7 @@ export default function ParentBudgetDialog({
                   min="0"
                   value={editedParentAmount}
                   onChange={(e) => setEditedParentAmount(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   className="w-32 text-right"
                   placeholder="0.00"
                 />
@@ -147,6 +148,7 @@ export default function ParentBudgetDialog({
                       ...prev,
                       [sibling.id]: e.target.value
                     }))}
+                    onFocus={(e) => e.target.select()}
                     className="w-32 text-right"
                     placeholder="0.00"
                   />
@@ -166,6 +168,7 @@ export default function ParentBudgetDialog({
                   min="0"
                   value={editedChildAmount}
                   onChange={(e) => setEditedChildAmount(e.target.value)}
+                  onFocus={(e) => e.target.select()}
                   className="w-32 text-right"
                   placeholder="0.00"
                 />
