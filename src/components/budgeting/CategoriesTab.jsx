@@ -20,13 +20,6 @@ import {
 } from '@/components/ui/tooltip';
 import { validateChildBudgetAgainstParent } from '@/utils/budgetValidation';
 import ParentBudgetDialog from './ParentBudgetDialog';
-import { findBudgetConflicts, generateConflictResolutions } from '@/utils/budgetReconciliation';
-import { AlertCircle } from 'lucide-react';
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from '@/components/ui/alert';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -222,26 +215,24 @@ export default function CategoriesTab() {
         budgetId
       );
 
-      if (!validation.isValid) {
-        const totalSiblingsAmount = siblingBudgets
-          .filter(b => b.id !== budgetId)
-          .reduce((sum, b) => {
-            return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', editedCadence);
-          }, 0);
+      const totalSiblingsAmount = siblingBudgets
+        .filter(b => b.id !== budgetId)
+        .reduce((sum, b) => {
+          return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', editedCadence);
+        }, 0);
 
-        setParentBudgetDialog({
-          open: true,
-          parentCategory,
-          parentBudget,
-          childCategory: category,
-          requestedAmount: newAmount,
-          requestedCadence: editedCadence,
-          totalSiblingsAmount,
-          overflow: validation.overflow,
-          pendingUpdate: { budgetId, newAmount, editedCadence }
-        });
-        return;
-      }
+      setParentBudgetDialog({
+        open: true,
+        parentCategory,
+        parentBudget,
+        childCategory: category,
+        requestedAmount: newAmount,
+        requestedCadence: editedCadence,
+        totalSiblingsAmount,
+        overflow: validation.overflow,
+        pendingUpdate: { budgetId, newAmount, editedCadence }
+      });
+      return;
     }
 
     setUpdatingBudgetId(budgetId);
@@ -724,62 +715,9 @@ export default function CategoriesTab() {
 
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense' && b.is_active);
 
-  const budgetConflicts = useMemo(() => {
-    return findBudgetConflicts(budgets, categories);
-  }, [budgets, categories]);
-
-  const handleFixAllConflicts = async () => {
-    const resolutions = generateConflictResolutions(budgetConflicts);
-
-    try {
-      for (const resolution of resolutions) {
-        await firstsavvy.entities.Budget.update(resolution.id, {
-          allocated_amount: resolution.newAmount
-        });
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ['budgets'] });
-      toast.success(`Fixed ${resolutions.length} parent budget${resolutions.length > 1 ? 's' : ''}`);
-    } catch (error) {
-      toast.error('Failed to fix budget conflicts');
-      console.error(error);
-    }
-  };
 
   return (
     <div className="space-y-4">
-      {budgetConflicts.length > 0 && (
-        <Alert className="bg-amber-50 border-amber-200">
-          <AlertCircle className="h-4 w-4 text-amber-600" />
-          <AlertTitle className="text-amber-800">Parent Budget Conflicts Detected</AlertTitle>
-          <AlertDescription className="text-sm text-amber-700">
-            <div className="space-y-2">
-              <p>
-                {budgetConflicts.length} parent budget{budgetConflicts.length > 1 ? 's are' : ' is'} insufficient to cover child budgets:
-              </p>
-              <ul className="list-disc list-inside space-y-1 ml-2">
-                {budgetConflicts.map(conflict => (
-                  <li key={conflict.parentBudget.id}>
-                    <strong>{conflict.parentCategory.display_name}</strong>: needs{' '}
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(conflict.totalChildrenAmount)}
-                    , currently{' '}
-                    {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0 }).format(conflict.parentBudget.allocated_amount)}
-                    {' '}({conflict.cadence})
-                  </li>
-                ))}
-              </ul>
-              <Button
-                onClick={handleFixAllConflicts}
-                size="sm"
-                className="mt-3 bg-amber-600 hover:bg-amber-700"
-              >
-                Auto-Fix All Parent Budgets
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <div className="space-y-6">
           {renderSection(

@@ -285,7 +285,6 @@ export default function AddBudgetItemSheet({
                b.chart_account_id !== selectedCategoryId;
       });
 
-      // Use the validation utility with cadence conversion
       const validation = validateChildBudgetAgainstParent(
         newAmount,
         selectedCadence,
@@ -297,24 +296,22 @@ export default function AddBudgetItemSheet({
       const parentCategory = availableCategories.find(c => c.id === parentAccountId) ||
         queryClient.getQueryData(['user-chart-accounts-income-expense', activeProfile.id])?.find(c => c.id === parentAccountId);
 
-      if (!validation.isValid) {
-        const totalSiblingsAmount = siblingBudgets
-          .reduce((sum, b) => {
-            return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', selectedCadence);
-          }, 0);
+      const totalSiblingsAmount = siblingBudgets
+        .reduce((sum, b) => {
+          return sum + convertCadence(b.allocated_amount || 0, b.cadence || 'monthly', selectedCadence);
+        }, 0);
 
-        setBudgetAlertData({
-          open: true,
-          parentCategory,
-          parentBudget,
-          childCategory: selectedAccount,
-          requestedAmount: newAmount,
-          requestedCadence: selectedCadence,
-          totalSiblingsAmount,
-          overflow: validation.overflow
-        });
-        return;
-      }
+      setBudgetAlertData({
+        open: true,
+        parentCategory,
+        parentBudget,
+        childCategory: selectedAccount,
+        requestedAmount: newAmount,
+        requestedCadence: selectedCadence,
+        totalSiblingsAmount,
+        overflow: validation.overflow
+      });
+      return;
     }
 
     await saveBudget(selectedAccount, newAmount);

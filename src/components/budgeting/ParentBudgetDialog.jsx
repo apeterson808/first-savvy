@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Info } from 'lucide-react';
 import { convertCadence, formatCadenceAmount } from '@/utils/cadenceUtils';
 import { getCadenceLabel } from '@/utils/budgetValidation';
 
@@ -29,11 +29,10 @@ export default function ParentBudgetDialog({
       const parentCadence = parentBudget?.cadence || 'monthly';
       const parentAmount = parentBudget?.allocated_amount || 0;
       const totalNeeded = totalSiblingsAmount + requestedAmount;
-      const overflowInParentCadence = convertCadence(overflow, requestedCadence, parentCadence);
-      const newParentAmount = parentAmount + overflowInParentCadence;
+      const totalNeededInParentCadence = convertCadence(totalNeeded, requestedCadence, parentCadence);
 
       const calculatedAmount = parentBudget
-        ? newParentAmount
+        ? Math.max(parentAmount, totalNeededInParentCadence)
         : convertCadence(totalNeeded, requestedCadence, 'monthly');
 
       setEditedParentAmount(calculatedAmount.toFixed(2));
@@ -76,26 +75,53 @@ export default function ParentBudgetDialog({
   };
 
   const hasParentBudget = !!parentBudget;
+  const hasOverflow = overflow > 0;
 
   const enteredAmount = parseFloat(editedParentAmount);
   const isValidAmount = !isNaN(enteredAmount) && enteredAmount >= minimumRequired;
   const showError = editedParentAmount !== '' && !isValidAmount;
 
+  const getDialogTitle = () => {
+    if (!hasParentBudget) return 'Create Parent Budget?';
+    if (hasOverflow) return 'Increase Parent Budget?';
+    return 'Budget Preview';
+  };
+
+  const getDialogIcon = () => {
+    if (!hasParentBudget || hasOverflow) {
+      return <AlertTriangle className="w-5 h-5" />;
+    }
+    return <Info className="w-5 h-5" />;
+  };
+
+  const getDialogColor = () => {
+    if (!hasParentBudget || hasOverflow) return 'text-amber-600';
+    return 'text-blue-600';
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-amber-600">
-            <AlertTriangle className="w-5 h-5" />
-            {hasParentBudget ? 'Increase Parent Budget?' : 'Create Parent Budget?'}
+          <DialogTitle className={`flex items-center gap-2 ${getDialogColor()}`}>
+            {getDialogIcon()}
+            {getDialogTitle()}
           </DialogTitle>
           <DialogDescription className="text-sm text-slate-600">
             {hasParentBudget ? (
-              <>
-                Setting <strong>{childCategory.display_name}</strong> to{' '}
-                {formatAmount(requestedAmount, requestedCadence)} would exceed the parent budget
-                for <strong>{parentCategory.display_name}</strong>.
-              </>
+              hasOverflow ? (
+                <>
+                  Setting <strong>{childCategory.display_name}</strong> to{' '}
+                  {formatAmount(requestedAmount, requestedCadence)} would exceed the parent budget
+                  for <strong>{parentCategory.display_name}</strong>.
+                </>
+              ) : (
+                <>
+                  Setting <strong>{childCategory.display_name}</strong> to{' '}
+                  {formatAmount(requestedAmount, requestedCadence)} is within the parent budget
+                  for <strong>{parentCategory.display_name}</strong>.
+                </>
+              )
             ) : (
               <>
                 <strong>{parentCategory.display_name}</strong> needs a budget before you can
@@ -108,7 +134,7 @@ export default function ParentBudgetDialog({
         <div className="space-y-4 py-4">
           {hasParentBudget ? (
             <>
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-2">
+              <div className={`${hasOverflow ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'} border rounded-lg p-3 space-y-2`}>
                 <div className="flex justify-between text-sm">
                   <span className="text-slate-600">Current parent budget:</span>
                   <span className="font-medium">{formatAmount(parentAmount, parentCadence)}</span>
@@ -117,10 +143,17 @@ export default function ParentBudgetDialog({
                   <span className="text-slate-600">Total child budgets needed:</span>
                   <span className="font-medium">{formatAmount(totalNeededInParentCadence, parentCadence)}</span>
                 </div>
-                <div className="flex justify-between text-sm border-t border-slate-300 pt-2">
-                  <span className="text-slate-600">Increase needed:</span>
-                  <span className="font-medium text-amber-600">+{formatAmount(overflowInParentCadence, parentCadence)}</span>
-                </div>
+                {hasOverflow ? (
+                  <div className="flex justify-between text-sm border-t border-amber-300 pt-2">
+                    <span className="text-slate-600">Increase needed:</span>
+                    <span className="font-medium text-amber-600">+{formatAmount(overflowInParentCadence, parentCadence)}</span>
+                  </div>
+                ) : (
+                  <div className="flex justify-between text-sm border-t border-blue-300 pt-2">
+                    <span className="text-slate-600">Remaining:</span>
+                    <span className="font-medium text-blue-600">{formatAmount(parentAmount - totalNeededInParentCadence, parentCadence)}</span>
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-slate-200 pt-2">
@@ -187,7 +220,7 @@ export default function ParentBudgetDialog({
             disabled={isCreating || !isValidAmount}
             className="bg-blue-600 hover:bg-blue-700"
           >
-            {isCreating ? 'Processing...' : (hasParentBudget ? 'Increase Parent Budget' : 'Create Parent Budget')}
+            {isCreating ? 'Processing...' : hasParentBudget ? (hasOverflow ? 'Increase & Continue' : 'Continue') : 'Create Parent Budget'}
           </Button>
         </DialogFooter>
       </DialogContent>
