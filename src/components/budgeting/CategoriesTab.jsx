@@ -212,7 +212,7 @@ export default function CategoriesTab() {
     const isNoBudget = budgetStatus === 'none';
     const isDisabled = isInactive || isNoBudget;
 
-    const textColorClass = isDisabled ? 'text-slate-300' : '';
+    const textColorClass = isInactive ? 'text-slate-300' : '';
     const isToggling = togglingBudgetId === (budget?.id || categoryWithBudget.id);
 
     const cadence = budget?.cadence || 'monthly';
@@ -262,7 +262,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-500 italic"
+              className="text-slate-700 italic"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -273,7 +273,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-500 italic"
+              className="text-slate-700 italic"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -285,7 +285,7 @@ export default function CategoriesTab() {
               isLoading={isUpdating}
               isMonthlyColumn={true}
               disabled={true}
-              className="text-slate-500 italic"
+              className="text-slate-700 italic"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -296,7 +296,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-500 italic"
+              className="text-slate-700 italic"
               isSuggested={true}
               suppressTooltip={true}
             />
