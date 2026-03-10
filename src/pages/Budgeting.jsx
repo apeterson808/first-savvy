@@ -14,6 +14,9 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
 } from '@/components/ui/dropdown-menu';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
@@ -148,49 +151,50 @@ export default function Budgeting() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>View</DropdownMenuLabel>
                   <DropdownMenuItem
                     onClick={() => categoriesTabRef.current?.openCategoryWizard()}
-                    className="pl-6"
                   >
                     Add New Category
                   </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const newValue = !categoryFilters.hideNotBudgeted;
-                      setCategoryFilters(prev => ({
-                        ...prev,
-                        hideNotBudgeted: newValue
-                      }));
-                      if (categoriesTabRef.current?.setFilters) {
-                        categoriesTabRef.current.setFilters(prev => ({
-                          ...prev,
-                          hideNotBudgeted: newValue
-                        }));
-                      }
-                    }}
-                    className="pl-6"
-                  >
-                    {categoryFilters.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
-                  </DropdownMenuItem>
-                  <DropdownMenuItem
-                    onClick={() => {
-                      const newValue = !categoryFilters.hideSuggestedBudget;
-                      setCategoryFilters(prev => ({
-                        ...prev,
-                        hideSuggestedBudget: newValue
-                      }));
-                      if (categoriesTabRef.current?.setFilters) {
-                        categoriesTabRef.current.setFilters(prev => ({
-                          ...prev,
-                          hideSuggestedBudget: newValue
-                        }));
-                      }
-                    }}
-                    className="pl-6"
-                  >
-                    {categoryFilters.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
-                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>View</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const newValue = !categoryFilters.hideNotBudgeted;
+                          setCategoryFilters(prev => ({
+                            ...prev,
+                            hideNotBudgeted: newValue
+                          }));
+                          if (categoriesTabRef.current?.setFilters) {
+                            categoriesTabRef.current.setFilters(prev => ({
+                              ...prev,
+                              hideNotBudgeted: newValue
+                            }));
+                          }
+                        }}
+                      >
+                        {categoryFilters.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          const newValue = !categoryFilters.hideSuggestedBudget;
+                          setCategoryFilters(prev => ({
+                            ...prev,
+                            hideSuggestedBudget: newValue
+                          }));
+                          if (categoriesTabRef.current?.setFilters) {
+                            categoriesTabRef.current.setFilters(prev => ({
+                              ...prev,
+                              hideSuggestedBudget: newValue
+                            }));
+                          }
+                        }}
+                      >
+                        {categoryFilters.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
