@@ -12,6 +12,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -147,6 +148,12 @@ export default function Budgeting() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    onClick={() => categoriesTabRef.current?.openCategoryWizard()}
+                  >
+                    Add New Category
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuLabel>View</DropdownMenuLabel>
                   <DropdownMenuItem
                     onClick={() => {
@@ -186,15 +193,6 @@ export default function Budgeting() {
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-              <Button
-                onClick={() => categoriesTabRef.current?.openCategoryWizard()}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
-                <Plus className="h-4 w-4" />
-                New Category
-              </Button>
             </div>
           )
         }
