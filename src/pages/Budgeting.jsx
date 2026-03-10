@@ -148,13 +148,13 @@ export default function Budgeting() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>View</DropdownMenuLabel>
                   <DropdownMenuItem
                     onClick={() => categoriesTabRef.current?.openCategoryWizard()}
+                    className="pl-6"
                   >
                     Add New Category
                   </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>View</DropdownMenuLabel>
                   <DropdownMenuItem
                     onClick={() => {
                       const newValue = !categoryFilters.hideNotBudgeted;
