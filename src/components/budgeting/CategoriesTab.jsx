@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
-const CategoriesTab = forwardRef((props, ref) => {
+export default function CategoriesTab() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const {
@@ -64,13 +64,6 @@ const CategoriesTab = forwardRef((props, ref) => {
     siblingBudgets: [],
     pendingUpdate: null
   });
-
-  useImperativeHandle(ref, () => ({
-    openCategoryWizard: () => {
-      setWizardInitialClass(null);
-      setShowCategoryWizard(true);
-    }
-  }));
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'types', JSON.stringify(collapsedTypes));
@@ -677,9 +670,25 @@ const CategoriesTab = forwardRef((props, ref) => {
     const monthlyFormatted = formatAccountingAmount(totals.monthly);
     const yearlyFormatted = formatAccountingAmount(totals.yearly);
 
+    const classType = title.includes('Income') ? 'income' : 'expense';
+
     return (
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-3">{title}</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+          <Button
+            onClick={() => {
+              setWizardInitialClass(classType);
+              setShowCategoryWizard(true);
+            }}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Category
+          </Button>
+        </div>
         {categories.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No categories available
@@ -887,8 +896,4 @@ const CategoriesTab = forwardRef((props, ref) => {
       />
     </div>
   );
-});
-
-CategoriesTab.displayName = 'CategoriesTab';
-
-export default CategoriesTab;
+}

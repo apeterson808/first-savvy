@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -23,7 +23,6 @@ export default function Budgeting() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || 'overview';
   });
-  const categoriesTabRef = useRef();
 
   React.useEffect(() => {
     const handleUrlChange = () => {
@@ -122,19 +121,6 @@ export default function Budgeting() {
             },
           },
         }}
-        actions={
-          activeTab === 'modify_budget' && (
-            <Button
-              onClick={() => categoriesTabRef.current?.openCategoryWizard()}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Category
-            </Button>
-          )
-        }
       />
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
@@ -163,7 +149,7 @@ export default function Budgeting() {
         </TabsContent>
 
         <TabsContent value="modify_budget" className="mt-0">
-          <CategoriesTab ref={categoriesTabRef} />
+          <CategoriesTab />
         </TabsContent>
       </Tabs>
 
