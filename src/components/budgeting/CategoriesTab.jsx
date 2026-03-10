@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/tooltip';
 import { validateChildBudgetAgainstParent } from '@/utils/budgetValidation';
 import ParentBudgetDialog from './ParentBudgetDialog';
+import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
@@ -49,6 +50,8 @@ export default function CategoriesTab() {
 
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
   const [togglingBudgetId, setTogglingBudgetId] = useState(null);
+  const [showCategoryWizard, setShowCategoryWizard] = useState(false);
+  const [wizardInitialClass, setWizardInitialClass] = useState(null);
   const [parentBudgetDialog, setParentBudgetDialog] = useState({
     open: false,
     parentCategory: null,
@@ -667,8 +670,25 @@ export default function CategoriesTab() {
     const monthlyFormatted = formatAccountingAmount(totals.monthly);
     const yearlyFormatted = formatAccountingAmount(totals.yearly);
 
+    const classType = title.includes('Income') ? 'income' : 'expense';
+
     return (
       <div className="mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold text-slate-800">{title}</h2>
+          <Button
+            onClick={() => {
+              setWizardInitialClass(classType);
+              setShowCategoryWizard(true);
+            }}
+            variant="outline"
+            size="sm"
+            className="gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New Category
+          </Button>
+        </div>
         {categories.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No categories available
@@ -862,6 +882,17 @@ export default function CategoriesTab() {
         siblingBudgets={parentBudgetDialog.siblingBudgets}
         onConfirm={handleParentBudgetConfirm}
         onCancel={() => setParentBudgetDialog(prev => ({ ...prev, open: false }))}
+      />
+
+      <AccountCreationWizard
+        open={showCategoryWizard}
+        onOpenChange={setShowCategoryWizard}
+        initialAccountType="budget"
+        initialClass={wizardInitialClass}
+        onAccountCreated={() => {
+          queryClient.invalidateQueries(['chartAccounts']);
+          queryClient.invalidateQueries(['budgets']);
+        }}
       />
     </div>
   );
