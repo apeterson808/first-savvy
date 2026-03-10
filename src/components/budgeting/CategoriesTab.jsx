@@ -421,7 +421,7 @@ export default function CategoriesTab() {
     const isNoBudget = budgetStatus === 'none';
     const isDisabled = isInactive || isNoBudget;
 
-    const textColorClass = (isInactive || hasSuggestion || isNoBudget) ? 'text-slate-500 italic opacity-40' : 'text-slate-900';
+    const textColorClass = (isInactive || hasSuggestion || isNoBudget) ? 'text-slate-600 italic opacity-70' : 'text-slate-900';
     const isToggling = togglingBudgetId === (budget?.id || categoryWithBudget.id);
 
     const cadence = budget?.cadence || 'monthly';
@@ -469,7 +469,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-500 italic opacity-40"
+              className="text-slate-600 italic opacity-70"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -480,7 +480,7 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-500 italic opacity-40"
+              className="text-slate-600 italic opacity-70"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -492,7 +492,7 @@ export default function CategoriesTab() {
               isLoading={isUpdating}
               isMonthlyColumn={true}
               disabled={true}
-              className="text-slate-500 italic opacity-40"
+              className="text-slate-600 italic opacity-70"
               isSuggested={true}
               suppressTooltip={true}
             />
@@ -503,17 +503,17 @@ export default function CategoriesTab() {
               onUpdate={(newAmount, editedCadence) => handleUpdateBudgetAmount(budget?.id, newAmount, editedCadence)}
               isLoading={isUpdating}
               disabled={true}
-              className="text-slate-500 italic opacity-40"
+              className="text-slate-600 italic opacity-70"
               isSuggested={true}
               suppressTooltip={true}
             />
           </>
         ) : isNoBudget ? (
           <>
-            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
-            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
-            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
-            <td className="px-4 py-0.5 text-center text-slate-500 italic opacity-40">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-600 italic opacity-70">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-600 italic opacity-70">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-600 italic opacity-70">-</td>
+            <td className="px-4 py-0.5 text-center text-slate-600 italic opacity-70">-</td>
           </>
         ) : (
           <>
