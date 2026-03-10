@@ -97,8 +97,8 @@ export default function Budgeting() {
   }
 
   return (
-    <div className="flex flex-col h-screen">
-      <div className="p-4 md:p-6 pb-0">
+    <div className="flex flex-col">
+      <div className="p-4 md:p-6 pb-0 sticky top-0 bg-slate-100 z-10">
         {connectionError && (
           <Alert variant="destructive" className="mb-6">
             <AlertCircle className="h-4 w-4" />
@@ -205,7 +205,7 @@ export default function Budgeting() {
         <div className="border-b mt-4" />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-4">
+      <div className="px-4 md:px-6 pt-4 pb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="overview" className="mt-0">
             {!hasSetupStarted ? (
