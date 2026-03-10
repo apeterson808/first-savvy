@@ -679,7 +679,6 @@ const CategoriesTab = forwardRef((props, ref) => {
 
     return (
       <div className="mb-6">
-        <h2 className="text-lg font-semibold text-slate-800 mb-3">{title}</h2>
         {categories.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             No categories available
