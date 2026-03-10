@@ -10,7 +10,7 @@ import { format, subMonths, startOfMonth } from 'date-fns';
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuCheckboxItem,
+  DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -143,34 +143,32 @@ export default function Budgeting() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuCheckboxItem
-                    checked={categoriesTabRef.current?.filters?.hideNotBudgeted || false}
-                    onCheckedChange={(checked) => {
+                  <DropdownMenuItem
+                    onClick={() => {
                       if (categoriesTabRef.current?.setFilters) {
                         categoriesTabRef.current.setFilters(prev => ({
                           ...prev,
-                          hideNotBudgeted: checked
+                          hideNotBudgeted: !prev.hideNotBudgeted
                         }));
                         forceUpdate({});
                       }
                     }}
                   >
-                    Hide Not Budgeted
-                  </DropdownMenuCheckboxItem>
-                  <DropdownMenuCheckboxItem
-                    checked={categoriesTabRef.current?.filters?.hideSuggestedBudget || false}
-                    onCheckedChange={(checked) => {
+                    {categoriesTabRef.current?.filters?.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => {
                       if (categoriesTabRef.current?.setFilters) {
                         categoriesTabRef.current.setFilters(prev => ({
                           ...prev,
-                          hideSuggestedBudget: checked
+                          hideSuggestedBudget: !prev.hideSuggestedBudget
                         }));
                         forceUpdate({});
                       }
                     }}
                   >
-                    Hide Suggested Budget
-                  </DropdownMenuCheckboxItem>
+                    {categoriesTabRef.current?.filters?.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
               <Button
