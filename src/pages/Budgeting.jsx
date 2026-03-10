@@ -30,7 +30,10 @@ export default function Budgeting() {
     return urlParams.get('tab') || 'overview';
   });
   const categoriesTabRef = useRef();
-  const [, forceUpdate] = useState({});
+  const [categoryFilters, setCategoryFilters] = useState({
+    hideNotBudgeted: false,
+    hideSuggestedBudget: false
+  });
 
   React.useEffect(() => {
     const handleUrlChange = () => {
@@ -145,29 +148,37 @@ export default function Budgeting() {
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
                     onClick={() => {
+                      const newValue = !categoryFilters.hideNotBudgeted;
+                      setCategoryFilters(prev => ({
+                        ...prev,
+                        hideNotBudgeted: newValue
+                      }));
                       if (categoriesTabRef.current?.setFilters) {
                         categoriesTabRef.current.setFilters(prev => ({
                           ...prev,
-                          hideNotBudgeted: !prev.hideNotBudgeted
+                          hideNotBudgeted: newValue
                         }));
-                        forceUpdate({});
                       }
                     }}
                   >
-                    {categoriesTabRef.current?.filters?.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
+                    {categoryFilters.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
                   </DropdownMenuItem>
                   <DropdownMenuItem
                     onClick={() => {
+                      const newValue = !categoryFilters.hideSuggestedBudget;
+                      setCategoryFilters(prev => ({
+                        ...prev,
+                        hideSuggestedBudget: newValue
+                      }));
                       if (categoriesTabRef.current?.setFilters) {
                         categoriesTabRef.current.setFilters(prev => ({
                           ...prev,
-                          hideSuggestedBudget: !prev.hideSuggestedBudget
+                          hideSuggestedBudget: newValue
                         }));
-                        forceUpdate({});
                       }
                     }}
                   >
-                    {categoriesTabRef.current?.filters?.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
+                    {categoryFilters.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
