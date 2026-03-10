@@ -113,29 +113,16 @@ export default function ParentBudgetDialog({
 
         <div className="space-y-3 py-4">
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-slate-700">
-                {parentCategory.display_name}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500">$</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={editedParentAmount}
-                  onChange={(e) => setEditedParentAmount(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  className="w-32 text-right"
-                  placeholder="0.00"
-                />
+            {/* Parent Budget */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Parent Budget
+                </span>
               </div>
-            </div>
-
-            {siblingBudgets.map((sibling) => (
-              <div key={sibling.id} className="flex items-center justify-between pl-4">
-                <span className="text-sm text-slate-600">
-                  {sibling.categoryName}
+              <div className="flex items-center justify-between">
+                <span className="text-base font-semibold text-slate-900">
+                  {parentCategory.display_name}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-slate-500">$</span>
@@ -143,44 +130,84 @@ export default function ParentBudgetDialog({
                     type="number"
                     step="0.01"
                     min="0"
-                    value={editedSiblingAmounts[sibling.id] || '0.00'}
-                    onChange={(e) => setEditedSiblingAmounts(prev => ({
-                      ...prev,
-                      [sibling.id]: e.target.value
-                    }))}
+                    value={editedParentAmount}
+                    onChange={(e) => setEditedParentAmount(e.target.value)}
+                    onFocus={(e) => e.target.select()}
+                    className="w-32 text-right font-medium"
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div className="border-t border-slate-300"></div>
+
+            {/* Child Budgets */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                  Child Budgets (subtracted from parent)
+                </span>
+              </div>
+
+              {siblingBudgets.map((sibling) => (
+                <div key={sibling.id} className="flex items-center justify-between pl-6 py-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-400">−</span>
+                    <span className="text-sm text-slate-700">
+                      {sibling.categoryName}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-500">$</span>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={editedSiblingAmounts[sibling.id] || '0.00'}
+                      onChange={(e) => setEditedSiblingAmounts(prev => ({
+                        ...prev,
+                        [sibling.id]: e.target.value
+                      }))}
+                      onFocus={(e) => e.target.select()}
+                      className="w-32 text-right"
+                      placeholder="0.00"
+                    />
+                  </div>
+                </div>
+              ))}
+
+              <div className="flex items-center justify-between pl-6 py-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-400">−</span>
+                  <span className="text-sm font-medium text-slate-900">
+                    {childCategory.display_name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500">$</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editedChildAmount}
+                    onChange={(e) => setEditedChildAmount(e.target.value)}
                     onFocus={(e) => e.target.select()}
                     className="w-32 text-right"
                     placeholder="0.00"
                   />
                 </div>
               </div>
-            ))}
-
-            <div className="flex items-center justify-between pl-4">
-              <span className="text-sm font-medium text-slate-700">
-                {childCategory.display_name}
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-slate-500">$</span>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={editedChildAmount}
-                  onChange={(e) => setEditedChildAmount(e.target.value)}
-                  onFocus={(e) => e.target.select()}
-                  className="w-32 text-right"
-                  placeholder="0.00"
-                />
-              </div>
             </div>
 
+            {/* Remaining */}
             <div className="border-t border-slate-300 pt-3 mt-3">
               <div className="flex items-center justify-between">
-                <span className={`text-sm font-medium ${remaining < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                <span className={`text-sm font-semibold ${remaining < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                   Remaining
                 </span>
-                <div className={`text-sm font-medium tabular-nums ${remaining < 0 ? 'text-red-600' : 'text-slate-900'}`}>
+                <div className={`text-base font-semibold tabular-nums ${remaining < 0 ? 'text-red-600' : 'text-slate-900'}`}>
                   {formatAmount(remaining)}
                 </div>
               </div>
