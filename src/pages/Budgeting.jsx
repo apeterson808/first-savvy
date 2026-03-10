@@ -11,6 +11,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
@@ -146,6 +147,7 @@ export default function Budgeting() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>View</DropdownMenuLabel>
                   <DropdownMenuItem
                     onClick={() => {
                       const newValue = !categoryFilters.hideNotBudgeted;
@@ -160,6 +162,7 @@ export default function Budgeting() {
                         }));
                       }
                     }}
+                    className="pl-6"
                   >
                     {categoryFilters.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
                   </DropdownMenuItem>
@@ -177,6 +180,7 @@ export default function Budgeting() {
                         }));
                       }
                     }}
+                    className="pl-6"
                   >
                     {categoryFilters.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
                   </DropdownMenuItem>
