@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useBudgetData } from '@/hooks/useBudgetData';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,7 @@ import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
 
-export default function CategoriesTab() {
+const CategoriesTab = forwardRef((props, ref) => {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const {
@@ -64,6 +64,13 @@ export default function CategoriesTab() {
     siblingBudgets: [],
     pendingUpdate: null
   });
+
+  useImperativeHandle(ref, () => ({
+    openCategoryWizard: () => {
+      setWizardInitialClass(null);
+      setShowCategoryWizard(true);
+    }
+  }));
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'types', JSON.stringify(collapsedTypes));
@@ -829,20 +836,6 @@ export default function CategoriesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
-        <Button
-          onClick={() => {
-            setWizardInitialClass(null);
-            setShowCategoryWizard(true);
-          }}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
-          <Plus className="h-4 w-4" />
-          New Category
-        </Button>
-      </div>
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
         <div className="space-y-6">
           {renderSection(
@@ -894,4 +887,8 @@ export default function CategoriesTab() {
       />
     </div>
   );
-}
+});
+
+CategoriesTab.displayName = 'CategoriesTab';
+
+export default CategoriesTab;
