@@ -2,11 +2,17 @@ import React, { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
-import { Plus, AlertCircle } from 'lucide-react';
+import { Plus, AlertCircle, Settings } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { useAuth } from '@/contexts/AuthContext';
 import { PageTabs } from '@/components/common/PageTabs';
 import { format, subMonths, startOfMonth } from 'date-fns';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetTrackerContainer from '../components/budgeting/BudgetTrackerContainer';
@@ -24,6 +30,7 @@ export default function Budgeting() {
     return urlParams.get('tab') || 'overview';
   });
   const categoriesTabRef = useRef();
+  const [, forceUpdate] = useState({});
 
   React.useEffect(() => {
     const handleUrlChange = () => {
@@ -124,15 +131,58 @@ export default function Budgeting() {
         }}
         actions={
           activeTab === 'modify_budget' && (
-            <Button
-              onClick={() => categoriesTabRef.current?.openCategoryWizard()}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              New Category
-            </Button>
+            <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuCheckboxItem
+                    checked={categoriesTabRef.current?.filters?.hideNotBudgeted || false}
+                    onCheckedChange={(checked) => {
+                      if (categoriesTabRef.current?.setFilters) {
+                        categoriesTabRef.current.setFilters(prev => ({
+                          ...prev,
+                          hideNotBudgeted: checked
+                        }));
+                        forceUpdate({});
+                      }
+                    }}
+                  >
+                    Hide Not Budgeted
+                  </DropdownMenuCheckboxItem>
+                  <DropdownMenuCheckboxItem
+                    checked={categoriesTabRef.current?.filters?.hideSuggestedBudget || false}
+                    onCheckedChange={(checked) => {
+                      if (categoriesTabRef.current?.setFilters) {
+                        categoriesTabRef.current.setFilters(prev => ({
+                          ...prev,
+                          hideSuggestedBudget: checked
+                        }));
+                        forceUpdate({});
+                      }
+                    }}
+                  >
+                    Hide Suggested Budget
+                  </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              <Button
+                onClick={() => categoriesTabRef.current?.openCategoryWizard()}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                New Category
+              </Button>
+            </div>
           )
         }
       />

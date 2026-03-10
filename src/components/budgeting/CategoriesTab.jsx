@@ -23,6 +23,7 @@ import ParentBudgetDialog from './ParentBudgetDialog';
 import AccountCreationWizard from '@/components/banking/AccountCreationWizard';
 
 const STORAGE_KEY_PREFIX = 'categoriesTab_collapsed_';
+const STORAGE_KEY_FILTERS = 'categoriesTab_filters';
 
 const CategoriesTab = forwardRef((props, ref) => {
   const queryClient = useQueryClient();
@@ -48,6 +49,14 @@ const CategoriesTab = forwardRef((props, ref) => {
     return saved ? new Set(JSON.parse(saved)) : new Set();
   });
 
+  const [filters, setFilters] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_FILTERS);
+    return saved ? JSON.parse(saved) : {
+      hideNotBudgeted: false,
+      hideSuggestedBudget: false
+    };
+  });
+
   const [updatingBudgetId, setUpdatingBudgetId] = useState(null);
   const [togglingBudgetId, setTogglingBudgetId] = useState(null);
   const [showCategoryWizard, setShowCategoryWizard] = useState(false);
@@ -69,12 +78,18 @@ const CategoriesTab = forwardRef((props, ref) => {
     openCategoryWizard: () => {
       setWizardInitialClass(null);
       setShowCategoryWizard(true);
-    }
+    },
+    filters,
+    setFilters
   }));
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'types', JSON.stringify(collapsedTypes));
   }, [collapsedTypes]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_FILTERS, JSON.stringify(filters));
+  }, [filters]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_PREFIX + 'parents', JSON.stringify([...expandedParents]));
@@ -413,6 +428,17 @@ const CategoriesTab = forwardRef((props, ref) => {
     const { budget, budgetStatus } = categoryWithBudget;
     const IconComponent = Icons[categoryWithBudget.icon] || Icons.Circle;
 
+    const suggestedAmount = historicalAverages[categoryWithBudget.id] || 0;
+    const hasSuggestion = budgetStatus === 'none' && suggestedAmount > 0;
+
+    if (filters.hideNotBudgeted && budgetStatus === 'none' && !hasSuggestion) {
+      return [];
+    }
+
+    if (filters.hideSuggestedBudget && hasSuggestion) {
+      return [];
+    }
+
     const children = allCategories
       .filter(c => c.parent_account_id === categoryWithBudget.id)
       .sort((a, b) => {
@@ -424,8 +450,6 @@ const CategoriesTab = forwardRef((props, ref) => {
     const isParentExpanded = expandedParents.has(categoryWithBudget.id);
 
     const rows = [];
-    const suggestedAmount = historicalAverages[categoryWithBudget.id] || 0;
-    const hasSuggestion = budgetStatus === 'none' && suggestedAmount > 0;
 
     const isInactive = budgetStatus === 'inactive';
     const isNoBudget = budgetStatus === 'none';
