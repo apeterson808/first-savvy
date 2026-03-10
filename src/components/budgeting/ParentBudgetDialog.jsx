@@ -31,20 +31,22 @@ export default function ParentBudgetDialog({
       const parentCadence = parentBudget?.cadence || 'monthly';
       const parentAmount = parentBudget?.allocated_amount || 0;
 
-      const requestedInParentCadence = convertCadence(requestedAmount, requestedCadence, parentCadence);
-      const totalSiblingsInParentCadence = convertCadence(totalSiblingsAmount, requestedCadence, parentCadence);
-      const totalNeededInParentCadence = totalSiblingsInParentCadence + requestedInParentCadence;
+      const requestedInRequestedCadence = requestedAmount;
+      const totalSiblingsInRequestedCadence = convertCadence(totalSiblingsAmount, requestedCadence, requestedCadence);
+
+      const parentAmountInRequestedCadence = convertCadence(parentAmount, parentCadence, requestedCadence);
+      const totalNeededInRequestedCadence = totalSiblingsInRequestedCadence + requestedInRequestedCadence;
 
       const calculatedAmount = parentBudget
-        ? Math.max(parentAmount, totalNeededInParentCadence)
-        : totalNeededInParentCadence;
+        ? Math.max(parentAmountInRequestedCadence, totalNeededInRequestedCadence)
+        : totalNeededInRequestedCadence;
 
       setEditedParentAmount(calculatedAmount.toFixed(2));
-      setEditedChildAmount(requestedInParentCadence.toFixed(2));
+      setEditedChildAmount(requestedInRequestedCadence.toFixed(2));
 
       const siblingAmounts = {};
       siblingBudgets.forEach(sibling => {
-        const siblingAmount = convertCadence(sibling.allocated_amount || 0, sibling.cadence || 'monthly', parentCadence);
+        const siblingAmount = convertCadence(sibling.allocated_amount || 0, sibling.cadence || 'monthly', requestedCadence);
         siblingAmounts[sibling.id] = siblingAmount.toFixed(2);
       });
       setEditedSiblingAmounts(siblingAmounts);
@@ -73,7 +75,7 @@ export default function ParentBudgetDialog({
 
   if (!childCategory || !parentCategory) return null;
 
-  const parentCadence = parentBudget?.cadence || 'monthly';
+  const displayCadence = requestedCadence;
 
   const parentAmount = parseFloat(editedParentAmount) || 0;
   const childAmount = parseFloat(editedChildAmount) || 0;
@@ -84,7 +86,7 @@ export default function ParentBudgetDialog({
   const canContinue = remaining >= 0;
 
   const formatAmount = (amount) => {
-    return formatCadenceAmount(amount, parentCadence);
+    return formatCadenceAmount(amount, displayCadence);
   };
 
   const hasParentBudget = !!parentBudget;
@@ -127,7 +129,7 @@ export default function ParentBudgetDialog({
                   className="w-32 text-right font-medium"
                   placeholder="0.00"
                 />
-                <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(parentCadence)}</span>
+                <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(displayCadence)}</span>
               </div>
             </div>
 
@@ -159,7 +161,7 @@ export default function ParentBudgetDialog({
                       className="w-32 text-right"
                       placeholder="0.00"
                     />
-                    <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(parentCadence)}</span>
+                    <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(displayCadence)}</span>
                   </div>
                 </div>
               ))}
@@ -183,7 +185,7 @@ export default function ParentBudgetDialog({
                     className="w-32 text-right"
                     placeholder="0.00"
                   />
-                  <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(parentCadence)}</span>
+                  <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(displayCadence)}</span>
                 </div>
               </div>
             </div>

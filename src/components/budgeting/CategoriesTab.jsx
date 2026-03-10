@@ -321,20 +321,21 @@ export default function CategoriesTab() {
   };
 
   const handleParentBudgetConfirm = async (result) => {
-    const { parentCategory, parentBudget, pendingUpdate, siblingBudgets } = parentBudgetDialog;
+    const { parentCategory, parentBudget, pendingUpdate, siblingBudgets, requestedCadence } = parentBudgetDialog;
     const { parentAmount, childAmount, siblingAmounts } = result;
 
     try {
       const parentCadence = parentBudget?.cadence || 'monthly';
+      const displayCadence = requestedCadence;
 
       if (parentBudget) {
         await firstsavvy.entities.Budget.update(parentBudget.id, {
-          allocated_amount: parentAmount
+          allocated_amount: convertCadence(parentAmount, displayCadence, parentCadence)
         });
       } else {
         await firstsavvy.entities.Budget.create({
           chart_account_id: parentCategory.id,
-          allocated_amount: parentAmount,
+          allocated_amount: convertCadence(parentAmount, displayCadence, 'monthly'),
           cadence: 'monthly',
           is_active: true
         });
@@ -345,12 +346,12 @@ export default function CategoriesTab() {
         const originalAmount = convertCadence(
           siblingBudget.allocated_amount,
           siblingBudget.cadence,
-          parentCadence
+          displayCadence
         );
 
         if (!isNaN(editedAmount) && editedAmount !== originalAmount) {
           await firstsavvy.entities.Budget.update(siblingBudget.id, {
-            allocated_amount: convertCadence(editedAmount, parentCadence, siblingBudget.cadence)
+            allocated_amount: convertCadence(editedAmount, displayCadence, siblingBudget.cadence)
           });
         }
       }
@@ -362,7 +363,7 @@ export default function CategoriesTab() {
           setTogglingBudgetId(pendingUpdate.budgetData.chart_account_id);
           createBudgetMutation.mutate({
             ...pendingUpdate.budgetData,
-            allocated_amount: convertCadence(childAmount, parentCadence, 'monthly')
+            allocated_amount: convertCadence(childAmount, displayCadence, 'monthly')
           });
         } else {
           setUpdatingBudgetId(pendingUpdate.budgetId);
@@ -371,7 +372,7 @@ export default function CategoriesTab() {
           updateBudgetMutation.mutate({
             id: pendingUpdate.budgetId,
             data: {
-              allocated_amount: convertCadence(childAmount, parentCadence, targetCadence),
+              allocated_amount: convertCadence(childAmount, displayCadence, targetCadence),
               cadence: targetCadence
             }
           });
