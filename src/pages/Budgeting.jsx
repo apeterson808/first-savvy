@@ -97,29 +97,30 @@ export default function Budgeting() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      {connectionError && (
-        <Alert variant="destructive" className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Connection Error</AlertTitle>
-          <AlertDescription>
-            Unable to connect to the database. Please check your internet connection and refresh the page.
-            {connectionError && <div className="mt-2 text-xs opacity-80">Error: {connectionError}</div>}
-          </AlertDescription>
-        </Alert>
-      )}
+    <div className="flex flex-col h-screen">
+      <div className="p-4 md:p-6 pb-0">
+        {connectionError && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Connection Error</AlertTitle>
+            <AlertDescription>
+              Unable to connect to the database. Please check your internet connection and refresh the page.
+              {connectionError && <div className="mt-2 text-xs opacity-80">Error: {connectionError}</div>}
+            </AlertDescription>
+          </Alert>
+        )}
 
-      {!user && !connectionError && (
-        <Alert className="mb-6">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Authentication Required</AlertTitle>
-          <AlertDescription>
-            Please log in to view your budget information.
-          </AlertDescription>
-        </Alert>
-      )}
+        {!user && !connectionError && (
+          <Alert className="mb-6">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Authentication Required</AlertTitle>
+            <AlertDescription>
+              Please log in to view your budget information.
+            </AlertDescription>
+          </Alert>
+        )}
 
-      <PageTabs
+        <PageTabs
         tabs={['overview', 'modify_budget']}
         dynamicTabConfig={{
           overview: {
@@ -200,52 +201,57 @@ export default function Budgeting() {
             </div>
           )
         }
-      />
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsContent value="overview" className="mt-0">
-          {!hasSetupStarted ? (
-            <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
-              <div className="text-center max-w-xl px-6">
-                <h2 className="text-2xl font-semibold text-slate-900 mb-3">No Budget Setup Yet</h2>
-                <p className="text-slate-600 mb-8 leading-relaxed">
-                  Start by creating your first budget item to begin tracking your finances.
-                </p>
-                <Button onClick={() => setAddSheetOpen(true)} size="lg" className="bg-primary hover:bg-primary/90">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Budget Item
-                </Button>
-              </div>
-            </div>
-          ) : (
-            <BudgetTrackerContainer
-              budgets={budgets}
-              spendingByCategory={spendingByCategory}
-              incomeByCategory={incomeByCategory}
-              monthStart={monthStart}
-              monthEnd={monthEnd}
-            />
-          )}
-        </TabsContent>
-
-        <TabsContent value="modify_budget" className="mt-0">
-          <CategoriesTab ref={categoriesTabRef} />
-        </TabsContent>
-      </Tabs>
-
-      <AddBudgetItemSheet
-        open={addSheetOpen}
-        onOpenChange={setAddSheetOpen}
-        availableCategories={availableCategories}
-      />
-
-      {editingBudget && (
-        <AddBudgetItemSheet
-          open={!!editingBudget}
-          onOpenChange={(open) => !open && setEditingBudget(null)}
-          availableCategories={availableCategories}
-          editingBudget={editingBudget}
         />
-      )}
+        <div className="border-b mt-4" />
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-4">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsContent value="overview" className="mt-0">
+            {!hasSetupStarted ? (
+              <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
+                <div className="text-center max-w-xl px-6">
+                  <h2 className="text-2xl font-semibold text-slate-900 mb-3">No Budget Setup Yet</h2>
+                  <p className="text-slate-600 mb-8 leading-relaxed">
+                    Start by creating your first budget item to begin tracking your finances.
+                  </p>
+                  <Button onClick={() => setAddSheetOpen(true)} size="lg" className="bg-primary hover:bg-primary/90">
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Budget Item
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <BudgetTrackerContainer
+                budgets={budgets}
+                spendingByCategory={spendingByCategory}
+                incomeByCategory={incomeByCategory}
+                monthStart={monthStart}
+                monthEnd={monthEnd}
+              />
+            )}
+          </TabsContent>
+
+          <TabsContent value="modify_budget" className="mt-0">
+            <CategoriesTab ref={categoriesTabRef} />
+          </TabsContent>
+        </Tabs>
+
+        <AddBudgetItemSheet
+          open={addSheetOpen}
+          onOpenChange={setAddSheetOpen}
+          availableCategories={availableCategories}
+        />
+
+        {editingBudget && (
+          <AddBudgetItemSheet
+            open={!!editingBudget}
+            onOpenChange={(open) => !open && setEditingBudget(null)}
+            availableCategories={availableCategories}
+            editingBudget={editingBudget}
+          />
+        )}
+      </div>
     </div>
   );
 }
