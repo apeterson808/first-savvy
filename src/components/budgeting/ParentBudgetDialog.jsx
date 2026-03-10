@@ -106,37 +106,28 @@ export default function ParentBudgetDialog({
             {getDialogIcon()}
             {getDialogTitle()}
           </DialogTitle>
-          <DialogDescription className="text-sm text-slate-600">
-            Adjust budget allocation for <strong>{parentCategory.display_name}</strong> and its child budgets.
-          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-3 py-4">
           <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
             {/* Parent Budget */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Parent Budget
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-base font-semibold text-slate-900">
-                  {parentCategory.display_name}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-500">$</span>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={editedParentAmount}
-                    onChange={(e) => setEditedParentAmount(e.target.value)}
-                    onFocus={(e) => e.target.select()}
-                    className="w-32 text-right font-medium"
-                    placeholder="0.00"
-                  />
-                </div>
+            <div className="flex items-center justify-between">
+              <span className="text-base font-semibold text-slate-900">
+                {parentCategory.display_name}
+              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-slate-500">$</span>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={editedParentAmount}
+                  onChange={(e) => setEditedParentAmount(e.target.value)}
+                  onFocus={(e) => e.target.select()}
+                  className="w-32 text-right font-medium"
+                  placeholder="0.00"
+                />
+                <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(parentCadence)}</span>
               </div>
             </div>
 
@@ -145,12 +136,6 @@ export default function ParentBudgetDialog({
 
             {/* Child Budgets */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                  Child Budgets (subtracted from parent)
-                </span>
-              </div>
-
               {siblingBudgets.map((sibling) => (
                 <div key={sibling.id} className="flex items-center justify-between pl-6 py-1.5">
                   <div className="flex items-center gap-2">
@@ -159,7 +144,7 @@ export default function ParentBudgetDialog({
                       {sibling.categoryName}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
                     <span className="text-slate-500">$</span>
                     <Input
                       type="number"
@@ -174,6 +159,7 @@ export default function ParentBudgetDialog({
                       className="w-32 text-right"
                       placeholder="0.00"
                     />
+                    <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(parentCadence)}</span>
                   </div>
                 </div>
               ))}
@@ -185,7 +171,7 @@ export default function ParentBudgetDialog({
                     {childCategory.display_name}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <span className="text-slate-500">$</span>
                   <Input
                     type="number"
@@ -197,6 +183,7 @@ export default function ParentBudgetDialog({
                     className="w-32 text-right"
                     placeholder="0.00"
                   />
+                  <span className="text-xs text-slate-500 ml-1">{getCadenceLabel(parentCadence)}</span>
                 </div>
               </div>
             </div>
@@ -218,10 +205,6 @@ export default function ParentBudgetDialog({
               )}
             </div>
           </div>
-
-          <p className="text-xs text-slate-500">
-            All amounts shown in {getCadenceLabel(parentCadence)} format
-          </p>
         </div>
 
         <DialogFooter>
