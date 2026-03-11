@@ -31,8 +31,10 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
     'monthly'
   );
 
-  const percentage = budgetedAmount > 0 ? (actualAmount / budgetedAmount) * 100 : 0;
-  const remaining = budgetedAmount - actualAmount;
+  // For expenses, use absolute value to handle refunds/credits properly
+  const displayAmount = !isIncome ? Math.abs(actualAmount) : actualAmount;
+  const percentage = budgetedAmount > 0 ? (displayAmount / budgetedAmount) * 100 : 0;
+  const remaining = budgetedAmount - displayAmount;
   const isOverBudget = percentage >= 100;
   const isNearLimit = percentage >= 75 && percentage < 100;
 
