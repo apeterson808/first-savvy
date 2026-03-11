@@ -201,19 +201,16 @@ export default function Budgeting() {
         }
       />
 
-      {activeTab === 'overview' && hasSetupStarted && (
-        <div className="mt-4">
-          <BudgetLinearBar
-            budgets={budgets}
-            spendingByCategory={spendingByCategory}
-            incomeByCategory={incomeByCategory}
-            activeView="expenses"
-          />
-        </div>
-      )}
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsContent value="overview" className="mt-0">
+        <TabsContent value="overview" className="mt-0 space-y-4">
+          {hasSetupStarted && (
+            <BudgetLinearBar
+              budgets={budgets}
+              spendingByCategory={spendingByCategory}
+              incomeByCategory={incomeByCategory}
+              activeView="expenses"
+            />
+          )}
           {!hasSetupStarted ? (
             <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
               <div className="text-center max-w-xl px-6">
