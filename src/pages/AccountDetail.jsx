@@ -351,15 +351,15 @@ export default function AccountDetail() {
     });
 
     // All items are posted with pre-calculated running balance from database
-    // For liability accounts (credit cards), swap debit/credit display for user-friendly presentation
-    // - Accounting: Purchases = Credit liability, Payments = Debit liability
-    // - Display: Show purchases in "Debit" column, payments in "Credit" column to match user expectations
-    const isLiability = accountClass === 'liability';
+    // For credit-normal accounts (liability, income, equity), swap debit/credit display for user-friendly presentation
+    // - Accounting: Income/Revenue = Credit (increases), Refunds = Debit (decreases)
+    // - Display: Show income in "Money In" column, refunds in "Money Out" column to match user expectations
+    const isCreditNormal = ['liability', 'income', 'equity'].includes(accountClass);
 
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: isLiability ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
-      calculatedCredit: isLiability ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
+      calculatedDebit: isCreditNormal ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
+      calculatedCredit: isCreditNormal ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
     }));
 
     let beginningBal = null;
@@ -452,13 +452,13 @@ export default function AccountDetail() {
       return dateB - dateA;
     });
 
-    // For liability accounts, swap debit/credit display to match user expectations
-    const isLiability = accountClass === 'liability';
+    // For credit-normal accounts (liability, income, equity), swap debit/credit display to match user expectations
+    const isCreditNormal = ['liability', 'income', 'equity'].includes(accountClass);
 
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: isLiability ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
-      calculatedCredit: isLiability ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
+      calculatedDebit: isCreditNormal ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
+      calculatedCredit: isCreditNormal ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
     }));
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
