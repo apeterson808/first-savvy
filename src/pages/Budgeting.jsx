@@ -137,67 +137,65 @@ export default function Budgeting() {
             },
           },
         }}
-        actions={
+        inlineActions={
           activeTab === 'modify_budget' && (
-            <div className="flex gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => categoriesTabRef.current?.openCategoryWizard()}
-                  >
-                    Add New Category
-                  </DropdownMenuItem>
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger>View</DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const newValue = !categoryFilters.hideNotBudgeted;
-                          setCategoryFilters(prev => ({
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                >
+                  <Settings className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => categoriesTabRef.current?.openCategoryWizard()}
+                >
+                  Add New Category
+                </DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>View</DropdownMenuSubTrigger>
+                  <DropdownMenuSubContent>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const newValue = !categoryFilters.hideNotBudgeted;
+                        setCategoryFilters(prev => ({
+                          ...prev,
+                          hideNotBudgeted: newValue
+                        }));
+                        if (categoriesTabRef.current?.setFilters) {
+                          categoriesTabRef.current.setFilters(prev => ({
                             ...prev,
                             hideNotBudgeted: newValue
                           }));
-                          if (categoriesTabRef.current?.setFilters) {
-                            categoriesTabRef.current.setFilters(prev => ({
-                              ...prev,
-                              hideNotBudgeted: newValue
-                            }));
-                          }
-                        }}
-                      >
-                        {categoryFilters.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          const newValue = !categoryFilters.hideSuggestedBudget;
-                          setCategoryFilters(prev => ({
+                        }
+                      }}
+                    >
+                      {categoryFilters.hideNotBudgeted ? 'Show' : 'Hide'} Not Budgeted
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => {
+                        const newValue = !categoryFilters.hideSuggestedBudget;
+                        setCategoryFilters(prev => ({
+                          ...prev,
+                          hideSuggestedBudget: newValue
+                        }));
+                        if (categoriesTabRef.current?.setFilters) {
+                          categoriesTabRef.current.setFilters(prev => ({
                             ...prev,
                             hideSuggestedBudget: newValue
                           }));
-                          if (categoriesTabRef.current?.setFilters) {
-                            categoriesTabRef.current.setFilters(prev => ({
-                              ...prev,
-                              hideSuggestedBudget: newValue
-                            }));
-                          }
-                        }}
-                      >
-                        {categoryFilters.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                        }
+                      }}
+                    >
+                      {categoryFilters.hideSuggestedBudget ? 'Show' : 'Hide'} Suggested Budget
+                    </DropdownMenuItem>
+                  </DropdownMenuSubContent>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )
         }
       />

@@ -8,7 +8,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { format, subMonths, startOfMonth } from 'date-fns';
 
-export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions, dynamicTabConfig }) {
+export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions, dynamicTabConfig, inlineActions }) {
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || defaultTab;
@@ -115,8 +115,11 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
 
   return (
     <div className="flex items-center justify-between mb-4">
-      <div className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
-        {tabs.map((tab) => renderTab(tab))}
+      <div className="inline-flex items-center gap-1">
+        <div className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
+          {tabs.map((tab) => renderTab(tab))}
+        </div>
+        {inlineActions && <div className="flex items-center">{inlineActions}</div>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
     </div>
