@@ -46,39 +46,43 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
 
   if (chartData.length === 0) {
     return (
-      <Card className="shadow-sm border-slate-200 bg-white p-0 overflow-hidden">
-        <div className="flex h-8 bg-slate-100" />
+      <Card className="shadow-sm border-slate-200 bg-white">
+        <div className="p-4">
+          <div className="flex h-8 bg-slate-100 rounded" />
+        </div>
       </Card>
     );
   }
 
   return (
-    <Card className="shadow-sm border-slate-200 bg-white p-0 overflow-hidden" onMouseLeave={() => setActiveIndex(null)}>
-      <div className="flex h-8">
-        {chartData.map((item, index) => {
-          const percentage = (item.spent / totalSpent) * 100;
-          return (
-            <div
-              key={index}
-              className="relative group transition-all duration-200 cursor-pointer"
-              style={{
-                width: `${percentage}%`,
-                backgroundColor: item.color,
-                opacity: activeIndex === null || activeIndex === index ? 1 : 0.4,
-                transform: activeIndex === index ? 'scaleY(1.1)' : 'scaleY(1)',
-                zIndex: activeIndex === index ? 10 : 1
-              }}
-              onMouseEnter={() => setActiveIndex(index)}
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              {percentage > 8 && (
-                <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium px-1">
-                  <span className="truncate">{item.name}</span>
-                </div>
-              )}
-            </div>
-          );
-        })}
+    <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => setActiveIndex(null)}>
+      <div className="p-4">
+        <div className="flex h-8 rounded overflow-hidden">
+          {chartData.map((item, index) => {
+            const percentage = (item.spent / totalSpent) * 100;
+            return (
+              <div
+                key={index}
+                className="relative group transition-all duration-200 cursor-pointer"
+                style={{
+                  width: `${percentage}%`,
+                  backgroundColor: item.color,
+                  opacity: activeIndex === null || activeIndex === index ? 1 : 0.4,
+                  transform: activeIndex === index ? 'scaleY(1.1)' : 'scaleY(1)',
+                  zIndex: activeIndex === index ? 10 : 1
+                }}
+                onMouseEnter={() => setActiveIndex(index)}
+                onMouseLeave={() => setActiveIndex(null)}
+              >
+                {percentage > 8 && (
+                  <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium px-1">
+                    <span className="truncate">{item.name}</span>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </Card>
   );
