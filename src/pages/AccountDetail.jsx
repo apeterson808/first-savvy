@@ -1421,11 +1421,11 @@ export default function AccountDetail() {
                   <p className="text-lg font-bold text-burgundy">{formatCurrency(analytics.totalCredits)}</p>
                 </div>
 
-                <div className={`p-3 rounded-lg ${analytics.netChange >= 0 ? 'bg-forest-green/10' : 'bg-burgundy/10'}`}>
-                  <div className={`flex items-center gap-1.5 mb-0.5 ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
+                <div className="p-3 bg-light-blue/20 rounded-lg">
+                  <div className="flex items-center gap-1.5 mb-0.5 text-sky-blue">
                     <p className="text-xs font-medium">Net Change</p>
                   </div>
-                  <p className={`text-lg font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
+                  <p className="text-lg font-bold text-sky-blue">
                     {formatCurrency(analytics.netChange)}
                   </p>
                 </div>
