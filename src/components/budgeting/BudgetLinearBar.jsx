@@ -71,13 +71,13 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
   return (
     <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => setActiveIndex(null)}>
       <div className="p-4">
-        <div className="flex h-8 rounded overflow-hidden gap-1">
+        <div className="flex h-8 rounded overflow-hidden">
           {chartData.map((item, index) => {
             const percentage = (item.spent / totalForPercentage) * 100;
             return (
               <div
                 key={index}
-                className="relative group transition-all duration-200 cursor-pointer rounded-sm"
+                className="relative group transition-all duration-200 cursor-pointer"
                 style={{
                   width: `${percentage}%`,
                   backgroundColor: item.color,
@@ -98,7 +98,7 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
           })}
           {remaining > 0 && (
             <div
-              className="relative bg-slate-200 rounded-sm"
+              className="relative bg-slate-200"
               style={{
                 width: `${(remaining / totalForPercentage) * 100}%`
               }}
