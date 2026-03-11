@@ -369,12 +369,9 @@ export default function AccountDetail() {
       let runningBal = 0;
       for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
         const activity = activitiesWithBalance[i];
-        // Use original debit/credit amounts for balance calculation, not the swapped display values
-        const debit = activity.debitAmount || 0;
-        const credit = activity.creditAmount || 0;
         const change = isDebitNormal
-          ? (debit - credit)
-          : (credit - debit);
+          ? (activity.calculatedDebit - activity.calculatedCredit)
+          : (activity.calculatedCredit - activity.calculatedDebit);
         runningBal += change;
         activity.runningBalance = runningBal;
       }
@@ -1084,8 +1081,8 @@ export default function AccountDetail() {
                       <div className="flex items-center justify-end gap-2">
                         <span className="text-xs text-slate-500">Savvy Balance</span>
                         <span className={`text-lg font-semibold ${
-                          account.entityType === 'Asset' || account.entityType === 'Income' ? 'text-forest-green' :
-                          account.entityType === 'Liability' || account.entityType === 'Expense' ? 'text-burgundy' :
+                          account.entityType === 'Asset' ? 'text-forest-green' :
+                          account.entityType === 'Liability' ? 'text-burgundy' :
                           'text-slate-900'
                         }`}>
                           {formatCurrency(endingBalance)}
@@ -1195,8 +1192,8 @@ export default function AccountDetail() {
                           <div className="flex items-center justify-end gap-2">
                             <span className="text-xs text-slate-500">Savvy Balance</span>
                             <span className={`text-lg font-semibold ${
-                              account.entityType === 'Asset' || account.entityType === 'Income' ? 'text-forest-green' :
-                              account.entityType === 'Liability' || account.entityType === 'Expense' ? 'text-burgundy' :
+                              account.entityType === 'Asset' ? 'text-forest-green' :
+                              account.entityType === 'Liability' ? 'text-burgundy' :
                               'text-slate-900'
                             }`}>
                               {formatCurrency(endingBalance)}
