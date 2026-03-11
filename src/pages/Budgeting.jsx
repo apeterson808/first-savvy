@@ -207,7 +207,7 @@ export default function Budgeting() {
 
       <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsContent value="overview" className="mt-0">
+          <TabsContent value="overview" className="mt-4">
             {!hasSetupStarted ? (
               <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
                 <div className="text-center max-w-xl px-6">
@@ -232,7 +232,7 @@ export default function Budgeting() {
             )}
           </TabsContent>
 
-          <TabsContent value="modify_budget" className="mt-0">
+          <TabsContent value="modify_budget" className="mt-4">
             <CategoriesTab ref={categoriesTabRef} />
           </TabsContent>
         </Tabs>
