@@ -191,7 +191,7 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 -mt-4">
       <Card className="shadow-sm border-slate-200 bg-gradient-to-br from-white to-slate-50">
         <CardContent className="pt-6 pb-6">
           <div className="flex items-center justify-between mb-4">
