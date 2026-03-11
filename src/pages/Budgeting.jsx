@@ -205,7 +205,7 @@ export default function Budgeting() {
         <div className="border-b mt-4" />
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 pt-1 pb-6">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="overview" className="mt-0">
             {!hasSetupStarted ? (
