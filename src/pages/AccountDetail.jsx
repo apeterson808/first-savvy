@@ -362,6 +362,21 @@ export default function AccountDetail() {
       calculatedCredit: isCreditNormal ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
     }));
 
+    // Recalculate running balance in display order (newest to oldest)
+    // Database calculates oldest to newest, but we display newest first
+    if (activitiesWithBalance.length > 0) {
+      // Start from the end (oldest transaction) and work forward
+      let runningBal = 0;
+      for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
+        const activity = activitiesWithBalance[i];
+        const change = isDebitNormal
+          ? (activity.calculatedDebit - activity.calculatedCredit)
+          : (activity.calculatedCredit - activity.calculatedDebit);
+        runningBal += change;
+        activity.runningBalance = runningBal;
+      }
+    }
+
     let beginningBal = null;
     if (dateRange.start && activitiesWithBalance.length > 0) {
       const oldestActivity = activitiesWithBalance[activitiesWithBalance.length - 1];
