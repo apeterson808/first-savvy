@@ -2,12 +2,11 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import BudgetProgressPill from './BudgetProgressPill';
-import BudgetVsActualChart from './BudgetVsActualChart';
 import { convertCadence } from '@/utils/cadenceUtils';
 import { format } from 'date-fns';
 import { getAccountTypeLabel, getAccountTypeOrder } from '@/utils/accountTypeLabels';
 
-export default function BudgetTrackerContainer({ budgets, spendingByCategory, incomeByCategory, monthStart, monthEnd }) {
+export default function BudgetTrackerContainer({ budgets, spendingByCategory, incomeByCategory, monthStart, monthEnd, hoveredCategory }) {
   const [collapsedSections, setCollapsedSections] = useState({
     income: false,
     expense: false
@@ -210,60 +209,103 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
       </div>
 
       <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
-        <BudgetVsActualChart
-          budgets={budgets}
-          spendingByCategory={spendingByCategory}
-          incomeByCategory={incomeByCategory}
-        />
-
         <Card className="shadow-sm border-slate-200 bg-gradient-to-br from-white to-slate-50">
           <CardContent className="pt-6 pb-6">
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-900">Budget Period</h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
-              </p>
-            </div>
+            {hoveredCategory ? (
+              <div>
+                <div className="mb-6">
+                  <div
+                    className="w-6 h-6 rounded mb-2"
+                    style={{ backgroundColor: hoveredCategory.color }}
+                  />
+                  <h3 className="text-lg font-semibold text-slate-900">{hoveredCategory.name}</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
+                  </p>
+                </div>
 
-            <div className="space-y-3">
-              <div className="p-4 rounded-lg bg-white border border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingUp className="w-4 h-4 text-green-600" />
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Income</span>
-                </div>
-                <div className="text-2xl font-bold text-slate-900 mb-1">
-                  ${totalIncomeActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <div className="text-xs text-slate-500">
-                  of ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} budgeted
+                <div className="space-y-3">
+                  <div className="p-4 rounded-lg bg-white border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">
+                      ${hoveredCategory.budgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Actual</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                      ${hoveredCategory.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      {((hoveredCategory.spent / hoveredCategory.budgeted) * 100).toFixed(1)}% of budget
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Remaining</span>
+                    </div>
+                    <div className={`text-2xl font-bold ${hoveredCategory.budgeted - hoveredCategory.spent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      ${Math.abs(hoveredCategory.budgeted - hoveredCategory.spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                  </div>
                 </div>
               </div>
+            ) : (
+              <div>
+                <div className="mb-6">
+                  <h3 className="text-sm font-semibold text-slate-900">Budget Overview</h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
+                  </p>
+                </div>
 
-              <div className="p-4 rounded-lg bg-white border border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="w-4 h-4 text-red-600" />
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Expenses</span>
-                </div>
-                <div className="text-2xl font-bold text-slate-900 mb-1">
-                  ${totalExpenseActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <div className="text-xs text-slate-500">
-                  of ${totalExpenseBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} budgeted
+                <div className="space-y-3">
+                  <div className="p-4 rounded-lg bg-white border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="w-4 h-4 text-green-600" />
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Income</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                      ${totalIncomeActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      of ${totalIncomeBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} budgeted
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingDown className="w-4 h-4 text-red-600" />
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Expenses</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                      ${totalExpenseActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      of ${totalExpenseBudgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} budgeted
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-lg bg-white border border-slate-200">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Net</span>
+                    </div>
+                    <div className={`text-2xl font-bold mb-1 ${netActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {netActual >= 0 ? '+' : '-'}${Math.abs(netActual).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </div>
+                    <div className="text-xs text-slate-500">
+                      vs {netBudgeted >= 0 ? '+' : '-'}${Math.abs(netBudgeted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} planned
+                    </div>
+                  </div>
                 </div>
               </div>
-
-              <div className="p-4 rounded-lg bg-white border border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Net</span>
-                </div>
-                <div className={`text-2xl font-bold mb-1 ${netActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {netActual >= 0 ? '+' : '-'}${Math.abs(netActual).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </div>
-                <div className="text-xs text-slate-500">
-                  vs {netBudgeted >= 0 ? '+' : '-'}${Math.abs(netBudgeted).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} planned
-                </div>
-              </div>
-            </div>
+            )}
           </CardContent>
         </Card>
       </div>

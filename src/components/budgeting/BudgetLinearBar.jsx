@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { convertCadence } from '@/utils/cadenceUtils';
 
@@ -17,7 +17,7 @@ const DEFAULT_COLORS = [
   '#AFAB23'
 ];
 
-export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByCategory, activeView }) {
+export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByCategory, activeView, onHoverChange }) {
   const [activeIndex, setActiveIndex] = useState(null);
 
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
@@ -43,6 +43,12 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
 
   const totalSpent = chartData.reduce((sum, item) => sum + item.spent, 0);
   const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
+
+  React.useEffect(() => {
+    if (onHoverChange) {
+      onHoverChange(activeItem);
+    }
+  }, [activeItem, onHoverChange]);
 
   if (chartData.length === 0) {
     return (

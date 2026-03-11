@@ -40,6 +40,7 @@ export default function Budgeting() {
     hideNotBudgeted: false,
     hideSuggestedBudget: false
   });
+  const [hoveredCategory, setHoveredCategory] = useState(null);
 
   React.useEffect(() => {
     const handleUrlChange = () => {
@@ -209,6 +210,7 @@ export default function Budgeting() {
               spendingByCategory={spendingByCategory}
               incomeByCategory={incomeByCategory}
               activeView="expenses"
+              onHoverChange={setHoveredCategory}
             />
           )}
           {!hasSetupStarted ? (
@@ -231,6 +233,7 @@ export default function Budgeting() {
               incomeByCategory={incomeByCategory}
               monthStart={monthStart}
               monthEnd={monthEnd}
+              hoveredCategory={hoveredCategory}
             />
           )}
         </TabsContent>
