@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { convertCadence } from '@/utils/cadenceUtils';
 
@@ -17,7 +17,7 @@ const DEFAULT_COLORS = [
   '#AFAB23'
 ];
 
-export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByCategory, activeView, onHoverChange }) {
+export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByCategory, activeView }) {
   const [activeIndex, setActiveIndex] = useState(null);
 
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
@@ -41,30 +41,8 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
     .filter(item => item.budgeted > 0 && item.spent > 0)
     .sort((a, b) => b.spent - a.spent);
 
-  const totalBudgeted = currentBudgets.reduce((sum, budget) => {
-    const budgeted = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', 'monthly');
-    return sum + budgeted;
-  }, 0);
-
   const totalSpent = chartData.reduce((sum, item) => sum + item.spent, 0);
-  const remaining = Math.max(0, totalBudgeted - totalSpent);
-
-  const activeItem = activeIndex === 'remaining'
-    ? {
-        name: 'Unspent Budget',
-        budgeted: totalBudgeted,
-        spent: totalSpent,
-        color: '#cbd5e1'
-      }
-    : activeIndex !== null
-      ? chartData[activeIndex]
-      : null;
-
-  React.useEffect(() => {
-    if (onHoverChange) {
-      onHoverChange(activeItem);
-    }
-  }, [activeItem, onHoverChange]);
+  const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
 
   if (chartData.length === 0) {
     return (
@@ -76,18 +54,16 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
     );
   }
 
-  const totalForPercentage = totalBudgeted > 0 ? totalBudgeted : totalSpent;
-
   return (
     <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => setActiveIndex(null)}>
       <div className="p-4">
-        <div className="flex h-8 rounded overflow-hidden gap-1">
+        <div className="flex h-8 rounded overflow-hidden">
           {chartData.map((item, index) => {
-            const percentage = (item.spent / totalForPercentage) * 100;
+            const percentage = (item.spent / totalSpent) * 100;
             return (
               <div
                 key={index}
-                className="relative group transition-all duration-200 cursor-pointer rounded-sm"
+                className="relative group transition-all duration-200 cursor-pointer"
                 style={{
                   width: `${percentage}%`,
                   backgroundColor: item.color,
@@ -106,25 +82,6 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
               </div>
             );
           })}
-          {remaining > 0 && (
-            <div
-              className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200"
-              style={{
-                width: `${(remaining / totalForPercentage) * 100}%`,
-                opacity: activeIndex === null || activeIndex === 'remaining' ? 1 : 0.4,
-                transform: activeIndex === 'remaining' ? 'scaleY(1.1)' : 'scaleY(1)',
-                zIndex: activeIndex === 'remaining' ? 10 : 1
-              }}
-              onMouseEnter={() => setActiveIndex('remaining')}
-              onMouseLeave={() => setActiveIndex(null)}
-            >
-              {((remaining / totalForPercentage) * 100) > 8 && (
-                <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs font-medium px-1">
-                  <span className="truncate">Remaining</span>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
     </Card>
