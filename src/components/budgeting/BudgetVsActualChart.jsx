@@ -1,14 +1,21 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { convertCadence } from '@/utils/cadenceUtils';
-import { getAccountTypeLabel } from '@/utils/accountTypeLabels';
 
-const TYPE_COLORS = {
-  'fixed': '#52A5CE',
-  'variable': '#AACC96',
-  'discretionary': '#EF6F3C',
-  'uncategorized': '#94A3B8'
-};
+const DEFAULT_COLORS = [
+  '#52A5CE',
+  '#AACC96',
+  '#EF6F3C',
+  '#FF7BAC',
+  '#EFCE7B',
+  '#D3B6D3',
+  '#25533F',
+  '#F4BEAE',
+  '#876029',
+  '#B8CEE8',
+  '#6D1F42',
+  '#AFAB23'
+];
 
 export default function BudgetVsActualChart({ budgets, spendingByCategory, incomeByCategory }) {
   const [activeView, setActiveView] = useState('expenses');
@@ -21,26 +28,17 @@ export default function BudgetVsActualChart({ budgets, spendingByCategory, incom
   const currentBudgets = isExpenseView ? expenseBudgets : incomeBudgets;
   const currentActuals = isExpenseView ? spendingByCategory : incomeByCategory;
 
-  const groupedData = {};
-  currentBudgets.forEach((budget) => {
-    const accountType = budget.chartAccount?.account_type || 'uncategorized';
-    const budgeted = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', 'monthly');
-    const spent = currentActuals[budget.chart_account_id] || 0;
-
-    if (!groupedData[accountType]) {
-      groupedData[accountType] = {
-        name: getAccountTypeLabel(accountType),
-        budgeted: 0,
-        spent: 0,
-        color: TYPE_COLORS[accountType] || TYPE_COLORS['uncategorized']
+  const chartData = currentBudgets
+    .map((budget, index) => {
+      const budgeted = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', 'monthly');
+      const spent = currentActuals[budget.chart_account_id] || 0;
+      return {
+        name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Uncategorized',
+        budgeted,
+        spent,
+        color: budget.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length]
       };
-    }
-
-    groupedData[accountType].budgeted += budgeted;
-    groupedData[accountType].spent += spent;
-  });
-
-  const chartData = Object.values(groupedData)
+    })
     .filter(item => item.budgeted > 0)
     .sort((a, b) => b.spent - a.spent);
 
