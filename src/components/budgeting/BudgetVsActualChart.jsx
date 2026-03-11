@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import { convertCadence } from '@/utils/cadenceUtils';
 
 const DEFAULT_COLORS = [
@@ -47,28 +46,6 @@ export default function BudgetVsActualChart({ budgets, spendingByCategory, incom
   const totalSpent = chartData.reduce((sum, item) => sum + item.spent, 0);
   const remaining = totalBudgeted - totalSpent;
 
-  const pieData = chartData.map(item => ({
-    ...item,
-    value: item.spent
-  }));
-
-  const renderActiveShape = (props) => {
-    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
-    return (
-      <g>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius - 2}
-          outerRadius={outerRadius + 6}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-        />
-      </g>
-    );
-  };
-
   const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
 
   return (
@@ -105,57 +82,53 @@ export default function BudgetVsActualChart({ budgets, spendingByCategory, incom
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="h-[240px] relative" onMouseLeave={() => setActiveIndex(null)}>
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={78}
-                    outerRadius={95}
-                    startAngle={90}
-                    endAngle={-270}
-                    paddingAngle={2}
-                    cornerRadius={5}
-                    dataKey="value"
-                    activeIndex={activeIndex}
-                    activeShape={renderActiveShape}
-                    onMouseEnter={(_, index) => setActiveIndex(index)}
-                    onMouseLeave={() => setActiveIndex(null)}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell
-                        key={`cell-${index}`}
-                        fill={entry.color}
-                        opacity={activeIndex === null || activeIndex === index ? 1 : 0.4}
-                        style={{ cursor: 'pointer', transition: 'opacity 0.2s' }}
-                      />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center">
-                  {activeItem ? (
-                    <>
-                      <p className="text-lg font-semibold text-slate-900">
-                        ${activeItem.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </p>
-                      <p className="text-xs font-medium capitalize" style={{ color: activeItem.color }}>
-                        {activeItem.name}
-                      </p>
-                      <p className="text-[10px] text-slate-500">Spent</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="text-2xl font-bold text-slate-900">
-                        ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-xs text-slate-500">Total Spent</p>
-                    </>
-                  )}
-                </div>
+            <div className="space-y-4" onMouseLeave={() => setActiveIndex(null)}>
+              <div className="text-center">
+                {activeItem ? (
+                  <>
+                    <p className="text-2xl font-bold text-slate-900">
+                      ${activeItem.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                    <p className="text-sm font-medium capitalize" style={{ color: activeItem.color }}>
+                      {activeItem.name}
+                    </p>
+                    <p className="text-xs text-slate-500">Spent</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-2xl font-bold text-slate-900">
+                      ${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                    </p>
+                    <p className="text-xs text-slate-500">Total Spent</p>
+                  </>
+                )}
+              </div>
+
+              <div className="flex w-full h-16 rounded-lg overflow-hidden shadow-sm">
+                {chartData.map((item, index) => {
+                  const percentage = (item.spent / totalSpent) * 100;
+                  return (
+                    <div
+                      key={index}
+                      className="relative group transition-all duration-200 cursor-pointer"
+                      style={{
+                        width: `${percentage}%`,
+                        backgroundColor: item.color,
+                        opacity: activeIndex === null || activeIndex === index ? 1 : 0.4,
+                        transform: activeIndex === index ? 'scaleY(1.1)' : 'scaleY(1)',
+                        zIndex: activeIndex === index ? 10 : 1
+                      }}
+                      onMouseEnter={() => setActiveIndex(index)}
+                      onMouseLeave={() => setActiveIndex(null)}
+                    >
+                      {percentage > 8 && (
+                        <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium px-1">
+                          <span className="truncate">{item.name}</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
