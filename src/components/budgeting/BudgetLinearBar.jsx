@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { convertCadence } from '@/utils/cadenceUtils';
+import { startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 
 const DEFAULT_COLORS = [
   '#52A5CE',
@@ -104,6 +105,14 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
     }
   }, [activeItem, activeIncomeItem, onHoverChange]);
 
+  // Calculate progress through the month
+  const now = new Date();
+  const monthStartDate = startOfMonth(now);
+  const monthEndDate = endOfMonth(now);
+  const totalDaysInMonth = differenceInDays(monthEndDate, monthStartDate) + 1;
+  const daysPassed = differenceInDays(now, monthStartDate) + 1;
+  const monthProgressPercentage = (daysPassed / totalDaysInMonth) * 100;
+
   const renderIncomeBar = () => {
     if (incomeChartData.length === 0 && totalIncomeBudgeted === 0) {
       return (
@@ -113,7 +122,7 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
 
     if (incomeChartData.length === 0 && totalIncomeBudgeted > 0) {
       return (
-        <div className="flex h-8 rounded overflow-hidden">
+        <div className="relative flex h-8 rounded overflow-hidden">
           <div
             className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200 w-full"
             style={{
@@ -127,12 +136,17 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
               <span className="truncate">Remaining Income</span>
             </div>
           </div>
+          <div
+            className="absolute top-0 h-full w-0.5 bg-slate-500 z-30 opacity-70"
+            style={{ left: `${monthProgressPercentage}%` }}
+            title={`${daysPassed} of ${totalDaysInMonth} days through the month`}
+          />
         </div>
       );
     }
 
     return (
-      <div className="flex h-8 rounded overflow-hidden gap-1">
+      <div className="relative flex h-8 rounded overflow-hidden gap-1">
         {incomeChartData.map((item, index) => {
           const percentage = (item.earned / totalIncomeForPercentage) * 100;
           return (
@@ -176,6 +190,11 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
             )}
           </div>
         )}
+        <div
+          className="absolute top-0 h-full w-0.5 bg-slate-500 z-30 opacity-70"
+          style={{ left: `${monthProgressPercentage}%` }}
+          title={`${daysPassed} of ${totalDaysInMonth} days through the month`}
+        />
       </div>
     );
   };
@@ -196,7 +215,7 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
       <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => { setActiveIndex(null); setActiveIncomeIndex(null); }}>
         <div className="p-4 space-y-2">
           {renderIncomeBar()}
-          <div className="flex h-8 rounded overflow-hidden">
+          <div className="relative flex h-8 rounded overflow-hidden">
             <div
               className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200 w-full"
               style={{
@@ -210,6 +229,11 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
                 <span className="truncate">Remaining Budget</span>
               </div>
             </div>
+            <div
+              className="absolute top-0 h-full w-0.5 bg-slate-500 z-30 opacity-70"
+              style={{ left: `${monthProgressPercentage}%` }}
+              title={`${daysPassed} of ${totalDaysInMonth} days through the month`}
+            />
           </div>
         </div>
       </Card>
@@ -223,7 +247,7 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
     <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => { setActiveIndex(null); setActiveIncomeIndex(null); }}>
       <div className="p-4 space-y-2">
         {renderIncomeBar()}
-        <div className="flex h-8 rounded overflow-hidden gap-1">
+        <div className="relative flex h-8 rounded overflow-hidden gap-1">
           {chartData.map((item, index) => {
             const percentage = (item.spent / totalForPercentage) * 100;
             return (
@@ -267,6 +291,11 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
               )}
             </div>
           )}
+          <div
+            className="absolute top-0 h-full w-0.5 bg-slate-500 z-30 opacity-70"
+            style={{ left: `${monthProgressPercentage}%` }}
+            title={`${daysPassed} of ${totalDaysInMonth} days through the month`}
+          />
         </div>
       </div>
     </Card>

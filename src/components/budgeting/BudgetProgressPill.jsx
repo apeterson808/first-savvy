@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import * as Icons from 'lucide-react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { convertCadence } from '@/utils/cadenceUtils';
+import { startOfMonth, endOfMonth, differenceInDays } from 'date-fns';
 
 function lightenColor(hex, percent = 80) {
   const num = parseInt(hex.replace('#', ''), 16);
@@ -62,6 +63,14 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   const displayPercentage = Math.min(percentage, 100);
 
+  // Calculate progress through the month
+  const now = new Date();
+  const monthStartDate = startOfMonth(now);
+  const monthEndDate = endOfMonth(now);
+  const totalDaysInMonth = differenceInDays(monthEndDate, monthStartDate) + 1;
+  const daysPassed = differenceInDays(now, monthStartDate) + 1;
+  const monthProgressPercentage = (daysPassed / totalDaysInMonth) * 100;
+
   const [animatedWidth, setAnimatedWidth] = useState(0);
 
   useEffect(() => {
@@ -80,6 +89,15 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
             width: `${animatedWidth}%`,
             backgroundColor: progressColor
           }}
+        />
+
+        {/* Month progress indicator line */}
+        <div
+          className="absolute top-0 h-full w-0.5 bg-slate-400 z-20 opacity-60"
+          style={{
+            left: `${monthProgressPercentage}%`
+          }}
+          title={`${daysPassed} of ${totalDaysInMonth} days through the month`}
         />
 
         <div className="absolute inset-0 flex items-center justify-between px-3 z-10">
