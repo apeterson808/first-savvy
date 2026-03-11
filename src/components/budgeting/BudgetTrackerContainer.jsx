@@ -209,69 +209,63 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
       </div>
 
       <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
-        <Card className="shadow-sm border-slate-200 bg-gradient-to-br from-white to-slate-50">
-          <CardContent className="pt-6 pb-6">
+        <Card className="shadow-sm border-slate-200 bg-white">
+          <CardContent className="p-4">
             {hoveredCategory ? (
               <div>
-                <div className="mb-6">
+                <div className="flex items-center gap-2 mb-3">
                   <div
-                    className="w-6 h-6 rounded mb-2"
+                    className="w-3 h-3 rounded"
                     style={{ backgroundColor: hoveredCategory.color }}
                   />
-                  <h3 className="text-lg font-semibold text-slate-900">{hoveredCategory.name}</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
-                  </p>
+                  <h3 className="text-sm font-semibold text-slate-900">{hoveredCategory.name}</h3>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="p-4 rounded-lg bg-white border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budgeted</span>
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900">
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Budgeted</span>
+                    <span className="text-lg font-bold text-slate-900">
                       ${hoveredCategory.budgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Actual</span>
-                    </div>
-                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Actual</span>
+                    <span className="text-lg font-bold text-slate-900">
                       ${hoveredCategory.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
-                    <div className="text-xs text-slate-500">
-                      {((hoveredCategory.spent / hoveredCategory.budgeted) * 100).toFixed(1)}% of budget
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Remaining</span>
-                    </div>
-                    <div className={`text-2xl font-bold ${hoveredCategory.budgeted - hoveredCategory.spent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className="pt-2 border-t border-slate-200 flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Remaining</span>
+                    <span className={`text-lg font-bold ${hoveredCategory.budgeted - hoveredCategory.spent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       ${Math.abs(hoveredCategory.budgeted - hoveredCategory.spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+                    </span>
+                  </div>
+
+                  <div className="flex items-baseline justify-between pt-1">
+                    <span className="text-xs text-slate-500">
+                      {((hoveredCategory.spent / hoveredCategory.budgeted) * 100).toFixed(1)}% used
+                    </span>
                   </div>
                 </div>
               </div>
             ) : (
               <div>
-                <div className="mb-6">
+                <div className="mb-3">
                   <h3 className="text-sm font-semibold text-slate-900">Budget Overview</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-[10px] text-slate-500 mt-0.5">
                     {format(monthStart, 'MMM d')} - {format(monthEnd, 'MMM d, yyyy')}
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="p-4 rounded-lg bg-white border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-green-600" />
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Income</span>
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <TrendingUp className="w-3 h-3 text-green-600" />
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Income</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                    <div className="text-xl font-bold text-slate-900">
                       ${totalIncomeActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-xs text-slate-500">
@@ -279,12 +273,12 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingDown className="w-4 h-4 text-red-600" />
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Expenses</span>
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <TrendingDown className="w-3 h-3 text-red-600" />
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Expenses</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-900 mb-1">
+                    <div className="text-xl font-bold text-slate-900">
                       ${totalExpenseActual.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-xs text-slate-500">
@@ -292,11 +286,11 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-lg bg-white border border-slate-200">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Net</span>
+                  <div className="pt-2 border-t border-slate-200">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Net</span>
                     </div>
-                    <div className={`text-2xl font-bold mb-1 ${netActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <div className={`text-xl font-bold ${netActual >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {netActual >= 0 ? '+' : '-'}${Math.abs(netActual).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </div>
                     <div className="text-xs text-slate-500">
