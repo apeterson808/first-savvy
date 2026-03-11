@@ -140,7 +140,6 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                   >
                     {isTypeCollapsed ? <ChevronRight className="h-4 w-4 text-slate-600" /> : <ChevronDown className="h-4 w-4 text-slate-600" />}
                     <span className="text-sm font-medium text-slate-700">{getAccountTypeLabel(accountType)}</span>
-                    <span className="text-xs text-slate-500 ml-auto">({typeBudgets.length})</span>
                   </div>
                   {!isTypeCollapsed && (
                     <div className="px-4 py-3 space-y-3">
