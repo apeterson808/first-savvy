@@ -221,29 +221,29 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                   <h3 className="text-sm font-semibold text-slate-900">{hoveredCategory.name}</h3>
                 </div>
 
-                <div className="space-y-3">
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Budgeted</div>
-                    <div className="text-lg font-bold text-slate-900 text-right">
+                <div className="space-y-2">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Budgeted</span>
+                    <span className="text-lg font-bold text-slate-900">
                       ${hoveredCategory.budgeted.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+                    </span>
                   </div>
 
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Actual</div>
-                    <div className="text-lg font-bold text-slate-900 text-right">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Actual</span>
+                    <span className="text-lg font-bold text-slate-900">
                       ${hoveredCategory.spent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+                    </span>
                   </div>
 
-                  <div>
-                    <div className="text-[10px] font-medium text-slate-500 uppercase tracking-wide mb-1">Remaining</div>
-                    <div className={`text-lg font-bold text-right ${hoveredCategory.budgeted - hoveredCategory.spent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <div className="pt-2 border-t border-slate-200 flex items-baseline justify-between">
+                    <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Remaining</span>
+                    <span className={`text-lg font-bold ${hoveredCategory.budgeted - hoveredCategory.spent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       ${Math.abs(hoveredCategory.budgeted - hoveredCategory.spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </div>
+                    </span>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200">
+                  <div className="flex items-baseline justify-between pt-1">
                     <span className="text-xs text-slate-500">
                       {((hoveredCategory.spent / hoveredCategory.budgeted) * 100).toFixed(1)}% used
                     </span>
