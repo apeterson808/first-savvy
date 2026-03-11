@@ -23,6 +23,7 @@ import { useBudgetData } from '@/hooks/useBudgetData';
 import BudgetTrackerContainer from '../components/budgeting/BudgetTrackerContainer';
 import AddBudgetItemSheet from '../components/budgeting/AddBudgetItemSheet';
 import CategoriesTab from '../components/budgeting/CategoriesTab';
+import BudgetLinearBar from '../components/budgeting/BudgetLinearBar';
 
 export default function Budgeting() {
   const queryClient = useQueryClient();
@@ -199,6 +200,18 @@ export default function Budgeting() {
           )
         }
       />
+
+      {activeTab === 'overview' && hasSetupStarted && (
+        <div className="mt-4">
+          <BudgetLinearBar
+            budgets={budgets}
+            spendingByCategory={spendingByCategory}
+            incomeByCategory={incomeByCategory}
+            activeView="expenses"
+          />
+        </div>
+      )}
+
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
         <TabsContent value="overview" className="mt-0">
           {!hasSetupStarted ? (
