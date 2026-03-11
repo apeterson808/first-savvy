@@ -41,7 +41,10 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   // Default: very light pastel colors based on status
   bgColor = '#f8fafc';
 
-  if (!isIncome && !isChild) {
+  if (isIncome) {
+    // For income, show green progress
+    progressColor = 'rgba(134, 239, 172, 0.85)';
+  } else if (!isChild) {
     if (isOverBudget) {
       // Very light pastel red for over budget (100%+)
       progressColor = 'rgba(254, 202, 202, 0.85)';
@@ -53,7 +56,7 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
       progressColor = 'rgba(220, 252, 231, 0.85)';
     }
   } else {
-    // For income and child categories, use neutral gray
+    // For child categories, use neutral gray
     progressColor = 'rgba(241, 245, 249, 0.85)';
   }
 

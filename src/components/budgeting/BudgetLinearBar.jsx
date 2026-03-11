@@ -141,7 +141,7 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
               className="relative group transition-all duration-200 cursor-pointer rounded-sm"
               style={{
                 width: `${percentage}%`,
-                backgroundColor: item.color,
+                backgroundColor: '#22c55e',
                 opacity: activeIncomeIndex === null || activeIncomeIndex === index ? 1 : 0.4,
                 transform: activeIncomeIndex === index ? 'scaleY(1.1)' : 'scaleY(1)',
                 zIndex: activeIncomeIndex === index ? 10 : 1
