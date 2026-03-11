@@ -3,7 +3,7 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import TransactionsTab from '../components/banking/TransactionsTab';
 import RulesTab from '../components/banking/RulesTab';
-import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
+import BudgetGaugeChart from '../components/budgeting/BudgetGaugeChart';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
 import useAllAccounts from '../components/hooks/useAllAccounts';
@@ -108,20 +108,11 @@ export default function Banking() {
               onPointClick={handleChartPointClick}
             />
 
-            <CategoryBreakdownDonut 
-              transactions={transactions} 
+            <BudgetGaugeChart
+              transactions={transactions}
               selectedMonth={selectedMonth}
               selectedAccount={selectedAccount}
               accounts={accounts}
-              onCategoryClick={(categoryId) => {
-                if (categoryId) {
-                  setTransactionFilters({ category: categoryId, account: selectedAccount, month: selectedMonth });
-                  setFilterKey(prev => prev + 1);
-                  const newUrl = `${window.location.pathname}?tab=transactions&category=${categoryId}&account=${selectedAccount}&month=${selectedMonth}`;
-                  window.history.pushState({}, '', newUrl);
-                  setActiveTab('transactions');
-                }
-              }}
             />
           </div>
 
