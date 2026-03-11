@@ -48,7 +48,17 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
 
   const totalSpent = chartData.reduce((sum, item) => sum + item.spent, 0);
   const remaining = Math.max(0, totalBudgeted - totalSpent);
-  const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
+
+  const activeItem = activeIndex === 'remaining'
+    ? {
+        name: 'Unspent Budget',
+        budgeted: totalBudgeted,
+        spent: totalSpent,
+        color: '#cbd5e1'
+      }
+    : activeIndex !== null
+      ? chartData[activeIndex]
+      : null;
 
   React.useEffect(() => {
     if (onHoverChange) {
@@ -98,10 +108,15 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
           })}
           {remaining > 0 && (
             <div
-              className="relative bg-slate-200 rounded-sm"
+              className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200"
               style={{
-                width: `${(remaining / totalForPercentage) * 100}%`
+                width: `${(remaining / totalForPercentage) * 100}%`,
+                opacity: activeIndex === null || activeIndex === 'remaining' ? 1 : 0.4,
+                transform: activeIndex === 'remaining' ? 'scaleY(1.1)' : 'scaleY(1)',
+                zIndex: activeIndex === 'remaining' ? 10 : 1
               }}
+              onMouseEnter={() => setActiveIndex('remaining')}
+              onMouseLeave={() => setActiveIndex(null)}
             >
               {((remaining / totalForPercentage) * 100) > 8 && (
                 <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs font-medium px-1">
