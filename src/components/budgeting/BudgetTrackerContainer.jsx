@@ -7,10 +7,6 @@ import { format } from 'date-fns';
 import { getAccountTypeLabel, getAccountTypeOrder } from '@/utils/accountTypeLabels';
 
 export default function BudgetTrackerContainer({ budgets, spendingByCategory, incomeByCategory, monthStart, monthEnd, hoveredCategory }) {
-  const [collapsedSections, setCollapsedSections] = useState({
-    income: false,
-    expense: false
-  });
   const [collapsedTypes, setCollapsedTypes] = useState({});
   const [expandedParents, setExpandedParents] = useState({});
 
@@ -66,13 +62,6 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
   const netBudgeted = totalIncomeBudgeted - totalExpenseBudgeted;
   const netActual = totalIncomeActual - totalExpenseActual;
 
-  const toggleSection = (section) => {
-    setCollapsedSections(prev => ({
-      ...prev,
-      [section]: !prev[section]
-    }));
-  };
-
   const toggleType = (typeKey) => {
     setCollapsedTypes(prev => ({
       ...prev,
@@ -93,7 +82,6 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
   };
 
   const renderSection = (title, budgetsList, actualByCategory, isIncome, sectionKey) => {
-    const isCollapsed = collapsedSections[sectionKey];
     const count = budgetsList.length;
 
     if (count === 0) {
@@ -108,16 +96,11 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
     return (
       <Card className="shadow-sm border-slate-200 bg-white">
         <CardHeader className="pb-3 pt-4 px-6">
-          <div
-            className="flex items-center gap-2 cursor-pointer"
-            onClick={() => toggleSection(sectionKey)}
-          >
-            {isCollapsed ? <ChevronRight className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
+          <div className="flex items-center gap-2">
             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">{title}</p>
           </div>
         </CardHeader>
-        {!isCollapsed && (
-          <CardContent className="px-6 pb-4 space-y-4">
+        <CardContent className="px-6 pb-4 space-y-4">
             {sortedTypes.map(accountType => {
               const typeBudgets = groupedByType[accountType];
               const typeKey = `${sectionKey}_${accountType}`;
@@ -183,8 +166,7 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                 </div>
               );
             })}
-          </CardContent>
-        )}
+        </CardContent>
       </Card>
     );
   };
