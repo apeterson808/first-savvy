@@ -105,10 +105,10 @@ export function getAllCadenceValues(amount, sourceCadence) {
   const yearly = convertCadence(amount, sourceCadence, 'yearly');
 
   return {
-    daily: Math.ceil(daily),
-    weekly: Math.ceil(weekly),
-    monthly: Math.ceil(monthly),
-    yearly: Math.ceil(yearly),
+    daily,
+    weekly,
+    monthly,
+    yearly,
     source: sourceCadence
   };
 }
