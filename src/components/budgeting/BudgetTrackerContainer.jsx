@@ -229,10 +229,6 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-center text-slate-400 text-sm font-medium">
-                    =
-                  </div>
-
                   <div className="flex items-baseline justify-between">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Actual</span>
                     <span className="text-lg font-bold text-slate-900">
@@ -240,18 +236,14 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-center text-slate-400 text-sm font-medium">
-                    +
-                  </div>
-
-                  <div className="flex items-baseline justify-between">
+                  <div className="pt-2 border-t border-slate-200 flex items-baseline justify-between">
                     <span className="text-[10px] font-medium text-slate-500 uppercase tracking-wide">Remaining</span>
                     <span className={`text-lg font-bold ${hoveredCategory.budgeted - hoveredCategory.spent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       ${Math.abs(hoveredCategory.budgeted - hoveredCategory.spent).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
 
-                  <div className="flex items-baseline justify-between pt-2 border-t border-slate-200">
+                  <div className="flex items-baseline justify-between pt-1">
                     <span className="text-xs text-slate-500">
                       {((hoveredCategory.spent / hoveredCategory.budgeted) * 100).toFixed(1)}% used
                     </span>
