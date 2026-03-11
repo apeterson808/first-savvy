@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ChevronDown, ChevronRight, TrendingUp, TrendingDown } from 'lucide-react';
 import BudgetProgressPill from './BudgetProgressPill';
+import BudgetVsActualChart from './BudgetVsActualChart';
 import { convertCadence } from '@/utils/cadenceUtils';
 import { format } from 'date-fns';
 import { getAccountTypeLabel, getAccountTypeOrder } from '@/utils/accountTypeLabels';
@@ -208,7 +209,13 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
         )}
       </div>
 
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      <div className="lg:sticky lg:top-4 lg:self-start space-y-4">
+        <BudgetVsActualChart
+          budgets={budgets}
+          spendingByCategory={spendingByCategory}
+          incomeByCategory={incomeByCategory}
+        />
+
         <Card className="shadow-sm border-slate-200 bg-gradient-to-br from-white to-slate-50">
           <CardContent className="pt-6 pb-6">
             <div className="mb-6">
