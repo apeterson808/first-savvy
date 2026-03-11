@@ -19,6 +19,7 @@ const DEFAULT_COLORS = [
 
 export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByCategory, activeView, onHoverChange }) {
   const [activeIndex, setActiveIndex] = useState(null);
+  const [activeIncomeIndex, setActiveIncomeIndex] = useState(null);
 
   const incomeBudgets = budgets.filter(b => b.chartAccount?.class === 'income');
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense');
@@ -49,6 +50,28 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
   const totalSpent = chartData.reduce((sum, item) => sum + item.spent, 0);
   const remaining = Math.max(0, totalBudgeted - totalSpent);
 
+  const incomeChartData = incomeBudgets
+    .map((budget, index) => {
+      const budgeted = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', 'monthly');
+      const earned = incomeByCategory[budget.chart_account_id] || 0;
+      return {
+        name: budget.chartAccount?.display_name || budget.chartAccount?.account_detail || 'Uncategorized',
+        budgeted,
+        earned,
+        color: budget.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length]
+      };
+    })
+    .filter(item => item.budgeted > 0 && item.earned > 0)
+    .sort((a, b) => b.earned - a.earned);
+
+  const totalIncomeBudgeted = incomeBudgets.reduce((sum, budget) => {
+    const budgeted = convertCadence(parseFloat(budget.allocated_amount || 0), budget.cadence || 'monthly', 'monthly');
+    return sum + budgeted;
+  }, 0);
+
+  const totalIncomeEarned = incomeChartData.reduce((sum, item) => sum + item.earned, 0);
+  const incomeRemaining = Math.max(0, totalIncomeBudgeted - totalIncomeEarned);
+
   const activeItem = activeIndex === 'remaining'
     ? {
         name: 'Unspent Budget',
@@ -60,16 +83,108 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
       ? chartData[activeIndex]
       : null;
 
+  const activeIncomeItem = activeIncomeIndex === 'remaining'
+    ? {
+        name: 'Unearned Income',
+        budgeted: totalIncomeBudgeted,
+        spent: totalIncomeEarned,
+        earned: totalIncomeEarned,
+        color: '#cbd5e1'
+      }
+    : activeIncomeIndex !== null
+      ? {
+          ...incomeChartData[activeIncomeIndex],
+          spent: incomeChartData[activeIncomeIndex].earned
+        }
+      : null;
+
   React.useEffect(() => {
     if (onHoverChange) {
-      onHoverChange(activeItem);
+      onHoverChange(activeItem || activeIncomeItem);
     }
-  }, [activeItem, onHoverChange]);
+  }, [activeItem, activeIncomeItem, onHoverChange]);
+
+  const renderIncomeBar = () => {
+    if (incomeChartData.length === 0 && totalIncomeBudgeted === 0) {
+      return (
+        <div className="flex h-8 bg-slate-100 rounded" />
+      );
+    }
+
+    if (incomeChartData.length === 0 && totalIncomeBudgeted > 0) {
+      return (
+        <div className="flex h-8 rounded overflow-hidden">
+          <div
+            className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200 w-full"
+            style={{
+              opacity: activeIncomeIndex === null || activeIncomeIndex === 'remaining' ? 1 : 0.4,
+              transform: activeIncomeIndex === 'remaining' ? 'scaleY(1.1)' : 'scaleY(1)',
+            }}
+            onMouseEnter={() => setActiveIncomeIndex('remaining')}
+            onMouseLeave={() => setActiveIncomeIndex(null)}
+          >
+            <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs font-medium px-1">
+              <span className="truncate">Remaining Income</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex h-8 rounded overflow-hidden gap-1">
+        {incomeChartData.map((item, index) => {
+          const percentage = (item.earned / totalIncomeForPercentage) * 100;
+          return (
+            <div
+              key={index}
+              className="relative group transition-all duration-200 cursor-pointer rounded-sm"
+              style={{
+                width: `${percentage}%`,
+                backgroundColor: item.color,
+                opacity: activeIncomeIndex === null || activeIncomeIndex === index ? 1 : 0.4,
+                transform: activeIncomeIndex === index ? 'scaleY(1.1)' : 'scaleY(1)',
+                zIndex: activeIncomeIndex === index ? 10 : 1
+              }}
+              onMouseEnter={() => setActiveIncomeIndex(index)}
+              onMouseLeave={() => setActiveIncomeIndex(null)}
+            >
+              {percentage > 8 && (
+                <div className="absolute inset-0 flex items-center justify-center text-white text-xs font-medium px-1">
+                  <span className="truncate">{item.name}</span>
+                </div>
+              )}
+            </div>
+          );
+        })}
+        {incomeRemaining > 0 && (
+          <div
+            className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200"
+            style={{
+              width: `${(incomeRemaining / totalIncomeForPercentage) * 100}%`,
+              opacity: activeIncomeIndex === null || activeIncomeIndex === 'remaining' ? 1 : 0.4,
+              transform: activeIncomeIndex === 'remaining' ? 'scaleY(1.1)' : 'scaleY(1)',
+              zIndex: activeIncomeIndex === 'remaining' ? 10 : 1
+            }}
+            onMouseEnter={() => setActiveIncomeIndex('remaining')}
+            onMouseLeave={() => setActiveIncomeIndex(null)}
+          >
+            {((incomeRemaining / totalIncomeForPercentage) * 100) > 8 && (
+              <div className="absolute inset-0 flex items-center justify-center text-slate-500 text-xs font-medium px-1">
+                <span className="truncate">Remaining</span>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   if (chartData.length === 0 && totalBudgeted === 0) {
     return (
-      <Card className="shadow-sm border-slate-200 bg-white">
-        <div className="p-4">
+      <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => { setActiveIndex(null); setActiveIncomeIndex(null); }}>
+        <div className="p-4 space-y-2">
+          {renderIncomeBar()}
           <div className="flex h-8 bg-slate-100 rounded" />
         </div>
       </Card>
@@ -78,8 +193,9 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
 
   if (chartData.length === 0 && totalBudgeted > 0) {
     return (
-      <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => setActiveIndex(null)}>
-        <div className="p-4">
+      <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => { setActiveIndex(null); setActiveIncomeIndex(null); }}>
+        <div className="p-4 space-y-2">
+          {renderIncomeBar()}
           <div className="flex h-8 rounded overflow-hidden">
             <div
               className="relative bg-slate-200 rounded-sm cursor-pointer transition-all duration-200 w-full"
@@ -101,10 +217,12 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
   }
 
   const totalForPercentage = totalBudgeted > 0 ? totalBudgeted : totalSpent;
+  const totalIncomeForPercentage = totalIncomeBudgeted > 0 ? totalIncomeBudgeted : totalIncomeEarned;
 
   return (
-    <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => setActiveIndex(null)}>
-      <div className="p-4">
+    <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => { setActiveIndex(null); setActiveIncomeIndex(null); }}>
+      <div className="p-4 space-y-2">
+        {renderIncomeBar()}
         <div className="flex h-8 rounded overflow-hidden gap-1">
           {chartData.map((item, index) => {
             const percentage = (item.spent / totalForPercentage) * 100;
