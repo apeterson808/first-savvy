@@ -45,7 +45,11 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
   const activeItem = activeIndex !== null ? chartData[activeIndex] : null;
 
   if (chartData.length === 0) {
-    return null;
+    return (
+      <Card className="shadow-sm border-slate-200 bg-white p-0 overflow-hidden">
+        <div className="flex h-8 bg-slate-100" />
+      </Card>
+    );
   }
 
   return (
