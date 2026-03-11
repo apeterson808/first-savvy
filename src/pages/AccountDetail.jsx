@@ -1421,9 +1421,13 @@ export default function AccountDetail() {
                   <p className="text-lg font-bold text-sky-blue">{formatCurrency(analytics.totalCredits)}</p>
                 </div>
 
-                <div className="p-3 bg-burgundy/10 rounded-lg">
-                  <div className="flex items-center gap-1.5 text-burgundy mb-0.5">
-                    <TrendingDown className="w-3.5 h-3.5" />
+                <div className={`p-3 rounded-lg ${analytics.netChange >= 0 ? 'bg-forest-green/10' : 'bg-burgundy/10'}`}>
+                  <div className={`flex items-center gap-1.5 mb-0.5 ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
+                    {analytics.netChange >= 0 ? (
+                      <TrendingUp className="w-3.5 h-3.5" />
+                    ) : (
+                      <TrendingDown className="w-3.5 h-3.5" />
+                    )}
                     <p className="text-xs font-medium">Net Change</p>
                   </div>
                   <p className={`text-lg font-bold ${analytics.netChange >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
