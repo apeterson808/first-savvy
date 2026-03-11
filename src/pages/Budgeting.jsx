@@ -205,10 +205,8 @@ export default function Budgeting() {
         <div className="border-b mt-4" />
       </div>
 
-      <div className="flex-1 relative">
-        <div className="absolute top-0 left-0 right-0 border-b z-10 bg-background" />
-        <div className="h-full overflow-y-auto px-4 md:px-6 pb-6 pt-1">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+      <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-0">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsContent value="overview" className="mt-0">
             {!hasSetupStarted ? (
               <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
@@ -253,7 +251,6 @@ export default function Budgeting() {
             editingBudget={editingBudget}
           />
         )}
-        </div>
       </div>
     </div>
   );
