@@ -402,7 +402,7 @@ export default function AccountDetail() {
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
     const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
-    const netChange = isDebitNormal ? (totalDebits - totalCredits) : (totalCredits - totalDebits);
+    const netChange = totalDebits - totalCredits;
 
     const analyticsData = {
       transactionCount: combined.length,
