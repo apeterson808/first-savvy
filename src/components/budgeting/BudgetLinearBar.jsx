@@ -57,7 +57,7 @@ export default function BudgetLinearBar({ budgets, spendingByCategory, incomeByC
   return (
     <Card className="shadow-sm border-slate-200 bg-white" onMouseLeave={() => setActiveIndex(null)}>
       <div className="p-4">
-        <div className="flex h-8 rounded overflow-hidden gap-0.5">
+        <div className="flex h-8 rounded overflow-hidden gap-1">
           {chartData.map((item, index) => {
             const percentage = (item.spent / totalSpent) * 100;
             return (
