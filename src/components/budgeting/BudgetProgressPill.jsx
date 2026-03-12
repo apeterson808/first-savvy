@@ -49,14 +49,15 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
     progressColor = 'rgba(134, 239, 172, 0.85)';
   } else if (!isChild) {
     if (isOverBudget) {
-      // Very light pastel red for over budget (100%+)
-      progressColor = 'rgba(254, 202, 202, 0.85)';
+      // Stronger red for over budget (100%+)
+      progressColor = 'rgba(239, 68, 68, 0.85)';
+      bgColor = '#fef2f2';
     } else if (isNearLimit) {
-      // Very light pastel amber for approaching limit (75-99%)
-      progressColor = 'rgba(254, 243, 199, 0.85)';
+      // Amber for approaching limit (75-99%)
+      progressColor = 'rgba(251, 191, 36, 0.85)';
     } else {
-      // Very light pastel green for on-track (0-74%)
-      progressColor = 'rgba(220, 252, 231, 0.85)';
+      // Light green for on-track (0-74%)
+      progressColor = 'rgba(134, 239, 172, 0.85)';
     }
   } else {
     // For child categories, use neutral gray
