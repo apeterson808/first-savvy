@@ -103,11 +103,18 @@ export default function CalculatorAmountInput({
       return;
     }
 
-    if (e.key === 'Enter' && onEnter) {
+    if (e.key === 'Enter') {
       e.preventDefault();
       const cleanValue = inputValue.replace(/,/g, '') || '0';
       const numericValue = parseFloat(cleanValue);
-      onEnter(numericValue);
+
+      if (inputRef.current) {
+        inputRef.current.blur();
+      }
+
+      if (onEnter) {
+        onEnter(numericValue);
+      }
     }
   };
 
