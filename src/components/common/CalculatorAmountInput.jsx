@@ -18,6 +18,7 @@ export default function CalculatorAmountInput({
   disabled = false
 }) {
   const [inputValue, setInputValue] = useState('');
+  const [isSelected, setIsSelected] = useState(false);
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ export default function CalculatorAmountInput({
     // Handle backspace to remove last digit
     if (e.key === 'Backspace') {
       e.preventDefault();
+      setIsSelected(false);
       const cleanValue = inputValue.replace(/,/g, '') || '0';
       const cents = Math.round(parseFloat(cleanValue) * 100);
       const newCents = Math.floor(cents / 10);
@@ -69,6 +71,23 @@ export default function CalculatorAmountInput({
     if (/^\d$/.test(e.key)) {
       e.preventDefault();
       const digit = parseInt(e.key);
+
+      // If text is selected, start fresh with just this digit
+      if (isSelected) {
+        setIsSelected(false);
+        const newAmount = digit / 100;
+        const formatted = newAmount.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+        setInputValue(formatted);
+        if (onChange) {
+          onChange(newAmount);
+        }
+        return;
+      }
+
+      // Otherwise, append to existing value
       const cleanValue = inputValue.replace(/,/g, '') || '0';
       const cents = Math.round(parseFloat(cleanValue) * 100);
       const newCents = (cents * 10) + digit;
@@ -113,6 +132,7 @@ export default function CalculatorAmountInput({
 
   const handleFocus = (e) => {
     e.target.select();
+    setIsSelected(true);
   };
 
   const handleBlurEvent = (e) => {
