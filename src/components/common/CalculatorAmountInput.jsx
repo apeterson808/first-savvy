@@ -42,17 +42,25 @@ export default function CalculatorAmountInput({
     // Handle backspace to remove last digit
     if (e.key === 'Backspace') {
       e.preventDefault();
-      const cleanValue = inputValue.replace(/,/g, '');
+      const cleanValue = inputValue.replace(/,/g, '') || '0';
       const cents = Math.round(parseFloat(cleanValue) * 100);
       const newCents = Math.floor(cents / 10);
       const newAmount = newCents / 100;
-      const formatted = newAmount.toLocaleString('en-US', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-      setInputValue(formatted);
-      if (onChange) {
-        onChange(newAmount);
+
+      if (newAmount === 0) {
+        setInputValue('');
+        if (onChange) {
+          onChange(0);
+        }
+      } else {
+        const formatted = newAmount.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        });
+        setInputValue(formatted);
+        if (onChange) {
+          onChange(newAmount);
+        }
       }
       return;
     }
@@ -61,7 +69,7 @@ export default function CalculatorAmountInput({
     if (/^\d$/.test(e.key)) {
       e.preventDefault();
       const digit = parseInt(e.key);
-      const cleanValue = inputValue.replace(/,/g, '');
+      const cleanValue = inputValue.replace(/,/g, '') || '0';
       const cents = Math.round(parseFloat(cleanValue) * 100);
       const newCents = (cents * 10) + digit;
       const newAmount = newCents / 100;
@@ -78,7 +86,7 @@ export default function CalculatorAmountInput({
 
     if (e.key === 'Enter' && onEnter) {
       e.preventDefault();
-      const cleanValue = inputValue.replace(/,/g, '');
+      const cleanValue = inputValue.replace(/,/g, '') || '0';
       const numericValue = parseFloat(cleanValue);
       onEnter(numericValue);
     }
