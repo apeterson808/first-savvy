@@ -47,7 +47,8 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   if (isIncome) {
     // For income, show green progress
     progressColor = 'rgba(134, 239, 172, 0.85)';
-  } else if (!isChild) {
+  } else {
+    // Apply status colors to both parent and child categories
     if (isOverBudget) {
       // Stronger red for over budget (100%+)
       progressColor = 'rgba(239, 68, 68, 0.85)';
@@ -59,9 +60,6 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
       // Light green for on-track (0-74%)
       progressColor = 'rgba(134, 239, 172, 0.85)';
     }
-  } else {
-    // For child categories, use neutral gray
-    progressColor = 'rgba(241, 245, 249, 0.85)';
   }
 
   const displayPercentage = Math.min(percentage, 100);
