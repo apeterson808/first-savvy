@@ -17,7 +17,7 @@ export default function CalculatorAmountInput({
   showDollarSign = true,
   disabled = false
 }) {
-  const [inputValue, setInputValue] = useState('0.00');
+  const [inputValue, setInputValue] = useState('');
   const inputRef = useRef(null);
 
   useEffect(() => {
@@ -27,12 +27,15 @@ export default function CalculatorAmountInput({
   }, [autoFocus]);
 
   useEffect(() => {
-    // Initialize with the passed value
-    const formatted = (value || 0).toLocaleString('en-US', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-    setInputValue(formatted);
+    if (value === 0 || value === null || value === undefined) {
+      setInputValue('');
+    } else {
+      const formatted = value.toLocaleString('en-US', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      setInputValue(formatted);
+    }
   }, [value]);
 
   const handleKeyDown = (e) => {
@@ -100,6 +103,10 @@ export default function CalculatorAmountInput({
     }
   };
 
+  const handleFocus = (e) => {
+    e.target.select();
+  };
+
   const handleBlurEvent = (e) => {
     if (onBlur) {
       const cleanValue = inputValue.replace(/,/g, '');
@@ -119,6 +126,7 @@ export default function CalculatorAmountInput({
         value={inputValue}
         onChange={handleChange}
         onKeyDown={handleKeyDown}
+        onFocus={handleFocus}
         onBlur={handleBlurEvent}
         className={`tabular-nums text-right ${showDollarSign ? 'pl-7' : ''} ${className}`}
         placeholder={placeholder}
