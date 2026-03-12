@@ -85,7 +85,11 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
 
   const handlePillClick = () => {
     if (budget?.chart_account_id) {
-      navigate(`/Banking/account/${budget.chart_account_id}`);
+      if (categoryData?.class === 'expense' || categoryData?.class === 'income') {
+        navigate(`/Budgeting/category/${budget.chart_account_id}`);
+      } else {
+        navigate(`/Banking/account/${budget.chart_account_id}`);
+      }
     }
   };
 
