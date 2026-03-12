@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import IconPicker from '@/components/common/IconPicker';
 import ColorPicker from '@/components/common/ColorPicker';
+import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 
 export function BudgetSettingsCard({ budget, categoryAccount }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -246,15 +247,9 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                       </Tooltip>
                     </div>
                     {rolloverEnabled && (
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
+                      <CalculatorAmountInput
                         value={accumulatedRollover}
-                        onChange={(e) => {
-                          const value = parseFloat(e.target.value) || 0;
-                          setAccumulatedRollover(value);
-                        }}
+                        onChange={(value) => setAccumulatedRollover(value)}
                         onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
                         placeholder="0.00"
                         className="w-28 h-8 text-sm"
