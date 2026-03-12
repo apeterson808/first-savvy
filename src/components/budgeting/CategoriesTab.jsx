@@ -460,7 +460,10 @@ const CategoriesTab = forwardRef((props, ref) => {
 
     const cadence = budget?.cadence || 'monthly';
     const amount = budget?.allocated_amount || 0;
-    const values = budget ? getAllCadenceValues(amount, cadence) :
+    const rolloverAmount = budget?.accumulated_rollover || 0;
+    const rolloverEnabled = budget?.rollover_enabled || false;
+    const effectiveAmount = rolloverEnabled ? amount + rolloverAmount : amount;
+    const values = budget ? getAllCadenceValues(effectiveAmount, cadence) :
       hasSuggestion ? getAllCadenceValues(suggestedAmount, 'monthly') :
       { daily: 0, weekly: 0, monthly: 0, yearly: 0 };
     const isUpdating = updatingBudgetId === budget?.id;

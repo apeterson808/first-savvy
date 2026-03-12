@@ -39,11 +39,19 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
   };
 
   const totalIncomeBudgeted = incomeBudgets.reduce((sum, b) => {
-    return sum + convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
+    const baseAmount = parseFloat(b.allocated_amount || 0);
+    const rolloverAmount = parseFloat(b.accumulated_rollover || 0);
+    const rolloverEnabled = b.rollover_enabled || false;
+    const effectiveAmount = rolloverEnabled ? baseAmount + rolloverAmount : baseAmount;
+    return sum + convertCadence(effectiveAmount, b.cadence || 'monthly', 'monthly');
   }, 0);
 
   const totalExpenseBudgeted = expenseBudgets.reduce((sum, b) => {
-    return sum + convertCadence(parseFloat(b.allocated_amount || 0), b.cadence || 'monthly', 'monthly');
+    const baseAmount = parseFloat(b.allocated_amount || 0);
+    const rolloverAmount = parseFloat(b.accumulated_rollover || 0);
+    const rolloverEnabled = b.rollover_enabled || false;
+    const effectiveAmount = rolloverEnabled ? baseAmount + rolloverAmount : baseAmount;
+    return sum + convertCadence(effectiveAmount, b.cadence || 'monthly', 'monthly');
   }, 0);
 
   const totalIncomeActual = incomeBudgets.reduce((sum, b) => {
@@ -145,17 +153,23 @@ export default function BudgetTrackerContainer({ budgets, spendingByCategory, in
                             </div>
                             {hasChildren && isExpanded && (
                               <div className="ml-6 mt-2 space-y-2">
-                                {children.map(childBudget => (
-                                  <div key={childBudget.id}>
-                                    <BudgetProgressPill
-                                      budget={childBudget}
-                                      actualAmount={actualByCategory[childBudget.chart_account_id] || 0}
-                                      isIncome={isIncome}
-                                      isChild={true}
-                                      allocatedAmount={convertCadence(parseFloat(childBudget.allocated_amount || 0), childBudget.cadence || 'monthly', 'monthly')}
-                                    />
-                                  </div>
-                                ))}
+                                {children.map(childBudget => {
+                                  const baseAmount = parseFloat(childBudget.allocated_amount || 0);
+                                  const rolloverAmount = parseFloat(childBudget.accumulated_rollover || 0);
+                                  const rolloverEnabled = childBudget.rollover_enabled || false;
+                                  const effectiveAmount = rolloverEnabled ? baseAmount + rolloverAmount : baseAmount;
+                                  return (
+                                    <div key={childBudget.id}>
+                                      <BudgetProgressPill
+                                        budget={childBudget}
+                                        actualAmount={actualByCategory[childBudget.chart_account_id] || 0}
+                                        isIncome={isIncome}
+                                        isChild={true}
+                                        allocatedAmount={convertCadence(effectiveAmount, childBudget.cadence || 'monthly', 'monthly')}
+                                      />
+                                    </div>
+                                  );
+                                })}
                               </div>
                             )}
                           </div>

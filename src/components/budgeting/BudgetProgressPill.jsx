@@ -27,8 +27,13 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
   const IconComponent = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Icons.Circle;
   const iconColor = categoryData?.color || '#64748b';
 
+  const baseAmount = parseFloat(budget.allocated_amount || 0);
+  const rolloverAmount = parseFloat(budget.accumulated_rollover || 0);
+  const rolloverEnabled = budget.rollover_enabled || false;
+  const effectiveBaseAmount = rolloverEnabled ? baseAmount + rolloverAmount : baseAmount;
+
   const budgetedAmount = allocatedAmount !== null ? allocatedAmount : convertCadence(
-    parseFloat(budget.allocated_amount || 0),
+    effectiveBaseAmount,
     budget.cadence || 'monthly',
     'monthly'
   );
