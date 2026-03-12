@@ -22,7 +22,8 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
     cadence: budget?.cadence || 'monthly',
     custom_name: budget?.custom_name || '',
     is_active: budget?.is_active ?? true,
-    rollover_enabled: budget?.rollover_enabled ?? false
+    rollover_enabled: budget?.rollover_enabled ?? false,
+    accumulated_rollover: budget?.accumulated_rollover || 0
   });
 
   const queryClient = useQueryClient();
@@ -58,7 +59,8 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
       cadence: budget?.cadence || 'monthly',
       custom_name: budget?.custom_name || '',
       is_active: budget?.is_active ?? true,
-      rollover_enabled: budget?.rollover_enabled ?? false
+      rollover_enabled: budget?.rollover_enabled ?? false,
+      accumulated_rollover: budget?.accumulated_rollover || 0
     });
     setIsEditing(false);
   };
@@ -165,7 +167,7 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
               />
             </div>
 
-            <div className="space-y-2 pt-2 border-t">
+            <div className="space-y-3 pt-2 border-t">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
                   <Label htmlFor="rollover_enabled">Enable Budget Rollover</Label>
@@ -179,6 +181,24 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                   onCheckedChange={(checked) => setEditedBudget({ ...editedBudget, rollover_enabled: checked })}
                 />
               </div>
+
+              {editedBudget.rollover_enabled && (
+                <div className="space-y-2 pl-4 border-l-2 border-blue-200">
+                  <Label htmlFor="accumulated_rollover">Accumulated Amount from Previous Month</Label>
+                  <Input
+                    id="accumulated_rollover"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={editedBudget.accumulated_rollover}
+                    onChange={(e) => setEditedBudget({ ...editedBudget, accumulated_rollover: parseFloat(e.target.value) || 0 })}
+                    placeholder="0.00"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Enter any carryover amount from previous months. Defaults to $0.
+                  </p>
+                </div>
+              )}
             </div>
           </>
         ) : (
@@ -229,16 +249,19 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t">
-                <div className="space-y-1">
+              <div className="space-y-2 pt-2 border-t">
+                <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Budget Rollover</span>
-                  {budget?.rollover_enabled && (
-                    <p className="text-xs text-muted-foreground">Unused budget accumulates monthly</p>
-                  )}
+                  <span className={`text-sm font-medium ${budget?.rollover_enabled ? 'text-blue-600' : 'text-gray-500'}`}>
+                    {budget?.rollover_enabled ? 'Enabled' : 'Disabled'}
+                  </span>
                 </div>
-                <span className={`text-sm font-medium ${budget?.rollover_enabled ? 'text-blue-600' : 'text-gray-500'}`}>
-                  {budget?.rollover_enabled ? 'Enabled' : 'Disabled'}
-                </span>
+                {budget?.rollover_enabled && (
+                  <div className="pl-4 border-l-2 border-blue-200 space-y-1">
+                    <p className="text-xs text-muted-foreground">Accumulated from previous months</p>
+                    <p className="text-lg font-semibold text-blue-600">{formatCurrency(budget?.accumulated_rollover || 0)}</p>
+                  </div>
+                )}
               </div>
 
               {budget?.updated_at && (
