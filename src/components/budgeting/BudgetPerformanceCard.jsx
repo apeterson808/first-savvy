@@ -15,11 +15,15 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const percentOfMonthElapsed = (daysElapsed / daysInMonth) * 100;
 
   const budgetAmount = budget?.allocated_amount || 0;
-  const spent = currentSpending || 0;
-  const remaining = budgetAmount - spent;
-  const percentUsed = budgetAmount > 0 ? (spent / budgetAmount) * 100 : 0;
+  const accumulatedRollover = budget?.accumulated_rollover || 0;
+  const isRolloverEnabled = budget?.rollover_enabled || false;
+  const effectiveBudget = isRolloverEnabled ? budgetAmount + accumulatedRollover : budgetAmount;
 
-  const expectedSpending = (budgetAmount * percentOfMonthElapsed) / 100;
+  const spent = currentSpending || 0;
+  const remaining = effectiveBudget - spent;
+  const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
+
+  const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
   const spendingPace = spent - expectedSpending;
   const isOnPace = Math.abs(spendingPace) < (budgetAmount * 0.05);
   const isOverPace = spendingPace > 0;
@@ -48,12 +52,34 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
               {percentUsed.toFixed(0)}% Used
             </Badge>
           </div>
-          <Progress value={Math.min(percentUsed, 100)} className="h-3" />
+          <div className="relative">
+            <Progress value={Math.min(percentUsed, 100)} className="h-3" />
+            <div
+              className="absolute top-0 h-full w-0.5 bg-blue-600 z-10"
+              style={{ left: `${Math.min(percentOfMonthElapsed, 100)}%` }}
+            >
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 text-xs font-medium text-blue-600 whitespace-nowrap bg-white px-1 rounded">
+                Day {daysElapsed}
+              </div>
+            </div>
+          </div>
           <div className="flex justify-between text-xs text-muted-foreground">
             <span>{formatCurrency(spent)} spent</span>
-            <span>{formatCurrency(budgetAmount)} budgeted</span>
+            <span>{formatCurrency(effectiveBudget)} available</span>
           </div>
         </div>
+
+        {isRolloverEnabled && accumulatedRollover > 0 && (
+          <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg">
+            <div>
+              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Rollover Budget</p>
+              <p className="text-xs text-blue-700 dark:text-blue-300">
+                {formatCurrency(budgetAmount)} this month + {formatCurrency(accumulatedRollover)} accumulated
+              </p>
+            </div>
+            <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{formatCurrency(effectiveBudget)}</p>
+          </div>
+        )}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1">
@@ -98,18 +124,6 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-muted rounded-lg">
-            <div className="flex items-start gap-2">
-              <Calendar className="h-4 w-4 mt-0.5 text-muted-foreground" />
-              <div className="space-y-1 flex-1">
-                <p className="text-xs font-medium">Month Progress</p>
-                <Progress value={percentOfMonthElapsed} className="h-1.5" />
-                <p className="text-xs text-muted-foreground">
-                  Day {daysElapsed} of {daysInMonth} ({percentOfMonthElapsed.toFixed(0)}% elapsed)
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {performanceHistory && (
@@ -147,7 +161,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             <div className="space-y-1">
               <p className="text-sm font-medium text-red-900 dark:text-red-100">Budget Exceeded</p>
               <p className="text-xs text-red-700 dark:text-red-300">
-                You're {formatCurrency(spent - budgetAmount)} over budget with {daysInMonth - daysElapsed} days remaining
+                You're {formatCurrency(spent - effectiveBudget)} over budget with {daysInMonth - daysElapsed} days remaining
               </p>
             </div>
           </div>

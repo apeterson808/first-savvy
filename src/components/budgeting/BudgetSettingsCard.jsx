@@ -5,12 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit2, Save, X, Clock } from 'lucide-react';
+import { Edit2, Save, X, Clock, Circle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import IconPicker from '@/components/common/IconPicker';
+import ColorPicker from '@/components/common/ColorPicker';
 
 export function BudgetSettingsCard({ budget, categoryAccount }) {
   const [isEditing, setIsEditing] = useState(false);
@@ -18,7 +21,8 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
     allocated_amount: budget?.allocated_amount || 0,
     cadence: budget?.cadence || 'monthly',
     custom_name: budget?.custom_name || '',
-    is_active: budget?.is_active ?? true
+    is_active: budget?.is_active ?? true,
+    rollover_enabled: budget?.rollover_enabled ?? false
   });
 
   const queryClient = useQueryClient();
@@ -53,29 +57,23 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
       allocated_amount: budget?.allocated_amount || 0,
       cadence: budget?.cadence || 'monthly',
       custom_name: budget?.custom_name || '',
-      is_active: budget?.is_active ?? true
+      is_active: budget?.is_active ?? true,
+      rollover_enabled: budget?.rollover_enabled ?? false
     });
     setIsEditing(false);
   };
 
   const convertAmount = (amount, fromCadence, toCadence) => {
-    const toDaily = {
-      daily: amount,
-      weekly: amount / 7,
-      monthly: amount / 30.44,
-      yearly: amount / 365.25
+    if (fromCadence === toCadence) return amount;
+
+    const conversions = {
+      daily: { daily: 1, weekly: 7, monthly: 30.44, yearly: 365.25 },
+      weekly: { daily: 1/7, weekly: 1, monthly: 4.35, yearly: 52.18 },
+      monthly: { daily: 1/30.44, weekly: 1/4.35, monthly: 1, yearly: 12 },
+      yearly: { daily: 1/365.25, weekly: 1/52.18, monthly: 1/12, yearly: 1 }
     };
 
-    const daily = toDaily[fromCadence];
-
-    const fromDaily = {
-      daily: daily,
-      weekly: daily * 7,
-      monthly: daily * 30.44,
-      yearly: daily * 365.25
-    };
-
-    return fromDaily[toCadence];
+    return amount * conversions[fromCadence][toCadence];
   };
 
   const displayAmount = budget?.allocated_amount || 0;
@@ -87,6 +85,9 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
     monthly: convertAmount(displayAmount, displayCadence, 'monthly'),
     yearly: convertAmount(displayAmount, displayCadence, 'yearly')
   };
+
+  const IconComponent = categoryAccount?.icon && Icons[categoryAccount.icon] ? Icons[categoryAccount.icon] : Circle;
+  const iconColor = categoryAccount?.color || '#64748b';
 
   return (
     <Card>
@@ -163,15 +164,36 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                 onCheckedChange={(checked) => setEditedBudget({ ...editedBudget, is_active: checked })}
               />
             </div>
+
+            <div className="space-y-2 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <Label htmlFor="rollover_enabled">Enable Budget Rollover</Label>
+                  <p className="text-xs text-muted-foreground max-w-xs">
+                    Unused budget accumulates monthly. Perfect for periodic expenses like property taxes or insurance.
+                  </p>
+                </div>
+                <Switch
+                  id="rollover_enabled"
+                  checked={editedBudget.rollover_enabled}
+                  onCheckedChange={(checked) => setEditedBudget({ ...editedBudget, rollover_enabled: checked })}
+                />
+              </div>
+            </div>
           </>
         ) : (
           <>
             <div className="space-y-4">
-              <div>
-                <p className="text-sm text-muted-foreground mb-1">Display Name</p>
-                <p className="text-base font-medium">
-                  {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="flex-shrink-0">
+                  <IconComponent className="h-8 w-8" style={{ color: iconColor }} />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-muted-foreground">Display Name</p>
+                  <p className="text-base font-medium">
+                    {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
+                  </p>
+                </div>
               </div>
 
               <div>
@@ -179,22 +201,24 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                 <p className="text-2xl font-bold">{formatCurrency(displayAmount)}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                <div>
-                  <p className="text-xs text-muted-foreground">Daily</p>
-                  <p className="text-sm font-medium">{formatCurrency(amounts.daily)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Weekly</p>
-                  <p className="text-sm font-medium">{formatCurrency(amounts.weekly)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Monthly</p>
-                  <p className="text-sm font-medium">{formatCurrency(amounts.monthly)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Yearly</p>
-                  <p className="text-sm font-medium">{formatCurrency(amounts.yearly)}</p>
+              <div className="pt-2 border-t">
+                <div className="grid grid-cols-4 gap-2">
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Daily</p>
+                    <p className="text-sm font-medium">{formatCurrency(amounts.daily)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Weekly</p>
+                    <p className="text-sm font-medium">{formatCurrency(amounts.weekly)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Monthly</p>
+                    <p className="text-sm font-medium">{formatCurrency(amounts.monthly)}</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-muted-foreground mb-1">Yearly</p>
+                    <p className="text-sm font-medium">{formatCurrency(amounts.yearly)}</p>
+                  </div>
                 </div>
               </div>
 
@@ -202,6 +226,18 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                 <span className="text-sm text-muted-foreground">Status</span>
                 <span className={`text-sm font-medium ${budget?.is_active ? 'text-green-600' : 'text-gray-500'}`}>
                   {budget?.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-2 border-t">
+                <div className="space-y-1">
+                  <span className="text-sm text-muted-foreground">Budget Rollover</span>
+                  {budget?.rollover_enabled && (
+                    <p className="text-xs text-muted-foreground">Unused budget accumulates monthly</p>
+                  )}
+                </div>
+                <span className={`text-sm font-medium ${budget?.rollover_enabled ? 'text-blue-600' : 'text-gray-500'}`}>
+                  {budget?.rollover_enabled ? 'Enabled' : 'Disabled'}
                 </span>
               </div>
 
