@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import * as Icons from 'lucide-react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { convertCadence } from '@/utils/cadenceUtils';
@@ -21,6 +22,7 @@ function adjustColorOpacity(hex, opacity = 0.5) {
 }
 
 export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome = false, isChild = false, isParent = false, allocatedAmount = null, isExpanded = false, onToggle = null }) {
+  const navigate = useNavigate();
   const categoryData = budget.chartAccount;
   const IconComponent = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Icons.Circle;
   const iconColor = categoryData?.color || '#64748b';
@@ -81,9 +83,19 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
     return () => clearTimeout(timer);
   }, [displayPercentage]);
 
+  const handlePillClick = () => {
+    if (budget?.chart_account_id) {
+      navigate(`/Banking/account/${budget.chart_account_id}`);
+    }
+  };
+
   return (
     <div className="group relative">
-      <div className="relative h-7 rounded-lg overflow-hidden shadow-sm border border-slate-200" style={{ backgroundColor: bgColor }}>
+      <div
+        className="relative h-7 rounded-lg overflow-hidden shadow-sm border border-slate-200 cursor-pointer hover:shadow-md transition-all duration-200"
+        style={{ backgroundColor: bgColor }}
+        onClick={handlePillClick}
+      >
         <div
           className="absolute left-0 top-0 h-full transition-all duration-700 ease-out"
           style={{
