@@ -269,7 +269,7 @@ export default function AccountDetail() {
       queryClient.invalidateQueries({ queryKey: ['equity'] });
       queryClient.invalidateQueries({ queryKey: ['chart-accounts'] });
       toast.success('Account deleted');
-      navigate(`/Banking${returnUrl}`);
+      navigate(-1);
     },
     onError: (error) => {
       toast.error(`Failed to delete account: ${error.message}`);
@@ -870,8 +870,8 @@ export default function AccountDetail() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center text-slate-500">Account not found</div>
           <div className="text-center mt-4">
-            <Button onClick={() => navigate(`/Banking${returnUrl}`)} variant="outline">
-              Back to Accounts
+            <Button onClick={() => navigate(-1)} variant="outline">
+              Back
             </Button>
           </div>
         </div>
@@ -897,7 +897,7 @@ export default function AccountDetail() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(`/Banking${returnUrl}`)}
+              onClick={() => navigate(-1)}
               className="gap-1.5 h-8"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
