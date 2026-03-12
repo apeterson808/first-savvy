@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Edit2, Save, X, Clock, Circle } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Edit2, Save, X, Clock, Circle, Info } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,13 +21,20 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
   const [editedBudget, setEditedBudget] = useState({
     allocated_amount: budget?.allocated_amount || 0,
     cadence: budget?.cadence || 'monthly',
-    custom_name: budget?.custom_name || '',
-    is_active: budget?.is_active ?? true,
-    rollover_enabled: budget?.rollover_enabled ?? false,
-    accumulated_rollover: budget?.accumulated_rollover || 0
+    custom_name: budget?.custom_name || ''
   });
 
+  const [isActive, setIsActive] = useState(budget?.is_active ?? true);
+  const [rolloverEnabled, setRolloverEnabled] = useState(budget?.rollover_enabled ?? false);
+  const [accumulatedRollover, setAccumulatedRollover] = useState(budget?.accumulated_rollover || 0);
+
   const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setIsActive(budget?.is_active ?? true);
+    setRolloverEnabled(budget?.rollover_enabled ?? false);
+    setAccumulatedRollover(budget?.accumulated_rollover || 0);
+  }, [budget?.is_active, budget?.rollover_enabled, budget?.accumulated_rollover]);
 
   const updateBudgetMutation = useMutation({
     mutationFn: async (updates) => {
@@ -50,19 +58,28 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
   });
 
   const handleSave = () => {
-    updateBudgetMutation.mutate(editedBudget);
+    updateBudgetMutation.mutate({
+      ...editedBudget,
+      is_active: isActive,
+      rollover_enabled: rolloverEnabled,
+      accumulated_rollover: accumulatedRollover
+    });
   };
 
   const handleCancel = () => {
     setEditedBudget({
       allocated_amount: budget?.allocated_amount || 0,
       cadence: budget?.cadence || 'monthly',
-      custom_name: budget?.custom_name || '',
-      is_active: budget?.is_active ?? true,
-      rollover_enabled: budget?.rollover_enabled ?? false,
-      accumulated_rollover: budget?.accumulated_rollover || 0
+      custom_name: budget?.custom_name || ''
     });
+    setIsActive(budget?.is_active ?? true);
+    setRolloverEnabled(budget?.rollover_enabled ?? false);
+    setAccumulatedRollover(budget?.accumulated_rollover || 0);
     setIsEditing(false);
+  };
+
+  const handleQuickUpdate = (updates) => {
+    updateBudgetMutation.mutate(updates);
   };
 
   const convertAmount = (amount, fromCadence, toCadence) => {
@@ -158,48 +175,6 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
               </Select>
             </div>
 
-            <div className="flex items-center justify-between">
-              <Label htmlFor="is_active">Active Budget</Label>
-              <Switch
-                id="is_active"
-                checked={editedBudget.is_active}
-                onCheckedChange={(checked) => setEditedBudget({ ...editedBudget, is_active: checked })}
-              />
-            </div>
-
-            <div className="space-y-3 pt-2 border-t">
-              <div className="flex items-center justify-between">
-                <div className="space-y-1">
-                  <Label htmlFor="rollover_enabled">Enable Budget Rollover</Label>
-                  <p className="text-xs text-muted-foreground max-w-xs">
-                    Unused budget accumulates monthly. Perfect for periodic expenses like property taxes or insurance.
-                  </p>
-                </div>
-                <Switch
-                  id="rollover_enabled"
-                  checked={editedBudget.rollover_enabled}
-                  onCheckedChange={(checked) => setEditedBudget({ ...editedBudget, rollover_enabled: checked })}
-                />
-              </div>
-
-              {editedBudget.rollover_enabled && (
-                <div className="space-y-2 pl-4 border-l-2 border-blue-200">
-                  <Label htmlFor="accumulated_rollover">Accumulated Amount from Previous Month</Label>
-                  <Input
-                    id="accumulated_rollover"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={editedBudget.accumulated_rollover}
-                    onChange={(e) => setEditedBudget({ ...editedBudget, accumulated_rollover: parseFloat(e.target.value) || 0 })}
-                    placeholder="0.00"
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Enter any carryover amount from previous months. Defaults to $0.
-                  </p>
-                </div>
-              )}
-            </div>
           </>
         ) : (
           <>
@@ -243,25 +218,58 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t">
-                <span className="text-sm text-muted-foreground">Status</span>
-                <span className={`text-sm font-medium ${budget?.is_active ? 'text-green-600' : 'text-gray-500'}`}>
-                  {budget?.is_active ? 'Active' : 'Inactive'}
-                </span>
+                <Label htmlFor="is_active_view" className="text-sm text-muted-foreground">Active Budget</Label>
+                <Switch
+                  id="is_active_view"
+                  checked={isActive}
+                  onCheckedChange={(checked) => {
+                    setIsActive(checked);
+                    handleQuickUpdate({ is_active: checked });
+                  }}
+                />
               </div>
 
-              <div className="space-y-2 pt-2 border-t">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Budget Rollover</span>
-                  <span className={`text-sm font-medium ${budget?.rollover_enabled ? 'text-blue-600' : 'text-gray-500'}`}>
-                    {budget?.rollover_enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-                {budget?.rollover_enabled && (
-                  <div className="pl-4 border-l-2 border-blue-200 space-y-1">
-                    <p className="text-xs text-muted-foreground">Accumulated from previous months</p>
-                    <p className="text-lg font-semibold text-blue-600">{formatCurrency(budget?.accumulated_rollover || 0)}</p>
+              <div className="pt-2 border-t">
+                <TooltipProvider>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                        Enable Budget Rollover
+                      </Label>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <p>Unused budget accumulates monthly. Perfect for periodic expenses like property taxes or insurance.</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </div>
+                    {rolloverEnabled && (
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={accumulatedRollover}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0;
+                          setAccumulatedRollover(value);
+                        }}
+                        onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                        placeholder="0.00"
+                        className="w-28 h-8 text-sm"
+                      />
+                    )}
+                    <Switch
+                      id="rollover_enabled_view"
+                      checked={rolloverEnabled}
+                      onCheckedChange={(checked) => {
+                        setRolloverEnabled(checked);
+                        handleQuickUpdate({ rollover_enabled: checked });
+                      }}
+                    />
                   </div>
-                )}
+                </TooltipProvider>
               </div>
 
               {budget?.updated_at && (
