@@ -132,11 +132,11 @@ export default function BudgetProgressPill({ budget, actualAmount = 0, isIncome 
           <div className="flex items-center gap-2 flex-shrink-0 ml-3">
             <div className="flex items-center gap-1.5 text-xs font-medium">
               <span className="text-slate-900">
-                ${actualAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${Math.abs(actualAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
               <span className="text-slate-400">/</span>
               <span className="text-slate-600">
-                ${budgetedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ${Math.abs(budgetedAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </span>
             </div>
           </div>
