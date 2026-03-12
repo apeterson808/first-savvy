@@ -351,15 +351,13 @@ export default function AccountDetail() {
     });
 
     // All items are posted with pre-calculated running balance from database
-    // For credit-normal accounts (liability, income, equity), swap debit/credit display for user-friendly presentation
-    // - Accounting: Income/Revenue = Credit (increases), Refunds = Debit (decreases)
-    // - Display: Show income in "Money In" column, refunds in "Money Out" column to match user expectations
-    const isCreditNormal = ['liability', 'income', 'equity'].includes(accountClass);
-
+    // Use natural accounting presentation - no swapping needed as it's intuitive:
+    // - For credit cards: debits = payments (money in), credits = purchases (money out)
+    // - For income: credits = earnings (money in), debits = refunds (money out)
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: isCreditNormal ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
-      calculatedCredit: isCreditNormal ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
+      calculatedDebit: activity.debitAmount || 0,
+      calculatedCredit: activity.creditAmount || 0
     }));
 
     // Recalculate running balance in chronological order
@@ -471,13 +469,11 @@ export default function AccountDetail() {
       return dateB - dateA;
     });
 
-    // For credit-normal accounts (liability, income, equity), swap debit/credit display to match user expectations
-    const isCreditNormal = ['liability', 'income', 'equity'].includes(accountClass);
-
+    // Use natural accounting presentation for audit history
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: isCreditNormal ? (activity.creditAmount || 0) : (activity.debitAmount || 0),
-      calculatedCredit: isCreditNormal ? (activity.debitAmount || 0) : (activity.creditAmount || 0)
+      calculatedDebit: activity.debitAmount || 0,
+      calculatedCredit: activity.creditAmount || 0
     }));
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
