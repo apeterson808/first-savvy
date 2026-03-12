@@ -1482,46 +1482,46 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
-                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {allActivity.map((activity, index) => (
-                          <TableRow
-                            key={`${activity.id || index}`}
-                            className={`h-7 ${
-                              index % 2 === 0
-                                ? 'bg-white hover:bg-slate-50'
-                                : 'bg-slate-50/50 hover:bg-slate-100'
-                            }`}
-                          >
-                            <TableCell className="whitespace-nowrap text-[11px] py-1">
-                              {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                            </TableCell>
-                            <TableCell className="py-1">
-                              <span
-                                className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                                onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                              >
-                                {activity.entryNumber}
-                              </span>
-                            </TableCell>
-                            <TableCell className="py-1 max-w-[300px]">
-                              <div className="text-[11px] truncate">{activity.displayDescription}</div>
-                            </TableCell>
-                            <TableCell className="text-[11px] text-slate-600 py-1">
-                              {activity.offsettingAccounts || '—'}
-                            </TableCell>
-                            <TableCell className="text-right text-[11px] py-1">
-                              {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                            </TableCell>
-                            <TableCell className="text-right text-[11px] py-1">
-                              {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                            </TableCell>
-                            <TableCell className="text-right font-semibold text-[11px] py-1">
+                        {allActivity.map((activity, index) => {
+                          const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                          return (
+                            <TableRow
+                              key={`${activity.id || index}`}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <span
+                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                                >
+                                  {activity.entryNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-1 max-w-[300px]">
+                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                              </TableCell>
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                {activity.offsettingAccounts || '—'}
+                              </TableCell>
+                              <TableCell className={`text-right text-[11px] py-1 font-medium ${
+                                amount > 0 ? 'text-forest-green' : amount < 0 ? 'text-burgundy' : ''
+                              }`}>
+                                {amount !== 0 ? formatCurrency(amount) : '—'}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-[11px] py-1">
                               {formatCurrency(activity.runningBalance)}
                             </TableCell>
                             <TableCell className="py-1">
@@ -1540,17 +1540,18 @@ export default function AccountDetail() {
                               </div>
                             </TableCell>
                           </TableRow>
-                        ))}
+                          );
+                        })}
                         {isFetchingNextPage && (
                           <TableRow>
-                            <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                            <TableCell colSpan={7} className="text-center py-3 text-slate-500 text-xs">
                               Loading more entries...
                             </TableCell>
                           </TableRow>
                         )}
                         {hasNextPage && !isFetchingNextPage && (
                           <TableRow ref={loadMoreRef}>
-                            <TableCell colSpan={8} className="h-4"></TableCell>
+                            <TableCell colSpan={7} className="h-4"></TableCell>
                           </TableRow>
                         )}
                       </TableBody>
