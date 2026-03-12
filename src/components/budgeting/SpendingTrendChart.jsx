@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, Area, AreaChart, ReferenceLine } from 'recharts';
 import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
@@ -9,8 +9,8 @@ export function SpendingTrendChart({ historicalData, budget }) {
   if (!historicalData?.monthlyData) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Spending Trend</CardTitle>
+        <CardHeader className="pb-2 pt-3 px-3">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Spending Trend</p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No historical data available</p>
@@ -47,9 +47,9 @@ export function SpendingTrendChart({ historicalData, budget }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">12-Month Spending Trend</CardTitle>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">12-Month Spending Trend</p>
           <div className="flex items-center gap-2">
             {getTrendIcon()}
             <span className={`text-sm font-medium ${getTrendColor()}`}>

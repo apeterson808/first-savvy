@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -17,8 +17,8 @@ export function VendorAnalysisCard({ vendorData }) {
   if (!vendorData?.vendors) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Vendor Analysis</CardTitle>
+        <CardHeader className="pb-2 pt-3 px-3">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Vendor Analysis</p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No vendor data available</p>
@@ -46,9 +46,9 @@ export function VendorAnalysisCard({ vendorData }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Vendor Breakdown</CardTitle>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Vendor Breakdown</p>
           <Badge variant="outline">{vendors.length} Vendors</Badge>
         </div>
       </CardHeader>

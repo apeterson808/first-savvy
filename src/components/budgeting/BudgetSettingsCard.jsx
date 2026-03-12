@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -111,8 +111,8 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Budget Settings</CardTitle>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-3">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Settings</p>
         {!isEditing ? (
           <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
             <Edit2 className="h-4 w-4 mr-2" />

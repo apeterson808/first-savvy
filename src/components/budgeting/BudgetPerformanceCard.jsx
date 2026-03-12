@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
@@ -41,8 +41,8 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Budget Performance - Current Month</CardTitle>
+      <CardHeader className="pb-2 pt-3 px-3">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Performance - Current Month</p>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">

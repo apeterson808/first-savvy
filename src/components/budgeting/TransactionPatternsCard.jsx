@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Repeat } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -8,8 +8,8 @@ export function TransactionPatternsCard({ patterns }) {
   if (!patterns) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Transaction Patterns</CardTitle>
+        <CardHeader className="pb-2 pt-3 px-3">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Transaction Patterns</p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No pattern data available</p>
@@ -36,9 +36,9 @@ export function TransactionPatternsCard({ patterns }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Transaction Patterns</CardTitle>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Transaction Patterns</p>
           <Badge variant="outline" className="flex items-center gap-1">
             <Repeat className="h-3 w-3" />
             {frequencyLabels[averageFrequency] || 'Unknown'}

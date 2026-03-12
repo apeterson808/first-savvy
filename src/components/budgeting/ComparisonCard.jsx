@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, TrendingDown, Minus, Calendar, DollarSign, PieChart as PieChartIcon } from 'lucide-react';
@@ -10,8 +10,8 @@ export function ComparisonCard({ comparativeData, historicalData }) {
   if (!comparativeData) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Comparative Analysis</CardTitle>
+        <CardHeader className="pb-2 pt-3 px-3">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Comparative Analysis</p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No comparison data available</p>
@@ -53,8 +53,8 @@ export function ComparisonCard({ comparativeData, historicalData }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-lg">Comparative Analysis</CardTitle>
+      <CardHeader className="pb-2 pt-3 px-3">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Comparative Analysis</p>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-4">

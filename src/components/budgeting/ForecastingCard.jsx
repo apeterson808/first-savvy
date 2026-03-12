@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { TrendingUp, AlertTriangle, CheckCircle, Calendar, Target } from 'lucide-react';
@@ -9,8 +9,8 @@ export function ForecastingCard({ forecast, budget }) {
   if (!forecast) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Spending Forecast</CardTitle>
+        <CardHeader className="pb-2 pt-3 px-3">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Spending Forecast</p>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No forecast data available</p>
@@ -47,9 +47,9 @@ export function ForecastingCard({ forecast, budget }) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Spending Forecast & Projections</CardTitle>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Spending Forecast & Projections</p>
           <Badge variant={confidenceBadge.variant}>{confidenceBadge.label}</Badge>
         </div>
       </CardHeader>
