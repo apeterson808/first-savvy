@@ -218,73 +218,54 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
             </div>
           </div>
         ) : (
-          <div className="flex items-start justify-between gap-6">
-            <div className="flex items-start gap-4 flex-1">
-              <div className="flex-shrink-0 mt-1">
-                <IconComponent className="h-10 w-10" style={{ color: iconColor }} />
-              </div>
-
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <h1 className="text-xl font-semibold">
-                    {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
-                  </h1>
-                  {categoryAccount?.account_number && (
-                    <span className="text-sm text-slate-500 font-mono">
-                      ({categoryAccount.account_number})
-                    </span>
-                  )}
-                  <Badge variant={budget?.is_active ? 'default' : 'secondary'}>
-                    {budget?.is_active ? 'Budget Active' : 'Budget Inactive'}
-                  </Badge>
+          <div className="flex flex-col gap-6">
+            <div className="flex items-start justify-between">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 mt-1">
+                  <IconComponent className="h-10 w-10" style={{ color: iconColor }} />
                 </div>
 
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <span className="capitalize">{formatLabel(categoryAccount?.account_class || categoryAccount?.class || '')}</span>
-                  {categoryAccount?.account_type && (
-                    <>
-                      <span>•</span>
-                      <span>{formatLabel(categoryAccount.account_type)}</span>
-                    </>
-                  )}
-                  {categoryAccount?.account_detail && (
-                    <>
-                      <span>•</span>
-                      <span>{formatLabel(categoryAccount.account_detail)}</span>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <h1 className="text-xl font-semibold">
+                      {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
+                    </h1>
+                    {categoryAccount?.account_number && (
+                      <span className="text-sm text-slate-500 font-mono">
+                        ({categoryAccount.account_number})
+                      </span>
+                    )}
+                    <Badge variant={budget?.is_active ? 'default' : 'secondary'}>
+                      {budget?.is_active ? 'Budget Active' : 'Budget Inactive'}
+                    </Badge>
+                  </div>
 
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-6 flex-1 justify-center">
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Daily</p>
-                  <p className="text-lg font-semibold">{formatCurrency(amounts.daily)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Weekly</p>
-                  <p className="text-lg font-semibold">{formatCurrency(amounts.weekly)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-sm text-muted-foreground mb-1">Monthly</p>
-                  <p className="text-2xl font-bold">{formatCurrency(amounts.monthly)}</p>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs text-muted-foreground mb-1">Yearly</p>
-                  <p className="text-lg font-semibold">{formatCurrency(amounts.yearly)}</p>
+                  <div className="flex items-center gap-2 text-sm text-slate-600">
+                    <span className="capitalize">{formatLabel(categoryAccount?.account_class || categoryAccount?.class || '')}</span>
+                    {categoryAccount?.account_type && (
+                      <>
+                        <span>•</span>
+                        <span>{formatLabel(categoryAccount.account_type)}</span>
+                      </>
+                    )}
+                    {categoryAccount?.account_detail && (
+                      <>
+                        <span>•</span>
+                        <span>{formatLabel(categoryAccount.account_detail)}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex flex-col gap-4">
+              <div className="flex items-center gap-4">
                 <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
                   <Edit2 className="h-4 w-4 mr-2" />
                   Edit
                 </Button>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
                     <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">Active Budget</Label>
                     <Switch
                       id="is_active_view"
@@ -297,7 +278,7 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
                   </div>
 
                   <TooltipProvider>
-                    <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
                       <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
                         Rollover
                       </Label>
@@ -325,7 +306,7 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
                               />
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="left" className="max-w-xs">
+                          <TooltipContent side="top" className="max-w-xs">
                             <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
                           </TooltipContent>
                         </Tooltip>
@@ -335,11 +316,30 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
                 </div>
 
                 {budget?.updated_at && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground pt-2 border-t">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
                     <span>Updated {format(new Date(budget.updated_at), 'MMM d, yyyy')}</span>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="flex items-end justify-center gap-8 px-12">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">Daily</p>
+                <p className="text-lg font-semibold">{formatCurrency(amounts.daily)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">Weekly</p>
+                <p className="text-lg font-semibold">{formatCurrency(amounts.weekly)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-sm text-muted-foreground mb-2">Monthly</p>
+                <p className="text-2xl font-bold">{formatCurrency(amounts.monthly)}</p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground mb-2">Yearly</p>
+                <p className="text-lg font-semibold">{formatCurrency(amounts.yearly)}</p>
               </div>
             </div>
           </div>
