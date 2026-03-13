@@ -51,7 +51,7 @@ import CsvColumnMapper from '@/components/banking/CsvColumnMapper';
 import { processStatementFile, autoMatchTransfers, mapCsvToTransactions } from '@/components/banking/StatementProcessor';
 import { detectDuplicateTransactions } from '@/api/duplicateDetection';
 import { budgetAnalytics } from '@/api/budgetAnalytics';
-import { BudgetSettingsCard } from '@/components/budgeting/BudgetSettingsCard';
+import { BudgetOverviewCard } from '@/components/budgeting/BudgetOverviewCard';
 import { SpendingTrendChart } from '@/components/budgeting/SpendingTrendChart';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { VendorAnalysisCard } from '@/components/budgeting/VendorAnalysisCard';
@@ -1078,21 +1078,352 @@ export default function AccountDetail() {
         </div>
 
         {isBudgetableAccount && !isEditMode && (
-          <div className="flex items-center justify-between px-1 py-2">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium text-slate-700">Period:</span>
-              <DatePresetDropdown
-                value={datePreset}
-                onValueChange={setDatePreset}
-                triggerClassName="w-44 h-9"
-              />
+          <>
+            <BudgetOverviewCard budget={budget} categoryAccount={account} />
+            <div className="flex items-center justify-between px-1 py-2">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-slate-700">Period:</span>
+                <DatePresetDropdown
+                  value={datePreset}
+                  onValueChange={setDatePreset}
+                  triggerClassName="w-44 h-9"
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
 
-        <Card>
-          <CardHeader className="pb-3 pt-4">
-            {isEditMode ? (
+        {isBudgetableAccount && !isEditMode ? (
+          <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
+            <TabsList className="w-full justify-start mb-3">
+              <TabsTrigger value="budget" className="flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5" />
+                Budget
+              </TabsTrigger>
+              <TabsTrigger value="trends" className="flex items-center gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5" />
+                Trends
+              </TabsTrigger>
+              <TabsTrigger value="vendors" className="flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5" />
+                Vendors
+              </TabsTrigger>
+              <TabsTrigger value="forecast" className="flex items-center gap-1.5">
+                <TrendingUp className="w-3.5 h-3.5" />
+                Forecast
+              </TabsTrigger>
+              <TabsTrigger value="patterns" className="flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5" />
+                Patterns
+              </TabsTrigger>
+              <TabsTrigger value="register" className="flex items-center gap-1.5">
+                <FileText className="w-3.5 h-3.5" />
+                Register
+              </TabsTrigger>
+              <TabsTrigger value="audit" className="flex items-center gap-1.5">
+                <History className="w-3.5 h-3.5" />
+                Audit History
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="budget" className="mt-0 space-y-4">
+              <BudgetPerformanceCard
+                budget={budget}
+                currentSpending={currentMonthSpending}
+                performanceHistory={performanceHistory}
+              />
+
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <SpendingTrendChart historicalData={historicalData} budget={budget} />
+                <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="trends" className="mt-0 space-y-4">
+              <SpendingTrendChart historicalData={historicalData} budget={budget} />
+              <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+            </TabsContent>
+
+            <TabsContent value="vendors" className="mt-0">
+              <VendorAnalysisCard vendorData={vendorData} />
+            </TabsContent>
+
+            <TabsContent value="forecast" className="mt-0 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <ForecastingCard forecast={forecast} budget={budget} />
+                <BudgetPerformanceCard
+                  budget={budget}
+                  currentSpending={currentMonthSpending}
+                  performanceHistory={performanceHistory}
+                />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="patterns" className="mt-0">
+              <TransactionPatternsCard patterns={patterns} />
+            </TabsContent>
+
+            <TabsContent value="register" className="mt-0">
+              <div className="mb-3 flex items-center justify-end">
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 w-64 h-8 text-sm"
+                  />
+                </div>
+              </div>
+              {journalLinesLoading ? (
+                <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
+              ) : journalLinesError ? (
+                <div className="text-center py-6 space-y-2">
+                  <p className="text-sm text-red-600">Failed to load register data</p>
+                  <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+                </div>
+              ) : allActivity.length === 0 ? (
+                <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
+              ) : (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="h-8 bg-slate-100">
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
+                        <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                        <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                        <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                        <TableHead className="w-[40px] py-1.5"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allActivity.map((activity, index) => (
+                        <TableRow
+                          key={`${activity.id || index}`}
+                          className={`h-7 ${
+                            index % 2 === 0
+                              ? 'bg-white hover:bg-slate-50'
+                              : 'bg-slate-50/50 hover:bg-slate-100'
+                          }`}
+                        >
+                          <TableCell className="whitespace-nowrap text-[11px] py-1">
+                            {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <span
+                              className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                              onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                            >
+                              {activity.entryNumber}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-1 max-w-[300px]">
+                            <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                          </TableCell>
+                          <TableCell className="text-[11px] text-slate-600 py-1">
+                            {activity.offsettingAccounts || '—'}
+                          </TableCell>
+                          <TableCell className="text-right text-[11px] py-1">
+                            {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                          </TableCell>
+                          <TableCell className="text-right text-[11px] py-1">
+                            {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-[11px] py-1">
+                            {formatCurrency(activity.runningBalance)}
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <div className="flex items-center gap-1">
+                              {activity.journalEntryId && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                  className="h-6 w-6 p-0"
+                                  title="View Journal Entry"
+                                >
+                                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                                </Button>
+                              )}
+                              {activity.transactionId && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                  className="h-6 w-6 p-0"
+                                  title="View Audit History"
+                                >
+                                  <History className="w-3 h-3 text-slate-400" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {isFetchingNextPage && (
+                        <TableRow>
+                          <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                            Loading more transactions...
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {hasNextPage && !isFetchingNextPage && (
+                        <TableRow ref={loadMoreRef}>
+                          <TableCell colSpan={8} className="h-4"></TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                  {totalJournalLines > 0 && (
+                    <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                      Showing {allActivity.length} of {totalJournalLines} transactions
+                    </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="audit" className="mt-0">
+              <div className="mb-3 flex items-center justify-between">
+                <p className="text-xs text-slate-600 px-1">
+                  Complete journal entry history including edits and all accounting changes.
+                </p>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                  <Input
+                    placeholder="Search transactions..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-8 w-64 h-8 text-sm"
+                  />
+                </div>
+              </div>
+              {auditHistoryLoading ? (
+                <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
+              ) : auditHistoryError ? (
+                <div className="text-center py-6 space-y-2">
+                  <p className="text-sm text-red-600">Failed to load audit history</p>
+                  <p className="text-xs text-slate-500">{auditHistoryError.message}</p>
+                </div>
+              ) : allAuditActivity.length === 0 ? (
+                <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
+              ) : (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="h-8 bg-slate-100">
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Action Time</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
+                        <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                        <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                        <TableHead className="w-[40px] py-1.5"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {allAuditActivity.map((activity, index) => (
+                        <TableRow
+                          key={`${activity.id || index}`}
+                          className={`h-7 ${
+                            index % 2 === 0
+                              ? 'bg-white hover:bg-slate-50'
+                              : 'bg-slate-50/50 hover:bg-slate-100'
+                          }`}
+                        >
+                          <TableCell className="py-1 text-[11px] text-slate-600 whitespace-nowrap">
+                            {activity.createdAt ? format(new Date(activity.createdAt), 'MMM d, h:mm a') : '—'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-[11px] py-1">
+                            {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <span
+                              className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                              onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                            >
+                              {activity.entryNumber}
+                            </span>
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <Badge variant="outline" className="text-[10px] h-5 capitalize">
+                              {activity.entryType.replace('_', ' ')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-1 max-w-[250px]">
+                            <div className="text-[11px] truncate">
+                              {activity.displayDescription}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-[11px] text-slate-600 py-1">
+                            {activity.offsettingAccounts || '—'}
+                          </TableCell>
+                          <TableCell className="text-right text-[11px] py-1">
+                            {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                          </TableCell>
+                          <TableCell className="text-right text-[11px] py-1">
+                            {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                          </TableCell>
+                          <TableCell className="py-1">
+                            <div className="flex items-center gap-1">
+                              {activity.journalEntryId && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                  className="h-6 w-6 p-0"
+                                  title="View Journal Entry"
+                                >
+                                  <ExternalLink className="w-3 h-3 text-slate-400" />
+                                </Button>
+                              )}
+                              {activity.transactionId && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                  className="h-6 w-6 p-0"
+                                  title="View Audit History"
+                                >
+                                  <History className="w-3 h-3 text-slate-400" />
+                                </Button>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {isFetchingNextAuditPage && (
+                        <TableRow>
+                          <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
+                            Loading more entries...
+                          </TableCell>
+                        </TableRow>
+                      )}
+                      {hasNextAuditPage && !isFetchingNextAuditPage && (
+                        <TableRow ref={loadMoreAuditRef}>
+                          <TableCell colSpan={9} className="h-4"></TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                  {totalAuditLines > 0 && (
+                    <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                      Showing {allAuditActivity.length} of {totalAuditLines} entries
+                    </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        ) : (
+          <Card>
+            <CardHeader className="pb-3 pt-4">
+              {isEditMode ? (
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-3">
                   {/* Line 1: Name, Account Number, Active Badge */}
@@ -1377,340 +1708,6 @@ export default function AccountDetail() {
                   </Button>
                 </div>
               </form>
-            ) : isBudgetableAccount ? (
-              <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
-                <TabsList className="w-full justify-start mb-3">
-                  <TabsTrigger value="budget" className="flex items-center gap-1.5">
-                    <Target className="w-3.5 h-3.5" />
-                    Budget
-                  </TabsTrigger>
-                  <TabsTrigger value="trends" className="flex items-center gap-1.5">
-                    <BarChart3 className="w-3.5 h-3.5" />
-                    Trends
-                  </TabsTrigger>
-                  <TabsTrigger value="vendors" className="flex items-center gap-1.5">
-                    <Users className="w-3.5 h-3.5" />
-                    Vendors
-                  </TabsTrigger>
-                  <TabsTrigger value="forecast" className="flex items-center gap-1.5">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    Forecast
-                  </TabsTrigger>
-                  <TabsTrigger value="patterns" className="flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5" />
-                    Patterns
-                  </TabsTrigger>
-                  <TabsTrigger value="register" className="flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    Register
-                  </TabsTrigger>
-                  <TabsTrigger value="audit" className="flex items-center gap-1.5">
-                    <History className="w-3.5 h-3.5" />
-                    Audit History
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="budget" className="mt-0 space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                    <div className="lg:col-span-1">
-                      <BudgetSettingsCard budget={budget} categoryAccount={account} />
-                    </div>
-                    <div className="lg:col-span-2">
-                      <BudgetPerformanceCard
-                        budget={budget}
-                        currentSpending={currentMonthSpending}
-                        performanceHistory={performanceHistory}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <SpendingTrendChart historicalData={historicalData} budget={budget} />
-                    <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="trends" className="mt-0 space-y-4">
-                  <SpendingTrendChart historicalData={historicalData} budget={budget} />
-                  <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
-                </TabsContent>
-
-                <TabsContent value="vendors" className="mt-0">
-                  <VendorAnalysisCard vendorData={vendorData} />
-                </TabsContent>
-
-                <TabsContent value="forecast" className="mt-0 space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <ForecastingCard forecast={forecast} budget={budget} />
-                    <BudgetPerformanceCard
-                      budget={budget}
-                      currentSpending={currentMonthSpending}
-                      performanceHistory={performanceHistory}
-                    />
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="patterns" className="mt-0">
-                  <TransactionPatternsCard patterns={patterns} />
-                </TabsContent>
-
-                <TabsContent value="register" className="mt-0">
-                  <div className="mb-3 flex items-center justify-end">
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                      <Input
-                        placeholder="Search transactions..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 w-64 h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  {journalLinesLoading ? (
-                    <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
-                  ) : journalLinesError ? (
-                    <div className="text-center py-6 space-y-2">
-                      <p className="text-sm text-red-600">Failed to load register data</p>
-                      <p className="text-xs text-slate-500">{journalLinesError.message}</p>
-                    </div>
-                  ) : allActivity.length === 0 ? (
-                    <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
-                  ) : (
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="h-8 bg-slate-100">
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
-                            <TableHead className="w-[40px] py-1.5"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {allActivity.map((activity, index) => (
-                            <TableRow
-                              key={`${activity.id || index}`}
-                              className={`h-7 ${
-                                index % 2 === 0
-                                  ? 'bg-white hover:bg-slate-50'
-                                  : 'bg-slate-50/50 hover:bg-slate-100'
-                              }`}
-                            >
-                              <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                              </TableCell>
-                              <TableCell className="py-1">
-                                <span
-                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                                >
-                                  {activity.entryNumber}
-                                </span>
-                              </TableCell>
-                              <TableCell className="py-1 max-w-[300px]">
-                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
-                              </TableCell>
-                              <TableCell className="text-[11px] text-slate-600 py-1">
-                                {activity.offsettingAccounts || '—'}
-                              </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                              </TableCell>
-                              <TableCell className="text-right font-semibold text-[11px] py-1">
-                                {formatCurrency(activity.runningBalance)}
-                              </TableCell>
-                              <TableCell className="py-1">
-                                <div className="flex items-center gap-1">
-                                  {activity.journalEntryId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Journal Entry"
-                                    >
-                                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                  {activity.transactionId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Audit History"
-                                    >
-                                      <History className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          {isFetchingNextPage && (
-                            <TableRow>
-                              <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
-                                Loading more transactions...
-                              </TableCell>
-                            </TableRow>
-                          )}
-                          {hasNextPage && !isFetchingNextPage && (
-                            <TableRow ref={loadMoreRef}>
-                              <TableCell colSpan={8} className="h-4"></TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                      {totalJournalLines > 0 && (
-                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                          Showing {allActivity.length} of {totalJournalLines} transactions
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="audit" className="mt-0">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs text-slate-600 px-1">
-                      Complete journal entry history including edits and all accounting changes.
-                    </p>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                      <Input
-                        placeholder="Search transactions..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 w-64 h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                  {auditHistoryLoading ? (
-                    <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
-                  ) : auditHistoryError ? (
-                    <div className="text-center py-6 space-y-2">
-                      <p className="text-sm text-red-600">Failed to load audit history</p>
-                      <p className="text-xs text-slate-500">{auditHistoryError.message}</p>
-                    </div>
-                  ) : allAuditActivity.length === 0 ? (
-                    <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
-                  ) : (
-                    <div className="rounded-md border overflow-x-auto">
-                      <Table>
-                        <TableHeader>
-                          <TableRow className="h-8 bg-slate-100">
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Action Time</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                            <TableHead className="w-[40px] py-1.5"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {allAuditActivity.map((activity, index) => (
-                            <TableRow
-                              key={`${activity.id || index}`}
-                              className={`h-7 ${
-                                index % 2 === 0
-                                  ? 'bg-white hover:bg-slate-50'
-                                  : 'bg-slate-50/50 hover:bg-slate-100'
-                              }`}
-                            >
-                              <TableCell className="py-1 text-[11px] text-slate-600 whitespace-nowrap">
-                                {activity.createdAt ? format(new Date(activity.createdAt), 'MMM d, h:mm a') : '—'}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                              </TableCell>
-                              <TableCell className="py-1">
-                                <span
-                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                                >
-                                  {activity.entryNumber}
-                                </span>
-                              </TableCell>
-                              <TableCell className="py-1">
-                                <Badge variant="outline" className="text-[10px] h-5 capitalize">
-                                  {activity.entryType.replace('_', ' ')}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="py-1 max-w-[250px]">
-                                <div className="text-[11px] truncate">
-                                  {activity.displayDescription}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-[11px] text-slate-600 py-1">
-                                {activity.offsettingAccounts || '—'}
-                              </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                              </TableCell>
-                              <TableCell className="py-1">
-                                <div className="flex items-center gap-1">
-                                  {activity.journalEntryId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Journal Entry"
-                                    >
-                                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                  {activity.transactionId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Audit History"
-                                    >
-                                      <History className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                </div>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                          {isFetchingNextAuditPage && (
-                            <TableRow>
-                              <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
-                                Loading more entries...
-                              </TableCell>
-                            </TableRow>
-                          )}
-                          {hasNextAuditPage && !isFetchingNextAuditPage && (
-                            <TableRow ref={loadMoreAuditRef}>
-                              <TableCell colSpan={9} className="h-4"></TableCell>
-                            </TableRow>
-                          )}
-                        </TableBody>
-                      </Table>
-                      {totalAuditLines > 0 && (
-                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                          Showing {allAuditActivity.length} of {totalAuditLines} entries
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1805,6 +1802,7 @@ export default function AccountDetail() {
             )}
           </CardContent>
         </Card>
+        )}
 
         {(account.entityType === 'Asset' || account.entityType === 'Liability') && linkedAccounts.length > 0 && (
           <Card>
