@@ -1052,15 +1052,6 @@ export default function AccountDetail() {
                   Print
                 </Button>
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={initializeEditMode}
-                  className="gap-1.5 h-8 px-2.5"
-                >
-                  <Edit2 className="w-3.5 h-3.5" />
-                  Edit
-                </Button>
-                <Button
                   variant="destructive"
                   size="sm"
                   onClick={handleDelete}
