@@ -257,28 +257,23 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
               </div>
             </div>
 
-            <div className="flex items-start gap-6">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">Budget Amount ({displayCadence})</p>
-                <p className="text-3xl font-bold mb-4">{formatCurrency(displayAmount)}</p>
-
-                <div className="flex items-center gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-muted-foreground">Daily</p>
-                    <p className="font-medium">{formatCurrency(amounts.daily)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Weekly</p>
-                    <p className="font-medium">{formatCurrency(amounts.weekly)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Monthly</p>
-                    <p className="font-medium">{formatCurrency(amounts.monthly)}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Yearly</p>
-                    <p className="font-medium">{formatCurrency(amounts.yearly)}</p>
-                  </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-6 flex-1 justify-center">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Daily</p>
+                  <p className="text-lg font-semibold">{formatCurrency(amounts.daily)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Weekly</p>
+                  <p className="text-lg font-semibold">{formatCurrency(amounts.weekly)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-1">Monthly</p>
+                  <p className="text-2xl font-bold">{formatCurrency(amounts.monthly)}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Yearly</p>
+                  <p className="text-lg font-semibold">{formatCurrency(amounts.yearly)}</p>
                 </div>
               </div>
 
