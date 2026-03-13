@@ -68,6 +68,7 @@ export default function AccountDetail() {
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const [activeTab, setActiveTab] = useState('register');
+  const [budgetActiveTab, setBudgetActiveTab] = useState('budget');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -1252,88 +1253,90 @@ export default function AccountDetail() {
                     )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <TooltipProvider>
-                    <div className="space-y-1">
-                      {account.entityType === 'Equity' ? (
-                        <>
-                          {!isOpeningBalanceEquity && beginningBalance !== null && (
-                            <div className="flex items-center justify-end gap-2">
-                              <span className="text-xs text-slate-500">Beginning Balance</span>
-                              <span className="text-base font-medium text-slate-700">
-                                {formatCurrency(beginningBalance)}
-                              </span>
-                            </div>
-                          )}
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-slate-500">
-                              {isOpeningBalanceEquity ? 'Total Opening Balances' : 'Current Balance'}
-                            </span>
-                            <span className="text-2xl font-bold text-blue-600">
-                              {formatCurrency(endingBalance)}
-                            </span>
-                          </div>
-                          {!isOpeningBalanceEquity && beginningBalance !== null && (
-                            <div className="flex items-center justify-end gap-2 pt-1 border-t">
-                              <span className="text-xs text-slate-500">Net Change</span>
-                              <span className={`text-base font-semibold ${
-                                (endingBalance - beginningBalance) >= 0 ? 'text-forest-green' : 'text-burgundy'
-                              }`}>
-                                {formatCurrency(endingBalance - beginningBalance)}
-                              </span>
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-slate-500">Bank Balance</span>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className={`text-lg font-semibold cursor-help ${
-                                  account.entityType === 'Asset' ? 'text-forest-green' :
-                                  account.entityType === 'Liability' ? 'text-burgundy' :
-                                  'text-slate-900'
-                                }`}>
-                                  {account.bank_balance !== null && account.bank_balance !== undefined
-                                    ? formatCurrency(account.bank_balance)
-                                    : 'Not synced'}
+                {(account.entityType === 'Asset' || account.entityType === 'Liability' || account.entityType === 'Equity') && (
+                  <div className="text-right">
+                    <TooltipProvider>
+                      <div className="space-y-1">
+                        {account.entityType === 'Equity' ? (
+                          <>
+                            {!isOpeningBalanceEquity && beginningBalance !== null && (
+                              <div className="flex items-center justify-end gap-2">
+                                <span className="text-xs text-slate-500">Beginning Balance</span>
+                                <span className="text-base font-medium text-slate-700">
+                                  {formatCurrency(beginningBalance)}
                                 </span>
-                              </TooltipTrigger>
-                              {account.last_synced_at && (
-                                <TooltipContent>
-                                  <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
-                                </TooltipContent>
-                              )}
-                            </Tooltip>
-                          </div>
-                          <div className="flex items-center justify-end gap-2">
-                            <span className="text-xs text-slate-500">Savvy Balance</span>
-                            <span className={`text-lg font-semibold ${
-                              account.entityType === 'Asset' || account.entityType === 'Income' ? 'text-forest-green' :
-                              account.entityType === 'Liability' || account.entityType === 'Expense' ? 'text-burgundy' :
-                              'text-slate-900'
-                            }`}>
-                              {formatCurrency(endingBalance)}
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-end gap-2 pt-1 border-t">
-                            <span className="text-xs text-slate-500">Difference</span>
-                            <span className={`text-base font-bold ${
-                              account.bank_balance !== null && account.bank_balance !== undefined
-                                ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
-                                : 'text-slate-400'
-                            }`}>
-                              {account.bank_balance !== null && account.bank_balance !== undefined
-                                ? formatCurrency(account.bank_balance - endingBalance)
-                                : '—'}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </TooltipProvider>
-                </div>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-slate-500">
+                                {isOpeningBalanceEquity ? 'Total Opening Balances' : 'Current Balance'}
+                              </span>
+                              <span className="text-2xl font-bold text-blue-600">
+                                {formatCurrency(endingBalance)}
+                              </span>
+                            </div>
+                            {!isOpeningBalanceEquity && beginningBalance !== null && (
+                              <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                                <span className="text-xs text-slate-500">Net Change</span>
+                                <span className={`text-base font-semibold ${
+                                  (endingBalance - beginningBalance) >= 0 ? 'text-forest-green' : 'text-burgundy'
+                                }`}>
+                                  {formatCurrency(endingBalance - beginningBalance)}
+                                </span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-slate-500">Bank Balance</span>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className={`text-lg font-semibold cursor-help ${
+                                    account.entityType === 'Asset' ? 'text-forest-green' :
+                                    account.entityType === 'Liability' ? 'text-burgundy' :
+                                    'text-slate-900'
+                                  }`}>
+                                    {account.bank_balance !== null && account.bank_balance !== undefined
+                                      ? formatCurrency(account.bank_balance)
+                                      : 'Not synced'}
+                                  </span>
+                                </TooltipTrigger>
+                                {account.last_synced_at && (
+                                  <TooltipContent>
+                                    <p className="text-xs">Last synced: {format(new Date(account.last_synced_at), 'MMM d, yyyy h:mm a')}</p>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </div>
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-xs text-slate-500">Savvy Balance</span>
+                              <span className={`text-lg font-semibold ${
+                                account.entityType === 'Asset' || account.entityType === 'Income' ? 'text-forest-green' :
+                                account.entityType === 'Liability' || account.entityType === 'Expense' ? 'text-burgundy' :
+                                'text-slate-900'
+                              }`}>
+                                {formatCurrency(endingBalance)}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-end gap-2 pt-1 border-t">
+                              <span className="text-xs text-slate-500">Difference</span>
+                              <span className={`text-base font-bold ${
+                                account.bank_balance !== null && account.bank_balance !== undefined
+                                  ? ((account.bank_balance - endingBalance) >= 0 ? 'text-forest-green' : 'text-burgundy')
+                                  : 'text-slate-400'
+                              }`}>
+                                {account.bank_balance !== null && account.bank_balance !== undefined
+                                  ? formatCurrency(account.bank_balance - endingBalance)
+                                  : '—'}
+                              </span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </TooltipProvider>
+                  </div>
+                )}
               </div>
             )}
           </CardHeader>
@@ -1361,6 +1364,75 @@ export default function AccountDetail() {
                   </Button>
                 </div>
               </form>
+            ) : isBudgetableAccount ? (
+              <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
+                <TabsList className="w-full justify-start mb-3">
+                  <TabsTrigger value="budget" className="flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5" />
+                    Budget
+                  </TabsTrigger>
+                  <TabsTrigger value="trends" className="flex items-center gap-1.5">
+                    <BarChart3 className="w-3.5 h-3.5" />
+                    Trends
+                  </TabsTrigger>
+                  <TabsTrigger value="vendors" className="flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5" />
+                    Vendors
+                  </TabsTrigger>
+                  <TabsTrigger value="forecast" className="flex items-center gap-1.5">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    Forecast
+                  </TabsTrigger>
+                  <TabsTrigger value="patterns" className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Patterns
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="budget" className="mt-0 space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-1">
+                      <BudgetSettingsCard budget={budget} categoryAccount={account} />
+                    </div>
+                    <div className="lg:col-span-2">
+                      <BudgetPerformanceCard
+                        budget={budget}
+                        currentSpending={currentMonthSpending}
+                        performanceHistory={performanceHistory}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <SpendingTrendChart historicalData={historicalData} budget={budget} />
+                    <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="trends" className="mt-0 space-y-4">
+                  <SpendingTrendChart historicalData={historicalData} budget={budget} />
+                  <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+                </TabsContent>
+
+                <TabsContent value="vendors" className="mt-0">
+                  <VendorAnalysisCard vendorData={vendorData} />
+                </TabsContent>
+
+                <TabsContent value="forecast" className="mt-0 space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <ForecastingCard forecast={forecast} budget={budget} />
+                    <BudgetPerformanceCard
+                      budget={budget}
+                      currentSpending={currentMonthSpending}
+                      performanceHistory={performanceHistory}
+                    />
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="patterns" className="mt-0">
+                  <TransactionPatternsCard patterns={patterns} />
+                </TabsContent>
+              </Tabs>
             ) : (
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1647,30 +1719,6 @@ export default function AccountDetail() {
                     <History className="w-3.5 h-3.5" />
                     Audit History
                   </TabsTrigger>
-                  {isBudgetableAccount && (
-                    <>
-                      <TabsTrigger value="budget-overview" className="flex items-center gap-1.5">
-                        <Target className="w-3.5 h-3.5" />
-                        Budget
-                      </TabsTrigger>
-                      <TabsTrigger value="trends" className="flex items-center gap-1.5">
-                        <BarChart3 className="w-3.5 h-3.5" />
-                        Trends
-                      </TabsTrigger>
-                      <TabsTrigger value="vendors" className="flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5" />
-                        Vendors
-                      </TabsTrigger>
-                      <TabsTrigger value="forecast" className="flex items-center gap-1.5">
-                        <TrendingUp className="w-3.5 h-3.5" />
-                        Forecast
-                      </TabsTrigger>
-                      <TabsTrigger value="patterns" className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5" />
-                        Patterns
-                      </TabsTrigger>
-                    </>
-                  )}
                 </TabsList>
 
                 <TabsContent value="register" className="mt-0">
@@ -1909,54 +1957,6 @@ export default function AccountDetail() {
                   </div>
                 )}
               </TabsContent>
-
-              {isBudgetableAccount && (
-                <>
-                  <TabsContent value="budget-overview" className="mt-0 space-y-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                      <div className="lg:col-span-1">
-                        <BudgetSettingsCard budget={budget} categoryAccount={account} />
-                      </div>
-                      <div className="lg:col-span-2">
-                        <BudgetPerformanceCard
-                          budget={budget}
-                          currentSpending={currentMonthSpending}
-                          performanceHistory={performanceHistory}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <SpendingTrendChart historicalData={historicalData} budget={budget} />
-                      <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="trends" className="mt-0 space-y-4">
-                    <SpendingTrendChart historicalData={historicalData} budget={budget} />
-                    <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
-                  </TabsContent>
-
-                  <TabsContent value="vendors" className="mt-0">
-                    <VendorAnalysisCard vendorData={vendorData} />
-                  </TabsContent>
-
-                  <TabsContent value="forecast" className="mt-0 space-y-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                      <ForecastingCard forecast={forecast} budget={budget} />
-                      <BudgetPerformanceCard
-                        budget={budget}
-                        currentSpending={currentMonthSpending}
-                        performanceHistory={performanceHistory}
-                      />
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="patterns" className="mt-0">
-                    <TransactionPatternsCard patterns={patterns} />
-                  </TabsContent>
-                </>
-              )}
               </Tabs>
             )}
           </CardContent>
