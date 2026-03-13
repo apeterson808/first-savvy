@@ -67,6 +67,7 @@ export default function AccountDetail() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
+  const [activeTab, setActiveTab] = useState('register');
   const [budgetActiveTab, setBudgetActiveTab] = useState('budget');
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -315,7 +316,7 @@ export default function AccountDetail() {
       const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
       return lastPage.hasMore ? loadedCount : undefined;
     },
-    enabled: !!id && !!activeProfile && activeTab === 'audit'
+    enabled: !!id && !!activeProfile && (activeTab === 'audit' || budgetActiveTab === 'audit')
   });
 
   const auditHistoryLines = useMemo(() => {
@@ -530,7 +531,7 @@ export default function AccountDetail() {
   }, [journalLines, account, searchQuery, dateRange]);
 
   const { allAuditActivity, auditAnalytics } = useMemo(() => {
-    if (activeTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
+    if (activeTab !== 'audit' && budgetActiveTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
 
     const accountClass = account?.account_class || account?.class || 'asset';
     const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
@@ -598,7 +599,7 @@ export default function AccountDetail() {
       allAuditActivity: activitiesWithBalance,
       auditAnalytics: analyticsData
     };
-  }, [auditHistoryLines, account, searchQuery, activeTab]);
+  }, [auditHistoryLines, account, searchQuery, activeTab, budgetActiveTab]);
 
   // Infinite scroll observer for register
   const loadMoreRef = useRef();
