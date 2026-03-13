@@ -1524,7 +1524,13 @@ export default function AccountDetail() {
                     <TrendingUp className="w-3.5 h-3.5" />
                     <p className="text-xs font-medium">Money In</p>
                   </div>
-                  <p className="text-lg font-bold text-forest-green">{formatCurrency(analytics.totalDebits)}</p>
+                  <p className="text-lg font-bold text-forest-green">
+                    {formatCurrency(
+                      account?.class === 'expense' ? analytics.totalCredits :
+                      account?.class === 'income' ? analytics.totalDebits :
+                      analytics.totalDebits
+                    )}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-burgundy/10 rounded-lg">
@@ -1532,7 +1538,13 @@ export default function AccountDetail() {
                     <TrendingDown className="w-3.5 h-3.5" />
                     <p className="text-xs font-medium">Money Out</p>
                   </div>
-                  <p className="text-lg font-bold text-burgundy">{formatCurrency(analytics.totalCredits)}</p>
+                  <p className="text-lg font-bold text-burgundy">
+                    {formatCurrency(
+                      account?.class === 'expense' ? analytics.totalDebits :
+                      account?.class === 'income' ? analytics.totalCredits :
+                      analytics.totalCredits
+                    )}
+                  </p>
                 </div>
 
                 <div className="p-3 bg-light-blue/20 rounded-lg">
@@ -1540,7 +1552,11 @@ export default function AccountDetail() {
                     <p className="text-xs font-medium">Net Change</p>
                   </div>
                   <p className="text-lg font-bold text-sky-blue">
-                    {formatCurrency(analytics.netChange)}
+                    {formatCurrency(
+                      account?.class === 'expense' ? -analytics.netChange :
+                      account?.class === 'income' ? -analytics.netChange :
+                      analytics.netChange
+                    )}
                   </p>
                 </div>
 
