@@ -1503,75 +1503,6 @@ export default function AccountDetail() {
           </Card>
         )}
 
-        {!isOpeningBalanceEquity && (
-          <Card>
-            <CardHeader className="pb-3 pt-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <h2 className="text-base font-semibold">Period Summary</h2>
-                <div className="flex items-center gap-2">
-                  <DatePresetDropdown
-                    value={datePreset}
-                    onValueChange={setDatePreset}
-                    triggerClassName="w-40 h-8"
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5">
-                <div className="p-3 bg-soft-green/20 rounded-lg">
-                  <div className="flex items-center gap-1.5 text-forest-green mb-0.5">
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <p className="text-xs font-medium">Money In</p>
-                  </div>
-                  <p className="text-lg font-bold text-forest-green">
-                    {formatCurrency(
-                      account?.class === 'expense' ? analytics.totalCredits :
-                      account?.class === 'income' ? analytics.totalDebits :
-                      analytics.totalDebits
-                    )}
-                  </p>
-                </div>
-
-                <div className="p-3 bg-burgundy/10 rounded-lg">
-                  <div className="flex items-center gap-1.5 text-burgundy mb-0.5">
-                    <TrendingDown className="w-3.5 h-3.5" />
-                    <p className="text-xs font-medium">Money Out</p>
-                  </div>
-                  <p className="text-lg font-bold text-burgundy">
-                    {formatCurrency(
-                      account?.class === 'expense' ? analytics.totalDebits :
-                      account?.class === 'income' ? analytics.totalCredits :
-                      analytics.totalCredits
-                    )}
-                  </p>
-                </div>
-
-                <div className="p-3 bg-light-blue/20 rounded-lg">
-                  <div className="flex items-center gap-1.5 mb-0.5 text-sky-blue">
-                    <p className="text-xs font-medium">Net Change</p>
-                  </div>
-                  <p className="text-lg font-bold text-sky-blue">
-                    {formatCurrency(
-                      account?.class === 'expense' ? -analytics.netChange :
-                      account?.class === 'income' ? -analytics.netChange :
-                      analytics.netChange
-                    )}
-                  </p>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-lg">
-                  <div className="flex items-center gap-1.5 text-slate-600 mb-0.5">
-                    <Hash className="w-3.5 h-3.5" />
-                    <p className="text-xs font-medium">Transactions</p>
-                  </div>
-                  <p className="text-lg font-bold">{analytics.transactionCount}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
         <Card>
           <CardHeader className="pb-2 pt-4">
             <div className="flex items-center justify-between flex-wrap gap-3">
@@ -1583,6 +1514,13 @@ export default function AccountDetail() {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
+                {!isOpeningBalanceEquity && (
+                  <DatePresetDropdown
+                    value={datePreset}
+                    onValueChange={setDatePreset}
+                    triggerClassName="w-40 h-8"
+                  />
+                )}
                 <div className="relative">
                   <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input
