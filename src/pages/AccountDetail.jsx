@@ -1013,6 +1013,13 @@ export default function AccountDetail() {
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </Button>
+            {isBudgetableAccount && !isEditMode && (
+              <DatePresetDropdown
+                value={datePreset}
+                onValueChange={setDatePreset}
+                triggerClassName="w-44 h-9"
+              />
+            )}
           </div>
           <div className="flex items-center gap-1.5">
             {!isEditMode ? (
@@ -1078,19 +1085,7 @@ export default function AccountDetail() {
         </div>
 
         {isBudgetableAccount && !isEditMode && (
-          <>
-            <BudgetOverviewCard budget={budget} categoryAccount={account} />
-            <div className="flex items-center justify-between px-1 py-2">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-slate-700">Period:</span>
-                <DatePresetDropdown
-                  value={datePreset}
-                  onValueChange={setDatePreset}
-                  triggerClassName="w-44 h-9"
-                />
-              </div>
-            </div>
-          </>
+          <BudgetOverviewCard budget={budget} categoryAccount={account} />
         )}
 
         {isBudgetableAccount && !isEditMode ? (
