@@ -282,16 +282,15 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
                         Rollover
                       </Label>
                       <div className="flex items-center gap-2">
-                        {rolloverEnabled && (
-                          <CalculatorAmountInput
-                            id="accumulated_rollover"
-                            value={accumulatedRollover}
-                            onChange={(value) => setAccumulatedRollover(value)}
-                            onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                            placeholder="0.00"
-                            className="w-24 h-8 text-sm"
-                          />
-                        )}
+                        <CalculatorAmountInput
+                          id="accumulated_rollover"
+                          value={accumulatedRollover}
+                          onChange={(value) => setAccumulatedRollover(value)}
+                          onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                          placeholder="0.00"
+                          className="w-24 h-8 text-sm"
+                          disabled={!rolloverEnabled}
+                        />
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div>
