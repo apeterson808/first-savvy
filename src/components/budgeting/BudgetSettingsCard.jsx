@@ -232,11 +232,11 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                 />
               </div>
 
-              <div className="pt-2 border-t">
+              <div className="pt-2 border-t space-y-3">
                 <TooltipProvider>
                   <div className="flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                      <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground">
                         Enable Budget Rollover
                       </Label>
                       <Tooltip>
@@ -248,15 +248,6 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    {rolloverEnabled && (
-                      <CalculatorAmountInput
-                        value={accumulatedRollover}
-                        onChange={(value) => setAccumulatedRollover(value)}
-                        onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                        placeholder="0.00"
-                        className="w-28 h-8 text-sm"
-                      />
-                    )}
                     <Switch
                       id="rollover_enabled_view"
                       checked={rolloverEnabled}
@@ -266,6 +257,21 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                       }}
                     />
                   </div>
+                  {rolloverEnabled && (
+                    <div className="space-y-1">
+                      <Label htmlFor="accumulated_rollover" className="text-xs text-muted-foreground">
+                        Accumulated Rollover
+                      </Label>
+                      <CalculatorAmountInput
+                        id="accumulated_rollover"
+                        value={accumulatedRollover}
+                        onChange={(value) => setAccumulatedRollover(value)}
+                        onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                        placeholder="0.00"
+                        className="w-full h-9 text-sm"
+                      />
+                    </div>
+                  )}
                 </TooltipProvider>
               </div>
 
