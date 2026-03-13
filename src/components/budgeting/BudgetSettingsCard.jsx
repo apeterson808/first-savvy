@@ -232,46 +232,42 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
                 />
               </div>
 
-              <div className="pt-2 border-t space-y-3">
+              <div className="pt-2 border-t">
                 <TooltipProvider>
-                  <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground">
+                      Budget Rollover
+                    </Label>
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground">
-                        Enable Budget Rollover
-                      </Label>
+                      {rolloverEnabled && (
+                        <CalculatorAmountInput
+                          id="accumulated_rollover"
+                          value={accumulatedRollover}
+                          onChange={(value) => setAccumulatedRollover(value)}
+                          onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                          placeholder="0.00"
+                          className="w-28 h-8 text-sm"
+                        />
+                      )}
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Info className="h-3.5 w-3.5 text-muted-foreground cursor-help" />
+                          <div>
+                            <Switch
+                              id="rollover_enabled_view"
+                              checked={rolloverEnabled}
+                              onCheckedChange={(checked) => {
+                                setRolloverEnabled(checked);
+                                handleQuickUpdate({ rollover_enabled: checked });
+                              }}
+                            />
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent side="top" className="max-w-xs">
                           <p>Unused budget accumulates monthly. Perfect for periodic expenses like property taxes or insurance.</p>
                         </TooltipContent>
                       </Tooltip>
                     </div>
-                    <Switch
-                      id="rollover_enabled_view"
-                      checked={rolloverEnabled}
-                      onCheckedChange={(checked) => {
-                        setRolloverEnabled(checked);
-                        handleQuickUpdate({ rollover_enabled: checked });
-                      }}
-                    />
                   </div>
-                  {rolloverEnabled && (
-                    <div className="space-y-1">
-                      <Label htmlFor="accumulated_rollover" className="text-xs text-muted-foreground">
-                        Accumulated Rollover
-                      </Label>
-                      <CalculatorAmountInput
-                        id="accumulated_rollover"
-                        value={accumulatedRollover}
-                        onChange={(value) => setAccumulatedRollover(value)}
-                        onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                        placeholder="0.00"
-                        className="w-full h-9 text-sm"
-                      />
-                    </div>
-                  )}
                 </TooltipProvider>
               </div>
 
