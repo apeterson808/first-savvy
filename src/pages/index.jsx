@@ -76,7 +76,7 @@ function PagesContent() {
                     <Route path="/Banking" element={<Banking />} />
                     <Route path="/Banking/account/:id" element={<AccountDetail />} />
                     <Route path="/Budgeting" element={<Budgeting />} />
-                    <Route path="/Budgeting/category/:id" element={<ExpenseCategoryDetail />} />
+                    <Route path="/Budgeting/category/:id" element={<AccountDetail />} />
                     <Route path="/Goals" element={<Goals />} />
                     <Route path="/Calendar" element={<Calendar />} />
                     <Route path="/NetWorth" element={<NetWorth />} />

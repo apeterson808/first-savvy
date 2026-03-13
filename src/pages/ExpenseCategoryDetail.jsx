@@ -1,3 +1,17 @@
+/**
+ * DEPRECATED: This component has been superseded by AccountDetail.jsx
+ *
+ * All budget analytics functionality has been integrated into AccountDetail.jsx,
+ * which now handles both regular accounts (assets, liabilities, equity) and
+ * budgetable accounts (expense, income) with conditional rendering.
+ *
+ * The route /Budgeting/category/:id now redirects to AccountDetail.jsx
+ * for a unified account detail experience.
+ *
+ * This file is kept temporarily for reference but should be removed once
+ * the migration is fully tested and confirmed.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';

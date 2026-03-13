@@ -27,9 +27,10 @@ import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/Clic
 import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
-  Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload
+  Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
+  BarChart3, Users, Target
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency, formatLabel } from '@/components/utils/formatters';
 import IconPicker from '@/components/common/IconPicker';
@@ -49,6 +50,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import CsvColumnMapper from '@/components/banking/CsvColumnMapper';
 import { processStatementFile, autoMatchTransfers, mapCsvToTransactions } from '@/components/banking/StatementProcessor';
 import { detectDuplicateTransactions } from '@/api/duplicateDetection';
+import { budgetAnalytics } from '@/api/budgetAnalytics';
+import { BudgetSettingsCard } from '@/components/budgeting/BudgetSettingsCard';
+import { SpendingTrendChart } from '@/components/budgeting/SpendingTrendChart';
+import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
+import { VendorAnalysisCard } from '@/components/budgeting/VendorAnalysisCard';
+import { ForecastingCard } from '@/components/budgeting/ForecastingCard';
+import { ComparisonCard } from '@/components/budgeting/ComparisonCard';
+import { TransactionPatternsCard } from '@/components/budgeting/TransactionPatternsCard';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -143,6 +152,106 @@ export default function AccountDetail() {
     const accountDetail = account.account_detail;
     return accountDetail === 'opening_balance_equity';
   }, [account]);
+
+  const isBudgetableAccount = useMemo(() => {
+    if (!account) return false;
+    const accountClass = account.account_class || account.class;
+    return accountClass === 'expense' || accountClass === 'income';
+  }, [account]);
+
+  const { data: budget } = useQuery({
+    queryKey: ['budget-for-category', id, activeProfile?.id],
+    queryFn: async () => {
+      const { data, error } = await firstsavvy.supabase
+        .from('budgets')
+        .select('*')
+        .eq('chart_account_id', id)
+        .eq('profile_id', activeProfile.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: currentMonthSpending } = useQuery({
+    queryKey: ['current-month-spending', id, activeProfile?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+
+      const { data, error } = await firstsavvy.supabase
+        .from('transactions')
+        .select('amount')
+        .eq('profile_id', activeProfile.id)
+        .eq('category_account_id', id)
+        .eq('status', 'posted')
+        .eq('type', account?.class === 'expense' ? 'expense' : 'income')
+        .gte('date', monthStart.toISOString())
+        .lte('date', monthEnd.toISOString());
+
+      if (error) throw error;
+      return data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount && !!account
+  });
+
+  const { data: historicalData } = useQuery({
+    queryKey: ['historical-spending', id, activeProfile?.id],
+    queryFn: async () => {
+      return await budgetAnalytics.getHistoricalSpending(id, 12, activeProfile.id);
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: vendorData } = useQuery({
+    queryKey: ['vendor-breakdown', id, activeProfile?.id],
+    queryFn: async () => {
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      return await budgetAnalytics.getVendorBreakdown(
+        id,
+        { startDate: monthStart.toISOString(), endDate: monthEnd.toISOString() },
+        activeProfile.id
+      );
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: patterns } = useQuery({
+    queryKey: ['transaction-patterns', id, activeProfile?.id],
+    queryFn: async () => {
+      return await budgetAnalytics.getTransactionPatterns(id, activeProfile.id);
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: performanceHistory } = useQuery({
+    queryKey: ['budget-performance-history', id, activeProfile?.id],
+    queryFn: async () => {
+      return await budgetAnalytics.getBudgetPerformanceHistory(id, 12, activeProfile.id);
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: forecast } = useQuery({
+    queryKey: ['spending-forecast', id, activeProfile?.id],
+    queryFn: async () => {
+      return await budgetAnalytics.getSpendingForecast(id, activeProfile.id);
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: comparativeData } = useQuery({
+    queryKey: ['comparative-analysis', id, activeProfile?.id],
+    queryFn: async () => {
+      return await budgetAnalytics.getComparativeAnalysis(id, activeProfile.id);
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
+  });
 
   // NOTE: Pending transactions are NOT shown in the register (QuickBooks behavior)
   // Transactions only appear in the register after they've been posted to journal entries
@@ -1109,11 +1218,20 @@ export default function AccountDetail() {
                 <div className="space-y-2">
                   {/* Line 1: Name, Account Number */}
                   <div className="flex items-center gap-3 flex-wrap">
-                    <h1 className="text-lg font-semibold">{account.display_name || account.name}</h1>
+                    <h1 className="text-lg font-semibold">
+                      {isBudgetableAccount && budget?.custom_name
+                        ? budget.custom_name
+                        : (account.display_name || account.name)}
+                    </h1>
                     {account.account_number && (
                       <span className="text-sm text-slate-500 font-mono">
                         ({account.account_number})
                       </span>
+                    )}
+                    {isBudgetableAccount && budget && (
+                      <Badge variant={budget.is_active ? 'default' : 'secondary'}>
+                        {budget.is_active ? 'Budget Active' : 'Budget Inactive'}
+                      </Badge>
                     )}
                   </div>
 
@@ -1575,6 +1693,30 @@ export default function AccountDetail() {
                     <History className="w-3.5 h-3.5" />
                     Audit History
                   </TabsTrigger>
+                  {isBudgetableAccount && (
+                    <>
+                      <TabsTrigger value="budget-overview" className="flex items-center gap-1.5">
+                        <Target className="w-3.5 h-3.5" />
+                        Budget
+                      </TabsTrigger>
+                      <TabsTrigger value="trends" className="flex items-center gap-1.5">
+                        <BarChart3 className="w-3.5 h-3.5" />
+                        Trends
+                      </TabsTrigger>
+                      <TabsTrigger value="vendors" className="flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5" />
+                        Vendors
+                      </TabsTrigger>
+                      <TabsTrigger value="forecast" className="flex items-center gap-1.5">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        Forecast
+                      </TabsTrigger>
+                      <TabsTrigger value="patterns" className="flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5" />
+                        Patterns
+                      </TabsTrigger>
+                    </>
+                  )}
                 </TabsList>
 
                 <TabsContent value="register" className="mt-0">
@@ -1813,6 +1955,54 @@ export default function AccountDetail() {
                   </div>
                 )}
               </TabsContent>
+
+              {isBudgetableAccount && (
+                <>
+                  <TabsContent value="budget-overview" className="mt-0 space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                      <div className="lg:col-span-1">
+                        <BudgetSettingsCard budget={budget} categoryAccount={account} />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <BudgetPerformanceCard
+                          budget={budget}
+                          currentSpending={currentMonthSpending}
+                          performanceHistory={performanceHistory}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <SpendingTrendChart historicalData={historicalData} budget={budget} />
+                      <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="trends" className="mt-0 space-y-4">
+                    <SpendingTrendChart historicalData={historicalData} budget={budget} />
+                    <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+                  </TabsContent>
+
+                  <TabsContent value="vendors" className="mt-0">
+                    <VendorAnalysisCard vendorData={vendorData} />
+                  </TabsContent>
+
+                  <TabsContent value="forecast" className="mt-0 space-y-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <ForecastingCard forecast={forecast} budget={budget} />
+                      <BudgetPerformanceCard
+                        budget={budget}
+                        currentSpending={currentMonthSpending}
+                        performanceHistory={performanceHistory}
+                      />
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="patterns" className="mt-0">
+                    <TransactionPatternsCard patterns={patterns} />
+                  </TabsContent>
+                </>
+              )}
               </Tabs>
             )}
           </CardContent>
