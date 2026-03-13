@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Edit2, Save, X, Clock, Circle, Info } from 'lucide-react';
+import { Edit2, Save, X, Clock, Circle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
