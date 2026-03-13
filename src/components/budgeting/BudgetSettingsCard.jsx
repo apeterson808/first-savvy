@@ -111,25 +111,27 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-3">
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Settings</p>
-        {!isEditing ? (
-          <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-            <Edit2 className="h-4 w-4 mr-2" />
-            Edit
-          </Button>
-        ) : (
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleCancel}>
-              <X className="h-4 w-4 mr-2" />
-              Cancel
+      <CardHeader className="pb-2 pt-3 px-3">
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Settings</p>
+          {!isEditing ? (
+            <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
+              <Edit2 className="h-4 w-4 mr-2" />
+              Edit
             </Button>
-            <Button size="sm" onClick={handleSave} disabled={updateBudgetMutation.isPending}>
-              <Save className="h-4 w-4 mr-2" />
-              Save
-            </Button>
-          </div>
-        )}
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={handleCancel}>
+                <X className="h-4 w-4 mr-2" />
+                Cancel
+              </Button>
+              <Button size="sm" onClick={handleSave} disabled={updateBudgetMutation.isPending}>
+                <Save className="h-4 w-4 mr-2" />
+                Save
+              </Button>
+            </div>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         {isEditing ? (
