@@ -40,11 +40,11 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const adherenceRate = performanceHistory?.adherenceRate || 0;
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-2 pt-3 px-3">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Performance - Current Month</p>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 flex-1">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Budget Progress</span>
@@ -99,7 +99,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
         </div>
 
         <div className="pt-4 border-t">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Spending Pace</span>
             <div className="flex items-center gap-2">
               <PaceIcon className={`h-4 w-4 ${paceStatus.color}`} />
@@ -107,7 +107,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Expected at {daysElapsed}/{daysInMonth} days:</span>
               <span className="font-medium">{formatCurrency(expectedSpending)}</span>

@@ -110,7 +110,7 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
   const iconColor = categoryAccount?.color || '#64748b';
 
   return (
-    <Card>
+    <Card className="h-full flex flex-col">
       <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Settings</p>
@@ -133,7 +133,7 @@ export function BudgetSettingsCard({ budget, categoryAccount }) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 flex-1">
         {isEditing ? (
           <>
             <div className="space-y-2">
