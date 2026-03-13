@@ -44,7 +44,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
       <CardHeader className="pb-2 pt-3 px-3">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Performance - Current Month</p>
       </CardHeader>
-      <CardContent className="space-y-6 flex-1">
+      <CardContent className="space-y-4 flex-1">
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Budget Progress</span>
@@ -70,76 +70,64 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
         </div>
 
         {isRolloverEnabled && accumulatedRollover > 0 && (
-          <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg">
+          <div className="flex items-center justify-between p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 rounded-lg">
             <div>
-              <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Rollover Budget</p>
-              <p className="text-xs text-blue-700 dark:text-blue-300">
-                {formatCurrency(budgetAmount)} this month + {formatCurrency(accumulatedRollover)} accumulated
+              <p className="text-xs font-medium text-blue-900 dark:text-blue-100">Rollover Budget</p>
+              <p className="text-[10px] text-blue-700 dark:text-blue-300">
+                {formatCurrency(budgetAmount)} + {formatCurrency(accumulatedRollover)} accumulated
               </p>
             </div>
-            <p className="text-lg font-bold text-blue-900 dark:text-blue-100">{formatCurrency(effectiveBudget)}</p>
+            <p className="text-base font-bold text-blue-900 dark:text-blue-100">{formatCurrency(effectiveBudget)}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Remaining</p>
-            <p className={`text-xl font-bold ${remaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
+        <div className="grid grid-cols-3 gap-3">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Remaining</p>
+            <p className={`text-lg font-bold ${remaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
               {formatCurrency(Math.abs(remaining))}
             </p>
-            {remaining < 0 && (
-              <p className="text-xs text-red-600">Over budget</p>
-            )}
           </div>
-          <div className="space-y-1">
-            <p className="text-xs text-muted-foreground">Days Remaining</p>
-            <p className="text-xl font-bold">{daysInMonth - daysElapsed}</p>
-            <p className="text-xs text-muted-foreground">of {daysInMonth} days</p>
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Days Left</p>
+            <p className="text-lg font-bold">{daysInMonth - daysElapsed}<span className="text-xs text-muted-foreground font-normal ml-1">/ {daysInMonth}</span></p>
           </div>
-        </div>
-
-        <div className="pt-4 border-t">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium">Spending Pace</span>
-            <div className="flex items-center gap-2">
-              <PaceIcon className={`h-4 w-4 ${paceStatus.color}`} />
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Pace</p>
+            <div className="flex items-center gap-1">
+              <PaceIcon className={`h-3.5 w-3.5 ${paceStatus.color}`} />
               <span className={`text-sm font-medium ${paceStatus.color}`}>{paceStatus.label}</span>
             </div>
           </div>
+        </div>
 
-          <div className="space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Expected at {daysElapsed}/{daysInMonth} days:</span>
-              <span className="font-medium">{formatCurrency(expectedSpending)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Actual spending:</span>
-              <span className="font-medium">{formatCurrency(spent)}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Variance:</span>
-              <span className={`font-medium ${isOverPace ? 'text-red-600' : 'text-green-600'}`}>
-                {isOverPace ? '+' : ''}{formatCurrency(spendingPace)}
-              </span>
-            </div>
+        <div className="grid grid-cols-2 gap-3 pt-2 border-t">
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Expected</p>
+            <p className="text-sm font-medium">{formatCurrency(expectedSpending)}</p>
           </div>
-
+          <div>
+            <p className="text-xs text-muted-foreground mb-1">Variance</p>
+            <p className={`text-sm font-medium ${isOverPace ? 'text-red-600' : 'text-green-600'}`}>
+              {isOverPace ? '+' : ''}{formatCurrency(spendingPace)}
+            </p>
+          </div>
         </div>
 
         {performanceHistory && (
-          <div className="pt-4 border-t">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
+          <div className="pt-2 border-t">
+            <div className="flex items-center justify-between">
+              <div>
                 <span className="text-sm font-medium">Historical Performance</span>
-                <Badge variant={adherenceRate >= 75 ? 'default' : adherenceRate >= 50 ? 'secondary' : 'destructive'}>
-                  {adherenceRate.toFixed(0)}% Adherence
-                </Badge>
+                <p className="text-[10px] text-muted-foreground">
+                  {Math.round((adherenceRate / 100) * 12)} of 12 months under budget
+                </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Stayed under budget in {Math.round((adherenceRate / 100) * 12)} of the last 12 months
-              </p>
-              <Progress value={adherenceRate} className="h-2" />
+              <Badge variant={adherenceRate >= 75 ? 'default' : adherenceRate >= 50 ? 'secondary' : 'destructive'}>
+                {adherenceRate.toFixed(0)}%
+              </Badge>
             </div>
+            <Progress value={adherenceRate} className="h-2 mt-2" />
           </div>
         )}
 
