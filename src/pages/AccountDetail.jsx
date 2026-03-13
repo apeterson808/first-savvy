@@ -1094,8 +1094,10 @@ export default function AccountDetail() {
         )}
 
         {isBudgetableAccount && !isEditMode ? (
-          <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
-            <TabsList className="w-full justify-start mb-3">
+          <Card>
+            <CardContent className="pt-4">
+              <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
+                <TabsList className="w-full justify-start mb-3">
               <TabsTrigger value="budget" className="flex items-center gap-1.5">
                 <Target className="w-3.5 h-3.5" />
                 Budget
@@ -1419,7 +1421,9 @@ export default function AccountDetail() {
                 </div>
               )}
             </TabsContent>
-          </Tabs>
+              </Tabs>
+            </CardContent>
+          </Card>
         ) : (
           <Card>
             <CardHeader className="pb-3 pt-4">
