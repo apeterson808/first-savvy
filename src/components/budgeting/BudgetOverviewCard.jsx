@@ -235,9 +235,6 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
                         ({categoryAccount.account_number})
                       </span>
                     )}
-                    <Badge variant={budget?.is_active ? 'default' : 'secondary'}>
-                      {budget?.is_active ? 'Budget Active' : 'Budget Inactive'}
-                    </Badge>
                   </div>
 
                   <div className="flex items-center gap-2 text-sm text-slate-600">
@@ -266,7 +263,9 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
 
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-2">
-                    <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">Active Budget</Label>
+                    <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                      {isActive ? 'Active' : 'Inactive'}
+                    </Label>
                     <Switch
                       id="is_active_view"
                       checked={isActive}
