@@ -6,17 +6,24 @@ import { TrendingUp, TrendingDown, Minus, Calendar, DollarSign, PieChart as PieC
 import { formatCurrency } from '@/components/utils/formatters';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
-export function ComparisonCard({ comparativeData, historicalData }) {
+export function ComparisonCard({ comparativeData, historicalData, compact = false }) {
+  const Wrapper = compact ? 'div' : Card;
+  const wrapperProps = compact ? { className: 'border rounded-lg' } : {};
+  const HeaderWrapper = compact ? 'div' : CardHeader;
+  const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
+  const ContentWrapper = compact ? 'div' : CardContent;
+  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3' } : { className: 'space-y-6' };
+
   if (!comparativeData) {
     return (
-      <Card>
-        <CardHeader className="pb-2 pt-3 px-3">
+      <Wrapper {...wrapperProps}>
+        <HeaderWrapper {...headerProps}>
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Comparative Analysis</p>
-        </CardHeader>
-        <CardContent>
+        </HeaderWrapper>
+        <ContentWrapper {...(compact ? { className: 'px-3 pb-3' } : {})}>
           <p className="text-sm text-muted-foreground">No comparison data available</p>
-        </CardContent>
-      </Card>
+        </ContentWrapper>
+      </Wrapper>
     );
   }
 
@@ -52,15 +59,15 @@ export function ComparisonCard({ comparativeData, historicalData }) {
   const variancePercent = avgRecentSpending > 0 ? (varianceFromAvg / avgRecentSpending) * 100 : 0;
 
   return (
-    <Card>
-      <CardHeader className="pb-2 pt-3 px-3">
+    <Wrapper {...wrapperProps}>
+      <HeaderWrapper {...headerProps}>
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Comparative Analysis</p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-4">
+      </HeaderWrapper>
+      <ContentWrapper {...contentProps}>
+        <div className={compact ? 'space-y-3' : 'space-y-4'}>
           <div>
             <p className="text-sm text-muted-foreground mb-2">Year-over-Year Comparison</p>
-            <div className="h-48">
+            <div className={compact ? 'h-32' : 'h-48'}>
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -88,18 +95,18 @@ export function ComparisonCard({ comparativeData, historicalData }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className={`grid grid-cols-2 ${compact ? 'gap-3' : 'gap-4'}`}>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">This Month</p>
-              <p className="text-xl font-bold">{formatCurrency(currentMonth)}</p>
+              <p className={`${compact ? 'text-lg' : 'text-xl'} font-bold`}>{formatCurrency(currentMonth)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Same Month Last Year</p>
-              <p className="text-xl font-bold">{formatCurrency(lastYearSameMonth)}</p>
+              <p className={`${compact ? 'text-lg' : 'text-xl'} font-bold`}>{formatCurrency(lastYearSameMonth)}</p>
             </div>
           </div>
 
-          <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+          <div className={`flex items-center justify-between ${compact ? 'p-2' : 'p-3'} bg-muted rounded-lg`}>
             <div className="flex items-center gap-2">
               {isIncrease ? (
                 <TrendingUp className="h-5 w-5 text-red-600" />
@@ -116,7 +123,7 @@ export function ComparisonCard({ comparativeData, historicalData }) {
           </div>
         </div>
 
-        <div className="pt-4 border-t space-y-4">
+        <div className={`${compact ? 'pt-2' : 'pt-4'} border-t ${compact ? 'space-y-3' : 'space-y-4'}`}>
           <div>
             <div className="flex items-center justify-between mb-2">
               <p className="text-sm font-medium">Percentage of Total Expenses</p>
@@ -130,64 +137,80 @@ export function ComparisonCard({ comparativeData, historicalData }) {
         </div>
 
         {recentMonths.length > 0 && (
-          <div className="pt-4 border-t space-y-4">
-            <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-              <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div className="space-y-2 flex-1">
-                <p className="text-sm font-medium">6-Month Average</p>
-                <p className="text-lg font-bold">{formatCurrency(avgRecentSpending)}</p>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground">Current vs Avg:</span>
-                  <Badge variant={varianceFromAvg > 0 ? 'destructive' : 'default'} className="text-xs">
-                    {varianceFromAvg > 0 ? '+' : ''}{formatCurrency(varianceFromAvg)} ({variancePercent > 0 ? '+' : ''}{variancePercent.toFixed(1)}%)
-                  </Badge>
+          compact ? (
+            <div className="pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">6-Month Average</p>
+                  <p className="text-base font-bold">{formatCurrency(avgRecentSpending)}</p>
+                </div>
+                <Badge variant={varianceFromAvg > 0 ? 'destructive' : 'default'} className="text-xs">
+                  {varianceFromAvg > 0 ? '+' : ''}{formatCurrency(varianceFromAvg)} ({variancePercent > 0 ? '+' : ''}{variancePercent.toFixed(1)}%)
+                </Badge>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-4 border-t space-y-4">
+              <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                <Calendar className="h-5 w-5 text-blue-600 mt-0.5" />
+                <div className="space-y-2 flex-1">
+                  <p className="text-sm font-medium">6-Month Average</p>
+                  <p className="text-lg font-bold">{formatCurrency(avgRecentSpending)}</p>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">Current vs Avg:</span>
+                    <Badge variant={varianceFromAvg > 0 ? 'destructive' : 'default'} className="text-xs">
+                      {varianceFromAvg > 0 ? '+' : ''}{formatCurrency(varianceFromAvg)} ({variancePercent > 0 ? '+' : ''}{variancePercent.toFixed(1)}%)
+                    </Badge>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )
         )}
 
-        <div className="pt-4 border-t space-y-3">
-          <p className="text-sm font-medium">Insights</p>
-          <div className="space-y-2 text-sm text-muted-foreground">
-            {Math.abs(yearOverYearChange) > 20 && (
-              <div className="flex items-start gap-2">
-                <span className="text-lg">•</span>
-                <p>
-                  Spending has {isIncrease ? 'increased' : 'decreased'} significantly ({yoyChangeAbs.toFixed(0)}%) compared to last year.
-                  {isIncrease && ' Consider reviewing if this aligns with your financial goals.'}
-                </p>
-              </div>
-            )}
-            {percentOfTotalExpenses > 30 && (
-              <div className="flex items-start gap-2">
-                <span className="text-lg">•</span>
-                <p>
-                  This is a major expense category, representing over 30% of your total spending.
-                  Small changes here can have a significant impact on your overall budget.
-                </p>
-              </div>
-            )}
-            {Math.abs(variancePercent) < 10 && (
-              <div className="flex items-start gap-2">
-                <span className="text-lg">•</span>
-                <p>
-                  Your spending this month is consistent with your recent average, showing stable spending patterns.
-                </p>
-              </div>
-            )}
-            {variancePercent > 20 && (
-              <div className="flex items-start gap-2">
-                <span className="text-lg">•</span>
-                <p>
-                  Current spending is {variancePercent.toFixed(0)}% higher than your 6-month average.
-                  This may indicate an unusual month or a trend change.
-                </p>
-              </div>
-            )}
+        {!compact && (
+          <div className="pt-4 border-t space-y-3">
+            <p className="text-sm font-medium">Insights</p>
+            <div className="space-y-2 text-sm text-muted-foreground">
+              {Math.abs(yearOverYearChange) > 20 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">•</span>
+                  <p>
+                    Spending has {isIncrease ? 'increased' : 'decreased'} significantly ({yoyChangeAbs.toFixed(0)}%) compared to last year.
+                    {isIncrease && ' Consider reviewing if this aligns with your financial goals.'}
+                  </p>
+                </div>
+              )}
+              {percentOfTotalExpenses > 30 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">•</span>
+                  <p>
+                    This is a major expense category, representing over 30% of your total spending.
+                    Small changes here can have a significant impact on your overall budget.
+                  </p>
+                </div>
+              )}
+              {Math.abs(variancePercent) < 10 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">•</span>
+                  <p>
+                    Your spending this month is consistent with your recent average, showing stable spending patterns.
+                  </p>
+                </div>
+              )}
+              {variancePercent > 20 && (
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">•</span>
+                  <p>
+                    Current spending is {variancePercent.toFixed(0)}% higher than your 6-month average.
+                    This may indicate an unusual month or a trend change.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+      </ContentWrapper>
+    </Wrapper>
   );
 }

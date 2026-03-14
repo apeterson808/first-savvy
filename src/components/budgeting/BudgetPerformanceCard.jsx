@@ -6,7 +6,7 @@ import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Calendar } from 'lu
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory }) {
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, compact = false }) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -39,12 +39,19 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
 
   const adherenceRate = performanceHistory?.adherenceRate || 0;
 
+  const Wrapper = compact ? 'div' : Card;
+  const wrapperProps = compact ? { className: 'border rounded-lg h-full flex flex-col' } : { className: 'h-full flex flex-col' };
+  const HeaderWrapper = compact ? 'div' : CardHeader;
+  const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
+  const ContentWrapper = compact ? 'div' : CardContent;
+  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3 flex-1' } : { className: 'space-y-4 flex-1' };
+
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader className="pb-2 pt-3 px-3">
+    <Wrapper {...wrapperProps}>
+      <HeaderWrapper {...headerProps}>
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Performance - Current Month</p>
-      </CardHeader>
-      <CardContent className="space-y-4 flex-1">
+      </HeaderWrapper>
+      <ContentWrapper {...contentProps}>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Budget Progress</span>
@@ -132,7 +139,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
         )}
 
         {percentUsed > 90 && percentUsed <= 100 && (
-          <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg">
+          <div className={`flex items-start gap-2 ${compact ? 'p-2' : 'p-3'} bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-900 rounded-lg`}>
             <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-yellow-900 dark:text-yellow-100">Approaching Budget Limit</p>
@@ -144,7 +151,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
         )}
 
         {percentUsed > 100 && (
-          <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg">
+          <div className={`flex items-start gap-2 ${compact ? 'p-2' : 'p-3'} bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900 rounded-lg`}>
             <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
             <div className="space-y-1">
               <p className="text-sm font-medium text-red-900 dark:text-red-100">Budget Exceeded</p>
@@ -154,7 +161,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             </div>
           </div>
         )}
-      </CardContent>
-    </Card>
+      </ContentWrapper>
+    </Wrapper>
   );
 }

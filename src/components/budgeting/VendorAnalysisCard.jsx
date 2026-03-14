@@ -6,17 +6,24 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#06b6d4', '#6366f1', '#14b8a6', '#f97316'];
 
-export function VendorAnalysisCard({ vendorData }) {
+export function VendorAnalysisCard({ vendorData, compact = false }) {
+  const Wrapper = compact ? 'div' : Card;
+  const wrapperProps = compact ? { className: 'border rounded-lg' } : {};
+  const HeaderWrapper = compact ? 'div' : CardHeader;
+  const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
+  const ContentWrapper = compact ? 'div' : CardContent;
+  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3' } : { className: 'space-y-6' };
+
   if (!vendorData?.monthlyData || !vendorData?.vendors) {
     return (
-      <Card>
-        <CardHeader className="pb-2 pt-3 px-3">
+      <Wrapper {...wrapperProps}>
+        <HeaderWrapper {...headerProps}>
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Vendor Breakdown</p>
-        </CardHeader>
-        <CardContent>
+        </HeaderWrapper>
+        <ContentWrapper {...(compact ? { className: 'px-3 pb-3' } : {})}>
           <p className="text-sm text-muted-foreground">No vendor data available</p>
-        </CardContent>
-      </Card>
+        </ContentWrapper>
+      </Wrapper>
     );
   }
 
@@ -54,16 +61,18 @@ export function VendorAnalysisCard({ vendorData }) {
     .sort((a, b) => b[1] - a[1])
     .map(([name]) => name);
 
+  const displayVendors = compact ? sortedVendors.slice(0, 5) : sortedVendors;
+
   return (
-    <Card>
-      <CardHeader className="pb-2 pt-3 px-3">
+    <Wrapper {...wrapperProps}>
+      <HeaderWrapper {...headerProps}>
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Vendor Breakdown</p>
           <Badge variant="outline">{allVendorNames.length} Vendors</Badge>
         </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="h-48 -mx-2">
+      </HeaderWrapper>
+      <ContentWrapper {...contentProps}>
+        <div className={`${compact ? 'h-36' : 'h-48'} -mx-2`}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
@@ -166,17 +175,17 @@ export function VendorAnalysisCard({ vendorData }) {
           </ResponsiveContainer>
         </div>
 
-        <div className="pt-4 border-t">
+        <div className={`${compact ? 'pt-2' : 'pt-4'} border-t`}>
           <p className="text-sm font-medium mb-3">Average Monthly Spend by Vendor</p>
           <div className="space-y-2.5">
-            {sortedVendors.map((vendorName, index) => {
+            {displayVendors.map((vendorName, index) => {
               const monthsWithSpend = monthlyData.filter(month =>
                 month.vendors.some(v => v.name === vendorName)
               ).length;
               const avgSpend = monthsWithSpend > 0 ? totalsByVendor[vendorName] / monthsWithSpend : 0;
 
               return (
-                <div key={vendorName} className="flex items-center justify-between group hover:bg-accent/50 -mx-2 px-2 py-1 rounded-md transition-colors">
+                <div key={vendorName} className={`flex items-center justify-between group hover:bg-accent/50 -mx-2 px-2 ${compact ? 'py-0.5' : 'py-1'} rounded-md transition-colors`}>
                   <div className="flex items-center gap-2.5">
                     <div
                       className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm"
@@ -193,7 +202,7 @@ export function VendorAnalysisCard({ vendorData }) {
             })}
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </ContentWrapper>
+    </Wrapper>
   );
 }
