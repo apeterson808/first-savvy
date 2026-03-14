@@ -1109,13 +1109,12 @@ export default function AccountDetail() {
               budget={budget}
               currentSpending={currentMonthSpending}
               performanceHistory={performanceHistory}
-              compact
             />
-            <SpendingTrendChart historicalData={historicalData} budget={budget} compact />
+            <SpendingTrendChart historicalData={historicalData} budget={budget} />
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} compact />
-            <VendorAnalysisCard vendorData={vendorData} compact />
+            <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+            <VendorAnalysisCard vendorData={vendorData} />
           </div>
 
           <Card>
