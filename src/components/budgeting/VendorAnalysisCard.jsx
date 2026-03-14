@@ -99,6 +99,8 @@ export function VendorAnalysisCard({ vendorData }) {
               />
               <Tooltip
                 cursor={false}
+                position={{ y: -10 }}
+                wrapperStyle={{ zIndex: 1000 }}
                 content={({ active, payload, label }) => {
                   if (!active || !payload || !payload.length) return null;
                   const monthData = chartData.find(d => d.month === label);
@@ -143,15 +145,20 @@ export function VendorAnalysisCard({ vendorData }) {
                   radius={index === sortedVendors.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                   stroke="hsl(var(--background))"
                   strokeWidth={2}
-                  onMouseEnter={(data, index, e) => {
-                    e.target.style.transform = 'scale(1.05)';
-                    e.target.style.transformOrigin = 'center bottom';
-                    e.target.style.filter = 'brightness(1.1)';
-                    e.target.style.transition = 'all 0.2s ease';
+                  onMouseEnter={(data, barIndex, e) => {
+                    const allBars = e.target.parentNode.querySelectorAll('path.recharts-rectangle');
+                    allBars.forEach(bar => {
+                      bar.style.transform = 'translateY(-2px)';
+                      bar.style.transition = 'all 0.2s ease';
+                      bar.style.filter = 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1))';
+                    });
                   }}
-                  onMouseLeave={(data, index, e) => {
-                    e.target.style.transform = 'scale(1)';
-                    e.target.style.filter = 'brightness(1)';
+                  onMouseLeave={(data, barIndex, e) => {
+                    const allBars = e.target.parentNode.querySelectorAll('path.recharts-rectangle');
+                    allBars.forEach(bar => {
+                      bar.style.transform = 'translateY(0)';
+                      bar.style.filter = 'none';
+                    });
                   }}
                 />
               ))}
