@@ -68,6 +68,8 @@ export function VendorAnalysisCard({ vendorData }) {
             <BarChart
               data={chartData}
               margin={{ top: 10, right: 10, left: 0, bottom: 5 }}
+              barSize={32}
+              barGap={2}
             >
               <defs>
                 {sortedVendors.map((vendorName, index) => {
@@ -138,6 +140,8 @@ export function VendorAnalysisCard({ vendorData }) {
                   stackId="vendors"
                   fill={`url(#gradient-${index})`}
                   radius={index === sortedVendors.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
+                  stroke="hsl(var(--background))"
+                  strokeWidth={2}
                 />
               ))}
             </BarChart>
