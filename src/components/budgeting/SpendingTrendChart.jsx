@@ -60,7 +60,7 @@ export function SpendingTrendChart({ historicalData, budget }) {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="h-[300px]">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>

@@ -60,7 +60,7 @@ export function ComparisonCard({ comparativeData, historicalData }) {
         <div className="space-y-4">
           <div>
             <p className="text-sm text-muted-foreground mb-2">Year-over-Year Comparison</p>
-            <div className="h-[200px]">
+            <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
