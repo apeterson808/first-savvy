@@ -33,13 +33,17 @@ function mergeData(historicalData, vendorData) {
       transactionCount: spendMonth.transactionCount,
     };
 
+    let vendorSum = 0;
     if (vendorMonth?.vendors) {
       vendorMonth.vendors.forEach(v => {
         point[v.name] = v.totalSpent;
+        vendorSum += v.totalSpent;
         totalsByVendor[v.name] = (totalsByVendor[v.name] || 0) + v.totalSpent;
         monthCountByVendor[v.name] = (monthCountByVendor[v.name] || 0) + 1;
       });
     }
+
+    point.stackTotal = vendorSum;
 
     return point;
   });
@@ -57,7 +61,7 @@ function CustomTooltip({ active, payload, vendorColorMap, budgetAmount }) {
   const data = payload[0]?.payload;
   if (!data) return null;
 
-  const vendorEntries = payload.filter(p => p.dataKey !== 'totalSpent');
+  const vendorEntries = payload.filter(p => p.dataKey !== 'totalSpent' && p.dataKey !== 'stackTotal');
   const total = vendorEntries.reduce((sum, p) => sum + (p.value || 0), 0);
 
   return (
@@ -166,7 +170,7 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData }) {
     <Card>
       <CardHeader className="pb-1 pt-3 px-4">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">12-Month Spending & Vendors</p>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">12-Month Spending</p>
           <div className={`flex items-center gap-1.5 ${trend.color}`}>
             {trend.icon}
             <span className="text-xs font-medium">{trend.label}</span>
@@ -232,11 +236,11 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData }) {
               {sortedVendors.length > 0 && (
                 <Line
                   type="monotone"
-                  dataKey="totalSpent"
-                  stroke="hsl(var(--foreground))"
+                  dataKey="stackTotal"
+                  stroke="#f59e0b"
                   strokeWidth={2}
-                  dot={{ r: 3, fill: 'hsl(var(--background))', stroke: 'hsl(var(--foreground))', strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: 'hsl(var(--foreground))' }}
+                  dot={{ r: 3, fill: 'hsl(var(--background))', stroke: '#f59e0b', strokeWidth: 2 }}
+                  activeDot={{ r: 5, fill: '#f59e0b' }}
                 />
               )}
             </ComposedChart>
@@ -244,15 +248,15 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData }) {
         </div>
 
         <div className="grid grid-cols-3 gap-3 pt-1">
-          <div>
+          <div className="text-center">
             <p className="text-xs text-muted-foreground">Average</p>
             <p className="text-base font-semibold tabular-nums">{formatCurrency(summary?.average || 0)}</p>
           </div>
-          <div>
+          <div className="text-center">
             <p className="text-xs text-muted-foreground">Highest</p>
             <p className="text-base font-semibold text-red-600 tabular-nums">{formatCurrency(summary?.max || 0)}</p>
           </div>
-          <div>
+          <div className="text-center">
             <p className="text-xs text-muted-foreground">Lowest</p>
             <p className="text-base font-semibold text-green-600 tabular-nums">{formatCurrency(summary?.min || 0)}</p>
           </div>
