@@ -4,24 +4,17 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, Repeat } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-export function TransactionPatternsCard({ patterns, compact = false }) {
-  const Wrapper = compact ? 'div' : Card;
-  const wrapperProps = compact ? { className: 'border rounded-lg' } : {};
-  const HeaderWrapper = compact ? 'div' : CardHeader;
-  const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
-  const ContentWrapper = compact ? 'div' : CardContent;
-  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3' } : { className: 'space-y-6' };
-
+export function TransactionPatternsCard({ patterns }) {
   if (!patterns) {
     return (
-      <Wrapper {...wrapperProps}>
-        <HeaderWrapper {...headerProps}>
+      <Card>
+        <CardHeader className="pb-2 pt-3 px-3">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Transaction Patterns</p>
-        </HeaderWrapper>
-        <ContentWrapper {...(compact ? { className: 'px-3 pb-3' } : {})}>
+        </CardHeader>
+        <CardContent>
           <p className="text-sm text-muted-foreground">No pattern data available</p>
-        </ContentWrapper>
-      </Wrapper>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -42,8 +35,8 @@ export function TransactionPatternsCard({ patterns, compact = false }) {
   };
 
   return (
-    <Wrapper {...wrapperProps}>
-      <HeaderWrapper {...headerProps}>
+    <Card>
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Transaction Patterns</p>
           <Badge variant="outline" className="flex items-center gap-1">
@@ -51,15 +44,15 @@ export function TransactionPatternsCard({ patterns, compact = false }) {
             {frequencyLabels[averageFrequency] || 'Unknown'}
           </Badge>
         </div>
-      </HeaderWrapper>
-      <ContentWrapper {...contentProps}>
+      </CardHeader>
+      <CardContent className="space-y-6">
         {dayOfWeekPattern?.length > 0 && (
           <div className="space-y-3">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium">Day of Week Distribution</p>
             </div>
-            <div className={compact ? 'h-36' : 'h-[200px]'}>
+            <div className="h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={dayOfWeekPattern}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -88,15 +81,15 @@ export function TransactionPatternsCard({ patterns, compact = false }) {
         )}
 
         {topDaysOfMonth?.length > 0 && (
-          <div className={`${compact ? 'pt-2' : 'pt-4'} border-t space-y-3`}>
+          <div className="pt-4 border-t space-y-3">
             <div className="flex items-center gap-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <p className="text-sm font-medium">Common Days of Month</p>
             </div>
             <div className="grid grid-cols-5 gap-2">
               {topDaysOfMonth.map((item) => (
-                <div key={item.day} className={`text-center ${compact ? 'p-1.5' : 'p-2'} bg-muted rounded-lg`}>
-                  <p className={`${compact ? 'text-base' : 'text-lg'} font-bold`}>{item.day}</p>
+                <div key={item.day} className="text-center p-2 bg-muted rounded-lg">
+                  <p className="text-lg font-bold">{item.day}</p>
                   <p className="text-xs text-muted-foreground">{item.count}x</p>
                 </div>
               ))}
@@ -107,39 +100,35 @@ export function TransactionPatternsCard({ patterns, compact = false }) {
           </div>
         )}
 
-        {!compact && (
-          <div className="pt-4 border-t">
-            <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
-              <Repeat className="h-5 w-5 text-blue-600 mt-0.5" />
-              <div className="space-y-2 flex-1">
-                <p className="text-sm font-medium">Spending Frequency</p>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${frequencyColors[averageFrequency]}`} />
-                  <p className="text-sm">{frequencyLabels[averageFrequency]}</p>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {getFrequencyDescription(averageFrequency)}
-                </p>
+        <div className="pt-4 border-t">
+          <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+            <Repeat className="h-5 w-5 text-blue-600 mt-0.5" />
+            <div className="space-y-2 flex-1">
+              <p className="text-sm font-medium">Spending Frequency</p>
+              <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${frequencyColors[averageFrequency]}`} />
+                <p className="text-sm">{frequencyLabels[averageFrequency]}</p>
               </div>
+              <p className="text-xs text-muted-foreground">
+                {getFrequencyDescription(averageFrequency)}
+              </p>
             </div>
           </div>
-        )}
+        </div>
 
-        {!compact && (
-          <div className="pt-4 border-t">
-            <p className="text-sm font-medium mb-3">Pattern Insights</p>
-            <div className="space-y-2 text-sm text-muted-foreground">
-              {getPatternInsights(dayOfWeekPattern, topDaysOfMonth, averageFrequency).map((insight, idx) => (
-                <div key={idx} className="flex items-start gap-2">
-                  <span className="text-lg">•</span>
-                  <p>{insight}</p>
-                </div>
-              ))}
-            </div>
+        <div className="pt-4 border-t">
+          <p className="text-sm font-medium mb-3">Pattern Insights</p>
+          <div className="space-y-2 text-sm text-muted-foreground">
+            {getPatternInsights(dayOfWeekPattern, topDaysOfMonth, averageFrequency).map((insight, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span className="text-lg">•</span>
+                <p>{insight}</p>
+              </div>
+            ))}
           </div>
-        )}
-      </ContentWrapper>
-    </Wrapper>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

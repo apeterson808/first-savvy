@@ -5,24 +5,17 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { Badge } from '@/components/ui/badge';
 
-export function SpendingTrendChart({ historicalData, budget, compact = false }) {
-  const Wrapper = compact ? 'div' : Card;
-  const wrapperProps = compact ? { className: 'border rounded-lg' } : {};
-  const HeaderWrapper = compact ? 'div' : CardHeader;
-  const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
-  const ContentWrapper = compact ? 'div' : CardContent;
-  const contentProps = compact ? { className: 'px-3 pb-3' } : {};
-
+export function SpendingTrendChart({ historicalData, budget }) {
   if (!historicalData?.monthlyData) {
     return (
-      <Wrapper {...wrapperProps}>
-        <HeaderWrapper {...headerProps}>
+      <Card>
+        <CardHeader className="pb-2 pt-3 px-3">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Spending Trend</p>
-        </HeaderWrapper>
-        <ContentWrapper {...contentProps}>
+        </CardHeader>
+        <CardContent>
           <p className="text-sm text-muted-foreground">No historical data available</p>
-        </ContentWrapper>
-      </Wrapper>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -53,8 +46,8 @@ export function SpendingTrendChart({ historicalData, budget, compact = false }) 
   };
 
   return (
-    <Wrapper {...wrapperProps}>
-      <HeaderWrapper {...headerProps}>
+    <Card>
+      <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">12-Month Spending Trend</p>
           <div className="flex items-center gap-2">
@@ -64,10 +57,10 @@ export function SpendingTrendChart({ historicalData, budget, compact = false }) 
             </span>
           </div>
         </div>
-      </HeaderWrapper>
-      <ContentWrapper {...contentProps}>
-        <div className={compact ? 'space-y-3' : 'space-y-6'}>
-          <div className={compact ? 'h-40' : 'h-64'}>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <defs>
@@ -139,23 +132,23 @@ export function SpendingTrendChart({ historicalData, budget, compact = false }) 
             </ResponsiveContainer>
           </div>
 
-          <div className={`grid grid-cols-3 ${compact ? 'gap-3' : 'gap-4'}`}>
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Average</p>
-              <p className={`${compact ? 'text-base' : 'text-lg'} font-semibold`}>{formatCurrency(summary.average)}</p>
+              <p className="text-lg font-semibold">{formatCurrency(summary.average)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Highest</p>
-              <p className={`${compact ? 'text-base' : 'text-lg'} font-semibold text-red-600`}>{formatCurrency(summary.max)}</p>
+              <p className="text-lg font-semibold text-red-600">{formatCurrency(summary.max)}</p>
             </div>
             <div className="space-y-1">
               <p className="text-xs text-muted-foreground">Lowest</p>
-              <p className={`${compact ? 'text-base' : 'text-lg'} font-semibold text-green-600`}>{formatCurrency(summary.min)}</p>
+              <p className="text-lg font-semibold text-green-600">{formatCurrency(summary.min)}</p>
             </div>
           </div>
 
           {budgetAmount > 0 && (
-            <div className={compact ? 'pt-2 border-t' : 'pt-4 border-t'}>
+            <div className="pt-4 border-t">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm text-muted-foreground">Average vs Budget</span>
                 <Badge variant={summary.average > budgetAmount ? 'destructive' : 'default'}>
@@ -172,7 +165,7 @@ export function SpendingTrendChart({ historicalData, budget, compact = false }) 
             </div>
           )}
         </div>
-      </ContentWrapper>
-    </Wrapper>
+      </CardContent>
+    </Card>
   );
 }
