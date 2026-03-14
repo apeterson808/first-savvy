@@ -52,9 +52,7 @@ export const budgetAnalytics = {
   },
 
   async getVendorBreakdown(categoryAccountId, dateRange, profileId) {
-    const { startDate, endDate } = dateRange;
-
-    const { data: transactions, error } = await firstsavvy.supabase
+    let query = firstsavvy.supabase
       .from('transactions')
       .select(`
         id,
@@ -72,10 +70,14 @@ export const budgetAnalytics = {
       .eq('profile_id', profileId)
       .eq('category_account_id', categoryAccountId)
       .eq('status', 'posted')
-      .eq('type', 'expense')
-      .gte('date', startDate)
-      .lte('date', endDate)
-      .order('date', { ascending: false });
+      .eq('type', 'expense');
+
+    if (dateRange) {
+      const { startDate, endDate } = dateRange;
+      query = query.gte('date', startDate).lte('date', endDate);
+    }
+
+    const { data: transactions, error } = await query.order('date', { ascending: false });
 
     if (error) throw error;
 

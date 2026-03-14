@@ -104,12 +104,9 @@ export default function ExpenseCategoryDetail() {
   const { data: vendorData, isLoading: vendorLoading } = useQuery({
     queryKey: ['vendor-breakdown', id, activeProfile?.id],
     queryFn: async () => {
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
       return await budgetAnalytics.getVendorBreakdown(
         id,
-        { startDate: monthStart.toISOString(), endDate: monthEnd.toISOString() },
+        null,
         activeProfile.id
       );
     },
