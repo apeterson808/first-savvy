@@ -1025,13 +1025,6 @@ export default function AccountDetail() {
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </Button>
-            {isBudgetableAccount && !isEditMode && !isBudgetEditMode && (
-              <DatePresetDropdown
-                value={datePreset}
-                onValueChange={setDatePreset}
-                triggerClassName="w-44 h-9"
-              />
-            )}
             {isBudgetableAccount && !isEditMode && isBudgetEditMode && (
               <div className="flex items-center gap-2 ml-2">
                 <Button
@@ -1176,21 +1169,28 @@ export default function AccountDetail() {
           </Card>
 
           <Card>
-            <CardContent className="pt-4">
+            <CardHeader className="pb-2 pt-4">
+              <h3 className="text-base font-semibold">Account Ledger</h3>
+            </CardHeader>
+            <CardContent className="pt-2">
               <Tabs value={budgetLedgerTab} onValueChange={setBudgetLedgerTab} className="w-full">
-                <TabsList className="w-full justify-start mb-3">
-                  <TabsTrigger value="register" className="flex items-center gap-1.5">
-                    <FileText className="w-3.5 h-3.5" />
-                    Register
-                  </TabsTrigger>
-                  <TabsTrigger value="audit" className="flex items-center gap-1.5">
-                    <History className="w-3.5 h-3.5" />
-                    Audit History
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="register" className="mt-0">
-                  <div className="mb-3 flex items-center justify-end">
+                <div className="flex items-center justify-between mb-3">
+                  <TabsList>
+                    <TabsTrigger value="register" className="flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5" />
+                      Register
+                    </TabsTrigger>
+                    <TabsTrigger value="audit" className="flex items-center gap-1.5">
+                      <History className="w-3.5 h-3.5" />
+                      Audit History
+                    </TabsTrigger>
+                  </TabsList>
+                  <div className="flex items-center gap-2">
+                    <DatePresetDropdown
+                      value={datePreset}
+                      onValueChange={setDatePreset}
+                      triggerClassName="w-40 h-8 text-sm"
+                    />
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
@@ -1201,6 +1201,9 @@ export default function AccountDetail() {
                       />
                     </div>
                   </div>
+                </div>
+
+                <TabsContent value="register" className="mt-0">
                   {journalLinesLoading ? (
                     <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
                   ) : journalLinesError ? (
@@ -1313,20 +1316,6 @@ export default function AccountDetail() {
                 </TabsContent>
 
                 <TabsContent value="audit" className="mt-0">
-                  <div className="mb-3 flex items-center justify-between">
-                    <p className="text-xs text-slate-600 px-1">
-                      Complete journal entry history including edits and all accounting changes.
-                    </p>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                      <Input
-                        placeholder="Search transactions..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="pl-8 w-64 h-8 text-sm"
-                      />
-                    </div>
-                  </div>
                   {auditHistoryLoading ? (
                     <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
                   ) : auditHistoryError ? (
