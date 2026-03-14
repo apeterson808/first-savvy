@@ -60,7 +60,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
     onSuccess: () => {
       queryClient.invalidateQueries(['budgets']);
       toast.success('Budget settings updated');
-      setIsEditing(false);
+      if (onEditChange) { onEditChange(false); }
     },
     onError: (error) => {
       toast.error(`Failed to update budget: ${error.message}`);
