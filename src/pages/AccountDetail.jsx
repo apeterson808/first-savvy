@@ -55,9 +55,7 @@ import { BudgetOverviewCard } from '@/components/budgeting/BudgetOverviewCard';
 import { SpendingTrendChart } from '@/components/budgeting/SpendingTrendChart';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { VendorAnalysisCard } from '@/components/budgeting/VendorAnalysisCard';
-import { ForecastingCard } from '@/components/budgeting/ForecastingCard';
 import { ComparisonCard } from '@/components/budgeting/ComparisonCard';
-import { TransactionPatternsCard } from '@/components/budgeting/TransactionPatternsCard';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -220,26 +218,10 @@ export default function AccountDetail() {
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount
   });
 
-  const { data: patterns } = useQuery({
-    queryKey: ['transaction-patterns', id, activeProfile?.id],
-    queryFn: async () => {
-      return await budgetAnalytics.getTransactionPatterns(id, activeProfile.id);
-    },
-    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
-  });
-
   const { data: performanceHistory } = useQuery({
     queryKey: ['budget-performance-history', id, activeProfile?.id],
     queryFn: async () => {
       return await budgetAnalytics.getBudgetPerformanceHistory(id, 12, activeProfile.id);
-    },
-    enabled: !!id && !!activeProfile?.id && isBudgetableAccount
-  });
-
-  const { data: forecast } = useQuery({
-    queryKey: ['spending-forecast', id, activeProfile?.id],
-    queryFn: async () => {
-      return await budgetAnalytics.getSpendingForecast(id, activeProfile.id);
     },
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount
   });
@@ -1132,17 +1114,13 @@ export default function AccountDetail() {
                 <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} compact />
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <ForecastingCard forecast={forecast} budget={budget} compact />
                 <BudgetPerformanceCard
                   budget={budget}
                   currentSpending={currentMonthSpending}
                   performanceHistory={performanceHistory}
                   compact
                 />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <VendorAnalysisCard vendorData={vendorData} compact />
-                <TransactionPatternsCard patterns={patterns} compact />
               </div>
             </CardContent>
           </Card>
