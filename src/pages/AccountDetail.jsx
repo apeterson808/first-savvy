@@ -209,14 +209,11 @@ export default function AccountDetail() {
   });
 
   const { data: vendorData } = useQuery({
-    queryKey: ['vendor-breakdown', id, activeProfile?.id],
+    queryKey: ['vendor-breakdown', id, activeProfile?.id, dateRange.startDate, dateRange.endDate],
     queryFn: async () => {
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
       return await budgetAnalytics.getVendorBreakdown(
         id,
-        { startDate: monthStart.toISOString(), endDate: monthEnd.toISOString() },
+        { startDate: dateRange.startDate, endDate: dateRange.endDate },
         activeProfile.id
       );
     },
