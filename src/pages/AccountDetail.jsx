@@ -28,7 +28,7 @@ import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
   Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
-  BarChart3, Users, Target
+  Target
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -69,7 +69,6 @@ export default function AccountDetail() {
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const [activeTab, setActiveTab] = useState('register');
-  const [budgetActiveTab, setBudgetActiveTab] = useState('trends');
   const [budgetLedgerTab, setBudgetLedgerTab] = useState('register');
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -1124,53 +1123,33 @@ export default function AccountDetail() {
         {isBudgetableAccount && !isEditMode ? (
           <>
           <Card>
-            <CardContent className="pt-4">
-              <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
-                <TabsList className="w-full justify-start mb-3">
-              <TabsTrigger value="trends" className="flex items-center gap-1.5">
-                <BarChart3 className="w-3.5 h-3.5" />
-                Trends
-              </TabsTrigger>
-              <TabsTrigger value="vendors" className="flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
-                Vendors
-              </TabsTrigger>
-              <TabsTrigger value="forecast" className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5" />
-                Forecast
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="trends" className="mt-0 space-y-4">
+            <CardHeader className="pb-2 pt-3 px-3">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Analytics</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <SpendingTrendChart historicalData={historicalData} budget={budget} />
-                <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
+                <SpendingTrendChart historicalData={historicalData} budget={budget} compact />
+                <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} compact />
               </div>
-            </TabsContent>
-
-            <TabsContent value="vendors" className="mt-0">
-              <VendorAnalysisCard vendorData={vendorData} />
-            </TabsContent>
-
-            <TabsContent value="forecast" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <ForecastingCard forecast={forecast} budget={budget} />
+                <ForecastingCard forecast={forecast} budget={budget} compact />
                 <BudgetPerformanceCard
                   budget={budget}
                   currentSpending={currentMonthSpending}
                   performanceHistory={performanceHistory}
+                  compact
                 />
               </div>
-              <TransactionPatternsCard patterns={patterns} />
-            </TabsContent>
-
-              </Tabs>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <VendorAnalysisCard vendorData={vendorData} compact />
+                <TransactionPatternsCard patterns={patterns} compact />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
-            <CardHeader className="pb-2 pt-4">
-              <h3 className="text-base font-semibold">Account Ledger</h3>
+            <CardHeader className="pb-2 pt-3 px-3">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Account Ledger</p>
             </CardHeader>
             <CardContent className="pt-2">
               <Tabs value={budgetLedgerTab} onValueChange={setBudgetLedgerTab} className="w-full">
