@@ -1104,26 +1104,19 @@ export default function AccountDetail() {
 
         {isBudgetableAccount && !isEditMode ? (
           <>
-          <Card>
-            <CardHeader className="pb-2 pt-3 px-3">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Analytics</p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <SpendingTrendChart historicalData={historicalData} budget={budget} compact />
-                <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} compact />
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <BudgetPerformanceCard
-                  budget={budget}
-                  currentSpending={currentMonthSpending}
-                  performanceHistory={performanceHistory}
-                  compact
-                />
-                <VendorAnalysisCard vendorData={vendorData} compact />
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <BudgetPerformanceCard
+              budget={budget}
+              currentSpending={currentMonthSpending}
+              performanceHistory={performanceHistory}
+              compact
+            />
+            <SpendingTrendChart historicalData={historicalData} budget={budget} compact />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} compact />
+            <VendorAnalysisCard vendorData={vendorData} compact />
+          </div>
 
           <Card>
             <CardHeader className="pb-2 pt-3 px-3">
