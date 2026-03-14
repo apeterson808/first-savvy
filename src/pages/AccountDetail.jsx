@@ -69,7 +69,7 @@ export default function AccountDetail() {
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const [activeTab, setActiveTab] = useState('register');
-  const [budgetActiveTab, setBudgetActiveTab] = useState('budget');
+  const [budgetActiveTab, setBudgetActiveTab] = useState('trends');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -1132,10 +1132,6 @@ export default function AccountDetail() {
             <CardContent className="pt-4">
               <Tabs value={budgetActiveTab} onValueChange={setBudgetActiveTab} className="w-full">
                 <TabsList className="w-full justify-start mb-3">
-              <TabsTrigger value="budget" className="flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5" />
-                Budget
-              </TabsTrigger>
               <TabsTrigger value="trends" className="flex items-center gap-1.5">
                 <BarChart3 className="w-3.5 h-3.5" />
                 Trends
@@ -1148,10 +1144,6 @@ export default function AccountDetail() {
                 <TrendingUp className="w-3.5 h-3.5" />
                 Forecast
               </TabsTrigger>
-              <TabsTrigger value="patterns" className="flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5" />
-                Patterns
-              </TabsTrigger>
               <TabsTrigger value="register" className="flex items-center gap-1.5">
                 <FileText className="w-3.5 h-3.5" />
                 Register
@@ -1162,22 +1154,11 @@ export default function AccountDetail() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="budget" className="mt-0 space-y-4">
-              <BudgetPerformanceCard
-                budget={budget}
-                currentSpending={currentMonthSpending}
-                performanceHistory={performanceHistory}
-              />
-
+            <TabsContent value="trends" className="mt-0 space-y-4">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                 <SpendingTrendChart historicalData={historicalData} budget={budget} />
                 <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
               </div>
-            </TabsContent>
-
-            <TabsContent value="trends" className="mt-0 space-y-4">
-              <SpendingTrendChart historicalData={historicalData} budget={budget} />
-              <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
             </TabsContent>
 
             <TabsContent value="vendors" className="mt-0">
@@ -1193,9 +1174,6 @@ export default function AccountDetail() {
                   performanceHistory={performanceHistory}
                 />
               </div>
-            </TabsContent>
-
-            <TabsContent value="patterns" className="mt-0">
               <TransactionPatternsCard patterns={patterns} />
             </TabsContent>
 
