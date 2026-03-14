@@ -1148,8 +1148,8 @@ export default function AccountDetail() {
           </Card>
 
           <Card>
-            <CardHeader className="pb-2 pt-4">
-              <h3 className="text-base font-semibold">Account Ledger</h3>
+            <CardHeader className="pb-2 pt-3 px-3">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Account Ledger</p>
             </CardHeader>
             <CardContent className="pt-2">
               <Tabs value={budgetLedgerTab} onValueChange={setBudgetLedgerTab} className="w-full">
