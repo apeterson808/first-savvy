@@ -408,14 +408,17 @@ export default function AccountDetail() {
 
     // ALL accounts show only posted journal lines (no pending transactions)
     let combined = journalLines.map(jl => {
-      // For transfers and credit card payments, show special labels instead of account names
+      // For transfers and credit card payments, show special labels
+      // For regular transactions, show contact name
       const entryType = jl.entry_type || 'adjustment';
-      let offsettingAccountsDisplay = jl.offsetting_accounts;
+      let fromToDisplay = jl.offsetting_accounts;
 
       if (entryType === 'transfer') {
-        offsettingAccountsDisplay = 'Transfer';
+        fromToDisplay = jl.offsetting_accounts || 'Transfer';
       } else if (entryType === 'credit_card_payment') {
-        offsettingAccountsDisplay = 'Credit Card Payment';
+        fromToDisplay = 'Credit Card Payment';
+      } else if (jl.contact_name) {
+        fromToDisplay = jl.contact_name;
       }
 
       return {
@@ -430,7 +433,7 @@ export default function AccountDetail() {
         journalEntryId: jl.entry_id,
         transactionId: jl.transaction_id,
         entryType,
-        offsettingAccounts: offsettingAccountsDisplay,
+        offsettingAccounts: fromToDisplay,
         runningBalance: parseFloat(jl.running_balance || 0)
       };
     });
@@ -539,13 +542,17 @@ export default function AccountDetail() {
     const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
 
     let combined = auditHistoryLines.map(jl => {
+      // For transfers and credit card payments, show special labels
+      // For regular transactions, show contact name
       const entryType = jl.entry_type || 'adjustment';
-      let offsettingAccountsDisplay = jl.offsetting_accounts;
+      let fromToDisplay = jl.offsetting_accounts;
 
       if (entryType === 'transfer') {
-        offsettingAccountsDisplay = 'Transfer';
+        fromToDisplay = jl.offsetting_accounts || 'Transfer';
       } else if (entryType === 'credit_card_payment') {
-        offsettingAccountsDisplay = 'Credit Card Payment';
+        fromToDisplay = 'Credit Card Payment';
+      } else if (jl.contact_name) {
+        fromToDisplay = jl.contact_name;
       }
 
       return {
@@ -560,7 +567,7 @@ export default function AccountDetail() {
         journalEntryId: jl.entry_id,
         transactionId: jl.transaction_id,
         entryType,
-        offsettingAccounts: offsettingAccountsDisplay,
+        offsettingAccounts: fromToDisplay,
         runningBalance: parseFloat(jl.running_balance || 0),
         createdAt: jl.created_at
       };
