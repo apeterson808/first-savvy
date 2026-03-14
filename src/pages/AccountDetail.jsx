@@ -209,11 +209,11 @@ export default function AccountDetail() {
   });
 
   const { data: vendorData } = useQuery({
-    queryKey: ['vendor-breakdown', id, activeProfile?.id, dateRange.startDate, dateRange.endDate],
+    queryKey: ['vendor-breakdown', id, activeProfile?.id],
     queryFn: async () => {
       return await budgetAnalytics.getVendorBreakdown(
         id,
-        { startDate: dateRange.startDate, endDate: dateRange.endDate },
+        null,
         activeProfile.id
       );
     },
