@@ -157,6 +157,42 @@ export default function AccountDetail() {
     return accountClass === 'expense' || accountClass === 'income';
   }, [account]);
 
+  const { data: relatedAccounts = [] } = useQuery({
+    queryKey: ['related-category-accounts', id, account?.parent_account_id, activeProfile?.id],
+    queryFn: async () => {
+      if (!account || !activeProfile) return [];
+      const parentId = account.parent_account_id;
+
+      if (parentId) {
+        const { data, error } = await firstsavvy.supabase
+          .from('user_chart_of_accounts')
+          .select('id, display_name, account_number, icon, color, parent_account_id')
+          .eq('profile_id', activeProfile.id)
+          .eq('parent_account_id', parentId);
+        if (error) throw error;
+        return data || [];
+      }
+
+      const { data, error } = await firstsavvy.supabase
+        .from('user_chart_of_accounts')
+        .select('id, display_name, account_number, icon, color, parent_account_id')
+        .eq('profile_id', activeProfile.id)
+        .eq('parent_account_id', id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!account && !!activeProfile?.id && isBudgetableAccount
+  });
+
+  const { data: parentAccount } = useQuery({
+    queryKey: ['parent-category-account', account?.parent_account_id],
+    queryFn: async () => {
+      if (!account?.parent_account_id) return null;
+      return await getChartAccountById(account.parent_account_id);
+    },
+    enabled: !!account?.parent_account_id && isBudgetableAccount
+  });
+
   const { data: budget } = useQuery({
     queryKey: ['budget-for-category', id, activeProfile?.id],
     queryFn: async () => {
@@ -1097,6 +1133,8 @@ export default function AccountDetail() {
             categoryAccount={account}
             isEditing={isBudgetEditMode}
             onEditChange={setIsBudgetEditMode}
+            parentAccount={parentAccount}
+            relatedAccounts={relatedAccounts}
           />
         )}
 
