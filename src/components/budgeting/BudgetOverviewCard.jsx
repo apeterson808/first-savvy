@@ -160,8 +160,8 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
           </div>
 
           <div className="flex items-start justify-between">
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 mt-1">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
                 {isEditing ? (
                   <AppearancePicker
                     color={iconColor}
@@ -170,7 +170,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
                     onIconChange={(icon) => handleIconColorUpdate(icon, iconColor)}
                   />
                 ) : (
-                  <IconComponent className="h-10 w-10" style={{ color: iconColor }} />
+                  <IconComponent className="h-5 w-5" style={{ color: iconColor }} />
                 )}
               </div>
 
