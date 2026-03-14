@@ -98,6 +98,7 @@ export function VendorAnalysisCard({ vendorData }) {
                 dx={-5}
               />
               <Tooltip
+                cursor={false}
                 content={({ active, payload, label }) => {
                   if (!active || !payload || !payload.length) return null;
                   const monthData = chartData.find(d => d.month === label);
@@ -112,8 +113,8 @@ export function VendorAnalysisCard({ vendorData }) {
                           <div key={index} className="flex items-center justify-between gap-4 mb-1">
                             <div className="flex items-center gap-2">
                               <div
-                                className="w-3 h-3 rounded-sm"
-                                style={{ backgroundColor: entry.fill }}
+                                className="w-3 h-3 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: vendorColorMap[entry.name] }}
                               />
                               <span className="text-sm">{entry.name}</span>
                             </div>
@@ -142,6 +143,16 @@ export function VendorAnalysisCard({ vendorData }) {
                   radius={index === sortedVendors.length - 1 ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                   stroke="hsl(var(--background))"
                   strokeWidth={2}
+                  onMouseEnter={(data, index, e) => {
+                    e.target.style.transform = 'scale(1.05)';
+                    e.target.style.transformOrigin = 'center bottom';
+                    e.target.style.filter = 'brightness(1.1)';
+                    e.target.style.transition = 'all 0.2s ease';
+                  }}
+                  onMouseLeave={(data, index, e) => {
+                    e.target.style.transform = 'scale(1)';
+                    e.target.style.filter = 'brightness(1)';
+                  }}
                 />
               ))}
             </BarChart>
