@@ -141,8 +141,24 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
 
   return (
     <Card>
-      <CardContent className="pt-6">
+      <CardContent className="pt-4">
         <div className="flex flex-col gap-6">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="capitalize">{formatLabel(categoryAccount?.account_class || categoryAccount?.class || '')}</span>
+            {categoryAccount?.account_type && (
+              <>
+                <span>•</span>
+                <span>{formatLabel(categoryAccount.account_type)}</span>
+              </>
+            )}
+            {categoryAccount?.account_detail && (
+              <>
+                <span>•</span>
+                <span>{formatLabel(categoryAccount.account_detail)}</span>
+              </>
+            )}
+          </div>
+
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-4">
               <div className="flex-shrink-0 mt-1">
@@ -177,22 +193,6 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
                     <span className="text-sm text-slate-500 font-mono">
                       ({categoryAccount.account_number})
                     </span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-2 text-sm text-slate-600">
-                  <span className="capitalize">{formatLabel(categoryAccount?.account_class || categoryAccount?.class || '')}</span>
-                  {categoryAccount?.account_type && (
-                    <>
-                      <span>•</span>
-                      <span>{formatLabel(categoryAccount.account_type)}</span>
-                    </>
-                  )}
-                  {categoryAccount?.account_detail && (
-                    <>
-                      <span>•</span>
-                      <span>{formatLabel(categoryAccount.account_detail)}</span>
-                    </>
                   )}
                 </div>
               </div>
