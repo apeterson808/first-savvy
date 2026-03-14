@@ -52,9 +52,8 @@ import { processStatementFile, autoMatchTransfers, mapCsvToTransactions } from '
 import { detectDuplicateTransactions } from '@/api/duplicateDetection';
 import { budgetAnalytics } from '@/api/budgetAnalytics';
 import { BudgetOverviewCard } from '@/components/budgeting/BudgetOverviewCard';
-import { SpendingTrendChart } from '@/components/budgeting/SpendingTrendChart';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
-import { VendorAnalysisCard } from '@/components/budgeting/VendorAnalysisCard';
+import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorCard';
 import { ComparisonCard } from '@/components/budgeting/ComparisonCard';
 
 export default function AccountDetail() {
@@ -1110,12 +1109,9 @@ export default function AccountDetail() {
               currentSpending={currentMonthSpending}
               performanceHistory={performanceHistory}
             />
-            <SpendingTrendChart historicalData={historicalData} budget={budget} />
+            <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
-            <VendorAnalysisCard vendorData={vendorData} />
-          </div>
+          <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
 
           <Card>
             <CardHeader className="pb-2 pt-3 px-3">
