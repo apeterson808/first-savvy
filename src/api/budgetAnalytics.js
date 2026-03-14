@@ -52,70 +52,73 @@ export const budgetAnalytics = {
   },
 
   async getVendorBreakdown(categoryAccountId, dateRange, profileId) {
-    let query = firstsavvy.supabase
-      .from('transactions')
-      .select(`
-        id,
-        amount,
-        date,
-        description,
-        type,
-        contact_id,
-        contacts (
-          id,
-          name,
-          type
-        )
-      `)
-      .eq('profile_id', profileId)
-      .eq('category_account_id', categoryAccountId)
-      .eq('status', 'posted')
-      .eq('type', 'expense');
+    const now = new Date();
+    const monthsBack = 12;
+    const monthlyData = [];
 
-    if (dateRange) {
-      const { startDate, endDate } = dateRange;
-      query = query.gte('date', startDate).lte('date', endDate);
+    for (let i = monthsBack - 1; i >= 0; i--) {
+      const targetDate = subMonths(now, i);
+      const monthStart = startOfMonth(targetDate);
+      const monthEnd = endOfMonth(targetDate);
+
+      const { data: transactions, error } = await firstsavvy.supabase
+        .from('transactions')
+        .select(`
+          id,
+          amount,
+          date,
+          description,
+          type,
+          contact_id,
+          contacts (
+            id,
+            name,
+            type
+          )
+        `)
+        .eq('profile_id', profileId)
+        .eq('category_account_id', categoryAccountId)
+        .eq('status', 'posted')
+        .eq('type', 'expense')
+        .gte('date', monthStart.toISOString())
+        .lte('date', monthEnd.toISOString())
+        .order('date', { ascending: false });
+
+      if (error) throw error;
+
+      const vendorMap = {};
+      transactions.forEach(t => {
+        if (t.contact_id && t.contacts) {
+          const vendorId = t.contact_id;
+          if (!vendorMap[vendorId]) {
+            vendorMap[vendorId] = {
+              id: vendorId,
+              name: t.contacts.name,
+              totalSpent: 0,
+              transactionCount: 0
+            };
+          }
+          vendorMap[vendorId].totalSpent += t.amount;
+          vendorMap[vendorId].transactionCount += 1;
+        }
+      });
+
+      monthlyData.push({
+        month: format(targetDate, 'MMM yyyy'),
+        monthKey: format(targetDate, 'yyyy-MM'),
+        vendors: Object.values(vendorMap),
+        totalSpent: transactions.reduce((sum, t) => sum + t.amount, 0)
+      });
     }
 
-    const { data: transactions, error } = await query.order('date', { ascending: false });
-
-    if (error) throw error;
-
-    const vendorMap = {};
-    const uncategorizedTransactions = [];
-
-    transactions.forEach(t => {
-      if (t.contact_id && t.contacts) {
-        const vendorId = t.contact_id;
-        if (!vendorMap[vendorId]) {
-          vendorMap[vendorId] = {
-            id: vendorId,
-            name: t.contacts.name,
-            totalSpent: 0,
-            transactionCount: 0,
-            transactions: []
-          };
-        }
-        vendorMap[vendorId].totalSpent += t.amount;
-        vendorMap[vendorId].transactionCount += 1;
-        vendorMap[vendorId].transactions.push(t);
-      } else {
-        uncategorizedTransactions.push(t);
-      }
+    const allVendors = new Set();
+    monthlyData.forEach(month => {
+      month.vendors.forEach(vendor => allVendors.add(vendor.name));
     });
 
-    const vendors = Object.values(vendorMap).sort((a, b) => b.totalSpent - a.totalSpent);
-
-    const uncategorizedTotal = uncategorizedTransactions.reduce((sum, t) => sum + t.amount, 0);
-
     return {
-      vendors,
-      uncategorized: {
-        totalSpent: uncategorizedTotal,
-        transactionCount: uncategorizedTransactions.length,
-        transactions: uncategorizedTransactions
-      },
-      totalSpent: transactions.reduce((sum, t) => sum + t.amount, 0)
+      monthlyData,
+      vendors: Array.from(allVendors)
     };
   },
 
