@@ -459,13 +459,17 @@ export default function AccountDetail() {
     });
 
     // All items are posted with pre-calculated running balance from database
-    // Use natural accounting presentation - no swapping needed as it's intuitive:
-    // - For credit cards: debits = payments (money in), credits = purchases (money out)
+    // Use natural accounting presentation:
+    // - For expenses: debits = expenses (money out), credits = refunds (money in)
     // - For income: credits = earnings (money in), debits = refunds (money out)
+    // - For assets: debits = increases (money in), credits = decreases (money out)
+    // - For liabilities/credit cards: debits = payments (money in), credits = purchases (money out)
+    const isExpenseAccount = accountClass === 'expense';
+
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: activity.debitAmount || 0,
-      calculatedCredit: activity.creditAmount || 0
+      calculatedDebit: isExpenseAccount ? activity.creditAmount || 0 : activity.debitAmount || 0,
+      calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
     // Recalculate running balance in chronological order
@@ -578,10 +582,12 @@ export default function AccountDetail() {
     });
 
     // Use natural accounting presentation for audit history
+    const isExpenseAccount = accountClass === 'expense';
+
     let activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: activity.debitAmount || 0,
-      calculatedCredit: activity.creditAmount || 0
+      calculatedDebit: isExpenseAccount ? activity.creditAmount || 0 : activity.debitAmount || 0,
+      calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
@@ -688,7 +694,7 @@ export default function AccountDetail() {
 
   const handleExport = () => {
     const csvContent = [
-      ['Date', 'Description', 'Reference', 'Offsetting Account', 'Money In', 'Money Out', 'Balance'].join(','),
+      ['Date', 'Description', 'Reference', 'From/To', 'Money In', 'Money Out', 'Balance'].join(','),
       ...allActivity.map(activity => [
         format(new Date(activity.displayDate), 'yyyy-MM-dd'),
         `"${activity.displayDescription}"`,
@@ -1215,7 +1221,7 @@ export default function AccountDetail() {
                         <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                         <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                         <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                        <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'From/To'}</TableHead>
                         <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                         <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                         <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
@@ -1343,7 +1349,7 @@ export default function AccountDetail() {
                         <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                         <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
                         <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                        <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
+                        <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                         <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                         <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                         <TableHead className="w-[40px] py-1.5"></TableHead>
@@ -1927,7 +1933,7 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                          <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
@@ -2041,7 +2047,7 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'Offsetting Account'}</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'From/To'}</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
@@ -2160,7 +2166,7 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                          <TableHead className="py-1.5 text-[11px] font-semibold">Offsetting Account</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
