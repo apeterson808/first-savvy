@@ -249,16 +249,16 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData }) {
 
         <div className="grid grid-cols-3 gap-3 pt-1">
           <div className="text-center">
+            <p className="text-xs text-muted-foreground">Lowest</p>
+            <p className="text-base font-semibold text-green-600 tabular-nums">{formatCurrency(summary?.min || 0)}</p>
+          </div>
+          <div className="text-center">
             <p className="text-xs text-muted-foreground">Average</p>
             <p className="text-base font-semibold tabular-nums">{formatCurrency(summary?.average || 0)}</p>
           </div>
           <div className="text-center">
             <p className="text-xs text-muted-foreground">Highest</p>
             <p className="text-base font-semibold text-red-600 tabular-nums">{formatCurrency(summary?.max || 0)}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">Lowest</p>
-            <p className="text-base font-semibold text-green-600 tabular-nums">{formatCurrency(summary?.min || 0)}</p>
           </div>
         </div>
 

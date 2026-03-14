@@ -28,7 +28,6 @@ import { SpendingTrendChart } from '@/components/budgeting/SpendingTrendChart';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { VendorAnalysisCard } from '@/components/budgeting/VendorAnalysisCard';
 import { ForecastingCard } from '@/components/budgeting/ForecastingCard';
-import { ComparisonCard } from '@/components/budgeting/ComparisonCard';
 import { TransactionPatternsCard } from '@/components/budgeting/TransactionPatternsCard';
 import { startOfMonth, endOfMonth } from 'date-fns';
 
@@ -233,19 +232,17 @@ export default function ExpenseCategoryDetail() {
                 budget={budget}
                 currentSpending={currentMonthSpending}
                 performanceHistory={performanceHistory}
+                comparativeData={comparativeData}
+                historicalData={historicalData}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SpendingTrendChart historicalData={historicalData} budget={budget} />
-            <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
-          </div>
+          <SpendingTrendChart historicalData={historicalData} budget={budget} />
         </TabsContent>
 
         <TabsContent value="trends" className="space-y-6 mt-6">
           <SpendingTrendChart historicalData={historicalData} budget={budget} />
-          <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
         </TabsContent>
 
         <TabsContent value="vendors" className="space-y-6 mt-6">
@@ -259,6 +256,8 @@ export default function ExpenseCategoryDetail() {
               budget={budget}
               currentSpending={currentMonthSpending}
               performanceHistory={performanceHistory}
+              comparativeData={comparativeData}
+              historicalData={historicalData}
             />
           </div>
         </TabsContent>

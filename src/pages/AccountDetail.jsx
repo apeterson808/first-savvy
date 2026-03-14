@@ -54,7 +54,6 @@ import { budgetAnalytics } from '@/api/budgetAnalytics';
 import { BudgetOverviewCard } from '@/components/budgeting/BudgetOverviewCard';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorCard';
-import { ComparisonCard } from '@/components/budgeting/ComparisonCard';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -1108,10 +1107,11 @@ export default function AccountDetail() {
               budget={budget}
               currentSpending={currentMonthSpending}
               performanceHistory={performanceHistory}
+              comparativeData={comparativeData}
+              historicalData={historicalData}
             />
             <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>
-          <ComparisonCard comparativeData={comparativeData} historicalData={historicalData} />
 
           <Card>
             <CardHeader className="pb-2 pt-3 px-3">

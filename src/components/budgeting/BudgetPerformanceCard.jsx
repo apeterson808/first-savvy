@@ -2,11 +2,158 @@ import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Lightbulb } from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, compact = false }) {
+function BudgetRecommendation({ budgetAmount, historicalData, comparativeData }) {
+  if (!budgetAmount || !historicalData?.summary) return null;
+
+  const { average, max, min } = historicalData.summary;
+  const recentMonths = historicalData.monthlyData?.slice(-6) || [];
+  const recentAvg = recentMonths.length > 0
+    ? recentMonths.reduce((sum, m) => sum + m.totalSpent, 0) / recentMonths.length
+    : average;
+
+  const diff = budgetAmount - recentAvg;
+  const diffPercent = budgetAmount > 0 ? (diff / budgetAmount) * 100 : 0;
+
+  const yoyChange = comparativeData?.yearOverYearChange || 0;
+
+  let recommendation = null;
+  let tone = 'blue';
+
+  if (diffPercent < -10) {
+    const suggested = Math.ceil(recentAvg * 1.1 / 10) * 10;
+    recommendation = `Your 6-month average (${formatCurrency(recentAvg)}) consistently exceeds your budget. Consider raising it to around ${formatCurrency(suggested)} to better reflect actual spending.`;
+    tone = 'amber';
+  } else if (diffPercent > 40) {
+    const suggested = Math.ceil(recentAvg * 1.15 / 10) * 10;
+    recommendation = `You're regularly spending well below budget. You could lower it to around ${formatCurrency(suggested)} and redirect the surplus elsewhere.`;
+    tone = 'green';
+  } else if (yoyChange > 25) {
+    recommendation = `Year-over-year spending is up ${yoyChange.toFixed(0)}%. If this trend continues, a budget increase may be needed soon.`;
+    tone = 'amber';
+  } else if (yoyChange < -25) {
+    recommendation = `Year-over-year spending is down ${Math.abs(yoyChange).toFixed(0)}%. Your current budget may be higher than necessary.`;
+    tone = 'green';
+  } else {
+    recommendation = `Your budget of ${formatCurrency(budgetAmount)} aligns well with your recent spending average of ${formatCurrency(recentAvg)}. No changes recommended.`;
+    tone = 'blue';
+  }
+
+  const toneStyles = {
+    amber: {
+      bg: 'bg-amber-50 dark:bg-amber-950/20',
+      border: 'border-amber-200 dark:border-amber-800',
+      icon: 'text-amber-600',
+      title: 'text-amber-900 dark:text-amber-100',
+      text: 'text-amber-700 dark:text-amber-300',
+    },
+    green: {
+      bg: 'bg-emerald-50 dark:bg-emerald-950/20',
+      border: 'border-emerald-200 dark:border-emerald-800',
+      icon: 'text-emerald-600',
+      title: 'text-emerald-900 dark:text-emerald-100',
+      text: 'text-emerald-700 dark:text-emerald-300',
+    },
+    blue: {
+      bg: 'bg-blue-50 dark:bg-blue-950/20',
+      border: 'border-blue-200 dark:border-blue-800',
+      icon: 'text-blue-600',
+      title: 'text-blue-900 dark:text-blue-100',
+      text: 'text-blue-700 dark:text-blue-300',
+    },
+  };
+
+  const s = toneStyles[tone];
+
+  return (
+    <div className={`flex items-start gap-2 p-3 ${s.bg} border ${s.border} rounded-lg`}>
+      <Lightbulb className={`h-4 w-4 ${s.icon} mt-0.5 flex-shrink-0`} />
+      <div className="space-y-1">
+        <p className={`text-sm font-medium ${s.title}`}>Budget Recommendation</p>
+        <p className={`text-xs ${s.text}`}>{recommendation}</p>
+      </div>
+    </div>
+  );
+}
+
+function ComparisonSection({ comparativeData, historicalData }) {
+  if (!comparativeData) return null;
+
+  const {
+    currentMonth,
+    lastYearSameMonth,
+    yearOverYearChange,
+    percentOfTotalExpenses,
+  } = comparativeData;
+
+  const yoyChangeAbs = Math.abs(yearOverYearChange);
+  const isIncrease = yearOverYearChange > 0;
+
+  const recentMonths = historicalData?.monthlyData?.slice(-6) || [];
+  const avgRecentSpending = recentMonths.length > 0
+    ? recentMonths.reduce((sum, m) => sum + m.totalSpent, 0) / recentMonths.length
+    : 0;
+  const varianceFromAvg = currentMonth - avgRecentSpending;
+  const variancePercent = avgRecentSpending > 0 ? (varianceFromAvg / avgRecentSpending) * 100 : 0;
+
+  return (
+    <div className="pt-3 border-t space-y-3">
+      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Comparative Analysis</p>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <p className="text-xs text-muted-foreground mb-0.5">This Month</p>
+          <p className="text-sm font-bold">{formatCurrency(currentMonth)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-0.5">Last Year</p>
+          <p className="text-sm font-bold">{formatCurrency(lastYearSameMonth)}</p>
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground mb-0.5">6-Mo Avg</p>
+          <p className="text-sm font-bold">{formatCurrency(avgRecentSpending)}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-1 p-2 bg-muted rounded-lg">
+          {isIncrease ? (
+            <TrendingUp className="h-4 w-4 text-red-600 flex-shrink-0" />
+          ) : yearOverYearChange < 0 ? (
+            <TrendingDown className="h-4 w-4 text-green-600 flex-shrink-0" />
+          ) : null}
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground">YoY Change</p>
+            <p className={`text-xs font-semibold ${isIncrease ? 'text-red-600' : yearOverYearChange < 0 ? 'text-green-600' : ''}`}>
+              {isIncrease ? '+' : ''}{yoyChangeAbs.toFixed(1)}%
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-1 p-2 bg-muted rounded-lg">
+          <div className="min-w-0">
+            <p className="text-[10px] text-muted-foreground">% of Total Expenses</p>
+            <p className="text-xs font-semibold">{percentOfTotalExpenses.toFixed(1)}%</p>
+          </div>
+        </div>
+        {recentMonths.length > 0 && (
+          <div className="flex items-center gap-2 flex-1 p-2 bg-muted rounded-lg">
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground">vs 6-Mo Avg</p>
+              <p className={`text-xs font-semibold ${varianceFromAvg > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                {varianceFromAvg > 0 ? '+' : ''}{variancePercent.toFixed(1)}%
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, compact = false }) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -159,6 +306,20 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
                 You're {formatCurrency(spent - effectiveBudget)} over budget with {daysInMonth - daysElapsed} days remaining
               </p>
             </div>
+          </div>
+        )}
+
+        {!compact && (
+          <ComparisonSection comparativeData={comparativeData} historicalData={historicalData} />
+        )}
+
+        {!compact && budgetAmount > 0 && historicalData?.summary && (
+          <div className="pt-3 border-t">
+            <BudgetRecommendation
+              budgetAmount={budgetAmount}
+              historicalData={historicalData}
+              comparativeData={comparativeData}
+            />
           </div>
         )}
       </ContentWrapper>
