@@ -63,6 +63,7 @@ export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isBudgetEditMode, setIsBudgetEditMode] = useState(false);
   const [datePreset, setDatePreset] = useState('thisMonth');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
@@ -1013,17 +1014,49 @@ export default function AccountDetail() {
               <ArrowLeft className="w-3.5 h-3.5" />
               Back
             </Button>
-            {isBudgetableAccount && !isEditMode && (
+            {isBudgetableAccount && !isEditMode && !isBudgetEditMode && (
               <DatePresetDropdown
                 value={datePreset}
                 onValueChange={setDatePreset}
                 triggerClassName="w-44 h-9"
               />
             )}
+            {isBudgetableAccount && !isEditMode && isBudgetEditMode && (
+              <div className="flex items-center gap-2 ml-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsBudgetEditMode(false)}
+                  className="gap-1.5 h-8"
+                >
+                  <X className="w-3.5 h-3.5" />
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => setIsBudgetEditMode(false)}
+                  className="gap-1.5 h-8"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Done
+                </Button>
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-1.5">
             {!isEditMode ? (
               <>
+                {isBudgetableAccount && !isBudgetEditMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsBudgetEditMode(true)}
+                    className="gap-1.5 h-8 px-2.5"
+                  >
+                    <Edit2 className="w-3.5 h-3.5" />
+                    Edit Budget
+                  </Button>
+                )}
                 <Button
                   variant="outline"
                   size="sm"
@@ -1076,7 +1109,12 @@ export default function AccountDetail() {
         </div>
 
         {isBudgetableAccount && !isEditMode && (
-          <BudgetOverviewCard budget={budget} categoryAccount={account} />
+          <BudgetOverviewCard
+            budget={budget}
+            categoryAccount={account}
+            isEditing={isBudgetEditMode}
+            onEditChange={setIsBudgetEditMode}
+          />
         )}
 
         {isBudgetableAccount && !isEditMode ? (

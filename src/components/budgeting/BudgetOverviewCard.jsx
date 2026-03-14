@@ -27,8 +27,7 @@ const formatLabel = (str) => {
     .join(' ');
 };
 
-export function BudgetOverviewCard({ budget, categoryAccount }) {
-  const [isEditing, setIsEditing] = useState(false);
+export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false, onEditChange }) {
   const [editedBudget, setEditedBudget] = useState({
     allocated_amount: budget?.allocated_amount || 0,
     cadence: budget?.cadence || 'monthly',
@@ -86,7 +85,9 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
     setIsActive(budget?.is_active ?? true);
     setRolloverEnabled(budget?.rollover_enabled ?? false);
     setAccumulatedRollover(budget?.accumulated_rollover || 0);
-    setIsEditing(false);
+    if (onEditChange) {
+      onEditChange(false);
+    }
   };
 
   const handleQuickUpdate = (updates) => {
@@ -198,75 +199,55 @@ export function BudgetOverviewCard({ budget, categoryAccount }) {
             </div>
 
             <div className="flex items-center gap-4">
-              {isEditing ? (
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={handleCancel}>
-                    <X className="h-4 w-4 mr-2" />
-                    Cancel
-                  </Button>
-                  <Button size="sm" onClick={() => setIsEditing(false)}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Done
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>
-                  <Edit2 className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              )}
-
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
-                    {isActive ? 'Active' : 'Inactive'}
-                  </Label>
-                  <Switch
-                    id="is_active_view"
-                    checked={isActive}
-                    onCheckedChange={(checked) => {
-                      setIsActive(checked);
-                      handleQuickUpdate({ is_active: checked });
-                    }}
-                  />
-                </div>
-
-                <TooltipProvider>
-                  <div className="flex items-center gap-2">
-                    <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
-                      Rollover
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      <CalculatorAmountInput
-                        id="accumulated_rollover"
-                        value={accumulatedRollover}
-                        onChange={(value) => setAccumulatedRollover(value)}
-                        onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                        placeholder="0.00"
-                        className="w-24 h-8 text-sm"
-                        disabled={!rolloverEnabled}
-                      />
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div>
-                            <Switch
-                              id="rollover_enabled_view"
-                              checked={rolloverEnabled}
-                              onCheckedChange={(checked) => {
-                                setRolloverEnabled(checked);
-                                handleQuickUpdate({ rollover_enabled: checked });
-                              }}
-                            />
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" className="max-w-xs">
-                          <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                  </div>
-                </TooltipProvider>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                  {isActive ? 'Active' : 'Inactive'}
+                </Label>
+                <Switch
+                  id="is_active_view"
+                  checked={isActive}
+                  onCheckedChange={(checked) => {
+                    setIsActive(checked);
+                    handleQuickUpdate({ is_active: checked });
+                  }}
+                />
               </div>
+
+              <TooltipProvider>
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                    Rollover
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <CalculatorAmountInput
+                      id="accumulated_rollover"
+                      value={accumulatedRollover}
+                      onChange={(value) => setAccumulatedRollover(value)}
+                      onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                      placeholder="0.00"
+                      className="w-24 h-8 text-sm"
+                      disabled={!rolloverEnabled}
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Switch
+                            id="rollover_enabled_view"
+                            checked={rolloverEnabled}
+                            onCheckedChange={(checked) => {
+                              setRolloverEnabled(checked);
+                              handleQuickUpdate({ rollover_enabled: checked });
+                            }}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </TooltipProvider>
 
               {budget?.updated_at && (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
