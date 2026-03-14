@@ -411,7 +411,7 @@ export default function AccountDetail() {
       // For transfers and credit card payments, show special labels
       // For regular transactions, show contact name
       const entryType = jl.entry_type || 'adjustment';
-      let fromToDisplay = jl.offsetting_accounts;
+      let fromToDisplay = '';
 
       if (entryType === 'transfer') {
         fromToDisplay = jl.offsetting_accounts || 'Transfer';
@@ -545,7 +545,7 @@ export default function AccountDetail() {
       // For transfers and credit card payments, show special labels
       // For regular transactions, show contact name
       const entryType = jl.entry_type || 'adjustment';
-      let fromToDisplay = jl.offsetting_accounts;
+      let fromToDisplay = '';
 
       if (entryType === 'transfer') {
         fromToDisplay = jl.offsetting_accounts || 'Transfer';
