@@ -69,6 +69,7 @@ export default function AccountDetail() {
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const [registerTab, setRegisterTab] = useState('register');
+  const [activeTab, setActiveTab] = useState('register');
   const [budgetActiveTab, setBudgetActiveTab] = useState('trends');
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -314,7 +315,7 @@ export default function AccountDetail() {
       const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
       return lastPage.hasMore ? loadedCount : undefined;
     },
-    enabled: !!id && !!activeProfile && (registerTab === 'audit' || budgetActiveTab === 'audit')
+    enabled: !!id && !!activeProfile && (registerTab === 'audit' || activeTab === 'audit' || budgetActiveTab === 'audit')
   });
 
   const auditHistoryLines = useMemo(() => {
@@ -536,7 +537,7 @@ export default function AccountDetail() {
   }, [journalLines, account, searchQuery, dateRange]);
 
   const { allAuditActivity, auditAnalytics } = useMemo(() => {
-    if (registerTab !== 'audit' && budgetActiveTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
+    if (registerTab !== 'audit' && activeTab !== 'audit' && budgetActiveTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
 
     const accountClass = account?.account_class || account?.class || 'asset';
     const isDebitNormal = accountClass === 'asset' || accountClass === 'expense';
@@ -610,7 +611,7 @@ export default function AccountDetail() {
       allAuditActivity: activitiesWithBalance,
       auditAnalytics: analyticsData
     };
-  }, [auditHistoryLines, account, searchQuery, registerTab, budgetActiveTab]);
+  }, [auditHistoryLines, account, searchQuery, registerTab, activeTab, budgetActiveTab]);
 
   // Infinite scroll observer for register
   const loadMoreRef = useRef();
@@ -2012,7 +2013,7 @@ export default function AccountDetail() {
                 )}
               </div>
             ) : (
-              <Tabs value={registerTab} onValueChange={setActiveTab} className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="w-full justify-start mb-3">
                   <TabsTrigger value="register" className="flex items-center gap-1.5">
                     <FileText className="w-3.5 h-3.5" />
