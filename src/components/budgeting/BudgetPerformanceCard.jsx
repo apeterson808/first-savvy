@@ -190,7 +190,7 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
           <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
         </div>
         <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : isOverPace ? 'text-amber-600' : 'text-slate-500'}`}>
-          {percentRemaining.toFixed(0)}% remaining
+          {formatCurrency(Math.max(0, remaining))} ({percentRemaining.toFixed(0)}%) remaining
         </span>
       </div>
       <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
@@ -265,6 +265,10 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const daysElapsed = differenceInDays(now, monthStart) + 1;
   const percentOfMonthElapsed = (daysElapsed / daysInMonth) * 100;
 
+  const categoryData = budget?.chartAccount;
+  const ParentIcon = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Circle;
+  const parentIconColor = categoryData?.color || '#94a3b8';
+
   const budgetAmount = budget?.allocated_amount || 0;
   const accumulatedRollover = budget?.accumulated_rollover || 0;
   const isRolloverEnabled = budget?.rollover_enabled || false;
@@ -294,11 +298,14 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
       <ContentWrapper {...contentProps}>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
-              {parentName || 'Budget Progress'}
-            </span>
+            <div className="flex items-center gap-1.5">
+              <ParentIcon className="w-4 h-4 flex-shrink-0" style={{ color: parentIconColor }} />
+              <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
+                {parentName || 'Budget Progress'}
+              </span>
+            </div>
             <span className={`text-xs tabular-nums ${percentUsed > 100 ? 'text-red-600 font-semibold' : percentUsed > 90 ? 'text-amber-600' : 'text-slate-500'}`}>
-              {Math.max(0, 100 - Math.round(percentUsed))}% remaining
+              {formatCurrency(Math.max(0, effectiveBudget - spent))} ({Math.max(0, 100 - Math.round(percentUsed))}%) remaining
             </span>
           </div>
           <div className="relative">
