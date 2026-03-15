@@ -1543,22 +1543,6 @@ export default function AccountDetail() {
                     )}
                   </div>
 
-                  {/* Line 2: Class, Account Type, Account Detail */}
-                  <div className="flex items-center gap-2 text-sm text-slate-600">
-                    <span className="capitalize">{formatLabel(account.account_class || account.class || '')}</span>
-                    {account.account_type && (
-                      <>
-                        <span>•</span>
-                        <span>{formatLabel(account.account_type)}</span>
-                      </>
-                    )}
-                    {account.account_detail && (
-                      <>
-                        <span>•</span>
-                        <span>{formatLabel(account.account_detail)}</span>
-                      </>
-                    )}
-                  </div>
                 </div>
                 {(account.entityType === 'Asset' || account.entityType === 'Liability' || account.entityType === 'Equity') && (
                   <div className="text-right">
