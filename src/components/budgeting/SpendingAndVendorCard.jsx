@@ -63,13 +63,14 @@ function CustomTooltip({ active, payload, vendorColorMap, budgetAmount }) {
 
   const vendorEntries = payload.filter(p => p.dataKey !== 'totalSpent' && p.dataKey !== 'stackTotal');
   const total = vendorEntries.reduce((sum, p) => sum + (p.value || 0), 0);
+  const displayTotal = data.totalSpent || total;
 
   return (
     <div className="bg-popover border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
       <p className="font-semibold text-sm mb-2">{data.fullMonth}</p>
 
-      {vendorEntries.length > 0 ? (
-        <div className="space-y-1">
+      {vendorEntries.length > 0 && (
+        <div className="space-y-1 mb-2">
           {vendorEntries
             .filter(e => e.value > 0)
             .sort((a, b) => b.value - a.value)
@@ -83,11 +84,11 @@ function CustomTooltip({ active, payload, vendorColorMap, budgetAmount }) {
               </div>
             ))}
         </div>
-      ) : null}
+      )}
 
-      <div className="flex items-center justify-between gap-3 mt-2 pt-2 border-t">
+      <div className="flex items-center justify-between gap-3 pt-2 border-t">
         <span className="text-xs font-semibold">Total</span>
-        <span className="text-xs font-semibold">{formatCurrency(data.totalSpent || total)}</span>
+        <span className="text-xs font-semibold">{formatCurrency(displayTotal)}</span>
       </div>
 
       {budgetAmount > 0 && (
@@ -221,26 +222,33 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData }) {
                 />
               )}
 
-              {sortedVendors.map((name, i) => (
+              {sortedVendors.length > 0 ? (
+                <>
+                  {sortedVendors.map((name, i) => (
+                    <Bar
+                      key={name}
+                      dataKey={name}
+                      stackId="vendors"
+                      fill={`url(#vendorGrad-${i})`}
+                      radius={i === sortedVendors.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
+                      opacity={hoveredVendor ? (hoveredVendor === name ? 1 : 0.15) : 1}
+                      style={{ transition: 'opacity 150ms ease' }}
+                    />
+                  ))}
+                  <Line
+                    type="monotone"
+                    dataKey="stackTotal"
+                    stroke="#f59e0b"
+                    strokeWidth={2}
+                    dot={{ r: 3, fill: 'hsl(var(--background))', stroke: '#f59e0b', strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: '#f59e0b' }}
+                  />
+                </>
+              ) : (
                 <Bar
-                  key={name}
-                  dataKey={name}
-                  stackId="vendors"
-                  fill={`url(#vendorGrad-${i})`}
-                  radius={i === sortedVendors.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                  opacity={hoveredVendor ? (hoveredVendor === name ? 1 : 0.15) : 1}
-                  style={{ transition: 'opacity 150ms ease' }}
-                />
-              ))}
-
-              {sortedVendors.length > 0 && (
-                <Line
-                  type="monotone"
-                  dataKey="stackTotal"
-                  stroke="#f59e0b"
-                  strokeWidth={2}
-                  dot={{ r: 3, fill: 'hsl(var(--background))', stroke: '#f59e0b', strokeWidth: 2 }}
-                  activeDot={{ r: 5, fill: '#f59e0b' }}
+                  dataKey="totalSpent"
+                  fill="#3b82f6"
+                  radius={[3, 3, 0, 0]}
                 />
               )}
             </ComposedChart>
