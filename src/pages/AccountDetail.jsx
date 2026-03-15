@@ -301,6 +301,25 @@ export default function AccountDetail() {
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount
   });
 
+  const { data: childAnalytics } = useQuery({
+    queryKey: ['child-analytics', id, activeProfile?.id, childAccounts.map(c => c.id).join(',')],
+    queryFn: async () => {
+      if (!childAccounts.length) return {};
+      const results = await Promise.all(
+        childAccounts.map(async (child) => {
+          const [historical, performance, comparative] = await Promise.all([
+            budgetAnalytics.getHistoricalSpending(child.id, 12, activeProfile.id),
+            budgetAnalytics.getBudgetPerformanceHistory(child.id, 12, activeProfile.id),
+            budgetAnalytics.getComparativeAnalysis(child.id, activeProfile.id),
+          ]);
+          return { id: child.id, historical, performance, comparative };
+        })
+      );
+      return Object.fromEntries(results.map(r => [r.id, { historical: r.historical, performance: r.performance, comparative: r.comparative }]));
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount && childAccounts.length > 0
+  });
+
   // NOTE: Pending transactions are NOT shown in the register (QuickBooks behavior)
   // Transactions only appear in the register after they've been posted to journal entries
 
@@ -1183,6 +1202,7 @@ export default function AccountDetail() {
               childAccounts={childAccounts}
               childBudgets={childBudgets}
               childSpending={childSpending}
+              childAnalytics={childAnalytics}
               parentName={account?.name || account?.display_name}
               account={account}
             />

@@ -177,6 +177,7 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
   const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
 
   const hoverData = {
+    id: child.id,
     name: child.display_name,
     icon: child.icon,
     color: child.color,
@@ -249,7 +250,7 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
   );
 }
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, compact = false, parentName = null, account = null }) {
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, childAnalytics, compact = false, parentName = null, account = null }) {
   const [hoveredChild, setHoveredChild] = useState(null);
 
   const now = new Date();
@@ -277,9 +278,18 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
 
   const adherenceRate = performanceHistory?.adherenceRate || 0;
 
+  const hoveredChildAnalytics = hoveredChild?.id && childAnalytics?.[hoveredChild.id];
+
   const activeExpected = hoveredChild ? hoveredChild.expectedSpending : expectedSpending;
   const activeVariance = hoveredChild ? hoveredChild.spendingPace : spendingPace;
   const activeIsOverPace = hoveredChild ? hoveredChild.isOverPace : isOverPace;
+  const activePerformanceHistory = hoveredChildAnalytics?.performance || performanceHistory;
+  const activeComparativeData = hoveredChildAnalytics?.comparative || comparativeData;
+  const activeHistoricalData = hoveredChildAnalytics?.historical || historicalData;
+  const activeBudgetAmount = hoveredChild
+    ? (childBudgets?.find(b => b.chart_account_id === hoveredChild.id)?.allocated_amount || 0)
+    : budgetAmount;
+  const activeAdherenceRate = activePerformanceHistory?.adherenceRate || 0;
 
   const Wrapper = compact ? 'div' : Card;
   const wrapperProps = compact ? { className: 'border rounded-lg h-full flex flex-col' } : { className: 'h-full flex flex-col' };
@@ -360,20 +370,22 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
           </div>
         </div>
 
-        {performanceHistory && (
+        {activePerformanceHistory && (
           <div className="pt-2 border-t">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium">Historical Performance</span>
+                <span className="text-sm font-medium">
+                  Historical Performance{hoveredChild ? ` · ${hoveredChild.name}` : ''}
+                </span>
                 <p className="text-[10px] text-muted-foreground">
-                  {Math.round((adherenceRate / 100) * 12)} of 12 months under budget
+                  {Math.round((activeAdherenceRate / 100) * 12)} of 12 months under budget
                 </p>
               </div>
-              <Badge variant={adherenceRate >= 75 ? 'default' : adherenceRate >= 50 ? 'secondary' : 'destructive'}>
-                {adherenceRate.toFixed(0)}%
+              <Badge variant={activeAdherenceRate >= 75 ? 'default' : activeAdherenceRate >= 50 ? 'secondary' : 'destructive'}>
+                {activeAdherenceRate.toFixed(0)}%
               </Badge>
             </div>
-            <Progress value={adherenceRate} className="h-2 mt-2" />
+            <Progress value={activeAdherenceRate} className="h-2 mt-2" />
           </div>
         )}
 
@@ -402,15 +414,22 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
         )}
 
         {!compact && (
-          <ComparisonSection comparativeData={comparativeData} historicalData={historicalData} />
+          <div>
+            {hoveredChild && (
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide pb-1">
+                Showing data for {hoveredChild.name}
+              </p>
+            )}
+            <ComparisonSection comparativeData={activeComparativeData} historicalData={activeHistoricalData} />
+          </div>
         )}
 
-        {!compact && budgetAmount > 0 && historicalData?.summary && (
+        {!compact && activeBudgetAmount > 0 && activeHistoricalData?.summary && (
           <div className="pt-3 border-t">
             <BudgetRecommendation
-              budgetAmount={budgetAmount}
-              historicalData={historicalData}
-              comparativeData={comparativeData}
+              budgetAmount={activeBudgetAmount}
+              historicalData={activeHistoricalData}
+              comparativeData={activeComparativeData}
             />
           </div>
         )}
