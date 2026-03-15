@@ -26,6 +26,104 @@ const formatLabel = (str) => {
     .join(' ');
 };
 
+function ChildBudgetRow({ child, childBudget, childAmount }) {
+  const [isActive, setIsActive] = useState(childBudget?.is_active ?? true);
+  const [rolloverEnabled, setRolloverEnabled] = useState(childBudget?.rollover_enabled ?? false);
+  const [accumulatedRollover, setAccumulatedRollover] = useState(childBudget?.accumulated_rollover || 0);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    setIsActive(childBudget?.is_active ?? true);
+    setRolloverEnabled(childBudget?.rollover_enabled ?? false);
+    setAccumulatedRollover(childBudget?.accumulated_rollover || 0);
+  }, [childBudget?.is_active, childBudget?.rollover_enabled, childBudget?.accumulated_rollover]);
+
+  const updateMutation = useMutation({
+    mutationFn: async (updates) => {
+      if (!childBudget?.id) return;
+      return await firstsavvy.entities.Budget.update(childBudget.id, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['budgets']);
+      queryClient.invalidateQueries(['child-budgets']);
+      toast.success('Updated');
+    },
+    onError: (error) => toast.error(`Failed: ${error.message}`)
+  });
+
+  const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
+  const iconColor = child.color || '#94a3b8';
+
+  if (!childBudget) return null;
+
+  return (
+    <TooltipProvider>
+      <div className="flex items-center justify-between gap-4 pl-8">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="flex-shrink-0 w-4">
+            <ChildIcon className="h-4 w-4" style={{ color: iconColor }} />
+          </div>
+          <span className="text-base font-medium text-slate-700 whitespace-nowrap">{child.display_name}</span>
+        </div>
+
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <span className="text-base font-semibold text-slate-700 whitespace-nowrap tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+            {childAmount !== null
+              ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
+              : <span className="text-sm font-normal text-slate-400">—</span>
+            }
+          </span>
+
+          <div className="flex items-center gap-2">
+            <Label htmlFor={`is_active_child_${child.id}`} className="text-xs text-muted-foreground whitespace-nowrap">
+              {isActive ? 'Active' : 'Inactive'}
+            </Label>
+            <Switch
+              id={`is_active_child_${child.id}`}
+              checked={isActive}
+              onCheckedChange={(checked) => {
+                setIsActive(checked);
+                updateMutation.mutate({ is_active: checked });
+              }}
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Label htmlFor={`rollover_child_${child.id}`} className="text-xs text-muted-foreground whitespace-nowrap">
+              Rollover
+            </Label>
+            <CalculatorAmountInput
+              value={accumulatedRollover}
+              onChange={(value) => setAccumulatedRollover(value)}
+              onBlur={() => updateMutation.mutate({ accumulated_rollover: accumulatedRollover })}
+              placeholder="0.00"
+              className="w-16 h-6 text-xs"
+              disabled={!rolloverEnabled}
+            />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <Switch
+                    id={`rollover_child_${child.id}`}
+                    checked={rolloverEnabled}
+                    onCheckedChange={(checked) => {
+                      setRolloverEnabled(checked);
+                      updateMutation.mutate({ rollover_enabled: checked });
+                    }}
+                  />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </div>
+      </div>
+    </TooltipProvider>
+  );
+}
+
 export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = [], childBudgets = [], isEditing = false, onEditChange }) {
   const [editedBudget, setEditedBudget] = useState({
     allocated_amount: budget?.allocated_amount || 0,
@@ -141,9 +239,9 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
   return (
     <Card>
       <CardContent className="pt-5 pb-5">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0" style={{ display: 'grid', gridTemplateColumns: '1fr max-content', alignItems: 'center', gap: '4px 16px' }}>
-            <div className="flex items-center gap-3">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
               <div className="flex-shrink-0 w-5">
                 {isEditing ? (
                   <AppearancePicker
@@ -171,92 +269,90 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
               )}
             </div>
 
-            {isEditing ? (
-              <CalculatorAmountInput
-                value={amounts.monthly}
-                onChange={(value) => handleAmountUpdate('monthly', value)}
-                placeholder="0.00"
-                className="w-28 h-8 text-lg font-semibold text-center"
-              />
-            ) : (
-              <span className="text-lg font-semibold text-slate-700 whitespace-nowrap text-right tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
-              </span>
-            )}
+            <div className="flex items-center gap-4 flex-shrink-0">
+              {isEditing ? (
+                <CalculatorAmountInput
+                  value={amounts.monthly}
+                  onChange={(value) => handleAmountUpdate('monthly', value)}
+                  placeholder="0.00"
+                  className="w-28 h-8 text-lg font-semibold text-center"
+                />
+              ) : (
+                <span className="text-lg font-semibold text-slate-700 whitespace-nowrap text-right tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
+                  {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
+                </span>
+              )}
 
-            {childAccounts.map((child) => {
-              const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
-              const childColor = child.color || '#94a3b8';
-              const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
-              const childAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly') : null;
-              return (
-                <>
-                  <div key={child.id} className="flex items-center gap-3 pl-8">
-                    <div className="flex-shrink-0 w-5">
-                      <ChildIcon className="h-5 w-5" style={{ color: childColor }} />
-                    </div>
-                    <span className="text-xl font-semibold whitespace-nowrap">{child.display_name}</span>
+              <TooltipProvider>
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                      {isActive ? 'Active' : 'Inactive'}
+                    </Label>
+                    <Switch
+                      id="is_active_view"
+                      checked={isActive}
+                      onCheckedChange={(checked) => {
+                        setIsActive(checked);
+                        handleQuickUpdate({ is_active: checked });
+                      }}
+                    />
                   </div>
-                  <span key={`${child.id}-amt`} className="text-base font-semibold text-slate-700 whitespace-nowrap text-right tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
-                    {childAmount !== null
-                      ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
-                      : <span className="text-sm font-normal text-slate-400">—</span>
-                    }
-                  </span>
-                </>
-              );
-            })}
+
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                      Rollover
+                    </Label>
+                    <CalculatorAmountInput
+                      id="accumulated_rollover"
+                      value={accumulatedRollover}
+                      onChange={(value) => setAccumulatedRollover(value)}
+                      onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                      placeholder="0.00"
+                      className="w-20 h-7 text-sm"
+                      disabled={!rolloverEnabled}
+                    />
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Switch
+                            id="rollover_enabled_view"
+                            checked={rolloverEnabled}
+                            onCheckedChange={(checked) => {
+                              setRolloverEnabled(checked);
+                              handleQuickUpdate({ rollover_enabled: checked });
+                            }}
+                          />
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-xs">
+                        <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
+                </div>
+              </TooltipProvider>
+            </div>
           </div>
 
-          <TooltipProvider>
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
-                  {isActive ? 'Active' : 'Inactive'}
-                </Label>
-                <Switch
-                  id="is_active_view"
-                  checked={isActive}
-                  onCheckedChange={(checked) => {
-                    setIsActive(checked);
-                    handleQuickUpdate({ is_active: checked });
-                  }}
-                />
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
-                  Rollover
-                </Label>
-                <CalculatorAmountInput
-                  id="accumulated_rollover"
-                  value={accumulatedRollover}
-                  onChange={(value) => setAccumulatedRollover(value)}
-                  onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                  placeholder="0.00"
-                  className="w-20 h-7 text-sm"
-                  disabled={!rolloverEnabled}
-                />
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div>
-                      <Switch
-                        id="rollover_enabled_view"
-                        checked={rolloverEnabled}
-                        onCheckedChange={(checked) => {
-                          setRolloverEnabled(checked);
-                          handleQuickUpdate({ rollover_enabled: checked });
-                        }}
-                      />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+          {childAccounts.length > 0 && (
+            <div className="border-t pt-3 space-y-2">
+              {childAccounts.map((child) => {
+                const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
+                const childAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly') : null;
+                return (
+                  <ChildBudgetRow
+                    key={child.id}
+                    child={child}
+                    childBudget={childBudget}
+                    childAmount={childAmount}
+                    categoryAccount={categoryAccount}
+                    convertAmount={convertAmount}
+                  />
+                );
+              })}
             </div>
-          </TooltipProvider>
+          )}
         </div>
       </CardContent>
     </Card>
