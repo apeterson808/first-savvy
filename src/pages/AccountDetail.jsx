@@ -1458,18 +1458,6 @@ export default function AccountDetail() {
             </CardContent>
           </Card>
 
-          {childAccounts.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide pl-1">Sub-Categories</p>
-              {childAccounts.map((child) => (
-                <ChildBudgetSection
-                  key={child.id}
-                  childAccount={child}
-                  profileId={activeProfile?.id}
-                />
-              ))}
-            </div>
-          )}
           </>
         ) : (
           <Card>
