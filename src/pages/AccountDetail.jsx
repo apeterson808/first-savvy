@@ -1184,6 +1184,7 @@ export default function AccountDetail() {
               childBudgets={childBudgets}
               childSpending={childSpending}
               parentName={account?.name || account?.display_name}
+              account={account}
             />
             <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>

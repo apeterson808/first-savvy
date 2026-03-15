@@ -154,9 +154,7 @@ function ComparisonSection({ comparativeData, historicalData }) {
   );
 }
 
-function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElapsed }) {
-  const [hovered, setHovered] = useState(false);
-
+function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElapsed, onHover }) {
   const convertAmount = (amount, fromCadence) => {
     const conversions = { daily: 30.44, weekly: 4.35, monthly: 1, yearly: 1 / 12 };
     return amount * (conversions[fromCadence] || 1);
@@ -178,11 +176,27 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
   const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
   const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
 
+  const hoverData = {
+    name: child.display_name,
+    icon: child.icon,
+    color: child.color,
+    spent,
+    effectiveBudget,
+    remaining,
+    expectedSpending,
+    spendingPace: spent - expectedSpending,
+    isOverPace,
+    isOverBudget,
+    percentUsed,
+    isRollover,
+    rollover,
+  };
+
   return (
     <div
-      className="space-y-1 relative"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className="space-y-1 relative cursor-default"
+      onMouseEnter={() => onHover(hoverData)}
+      onMouseLeave={() => onHover(null)}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
@@ -203,34 +217,11 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
           style={{ left: `${Math.min(percentOfMonthElapsed, 100)}%` }}
         />
       </div>
-
-      {hovered && (
-        <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 min-w-[180px] text-xs space-y-1.5">
-          <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Spent</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(spent)}</span>
-          </div>
-          <div className="flex justify-between gap-4">
-            <span className="text-slate-500">Budget</span>
-            <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(effectiveBudget)}</span>
-          </div>
-          <div className="flex justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-700">
-            <span className="text-slate-500">Remaining</span>
-            <span className={`font-semibold ${remaining < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{formatCurrency(remaining)}</span>
-          </div>
-          {isRollover && rollover !== 0 && (
-            <div className="flex justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-700">
-              <span className="text-slate-500">Rollover</span>
-              <span className="font-semibold text-blue-600">{formatCurrency(rollover)}</span>
-            </div>
-          )}
-        </div>
-      )}
     </div>
   );
 }
 
-function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOfMonthElapsed }) {
+function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOfMonthElapsed, onHover }) {
   if (!childAccounts?.length) return null;
 
   const childrenWithBudgets = childAccounts.filter(child =>
@@ -250,6 +241,7 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
             childBudget={childBudget}
             childSpending={childSpending}
             percentOfMonthElapsed={percentOfMonthElapsed}
+            onHover={onHover}
           />
         );
       })}
@@ -257,7 +249,9 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
   );
 }
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, compact = false, parentName = null }) {
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, compact = false, parentName = null, account = null }) {
+  const [hoveredChild, setHoveredChild] = useState(null);
+
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -265,9 +259,9 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const daysElapsed = differenceInDays(now, monthStart) + 1;
   const percentOfMonthElapsed = (daysElapsed / daysInMonth) * 100;
 
-  const categoryData = budget?.chartAccount;
-  const ParentIcon = categoryData?.icon && Icons[categoryData.icon] ? Icons[categoryData.icon] : Circle;
-  const parentIconColor = categoryData?.color || '#94a3b8';
+  const iconName = account?.icon || budget?.chartAccount?.icon;
+  const iconColor = account?.color || budget?.chartAccount?.color || '#94a3b8';
+  const ParentIcon = iconName && Icons[iconName] ? Icons[iconName] : Circle;
 
   const budgetAmount = budget?.allocated_amount || 0;
   const accumulatedRollover = budget?.accumulated_rollover || 0;
@@ -282,6 +276,10 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const isOverPace = spendingPace > 0;
 
   const adherenceRate = performanceHistory?.adherenceRate || 0;
+
+  const activeExpected = hoveredChild ? hoveredChild.expectedSpending : expectedSpending;
+  const activeVariance = hoveredChild ? hoveredChild.spendingPace : spendingPace;
+  const activeIsOverPace = hoveredChild ? hoveredChild.isOverPace : isOverPace;
 
   const Wrapper = compact ? 'div' : Card;
   const wrapperProps = compact ? { className: 'border rounded-lg h-full flex flex-col' } : { className: 'h-full flex flex-col' };
@@ -299,7 +297,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <ParentIcon className="w-4 h-4 flex-shrink-0" style={{ color: parentIconColor }} />
+              <ParentIcon className="w-4 h-4 flex-shrink-0" style={{ color: iconColor }} />
               <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
                 {parentName || 'Budget Progress'}
               </span>
@@ -324,6 +322,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             childBudgets={childBudgets}
             childSpending={childSpending}
             percentOfMonthElapsed={percentOfMonthElapsed}
+            onHover={setHoveredChild}
           />
         </div>
 
@@ -341,14 +340,23 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
 
         <div className="grid grid-cols-2 gap-3 pt-2 border-t">
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Expected</p>
-            <p className="text-sm font-medium">{formatCurrency(expectedSpending)}</p>
+            <p className="text-xs text-muted-foreground mb-1">
+              Expected{hoveredChild ? ` · ${hoveredChild.name}` : ''}
+            </p>
+            <p className="text-sm font-medium">{formatCurrency(activeExpected)}</p>
           </div>
           <div>
-            <p className="text-xs text-muted-foreground mb-1">Variance</p>
-            <p className={`text-sm font-medium ${isOverPace ? 'text-red-600' : 'text-green-600'}`}>
-              {isOverPace ? '+' : ''}{formatCurrency(spendingPace)}
+            <p className="text-xs text-muted-foreground mb-1">
+              Variance{hoveredChild ? ` · ${hoveredChild.name}` : ''}
             </p>
+            <div className="flex items-center gap-1.5">
+              <p className={`text-sm font-medium ${activeIsOverPace ? 'text-red-600' : 'text-green-600'}`}>
+                {activeIsOverPace ? '+' : ''}{formatCurrency(activeVariance)}
+              </p>
+              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${activeIsOverPace ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
+                {activeIsOverPace ? 'Over Pace' : 'Under Pace'}
+              </span>
+            </div>
           </div>
         </div>
 
