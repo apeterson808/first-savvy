@@ -175,7 +175,6 @@ export default function ExpenseCategoryDetail() {
   }
 
   const categoryName = budget?.custom_name || categoryAccount.display_name;
-  const breadcrumbPath = categoryAccount.parent_account_id ? 'Parent > ' : '';
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -184,16 +183,11 @@ export default function ExpenseCategoryDetail() {
           <Button variant="ghost" size="icon" onClick={() => navigate('/budgeting')}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-3xl font-bold">{categoryName}</h1>
-              <Badge variant={budget?.is_active ? 'default' : 'secondary'}>
-                {budget?.is_active ? 'Active' : 'Inactive'}
-              </Badge>
-            </div>
-            {breadcrumbPath && (
-              <p className="text-sm text-muted-foreground mt-1">{breadcrumbPath}{categoryName}</p>
-            )}
+          <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold">{categoryName}</h1>
+            <Badge variant={budget?.is_active ? 'default' : 'secondary'}>
+              {budget?.is_active ? 'Active' : 'Inactive'}
+            </Badge>
           </div>
         </div>
       </div>
