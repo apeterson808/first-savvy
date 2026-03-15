@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
@@ -252,6 +252,35 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
 
 export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, childAnalytics, compact = false, parentName = null, account = null }) {
   const [hoveredChild, setHoveredChild] = useState(null);
+  const [lockedHeight, setLockedHeight] = useState(null);
+  const cardRef = useRef(null);
+  const clearTimerRef = useRef(null);
+  const hasChildren = childAccounts?.length > 0 && childBudgets?.length > 0;
+
+  const handleChildHover = useCallback((data) => {
+    if (clearTimerRef.current) {
+      clearTimeout(clearTimerRef.current);
+      clearTimerRef.current = null;
+    }
+    if (data) {
+      if (!lockedHeight && cardRef.current) {
+        setLockedHeight(cardRef.current.offsetHeight);
+      }
+      setHoveredChild(data);
+    } else {
+      clearTimerRef.current = setTimeout(() => {
+        setHoveredChild(null);
+        setLockedHeight(null);
+        clearTimerRef.current = null;
+      }, 80);
+    }
+  }, [lockedHeight]);
+
+  useEffect(() => {
+    return () => {
+      if (clearTimerRef.current) clearTimeout(clearTimerRef.current);
+    };
+  }, []);
 
   const now = new Date();
   const monthStart = startOfMonth(now);
@@ -292,11 +321,13 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const activeAdherenceRate = activePerformanceHistory?.adherenceRate || 0;
 
   const Wrapper = compact ? 'div' : Card;
-  const wrapperProps = compact ? { className: 'border rounded-lg h-full flex flex-col' } : { className: 'h-full flex flex-col' };
+  const wrapperProps = compact
+    ? { className: 'border rounded-lg flex flex-col', ref: cardRef, style: lockedHeight ? { minHeight: lockedHeight, height: lockedHeight } : {} }
+    : { className: 'flex flex-col', ref: cardRef, style: lockedHeight ? { minHeight: lockedHeight, height: lockedHeight } : {} };
   const HeaderWrapper = compact ? 'div' : CardHeader;
   const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
   const ContentWrapper = compact ? 'div' : CardContent;
-  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3 flex-1' } : { className: 'space-y-4 flex-1' };
+  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3 flex-1 overflow-y-auto' } : { className: 'space-y-4 flex-1 overflow-y-auto' };
 
   return (
     <Wrapper {...wrapperProps}>
@@ -332,7 +363,7 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             childBudgets={childBudgets}
             childSpending={childSpending}
             percentOfMonthElapsed={percentOfMonthElapsed}
-            onHover={setHoveredChild}
+            onHover={handleChildHover}
           />
         </div>
 
