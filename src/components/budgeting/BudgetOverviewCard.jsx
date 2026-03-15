@@ -29,14 +29,12 @@ const formatLabel = (str) => {
 function ChildBudgetRow({ child, childBudget, childAmount }) {
   const [isActive, setIsActive] = useState(childBudget?.is_active ?? true);
   const [rolloverEnabled, setRolloverEnabled] = useState(childBudget?.rollover_enabled ?? false);
-  const [accumulatedRollover, setAccumulatedRollover] = useState(childBudget?.accumulated_rollover || 0);
   const queryClient = useQueryClient();
 
   useEffect(() => {
     setIsActive(childBudget?.is_active ?? true);
     setRolloverEnabled(childBudget?.rollover_enabled ?? false);
-    setAccumulatedRollover(childBudget?.accumulated_rollover || 0);
-  }, [childBudget?.is_active, childBudget?.rollover_enabled, childBudget?.accumulated_rollover]);
+  }, [childBudget?.is_active, childBudget?.rollover_enabled]);
 
   const updateMutation = useMutation({
     mutationFn: async (updates) => {
@@ -91,14 +89,6 @@ function ChildBudgetRow({ child, childBudget, childAmount }) {
           <Label htmlFor={`rollover_child_${child.id}`} className="text-xs text-muted-foreground whitespace-nowrap">
             Rollover
           </Label>
-          <CalculatorAmountInput
-            value={accumulatedRollover}
-            onChange={(value) => setAccumulatedRollover(value)}
-            onBlur={() => updateMutation.mutate({ accumulated_rollover: accumulatedRollover })}
-            placeholder="0.00"
-            className="w-24 h-7 text-sm"
-            disabled={!rolloverEnabled}
-          />
           <Tooltip>
             <TooltipTrigger asChild>
               <div>
@@ -131,15 +121,12 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
 
   const [isActive, setIsActive] = useState(budget?.is_active ?? true);
   const [rolloverEnabled, setRolloverEnabled] = useState(budget?.rollover_enabled ?? false);
-  const [accumulatedRollover, setAccumulatedRollover] = useState(budget?.accumulated_rollover || 0);
-
   const queryClient = useQueryClient();
 
   useEffect(() => {
     setIsActive(budget?.is_active ?? true);
     setRolloverEnabled(budget?.rollover_enabled ?? false);
-    setAccumulatedRollover(budget?.accumulated_rollover || 0);
-  }, [budget?.is_active, budget?.rollover_enabled, budget?.accumulated_rollover]);
+  }, [budget?.is_active, budget?.rollover_enabled]);
 
   const updateBudgetMutation = useMutation({
     mutationFn: async (updates) => {
@@ -166,8 +153,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
     updateBudgetMutation.mutate({
       ...editedBudget,
       is_active: isActive,
-      rollover_enabled: rolloverEnabled,
-      accumulated_rollover: accumulatedRollover
+      rollover_enabled: rolloverEnabled
     });
   };
 
@@ -301,15 +287,6 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
               <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
                 Rollover
               </Label>
-              <CalculatorAmountInput
-                id="accumulated_rollover"
-                value={accumulatedRollover}
-                onChange={(value) => setAccumulatedRollover(value)}
-                onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                placeholder="0.00"
-                className="w-24 h-7 text-sm"
-                disabled={!rolloverEnabled}
-              />
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div>
