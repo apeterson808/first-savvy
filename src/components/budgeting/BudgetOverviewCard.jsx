@@ -142,7 +142,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
     <Card>
       <CardContent className="pt-5 pb-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1 min-w-0 flex-1">
+          <div className="min-w-0" style={{ display: 'grid', gridTemplateColumns: 'auto auto', alignItems: 'center', gap: '4px 16px' }}>
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0 w-5">
                 {isEditing ? (
@@ -156,7 +156,6 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                   <IconComponent className="h-5 w-5" style={{ color: iconColor }} />
                 )}
               </div>
-
               {isEditing ? (
                 <Input
                   value={editedBudget.custom_name}
@@ -166,49 +165,47 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                   className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
                 />
               ) : (
-                <h1 className="text-xl font-semibold">
+                <h1 className="text-xl font-semibold whitespace-nowrap">
                   {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
                 </h1>
               )}
-
-              {isEditing ? (
-                <CalculatorAmountInput
-                  value={amounts.monthly}
-                  onChange={(value) => handleAmountUpdate('monthly', value)}
-                  placeholder="0.00"
-                  className="w-28 h-8 text-lg font-semibold text-center flex-shrink-0"
-                />
-              ) : (
-                <span className="text-lg font-semibold text-slate-700 flex-shrink-0">
-                  {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
-                </span>
-              )}
             </div>
 
-            {childAccounts.length > 0 && (
-              <div className="flex flex-col gap-1 mt-1">
-                {childAccounts.map((child) => {
-                  const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
-                  const childColor = child.color || '#94a3b8';
-                  const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
-                  const childAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly') : null;
-                  return (
-                    <div key={child.id} className="flex items-center gap-3 pl-8">
-                      <div className="flex-shrink-0 w-5">
-                        <ChildIcon className="h-5 w-5" style={{ color: childColor }} />
-                      </div>
-                      <span className="text-xl font-semibold">{child.display_name}</span>
-                      <span className="text-lg font-semibold text-slate-700 flex-shrink-0">
-                        {childAmount !== null
-                          ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
-                          : <span className="text-sm font-normal text-slate-400">—</span>
-                        }
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+            {isEditing ? (
+              <CalculatorAmountInput
+                value={amounts.monthly}
+                onChange={(value) => handleAmountUpdate('monthly', value)}
+                placeholder="0.00"
+                className="w-28 h-8 text-lg font-semibold text-center"
+              />
+            ) : (
+              <span className="text-lg font-semibold text-slate-700 whitespace-nowrap">
+                {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
+              </span>
             )}
+
+            {childAccounts.map((child) => {
+              const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
+              const childColor = child.color || '#94a3b8';
+              const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
+              const childAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly') : null;
+              return (
+                <>
+                  <div key={child.id} className="flex items-center gap-3 pl-8">
+                    <div className="flex-shrink-0 w-5">
+                      <ChildIcon className="h-5 w-5" style={{ color: childColor }} />
+                    </div>
+                    <span className="text-xl font-semibold whitespace-nowrap">{child.display_name}</span>
+                  </div>
+                  <span key={`${child.id}-amt`} className="text-lg font-semibold text-slate-700 whitespace-nowrap">
+                    {childAmount !== null
+                      ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
+                      : <span className="text-sm font-normal text-slate-400">—</span>
+                    }
+                  </span>
+                </>
+              );
+            })}
           </div>
 
           <TooltipProvider>
