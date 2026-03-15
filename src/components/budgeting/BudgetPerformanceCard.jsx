@@ -154,17 +154,32 @@ function ComparisonSection({ comparativeData, historicalData }) {
   );
 }
 
-function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElapsed, onHover }) {
-  const convertAmount = (amount, fromCadence) => {
-    const conversions = { daily: 30.44, weekly: 4.35, monthly: 1, yearly: 1 / 12 };
-    return amount * (conversions[fromCadence] || 1);
+function buildChildHoverData(child, childBudget, childSpending, percentOfMonthElapsed) {
+  const conversions = { daily: 30.44, weekly: 4.35, monthly: 1, yearly: 1 / 12 };
+  const convertAmount = (amount, fromCadence) => amount * (conversions[fromCadence] || 1);
+  const budgetAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence) : 0;
+  const isRollover = childBudget?.rollover_enabled;
+  const rollover = childBudget?.accumulated_rollover || 0;
+  const effectiveBudget = isRollover ? budgetAmount + rollover : budgetAmount;
+  const spent = childSpending?.[child.id] || 0;
+  const remaining = effectiveBudget - spent;
+  const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
+  const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
+  const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
+  return {
+    id: child.id, name: child.display_name, icon: child.icon, color: child.color,
+    spent, effectiveBudget, remaining, expectedSpending,
+    spendingPace: spent - expectedSpending, isOverPace,
+    isOverBudget: percentUsed > 100, percentUsed, isRollover, rollover,
   };
+}
 
+function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElapsed }) {
+  const conversions = { daily: 30.44, weekly: 4.35, monthly: 1, yearly: 1 / 12 };
+  const convertAmount = (amount, fromCadence) => amount * (conversions[fromCadence] || 1);
   const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
   const iconColor = child.color || '#94a3b8';
-  const budgetAmount = childBudget
-    ? convertAmount(childBudget.allocated_amount, childBudget.cadence)
-    : 0;
+  const budgetAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence) : 0;
   const isRollover = childBudget?.rollover_enabled;
   const rollover = childBudget?.accumulated_rollover || 0;
   const effectiveBudget = isRollover ? budgetAmount + rollover : budgetAmount;
@@ -176,29 +191,8 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
   const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
   const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
 
-  const hoverData = {
-    id: child.id,
-    name: child.display_name,
-    icon: child.icon,
-    color: child.color,
-    spent,
-    effectiveBudget,
-    remaining,
-    expectedSpending,
-    spendingPace: spent - expectedSpending,
-    isOverPace,
-    isOverBudget,
-    percentUsed,
-    isRollover,
-    rollover,
-  };
-
   return (
-    <div
-      className="space-y-1 relative cursor-default"
-      onMouseEnter={() => onHover(hoverData)}
-      onMouseLeave={() => onHover(null)}
-    >
+    <div className="space-y-1 relative cursor-default py-1">
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: iconColor }} />
@@ -223,6 +217,8 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
 }
 
 function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOfMonthElapsed, onHover }) {
+  const rowRefs = useRef({});
+
   if (!childAccounts?.length) return null;
 
   const childrenWithBudgets = childAccounts.filter(child =>
@@ -231,19 +227,44 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
 
   if (!childrenWithBudgets.length) return null;
 
+  const handleMouseMove = (e) => {
+    const mouseY = e.clientY;
+    let closest = null;
+    let closestDist = Infinity;
+    for (const child of childrenWithBudgets) {
+      const el = rowRefs.current[child.id];
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      const dist = Math.abs(mouseY - midY);
+      if (dist < closestDist) {
+        closestDist = dist;
+        closest = child;
+      }
+    }
+    if (closest) {
+      const childBudget = childBudgets.find(b => b.chart_account_id === closest.id);
+      onHover(buildChildHoverData(closest, childBudget, childSpending, percentOfMonthElapsed));
+    }
+  };
+
   return (
-    <div className="pt-2 border-t space-y-2">
+    <div
+      className="pt-2 border-t"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={() => onHover(null)}
+    >
       {childrenWithBudgets.map(child => {
         const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
         return (
-          <ChildBudgetBar
-            key={child.id}
-            child={child}
-            childBudget={childBudget}
-            childSpending={childSpending}
-            percentOfMonthElapsed={percentOfMonthElapsed}
-            onHover={onHover}
-          />
+          <div key={child.id} ref={el => rowRefs.current[child.id] = el}>
+            <ChildBudgetBar
+              child={child}
+              childBudget={childBudget}
+              childSpending={childSpending}
+              percentOfMonthElapsed={percentOfMonthElapsed}
+            />
+          </div>
         );
       })}
     </div>
@@ -252,10 +273,7 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
 
 export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, childAnalytics, compact = false, parentName = null, account = null }) {
   const [hoveredChild, setHoveredChild] = useState(null);
-  const [lockedHeight, setLockedHeight] = useState(null);
-  const cardRef = useRef(null);
   const clearTimerRef = useRef(null);
-  const hasChildren = childAccounts?.length > 0 && childBudgets?.length > 0;
 
   const handleChildHover = useCallback((data) => {
     if (clearTimerRef.current) {
@@ -263,18 +281,14 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
       clearTimerRef.current = null;
     }
     if (data) {
-      if (!lockedHeight && cardRef.current) {
-        setLockedHeight(cardRef.current.offsetHeight);
-      }
       setHoveredChild(data);
     } else {
       clearTimerRef.current = setTimeout(() => {
         setHoveredChild(null);
-        setLockedHeight(null);
         clearTimerRef.current = null;
-      }, 80);
+      }, 120);
     }
-  }, [lockedHeight]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -321,13 +335,11 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const activeAdherenceRate = activePerformanceHistory?.adherenceRate || 0;
 
   const Wrapper = compact ? 'div' : Card;
-  const wrapperProps = compact
-    ? { className: 'border rounded-lg flex flex-col', ref: cardRef, style: lockedHeight ? { minHeight: lockedHeight, height: lockedHeight } : {} }
-    : { className: 'flex flex-col', ref: cardRef, style: lockedHeight ? { minHeight: lockedHeight, height: lockedHeight } : {} };
+  const wrapperProps = compact ? { className: 'border rounded-lg h-full flex flex-col' } : { className: 'h-full flex flex-col' };
   const HeaderWrapper = compact ? 'div' : CardHeader;
   const headerProps = compact ? { className: 'px-3 pt-2 pb-1' } : { className: 'pb-2 pt-3 px-3' };
   const ContentWrapper = compact ? 'div' : CardContent;
-  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3 flex-1 overflow-y-auto' } : { className: 'space-y-4 flex-1 overflow-y-auto' };
+  const contentProps = compact ? { className: 'px-3 pb-3 space-y-3 flex-1' } : { className: 'space-y-4 flex-1' };
 
   return (
     <Wrapper {...wrapperProps}>
