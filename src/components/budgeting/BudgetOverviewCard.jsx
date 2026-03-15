@@ -142,7 +142,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
     <Card>
       <CardContent className="pt-5 pb-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0" style={{ display: 'grid', gridTemplateColumns: 'auto auto', alignItems: 'center', gap: '4px 16px' }}>
+          <div className="min-w-0" style={{ display: 'grid', gridTemplateColumns: '1fr max-content', alignItems: 'center', gap: '4px 16px' }}>
             <div className="flex items-center gap-3">
               <div className="flex-shrink-0 w-5">
                 {isEditing ? (
@@ -179,7 +179,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                 className="w-28 h-8 text-lg font-semibold text-center"
               />
             ) : (
-              <span className="text-lg font-semibold text-slate-700 whitespace-nowrap">
+              <span className="text-lg font-semibold text-slate-700 whitespace-nowrap text-right tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
                 {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
               </span>
             )}
@@ -197,7 +197,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                     </div>
                     <span className="text-xl font-semibold whitespace-nowrap">{child.display_name}</span>
                   </div>
-                  <span key={`${child.id}-amt`} className="text-lg font-semibold text-slate-700 whitespace-nowrap">
+                  <span key={`${child.id}-amt`} className="text-base font-semibold text-slate-700 whitespace-nowrap text-right tabular-nums" style={{ fontVariantNumeric: 'tabular-nums' }}>
                     {childAmount !== null
                       ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
                       : <span className="text-sm font-normal text-slate-400">—</span>

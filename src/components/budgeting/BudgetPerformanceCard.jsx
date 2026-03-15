@@ -2,7 +2,8 @@ import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Lightbulb } from 'lucide-react';
+import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Lightbulb, Circle } from 'lucide-react';
+import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
 
@@ -153,7 +154,74 @@ function ComparisonSection({ comparativeData, historicalData }) {
   );
 }
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, compact = false }) {
+function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOfMonthElapsed }) {
+  if (!childAccounts?.length) return null;
+
+  const childrenWithBudgets = childAccounts.filter(child =>
+    childBudgets?.find(b => b.chart_account_id === child.id)
+  );
+
+  if (!childrenWithBudgets.length) return null;
+
+  const convertAmount = (amount, fromCadence, toCadence) => {
+    if (fromCadence === toCadence) return amount;
+    const conversions = {
+      daily: { monthly: 30.44 },
+      weekly: { monthly: 4.35 },
+      monthly: { monthly: 1 },
+      yearly: { monthly: 1 / 12 },
+    };
+    return amount * (conversions[fromCadence]?.[toCadence] || 1);
+  };
+
+  return (
+    <div className="pt-2 border-t space-y-2">
+      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Child Budgets</p>
+      {childrenWithBudgets.map(child => {
+        const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
+        const iconColor = child.color || '#94a3b8';
+        const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
+        const budgetAmount = childBudget
+          ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly')
+          : 0;
+        const isRollover = childBudget?.rollover_enabled;
+        const rollover = childBudget?.accumulated_rollover || 0;
+        const effectiveBudget = isRollover ? budgetAmount + rollover : budgetAmount;
+        const spent = childSpending?.[child.id] || 0;
+        const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
+        const isOverBudget = percentUsed > 100;
+        const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
+        const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
+
+        return (
+          <div key={child.id} className="space-y-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: iconColor }} />
+                <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
+              </div>
+              <span className={`text-xs font-semibold tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600' : isOverPace ? 'text-amber-600' : 'text-slate-600'}`}>
+                {formatCurrency(spent)} / {formatCurrency(effectiveBudget)}
+              </span>
+            </div>
+            <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
+              <div
+                className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : isOverPace ? 'bg-amber-400' : 'bg-emerald-500'}`}
+                style={{ width: `${Math.min(percentUsed, 100)}%` }}
+              />
+              <div
+                className="absolute top-0 h-full w-px bg-blue-500 z-10"
+                style={{ left: `${Math.min(percentOfMonthElapsed, 100)}%` }}
+              />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, compact = false }) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -221,6 +289,12 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             <span>{formatCurrency(spent)} spent</span>
             <span>{formatCurrency(effectiveBudget)} available</span>
           </div>
+          <ChildBudgetBars
+            childAccounts={childAccounts}
+            childBudgets={childBudgets}
+            childSpending={childSpending}
+            percentOfMonthElapsed={percentOfMonthElapsed}
+          />
         </div>
 
         {isRolloverEnabled && accumulatedRollover > 0 && (

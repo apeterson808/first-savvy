@@ -200,6 +200,32 @@ export default function AccountDetail() {
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount && childAccounts.length > 0
   });
 
+  const { data: childSpending } = useQuery({
+    queryKey: ['child-spending-this-month', id, activeProfile?.id, childAccounts.map(c => c.id).join(',')],
+    queryFn: async () => {
+      if (!childAccounts.length) return {};
+      const now = new Date();
+      const monthStart = startOfMonth(now);
+      const monthEnd = endOfMonth(now);
+      const childIds = childAccounts.map(c => c.id);
+      const { data, error } = await firstsavvy.supabase
+        .from('transactions')
+        .select('amount, category_account_id')
+        .eq('profile_id', activeProfile.id)
+        .in('category_account_id', childIds)
+        .eq('status', 'posted')
+        .gte('date', monthStart.toISOString())
+        .lte('date', monthEnd.toISOString());
+      if (error) throw error;
+      const map = {};
+      for (const t of data || []) {
+        map[t.category_account_id] = (map[t.category_account_id] || 0) + (t.amount || 0);
+      }
+      return map;
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount && childAccounts.length > 0
+  });
+
   const { data: budget } = useQuery({
     queryKey: ['budget-for-category', id, activeProfile?.id],
     queryFn: async () => {
@@ -1154,6 +1180,9 @@ export default function AccountDetail() {
               performanceHistory={performanceHistory}
               comparativeData={comparativeData}
               historicalData={historicalData}
+              childAccounts={childAccounts}
+              childBudgets={childBudgets}
+              childSpending={childSpending}
             />
             <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>
