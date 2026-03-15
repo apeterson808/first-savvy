@@ -157,21 +157,19 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                 )}
               </div>
 
-              <div className="flex items-baseline gap-3 flex-1 min-w-0">
-                {isEditing ? (
-                  <Input
-                    value={editedBudget.custom_name}
-                    onChange={(e) => setEditedBudget({ ...editedBudget, custom_name: e.target.value })}
-                    onBlur={() => handleQuickUpdate({ custom_name: editedBudget.custom_name })}
-                    placeholder={categoryAccount?.display_name || 'Category name'}
-                    className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
-                  />
-                ) : (
-                  <h1 className="text-xl font-semibold">
-                    {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
-                  </h1>
-                )}
-              </div>
+              {isEditing ? (
+                <Input
+                  value={editedBudget.custom_name}
+                  onChange={(e) => setEditedBudget({ ...editedBudget, custom_name: e.target.value })}
+                  onBlur={() => handleQuickUpdate({ custom_name: editedBudget.custom_name })}
+                  placeholder={categoryAccount?.display_name || 'Category name'}
+                  className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
+                />
+              ) : (
+                <h1 className="text-xl font-semibold">
+                  {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
+                </h1>
+              )}
 
               {isEditing ? (
                 <CalculatorAmountInput
@@ -181,7 +179,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                   className="w-28 h-8 text-lg font-semibold text-center flex-shrink-0"
                 />
               ) : (
-                <span className="text-lg font-semibold text-slate-700 flex-shrink-0 text-right">
+                <span className="text-lg font-semibold text-slate-700 flex-shrink-0">
                   {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
                 </span>
               )}
@@ -199,10 +197,8 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                       <div className="flex-shrink-0 w-5">
                         <ChildIcon className="h-5 w-5" style={{ color: childColor }} />
                       </div>
-                      <div className="flex items-baseline gap-3 flex-1 min-w-0">
-                        <span className="text-xl font-semibold">{child.display_name}</span>
-                      </div>
-                      <span className="text-lg font-semibold text-slate-700 flex-shrink-0 text-right">
+                      <span className="text-xl font-semibold">{child.display_name}</span>
+                      <span className="text-lg font-semibold text-slate-700 flex-shrink-0">
                         {childAmount !== null
                           ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
                           : <span className="text-sm font-normal text-slate-400">—</span>
