@@ -54,6 +54,7 @@ import { budgetAnalytics } from '@/api/budgetAnalytics';
 import { BudgetOverviewCard } from '@/components/budgeting/BudgetOverviewCard';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorCard';
+import { ChildBudgetSection } from '@/components/budgeting/ChildBudgetSection';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -156,6 +157,17 @@ export default function AccountDetail() {
     const accountClass = account.account_class || account.class;
     return accountClass === 'expense' || accountClass === 'income';
   }, [account]);
+
+  const isChildBudgetAccount = useMemo(() => {
+    if (!account || !isBudgetableAccount) return false;
+    return !!account.parent_account_id;
+  }, [account, isBudgetableAccount]);
+
+  React.useEffect(() => {
+    if (isChildBudgetAccount && account?.parent_account_id) {
+      navigate(`/Banking/account/${account.parent_account_id}`, { replace: true });
+    }
+  }, [isChildBudgetAccount, account?.parent_account_id, navigate]);
 
   const { data: childAccounts = [] } = useQuery({
     queryKey: ['child-accounts', id, activeProfile?.id],
@@ -1415,6 +1427,19 @@ export default function AccountDetail() {
               </Tabs>
             </CardContent>
           </Card>
+
+          {childAccounts.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide pl-1">Sub-Categories</p>
+              {childAccounts.map((child) => (
+                <ChildBudgetSection
+                  key={child.id}
+                  childAccount={child}
+                  profileId={activeProfile?.id}
+                />
+              ))}
+            </div>
+          )}
           </>
         ) : (
           <Card>
