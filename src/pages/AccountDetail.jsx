@@ -172,6 +172,22 @@ export default function AccountDetail() {
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount
   });
 
+  const { data: childBudgets = [] } = useQuery({
+    queryKey: ['child-budgets', id, activeProfile?.id],
+    queryFn: async () => {
+      if (!childAccounts.length) return [];
+      const childIds = childAccounts.map(c => c.id);
+      const { data, error } = await firstsavvy.supabase
+        .from('budgets')
+        .select('*')
+        .in('chart_account_id', childIds)
+        .eq('profile_id', activeProfile.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!id && !!activeProfile?.id && isBudgetableAccount && childAccounts.length > 0
+  });
+
   const { data: budget } = useQuery({
     queryKey: ['budget-for-category', id, activeProfile?.id],
     queryFn: async () => {
@@ -1111,6 +1127,7 @@ export default function AccountDetail() {
             budget={budget}
             categoryAccount={account}
             childAccounts={childAccounts}
+            childBudgets={childBudgets}
             isEditing={isBudgetEditMode}
             onEditChange={setIsBudgetEditMode}
           />

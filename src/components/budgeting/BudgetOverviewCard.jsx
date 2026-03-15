@@ -26,7 +26,7 @@ const formatLabel = (str) => {
     .join(' ');
 };
 
-export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = [], isEditing = false, onEditChange }) {
+export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = [], childBudgets = [], isEditing = false, onEditChange }) {
   const [editedBudget, setEditedBudget] = useState({
     allocated_amount: budget?.allocated_amount || 0,
     cadence: budget?.cadence || 'monthly',
@@ -142,9 +142,9 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
     <Card>
       <CardContent className="pt-5 pb-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex flex-col gap-1 min-w-0">
+          <div className="flex flex-col gap-1 min-w-0 flex-1">
             <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
+              <div className="flex-shrink-0 w-5">
                 {isEditing ? (
                   <AppearancePicker
                     color={iconColor}
@@ -157,7 +157,7 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                 )}
               </div>
 
-              <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+              <div className="flex items-baseline gap-3 flex-1 min-w-0">
                 {isEditing ? (
                   <Input
                     value={editedBudget.custom_name}
@@ -171,24 +171,20 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                     {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
                   </h1>
                 )}
-                {categoryAccount?.account_number && (
-                  <span className="text-sm text-slate-500 font-mono">
-                    ({categoryAccount.account_number})
-                  </span>
-                )}
-                {isEditing ? (
-                  <CalculatorAmountInput
-                    value={amounts.monthly}
-                    onChange={(value) => handleAmountUpdate('monthly', value)}
-                    placeholder="0.00"
-                    className="w-32 h-8 text-lg font-semibold text-center"
-                  />
-                ) : (
-                  <span className="text-lg font-semibold text-slate-700">
-                    {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
-                  </span>
-                )}
               </div>
+
+              {isEditing ? (
+                <CalculatorAmountInput
+                  value={amounts.monthly}
+                  onChange={(value) => handleAmountUpdate('monthly', value)}
+                  placeholder="0.00"
+                  className="w-32 h-8 text-lg font-semibold text-center flex-shrink-0"
+                />
+              ) : (
+                <span className="text-lg font-semibold text-slate-700 flex-shrink-0 w-32 text-right">
+                  {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
+                </span>
+              )}
             </div>
 
             {childAccounts.length > 0 && (
@@ -196,13 +192,22 @@ export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = []
                 {childAccounts.map((child) => {
                   const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
                   const childColor = child.color || '#94a3b8';
+                  const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
+                  const childAmount = childBudget ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly') : null;
                   return (
-                    <div key={child.id} className="flex items-center gap-2 pl-7">
-                      <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: childColor }} />
-                      <span className="text-sm text-slate-600">{child.display_name}</span>
-                      {child.account_number && (
-                        <span className="text-xs text-slate-400 font-mono">({child.account_number})</span>
-                      )}
+                    <div key={child.id} className="flex items-center gap-3 pl-8">
+                      <div className="flex-shrink-0 w-5">
+                        <ChildIcon className="h-5 w-5" style={{ color: childColor }} />
+                      </div>
+                      <div className="flex items-baseline gap-3 flex-1 min-w-0">
+                        <span className="text-xl font-semibold">{child.display_name}</span>
+                      </div>
+                      <span className="text-lg font-semibold text-slate-700 flex-shrink-0 w-32 text-right">
+                        {childAmount !== null
+                          ? <>{formatCurrency(childAmount)}<span className="text-sm font-normal text-slate-400">/mo</span></>
+                          : <span className="text-sm font-normal text-slate-400">—</span>
+                        }
+                      </span>
                     </div>
                   );
                 })}
