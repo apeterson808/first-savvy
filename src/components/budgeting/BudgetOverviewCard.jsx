@@ -8,13 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Edit2, Save, X, Clock, Circle } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
 import AppearancePicker from '@/components/common/AppearancePicker';
 import { updateAccountIconColor } from '@/api/chartOfAccounts';
@@ -141,176 +140,106 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
 
   return (
     <Card>
-      <CardContent className="pt-4">
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="capitalize">{formatLabel(categoryAccount?.account_class || categoryAccount?.class || '')}</span>
-            {categoryAccount?.account_type && (
-              <>
-                <span>•</span>
-                <span>{formatLabel(categoryAccount.account_type)}</span>
-              </>
-            )}
-            {categoryAccount?.account_detail && (
-              <>
-                <span>•</span>
-                <span>{formatLabel(categoryAccount.account_detail)}</span>
-              </>
-            )}
-          </div>
-
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex-shrink-0">
-                {isEditing ? (
-                  <AppearancePicker
-                    color={iconColor}
-                    icon={categoryAccount?.icon}
-                    onColorChange={(color) => handleIconColorUpdate(categoryAccount?.icon, color)}
-                    onIconChange={(icon) => handleIconColorUpdate(icon, iconColor)}
-                  />
-                ) : (
-                  <IconComponent className="h-5 w-5" style={{ color: iconColor }} />
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <div className="flex items-center gap-3 flex-wrap">
-                  {isEditing ? (
-                    <Input
-                      value={editedBudget.custom_name}
-                      onChange={(e) => setEditedBudget({ ...editedBudget, custom_name: e.target.value })}
-                      onBlur={() => handleQuickUpdate({ custom_name: editedBudget.custom_name })}
-                      placeholder={categoryAccount?.display_name || 'Category name'}
-                      className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
-                    />
-                  ) : (
-                    <h1 className="text-xl font-semibold">
-                      {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
-                    </h1>
-                  )}
-                  {categoryAccount?.account_number && (
-                    <span className="text-sm text-slate-500 font-mono">
-                      ({categoryAccount.account_number})
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
-                  {isActive ? 'Active' : 'Inactive'}
-                </Label>
-                <Switch
-                  id="is_active_view"
-                  checked={isActive}
-                  onCheckedChange={(checked) => {
-                    setIsActive(checked);
-                    handleQuickUpdate({ is_active: checked });
-                  }}
-                />
-              </div>
-
-              <TooltipProvider>
-                <div className="flex items-center gap-2">
-                  <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
-                    Rollover
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <CalculatorAmountInput
-                      id="accumulated_rollover"
-                      value={accumulatedRollover}
-                      onChange={(value) => setAccumulatedRollover(value)}
-                      onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
-                      placeholder="0.00"
-                      className="w-24 h-8 text-sm"
-                      disabled={!rolloverEnabled}
-                    />
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <Switch
-                            id="rollover_enabled_view"
-                            checked={rolloverEnabled}
-                            onCheckedChange={(checked) => {
-                              setRolloverEnabled(checked);
-                              handleQuickUpdate({ rollover_enabled: checked });
-                            }}
-                          />
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="top" className="max-w-xs">
-                        <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                </div>
-              </TooltipProvider>
-
-              {budget?.updated_at && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  <span>Updated {format(new Date(budget.updated_at), 'MMM d, yyyy')}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-end justify-center gap-8 px-12">
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-2">Daily</p>
+      <CardContent className="pt-5 pb-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="flex-shrink-0">
               {isEditing ? (
-                <CalculatorAmountInput
-                  value={amounts.daily}
-                  onChange={(value) => handleAmountUpdate('daily', value)}
-                  placeholder="0.00"
-                  className="w-24 h-9 text-lg font-semibold text-center"
+                <AppearancePicker
+                  color={iconColor}
+                  icon={categoryAccount?.icon}
+                  onColorChange={(color) => handleIconColorUpdate(categoryAccount?.icon, color)}
+                  onIconChange={(icon) => handleIconColorUpdate(icon, iconColor)}
                 />
               ) : (
-                <p className="text-lg font-semibold">{formatCurrency(amounts.daily)}</p>
+                <IconComponent className="h-5 w-5" style={{ color: iconColor }} />
               )}
             </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-2">Weekly</p>
+
+            <div className="flex items-baseline gap-3 flex-wrap min-w-0">
               {isEditing ? (
-                <CalculatorAmountInput
-                  value={amounts.weekly}
-                  onChange={(value) => handleAmountUpdate('weekly', value)}
-                  placeholder="0.00"
-                  className="w-24 h-9 text-lg font-semibold text-center"
+                <Input
+                  value={editedBudget.custom_name}
+                  onChange={(e) => setEditedBudget({ ...editedBudget, custom_name: e.target.value })}
+                  onBlur={() => handleQuickUpdate({ custom_name: editedBudget.custom_name })}
+                  placeholder={categoryAccount?.display_name || 'Category name'}
+                  className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
                 />
               ) : (
-                <p className="text-lg font-semibold">{formatCurrency(amounts.weekly)}</p>
+                <h1 className="text-xl font-semibold">
+                  {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
+                </h1>
               )}
-            </div>
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Monthly</p>
+              {categoryAccount?.account_number && (
+                <span className="text-sm text-slate-500 font-mono">
+                  ({categoryAccount.account_number})
+                </span>
+              )}
               {isEditing ? (
                 <CalculatorAmountInput
                   value={amounts.monthly}
                   onChange={(value) => handleAmountUpdate('monthly', value)}
                   placeholder="0.00"
-                  className="w-32 h-10 text-2xl font-bold text-center"
+                  className="w-32 h-8 text-lg font-semibold text-center"
                 />
               ) : (
-                <p className="text-2xl font-bold">{formatCurrency(amounts.monthly)}</p>
+                <span className="text-lg font-semibold text-slate-700">
+                  {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
+                </span>
               )}
             </div>
-            <div className="text-center">
-              <p className="text-xs text-muted-foreground mb-2">Yearly</p>
-              {isEditing ? (
-                <CalculatorAmountInput
-                  value={amounts.yearly}
-                  onChange={(value) => handleAmountUpdate('yearly', value)}
-                  placeholder="0.00"
-                  className="w-24 h-9 text-lg font-semibold text-center"
-                />
-              ) : (
-                <p className="text-lg font-semibold">{formatCurrency(amounts.yearly)}</p>
-              )}
+          </div>
+
+          <div className="flex flex-col gap-2 flex-shrink-0">
+            <div className="flex items-center justify-between gap-3">
+              <Label htmlFor="is_active_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                {isActive ? 'Active' : 'Inactive'}
+              </Label>
+              <Switch
+                id="is_active_view"
+                checked={isActive}
+                onCheckedChange={(checked) => {
+                  setIsActive(checked);
+                  handleQuickUpdate({ is_active: checked });
+                }}
+              />
             </div>
+
+            <TooltipProvider>
+              <div className="flex items-center justify-between gap-3">
+                <Label htmlFor="rollover_enabled_view" className="text-sm text-muted-foreground whitespace-nowrap">
+                  Rollover
+                </Label>
+                <div className="flex items-center gap-2">
+                  <CalculatorAmountInput
+                    id="accumulated_rollover"
+                    value={accumulatedRollover}
+                    onChange={(value) => setAccumulatedRollover(value)}
+                    onBlur={() => handleQuickUpdate({ accumulated_rollover: accumulatedRollover })}
+                    placeholder="0.00"
+                    className="w-20 h-7 text-sm"
+                    disabled={!rolloverEnabled}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <Switch
+                          id="rollover_enabled_view"
+                          checked={rolloverEnabled}
+                          onCheckedChange={(checked) => {
+                            setRolloverEnabled(checked);
+                            handleQuickUpdate({ rollover_enabled: checked });
+                          }}
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <p>Unused budget accumulates monthly. Perfect for periodic expenses.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+            </TooltipProvider>
           </div>
         </div>
       </CardContent>
