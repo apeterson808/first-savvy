@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle, TrendingUp, TrendingDown, Lightbulb, Circle } from 'lucide-react';
+import { AlertCircle, TrendingUp, TrendingDown, Lightbulb, Circle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
@@ -154,6 +154,82 @@ function ComparisonSection({ comparativeData, historicalData }) {
   );
 }
 
+function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElapsed }) {
+  const [hovered, setHovered] = useState(false);
+
+  const convertAmount = (amount, fromCadence) => {
+    const conversions = { daily: 30.44, weekly: 4.35, monthly: 1, yearly: 1 / 12 };
+    return amount * (conversions[fromCadence] || 1);
+  };
+
+  const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
+  const iconColor = child.color || '#94a3b8';
+  const budgetAmount = childBudget
+    ? convertAmount(childBudget.allocated_amount, childBudget.cadence)
+    : 0;
+  const isRollover = childBudget?.rollover_enabled;
+  const rollover = childBudget?.accumulated_rollover || 0;
+  const effectiveBudget = isRollover ? budgetAmount + rollover : budgetAmount;
+  const spent = childSpending?.[child.id] || 0;
+  const remaining = effectiveBudget - spent;
+  const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
+  const percentRemaining = Math.max(0, 100 - percentUsed);
+  const isOverBudget = percentUsed > 100;
+  const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
+  const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
+
+  return (
+    <div
+      className="space-y-1 relative"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-1.5 min-w-0">
+          <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: iconColor }} />
+          <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
+        </div>
+        <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : isOverPace ? 'text-amber-600' : 'text-slate-500'}`}>
+          {percentRemaining.toFixed(0)}% remaining
+        </span>
+      </div>
+      <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
+        <div
+          className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : isOverPace ? 'bg-amber-400' : 'bg-emerald-500'}`}
+          style={{ width: `${Math.min(percentUsed, 100)}%` }}
+        />
+        <div
+          className="absolute top-0 h-full w-px bg-blue-500 z-10"
+          style={{ left: `${Math.min(percentOfMonthElapsed, 100)}%` }}
+        />
+      </div>
+
+      {hovered && (
+        <div className="absolute right-0 top-full mt-1 z-50 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg p-3 min-w-[180px] text-xs space-y-1.5">
+          <div className="flex justify-between gap-4">
+            <span className="text-slate-500">Spent</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(spent)}</span>
+          </div>
+          <div className="flex justify-between gap-4">
+            <span className="text-slate-500">Budget</span>
+            <span className="font-semibold text-slate-800 dark:text-slate-100">{formatCurrency(effectiveBudget)}</span>
+          </div>
+          <div className="flex justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-700">
+            <span className="text-slate-500">Remaining</span>
+            <span className={`font-semibold ${remaining < 0 ? 'text-red-600' : 'text-emerald-600'}`}>{formatCurrency(remaining)}</span>
+          </div>
+          {isRollover && rollover !== 0 && (
+            <div className="flex justify-between gap-4 pt-1 border-t border-slate-100 dark:border-slate-700">
+              <span className="text-slate-500">Rollover</span>
+              <span className="font-semibold text-blue-600">{formatCurrency(rollover)}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOfMonthElapsed }) {
   if (!childAccounts?.length) return null;
 
@@ -163,65 +239,25 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
 
   if (!childrenWithBudgets.length) return null;
 
-  const convertAmount = (amount, fromCadence, toCadence) => {
-    if (fromCadence === toCadence) return amount;
-    const conversions = {
-      daily: { monthly: 30.44 },
-      weekly: { monthly: 4.35 },
-      monthly: { monthly: 1 },
-      yearly: { monthly: 1 / 12 },
-    };
-    return amount * (conversions[fromCadence]?.[toCadence] || 1);
-  };
-
   return (
     <div className="pt-2 border-t space-y-2">
-      <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Child Budgets</p>
       {childrenWithBudgets.map(child => {
-        const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
-        const iconColor = child.color || '#94a3b8';
         const childBudget = childBudgets.find(b => b.chart_account_id === child.id);
-        const budgetAmount = childBudget
-          ? convertAmount(childBudget.allocated_amount, childBudget.cadence, 'monthly')
-          : 0;
-        const isRollover = childBudget?.rollover_enabled;
-        const rollover = childBudget?.accumulated_rollover || 0;
-        const effectiveBudget = isRollover ? budgetAmount + rollover : budgetAmount;
-        const spent = childSpending?.[child.id] || 0;
-        const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
-        const isOverBudget = percentUsed > 100;
-        const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
-        const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
-
         return (
-          <div key={child.id} className="space-y-1">
-            <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 min-w-0">
-                <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: iconColor }} />
-                <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
-              </div>
-              <span className={`text-xs font-semibold tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600' : isOverPace ? 'text-amber-600' : 'text-slate-600'}`}>
-                {formatCurrency(spent)} / {formatCurrency(effectiveBudget)}
-              </span>
-            </div>
-            <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
-              <div
-                className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : isOverPace ? 'bg-amber-400' : 'bg-emerald-500'}`}
-                style={{ width: `${Math.min(percentUsed, 100)}%` }}
-              />
-              <div
-                className="absolute top-0 h-full w-px bg-blue-500 z-10"
-                style={{ left: `${Math.min(percentOfMonthElapsed, 100)}%` }}
-              />
-            </div>
-          </div>
+          <ChildBudgetBar
+            key={child.id}
+            child={child}
+            childBudget={childBudget}
+            childSpending={childSpending}
+            percentOfMonthElapsed={percentOfMonthElapsed}
+          />
         );
       })}
     </div>
   );
 }
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, compact = false }) {
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, compact = false, parentName = null }) {
   const now = new Date();
   const monthStart = startOfMonth(now);
   const monthEnd = endOfMonth(now);
@@ -235,22 +271,11 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   const effectiveBudget = isRolloverEnabled ? budgetAmount + accumulatedRollover : budgetAmount;
 
   const spent = currentSpending || 0;
-  const remaining = effectiveBudget - spent;
   const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
 
   const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
   const spendingPace = spent - expectedSpending;
-  const isOnPace = Math.abs(spendingPace) < (budgetAmount * 0.05);
   const isOverPace = spendingPace > 0;
-
-  const getPaceStatus = () => {
-    if (isOnPace) return { label: 'On Pace', color: 'text-green-600', icon: CheckCircle };
-    if (isOverPace) return { label: 'Over Pace', color: 'text-red-600', icon: AlertCircle };
-    return { label: 'Under Pace', color: 'text-blue-600', icon: TrendingDown };
-  };
-
-  const paceStatus = getPaceStatus();
-  const PaceIcon = paceStatus.icon;
 
   const adherenceRate = performanceHistory?.adherenceRate || 0;
 
@@ -269,10 +294,12 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
       <ContentWrapper {...contentProps}>
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Budget Progress</span>
-            <Badge variant={percentUsed > 100 ? 'destructive' : percentUsed > 90 ? 'secondary' : 'default'}>
-              {percentUsed.toFixed(0)}% Used
-            </Badge>
+            <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
+              {parentName || 'Budget Progress'}
+            </span>
+            <span className={`text-xs tabular-nums ${percentUsed > 100 ? 'text-red-600 font-semibold' : percentUsed > 90 ? 'text-amber-600' : 'text-slate-500'}`}>
+              {Math.max(0, 100 - Math.round(percentUsed))}% remaining
+            </span>
           </div>
           <div className="relative">
             <Progress value={Math.min(percentUsed, 100)} className="h-3" />
@@ -284,10 +311,6 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
                 Day {daysElapsed}
               </div>
             </div>
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>{formatCurrency(spent)} spent</span>
-            <span>{formatCurrency(effectiveBudget)} available</span>
           </div>
           <ChildBudgetBars
             childAccounts={childAccounts}
@@ -308,26 +331,6 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
             <p className="text-base font-bold text-blue-900 dark:text-blue-100">{formatCurrency(effectiveBudget)}</p>
           </div>
         )}
-
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Remaining</p>
-            <p className={`text-lg font-bold ${remaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
-              {formatCurrency(Math.abs(remaining))}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Days Left</p>
-            <p className="text-lg font-bold">{daysInMonth - daysElapsed}<span className="text-xs text-muted-foreground font-normal ml-1">/ {daysInMonth}</span></p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-1">Pace</p>
-            <div className="flex items-center gap-1">
-              <PaceIcon className={`h-3.5 w-3.5 ${paceStatus.color}`} />
-              <span className={`text-sm font-medium ${paceStatus.color}`}>{paceStatus.label}</span>
-            </div>
-          </div>
-        </div>
 
         <div className="grid grid-cols-2 gap-3 pt-2 border-t">
           <div>

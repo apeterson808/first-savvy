@@ -237,6 +237,7 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                 performanceHistory={performanceHistory}
                 comparativeData={comparativeData}
                 historicalData={historicalData}
+                parentName={childAccount?.display_name}
               />
               <SpendingAndVendorCard
                 historicalData={historicalData}

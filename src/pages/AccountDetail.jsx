@@ -1183,6 +1183,7 @@ export default function AccountDetail() {
               childAccounts={childAccounts}
               childBudgets={childBudgets}
               childSpending={childSpending}
+              parentName={account?.name || account?.display_name}
             />
             <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>

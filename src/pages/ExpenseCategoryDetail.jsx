@@ -228,6 +228,7 @@ export default function ExpenseCategoryDetail() {
                 performanceHistory={performanceHistory}
                 comparativeData={comparativeData}
                 historicalData={historicalData}
+                parentName={categoryName}
               />
             </div>
           </div>
@@ -252,6 +253,7 @@ export default function ExpenseCategoryDetail() {
               performanceHistory={performanceHistory}
               comparativeData={comparativeData}
               historicalData={historicalData}
+              parentName={categoryName}
             />
           </div>
         </TabsContent>
