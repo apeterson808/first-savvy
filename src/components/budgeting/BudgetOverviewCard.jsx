@@ -26,7 +26,7 @@ const formatLabel = (str) => {
     .join(' ');
 };
 
-export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false, onEditChange }) {
+export function BudgetOverviewCard({ budget, categoryAccount, childAccounts = [], isEditing = false, onEditChange }) {
   const [editedBudget, setEditedBudget] = useState({
     allocated_amount: budget?.allocated_amount || 0,
     cadence: budget?.cadence || 'monthly',
@@ -141,53 +141,73 @@ export function BudgetOverviewCard({ budget, categoryAccount, isEditing = false,
   return (
     <Card>
       <CardContent className="pt-5 pb-5">
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="flex-shrink-0">
-              {isEditing ? (
-                <AppearancePicker
-                  color={iconColor}
-                  icon={categoryAccount?.icon}
-                  onColorChange={(color) => handleIconColorUpdate(categoryAccount?.icon, color)}
-                  onIconChange={(icon) => handleIconColorUpdate(icon, iconColor)}
-                />
-              ) : (
-                <IconComponent className="h-5 w-5" style={{ color: iconColor }} />
-              )}
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-3">
+              <div className="flex-shrink-0">
+                {isEditing ? (
+                  <AppearancePicker
+                    color={iconColor}
+                    icon={categoryAccount?.icon}
+                    onColorChange={(color) => handleIconColorUpdate(categoryAccount?.icon, color)}
+                    onIconChange={(icon) => handleIconColorUpdate(icon, iconColor)}
+                  />
+                ) : (
+                  <IconComponent className="h-5 w-5" style={{ color: iconColor }} />
+                )}
+              </div>
+
+              <div className="flex items-baseline gap-3 flex-wrap min-w-0">
+                {isEditing ? (
+                  <Input
+                    value={editedBudget.custom_name}
+                    onChange={(e) => setEditedBudget({ ...editedBudget, custom_name: e.target.value })}
+                    onBlur={() => handleQuickUpdate({ custom_name: editedBudget.custom_name })}
+                    placeholder={categoryAccount?.display_name || 'Category name'}
+                    className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
+                  />
+                ) : (
+                  <h1 className="text-xl font-semibold">
+                    {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
+                  </h1>
+                )}
+                {categoryAccount?.account_number && (
+                  <span className="text-sm text-slate-500 font-mono">
+                    ({categoryAccount.account_number})
+                  </span>
+                )}
+                {isEditing ? (
+                  <CalculatorAmountInput
+                    value={amounts.monthly}
+                    onChange={(value) => handleAmountUpdate('monthly', value)}
+                    placeholder="0.00"
+                    className="w-32 h-8 text-lg font-semibold text-center"
+                  />
+                ) : (
+                  <span className="text-lg font-semibold text-slate-700">
+                    {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
+                  </span>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-baseline gap-3 flex-wrap min-w-0">
-              {isEditing ? (
-                <Input
-                  value={editedBudget.custom_name}
-                  onChange={(e) => setEditedBudget({ ...editedBudget, custom_name: e.target.value })}
-                  onBlur={() => handleQuickUpdate({ custom_name: editedBudget.custom_name })}
-                  placeholder={categoryAccount?.display_name || 'Category name'}
-                  className="text-xl font-semibold h-auto py-1 px-2 max-w-md"
-                />
-              ) : (
-                <h1 className="text-xl font-semibold">
-                  {budget?.custom_name || categoryAccount?.display_name || 'Unnamed Category'}
-                </h1>
-              )}
-              {categoryAccount?.account_number && (
-                <span className="text-sm text-slate-500 font-mono">
-                  ({categoryAccount.account_number})
-                </span>
-              )}
-              {isEditing ? (
-                <CalculatorAmountInput
-                  value={amounts.monthly}
-                  onChange={(value) => handleAmountUpdate('monthly', value)}
-                  placeholder="0.00"
-                  className="w-32 h-8 text-lg font-semibold text-center"
-                />
-              ) : (
-                <span className="text-lg font-semibold text-slate-700">
-                  {formatCurrency(amounts.monthly)}<span className="text-sm font-normal text-slate-400">/mo</span>
-                </span>
-              )}
-            </div>
+            {childAccounts.length > 0 && (
+              <div className="flex flex-col gap-1 mt-1">
+                {childAccounts.map((child) => {
+                  const ChildIcon = child.icon && Icons[child.icon] ? Icons[child.icon] : Circle;
+                  const childColor = child.color || '#94a3b8';
+                  return (
+                    <div key={child.id} className="flex items-center gap-2 pl-7">
+                      <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: childColor }} />
+                      <span className="text-sm text-slate-600">{child.display_name}</span>
+                      {child.account_number && (
+                        <span className="text-xs text-slate-400 font-mono">({child.account_number})</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex flex-col gap-2 flex-shrink-0">
