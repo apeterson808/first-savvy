@@ -101,6 +101,40 @@ export async function getAccountJournalLinesPaginated({
   };
 }
 
+export async function getMultiAccountJournalLinesPaginated({
+  profileId,
+  accountIds,
+  startDate = null,
+  endDate = null,
+  limit = 100,
+  offset = 0
+}) {
+  const { data, error } = await supabase.rpc('get_multi_account_journal_lines_paginated', {
+    p_profile_id: profileId,
+    p_account_ids: accountIds,
+    p_start_date: startDate,
+    p_end_date: endDate,
+    p_limit: limit,
+    p_offset: offset
+  });
+
+  if (error) throw error;
+
+  if (!data || data.length === 0) {
+    return {
+      lines: [],
+      totalCount: 0,
+      hasMore: false
+    };
+  }
+
+  return {
+    lines: data,
+    totalCount: data[0]?.total_count || 0,
+    hasMore: offset + data.length < (data[0]?.total_count || 0)
+  };
+}
+
 export async function getJournalEntries(profileId, filters = {}) {
   let query = supabase
     .from('journal_entries')

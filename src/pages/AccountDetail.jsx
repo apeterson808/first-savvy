@@ -41,7 +41,7 @@ import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById } from '@/api/chartOfAccounts';
-import { getAccountJournalLinesPaginated, getAccountAuditHistoryPaginated, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
+import { getAccountJournalLinesPaginated, getMultiAccountJournalLinesPaginated, getAccountAuditHistoryPaginated, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
@@ -327,6 +327,9 @@ export default function AccountDetail() {
   // Transactions only appear in the register after they've been posted to journal entries
 
   // SOURCE OF TRUTH: Query posted journal entry lines with pagination
+  const hasChildAccounts = childAccounts.length > 0;
+  const allAccountIds = useMemo(() => [id, ...childAccountIds], [id, childAccountIds]);
+
   const {
     data: journalLinesData,
     fetchNextPage,
@@ -335,15 +338,29 @@ export default function AccountDetail() {
     isLoading: journalLinesLoading,
     error: journalLinesError
   } = useInfiniteQuery({
-    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset, isOpeningBalanceEquity],
+    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset, isOpeningBalanceEquity, hasChildAccounts, childAccountIds, isBudgetableAccount],
     queryFn: async ({ pageParam = 0 }) => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
+
+      const useNoDateFilter = isBudgetableAccount || isOpeningBalanceEquity;
+
+      if (hasChildAccounts) {
+        return await getMultiAccountJournalLinesPaginated({
+          profileId: activeProfile.id,
+          accountIds: allAccountIds,
+          startDate: useNoDateFilter ? null : formatDateForDb(dateRange.start),
+          endDate: useNoDateFilter ? null : formatDateForDb(dateRange.end),
+          limit: 10,
+          offset: pageParam
+        });
+      }
+
       return await getAccountJournalLinesPaginated({
         profileId: activeProfile.id,
         accountId: id,
-        startDate: isOpeningBalanceEquity ? null : formatDateForDb(dateRange.start),
-        endDate: isOpeningBalanceEquity ? null : formatDateForDb(dateRange.end),
-        limit: 100,
+        startDate: useNoDateFilter ? null : formatDateForDb(dateRange.start),
+        endDate: useNoDateFilter ? null : formatDateForDb(dateRange.end),
+        limit: isBudgetableAccount ? 10 : 100,
         offset: pageParam
       });
     },
@@ -369,15 +386,15 @@ export default function AccountDetail() {
     isLoading: auditHistoryLoading,
     error: auditHistoryError
   } = useInfiniteQuery({
-    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset],
+    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset, isBudgetableAccount],
     queryFn: async ({ pageParam = 0 }) => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountAuditHistoryPaginated({
         profileId: activeProfile.id,
         accountId: id,
-        startDate: formatDateForDb(dateRange.start),
-        endDate: formatDateForDb(dateRange.end),
-        limit: 100,
+        startDate: isBudgetableAccount ? null : formatDateForDb(dateRange.start),
+        endDate: isBudgetableAccount ? null : formatDateForDb(dateRange.end),
+        limit: isBudgetableAccount ? 10 : 100,
         offset: pageParam
       });
     },
@@ -1230,11 +1247,13 @@ export default function AccountDetail() {
                     </TabsTrigger>
                   </TabsList>
                   <div className="flex items-center gap-2">
-                    <DatePresetDropdown
-                      value={datePreset}
-                      onValueChange={setDatePreset}
-                      triggerClassName="w-40 h-8 text-sm"
-                    />
+                    {!isBudgetableAccount && (
+                      <DatePresetDropdown
+                        value={datePreset}
+                        onValueChange={setDatePreset}
+                        triggerClassName="w-40 h-8 text-sm"
+                      />
+                    )}
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
@@ -1263,6 +1282,9 @@ export default function AccountDetail() {
                         <TableHeader>
                           <TableRow className="h-8 bg-slate-100">
                             <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            {hasChildAccounts && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
+                            )}
                             <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'From/To'}</TableHead>
@@ -1285,6 +1307,11 @@ export default function AccountDetail() {
                               <TableCell className="whitespace-nowrap text-[11px] py-1">
                                 {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                               </TableCell>
+                              {hasChildAccounts && (
+                                <TableCell className="text-[11px] text-slate-600 py-1">
+                                  {activity.account_name || '\u2014'}
+                                </TableCell>
+                              )}
                               <TableCell className="py-1">
                                 <span
                                   className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
@@ -1338,14 +1365,14 @@ export default function AccountDetail() {
                           ))}
                           {isFetchingNextPage && (
                             <TableRow>
-                              <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="text-center py-3 text-slate-500 text-xs">
                                 Loading more transactions...
                               </TableCell>
                             </TableRow>
                           )}
                           {hasNextPage && !isFetchingNextPage && (
                             <TableRow ref={loadMoreRef}>
-                              <TableCell colSpan={8} className="h-4"></TableCell>
+                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="h-4"></TableCell>
                             </TableRow>
                           )}
                         </TableBody>
@@ -2136,14 +2163,14 @@ export default function AccountDetail() {
                           ))}
                           {isFetchingNextPage && (
                             <TableRow>
-                              <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="text-center py-3 text-slate-500 text-xs">
                                 Loading more transactions...
                               </TableCell>
                             </TableRow>
                           )}
                           {hasNextPage && !isFetchingNextPage && (
                             <TableRow ref={loadMoreRef}>
-                              <TableCell colSpan={8} className="h-4"></TableCell>
+                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="h-4"></TableCell>
                             </TableRow>
                           )}
                         </TableBody>
