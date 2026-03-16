@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,7 +28,7 @@ import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
   Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
-  Target, ChevronLeft, ChevronRight
+  Target
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -61,16 +61,12 @@ export default function AccountDetail() {
   const navigate = useNavigate();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isBudgetEditMode, setIsBudgetEditMode] = useState(false);
+  const [datePreset, setDatePreset] = useState('thisMonth');
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const [activeTab, setActiveTab] = useState('register');
   const [budgetLedgerTab, setBudgetLedgerTab] = useState('register');
-  const [registerPage, setRegisterPage] = useState(0);
-  const [auditPage, setAuditPage] = useState(0);
-  const [budgetRegisterPage, setBudgetRegisterPage] = useState(0);
-  const [budgetAuditPage, setBudgetAuditPage] = useState(0);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -91,6 +87,8 @@ export default function AccountDetail() {
 
   const urlParams = new URLSearchParams(window.location.search);
   const returnUrl = urlParams.get('from') || '?tab=accounts';
+
+  const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
 
   // Hooks for fetching account types and details in edit mode
   const { accountTypes = [] } = useAccountTypesByClass(editClass);
@@ -337,87 +335,74 @@ export default function AccountDetail() {
   // NOTE: Pending transactions are NOT shown in the register (QuickBooks behavior)
   // Transactions only appear in the register after they've been posted to journal entries
 
-  const PAGE_SIZE = 10;
-
-  const { data: journalLinesData, isLoading: journalLinesLoading, error: journalLinesError } = useQuery({
-    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, registerPage],
-    queryFn: async () => {
+  // SOURCE OF TRUTH: Query posted journal entry lines with pagination
+  const {
+    data: journalLinesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: journalLinesLoading,
+    error: journalLinesError
+  } = useInfiniteQuery({
+    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset, isOpeningBalanceEquity],
+    queryFn: async ({ pageParam = 0 }) => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountJournalLinesPaginated({
         profileId: activeProfile.id,
         accountId: id,
-        startDate: null,
-        endDate: null,
-        limit: PAGE_SIZE,
-        offset: registerPage * PAGE_SIZE
+        startDate: isOpeningBalanceEquity ? null : formatDateForDb(dateRange.start),
+        endDate: isOpeningBalanceEquity ? null : formatDateForDb(dateRange.end),
+        limit: 100,
+        offset: pageParam
       });
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
+      return lastPage.hasMore ? loadedCount : undefined;
     },
     enabled: !!id && !!activeProfile
   });
 
-  const journalLines = journalLinesData?.lines || [];
-  const totalJournalLines = journalLinesData?.totalCount || 0;
-  const registerTotalPages = Math.ceil(totalJournalLines / PAGE_SIZE);
+  const journalLines = useMemo(() => {
+    if (!journalLinesData?.pages) return [];
+    return journalLinesData.pages.flatMap(page => page.lines);
+  }, [journalLinesData]);
 
-  const { data: auditHistoryData, isLoading: auditHistoryLoading, error: auditHistoryError } = useQuery({
-    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, auditPage],
-    queryFn: async () => {
+  const totalJournalLines = journalLinesData?.pages?.[0]?.totalCount || 0;
+
+  const {
+    data: auditHistoryData,
+    fetchNextPage: fetchNextAuditPage,
+    hasNextPage: hasNextAuditPage,
+    isFetchingNextPage: isFetchingNextAuditPage,
+    isLoading: auditHistoryLoading,
+    error: auditHistoryError
+  } = useInfiniteQuery({
+    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset],
+    queryFn: async ({ pageParam = 0 }) => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountAuditHistoryPaginated({
         profileId: activeProfile.id,
         accountId: id,
-        startDate: null,
-        endDate: null,
-        limit: PAGE_SIZE,
-        offset: auditPage * PAGE_SIZE
+        startDate: formatDateForDb(dateRange.start),
+        endDate: formatDateForDb(dateRange.end),
+        limit: 100,
+        offset: pageParam
       });
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
+      return lastPage.hasMore ? loadedCount : undefined;
     },
     enabled: !!id && !!activeProfile && (activeTab === 'audit' || budgetLedgerTab === 'audit')
   });
 
-  const auditHistoryLines = auditHistoryData?.lines || [];
-  const totalAuditLines = auditHistoryData?.totalCount || 0;
-  const auditTotalPages = Math.ceil(totalAuditLines / PAGE_SIZE);
+  const auditHistoryLines = useMemo(() => {
+    if (!auditHistoryData?.pages) return [];
+    return auditHistoryData.pages.flatMap(page => page.lines);
+  }, [auditHistoryData]);
 
-  const { data: budgetJournalLinesData, isLoading: budgetJournalLinesLoading } = useQuery({
-    queryKey: ['budget-journal-lines-paginated', 'account', id, activeProfile?.id, budgetRegisterPage],
-    queryFn: async () => {
-      if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
-      return await getAccountJournalLinesPaginated({
-        profileId: activeProfile.id,
-        accountId: id,
-        startDate: null,
-        endDate: null,
-        limit: PAGE_SIZE,
-        offset: budgetRegisterPage * PAGE_SIZE
-      });
-    },
-    enabled: !!id && !!activeProfile && isBudgetableAccount
-  });
-
-  const budgetJournalLines = budgetJournalLinesData?.lines || [];
-  const totalBudgetJournalLines = budgetJournalLinesData?.totalCount || 0;
-  const budgetRegisterTotalPages = Math.ceil(totalBudgetJournalLines / PAGE_SIZE);
-
-  const { data: budgetAuditData, isLoading: budgetAuditLoading } = useQuery({
-    queryKey: ['budget-audit-paginated', 'account', id, activeProfile?.id, budgetAuditPage],
-    queryFn: async () => {
-      if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
-      return await getAccountAuditHistoryPaginated({
-        profileId: activeProfile.id,
-        accountId: id,
-        startDate: null,
-        endDate: null,
-        limit: PAGE_SIZE,
-        offset: budgetAuditPage * PAGE_SIZE
-      });
-    },
-    enabled: !!id && !!activeProfile && isBudgetableAccount && budgetLedgerTab === 'audit'
-  });
-
-  const budgetAuditLines = budgetAuditData?.lines || [];
-  const totalBudgetAuditLines = budgetAuditData?.totalCount || 0;
-  const budgetAuditTotalPages = Math.ceil(totalBudgetAuditLines / PAGE_SIZE);
+  const totalAuditLines = auditHistoryData?.pages?.[0]?.totalCount || 0;
 
   // Helper functions for edit mode
   const cancelEditMode = () => {
@@ -542,21 +527,26 @@ export default function AccountDetail() {
       );
     }
 
-    if (typeFilter && typeFilter !== 'all') {
-      combined = combined.filter(item => item.entryType === typeFilter);
-    }
-
     combined.sort((a, b) => {
       const dateA = new Date(a.displayDate);
       const dateB = new Date(b.displayDate);
-      const dateDiff = dateB - dateA;
+      const dateDiff = dateB - dateA; // Reversed: newest first
+
+      // If dates are the same, ensure opening balance entries come last (when showing newest first)
       if (dateDiff === 0) {
         if (a.entryType === 'opening_balance' && b.entryType !== 'opening_balance') return 1;
         if (a.entryType !== 'opening_balance' && b.entryType === 'opening_balance') return -1;
       }
+
       return dateDiff;
     });
 
+    // All items are posted with pre-calculated running balance from database
+    // Use natural accounting presentation:
+    // - For expenses: debits = expenses (money out), credits = refunds (money in)
+    // - For income: credits = earnings (money in), debits = refunds (money out)
+    // - For assets: debits = increases (money in), credits = decreases (money out)
+    // - For liabilities/credit cards: debits = payments (money in), credits = purchases (money out)
     const isExpenseAccount = accountClass === 'expense';
 
     let activitiesWithBalance = combined.map(activity => ({
@@ -565,19 +555,44 @@ export default function AccountDetail() {
       calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
+    // Recalculate running balance in chronological order
+    // Array is sorted newest first (DESC), so we loop backwards to go oldest to newest
     if (activitiesWithBalance.length > 0) {
+      // Start from the end (oldest transaction) and work backward to index 0 (newest)
       let runningBal = 0;
       for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
         const activity = activitiesWithBalance[i];
+        // Use original debit/credit amounts for balance calculation, not the swapped display values
         const debit = activity.debitAmount || 0;
         const credit = activity.creditAmount || 0;
-        const change = isDebitNormal ? (debit - credit) : (credit - debit);
+        const change = isDebitNormal
+          ? (debit - credit)
+          : (credit - debit);
         runningBal += change;
         activity.runningBalance = runningBal;
       }
     }
 
-    const endingBal = activitiesWithBalance.length > 0 ? activitiesWithBalance[0].runningBalance : 0;
+    let beginningBal = null;
+    if (dateRange.start && activitiesWithBalance.length > 0) {
+      const oldestActivity = activitiesWithBalance[activitiesWithBalance.length - 1];
+      const oldestBalance = oldestActivity.runningBalance;
+      // Use original debit/credit amounts, not the swapped display values
+      const oldestDebit = oldestActivity.debitAmount || 0;
+      const oldestCredit = oldestActivity.creditAmount || 0;
+      const oldestChange = isDebitNormal ? (oldestDebit - oldestCredit) : (oldestCredit - oldestDebit);
+
+      beginningBal = oldestBalance - oldestChange;
+
+      activitiesWithBalance.forEach(activity => {
+        activity.runningBalance += beginningBal;
+      });
+    }
+
+    const endingBal = activitiesWithBalance.length > 0
+      ? activitiesWithBalance[0].runningBalance
+      : 0;
+
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
     const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
     const netChange = totalDebits - totalCredits;
@@ -595,91 +610,10 @@ export default function AccountDetail() {
     return {
       allActivity: activitiesWithBalance,
       analytics: analyticsData,
-      beginningBalance: null,
+      beginningBalance: dateRange.start ? beginningBal : null,
       endingBalance: endingBal
     };
-  }, [journalLines, account, searchQuery, typeFilter]);
-
-  const budgetAllActivity = useMemo(() => {
-    const accountClass = account?.account_class || account?.class || 'asset';
-    const isExpenseAccount = accountClass === 'expense';
-    let combined = budgetJournalLines.map(jl => {
-      const entryType = jl.entry_type || 'adjustment';
-      let fromToDisplay = '';
-      if (entryType === 'transfer') fromToDisplay = jl.offsetting_accounts || 'Transfer';
-      else if (entryType === 'credit_card_payment') fromToDisplay = 'Credit Card Payment';
-      else if (jl.contact_name) fromToDisplay = jl.contact_name;
-      return {
-        ...jl,
-        id: jl.line_id,
-        displayDate: jl.entry_date,
-        displayDescription: jl.line_description || jl.entry_description,
-        debitAmount: jl.debit_amount,
-        creditAmount: jl.credit_amount,
-        entryNumber: jl.entry_number,
-        journalEntryId: jl.entry_id,
-        transactionId: jl.transaction_id,
-        entryType,
-        offsettingAccounts: fromToDisplay,
-        runningBalance: parseFloat(jl.running_balance || 0),
-        calculatedDebit: isExpenseAccount ? (jl.credit_amount || 0) : (jl.debit_amount || 0),
-        calculatedCredit: isExpenseAccount ? (jl.debit_amount || 0) : (jl.credit_amount || 0)
-      };
-    });
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      combined = combined.filter(a =>
-        a.displayDescription?.toLowerCase().includes(q) ||
-        a.entryNumber?.toLowerCase().includes(q) ||
-        a.offsettingAccounts?.toLowerCase().includes(q)
-      );
-    }
-    if (typeFilter && typeFilter !== 'all') {
-      combined = combined.filter(a => a.entryType === typeFilter);
-    }
-    return combined;
-  }, [budgetJournalLines, account, searchQuery, typeFilter]);
-
-  const budgetAllAuditActivity = useMemo(() => {
-    if (budgetLedgerTab !== 'audit') return [];
-    const accountClass = account?.account_class || account?.class || 'asset';
-    const isExpenseAccount = accountClass === 'expense';
-    let combined = budgetAuditLines.map(jl => {
-      const entryType = jl.entry_type || 'adjustment';
-      let fromToDisplay = '';
-      if (entryType === 'transfer') fromToDisplay = jl.offsetting_accounts || 'Transfer';
-      else if (entryType === 'credit_card_payment') fromToDisplay = 'Credit Card Payment';
-      else if (jl.contact_name) fromToDisplay = jl.contact_name;
-      return {
-        ...jl,
-        id: jl.line_id,
-        displayDate: jl.transaction_date || jl.entry_date,
-        displayDescription: jl.line_description || jl.entry_description,
-        debitAmount: jl.debit_amount,
-        creditAmount: jl.credit_amount,
-        entryNumber: jl.entry_number,
-        journalEntryId: jl.entry_id,
-        transactionId: jl.transaction_id,
-        entryType,
-        offsettingAccounts: fromToDisplay,
-        createdAt: jl.created_at,
-        calculatedDebit: isExpenseAccount ? (jl.credit_amount || 0) : (jl.debit_amount || 0),
-        calculatedCredit: isExpenseAccount ? (jl.debit_amount || 0) : (jl.credit_amount || 0)
-      };
-    });
-    if (searchQuery) {
-      const q = searchQuery.toLowerCase();
-      combined = combined.filter(a =>
-        a.displayDescription?.toLowerCase().includes(q) ||
-        a.entryNumber?.toLowerCase().includes(q) ||
-        a.offsettingAccounts?.toLowerCase().includes(q)
-      );
-    }
-    if (typeFilter && typeFilter !== 'all') {
-      combined = combined.filter(a => a.entryType === typeFilter);
-    }
-    return combined;
-  }, [budgetAuditLines, account, searchQuery, typeFilter, budgetLedgerTab]);
+  }, [journalLines, account, searchQuery, dateRange]);
 
   const { allAuditActivity, auditAnalytics } = useMemo(() => {
     if (activeTab !== 'audit' && budgetLedgerTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
@@ -728,10 +662,6 @@ export default function AccountDetail() {
       );
     }
 
-    if (typeFilter && typeFilter !== 'all') {
-      combined = combined.filter(item => item.entryType === typeFilter);
-    }
-
     combined.sort((a, b) => {
       const dateA = new Date(a.displayDate);
       const dateB = new Date(b.displayDate);
@@ -760,8 +690,63 @@ export default function AccountDetail() {
       allAuditActivity: activitiesWithBalance,
       auditAnalytics: analyticsData
     };
-  }, [auditHistoryLines, account, searchQuery, typeFilter, activeTab, budgetLedgerTab]);
+  }, [auditHistoryLines, account, searchQuery, activeTab, budgetLedgerTab]);
 
+  // Infinite scroll observer for register
+  const loadMoreRef = useRef();
+  const observerCallback = useCallback((entries) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  // Infinite scroll observer for audit history
+  const loadMoreAuditRef = useRef();
+  const observerAuditCallback = useCallback((entries) => {
+    const [entry] = entries;
+    if (entry.isIntersecting && hasNextAuditPage && !isFetchingNextAuditPage) {
+      fetchNextAuditPage();
+    }
+  }, [hasNextAuditPage, isFetchingNextAuditPage, fetchNextAuditPage]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(observerCallback, {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [observerCallback]);
+
+  React.useEffect(() => {
+    const observer = new IntersectionObserver(observerAuditCallback, {
+      root: null,
+      rootMargin: '100px',
+      threshold: 0.1
+    });
+
+    const currentRef = loadMoreAuditRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [observerAuditCallback]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1254,141 +1239,252 @@ export default function AccountDetail() {
                     </TabsTrigger>
                   </TabsList>
                   <div className="flex items-center gap-2">
-                    <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setBudgetRegisterPage(0); setBudgetAuditPage(0); }}>
-                      <SelectTrigger className="w-36 h-8 text-sm">
-                        <SelectValue placeholder="All types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All types</SelectItem>
-                        <SelectItem value="expense">Expense</SelectItem>
-                        <SelectItem value="adjustment">Adjustment</SelectItem>
-                        <SelectItem value="transfer">Transfer</SelectItem>
-                        <SelectItem value="credit_card_payment">CC Payment</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <DatePresetDropdown
+                      value={datePreset}
+                      onValueChange={setDatePreset}
+                      triggerClassName="w-40 h-8 text-sm"
+                    />
                     <div className="relative">
                       <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
                         placeholder="Search transactions..."
                         value={searchQuery}
-                        onChange={(e) => { setSearchQuery(e.target.value); setBudgetRegisterPage(0); setBudgetAuditPage(0); }}
-                        className="pl-8 w-56 h-8 text-sm"
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8 w-64 h-8 text-sm"
                       />
                     </div>
                   </div>
                 </div>
 
                 <TabsContent value="register" className="mt-0">
-                  {budgetJournalLinesLoading ? (
+                  {journalLinesLoading ? (
                     <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
-                  ) : budgetAllActivity.length === 0 ? (
+                  ) : journalLinesError ? (
+                    <div className="text-center py-6 space-y-2">
+                      <p className="text-sm text-red-600">Failed to load register data</p>
+                      <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+                    </div>
+                  ) : allActivity.length === 0 ? (
                     <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
                   ) : (
-                    <>
-                      <div className="rounded-md border overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="h-8 bg-slate-100">
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
-                              <TableHead className="w-[40px] py-1.5"></TableHead>
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="h-8 bg-slate-100">
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'From/To'}</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            <TableHead className="w-[40px] py-1.5"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allActivity.map((activity, index) => (
+                            <TableRow
+                              key={`${activity.id || index}`}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <span
+                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                                >
+                                  {activity.entryNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-1 max-w-[300px]">
+                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                              </TableCell>
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                {activity.offsettingAccounts || '\u2014'}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1">
+                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1">
+                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              </TableCell>
+                              <TableCell className="text-right font-semibold text-[11px] py-1">
+                                {formatCurrency(activity.runningBalance)}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <div className="flex items-center gap-1">
+                                  {activity.journalEntryId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                      className="h-6 w-6 p-0"
+                                      title="View Journal Entry"
+                                    >
+                                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                                    </Button>
+                                  )}
+                                  {activity.transactionId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                      className="h-6 w-6 p-0"
+                                      title="View Audit History"
+                                    >
+                                      <History className="w-3 h-3 text-slate-400" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {budgetAllActivity.map((activity, index) => (
-                              <TableRow key={`${activity.id || index}`} className={`h-7 ${index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100'}`}>
-                                <TableCell className="whitespace-nowrap text-[11px] py-1">{format(parseISO(activity.displayDate), 'MMM d, yyyy')}</TableCell>
-                                <TableCell className="py-1"><span className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900" onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}>{activity.entryNumber}</span></TableCell>
-                                <TableCell className="py-1 max-w-[300px]"><div className="text-[11px] truncate">{activity.displayDescription}</div></TableCell>
-                                <TableCell className="text-[11px] text-slate-600 py-1">{activity.offsettingAccounts || '—'}</TableCell>
-                                <TableCell className="text-right text-[11px] py-1">{activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}</TableCell>
-                                <TableCell className="text-right text-[11px] py-1">{activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}</TableCell>
-                                <TableCell className="text-right font-semibold text-[11px] py-1">{formatCurrency(activity.runningBalance)}</TableCell>
-                                <TableCell className="py-1">
-                                  <div className="flex items-center gap-1">
-                                    {activity.journalEntryId && <Button variant="ghost" size="sm" onClick={() => setSelectedJournalEntryId(activity.journalEntryId)} className="h-6 w-6 p-0" title="View Journal Entry"><ExternalLink className="w-3 h-3 text-slate-400" /></Button>}
-                                    {activity.transactionId && <Button variant="ghost" size="sm" onClick={() => setSelectedTransactionForAudit(activity.transactionId)} className="h-6 w-6 p-0" title="View Audit History"><History className="w-3 h-3 text-slate-400" /></Button>}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      {budgetRegisterTotalPages > 1 && (
-                        <div className="flex items-center justify-between mt-2 px-1">
-                          <span className="text-xs text-slate-500">{budgetRegisterPage * PAGE_SIZE + 1}–{Math.min((budgetRegisterPage + 1) * PAGE_SIZE, totalBudgetJournalLines)} of {totalBudgetJournalLines}</span>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={budgetRegisterPage === 0} onClick={() => setBudgetRegisterPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                            <span className="text-xs text-slate-600">{budgetRegisterPage + 1} / {budgetRegisterTotalPages}</span>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={budgetRegisterPage >= budgetRegisterTotalPages - 1} onClick={() => setBudgetRegisterPage(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></Button>
-                          </div>
+                          ))}
+                          {isFetchingNextPage && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                                Loading more transactions...
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {hasNextPage && !isFetchingNextPage && (
+                            <TableRow ref={loadMoreRef}>
+                              <TableCell colSpan={8} className="h-4"></TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                      {totalJournalLines > 0 && (
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                          Showing {allActivity.length} of {totalJournalLines} transactions
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </TabsContent>
 
                 <TabsContent value="audit" className="mt-0">
-                  {budgetAuditLoading ? (
+                  {auditHistoryLoading ? (
                     <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
-                  ) : budgetAllAuditActivity.length === 0 ? (
+                  ) : auditHistoryError ? (
+                    <div className="text-center py-6 space-y-2">
+                      <p className="text-sm text-red-600">Failed to load audit history</p>
+                      <p className="text-xs text-slate-500">{auditHistoryError.message}</p>
+                    </div>
+                  ) : allAuditActivity.length === 0 ? (
                     <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
                   ) : (
-                    <>
-                      <div className="rounded-md border overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="h-8 bg-slate-100">
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Action Time</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                              <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                              <TableHead className="w-[40px] py-1.5"></TableHead>
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="h-8 bg-slate-100">
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Action Time</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="w-[40px] py-1.5"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allAuditActivity.map((activity, index) => (
+                            <TableRow
+                              key={`${activity.id || index}`}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="py-1 text-[11px] text-slate-600 whitespace-nowrap">
+                                {activity.createdAt ? format(new Date(activity.createdAt), 'MMM d, h:mm a') : '\u2014'}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <span
+                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                                >
+                                  {activity.entryNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <Badge variant="outline" className="text-[10px] h-5 capitalize">
+                                  {activity.entryType.replace('_', ' ')}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="py-1 max-w-[250px]">
+                                <div className="text-[11px] truncate">
+                                  {activity.displayDescription}
+                                </div>
+                              </TableCell>
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                {activity.offsettingAccounts || '\u2014'}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1">
+                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1">
+                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <div className="flex items-center gap-1">
+                                  {activity.journalEntryId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                      className="h-6 w-6 p-0"
+                                      title="View Journal Entry"
+                                    >
+                                      <ExternalLink className="w-3 h-3 text-slate-400" />
+                                    </Button>
+                                  )}
+                                  {activity.transactionId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                      className="h-6 w-6 p-0"
+                                      title="View Audit History"
+                                    >
+                                      <History className="w-3 h-3 text-slate-400" />
+                                    </Button>
+                                  )}
+                                </div>
+                              </TableCell>
                             </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {budgetAllAuditActivity.map((activity, index) => (
-                              <TableRow key={`${activity.id || index}`} className={`h-7 ${index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100'}`}>
-                                <TableCell className="py-1 text-[11px] text-slate-600 whitespace-nowrap">{activity.createdAt ? format(new Date(activity.createdAt), 'MMM d, h:mm a') : '—'}</TableCell>
-                                <TableCell className="whitespace-nowrap text-[11px] py-1">{format(parseISO(activity.displayDate), 'MMM d, yyyy')}</TableCell>
-                                <TableCell className="py-1"><span className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900" onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}>{activity.entryNumber}</span></TableCell>
-                                <TableCell className="py-1"><Badge variant="outline" className="text-[10px] h-5 capitalize">{activity.entryType?.replace('_', ' ')}</Badge></TableCell>
-                                <TableCell className="py-1 max-w-[250px]"><div className="text-[11px] truncate">{activity.displayDescription}</div></TableCell>
-                                <TableCell className="text-[11px] text-slate-600 py-1">{activity.offsettingAccounts || '—'}</TableCell>
-                                <TableCell className="text-right text-[11px] py-1">{activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}</TableCell>
-                                <TableCell className="text-right text-[11px] py-1">{activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}</TableCell>
-                                <TableCell className="py-1">
-                                  <div className="flex items-center gap-1">
-                                    {activity.journalEntryId && <Button variant="ghost" size="sm" onClick={() => setSelectedJournalEntryId(activity.journalEntryId)} className="h-6 w-6 p-0" title="View Journal Entry"><ExternalLink className="w-3 h-3 text-slate-400" /></Button>}
-                                    {activity.transactionId && <Button variant="ghost" size="sm" onClick={() => setSelectedTransactionForAudit(activity.transactionId)} className="h-6 w-6 p-0" title="View Audit History"><History className="w-3 h-3 text-slate-400" /></Button>}
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                      {budgetAuditTotalPages > 1 && (
-                        <div className="flex items-center justify-between mt-2 px-1">
-                          <span className="text-xs text-slate-500">{budgetAuditPage * PAGE_SIZE + 1}–{Math.min((budgetAuditPage + 1) * PAGE_SIZE, totalBudgetAuditLines)} of {totalBudgetAuditLines}</span>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={budgetAuditPage === 0} onClick={() => setBudgetAuditPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                            <span className="text-xs text-slate-600">{budgetAuditPage + 1} / {budgetAuditTotalPages}</span>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={budgetAuditPage >= budgetAuditTotalPages - 1} onClick={() => setBudgetAuditPage(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></Button>
-                          </div>
+                          ))}
+                          {isFetchingNextAuditPage && (
+                            <TableRow>
+                              <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
+                                Loading more entries...
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {hasNextAuditPage && !isFetchingNextAuditPage && (
+                            <TableRow ref={loadMoreAuditRef}>
+                              <TableCell colSpan={9} className="h-4"></TableCell>
+                            </TableRow>
+                          )}
+                        </TableBody>
+                      </Table>
+                      {totalAuditLines > 0 && (
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                          Showing {allAuditActivity.length} of {totalAuditLines} entries
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
                 </TabsContent>
               </Tabs>
@@ -1824,27 +1920,18 @@ export default function AccountDetail() {
                 </div>
                 <div className="flex items-center gap-2">
                   {!isOpeningBalanceEquity && (
-                    <Select value={typeFilter} onValueChange={(v) => { setTypeFilter(v); setRegisterPage(0); setAuditPage(0); }}>
-                      <SelectTrigger className="w-36 h-8 text-sm">
-                        <SelectValue placeholder="All types" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">All types</SelectItem>
-                        <SelectItem value="expense">Expense</SelectItem>
-                        <SelectItem value="income">Income</SelectItem>
-                        <SelectItem value="adjustment">Adjustment</SelectItem>
-                        <SelectItem value="transfer">Transfer</SelectItem>
-                        <SelectItem value="credit_card_payment">CC Payment</SelectItem>
-                        <SelectItem value="opening_balance">Opening Balance</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <DatePresetDropdown
+                      value={datePreset}
+                      onValueChange={setDatePreset}
+                      triggerClassName="w-40 h-8"
+                    />
                   )}
                   <div className="relative">
                     <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                     <Input
                       placeholder="Search transactions..."
                       value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); setRegisterPage(0); setAuditPage(0); }}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-8 w-52 h-8 text-sm"
                     />
                   </div>
@@ -1864,7 +1951,6 @@ export default function AccountDetail() {
                 ) : allActivity.length === 0 ? (
                   <p className="text-center text-slate-500 py-6 text-sm">No opening balance entries found</p>
                 ) : (
-                  <>
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -1933,20 +2019,26 @@ export default function AccountDetail() {
                           </TableRow>
                           );
                         })}
+                        {isFetchingNextPage && (
+                          <TableRow>
+                            <TableCell colSpan={7} className="text-center py-3 text-slate-500 text-xs">
+                              Loading more entries...
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {hasNextPage && !isFetchingNextPage && (
+                          <TableRow ref={loadMoreRef}>
+                            <TableCell colSpan={7} className="h-4"></TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
-                  </div>
-                  {registerTotalPages > 1 && (
-                    <div className="flex items-center justify-between mt-2 px-1">
-                      <span className="text-xs text-slate-500">{registerPage * PAGE_SIZE + 1}–{Math.min((registerPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines}</span>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={registerPage === 0} onClick={() => setRegisterPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                        <span className="text-xs text-slate-600">{registerPage + 1} / {registerTotalPages}</span>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={registerPage >= registerTotalPages - 1} onClick={() => setRegisterPage(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></Button>
+                    {totalJournalLines > 0 && (
+                      <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                        Showing {allActivity.length} of {totalJournalLines} entries
                       </div>
-                    </div>
-                  )}
-                  </>
+                    )}
+                  </div>
                 )}
               </div>
             ) : (
@@ -1973,7 +2065,6 @@ export default function AccountDetail() {
                   ) : allActivity.length === 0 ? (
                     <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
                   ) : (
-                    <>
                     <div className="rounded-md border overflow-x-auto">
                       <Table>
                         <TableHeader>
@@ -2052,20 +2143,26 @@ export default function AccountDetail() {
                               </TableCell>
                             </TableRow>
                           ))}
+                          {isFetchingNextPage && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="text-center py-3 text-slate-500 text-xs">
+                                Loading more transactions...
+                              </TableCell>
+                            </TableRow>
+                          )}
+                          {hasNextPage && !isFetchingNextPage && (
+                            <TableRow ref={loadMoreRef}>
+                              <TableCell colSpan={8} className="h-4"></TableCell>
+                            </TableRow>
+                          )}
                         </TableBody>
                       </Table>
-                    </div>
-                    {registerTotalPages > 1 && (
-                      <div className="flex items-center justify-between mt-2 px-1">
-                        <span className="text-xs text-slate-500">{registerPage * PAGE_SIZE + 1}–{Math.min((registerPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines}</span>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={registerPage === 0} onClick={() => setRegisterPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                          <span className="text-xs text-slate-600">{registerPage + 1} / {registerTotalPages}</span>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={registerPage >= registerTotalPages - 1} onClick={() => setRegisterPage(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></Button>
+                      {totalJournalLines > 0 && (
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                          Showing {allActivity.length} of {totalJournalLines} transactions
                         </div>
-                      </div>
-                    )}
-                    </>
+                      )}
+                    </div>
                   )}
                 </TabsContent>
 
@@ -2085,7 +2182,6 @@ export default function AccountDetail() {
                 ) : allAuditActivity.length === 0 ? (
                   <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
                 ) : (
-                  <>
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
@@ -2172,20 +2268,26 @@ export default function AccountDetail() {
                             </TableCell>
                           </TableRow>
                         ))}
+                        {isFetchingNextAuditPage && (
+                          <TableRow>
+                            <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
+                              Loading more entries...
+                            </TableCell>
+                          </TableRow>
+                        )}
+                        {hasNextAuditPage && !isFetchingNextAuditPage && (
+                          <TableRow ref={loadMoreAuditRef}>
+                            <TableCell colSpan={9} className="h-4"></TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
-                  </div>
-                  {auditTotalPages > 1 && (
-                    <div className="flex items-center justify-between mt-2 px-1">
-                      <span className="text-xs text-slate-500">{auditPage * PAGE_SIZE + 1}–{Math.min((auditPage + 1) * PAGE_SIZE, totalAuditLines)} of {totalAuditLines}</span>
-                      <div className="flex items-center gap-1">
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={auditPage === 0} onClick={() => setAuditPage(p => p - 1)}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-                        <span className="text-xs text-slate-600">{auditPage + 1} / {auditTotalPages}</span>
-                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0" disabled={auditPage >= auditTotalPages - 1} onClick={() => setAuditPage(p => p + 1)}><ChevronRight className="h-3.5 w-3.5" /></Button>
+                    {totalAuditLines > 0 && (
+                      <div className="text-xs text-slate-500 text-center py-1.5 border-t">
+                        Showing {allAuditActivity.length} of {totalAuditLines} entries
                       </div>
-                    </div>
-                  )}
-                  </>
+                    )}
+                  </div>
                 )}
               </TabsContent>
               </Tabs>
