@@ -64,7 +64,7 @@ export function ChildBudgetSection({ childAccount, profileId }) {
         .gte('date', monthStart.toISOString())
         .lte('date', monthEnd.toISOString());
       if (error) throw error;
-      return data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+      return data?.reduce((sum, t) => sum + Math.abs(t.amount || 0), 0) || 0;
     },
     enabled: !!childAccount.id && !!profileId && isOpen
   });

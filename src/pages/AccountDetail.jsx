@@ -228,7 +228,7 @@ export default function AccountDetail() {
       if (error) throw error;
       const map = {};
       for (const t of data || []) {
-        map[t.category_account_id] = (map[t.category_account_id] || 0) + (t.amount || 0);
+        map[t.category_account_id] = (map[t.category_account_id] || 0) + Math.abs(t.amount || 0);
       }
       return map;
     },
@@ -268,7 +268,7 @@ export default function AccountDetail() {
         .lte('date', monthEnd.toISOString());
 
       if (error) throw error;
-      return data?.reduce((sum, t) => sum + (t.amount || 0), 0) || 0;
+      return data?.reduce((sum, t) => sum + Math.abs(t.amount || 0), 0) || 0;
     },
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount && !!account
   });
