@@ -564,9 +564,11 @@ export default function ContactDetail() {
                     <p className={`text-2xl font-bold ${analytics.netBalance >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
                       {formatCurrency(Math.abs(analytics.netBalance))}
                     </p>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      {analytics.netBalance >= 0 ? 'They owe you' : 'You owe them'}
-                    </p>
+                    {analytics.transactionCount > 0 && (
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        {analytics.netBalance >= 0 ? 'They owe you' : 'You owe them'}
+                      </p>
+                    )}
                   </div>
 
                   <div className="border-t pt-5">
