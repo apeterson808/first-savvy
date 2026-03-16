@@ -69,6 +69,13 @@ export default function AccountDetail() {
   const [budgetLedgerTab, setBudgetLedgerTab] = useState('register');
   const [currentPage, setCurrentPage] = useState(0);
   const [currentAuditPage, setCurrentAuditPage] = useState(0);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    entryType: 'all',
+    minAmount: '',
+    maxAmount: '',
+    contact: ''
+  });
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -526,6 +533,34 @@ export default function AccountDetail() {
       );
     }
 
+    if (filters.entryType !== 'all') {
+      combined = combined.filter(item => item.entryType === filters.entryType);
+    }
+
+    if (filters.minAmount) {
+      const minAmt = parseFloat(filters.minAmount);
+      combined = combined.filter(item => {
+        const amount = Math.abs(parseFloat(item.debitAmount || item.creditAmount || 0));
+        return amount >= minAmt;
+      });
+    }
+
+    if (filters.maxAmount) {
+      const maxAmt = parseFloat(filters.maxAmount);
+      combined = combined.filter(item => {
+        const amount = Math.abs(parseFloat(item.debitAmount || item.creditAmount || 0));
+        return amount <= maxAmt;
+      });
+    }
+
+    if (filters.contact) {
+      const contactQuery = filters.contact.toLowerCase();
+      combined = combined.filter(item =>
+        item.offsettingAccounts?.toLowerCase().includes(contactQuery) ||
+        item.contact_name?.toLowerCase().includes(contactQuery)
+      );
+    }
+
     combined.sort((a, b) => {
       const dateA = new Date(a.displayDate);
       const dateB = new Date(b.displayDate);
@@ -612,7 +647,7 @@ export default function AccountDetail() {
       beginningBalance: dateRange.start ? beginningBal : null,
       endingBalance: endingBal
     };
-  }, [journalLines, account, searchQuery, dateRange]);
+  }, [journalLines, account, searchQuery, dateRange, filters]);
 
   const { allAuditActivity, auditAnalytics } = useMemo(() => {
     if (activeTab !== 'audit' && budgetLedgerTab !== 'audit') return { allAuditActivity: [], auditAnalytics: {} };
@@ -719,11 +754,29 @@ export default function AccountDetail() {
   // Reset page when filters change
   React.useEffect(() => {
     setCurrentPage(0);
-  }, [datePreset, id, searchQuery]);
+  }, [datePreset, id, searchQuery, filters]);
 
   React.useEffect(() => {
     setCurrentAuditPage(0);
   }, [datePreset, id]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (filters.entryType !== 'all') count++;
+    if (filters.minAmount) count++;
+    if (filters.maxAmount) count++;
+    if (filters.contact) count++;
+    return count;
+  }, [filters]);
+
+  const clearFilters = () => {
+    setFilters({
+      entryType: 'all',
+      minAmount: '',
+      maxAmount: '',
+      contact: ''
+    });
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1232,8 +1285,92 @@ export default function AccountDetail() {
                         className="pl-8 w-64 h-8 text-sm"
                       />
                     </div>
+                    <Button
+                      variant={activeFilterCount > 0 ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="h-8 gap-2"
+                    >
+                      <Filter className="w-3.5 h-3.5" />
+                      Filters
+                      {activeFilterCount > 0 && (
+                        <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                          {activeFilterCount}
+                        </Badge>
+                      )}
+                    </Button>
                   </div>
                 </div>
+
+                {showFilters && (
+                  <div className="border-b bg-slate-50 px-4 py-3">
+                    <div className="flex items-end gap-3 flex-wrap">
+                      <div className="flex-1 min-w-[180px]">
+                        <Label className="text-xs mb-1.5 block">Transaction Type</Label>
+                        <Select
+                          value={filters.entryType}
+                          onValueChange={(value) => setFilters({ ...filters, entryType: value })}
+                        >
+                          <SelectTrigger className="h-8 text-sm">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="all">All Types</SelectItem>
+                            <SelectItem value="transaction">Regular Transaction</SelectItem>
+                            <SelectItem value="transfer">Transfer</SelectItem>
+                            <SelectItem value="credit_card_payment">Credit Card Payment</SelectItem>
+                            <SelectItem value="adjustment">Adjustment</SelectItem>
+                            <SelectItem value="opening_balance">Opening Balance</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex-1 min-w-[140px]">
+                        <Label className="text-xs mb-1.5 block">Min Amount</Label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={filters.minAmount}
+                          onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                          className="h-8 text-sm"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[140px]">
+                        <Label className="text-xs mb-1.5 block">Max Amount</Label>
+                        <Input
+                          type="number"
+                          placeholder="0.00"
+                          value={filters.maxAmount}
+                          onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                          className="h-8 text-sm"
+                          step="0.01"
+                          min="0"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[180px]">
+                        <Label className="text-xs mb-1.5 block">Contact/Vendor</Label>
+                        <Input
+                          placeholder="Filter by contact..."
+                          value={filters.contact}
+                          onChange={(e) => setFilters({ ...filters, contact: e.target.value })}
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      {activeFilterCount > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-8"
+                        >
+                          <X className="w-3.5 h-3.5 mr-1" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <TabsContent value="register" className="mt-0">
                   {journalLinesLoading ? (
@@ -1940,8 +2077,92 @@ export default function AccountDetail() {
                       className="pl-8 w-52 h-8 text-sm"
                     />
                   </div>
+                  <Button
+                    variant={activeFilterCount > 0 ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="h-8 gap-2"
+                  >
+                    <Filter className="w-3.5 h-3.5" />
+                    Filters
+                    {activeFilterCount > 0 && (
+                      <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                        {activeFilterCount}
+                      </Badge>
+                    )}
+                  </Button>
                 </div>
               </div>
+
+              {showFilters && (
+                <div className="border-b bg-slate-50 px-4 py-3 -mx-6 -mt-3 mb-3">
+                  <div className="flex items-end gap-3 flex-wrap">
+                    <div className="flex-1 min-w-[180px]">
+                      <Label className="text-xs mb-1.5 block">Transaction Type</Label>
+                      <Select
+                        value={filters.entryType}
+                        onValueChange={(value) => setFilters({ ...filters, entryType: value })}
+                      >
+                        <SelectTrigger className="h-8 text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Types</SelectItem>
+                          <SelectItem value="transaction">Regular Transaction</SelectItem>
+                          <SelectItem value="transfer">Transfer</SelectItem>
+                          <SelectItem value="credit_card_payment">Credit Card Payment</SelectItem>
+                          <SelectItem value="adjustment">Adjustment</SelectItem>
+                          <SelectItem value="opening_balance">Opening Balance</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <Label className="text-xs mb-1.5 block">Min Amount</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={filters.minAmount}
+                        onChange={(e) => setFilters({ ...filters, minAmount: e.target.value })}
+                        className="h-8 text-sm"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[140px]">
+                      <Label className="text-xs mb-1.5 block">Max Amount</Label>
+                      <Input
+                        type="number"
+                        placeholder="0.00"
+                        value={filters.maxAmount}
+                        onChange={(e) => setFilters({ ...filters, maxAmount: e.target.value })}
+                        className="h-8 text-sm"
+                        step="0.01"
+                        min="0"
+                      />
+                    </div>
+                    <div className="flex-1 min-w-[180px]">
+                      <Label className="text-xs mb-1.5 block">Contact/Vendor</Label>
+                      <Input
+                        placeholder="Filter by contact..."
+                        value={filters.contact}
+                        onChange={(e) => setFilters({ ...filters, contact: e.target.value })}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    {activeFilterCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={clearFilters}
+                        className="h-8"
+                      >
+                        <X className="w-3.5 h-3.5 mr-1" />
+                        Clear
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardHeader>
           <CardContent>
             {isOpeningBalanceEquity ? (
