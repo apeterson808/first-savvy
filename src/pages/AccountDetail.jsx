@@ -86,6 +86,7 @@ export default function AccountDetail() {
   const [processedData, setProcessedData] = useState(null);
   const [mappedTransactions, setMappedTransactions] = useState([]);
   const [isImporting, setIsImporting] = useState(false);
+  const [budgetMonth, setBudgetMonth] = useState(new Date());
 
   // Edit form state
   const [editName, setEditName] = useState('');
@@ -210,12 +211,11 @@ export default function AccountDetail() {
   });
 
   const { data: childSpending } = useQuery({
-    queryKey: ['child-spending-this-month', id, activeProfile?.id, childAccounts.map(c => c.id).join(',')],
+    queryKey: ['child-spending-this-month', id, activeProfile?.id, childAccounts.map(c => c.id).join(','), budgetMonth.toISOString()],
     queryFn: async () => {
       if (!childAccounts.length) return {};
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
+      const monthStart = startOfMonth(budgetMonth);
+      const monthEnd = endOfMonth(budgetMonth);
       const childIds = childAccounts.map(c => c.id);
       const { data, error } = await firstsavvy.supabase
         .from('transactions')
@@ -252,11 +252,10 @@ export default function AccountDetail() {
   });
 
   const { data: currentMonthSpending } = useQuery({
-    queryKey: ['current-month-spending', id, activeProfile?.id],
+    queryKey: ['current-month-spending', id, activeProfile?.id, budgetMonth.toISOString()],
     queryFn: async () => {
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
+      const monthStart = startOfMonth(budgetMonth);
+      const monthEnd = endOfMonth(budgetMonth);
 
       const { data, error } = await firstsavvy.supabase
         .from('transactions')
@@ -1261,6 +1260,8 @@ export default function AccountDetail() {
               childAnalytics={childAnalytics}
               parentName={account?.name || account?.display_name}
               account={account}
+              selectedMonth={budgetMonth}
+              onMonthChange={setBudgetMonth}
             />
             <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>

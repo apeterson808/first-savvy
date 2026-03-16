@@ -272,10 +272,13 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
   );
 }
 
-export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, childAnalytics, compact = false, parentName = null, account = null }) {
+export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, childAnalytics, compact = false, parentName = null, account = null, selectedMonth, onMonthChange }) {
   const [hoveredChild, setHoveredChild] = useState(null);
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
+  const [internalMonth, setInternalMonth] = useState(new Date());
   const clearTimerRef = useRef(null);
+
+  const activeMonth = selectedMonth || internalMonth;
+  const handleMonthChange = onMonthChange || setInternalMonth;
 
   const handleChildHover = useCallback((data) => {
     if (clearTimerRef.current) {
@@ -299,23 +302,23 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   }, []);
 
   const now = new Date();
-  const isCurrentMonth = isSameMonth(selectedMonth, now);
-  const monthStart = startOfMonth(selectedMonth);
-  const monthEnd = endOfMonth(selectedMonth);
+  const isCurrentMonth = isSameMonth(activeMonth, now);
+  const monthStart = startOfMonth(activeMonth);
+  const monthEnd = endOfMonth(activeMonth);
   const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
   const daysElapsed = isCurrentMonth ? differenceInDays(now, monthStart) + 1 : daysInMonth;
   const percentOfMonthElapsed = (daysElapsed / daysInMonth) * 100;
 
-  const canGoForward = !isSameMonth(selectedMonth, now);
-  const monthLabel = format(selectedMonth, 'MMMM yyyy');
+  const canGoForward = !isSameMonth(activeMonth, now);
+  const monthLabel = format(activeMonth, 'MMMM yyyy');
 
   const handlePreviousMonth = () => {
-    setSelectedMonth(subMonths(selectedMonth, 1));
+    handleMonthChange(subMonths(activeMonth, 1));
   };
 
   const handleNextMonth = () => {
     if (canGoForward) {
-      setSelectedMonth(addMonths(selectedMonth, 1));
+      handleMonthChange(addMonths(activeMonth, 1));
     }
   };
 

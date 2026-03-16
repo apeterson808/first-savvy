@@ -30,6 +30,7 @@ export function ChildBudgetSection({ childAccount, profileId }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
+  const [budgetMonth, setBudgetMonth] = useState(new Date());
 
   const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
 
@@ -49,11 +50,10 @@ export function ChildBudgetSection({ childAccount, profileId }) {
   });
 
   const { data: currentMonthSpending } = useQuery({
-    queryKey: ['current-month-spending', childAccount.id, profileId],
+    queryKey: ['current-month-spending', childAccount.id, profileId, budgetMonth.toISOString()],
     queryFn: async () => {
-      const now = new Date();
-      const monthStart = startOfMonth(now);
-      const monthEnd = endOfMonth(now);
+      const monthStart = startOfMonth(budgetMonth);
+      const monthEnd = endOfMonth(budgetMonth);
       const { data, error } = await firstsavvy.supabase
         .from('transactions')
         .select('amount')
@@ -238,6 +238,8 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                 comparativeData={comparativeData}
                 historicalData={historicalData}
                 parentName={childAccount?.display_name}
+                selectedMonth={budgetMonth}
+                onMonthChange={setBudgetMonth}
               />
               <SpendingAndVendorCard
                 historicalData={historicalData}
