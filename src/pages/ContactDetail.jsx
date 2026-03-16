@@ -16,8 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Separator } from '@/components/ui/separator';
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
-import { Mail, Phone, MapPin, Tag, FileText, TrendingUp, DollarSign, Hash, Calendar, Edit2, Save, X, Trash2, ArrowLeft } from 'lucide-react';
+import { Mail, Phone, MapPin, Tag, FileText, TrendingUp, DollarSign, Hash, Calendar, Edit2, Save, X, Trash2, ArrowLeft, ChevronDown, Building2, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import AccountDetectionField from '@/components/contacts/AccountDetectionField';
 import { toast } from 'sonner';
@@ -29,6 +30,12 @@ import TransactionVolume from '@/components/contacts/TransactionVolume';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -303,391 +310,448 @@ export default function ContactDetail() {
   }
 
   return (
-    <div className="p-4 md:p-6">
-      <div className="max-w-6xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-slate-50">
+      <div className="bg-white border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="py-4 flex items-center justify-between">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => navigate('/contacts')}
-              className="gap-2"
+              className="gap-2 hover:bg-slate-100"
             >
               <ArrowLeft className="w-4 h-4" />
-              Back to Contacts
+              Back
             </Button>
+            <div className="flex items-center gap-2">
+              {!isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsEditMode(true)}
+                    className="gap-2"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                    Edit
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1">
+                        <span>More</span>
+                        <ChevronDown className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleDelete} className="text-red-600">
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete Contact
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setIsEditMode(false);
+                      setPhoneValue(contact.phone || '');
+                      setEmailValue(contact.email || '');
+                      setDetectedUser(null);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      const form = document.getElementById('contact-form');
+                      if (form) {
+                        form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                      }
+                    }}
+                    className="bg-primary hover:bg-primary/90"
+                  >
+                    <Save className="w-4 h-4 mr-2" />
+                    Save
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {!isEditMode ? (
-              <>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditMode(true)}
-                  className="gap-2"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </Button>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleDelete}
-                  className="gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setIsEditMode(false);
-                  setPhoneValue(contact.phone || '');
-                  setEmailValue(contact.email || '');
-                  setDetectedUser(null);
-                }}
-                className="gap-2"
-              >
-                <X className="w-4 h-4" />
-                Cancel
-              </Button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-6">
+            <Card className="shadow-sm">
+              <CardHeader className="border-b bg-slate-50/50">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-start gap-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-slate-100 to-slate-200 rounded-lg flex items-center justify-center">
+                      <Building2 className="w-8 h-8 text-slate-600" />
+                    </div>
+                    <div>
+                      <h1 className="text-2xl font-bold text-slate-900">{contact.name}</h1>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline" className="capitalize font-normal">
+                          {contact.type}
+                        </Badge>
+                        {contact.status && (
+                          <Badge
+                            className={
+                              contact.status.toLowerCase() === 'active'
+                                ? 'bg-soft-green/30 text-forest-green font-normal'
+                                : 'bg-gray-100 text-gray-800 font-normal'
+                            }
+                          >
+                            {contact.status}
+                          </Badge>
+                        )}
+                        {contact.connection_status === 'connected' && (
+                          <Badge className="bg-light-blue/20 text-sky-blue font-normal">
+                            Connected
+                          </Badge>
+                        )}
+                        {contact.connection_status === 'invited' && (
+                          <Badge className="bg-yellow-100 text-yellow-800 font-normal">
+                            Invited
+                          </Badge>
+                        )}
+                        {contact.connection_status === 'platform_user' && (
+                          <Badge className="bg-purple-100 text-purple-800 font-normal">
+                            On Platform
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                {isEditMode ? (
+                  <form id="contact-form" onSubmit={handleSubmit} className="space-y-6">
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="name" className="text-sm font-medium">Display name *</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          defaultValue={contact.name}
+                          placeholder="Contact name"
+                          required
+                          className="mt-1.5"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="type" className="text-sm font-medium">Type *</Label>
+                          <ClickThroughSelect
+                            name="type"
+                            defaultValue={contact.type}
+                            placeholder="Select type"
+                          >
+                            <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
+                            <ClickThroughSelectItem value="customer">Customer</ClickThroughSelectItem>
+                          </ClickThroughSelect>
+                        </div>
+                        <div>
+                          <Label htmlFor="status" className="text-sm font-medium">Status *</Label>
+                          <ClickThroughSelect
+                            name="status"
+                            defaultValue={contact.status}
+                            placeholder="Select status"
+                          >
+                            <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
+                            <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
+                          </ClickThroughSelect>
+                        </div>
+                      </div>
+
+                      <Separator />
+
+                      <div>
+                        <Label htmlFor="email" className="text-sm font-medium">Email</Label>
+                        <Input
+                          id="email"
+                          name="email"
+                          type="email"
+                          value={emailValue}
+                          onChange={(e) => setEmailValue(e.target.value)}
+                          placeholder="contact@example.com"
+                          className="mt-1.5"
+                        />
+                        <p className="text-xs text-slate-500 mt-1.5">
+                          Add email or phone to check if they have an account
+                        </p>
+                        <AccountDetectionField
+                          type="email"
+                          value={emailValue}
+                          onConnectionRequest={handleConnectionRequest}
+                          onInviteSend={handleSendInvitation}
+                          disabled={contact?.connection_status === 'connected' || contact?.connection_status === 'invited'}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone" className="text-sm font-medium">Phone</Label>
+                        <Input
+                          id="phone"
+                          name="phone"
+                          type="tel"
+                          value={phoneValue}
+                          onChange={handlePhoneChange}
+                          placeholder="(555) 123-4567"
+                          maxLength={14}
+                          className="mt-1.5"
+                        />
+                        <p className="text-xs text-slate-500 mt-1.5">
+                          Must include area code. Add to check if they have an account.
+                        </p>
+                        <AccountDetectionField
+                          type="phone"
+                          value={phoneValue}
+                          onConnectionRequest={handleConnectionRequest}
+                          onInviteSend={handleSendInvitation}
+                          disabled={contact?.connection_status === 'connected' || contact?.connection_status === 'invited'}
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="address" className="text-sm font-medium">Address</Label>
+                        <Textarea
+                          id="address"
+                          name="address"
+                          defaultValue={contact.address}
+                          placeholder="Street address, city, state, zip"
+                          rows={2}
+                          className="mt-1.5"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="notes" className="text-sm font-medium">Notes</Label>
+                        <Textarea
+                          id="notes"
+                          name="notes"
+                          defaultValue={contact.notes}
+                          placeholder="Additional notes"
+                          rows={3}
+                          className="mt-1.5"
+                        />
+                      </div>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="space-y-5">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Contact Information</p>
+                      <div className="space-y-3">
+                        {contact.email && (
+                          <div className="flex items-start gap-3">
+                            <Mail className="w-4 h-4 text-slate-400 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-slate-500">Email</p>
+                              <p className="text-sm text-slate-900 mt-0.5">{contact.email}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {contact.phone && (
+                          <div className="flex items-start gap-3">
+                            <Phone className="w-4 h-4 text-slate-400 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-slate-500">Phone</p>
+                              <p className="text-sm text-slate-900 mt-0.5">{contact.phone}</p>
+                            </div>
+                          </div>
+                        )}
+
+                        {contact.address && (
+                          <div className="flex items-start gap-3">
+                            <MapPin className="w-4 h-4 text-slate-400 mt-0.5" />
+                            <div className="flex-1">
+                              <p className="text-xs font-medium text-slate-500">Address</p>
+                              <p className="text-sm text-slate-900 mt-0.5">{contact.address}</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {contact.notes && (
+                      <>
+                        <Separator />
+                        <div>
+                          <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">Notes</p>
+                          <p className="text-sm text-slate-700 whitespace-pre-wrap">{contact.notes}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader className="border-b bg-slate-50/50">
+                <h2 className="text-lg font-semibold text-slate-900">Transaction History</h2>
+                <p className="text-sm text-slate-600 mt-1">Recent activity and transaction details</p>
+              </CardHeader>
+              <CardContent className="p-6">
+                {transactionsLoading ? (
+                  <p className="text-center text-slate-500 py-8">Loading transactions...</p>
+                ) : transactions.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <BarChart3 className="w-8 h-8 text-slate-400" />
+                    </div>
+                    <p className="text-slate-600 font-medium mb-1">No transactions yet</p>
+                    <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
+                  </div>
+                ) : (
+                  <>
+                    <Tabs defaultValue="list" className="w-full">
+                      <TabsList className="grid w-full grid-cols-4 mb-6">
+                        <TabsTrigger value="list">List</TabsTrigger>
+                        <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                        <TabsTrigger value="categories">Categories</TabsTrigger>
+                        <TabsTrigger value="volume">Volume</TabsTrigger>
+                      </TabsList>
+
+                      <TabsContent value="list" className="mt-0">
+                        <div className="rounded-lg border border-slate-200 overflow-hidden">
+                          <Table>
+                            <TableHeader>
+                              <TableRow className="bg-slate-50">
+                                <TableHead className="font-semibold">Date</TableHead>
+                                <TableHead className="font-semibold">Description</TableHead>
+                                <TableHead className="font-semibold">Category</TableHead>
+                                <TableHead className="font-semibold">Type</TableHead>
+                                <TableHead className="text-right font-semibold">Amount</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {transactions.slice(0, 10).map((transaction) => (
+                                <TableRow key={transaction.id} className="hover:bg-slate-50">
+                                  <TableCell className="text-sm">{format(new Date(transaction.date), 'MMM d, yyyy')}</TableCell>
+                                  <TableCell className="font-medium text-sm">{transaction.description}</TableCell>
+                                  <TableCell className="text-sm">
+                                    {chartAccounts.find(c => c.id === transaction.category_account_id) ? getDisplayName(chartAccounts.find(c => c.id === transaction.category_account_id)) : '-'}
+                                  </TableCell>
+                                  <TableCell className="capitalize">
+                                    <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'} className="font-normal">
+                                      {transaction.type === 'income' && transaction.original_type === 'expense' ? 'refund' : transaction.type}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell className="text-right font-semibold text-sm">
+                                    {formatCurrency(transaction.amount)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                        {transactions.length > 10 && (
+                          <p className="text-sm text-slate-500 text-center mt-4">
+                            Showing 10 of {transactions.length} transactions
+                          </p>
+                        )}
+                      </TabsContent>
+
+                      <TabsContent value="timeline" className="mt-0">
+                        <TransactionTimeline transactions={transactions} />
+                      </TabsContent>
+
+                      <TabsContent value="categories" className="mt-0">
+                        <CategoryBreakdown transactions={transactions} categories={chartAccounts} />
+                      </TabsContent>
+
+                      <TabsContent value="volume" className="mt-0">
+                        <TransactionVolume transactions={transactions} />
+                      </TabsContent>
+                    </Tabs>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            <Card className="shadow-sm">
+              <CardHeader className="border-b bg-slate-50/50">
+                <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Overview</h3>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center gap-2 text-slate-600 mb-2">
+                      <Hash className="w-4 h-4" />
+                      <p className="text-xs font-medium uppercase tracking-wider">Total Transactions</p>
+                    </div>
+                    <p className="text-3xl font-bold text-slate-900">{analytics.transactionCount}</p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <div className="flex items-center gap-2 text-burgundy mb-2">
+                      <DollarSign className="w-4 h-4" />
+                      <p className="text-xs font-medium uppercase tracking-wider">Total Spent</p>
+                    </div>
+                    <p className="text-2xl font-bold text-burgundy">{formatCurrency(analytics.totalSpent)}</p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <div className="flex items-center gap-2 text-forest-green mb-2">
+                      <TrendingUp className="w-4 h-4" />
+                      <p className="text-xs font-medium uppercase tracking-wider">Total Income</p>
+                    </div>
+                    <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.totalIncome)}</p>
+                  </div>
+
+                  <Separator />
+
+                  <div>
+                    <div className="flex items-center gap-2 text-sky-blue mb-2">
+                      <Calendar className="w-4 h-4" />
+                      <p className="text-xs font-medium uppercase tracking-wider">Avg Transaction</p>
+                    </div>
+                    <p className="text-2xl font-bold text-sky-blue">{formatCurrency(analytics.avgTransaction)}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {analytics.firstTransaction && (
+              <Card className="shadow-sm">
+                <CardHeader className="border-b bg-slate-50/50">
+                  <h3 className="text-sm font-semibold text-slate-900 uppercase tracking-wider">Activity Period</h3>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-xs font-medium text-slate-500 mb-1">First Transaction</p>
+                      <p className="text-sm font-semibold text-slate-900">{format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}</p>
+                    </div>
+                    {analytics.lastTransaction && (
+                      <div>
+                        <p className="text-xs font-medium text-slate-500 mb-1">Last Transaction</p>
+                        <p className="text-sm font-semibold text-slate-900">{format(new Date(analytics.lastTransaction), 'MMM d, yyyy')}</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             )}
           </div>
         </div>
-
-        <Card>
-          <CardHeader className="pb-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-3xl font-bold">{contact.name}</h1>
-                <div className="flex items-center gap-2 mt-3">
-                  <Badge variant="outline" className="capitalize">
-                    {contact.type}
-                  </Badge>
-                  {contact.status && (
-                    <Badge
-                      className={
-                        contact.status.toLowerCase() === 'active'
-                          ? 'bg-soft-green/30 text-forest-green'
-                          : 'bg-gray-100 text-gray-800'
-                      }
-                    >
-                      {contact.status}
-                    </Badge>
-                  )}
-                  {contact.connection_status === 'connected' && (
-                    <Badge className="bg-light-blue/20 text-sky-blue">
-                      Connected
-                    </Badge>
-                  )}
-                  {contact.connection_status === 'invited' && (
-                    <Badge className="bg-yellow-100 text-yellow-800">
-                      Invited
-                    </Badge>
-                  )}
-                  {contact.connection_status === 'platform_user' && (
-                    <Badge className="bg-purple-100 text-purple-800">
-                      On Platform
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {isEditMode ? (
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="name">Name *</Label>
-                    <Input
-                      id="name"
-                      name="name"
-                      defaultValue={contact.name}
-                      placeholder="Contact name"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="type">Type *</Label>
-                      <ClickThroughSelect
-                        name="type"
-                        defaultValue={contact.type}
-                        placeholder="Select type"
-                      >
-                        <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="customer">Customer</ClickThroughSelectItem>
-                      </ClickThroughSelect>
-                    </div>
-                    <div>
-                      <Label htmlFor="status">Status *</Label>
-                      <ClickThroughSelect
-                        name="status"
-                        defaultValue={contact.status}
-                        placeholder="Select status"
-                      >
-                        <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
-                        <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
-                      </ClickThroughSelect>
-                    </div>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={emailValue}
-                      onChange={(e) => setEmailValue(e.target.value)}
-                      placeholder="contact@example.com"
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      Add email or phone to check if they have an account
-                    </p>
-                    <AccountDetectionField
-                      type="email"
-                      value={emailValue}
-                      onConnectionRequest={handleConnectionRequest}
-                      onInviteSend={handleSendInvitation}
-                      disabled={contact?.connection_status === 'connected' || contact?.connection_status === 'invited'}
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="phone">Phone</Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      value={phoneValue}
-                      onChange={handlePhoneChange}
-                      placeholder="(555) 123-4567"
-                      maxLength={14}
-                    />
-                    <p className="text-xs text-slate-500 mt-1">
-                      Must include area code. Add to check if they have an account.
-                    </p>
-                    <AccountDetectionField
-                      type="phone"
-                      value={phoneValue}
-                      onConnectionRequest={handleConnectionRequest}
-                      onInviteSend={handleSendInvitation}
-                      disabled={contact?.connection_status === 'connected' || contact?.connection_status === 'invited'}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Label htmlFor="address">Address</Label>
-                    <Textarea
-                      id="address"
-                      name="address"
-                      defaultValue={contact.address}
-                      placeholder="Street address, city, state, zip"
-                      rows={2}
-                    />
-                  </div>
-
-                  <div className="md:col-span-2">
-                    <Label htmlFor="notes">Notes</Label>
-                    <Textarea
-                      id="notes"
-                      name="notes"
-                      defaultValue={contact.notes}
-                      placeholder="Additional notes"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-2 justify-end pt-4 border-t">
-                  <Button type="submit" className="gap-2 bg-primary hover:bg-primary/90">
-                    <Save className="w-4 h-4" />
-                    Save Changes
-                  </Button>
-                </div>
-              </form>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {contact.email && (
-                    <div className="flex items-start gap-3">
-                      <Mail className="w-5 h-5 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Email</p>
-                        <p className="text-base">{contact.email}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {contact.phone && (
-                    <div className="flex items-start gap-3">
-                      <Phone className="w-5 h-5 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Phone</p>
-                        <p className="text-base">{contact.phone}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {contact.address && (
-                    <div className="flex items-start gap-3 md:col-span-2">
-                      <MapPin className="w-5 h-5 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Address</p>
-                        <p className="text-base">{contact.address}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {contact.notes && (
-                    <div className="flex items-start gap-3 md:col-span-2">
-                      <FileText className="w-5 h-5 text-slate-400 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-slate-500">Notes</p>
-                        <p className="text-base whitespace-pre-wrap">{contact.notes}</p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Transaction Analytics</h2>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <div className="flex items-center gap-2 text-slate-600 mb-1">
-                  <Hash className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Transactions</p>
-                </div>
-                <p className="text-2xl font-bold">{analytics.transactionCount}</p>
-              </div>
-
-              <div className="p-4 bg-burgundy/10 rounded-lg">
-                <div className="flex items-center gap-2 text-burgundy mb-1">
-                  <DollarSign className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Spent</p>
-                </div>
-                <p className="text-2xl font-bold text-burgundy">{formatCurrency(analytics.totalSpent)}</p>
-              </div>
-
-              <div className="p-4 bg-soft-green/20 rounded-lg">
-                <div className="flex items-center gap-2 text-forest-green mb-1">
-                  <TrendingUp className="w-4 h-4" />
-                  <p className="text-sm font-medium">Total Income</p>
-                </div>
-                <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.totalIncome)}</p>
-              </div>
-
-              <div className="p-4 bg-light-blue/20 rounded-lg">
-                <div className="flex items-center gap-2 text-sky-blue mb-1">
-                  <Calendar className="w-4 h-4" />
-                  <p className="text-sm font-medium">Avg Transaction</p>
-                </div>
-                <p className="text-2xl font-bold text-sky-blue">{formatCurrency(analytics.avgTransaction)}</p>
-              </div>
-            </div>
-
-            {analytics.firstTransaction && (
-              <div className="mb-6 pb-6 border-b text-sm text-slate-600">
-                <p>
-                  First transaction: <span className="font-medium">{format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}</span>
-                  {analytics.lastTransaction && (
-                    <> • Last transaction: <span className="font-medium">{format(new Date(analytics.lastTransaction), 'MMM d, yyyy')}</span></>
-                  )}
-                </p>
-              </div>
-            )}
-
-            <Tabs defaultValue="timeline" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-                <TabsTrigger value="categories">Categories</TabsTrigger>
-                <TabsTrigger value="volume">Volume</TabsTrigger>
-              </TabsList>
-              <TabsContent value="timeline" className="mt-6">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Income vs Expenses Over Time</h3>
-                  <p className="text-xs text-slate-500">Monthly breakdown of income and expenses</p>
-                  <TransactionTimeline transactions={transactions} />
-                </div>
-              </TabsContent>
-              <TabsContent value="categories" className="mt-6">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Spending by Category</h3>
-                  <p className="text-xs text-slate-500">Distribution of transaction amounts across categories</p>
-                  <CategoryBreakdown transactions={transactions} categories={chartAccounts} />
-                </div>
-              </TabsContent>
-              <TabsContent value="volume" className="mt-6">
-                <div className="space-y-2">
-                  <h3 className="text-sm font-semibold text-slate-700">Transaction Activity</h3>
-                  <p className="text-xs text-slate-500">Monthly transaction counts by type</p>
-                  <TransactionVolume transactions={transactions} />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <h2 className="text-xl font-semibold">Recent Transactions</h2>
-          </CardHeader>
-          <CardContent>
-            {transactionsLoading ? (
-              <p className="text-center text-slate-500 py-4">Loading transactions...</p>
-            ) : transactions.length === 0 ? (
-              <p className="text-center text-slate-500 py-4">No transactions found for this contact</p>
-            ) : (
-              <div className="rounded-md border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Description</TableHead>
-                      <TableHead>Category</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Amount</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {transactions.slice(0, 10).map((transaction) => (
-                      <TableRow key={transaction.id}>
-                        <TableCell>{format(new Date(transaction.date), 'MMM d, yyyy')}</TableCell>
-                        <TableCell className="font-medium">{transaction.description}</TableCell>
-                        <TableCell>
-                          {chartAccounts.find(c => c.id === transaction.category_account_id) ? getDisplayName(chartAccounts.find(c => c.id === transaction.category_account_id)) : '-'}
-                        </TableCell>
-                        <TableCell className="capitalize">
-                          <Badge variant={transaction.type === 'income' ? 'default' : 'secondary'}>
-                            {transaction.type === 'income' && transaction.original_type === 'expense' ? 'refund' : transaction.type}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          {formatCurrency(transaction.amount)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
