@@ -27,6 +27,7 @@ import TransactionTimeline from '@/components/contacts/TransactionTimeline';
 import CategoryBreakdown from '@/components/contacts/CategoryBreakdown';
 import TransactionVolume from '@/components/contacts/TransactionVolume';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 
 function formatPhoneNumber(value) {
@@ -49,31 +50,32 @@ export default function ContactDetail() {
   const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { activeProfile } = useProfile();
 
-  const { data: contact, isLoading: contactLoading } = useQuery({
-    queryKey: ['contact', id],
+  const { data: contact, isLoading: contactLoading, error: contactError } = useQuery({
+    queryKey: ['contact', id, activeProfile?.id],
     queryFn: () => firstsavvy.entities.Contact.get(id),
-    enabled: !!id
+    enabled: !!id && !!activeProfile
   });
 
   const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'contact', id],
+    queryKey: ['transactions', 'contact', id, activeProfile?.id],
     queryFn: async () => {
       if (!id) return [];
       const allTransactions = await firstsavvy.entities.Transaction.list('date', 'desc');
       return allTransactions.filter(t => t.contact_id === id);
     },
-    enabled: !!id
+    enabled: !!id && !!activeProfile
   });
 
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chart-accounts', user?.id],
+    queryKey: ['chart-accounts', activeProfile?.id],
     queryFn: async () => {
-      if (!user) return [];
-      const accounts = await getUserChartOfAccounts(user.id);
+      if (!activeProfile) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
       return accounts.filter(a => a.level === 3);
     },
-    enabled: !!user
+    enabled: !!activeProfile
   });
 
   const updateMutation = useMutation({
@@ -264,6 +266,22 @@ export default function ContactDetail() {
       <div className="p-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center text-slate-500">Loading contact...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (contactError) {
+    return (
+      <div className="p-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center space-y-4">
+            <div className="text-red-600">Failed to load contact</div>
+            <div className="text-sm text-slate-500">{contactError.message}</div>
+            <Button onClick={() => navigate('/contacts')} variant="outline">
+              Back to Contacts
+            </Button>
+          </div>
         </div>
       </div>
     );

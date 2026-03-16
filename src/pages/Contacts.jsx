@@ -15,12 +15,14 @@ import {
 } from "@/components/ui/table";
 import { Plus, Search } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
+import { useProfile } from '@/contexts/ProfileContext';
 
 export default function Contacts() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
+  const { activeProfile } = useProfile();
 
   React.useEffect(() => {
     const handleProfileSwitch = () => {
@@ -32,8 +34,9 @@ export default function Contacts() {
   }, [queryClient]);
 
   const { data: contacts = [], isLoading } = useQuery({
-    queryKey: ['contacts'],
-    queryFn: () => firstsavvy.entities.Contact.list('name')
+    queryKey: ['contacts', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Contact.list('name'),
+    enabled: !!activeProfile
   });
 
   const filteredContacts = contacts.filter(c =>
