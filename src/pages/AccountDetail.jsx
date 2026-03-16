@@ -360,7 +360,7 @@ export default function AccountDetail() {
         accountId: id,
         startDate: useNoDateFilter ? null : formatDateForDb(dateRange.start),
         endDate: useNoDateFilter ? null : formatDateForDb(dateRange.end),
-        limit: isBudgetableAccount ? 10 : 100,
+        limit: 10,
         offset: pageParam
       });
     },
@@ -394,7 +394,7 @@ export default function AccountDetail() {
         accountId: id,
         startDate: isBudgetableAccount ? null : formatDateForDb(dateRange.start),
         endDate: isBudgetableAccount ? null : formatDateForDb(dateRange.end),
-        limit: isBudgetableAccount ? 10 : 100,
+        limit: 10,
         offset: pageParam
       });
     },
@@ -1380,7 +1380,7 @@ export default function AccountDetail() {
                       {totalJournalLines > 0 && (
                         <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
                           <span>Showing {allActivity.length} of {totalJournalLines} transactions</span>
-                          {isBudgetableAccount && hasNextPage && (
+                          {hasNextPage && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -1511,7 +1511,7 @@ export default function AccountDetail() {
                       {totalAuditLines > 0 && (
                         <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
                           <span>Showing {allAuditActivity.length} of {totalAuditLines} entries</span>
-                          {isBudgetableAccount && hasNextAuditPage && (
+                          {hasNextAuditPage && (
                             <Button
                               variant="ghost"
                               size="sm"
