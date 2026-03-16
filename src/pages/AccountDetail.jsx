@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -67,6 +67,8 @@ export default function AccountDetail() {
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
   const [activeTab, setActiveTab] = useState('register');
   const [budgetLedgerTab, setBudgetLedgerTab] = useState('register');
+  const [currentPage, setCurrentPage] = useState(0);
+  const [currentAuditPage, setCurrentAuditPage] = useState(0);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -329,20 +331,19 @@ export default function AccountDetail() {
   // SOURCE OF TRUTH: Query posted journal entry lines with pagination
   const hasChildAccounts = childAccounts.length > 0;
   const allAccountIds = useMemo(() => [id, ...childAccountIds], [id, childAccountIds]);
+  const PAGE_SIZE = 10;
 
   const {
     data: journalLinesData,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
     isLoading: journalLinesLoading,
     error: journalLinesError
-  } = useInfiniteQuery({
-    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset, isOpeningBalanceEquity, hasChildAccounts, childAccountIds, isBudgetableAccount],
-    queryFn: async ({ pageParam = 0 }) => {
+  } = useQuery({
+    queryKey: ['journal-lines-paginated', 'account', id, activeProfile?.id, datePreset, isOpeningBalanceEquity, hasChildAccounts, childAccountIds, isBudgetableAccount, currentPage],
+    queryFn: async () => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
 
       const useNoDateFilter = isBudgetableAccount || isOpeningBalanceEquity;
+      const offset = currentPage * PAGE_SIZE;
 
       if (hasChildAccounts) {
         return await getMultiAccountJournalLinesPaginated({
@@ -350,8 +351,8 @@ export default function AccountDetail() {
           accountIds: allAccountIds,
           startDate: useNoDateFilter ? null : formatDateForDb(dateRange.start),
           endDate: useNoDateFilter ? null : formatDateForDb(dateRange.end),
-          limit: 10,
-          offset: pageParam
+          limit: PAGE_SIZE,
+          offset: offset
         });
       }
 
@@ -360,57 +361,47 @@ export default function AccountDetail() {
         accountId: id,
         startDate: useNoDateFilter ? null : formatDateForDb(dateRange.start),
         endDate: useNoDateFilter ? null : formatDateForDb(dateRange.end),
-        limit: 10,
-        offset: pageParam
+        limit: PAGE_SIZE,
+        offset: offset
       });
     },
-    getNextPageParam: (lastPage, pages) => {
-      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
-      return lastPage.hasMore ? loadedCount : undefined;
-    },
-    enabled: !!id && !!activeProfile
+    enabled: !!id && !!activeProfile,
+    keepPreviousData: true
   });
 
-  const journalLines = useMemo(() => {
-    if (!journalLinesData?.pages) return [];
-    return journalLinesData.pages.flatMap(page => page.lines);
-  }, [journalLinesData]);
-
-  const totalJournalLines = journalLinesData?.pages?.[0]?.totalCount || 0;
+  const journalLines = journalLinesData?.lines || [];
+  const totalJournalLines = journalLinesData?.totalCount || 0;
+  const totalPages = Math.ceil(totalJournalLines / PAGE_SIZE);
+  const hasNextPage = currentPage < totalPages - 1;
+  const hasPreviousPage = currentPage > 0;
 
   const {
     data: auditHistoryData,
-    fetchNextPage: fetchNextAuditPage,
-    hasNextPage: hasNextAuditPage,
-    isFetchingNextPage: isFetchingNextAuditPage,
     isLoading: auditHistoryLoading,
     error: auditHistoryError
-  } = useInfiniteQuery({
-    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset, isBudgetableAccount],
-    queryFn: async ({ pageParam = 0 }) => {
+  } = useQuery({
+    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset, isBudgetableAccount, currentAuditPage],
+    queryFn: async () => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
+      const offset = currentAuditPage * PAGE_SIZE;
       return await getAccountAuditHistoryPaginated({
         profileId: activeProfile.id,
         accountId: id,
         startDate: isBudgetableAccount ? null : formatDateForDb(dateRange.start),
         endDate: isBudgetableAccount ? null : formatDateForDb(dateRange.end),
-        limit: 10,
-        offset: pageParam
+        limit: PAGE_SIZE,
+        offset: offset
       });
     },
-    getNextPageParam: (lastPage, pages) => {
-      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
-      return lastPage.hasMore ? loadedCount : undefined;
-    },
-    enabled: !!id && !!activeProfile && (activeTab === 'audit' || budgetLedgerTab === 'audit')
+    enabled: !!id && !!activeProfile && (activeTab === 'audit' || budgetLedgerTab === 'audit'),
+    keepPreviousData: true
   });
 
-  const auditHistoryLines = useMemo(() => {
-    if (!auditHistoryData?.pages) return [];
-    return auditHistoryData.pages.flatMap(page => page.lines);
-  }, [auditHistoryData]);
-
-  const totalAuditLines = auditHistoryData?.pages?.[0]?.totalCount || 0;
+  const auditHistoryLines = auditHistoryData?.lines || [];
+  const totalAuditLines = auditHistoryData?.totalCount || 0;
+  const totalAuditPages = Math.ceil(totalAuditLines / PAGE_SIZE);
+  const hasNextAuditPage = currentAuditPage < totalAuditPages - 1;
+  const hasPreviousAuditPage = currentAuditPage > 0;
 
   // Helper functions for edit mode
   const cancelEditMode = () => {
@@ -700,61 +691,39 @@ export default function AccountDetail() {
     };
   }, [auditHistoryLines, account, searchQuery, activeTab, budgetLedgerTab]);
 
-  // Infinite scroll observer for register
-  const loadMoreRef = useRef();
-  const observerCallback = useCallback((entries) => {
-    const [entry] = entries;
-    if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
+  // Pagination handlers
+  const goToNextPage = () => {
+    if (hasNextPage) {
+      setCurrentPage(prev => prev + 1);
     }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+  };
 
-  // Infinite scroll observer for audit history
-  const loadMoreAuditRef = useRef();
-  const observerAuditCallback = useCallback((entries) => {
-    const [entry] = entries;
-    if (entry.isIntersecting && hasNextAuditPage && !isFetchingNextAuditPage) {
-      fetchNextAuditPage();
+  const goToPreviousPage = () => {
+    if (hasPreviousPage) {
+      setCurrentPage(prev => prev - 1);
     }
-  }, [hasNextAuditPage, isFetchingNextAuditPage, fetchNextAuditPage]);
+  };
+
+  const goToNextAuditPage = () => {
+    if (hasNextAuditPage) {
+      setCurrentAuditPage(prev => prev + 1);
+    }
+  };
+
+  const goToPreviousAuditPage = () => {
+    if (hasPreviousAuditPage) {
+      setCurrentAuditPage(prev => prev - 1);
+    }
+  };
+
+  // Reset page when filters change
+  React.useEffect(() => {
+    setCurrentPage(0);
+  }, [datePreset, id, searchQuery]);
 
   React.useEffect(() => {
-    const observer = new IntersectionObserver(observerCallback, {
-      root: null,
-      rootMargin: '100px',
-      threshold: 0.1
-    });
-
-    const currentRef = loadMoreRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [observerCallback]);
-
-  React.useEffect(() => {
-    const observer = new IntersectionObserver(observerAuditCallback, {
-      root: null,
-      rootMargin: '100px',
-      threshold: 0.1
-    });
-
-    const currentRef = loadMoreAuditRef.current;
-    if (currentRef) {
-      observer.observe(currentRef);
-    }
-
-    return () => {
-      if (currentRef) {
-        observer.unobserve(currentRef);
-      }
-    };
-  }, [observerAuditCallback]);
+    setCurrentAuditPage(0);
+  }, [datePreset, id]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -1363,34 +1332,32 @@ export default function AccountDetail() {
                               </TableCell>
                             </TableRow>
                           ))}
-                          {isFetchingNextPage && (
-                            <TableRow>
-                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="text-center py-3 text-slate-500 text-xs">
-                                Loading more transactions...
-                              </TableCell>
-                            </TableRow>
-                          )}
-                          {hasNextPage && !isFetchingNextPage && (
-                            <TableRow ref={loadMoreRef}>
-                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="h-4"></TableCell>
-                            </TableRow>
-                          )}
                         </TableBody>
                       </Table>
                       {totalJournalLines > 0 && (
                         <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
-                          <span>Showing {allActivity.length} of {totalJournalLines} transactions</span>
-                          {hasNextPage && (
+                          <span>Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines} transactions</span>
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => fetchNextPage()}
-                              disabled={isFetchingNextPage}
+                              onClick={goToPreviousPage}
+                              disabled={!hasPreviousPage || journalLinesLoading}
                               className="h-7 text-xs"
                             >
-                              {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                              Previous
                             </Button>
-                          )}
+                            <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToNextPage}
+                              disabled={!hasNextPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Next
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1494,34 +1461,32 @@ export default function AccountDetail() {
                               </TableCell>
                             </TableRow>
                           ))}
-                          {isFetchingNextAuditPage && (
-                            <TableRow>
-                              <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
-                                Loading more entries...
-                              </TableCell>
-                            </TableRow>
-                          )}
-                          {hasNextAuditPage && !isFetchingNextAuditPage && (
-                            <TableRow ref={loadMoreAuditRef}>
-                              <TableCell colSpan={9} className="h-4"></TableCell>
-                            </TableRow>
-                          )}
                         </TableBody>
                       </Table>
                       {totalAuditLines > 0 && (
                         <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
-                          <span>Showing {allAuditActivity.length} of {totalAuditLines} entries</span>
-                          {hasNextAuditPage && (
+                          <span>Showing {currentAuditPage * PAGE_SIZE + 1}-{Math.min((currentAuditPage + 1) * PAGE_SIZE, totalAuditLines)} of {totalAuditLines} entries</span>
+                          <div className="flex items-center gap-2">
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => fetchNextAuditPage()}
-                              disabled={isFetchingNextAuditPage}
+                              onClick={goToPreviousAuditPage}
+                              disabled={!hasPreviousAuditPage || auditHistoryLoading}
                               className="h-7 text-xs"
                             >
-                              {isFetchingNextAuditPage ? 'Loading...' : 'Load More'}
+                              Previous
                             </Button>
-                          )}
+                            <span className="text-xs text-slate-600">Page {currentAuditPage + 1} of {totalAuditPages}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToNextAuditPage}
+                              disabled={!hasNextAuditPage || auditHistoryLoading}
+                              className="h-7 text-xs"
+                            >
+                              Next
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -2059,23 +2024,32 @@ export default function AccountDetail() {
                           </TableRow>
                           );
                         })}
-                        {isFetchingNextPage && (
-                          <TableRow>
-                            <TableCell colSpan={7} className="text-center py-3 text-slate-500 text-xs">
-                              Loading more entries...
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        {hasNextPage && !isFetchingNextPage && (
-                          <TableRow ref={loadMoreRef}>
-                            <TableCell colSpan={7} className="h-4"></TableCell>
-                          </TableRow>
-                        )}
                       </TableBody>
                     </Table>
                     {totalJournalLines > 0 && (
-                      <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                        Showing {allActivity.length} of {totalJournalLines} entries
+                      <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                        <span>Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines} entries</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={goToPreviousPage}
+                            disabled={!hasPreviousPage || journalLinesLoading}
+                            className="h-7 text-xs"
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={goToNextPage}
+                            disabled={!hasNextPage || journalLinesLoading}
+                            className="h-7 text-xs"
+                          >
+                            Next
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -2183,23 +2157,32 @@ export default function AccountDetail() {
                               </TableCell>
                             </TableRow>
                           ))}
-                          {isFetchingNextPage && (
-                            <TableRow>
-                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="text-center py-3 text-slate-500 text-xs">
-                                Loading more transactions...
-                              </TableCell>
-                            </TableRow>
-                          )}
-                          {hasNextPage && !isFetchingNextPage && (
-                            <TableRow ref={loadMoreRef}>
-                              <TableCell colSpan={hasChildAccounts ? 9 : 8} className="h-4"></TableCell>
-                            </TableRow>
-                          )}
                         </TableBody>
                       </Table>
                       {totalJournalLines > 0 && (
-                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                          Showing {allActivity.length} of {totalJournalLines} transactions
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                          <span>Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines} transactions</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToPreviousPage}
+                              disabled={!hasPreviousPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToNextPage}
+                              disabled={!hasNextPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Next
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -2308,23 +2291,32 @@ export default function AccountDetail() {
                             </TableCell>
                           </TableRow>
                         ))}
-                        {isFetchingNextAuditPage && (
-                          <TableRow>
-                            <TableCell colSpan={9} className="text-center py-3 text-slate-500 text-xs">
-                              Loading more entries...
-                            </TableCell>
-                          </TableRow>
-                        )}
-                        {hasNextAuditPage && !isFetchingNextAuditPage && (
-                          <TableRow ref={loadMoreAuditRef}>
-                            <TableCell colSpan={9} className="h-4"></TableCell>
-                          </TableRow>
-                        )}
                       </TableBody>
                     </Table>
                     {totalAuditLines > 0 && (
-                      <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                        Showing {allAuditActivity.length} of {totalAuditLines} entries
+                      <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                        <span>Showing {currentAuditPage * PAGE_SIZE + 1}-{Math.min((currentAuditPage + 1) * PAGE_SIZE, totalAuditLines)} of {totalAuditLines} entries</span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={goToPreviousAuditPage}
+                            disabled={!hasPreviousAuditPage || auditHistoryLoading}
+                            className="h-7 text-xs"
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-xs text-slate-600">Page {currentAuditPage + 1} of {totalAuditPages}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={goToNextAuditPage}
+                            disabled={!hasNextAuditPage || auditHistoryLoading}
+                            className="h-7 text-xs"
+                          >
+                            Next
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
