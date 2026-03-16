@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,14 +13,17 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
 import { useProfile } from '@/contexts/ProfileContext';
+
+const ROWS_PER_PAGE = 10;
 
 export default function Contacts() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -42,6 +45,15 @@ export default function Contacts() {
   const filteredContacts = contacts.filter(c =>
     c.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  const totalPages = Math.ceil(filteredContacts.length / ROWS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+  const endIndex = startIndex + ROWS_PER_PAGE;
+  const paginatedContacts = filteredContacts.slice(startIndex, endIndex);
 
   return (
     <div className="p-4 md:p-6">
@@ -75,44 +87,44 @@ export default function Contacts() {
           <div className="rounded-md border">
             <Table>
               <TableHeader>
-                <TableRow className="h-9">
-                  <TableHead className="h-9">Name</TableHead>
-                  <TableHead className="h-9">Type</TableHead>
-                  <TableHead className="h-9">Email</TableHead>
-                  <TableHead className="h-9">Phone</TableHead>
-                  <TableHead className="h-9">Status</TableHead>
-                  <TableHead className="h-9">Connection</TableHead>
+                <TableRow className="h-7">
+                  <TableHead className="h-7">Name</TableHead>
+                  <TableHead className="h-7">Type</TableHead>
+                  <TableHead className="h-7">Email</TableHead>
+                  <TableHead className="h-7">Phone</TableHead>
+                  <TableHead className="h-7">Status</TableHead>
+                  <TableHead className="h-7">Connection</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
-                  <TableRow className="h-12">
-                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
+                  <TableRow className="h-8">
+                    <TableCell colSpan={6} className="text-center text-slate-500 h-8 py-1">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredContacts.length === 0 ? (
-                  <TableRow className="h-12">
-                    <TableCell colSpan={6} className="text-center text-slate-500 h-12">
+                  <TableRow className="h-8">
+                    <TableCell colSpan={6} className="text-center text-slate-500 h-8 py-1">
                       No contacts found
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredContacts.map((contact) => (
+                  paginatedContacts.map((contact) => (
                     <TableRow
                       key={contact.id}
-                      className="h-11 cursor-pointer hover:bg-slate-50"
+                      className="h-8 cursor-pointer hover:bg-slate-50"
                       onClick={() => navigate(`/contacts/${contact.id}`)}
                     >
-                      <TableCell className="font-medium py-2">
+                      <TableCell className="font-medium py-1">
                         {contact.name}
                       </TableCell>
-                      <TableCell className="py-2 capitalize">{contact.type || '-'}</TableCell>
-                      <TableCell className="py-2">{contact.email || '-'}</TableCell>
-                      <TableCell className="py-2">{contact.phone || '-'}</TableCell>
-                      <TableCell className="py-2">
+                      <TableCell className="py-1 capitalize">{contact.type || '-'}</TableCell>
+                      <TableCell className="py-1">{contact.email || '-'}</TableCell>
+                      <TableCell className="py-1">{contact.phone || '-'}</TableCell>
+                      <TableCell className="py-1">
                         {contact.status ? (
-                          <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                          <span className={`inline-flex items-center px-2 py-0 rounded-full text-xs font-medium capitalize ${
                             contact.status.toLowerCase() === 'active'
                               ? 'bg-soft-green/30 text-forest-green'
                               : 'bg-gray-100 text-gray-800'
@@ -123,17 +135,17 @@ export default function Contacts() {
                           <span className="text-slate-400">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="py-2">
+                      <TableCell className="py-1">
                         {contact.connection_status === 'connected' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-light-blue/20 text-sky-blue">
+                          <span className="inline-flex items-center px-2 py-0 rounded-full text-xs font-medium bg-light-blue/20 text-sky-blue">
                             Connected
                           </span>
                         ) : contact.connection_status === 'invited' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                          <span className="inline-flex items-center px-2 py-0 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                             Invited
                           </span>
                         ) : contact.connection_status === 'platform_user' ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-lavender/20 text-burgundy">
+                          <span className="inline-flex items-center px-2 py-0 rounded-full text-xs font-medium bg-lavender/20 text-burgundy">
                             On Platform
                           </span>
                         ) : (
@@ -146,6 +158,39 @@ export default function Contacts() {
               </TableBody>
             </Table>
           </div>
+
+          {!isLoading && filteredContacts.length > 0 && (
+            <div className="flex items-center justify-between mt-4">
+              <div className="text-sm text-slate-600">
+                Showing {startIndex + 1}-{Math.min(endIndex, filteredContacts.length)} of {filteredContacts.length}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="h-8"
+                >
+                  <ChevronLeft className="w-4 h-4 mr-1" />
+                  Previous
+                </Button>
+                <div className="text-sm text-slate-600">
+                  Page {currentPage} of {totalPages}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="h-8"
+                >
+                  Next
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
