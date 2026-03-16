@@ -189,9 +189,7 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
   const percentUsed = effectiveBudget > 0 ? (spent / effectiveBudget) * 100 : 0;
   const percentRemaining = Math.max(0, 100 - percentUsed);
   const isOverBudget = percentUsed > 100;
-  const expectedSpending = (effectiveBudget * percentOfMonthElapsed) / 100;
-  const isOverPace = spent > expectedSpending && Math.abs(spent - expectedSpending) > (budgetAmount * 0.05);
-  const isNearingBudget = percentUsed >= 85 && percentUsed <= 100;
+  const isExactly100 = Math.abs(percentUsed - 100) < 0.01;
 
   return (
     <div className="space-y-1 relative cursor-default py-1">
@@ -200,7 +198,7 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
           <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: iconColor }} />
           <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
         </div>
-        <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : isNearingBudget ? 'text-amber-600' : isOverPace ? 'text-amber-600' : 'text-slate-500'}`}>
+        <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : isExactly100 ? 'text-emerald-600' : 'text-slate-500'}`}>
           {isOverBudget
             ? `${formatCurrency(Math.abs(remaining))} (${(percentUsed - 100).toFixed(0)}%) over`
             : `${formatCurrency(remaining)} (${percentRemaining.toFixed(0)}%) remaining`
@@ -209,7 +207,7 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
       </div>
       <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
         <div
-          className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : isNearingBudget ? 'bg-amber-400' : isOverPace ? 'bg-amber-400' : 'bg-emerald-500'}`}
+          className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : isExactly100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
           style={{ width: `${Math.min(percentUsed, 100)}%` }}
         />
         <div
