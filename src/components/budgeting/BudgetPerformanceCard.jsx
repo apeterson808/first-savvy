@@ -198,7 +198,7 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
           <ChildIcon className="h-3.5 w-3.5 flex-shrink-0" style={{ color: iconColor }} />
           <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
         </div>
-        <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : isExactly100 ? 'text-emerald-600' : 'text-slate-500'}`}>
+        <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : 'text-slate-500'}`}>
           {isOverBudget
             ? `${formatCurrency(Math.abs(remaining))} (${(percentUsed - 100).toFixed(0)}%) over`
             : `${formatCurrency(remaining)} (${percentRemaining.toFixed(0)}%) remaining`
@@ -207,8 +207,11 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
       </div>
       <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
         <div
-          className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : isExactly100 ? 'bg-emerald-500' : 'bg-blue-500'}`}
-          style={{ width: `${Math.min(percentUsed, 100)}%` }}
+          className={`absolute top-0 left-0 h-full rounded-full transition-all ${isOverBudget ? 'bg-red-500' : ''}`}
+          style={{
+            width: `${Math.min(percentUsed, 100)}%`,
+            backgroundColor: isOverBudget ? undefined : '#52A5CE'
+          }}
         />
         <div
           className="absolute top-0 h-full w-px bg-blue-500 z-10"
