@@ -125,8 +125,9 @@ export default function Budgeting() {
         tabs={['overview', 'modify_budget']}
         dynamicTabConfig={{
           overview: {
-            type: 'dropdown',
+            type: 'arrows',
             label: format(selectedMonth, 'MMMM'),
+            currentValue: selectedMonth.toISOString(),
             options: Array.from({ length: 12 }, (_, i) => {
               const monthDate = subMonths(startOfMonth(new Date()), i);
               return {
@@ -134,7 +135,7 @@ export default function Budgeting() {
                 label: format(monthDate, 'MMMM yyyy'),
               };
             }),
-            onSelect: (value) => {
+            onNavigate: (value) => {
               setSelectedMonth(new Date(value));
             },
           },
