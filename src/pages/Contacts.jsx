@@ -59,20 +59,10 @@ export default function Contacts() {
     <div className="p-4 md:p-6">
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-2 pt-4 px-4">
-          <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Contacts</p>
-            <Button
-              size="sm"
-              onClick={() => setDialogOpen(true)}
-              className="bg-primary hover:bg-primary/90 h-9"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Contact
-            </Button>
-          </div>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Contacts</p>
         </CardHeader>
         <CardContent className="p-4">
-          <div className="mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <div className="relative w-64">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
@@ -82,6 +72,14 @@ export default function Contacts() {
                 className="pl-9 h-9"
               />
             </div>
+            <Button
+              size="sm"
+              onClick={() => setDialogOpen(true)}
+              className="bg-primary hover:bg-primary/90 h-9"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add Contact
+            </Button>
           </div>
 
           <div className="rounded-md border">
