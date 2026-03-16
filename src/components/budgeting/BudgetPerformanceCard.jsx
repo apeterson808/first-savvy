@@ -200,7 +200,10 @@ function ChildBudgetBar({ child, childBudget, childSpending, percentOfMonthElaps
           <span className="text-xs font-medium text-slate-700 truncate">{child.display_name}</span>
         </div>
         <span className={`text-xs tabular-nums whitespace-nowrap flex-shrink-0 ${isOverBudget ? 'text-red-600 font-semibold' : isOverPace ? 'text-amber-600' : 'text-slate-500'}`}>
-          {formatCurrency(Math.max(0, remaining))} ({percentRemaining.toFixed(0)}%) remaining
+          {isOverBudget
+            ? `${formatCurrency(Math.abs(remaining))} (${(percentUsed - 100).toFixed(0)}%) over`
+            : `${formatCurrency(remaining)} (${percentRemaining.toFixed(0)}%) remaining`
+          }
         </span>
       </div>
       <div className="relative h-2 rounded-full overflow-visible bg-slate-100">
@@ -399,7 +402,10 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
               </span>
             </div>
             <span className={`text-xs tabular-nums ${percentUsed > 100 ? 'text-red-600 font-semibold' : percentUsed > 90 ? 'text-amber-600' : 'text-slate-500'}`}>
-              {formatCurrency(Math.max(0, effectiveBudget - spent))} ({Math.max(0, 100 - Math.round(percentUsed))}%) remaining
+              {percentUsed > 100
+                ? `${formatCurrency(spent - effectiveBudget)} (${Math.round(percentUsed - 100)}%) over`
+                : `${formatCurrency(effectiveBudget - spent)} (${100 - Math.round(percentUsed)}%) remaining`
+              }
             </span>
           </div>
           <div className="relative">
