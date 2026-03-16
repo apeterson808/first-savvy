@@ -2,10 +2,11 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, TrendingUp, TrendingDown, Lightbulb, Circle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { AlertCircle, TrendingUp, TrendingDown, Lightbulb, Circle, ChevronLeft, ChevronRight } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
-import { differenceInDays, startOfMonth, endOfMonth } from 'date-fns';
+import { differenceInDays, startOfMonth, endOfMonth, addMonths, subMonths, format, isSameMonth, startOfDay } from 'date-fns';
 
 function BudgetRecommendation({ budgetAmount, historicalData, comparativeData }) {
   if (!budgetAmount || !historicalData?.summary) return null;
@@ -273,6 +274,7 @@ function ChildBudgetBars({ childAccounts, childBudgets, childSpending, percentOf
 
 export function BudgetPerformanceCard({ budget, currentSpending, performanceHistory, comparativeData, historicalData, childAccounts, childBudgets, childSpending, childAnalytics, compact = false, parentName = null, account = null }) {
   const [hoveredChild, setHoveredChild] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState(new Date());
   const clearTimerRef = useRef(null);
 
   const handleChildHover = useCallback((data) => {
@@ -297,11 +299,25 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   }, []);
 
   const now = new Date();
-  const monthStart = startOfMonth(now);
-  const monthEnd = endOfMonth(now);
+  const isCurrentMonth = isSameMonth(selectedMonth, now);
+  const monthStart = startOfMonth(selectedMonth);
+  const monthEnd = endOfMonth(selectedMonth);
   const daysInMonth = differenceInDays(monthEnd, monthStart) + 1;
-  const daysElapsed = differenceInDays(now, monthStart) + 1;
+  const daysElapsed = isCurrentMonth ? differenceInDays(now, monthStart) + 1 : daysInMonth;
   const percentOfMonthElapsed = (daysElapsed / daysInMonth) * 100;
+
+  const canGoForward = !isSameMonth(selectedMonth, now);
+  const monthLabel = format(selectedMonth, 'MMMM yyyy');
+
+  const handlePreviousMonth = () => {
+    setSelectedMonth(subMonths(selectedMonth, 1));
+  };
+
+  const handleNextMonth = () => {
+    if (canGoForward) {
+      setSelectedMonth(addMonths(selectedMonth, 1));
+    }
+  };
 
   const iconName = account?.icon || budget?.chartAccount?.icon;
   const iconColor = account?.color || budget?.chartAccount?.color || '#94a3b8';
@@ -344,7 +360,31 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
   return (
     <Wrapper {...wrapperProps}>
       <HeaderWrapper {...headerProps}>
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Performance - Current Month</p>
+        <div className="flex items-center justify-between">
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Budget Performance</p>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handlePreviousMonth}
+              className="h-6 w-6 p-0"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <span className="text-xs font-medium text-slate-700 min-w-[120px] text-center">
+              {monthLabel}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleNextMonth}
+              disabled={!canGoForward}
+              className="h-6 w-6 p-0 disabled:opacity-30"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </div>
       </HeaderWrapper>
       <ContentWrapper {...contentProps}>
         <div className="space-y-2">
