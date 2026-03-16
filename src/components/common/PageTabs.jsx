@@ -106,7 +106,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
               window.history.pushState({}, '', newUrl);
               window.dispatchEvent(new PopStateEvent('popstate'));
             }}
-            className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all ${
+            className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md px-2 py-1.5 text-sm font-medium transition-all ${
               isActive
                 ? 'bg-background text-foreground shadow-sm'
                 : isDisabled
@@ -114,40 +114,38 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
                 : 'text-muted-foreground hover:bg-background/60 hover:text-foreground'
             }`}
           >
-            {config.label || tab.replace(/_/g, ' ')}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (canGoPrevious && config.onNavigate) {
+                  config.onNavigate(config.options[currentIndex + 1].value);
+                }
+              }}
+              disabled={!canGoPrevious}
+              className="h-5 w-5 p-0 disabled:opacity-30 hover:bg-transparent"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <span className="min-w-[80px] text-center">
+              {config.label || tab.replace(/_/g, ' ')}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (canGoNext && config.onNavigate) {
+                  config.onNavigate(config.options[currentIndex - 1].value);
+                }
+              }}
+              disabled={!canGoNext}
+              className="h-5 w-5 p-0 disabled:opacity-30 hover:bg-transparent"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
           </button>
-          {isActive && (
-            <div className="absolute -right-[68px] flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (canGoPrevious && config.onNavigate) {
-                    config.onNavigate(config.options[currentIndex + 1].value);
-                  }
-                }}
-                disabled={!canGoPrevious}
-                className="h-7 w-7 p-0 disabled:opacity-30"
-              >
-                <ChevronLeft className="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (canGoNext && config.onNavigate) {
-                    config.onNavigate(config.options[currentIndex - 1].value);
-                  }
-                }}
-                disabled={!canGoNext}
-                className="h-7 w-7 p-0 disabled:opacity-30"
-              >
-                <ChevronRight className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          )}
         </div>
       );
     }
