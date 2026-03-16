@@ -629,7 +629,7 @@ export default function ContactDetail() {
                 <div className="space-y-2">
                   <h3 className="text-sm font-semibold text-slate-700">Spending by Category</h3>
                   <p className="text-xs text-slate-500">Distribution of transaction amounts across categories</p>
-                  <CategoryBreakdown transactions={transactions} categories={categories} />
+                  <CategoryBreakdown transactions={transactions} categories={chartAccounts} />
                 </div>
               </TabsContent>
               <TabsContent value="volume" className="mt-6">
