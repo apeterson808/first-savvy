@@ -414,7 +414,11 @@ export function BudgetPerformanceCard({ budget, currentSpending, performanceHist
               className="absolute top-0 h-full w-0.5 bg-blue-600 z-10"
               style={{ left: `${Math.min(percentOfMonthElapsed, 100)}%` }}
             >
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 text-xs font-medium text-blue-600 whitespace-nowrap bg-white px-1 rounded">
+              <div
+                className={`absolute -top-1 text-xs font-medium text-blue-600 whitespace-nowrap bg-white px-1 rounded ${
+                  percentOfMonthElapsed > 90 ? 'right-0' : 'left-1/2 -translate-x-1/2'
+                }`}
+              >
                 Day {daysElapsed}
               </div>
             </div>
