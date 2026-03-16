@@ -24,7 +24,7 @@ export const budgetAnalytics = {
       if (error) throw error;
 
       const expenseTransactions = transactions.filter(t => t.type === 'expense');
-      const totalSpent = expenseTransactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+      const totalSpent = expenseTransactions.reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
       const transactionCount = expenseTransactions.length;
 
       monthlyData.push({
@@ -100,7 +100,7 @@ export const budgetAnalytics = {
               transactionCount: 0
             };
           }
-          vendorMap[vendorId].totalSpent += t.amount;
+          vendorMap[vendorId].totalSpent += Math.abs(t.amount);
           vendorMap[vendorId].transactionCount += 1;
         }
       });
@@ -109,7 +109,7 @@ export const budgetAnalytics = {
         month: format(targetDate, 'MMM yyyy'),
         monthKey: format(targetDate, 'yyyy-MM'),
         vendors: Object.values(vendorMap),
-        totalSpent: transactions.reduce((sum, t) => sum + t.amount, 0)
+        totalSpent: transactions.reduce((sum, t) => sum + Math.abs(t.amount), 0)
       });
     }
 
