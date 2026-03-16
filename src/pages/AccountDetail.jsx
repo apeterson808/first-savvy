@@ -41,7 +41,7 @@ import { getAccountDisplayName } from '@/components/utils/constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, deleteUserCreatedAccount, getChartAccountById } from '@/api/chartOfAccounts';
-import { getAccountJournalLinesPaginated, getMultiAccountJournalLinesPaginated, getAccountAuditHistoryPaginated, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
+import { getAccountJournalLinesPaginated, getMultiAccountJournalLinesPaginated, getAccountAuditHistoryPaginated, getMultiAccountAuditHistoryPaginated, createOpeningBalanceJournalEntry } from '@/api/journalEntries';
 import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
@@ -387,18 +387,32 @@ export default function AccountDetail() {
     isLoading: auditHistoryLoading,
     error: auditHistoryError
   } = useQuery({
-    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset, isBudgetableAccount, currentAuditPage],
+    queryKey: ['audit-history-paginated', 'account', id, activeProfile?.id, datePreset, isBudgetableAccount, currentAuditPage, childAccounts.map(c => c.id).join(',')],
     queryFn: async () => {
       if (!id || !activeProfile) return { lines: [], totalCount: 0, hasMore: false };
       const offset = currentAuditPage * PAGE_SIZE;
-      return await getAccountAuditHistoryPaginated({
-        profileId: activeProfile.id,
-        accountId: id,
-        startDate: isBudgetableAccount ? null : formatDateForDb(dateRange.start),
-        endDate: isBudgetableAccount ? null : formatDateForDb(dateRange.end),
-        limit: PAGE_SIZE,
-        offset: offset
-      });
+
+      const accountIds = [id, ...childAccounts.map(c => c.id)];
+
+      if (accountIds.length > 1) {
+        return await getMultiAccountAuditHistoryPaginated({
+          profileId: activeProfile.id,
+          accountIds: accountIds,
+          startDate: isBudgetableAccount ? null : formatDateForDb(dateRange.start),
+          endDate: isBudgetableAccount ? null : formatDateForDb(dateRange.end),
+          limit: PAGE_SIZE,
+          offset: offset
+        });
+      } else {
+        return await getAccountAuditHistoryPaginated({
+          profileId: activeProfile.id,
+          accountId: id,
+          startDate: isBudgetableAccount ? null : formatDateForDb(dateRange.start),
+          endDate: isBudgetableAccount ? null : formatDateForDb(dateRange.end),
+          limit: PAGE_SIZE,
+          offset: offset
+        });
+      }
     },
     enabled: !!id && !!activeProfile && (activeTab === 'audit' || budgetLedgerTab === 'audit'),
     keepPreviousData: true
@@ -1521,6 +1535,9 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            {childAccounts.length > 0 && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
+                            )}
                             <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
@@ -1561,6 +1578,13 @@ export default function AccountDetail() {
                                   {activity.displayDescription}
                                 </div>
                               </TableCell>
+                              {childAccounts.length > 0 && (
+                                <TableCell className="text-[11px] text-slate-600 py-1">
+                                  <div className="truncate max-w-[150px]">
+                                    {activity.account_name || '\u2014'}
+                                  </div>
+                                </TableCell>
+                              )}
                               <TableCell className="text-[11px] text-slate-600 py-1">
                                 {activity.offsettingAccounts || '\u2014'}
                               </TableCell>
@@ -2435,6 +2459,9 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Type</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                          {childAccounts.length > 0 && (
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
+                          )}
                           <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
@@ -2475,6 +2502,13 @@ export default function AccountDetail() {
                                 {activity.displayDescription}
                               </div>
                             </TableCell>
+                            {childAccounts.length > 0 && (
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                <div className="truncate max-w-[150px]">
+                                  {activity.account_name || '\u2014'}
+                                </div>
+                              </TableCell>
+                            )}
                             <TableCell className="text-[11px] text-slate-600 py-1">
                               {activity.offsettingAccounts || '—'}
                             </TableCell>
