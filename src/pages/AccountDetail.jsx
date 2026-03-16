@@ -1378,8 +1378,19 @@ export default function AccountDetail() {
                         </TableBody>
                       </Table>
                       {totalJournalLines > 0 && (
-                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                          Showing {allActivity.length} of {totalJournalLines} transactions
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                          <span>Showing {allActivity.length} of {totalJournalLines} transactions</span>
+                          {isBudgetableAccount && hasNextPage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => fetchNextPage()}
+                              disabled={isFetchingNextPage}
+                              className="h-7 text-xs"
+                            >
+                              {isFetchingNextPage ? 'Loading...' : 'Load More'}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -1498,8 +1509,19 @@ export default function AccountDetail() {
                         </TableBody>
                       </Table>
                       {totalAuditLines > 0 && (
-                        <div className="text-xs text-slate-500 text-center py-1.5 border-t">
-                          Showing {allAuditActivity.length} of {totalAuditLines} entries
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                          <span>Showing {allAuditActivity.length} of {totalAuditLines} entries</span>
+                          {isBudgetableAccount && hasNextAuditPage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => fetchNextAuditPage()}
+                              disabled={isFetchingNextAuditPage}
+                              className="h-7 text-xs"
+                            >
+                              {isFetchingNextAuditPage ? 'Loading...' : 'Load More'}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
