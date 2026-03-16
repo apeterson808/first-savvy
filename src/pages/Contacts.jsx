@@ -87,7 +87,6 @@ export default function Contacts() {
               <TableHeader>
                 <TableRow className="h-7">
                   <TableHead className="h-7">Name</TableHead>
-                  <TableHead className="h-7">Type</TableHead>
                   <TableHead className="h-7">Email</TableHead>
                   <TableHead className="h-7">Phone</TableHead>
                   <TableHead className="h-7">Status</TableHead>
@@ -97,13 +96,13 @@ export default function Contacts() {
               <TableBody>
                 {isLoading ? (
                   <TableRow className="h-8">
-                    <TableCell colSpan={6} className="text-center text-slate-500 h-8 py-1">
+                    <TableCell colSpan={5} className="text-center text-slate-500 h-8 py-1">
                       Loading...
                     </TableCell>
                   </TableRow>
                 ) : filteredContacts.length === 0 ? (
                   <TableRow className="h-8">
-                    <TableCell colSpan={6} className="text-center text-slate-500 h-8 py-1">
+                    <TableCell colSpan={5} className="text-center text-slate-500 h-8 py-1">
                       No contacts found
                     </TableCell>
                   </TableRow>
@@ -117,7 +116,6 @@ export default function Contacts() {
                       <TableCell className="font-medium py-1">
                         {contact.name}
                       </TableCell>
-                      <TableCell className="py-1 capitalize">{contact.type || '-'}</TableCell>
                       <TableCell className="py-1">{contact.email || '-'}</TableCell>
                       <TableCell className="py-1">{contact.phone || '-'}</TableCell>
                       <TableCell className="py-1">

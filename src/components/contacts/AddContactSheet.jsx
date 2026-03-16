@@ -37,7 +37,6 @@ export default function AddContactSheet({
 }) {
   const [formData, setFormData] = useState({
     name: '',
-    type: 'vendor',
     status: 'active',
     email: '',
     phone: '',
@@ -72,7 +71,6 @@ export default function AddContactSheet({
   const resetForm = () => {
     setFormData({
       name: '',
-      type: 'vendor',
       status: 'active',
       email: '',
       phone: '',
@@ -84,7 +82,7 @@ export default function AddContactSheet({
 
   const updateFormField = (field, value) => {
     let normalizedValue = value;
-    if (field === 'type' || field === 'status') {
+    if (field === 'status') {
       normalizedValue = value ? value.toLowerCase() : value;
     }
     setFormData(prev => ({ ...prev, [field]: normalizedValue }));
@@ -165,7 +163,6 @@ export default function AddContactSheet({
 
     const contactData = {
       name: formData.name.trim(),
-      type: (formData.type || 'vendor').toLowerCase(),
       status: (formData.status || 'active').toLowerCase(),
       email: formData.email.trim() || undefined,
       phone: formData.phone || undefined,
@@ -199,7 +196,7 @@ export default function AddContactSheet({
           <SheetHeader>
             <SheetTitle>Add Contact</SheetTitle>
             <SheetDescription>
-              Add a new vendor or customer to your contacts
+              Add a new contact to your address book
             </SheetDescription>
           </SheetHeader>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4 mt-4">
@@ -214,29 +211,16 @@ export default function AddContactSheet({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="type">Type *</Label>
-              <ClickThroughSelect
-                value={formData.type}
-                onValueChange={(value) => updateFormField('type', value)}
-                placeholder="Select type"
-              >
-                <ClickThroughSelectItem value="vendor">Vendor</ClickThroughSelectItem>
-                <ClickThroughSelectItem value="customer">Customer</ClickThroughSelectItem>
-              </ClickThroughSelect>
-            </div>
-            <div>
-              <Label htmlFor="status">Status *</Label>
-              <ClickThroughSelect
-                value={formData.status}
-                onValueChange={(value) => updateFormField('status', value)}
-                placeholder="Select status"
-              >
-                <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
-                <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
-              </ClickThroughSelect>
-            </div>
+          <div>
+            <Label htmlFor="status">Status *</Label>
+            <ClickThroughSelect
+              value={formData.status}
+              onValueChange={(value) => updateFormField('status', value)}
+              placeholder="Select status"
+            >
+              <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
+              <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
+            </ClickThroughSelect>
           </div>
 
           <div>
