@@ -265,21 +265,24 @@ export default function AccountDetail() {
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount && !!account
   });
 
+  const childAccountIds = useMemo(() => childAccounts.map(c => c.id), [childAccounts]);
+
   const { data: historicalData } = useQuery({
-    queryKey: ['historical-spending', id, activeProfile?.id],
+    queryKey: ['historical-spending', id, activeProfile?.id, childAccountIds],
     queryFn: async () => {
-      return await budgetAnalytics.getHistoricalSpending(id, 12, activeProfile.id);
+      return await budgetAnalytics.getHistoricalSpending(id, 12, activeProfile.id, childAccountIds);
     },
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount
   });
 
   const { data: vendorData } = useQuery({
-    queryKey: ['vendor-breakdown', id, activeProfile?.id],
+    queryKey: ['vendor-breakdown', id, activeProfile?.id, childAccountIds],
     queryFn: async () => {
       return await budgetAnalytics.getVendorBreakdown(
         id,
         null,
-        activeProfile.id
+        activeProfile.id,
+        childAccountIds
       );
     },
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount

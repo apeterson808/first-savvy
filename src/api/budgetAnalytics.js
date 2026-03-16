@@ -2,9 +2,10 @@ import { firstsavvy } from './firstsavvyClient';
 import { startOfMonth, endOfMonth, subMonths, format, parseISO, differenceInDays } from 'date-fns';
 
 export const budgetAnalytics = {
-  async getHistoricalSpending(categoryAccountId, monthsBack = 12, profileId) {
+  async getHistoricalSpending(categoryAccountId, monthsBack = 12, profileId, childAccountIds = []) {
     const now = new Date();
     const monthlyData = [];
+    const allAccountIds = [categoryAccountId, ...childAccountIds];
 
     for (let i = monthsBack - 1; i >= 0; i--) {
       const targetDate = subMonths(now, i);
@@ -15,7 +16,7 @@ export const budgetAnalytics = {
         .from('transactions')
         .select('amount, date, type, original_type')
         .eq('profile_id', profileId)
-        .eq('category_account_id', categoryAccountId)
+        .in('category_account_id', allAccountIds)
         .eq('status', 'posted')
         .gte('date', monthStart.toISOString())
         .lte('date', monthEnd.toISOString());
@@ -51,10 +52,11 @@ export const budgetAnalytics = {
     };
   },
 
-  async getVendorBreakdown(categoryAccountId, dateRange, profileId) {
+  async getVendorBreakdown(categoryAccountId, dateRange, profileId, childAccountIds = []) {
     const now = new Date();
     const monthsBack = 12;
     const monthlyData = [];
+    const allAccountIds = [categoryAccountId, ...childAccountIds];
 
     for (let i = monthsBack - 1; i >= 0; i--) {
       const targetDate = subMonths(now, i);
@@ -77,7 +79,7 @@ export const budgetAnalytics = {
           )
         `)
         .eq('profile_id', profileId)
-        .eq('category_account_id', categoryAccountId)
+        .in('category_account_id', allAccountIds)
         .eq('status', 'posted')
         .eq('type', 'expense')
         .gte('date', monthStart.toISOString())
