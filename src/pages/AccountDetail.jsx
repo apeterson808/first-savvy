@@ -252,16 +252,20 @@ export default function AccountDetail() {
   });
 
   const { data: currentMonthSpending } = useQuery({
-    queryKey: ['current-month-spending', id, activeProfile?.id, budgetMonth.toISOString()],
+    queryKey: ['current-month-spending', id, activeProfile?.id, budgetMonth.toISOString(), childAccounts.length],
     queryFn: async () => {
       const monthStart = startOfMonth(budgetMonth);
       const monthEnd = endOfMonth(budgetMonth);
+
+      const accountIds = childAccounts.length > 0
+        ? [id, ...childAccounts.map(c => c.id)]
+        : [id];
 
       const { data, error } = await firstsavvy.supabase
         .from('transactions')
         .select('amount')
         .eq('profile_id', activeProfile.id)
-        .eq('category_account_id', id)
+        .in('category_account_id', accountIds)
         .eq('status', 'posted')
         .eq('type', account?.class === 'expense' ? 'expense' : 'income')
         .gte('date', monthStart.toISOString())
