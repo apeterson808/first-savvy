@@ -320,18 +320,6 @@ export default function AccountDetail() {
     enabled: !!id && !!activeProfile?.id && isBudgetableAccount && childAccounts.length > 0
   });
 
-  const { data: categorizedHistoricalData } = useQuery({
-    queryKey: ['categorized-historical', id, activeProfile?.id, childAccounts.map(c => c.id).join(',')],
-    queryFn: async () => {
-      const ids = childAccounts.length > 0 ? childAccounts.map(c => c.id) : [id];
-      const names = childAccounts.length > 0
-        ? Object.fromEntries(childAccounts.map(c => [c.id, c.display_name]))
-        : { [id]: account?.display_name || '' };
-      return await budgetAnalytics.getHistoricalSpendingWithCategories(ids, names, 12, activeProfile.id);
-    },
-    enabled: !!id && !!activeProfile?.id && isBudgetableAccount && !!account
-  });
-
   // NOTE: Pending transactions are NOT shown in the register (QuickBooks behavior)
   // Transactions only appear in the register after they've been posted to journal entries
 
@@ -1218,7 +1206,7 @@ export default function AccountDetail() {
               parentName={account?.name || account?.display_name}
               account={account}
             />
-            <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} categorizedData={categorizedHistoricalData} />
+            <SpendingAndVendorCard historicalData={historicalData} budget={budget} vendorData={vendorData} />
           </div>
 
           <Card>

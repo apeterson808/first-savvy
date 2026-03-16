@@ -5,87 +5,20 @@ import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { formatCurrency } from '@/components/utils/formatters';
 import { Badge } from '@/components/ui/badge';
 
-const CATEGORY_BASE_COLORS = [
+const VENDOR_COLORS = [
   '#3b82f6', '#10b981', '#f59e0b', '#ef4444',
-  '#06b6d4', '#ec4899', '#14b8a6', '#f97316',
-  '#84cc16', '#8b5cf6'
+  '#06b6d4', '#ec4899', '#6366f1', '#14b8a6',
+  '#f97316', '#84cc16'
 ];
 
-function lighten(hex, amount) {
-  const num = parseInt(hex.slice(1), 16);
-  const r = Math.min(255, (num >> 16) + amount);
-  const g = Math.min(255, ((num >> 8) & 0xff) + amount);
-  const b = Math.min(255, (num & 0xff) + amount);
-  return `#${((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
-}
-
-function buildCategorizedChartData(categorizedData) {
-  if (!categorizedData?.monthlyData) return null;
-
-  const { monthlyData, categoryNames } = categorizedData;
-  const categoryIds = Object.keys(categoryNames || {});
-
-  const categoryColorMap = {};
-  categoryIds.forEach((id, i) => {
-    categoryColorMap[id] = CATEGORY_BASE_COLORS[i % CATEGORY_BASE_COLORS.length];
-  });
-
-  const allKeys = [];
-  const keyColorMap = {};
-  const keyLabelMap = {};
-
-  const merged = monthlyData.map(month => {
-    const point = {
-      month: month.monthShort || month.month?.split(' ')[0] || '',
-      fullMonth: month.month || '',
-      totalSpent: month.totalSpent,
-    };
-
-    categoryIds.forEach(catId => {
-      const catData = month.categories?.[catId] || { total: 0, vendors: {} };
-      const baseColor = categoryColorMap[catId];
-      const catName = categoryNames?.[catId] || catId;
-      const vendorEntries = Object.entries(catData.vendors || {}).sort((a, b) => b[1] - a[1]);
-      const vendorTotal = vendorEntries.reduce((s, [, v]) => s + v, 0);
-      const otherTotal = Math.max(0, catData.total - vendorTotal);
-
-      vendorEntries.forEach(([vname, vamt], vi) => {
-        const key = `${catId}__${vname}`;
-        point[key] = vamt;
-        if (!keyColorMap[key]) {
-          keyColorMap[key] = lighten(baseColor, vi * 30);
-          keyLabelMap[key] = `${catName} · ${vname}`;
-          allKeys.push(key);
-        }
-      });
-
-      if (otherTotal > 0.01 || vendorEntries.length === 0) {
-        const key = `${catId}__other`;
-        point[key] = vendorEntries.length === 0 ? catData.total : otherTotal;
-        if (!keyColorMap[key]) {
-          keyColorMap[key] = baseColor;
-          keyLabelMap[key] = vendorEntries.length === 0 ? catName : `${catName} · Other`;
-          allKeys.push(key);
-        }
-      }
-    });
-
-    return point;
-  });
-
-  const uniqueKeys = [...new Set(allKeys)];
-
-  return { merged, uniqueKeys, keyColorMap, keyLabelMap, categoryColorMap, categoryNames };
-}
-
-function mergeVendorData(historicalData, vendorData) {
+function mergeData(historicalData, vendorData) {
   const monthlySpending = historicalData?.monthlyData || [];
   const monthlyVendors = vendorData?.monthlyData || [];
   const allVendors = vendorData?.vendors || [];
 
   const vendorColorMap = {};
   allVendors.forEach((name, i) => {
-    vendorColorMap[name] = CATEGORY_BASE_COLORS[i % CATEGORY_BASE_COLORS.length];
+    vendorColorMap[name] = VENDOR_COLORS[i % VENDOR_COLORS.length];
   });
 
   const totalsByVendor = {};
@@ -111,6 +44,7 @@ function mergeVendorData(historicalData, vendorData) {
     }
 
     point.stackTotal = vendorSum;
+
     return point;
   });
 
@@ -121,48 +55,9 @@ function mergeVendorData(historicalData, vendorData) {
   return { merged, sortedVendors, vendorColorMap, totalsByVendor, monthCountByVendor };
 }
 
-function CategorizedTooltip({ active, payload, keyLabelMap, budgetAmount }) {
-  if (!active || !payload || !payload.length) return null;
-  const data = payload[0]?.payload;
-  if (!data) return null;
-
-  const entries = payload.filter(p => p.value > 0);
-  const total = data.totalSpent;
-
-  return (
-    <div className="bg-popover border border-border rounded-lg shadow-lg p-3 min-w-[200px] max-w-[260px]">
-      <p className="font-semibold text-sm mb-2">{data.fullMonth}</p>
-      {entries.length > 0 && (
-        <div className="space-y-1 mb-2">
-          {entries
-            .sort((a, b) => b.value - a.value)
-            .map((entry, i) => (
-              <div key={i} className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <div className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: entry.fill || entry.color }} />
-                  <span className="text-xs text-muted-foreground truncate">{keyLabelMap?.[entry.dataKey] || entry.dataKey}</span>
-                </div>
-                <span className="text-xs font-medium flex-shrink-0">{formatCurrency(entry.value)}</span>
-              </div>
-            ))}
-        </div>
-      )}
-      <div className="flex items-center justify-between gap-3 pt-2 border-t">
-        <span className="text-xs font-semibold">Total</span>
-        <span className="text-xs font-semibold">{formatCurrency(total)}</span>
-      </div>
-      {budgetAmount > 0 && (
-        <div className="flex items-center justify-between gap-3 mt-1">
-          <span className="text-xs text-muted-foreground">Budget</span>
-          <span className="text-xs font-medium">{formatCurrency(budgetAmount)}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function CustomTooltip({ active, payload, vendorColorMap, budgetAmount }) {
   if (!active || !payload || !payload.length) return null;
+
   const data = payload[0]?.payload;
   if (!data) return null;
 
@@ -173,6 +68,7 @@ function CustomTooltip({ active, payload, vendorColorMap, budgetAmount }) {
   return (
     <div className="bg-popover border border-border rounded-lg shadow-lg p-3 min-w-[180px]">
       <p className="font-semibold text-sm mb-2">{data.fullMonth}</p>
+
       {vendorEntries.length > 0 && (
         <div className="space-y-1 mb-2">
           {vendorEntries
@@ -189,10 +85,12 @@ function CustomTooltip({ active, payload, vendorColorMap, budgetAmount }) {
             ))}
         </div>
       )}
+
       <div className="flex items-center justify-between gap-3 pt-2 border-t">
         <span className="text-xs font-semibold">Total</span>
         <span className="text-xs font-semibold">{formatCurrency(displayTotal)}</span>
       </div>
+
       {budgetAmount > 0 && (
         <div className="flex items-center justify-between gap-3 mt-1">
           <span className="text-xs text-muted-foreground">Budget</span>
@@ -240,40 +138,17 @@ function VendorLegend({ sortedVendors, vendorColorMap, totalsByVendor, monthCoun
   );
 }
 
-function CategoryLegend({ uniqueKeys, keyColorMap, keyLabelMap }) {
-  if (!uniqueKeys.length) return null;
-  return (
-    <div className="space-y-1">
-      {uniqueKeys.map(key => (
-        <div key={key} className="flex items-center justify-between -mx-2 px-2 py-0.5">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: keyColorMap[key] }} />
-            <span className="text-xs text-muted-foreground">{keyLabelMap[key] || key}</span>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-export function SpendingAndVendorCard({ historicalData, budget, vendorData, categorizedData }) {
+export function SpendingAndVendorCard({ historicalData, budget, vendorData }) {
   const [hoveredVendor, setHoveredVendor] = useState(null);
   const budgetAmount = budget?.allocated_amount || 0;
-  const summary = categorizedData?.summary || historicalData?.summary;
-
-  const categorizedChart = useMemo(
-    () => buildCategorizedChartData(categorizedData),
-    [categorizedData]
-  );
+  const summary = historicalData?.summary;
 
   const { merged, sortedVendors, vendorColorMap, totalsByVendor, monthCountByVendor } = useMemo(
-    () => mergeVendorData(historicalData, vendorData),
+    () => mergeData(historicalData, vendorData),
     [historicalData, vendorData]
   );
 
-  const hasCategorized = !!categorizedChart && categorizedChart.uniqueKeys.length > 0;
-
-  if (!historicalData?.monthlyData && !categorizedData?.monthlyData) {
+  if (!historicalData?.monthlyData) {
     return (
       <Card>
         <CardContent className="py-10 text-center text-sm text-muted-foreground">
@@ -307,11 +182,18 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData, cate
       <CardContent className="pt-2 space-y-4">
         <div className="h-56">
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart
-              data={hasCategorized ? categorizedChart.merged : merged}
-              margin={{ top: 5, right: 5, left: -10, bottom: 0 }}
-            >
+            <ComposedChart data={merged} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
+              <defs>
+                {sortedVendors.map((name, i) => (
+                  <linearGradient key={name} id={`vendorGrad-${i}`} x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={vendorColorMap[name]} stopOpacity={0.85} />
+                    <stop offset="100%" stopColor={vendorColorMap[name]} stopOpacity={0.6} />
+                  </linearGradient>
+                ))}
+              </defs>
+
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted/40" vertical={false} />
+
               <XAxis
                 dataKey="month"
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
@@ -325,14 +207,12 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData, cate
                 tickLine={false}
                 tickFormatter={v => `$${v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}`}
               />
+
               <Tooltip
                 cursor={{ fill: 'hsl(var(--muted))', opacity: 0.3, radius: 4 }}
-                content={
-                  hasCategorized
-                    ? <CategorizedTooltip keyLabelMap={categorizedChart.keyLabelMap} budgetAmount={budgetAmount} />
-                    : <CustomTooltip vendorColorMap={vendorColorMap} budgetAmount={budgetAmount} />
-                }
+                content={<CustomTooltip vendorColorMap={vendorColorMap} budgetAmount={budgetAmount} />}
               />
+
               {budgetAmount > 0 && (
                 <ReferenceLine
                   y={budgetAmount}
@@ -342,24 +222,14 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData, cate
                 />
               )}
 
-              {hasCategorized ? (
-                categorizedChart.uniqueKeys.map((key, i) => (
-                  <Bar
-                    key={key}
-                    dataKey={key}
-                    stackId="cats"
-                    fill={categorizedChart.keyColorMap[key]}
-                    radius={i === categorizedChart.uniqueKeys.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
-                  />
-                ))
-              ) : sortedVendors.length > 0 ? (
+              {sortedVendors.length > 0 ? (
                 <>
                   {sortedVendors.map((name, i) => (
                     <Bar
                       key={name}
                       dataKey={name}
                       stackId="vendors"
-                      fill={vendorColorMap[name]}
+                      fill={`url(#vendorGrad-${i})`}
                       radius={i === sortedVendors.length - 1 ? [3, 3, 0, 0] : [0, 0, 0, 0]}
                       opacity={hoveredVendor ? (hoveredVendor === name ? 1 : 0.15) : 1}
                       style={{ transition: 'opacity 150ms ease' }}
@@ -415,21 +285,7 @@ export function SpendingAndVendorCard({ historicalData, budget, vendorData, cate
           </div>
         )}
 
-        {hasCategorized && categorizedChart.uniqueKeys.length > 1 && (
-          <div className="pt-3 border-t">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Categories</p>
-              <Badge variant="outline" className="text-[10px]">{Object.keys(categorizedChart.categoryNames || {}).length}</Badge>
-            </div>
-            <CategoryLegend
-              uniqueKeys={categorizedChart.uniqueKeys}
-              keyColorMap={categorizedChart.keyColorMap}
-              keyLabelMap={categorizedChart.keyLabelMap}
-            />
-          </div>
-        )}
-
-        {!hasCategorized && sortedVendors.length > 0 && (
+        {sortedVendors.length > 0 && (
           <div className="pt-3 border-t">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Vendors</p>

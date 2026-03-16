@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -7,29 +7,31 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronRight, ChevronLeft, FileText, History, Search } from 'lucide-react';
+import { ChevronDown, ChevronRight, FileText, History, Search } from 'lucide-react';
 import { Circle } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { budgetAnalytics } from '@/api/budgetAnalytics';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorCard';
+import DatePresetDropdown from '@/components/common/DatePresetDropdown';
 import { getAccountJournalLinesPaginated, getAccountAuditHistoryPaginated } from '@/api/journalEntries';
 import { formatCurrency } from '@/components/utils/formatters';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
+import { getDateRangeFromPreset, formatDateForDb } from '@/utils/dateRangeUtils';
 import JournalEntryDialog from '@/components/accounting/JournalEntryDialog';
 import AuditHistoryModal from '@/components/accounting/AuditHistoryModal';
-
-const PAGE_SIZE = 10;
+import { toast } from 'sonner';
 
 export function ChildBudgetSection({ childAccount, profileId }) {
   const [isOpen, setIsOpen] = useState(false);
   const [ledgerTab, setLedgerTab] = useState('register');
+  const [datePreset, setDatePreset] = useState('thisMonth');
   const [searchQuery, setSearchQuery] = useState('');
-  const [registerPage, setRegisterPage] = useState(0);
-  const [auditPage, setAuditPage] = useState(0);
   const [selectedJournalEntryId, setSelectedJournalEntryId] = useState(null);
   const [selectedTransactionForAudit, setSelectedTransactionForAudit] = useState(null);
+
+  const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
 
   const { data: budget } = useQuery({
     queryKey: ['budget-for-category', childAccount.id, profileId],
@@ -91,44 +93,66 @@ export function ChildBudgetSection({ childAccount, profileId }) {
     enabled: !!childAccount.id && !!profileId && isOpen
   });
 
-  const { data: journalLinesData, isLoading: journalLinesLoading } = useQuery({
-    queryKey: ['journal-lines-paginated', 'account', childAccount.id, profileId, registerPage],
-    queryFn: async () => {
+  const {
+    data: journalLinesData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading: journalLinesLoading,
+  } = useInfiniteQuery({
+    queryKey: ['journal-lines-paginated', 'account', childAccount.id, profileId, datePreset],
+    queryFn: async ({ pageParam = 0 }) => {
       if (!childAccount.id || !profileId) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountJournalLinesPaginated({
         profileId,
         accountId: childAccount.id,
-        startDate: null,
-        endDate: null,
-        limit: PAGE_SIZE,
-        offset: registerPage * PAGE_SIZE
+        startDate: formatDateForDb(dateRange.start),
+        endDate: formatDateForDb(dateRange.end),
+        limit: 100,
+        offset: pageParam
       });
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
+      return lastPage.hasMore ? loadedCount : undefined;
     },
     enabled: !!childAccount.id && !!profileId && isOpen
   });
 
-  const { data: auditHistoryData, isLoading: auditLoading } = useQuery({
-    queryKey: ['audit-history-paginated', 'account', childAccount.id, profileId, auditPage],
-    queryFn: async () => {
+  const {
+    data: auditHistoryData,
+    fetchNextPage: fetchNextAuditPage,
+    hasNextPage: hasNextAuditPage,
+    isFetchingNextPage: isFetchingNextAuditPage,
+  } = useInfiniteQuery({
+    queryKey: ['audit-history-paginated', 'account', childAccount.id, profileId, datePreset],
+    queryFn: async ({ pageParam = 0 }) => {
       if (!childAccount.id || !profileId) return { lines: [], totalCount: 0, hasMore: false };
       return await getAccountAuditHistoryPaginated({
         profileId,
         accountId: childAccount.id,
-        startDate: null,
-        endDate: null,
-        limit: PAGE_SIZE,
-        offset: auditPage * PAGE_SIZE
+        startDate: formatDateForDb(dateRange.start),
+        endDate: formatDateForDb(dateRange.end),
+        limit: 100,
+        offset: pageParam
       });
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce((sum, page) => sum + page.lines.length, 0);
+      return lastPage.hasMore ? loadedCount : undefined;
     },
     enabled: !!childAccount.id && !!profileId && isOpen && ledgerTab === 'audit'
   });
 
-  const journalLines = journalLinesData?.lines || [];
-  const auditHistoryLines = auditHistoryData?.lines || [];
-  const registerTotalCount = journalLinesData?.totalCount || 0;
-  const auditTotalCount = auditHistoryData?.totalCount || 0;
-  const registerTotalPages = Math.ceil(registerTotalCount / PAGE_SIZE);
-  const auditTotalPages = Math.ceil(auditTotalCount / PAGE_SIZE);
+  const journalLines = useMemo(() => {
+    if (!journalLinesData?.pages) return [];
+    return journalLinesData.pages.flatMap(page => page.lines);
+  }, [journalLinesData]);
+
+  const auditHistoryLines = useMemo(() => {
+    if (!auditHistoryData?.pages) return [];
+    return auditHistoryData.pages.flatMap(page => page.lines);
+  }, [auditHistoryData]);
 
   const allActivity = useMemo(() => {
     let combined = journalLines.map(jl => {
@@ -167,17 +191,9 @@ export function ChildBudgetSection({ childAccount, profileId }) {
       );
     }
 
+    combined.sort((a, b) => new Date(b.displayDate) - new Date(a.displayDate));
     return combined;
   }, [journalLines, searchQuery]);
-
-  const filteredAuditLines = useMemo(() => {
-    if (!searchQuery) return auditHistoryLines;
-    const query = searchQuery.toLowerCase();
-    return auditHistoryLines.filter(line =>
-      line.description?.toLowerCase().includes(query) ||
-      line.action?.toLowerCase().includes(query)
-    );
-  }, [auditHistoryLines, searchQuery]);
 
   const IconComponent = childAccount.icon && Icons[childAccount.icon] ? Icons[childAccount.icon] : Circle;
   const iconColor = childAccount.color || '#94a3b8';
@@ -247,14 +263,21 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                         Audit History
                       </TabsTrigger>
                     </TabsList>
-                    <div className="relative">
-                      <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-                      <Input
-                        placeholder="Search..."
-                        value={searchQuery}
-                        onChange={(e) => { setSearchQuery(e.target.value); setRegisterPage(0); setAuditPage(0); }}
-                        className="pl-8 w-48 h-8 text-sm"
+                    <div className="flex items-center gap-2">
+                      <DatePresetDropdown
+                        value={datePreset}
+                        onValueChange={setDatePreset}
+                        triggerClassName="w-40 h-8 text-sm"
                       />
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 transform -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
+                        <Input
+                          placeholder="Search transactions..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          className="pl-8 w-56 h-8 text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
 
@@ -264,173 +287,129 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                     ) : allActivity.length === 0 ? (
                       <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
                     ) : (
-                      <>
-                        <div className="rounded-md border overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="h-8 bg-slate-100">
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Budget</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                                <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                                <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                                <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
-                                <TableHead className="w-[40px] py-1.5"></TableHead>
+                      <div className="rounded-md border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="h-8 bg-slate-100">
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                              <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                              <TableHead className="w-[40px] py-1.5"></TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {allActivity.map((activity, index) => (
+                              <TableRow
+                                key={`${activity.id || index}`}
+                                className={`h-7 ${index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100'}`}
+                              >
+                                <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                  {activity.displayDate ? format(parseISO(activity.displayDate), 'MMM d, yyyy') : '—'}
+                                </TableCell>
+                                <TableCell className="text-[11px] py-1 text-slate-500">
+                                  {activity.entryNumber || '—'}
+                                </TableCell>
+                                <TableCell className="text-[11px] py-1">
+                                  {activity.displayDescription || '—'}
+                                </TableCell>
+                                <TableCell className="text-[11px] py-1 text-slate-600">
+                                  {activity.offsettingAccounts || '—'}
+                                </TableCell>
+                                <TableCell className="text-right text-[11px] py-1 text-emerald-600 font-medium">
+                                  {activity.debitAmount > 0 ? formatCurrency(activity.debitAmount) : ''}
+                                </TableCell>
+                                <TableCell className="text-right text-[11px] py-1 text-red-500 font-medium">
+                                  {activity.creditAmount > 0 ? formatCurrency(activity.creditAmount) : ''}
+                                </TableCell>
+                                <TableCell className="text-right text-[11px] py-1 font-medium">
+                                  {formatCurrency(activity.runningBalance)}
+                                </TableCell>
+                                <TableCell className="py-1">
+                                  {activity.journalEntryId && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-5 w-5 p-0"
+                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                    >
+                                      <FileText className="h-3 w-3" />
+                                    </Button>
+                                  )}
+                                </TableCell>
                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {allActivity.map((activity, index) => (
-                                <TableRow
-                                  key={`${activity.id || index}`}
-                                  className={`h-7 ${index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100'}`}
-                                >
-                                  <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                    {activity.displayDate ? format(parseISO(activity.displayDate), 'MMM d, yyyy') : '—'}
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1 text-slate-600 font-medium">
-                                    {childAccount.display_name}
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1 text-slate-500">
-                                    {activity.entryNumber || '—'}
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1">
-                                    {activity.displayDescription || '—'}
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1 text-slate-600">
-                                    {activity.offsettingAccounts || '—'}
-                                  </TableCell>
-                                  <TableCell className="text-right text-[11px] py-1 text-emerald-600 font-medium">
-                                    {activity.debitAmount > 0 ? formatCurrency(activity.debitAmount) : ''}
-                                  </TableCell>
-                                  <TableCell className="text-right text-[11px] py-1 text-red-500 font-medium">
-                                    {activity.creditAmount > 0 ? formatCurrency(activity.creditAmount) : ''}
-                                  </TableCell>
-                                  <TableCell className="text-right text-[11px] py-1 font-medium">
-                                    {formatCurrency(activity.runningBalance)}
-                                  </TableCell>
-                                  <TableCell className="py-1">
-                                    {activity.journalEntryId && (
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-5 w-5 p-0"
-                                        onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                      >
-                                        <FileText className="h-3 w-3" />
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                        {registerTotalPages > 1 && (
-                          <div className="flex items-center justify-between mt-2 px-1">
-                            <span className="text-xs text-slate-500">
-                              {registerPage * PAGE_SIZE + 1}–{Math.min((registerPage + 1) * PAGE_SIZE, registerTotalCount)} of {registerTotalCount}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                disabled={registerPage === 0}
-                                onClick={() => setRegisterPage(p => p - 1)}
-                              >
-                                <ChevronLeft className="h-3.5 w-3.5" />
-                              </Button>
-                              <span className="text-xs text-slate-600">{registerPage + 1} / {registerTotalPages}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                disabled={registerPage >= registerTotalPages - 1}
-                                onClick={() => setRegisterPage(p => p + 1)}
-                              >
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {hasNextPage && (
+                          <div className="flex justify-center py-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => fetchNextPage()}
+                              disabled={isFetchingNextPage}
+                              className="text-xs"
+                            >
+                              {isFetchingNextPage ? 'Loading...' : 'Load more'}
+                            </Button>
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </TabsContent>
 
                   <TabsContent value="audit" className="mt-0">
-                    {auditLoading ? (
-                      <p className="text-center text-slate-500 py-3 text-sm">Loading audit history...</p>
-                    ) : filteredAuditLines.length === 0 ? (
+                    {auditHistoryLines.length === 0 ? (
                       <p className="text-center text-slate-500 py-6 text-sm">No audit history found</p>
                     ) : (
-                      <>
-                        <div className="rounded-md border overflow-x-auto">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="h-8 bg-slate-100">
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Budget</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Action</TableHead>
-                                <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                                <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
+                      <div className="rounded-md border overflow-x-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow className="h-8 bg-slate-100">
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Action</TableHead>
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {auditHistoryLines.map((line, index) => (
+                              <TableRow
+                                key={`audit-${line.id || index}`}
+                                className={`h-7 ${index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100'}`}
+                                onClick={() => setSelectedTransactionForAudit(line)}
+                              >
+                                <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                  {line.changed_at ? format(parseISO(line.changed_at), 'MMM d, yyyy') : '—'}
+                                </TableCell>
+                                <TableCell className="text-[11px] py-1">
+                                  <Badge variant="outline" className="text-[10px] py-0">{line.action || '—'}</Badge>
+                                </TableCell>
+                                <TableCell className="text-[11px] py-1">{line.description || '—'}</TableCell>
+                                <TableCell className="text-right text-[11px] py-1 font-medium">
+                                  {line.amount != null ? formatCurrency(line.amount) : '—'}
+                                </TableCell>
                               </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {filteredAuditLines.map((line, index) => (
-                                <TableRow
-                                  key={`audit-${line.id || index}`}
-                                  className={`h-7 ${index % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100'} cursor-pointer`}
-                                  onClick={() => setSelectedTransactionForAudit(line)}
-                                >
-                                  <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                    {line.changed_at ? format(parseISO(line.changed_at), 'MMM d, yyyy') : '—'}
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1 text-slate-600 font-medium">
-                                    {childAccount.display_name}
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1">
-                                    <Badge variant="outline" className="text-[10px] py-0">{line.action || '—'}</Badge>
-                                  </TableCell>
-                                  <TableCell className="text-[11px] py-1">{line.description || '—'}</TableCell>
-                                  <TableCell className="text-right text-[11px] py-1 font-medium">
-                                    {line.amount != null ? formatCurrency(line.amount) : '—'}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                        {auditTotalPages > 1 && (
-                          <div className="flex items-center justify-between mt-2 px-1">
-                            <span className="text-xs text-slate-500">
-                              {auditPage * PAGE_SIZE + 1}–{Math.min((auditPage + 1) * PAGE_SIZE, auditTotalCount)} of {auditTotalCount}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                disabled={auditPage === 0}
-                                onClick={() => setAuditPage(p => p - 1)}
-                              >
-                                <ChevronLeft className="h-3.5 w-3.5" />
-                              </Button>
-                              <span className="text-xs text-slate-600">{auditPage + 1} / {auditTotalPages}</span>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                disabled={auditPage >= auditTotalPages - 1}
-                                onClick={() => setAuditPage(p => p + 1)}
-                              >
-                                <ChevronDown className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {hasNextAuditPage && (
+                          <div className="flex justify-center py-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => fetchNextAuditPage()}
+                              disabled={isFetchingNextAuditPage}
+                              className="text-xs"
+                            >
+                              {isFetchingNextAuditPage ? 'Loading...' : 'Load more'}
+                            </Button>
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </TabsContent>
                 </Tabs>

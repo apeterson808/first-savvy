@@ -51,68 +51,6 @@ export const budgetAnalytics = {
     };
   },
 
-  async getHistoricalSpendingWithCategories(accountIds, categoryNames, monthsBack = 12, profileId) {
-    const now = new Date();
-    const monthlyData = [];
-
-    for (let i = monthsBack - 1; i >= 0; i--) {
-      const targetDate = subMonths(now, i);
-      const monthStart = startOfMonth(targetDate);
-      const monthEnd = endOfMonth(targetDate);
-
-      const { data: transactions, error } = await firstsavvy.supabase
-        .from('transactions')
-        .select('amount, date, type, category_account_id, contact_id, contacts(id, name)')
-        .eq('profile_id', profileId)
-        .in('category_account_id', accountIds)
-        .eq('status', 'posted')
-        .eq('type', 'expense')
-        .gte('date', monthStart.toISOString())
-        .lte('date', monthEnd.toISOString());
-
-      if (error) throw error;
-
-      const byCategory = {};
-      accountIds.forEach(id => {
-        byCategory[id] = { total: 0, vendors: {} };
-      });
-
-      transactions.forEach(t => {
-        const catId = t.category_account_id;
-        if (!byCategory[catId]) byCategory[catId] = { total: 0, vendors: {} };
-        byCategory[catId].total += t.amount || 0;
-
-        if (t.contact_id && t.contacts?.name) {
-          const vname = t.contacts.name;
-          byCategory[catId].vendors[vname] = (byCategory[catId].vendors[vname] || 0) + (t.amount || 0);
-        }
-      });
-
-      const totalSpent = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-      const point = {
-        month: format(targetDate, 'MMM yyyy'),
-        monthShort: format(targetDate, 'MMM'),
-        monthKey: format(targetDate, 'yyyy-MM'),
-        totalSpent,
-        transactionCount: transactions.length,
-        categories: byCategory,
-      };
-
-      monthlyData.push(point);
-    }
-
-    const allSpending = monthlyData.map(m => m.totalSpent).filter(s => s > 0);
-    const average = allSpending.length > 0 ? allSpending.reduce((a, b) => a + b, 0) / allSpending.length : 0;
-    const max = allSpending.length > 0 ? Math.max(...allSpending) : 0;
-    const min = allSpending.length > 0 ? Math.min(...allSpending) : 0;
-
-    return {
-      monthlyData,
-      categoryNames,
-      summary: { average, max, min, trend: calculateTrend(monthlyData) }
-    };
-  },
-
   async getVendorBreakdown(categoryAccountId, dateRange, profileId) {
     const now = new Date();
     const monthsBack = 12;
