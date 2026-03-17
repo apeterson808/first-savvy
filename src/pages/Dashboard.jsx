@@ -666,7 +666,7 @@ export default function Dashboard() {
       <CardContent className="px-4 pb-4 flex-1 overflow-hidden">
         {budgetUtilization.length > 0 ? (
           <div className="space-y-2 h-full overflow-y-auto">
-            {budgetUtilization.map((item, index) => (
+            {budgetUtilization.slice(0, 7).map((item, index) => (
               <AnimatedProgressBar key={index} item={item} />
             ))}
           </div>
