@@ -499,7 +499,7 @@ export default function Dashboard() {
                     <TabsList className="h-8">
                       <TabsTrigger value="spending" className="text-xs px-3">Spending</TabsTrigger>
                       <TabsTrigger value="income" className="text-xs px-3">Money In/Out</TabsTrigger>
-                      <TabsTrigger value="balance" className="text-xs px-3">Net Worth</TabsTrigger>
+                      <TabsTrigger value="balance" className="text-xs px-3">Cash Balance</TabsTrigger>
                     </TabsList>
                   </Tabs>
                   {chartView === 'income' && (
@@ -591,26 +591,11 @@ export default function Dashboard() {
                         }
 
                         if (chartView === 'balance') {
-                          const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d') : data.date;
+                          const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d, yyyy') : data.date;
                           return (
-                            <div className="bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg text-xs">
-                              <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{dateLabel}</div>
-                              <div className="flex justify-between gap-4 mb-1">
-                                <span className="text-slate-600">Net Worth</span>
-                                <span className="font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</span>
-                              </div>
-                              {(data.income > 0 || data.spending > 0) && (
-                                <>
-                                  <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
-                                    <span className="text-slate-500">Income</span>
-                                    <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
-                                  </div>
-                                  <div className="flex justify-between gap-4 text-[10px]">
-                                    <span className="text-slate-500">Spending</span>
-                                    <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
-                                  </div>
-                                </>
-                              )}
+                            <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
+                              <div className="text-xs text-slate-500 mb-1">{dateLabel}</div>
+                              <div className="text-lg font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</div>
                             </div>
                           );
                         }
