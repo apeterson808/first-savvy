@@ -292,7 +292,10 @@ export default function Dashboard() {
       let currentBalance = 0;
       if (chartView === 'balance') {
         if (selectedAccount === 'all') {
-          currentBalance = bankAccounts.reduce((sum, acc) => {
+          const cashBalanceAccounts = [...assets, ...liabilities].filter(acc =>
+            acc.is_active && acc.include_in_cash_balance
+          );
+          currentBalance = cashBalanceAccounts.reduce((sum, acc) => {
             const balance = acc.current_balance || 0;
             if (acc.class === 'liability') {
               return sum - balance;
@@ -342,15 +345,21 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: calculate historical net worth
+      // For balance chart: calculate historical cash balance
       if (chartView === 'balance') {
-        // Get all transactions regardless of account filter
-        const allTransactionsForNetWorth = transactions.filter(t =>
-          t.date && !isNaN(new Date(t.date).getTime())
+        // Get accounts included in cash balance
+        const cashBalanceAccounts = [...assets, ...liabilities].filter(acc =>
+          acc.is_active && acc.include_in_cash_balance
+        );
+        const cashAccountIds = cashBalanceAccounts.map(a => a.id);
+
+        // Get all transactions for cash balance accounts
+        const allTransactionsForCashBalance = transactions.filter(t =>
+          t.date && !isNaN(new Date(t.date).getTime()) && cashAccountIds.includes(t.bank_account_id)
         );
 
-        const earliestTransactionDate = allTransactionsForNetWorth.length > 0
-          ? new Date(Math.min(...allTransactionsForNetWorth.map(t => new Date(t.date).getTime())))
+        const earliestTransactionDate = allTransactionsForCashBalance.length > 0
+          ? new Date(Math.min(...allTransactionsForCashBalance.map(t => new Date(t.date).getTime())))
           : subMonths(today, finalMonthsToShow);
 
         // Calculate start date for daily data
@@ -358,43 +367,42 @@ export default function Dashboard() {
           ? earliestTransactionDate
           : subMonths(today, finalMonthsToShow);
 
-        // Generate daily net worth data
+        // Generate daily cash balance data
         const days = eachDayOfInterval({ start: finalStartDate, end: today });
 
-        // Start with current net worth and work backwards
-        let currentNetWorth = netWorth;
+        // Start with current cash balance
+        const currentCashBalance = cashBalanceAccounts.reduce((sum, acc) => {
+          const balance = acc.current_balance || 0;
+          if (acc.class === 'liability') {
+            return sum - balance;
+          }
+          return sum + balance;
+        }, 0);
 
-        // Calculate net worth for each day by working backwards from today
-        const dailyNetWorthData = [];
+        // Calculate cash balance for each day by working backwards from today
+        const dailyCashBalanceData = [];
 
-        // First pass: calculate forward from start date
         days.forEach(currentDayDate => {
           const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
 
-          // Get all transactions up to and including this day
-          const transactionsUpToDay = allTransactionsForNetWorth.filter(t => {
-            const tDateStr = t.date.substring(0, 10);
-            return tDateStr <= currentDayStr;
-          });
+          // Calculate cash balance at end of this day
+          // Start with current cash balance and subtract all transactions after this day
+          let cashBalanceAtDay = currentCashBalance;
 
-          // Calculate net worth at end of this day
-          // Start with current net worth and subtract all transactions after this day
-          let netWorthAtDay = netWorth;
-
-          allTransactionsForNetWorth.forEach(t => {
+          allTransactionsForCashBalance.forEach(t => {
             const tDateStr = t.date.substring(0, 10);
             if (tDateStr > currentDayStr) {
               // Subtract transactions that happened after this day
               if (t.type === 'income') {
-                netWorthAtDay -= t.amount;
+                cashBalanceAtDay -= t.amount;
               } else if (t.type === 'expense') {
-                netWorthAtDay += t.amount;
+                cashBalanceAtDay += t.amount;
               }
             }
           });
 
           // Get day's transactions for display
-          const dayTransactions = allTransactionsForNetWorth.filter(t => {
+          const dayTransactions = allTransactionsForCashBalance.filter(t => {
             const tDateStr = t.date.substring(0, 10);
             return tDateStr === currentDayStr;
           });
@@ -409,16 +417,16 @@ export default function Dashboard() {
 
           const isFirstDayOfMonth = currentDayDate.getDate() === 1;
 
-          dailyNetWorthData.push({
+          dailyCashBalanceData.push({
             date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
             fullDate: currentDayDate,
             spending: daySpending,
             income: dayIncome,
-            balance: netWorthAtDay
+            balance: cashBalanceAtDay
           });
         });
 
-        data.push(...dailyNetWorthData);
+        data.push(...dailyCashBalanceData);
       } else {
         for (const monthData of monthlyData) {
           data.push({

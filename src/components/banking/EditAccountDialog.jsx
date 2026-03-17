@@ -11,6 +11,7 @@ import { withRetry, showErrorToast, logError } from '../utils/errorHandler';
 import { toast } from 'sonner';
 import { getAccountDisplayName } from '../utils/constants';
 import CalculatorAmountInput from '@/components/common/CalculatorAmountInput';
+import { Switch } from '@/components/ui/switch';
 
 export default function EditAccountDialog({ open, onOpenChange, account, onSuccess }) {
   const [formData, setFormData] = useState({});
@@ -24,7 +25,9 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
         current_balance: account.current_balance || 0,
         notes: account.notes || '',
         account_type: account.account_type || null,
-        account_detail: account.account_detail || null
+        account_detail: account.account_detail || null,
+        include_in_net_worth: account.include_in_net_worth !== false,
+        include_in_cash_balance: account.include_in_cash_balance || false
       });
     }
   }, [account]);
@@ -39,7 +42,9 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
         current_balance: parseFloat(data.current_balance) || 0,
         notes: data.notes || null,
         account_type: data.account_type || null,
-        account_detail: data.account_detail || null
+        account_detail: data.account_detail || null,
+        include_in_net_worth: data.include_in_net_worth,
+        include_in_cash_balance: data.include_in_cash_balance
       });
     },
     onSuccess: () => {
@@ -130,6 +135,34 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
               placeholder="Enter notes"
             />
           </div>
+
+          {showBalance && (
+            <div className="space-y-3 pt-2 border-t">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="include-net-worth" className="text-sm font-medium">Include in Net Worth</Label>
+                  <p className="text-xs text-slate-500">Include this account in net worth calculations</p>
+                </div>
+                <Switch
+                  id="include-net-worth"
+                  checked={formData.include_in_net_worth}
+                  onCheckedChange={(checked) => setFormData({ ...formData, include_in_net_worth: checked })}
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="include-cash-balance" className="text-sm font-medium">Include in Cash Balance</Label>
+                  <p className="text-xs text-slate-500">Include this account in cash balance chart</p>
+                </div>
+                <Switch
+                  id="include-cash-balance"
+                  checked={formData.include_in_cash_balance}
+                  onCheckedChange={(checked) => setFormData({ ...formData, include_in_cash_balance: checked })}
+                />
+              </div>
+            </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
