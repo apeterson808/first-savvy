@@ -12,7 +12,7 @@ import VaultItemDialog from '../components/vault/VaultItemDialog';
 import VaultFolderSidebar from '../components/vault/VaultFolderSidebar';
 
 export default function PasswordVault() {
-  const { currentProfile } = useProfile();
+  const { activeProfile } = useProfile();
   const [items, setItems] = useState([]);
   const [folders, setFolders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -25,23 +25,28 @@ export default function PasswordVault() {
   const [showTrash, setShowTrash] = useState(false);
 
   useEffect(() => {
-    if (currentProfile?.id) {
+    if (activeProfile?.id) {
       loadVaultData();
+    } else if (activeProfile === null) {
+      setLoading(false);
     }
-  }, [currentProfile]);
+  }, [activeProfile]);
 
   const loadVaultData = async () => {
     try {
       setLoading(true);
+      console.log('Loading vault data for profile:', activeProfile.id);
       const [itemsData, foldersData] = await Promise.all([
-        vaultService.getAllItems(currentProfile.id),
-        vaultService.getFolders(currentProfile.id),
+        vaultService.getAllItems(activeProfile.id),
+        vaultService.getFolders(activeProfile.id),
       ]);
+      console.log('Loaded vault items:', itemsData);
+      console.log('Loaded folders:', foldersData);
       setItems(itemsData);
       setFolders(foldersData);
     } catch (error) {
       console.error('Error loading vault data:', error);
-      toast.error('Failed to load vault data');
+      toast.error('Failed to load vault data: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -49,7 +54,7 @@ export default function PasswordVault() {
 
   const handleCreateItem = async (itemData) => {
     try {
-      await vaultService.createItem(itemData, currentProfile.id);
+      await vaultService.createItem(itemData, activeProfile.id);
       toast.success('Item created successfully');
       loadVaultData();
       setShowItemDialog(false);
@@ -166,7 +171,7 @@ export default function PasswordVault() {
         selectedFolder={selectedFolder}
         onSelectFolder={setSelectedFolder}
         onFoldersChange={loadVaultData}
-        profileId={currentProfile.id}
+        profileId={activeProfile.id}
         showTrash={showTrash}
         onToggleTrash={() => {
           setShowTrash(!showTrash);
@@ -302,7 +307,7 @@ export default function PasswordVault() {
           open={showItemDialog}
           onOpenChange={setShowItemDialog}
           onSave={handleCreateItem}
-          profileId={currentProfile.id}
+          profileId={activeProfile.id}
           folders={folders}
         />
       )}
@@ -313,7 +318,7 @@ export default function PasswordVault() {
           onOpenChange={(open) => !open && setEditingItem(null)}
           onSave={(data) => handleUpdateItem(editingItem.id, data)}
           item={editingItem}
-          profileId={currentProfile.id}
+          profileId={activeProfile.id}
           folders={folders}
         />
       )}

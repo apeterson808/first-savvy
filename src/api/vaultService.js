@@ -2,12 +2,17 @@ import { supabase } from './supabaseClient';
 
 export const vaultService = {
   async getAllItems(profileId, includeShared = true) {
-    const { data, error } = await supabase.rpc('get_vault_items', {
-      p_profile_id: profileId,
-      p_include_shared: includeShared,
-    });
+    const { data, error } = await supabase
+      .from('vault_items')
+      .select('*')
+      .eq('profile_id', profileId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Vault items error:', error);
+      throw error;
+    }
     return data || [];
   },
 
