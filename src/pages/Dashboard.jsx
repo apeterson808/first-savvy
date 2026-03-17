@@ -647,13 +647,13 @@ export default function Dashboard() {
           </Card>
 
   {/* Two-column section below chart */}
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:grid-rows-1">
     {/* Recent Transactions */}
     <RecentTransactionsCard />
 
     {/* Top Utilized Budgets */}
-    <Card className="shadow-sm border-slate-200 flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-3">
+    <Card className="shadow-sm border-slate-200 flex flex-col min-h-0">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-3 flex-shrink-0">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Top Utilized Budgets</p>
         <Button
           variant="link"
@@ -663,7 +663,7 @@ export default function Dashboard() {
           View all
         </Button>
       </CardHeader>
-      <CardContent className="pt-2 flex-1 overflow-auto">
+      <CardContent className="pt-2 flex-1 overflow-auto min-h-0">
         {budgetUtilization.length > 0 ? (
           <div className="space-y-2.5">
             {budgetUtilization.map((item, index) => (
