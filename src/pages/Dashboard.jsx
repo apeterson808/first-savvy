@@ -652,8 +652,8 @@ export default function Dashboard() {
     <RecentTransactionsCard />
 
     {/* Top Utilized Budgets */}
-    <Card className="shadow-sm border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-3">
+    <Card className="shadow-sm border-slate-200 flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4 shrink-0">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Top Utilized Budgets</p>
         <Button
           variant="link"
@@ -663,10 +663,10 @@ export default function Dashboard() {
           View all
         </Button>
       </CardHeader>
-      <CardContent className="pt-2">
+      <CardContent className="px-4 pb-4 flex-1 overflow-hidden">
         {budgetUtilization.length > 0 ? (
-          <div className="space-y-2.5">
-            {budgetUtilization.slice(0, 5).map((item, index) => (
+          <div className="space-y-2 h-full overflow-y-auto">
+            {budgetUtilization.map((item, index) => (
               <AnimatedProgressBar key={index} item={item} />
             ))}
           </div>
