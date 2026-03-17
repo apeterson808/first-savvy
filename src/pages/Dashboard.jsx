@@ -342,19 +342,15 @@ export default function Dashboard() {
         });
       }
 
-      // For balance chart: calculate daily balances
+      // For balance chart: calculate historical net worth
       if (chartView === 'balance') {
-        // Find the earliest transaction date for the selected account(s)
-        const relevantTransactions = transactions.filter(t => {
-          if (!t.date || isNaN(new Date(t.date).getTime())) return false;
-          const matchesAccount = selectedAccount === 'all'
-            ? activeAccountIds.includes(t.bank_account_id)
-            : t.bank_account_id === selectedAccount;
-          return matchesAccount;
-        });
+        // Get all transactions regardless of account filter
+        const allTransactionsForNetWorth = transactions.filter(t =>
+          t.date && !isNaN(new Date(t.date).getTime())
+        );
 
-        const earliestTransactionDate = relevantTransactions.length > 0
-          ? new Date(Math.min(...relevantTransactions.map(t => new Date(t.date).getTime())))
+        const earliestTransactionDate = allTransactionsForNetWorth.length > 0
+          ? new Date(Math.min(...allTransactionsForNetWorth.map(t => new Date(t.date).getTime())))
           : subMonths(today, finalMonthsToShow);
 
         // Calculate start date for daily data
@@ -362,27 +358,47 @@ export default function Dashboard() {
           ? earliestTransactionDate
           : subMonths(today, finalMonthsToShow);
 
-        // Generate daily balance data
+        // Generate daily net worth data
         const days = eachDayOfInterval({ start: finalStartDate, end: today });
-        let runningBalance = 0;
 
+        // Start with current net worth and work backwards
+        let currentNetWorth = netWorth;
+
+        // Calculate net worth for each day by working backwards from today
+        const dailyNetWorthData = [];
+
+        // First pass: calculate forward from start date
         days.forEach(currentDayDate => {
-          const dayStart = startOfDay(currentDayDate);
-          const dayEnd = endOfDay(currentDayDate);
+          const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
 
-          // Get transactions for this day
-          const dayTransactions = transactions.filter(t => {
-            if (!t.date || isNaN(new Date(t.date).getTime())) return false;
-            const transactionDateStr = t.date.substring(0, 10);
-            const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
-            const matchesAccount = selectedAccount === 'all'
-              ? activeAccountIds.includes(t.bank_account_id)
-              : t.bank_account_id === selectedAccount;
-            const isTransfer = t.type === 'transfer';
-            return transactionDateStr === currentDayStr && matchesAccount && !isTransfer;
+          // Get all transactions up to and including this day
+          const transactionsUpToDay = allTransactionsForNetWorth.filter(t => {
+            const tDateStr = t.date.substring(0, 10);
+            return tDateStr <= currentDayStr;
           });
 
-          // Calculate income and spending for the day
+          // Calculate net worth at end of this day
+          // Start with current net worth and subtract all transactions after this day
+          let netWorthAtDay = netWorth;
+
+          allTransactionsForNetWorth.forEach(t => {
+            const tDateStr = t.date.substring(0, 10);
+            if (tDateStr > currentDayStr) {
+              // Subtract transactions that happened after this day
+              if (t.type === 'income') {
+                netWorthAtDay -= t.amount;
+              } else if (t.type === 'expense') {
+                netWorthAtDay += t.amount;
+              }
+            }
+          });
+
+          // Get day's transactions for display
+          const dayTransactions = allTransactionsForNetWorth.filter(t => {
+            const tDateStr = t.date.substring(0, 10);
+            return tDateStr === currentDayStr;
+          });
+
           const dayIncome = dayTransactions
             .filter(t => t.type === 'income')
             .reduce((sum, t) => sum + t.amount, 0);
@@ -391,20 +407,18 @@ export default function Dashboard() {
             .filter(t => t.type === 'expense')
             .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
-          // Update running balance
-          runningBalance = runningBalance + dayIncome - daySpending;
-
-          // Check if this is the first day of the month for labeling
           const isFirstDayOfMonth = currentDayDate.getDate() === 1;
 
-          data.push({
+          dailyNetWorthData.push({
             date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
             fullDate: currentDayDate,
             spending: daySpending,
             income: dayIncome,
-            balance: runningBalance
+            balance: netWorthAtDay
           });
         });
+
+        data.push(...dailyNetWorthData);
       } else {
         for (const monthData of monthlyData) {
           data.push({
@@ -485,7 +499,7 @@ export default function Dashboard() {
                     <TabsList className="h-8">
                       <TabsTrigger value="spending" className="text-xs px-3">Spending</TabsTrigger>
                       <TabsTrigger value="income" className="text-xs px-3">Money In/Out</TabsTrigger>
-                      <TabsTrigger value="balance" className="text-xs px-3">Cash Balance</TabsTrigger>
+                      <TabsTrigger value="balance" className="text-xs px-3">Net Worth</TabsTrigger>
                     </TabsList>
                   </Tabs>
                   {chartView === 'income' && (
@@ -582,17 +596,21 @@ export default function Dashboard() {
                             <div className="bg-white/95 backdrop-blur-sm p-2 rounded-lg border border-slate-200 shadow-lg text-xs">
                               <div className="text-[10px] text-slate-400 uppercase tracking-wide mb-1">{dateLabel}</div>
                               <div className="flex justify-between gap-4 mb-1">
-                                <span className="text-slate-600">Cash Balance</span>
+                                <span className="text-slate-600">Net Worth</span>
                                 <span className="font-semibold text-sky-blue">${data.balance?.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) || '0.00'}</span>
                               </div>
-                              <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
-                                <span className="text-slate-500">Income</span>
-                                <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
-                              </div>
-                              <div className="flex justify-between gap-4 text-[10px]">
-                                <span className="text-slate-500">Spending</span>
-                                <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
-                              </div>
+                              {(data.income > 0 || data.spending > 0) && (
+                                <>
+                                  <div className="flex justify-between gap-4 text-[10px] border-t border-slate-100 pt-1 mt-1">
+                                    <span className="text-slate-500">Income</span>
+                                    <span className="text-soft-green">${data.income?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                  <div className="flex justify-between gap-4 text-[10px]">
+                                    <span className="text-slate-500">Spending</span>
+                                    <span className="text-orange">${data.spending?.toFixed(2) || '0.00'}</span>
+                                  </div>
+                                </>
+                              )}
                             </div>
                           );
                         }
