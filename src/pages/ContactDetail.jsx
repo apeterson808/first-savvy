@@ -33,8 +33,6 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
-import { Calendar as CalendarComponent } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -249,8 +247,6 @@ export default function ContactDetail() {
       setExpandedTransactionId(transaction.id);
       setEditingTransaction({
         description: transaction.description || '',
-        date: transaction.date || '',
-        amount: transaction.amount || 0,
         category_id: transaction.category_id || null,
         contact_id: transaction.contact_id || null
       });
@@ -267,8 +263,6 @@ export default function ContactDetail() {
       id: transactionId,
       data: {
         description: editingTransaction.description.trim(),
-        date: editingTransaction.date,
-        amount: editingTransaction.amount,
         category_id: editingTransaction.category_id,
         contact_id: editingTransaction.contact_id
       }
@@ -555,34 +549,16 @@ export default function ContactDetail() {
                                       <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                           <div>
-                                            <Label className="text-sm font-medium mb-1.5">Date</Label>
-                                            <Popover>
-                                              <PopoverTrigger asChild>
-                                                <Button
-                                                  variant="outline"
-                                                  className="w-full justify-start text-left font-normal"
-                                                >
-                                                  <Calendar className="mr-2 h-4 w-4" />
-                                                  {editingTransaction.date ? format(new Date(editingTransaction.date), 'MMM d, yyyy') : 'Pick a date'}
-                                                </Button>
-                                              </PopoverTrigger>
-                                              <PopoverContent className="w-auto p-0">
-                                                <CalendarComponent
-                                                  mode="single"
-                                                  selected={editingTransaction.date ? new Date(editingTransaction.date) : undefined}
-                                                  onSelect={(date) => setEditingTransaction(prev => ({ ...prev, date: date ? format(date, 'yyyy-MM-dd') : '' }))}
-                                                />
-                                              </PopoverContent>
-                                            </Popover>
+                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Date</Label>
+                                            <div className="text-sm font-medium">
+                                              {format(new Date(transaction.date), 'MMM d, yyyy')}
+                                            </div>
                                           </div>
                                           <div>
-                                            <Label className="text-sm font-medium mb-1.5">Amount</Label>
-                                            <Input
-                                              type="number"
-                                              step="0.01"
-                                              value={editingTransaction.amount}
-                                              onChange={(e) => setEditingTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                                            />
+                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Amount</Label>
+                                            <div className="text-sm font-semibold text-burgundy">
+                                              {formatCurrency(transaction.amount)}
+                                            </div>
                                           </div>
                                         </div>
                                         <div>
@@ -597,14 +573,14 @@ export default function ContactDetail() {
                                             <Label className="text-sm font-medium mb-1.5">Category</Label>
                                             <CategoryDropdown
                                               value={editingTransaction.category_id}
-                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
+                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
                                             />
                                           </div>
                                           <div>
                                             <Label className="text-sm font-medium mb-1.5">Contact</Label>
                                             <ContactDropdown
                                               value={editingTransaction.contact_id}
-                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
+                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
                                             />
                                           </div>
                                         </div>
@@ -681,34 +657,16 @@ export default function ContactDetail() {
                                       <div className="space-y-4">
                                         <div className="grid grid-cols-2 gap-4">
                                           <div>
-                                            <Label className="text-sm font-medium mb-1.5">Date</Label>
-                                            <Popover>
-                                              <PopoverTrigger asChild>
-                                                <Button
-                                                  variant="outline"
-                                                  className="w-full justify-start text-left font-normal"
-                                                >
-                                                  <Calendar className="mr-2 h-4 w-4" />
-                                                  {editingTransaction.date ? format(new Date(editingTransaction.date), 'MMM d, yyyy') : 'Pick a date'}
-                                                </Button>
-                                              </PopoverTrigger>
-                                              <PopoverContent className="w-auto p-0">
-                                                <CalendarComponent
-                                                  mode="single"
-                                                  selected={editingTransaction.date ? new Date(editingTransaction.date) : undefined}
-                                                  onSelect={(date) => setEditingTransaction(prev => ({ ...prev, date: date ? format(date, 'yyyy-MM-dd') : '' }))}
-                                                />
-                                              </PopoverContent>
-                                            </Popover>
+                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Date</Label>
+                                            <div className="text-sm font-medium">
+                                              {format(new Date(transaction.date), 'MMM d, yyyy')}
+                                            </div>
                                           </div>
                                           <div>
-                                            <Label className="text-sm font-medium mb-1.5">Amount</Label>
-                                            <Input
-                                              type="number"
-                                              step="0.01"
-                                              value={editingTransaction.amount}
-                                              onChange={(e) => setEditingTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-                                            />
+                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Amount</Label>
+                                            <div className="text-sm font-semibold text-burgundy">
+                                              {formatCurrency(transaction.amount)}
+                                            </div>
                                           </div>
                                         </div>
                                         <div>
@@ -723,14 +681,14 @@ export default function ContactDetail() {
                                             <Label className="text-sm font-medium mb-1.5">Category</Label>
                                             <CategoryDropdown
                                               value={editingTransaction.category_id}
-                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
+                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
                                             />
                                           </div>
                                           <div>
                                             <Label className="text-sm font-medium mb-1.5">Contact</Label>
                                             <ContactDropdown
                                               value={editingTransaction.contact_id}
-                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
+                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
                                             />
                                           </div>
                                         </div>
