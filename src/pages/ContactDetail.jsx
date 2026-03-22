@@ -234,7 +234,7 @@ export default function ContactDetail() {
       setExpandedTransactionId(transaction.id);
       setEditingTransaction({
         description: transaction.description || '',
-        category_id: transaction.category_id || null,
+        category_account_id: transaction.category_account_id || null,
         contact_id: transaction.contact_id || null
       });
     }
@@ -250,7 +250,7 @@ export default function ContactDetail() {
       id: transactionId,
       data: {
         description: editingTransaction.description.trim(),
-        category_id: editingTransaction.category_id,
+        category_account_id: editingTransaction.category_account_id,
         contact_id: editingTransaction.contact_id
       }
     });
@@ -515,8 +515,8 @@ export default function ContactDetail() {
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-sm">
                                     <div className="flex items-center justify-end gap-2">
-                                      <span className={transaction.amount < 0 ? 'text-burgundy' : 'text-forest-green'}>
-                                        {formatCurrency(transaction.amount)}
+                                      <span className={transaction.type === 'expense' ? 'text-burgundy' : 'text-forest-green'}>
+                                        {formatCurrency(transaction.type === 'expense' ? -Math.abs(transaction.amount) : Math.abs(transaction.amount))}
                                       </span>
                                       {expandedTransactionId === transaction.id ? (
                                         <ChevronUp className="w-4 h-4 text-slate-400" />
@@ -534,10 +534,10 @@ export default function ContactDetail() {
                                           <div>
                                             <Label className="text-sm font-medium mb-1.5">Category</Label>
                                             <CategoryDropdown
-                                              value={editingTransaction.category_id}
-                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
-                                              transactionType={transaction.amount < 0 ? 'expense' : 'income'}
-                                              isTransactionTransfer={!!transaction.transfer_pair_id}
+                                              value={editingTransaction.category_account_id}
+                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_account_id: value }))}
+                                              transactionType={transaction.type}
+                                              isTransactionTransfer={!!transaction.is_transfer_pair}
                                             />
                                           </div>
                                           <div>
