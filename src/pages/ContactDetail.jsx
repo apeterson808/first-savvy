@@ -25,12 +25,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send } from 'lucide-react';
+import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import CategoryDropdown from '@/components/common/CategoryDropdown';
+import ContactDropdown from '@/components/common/ContactDropdown';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -62,6 +66,8 @@ export default function ContactDetail() {
     notes: '',
     status: 'active'
   });
+  const [expandedTransactionId, setExpandedTransactionId] = useState(null);
+  const [editingTransaction, setEditingTransaction] = useState(null);
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -110,6 +116,20 @@ export default function ContactDetail() {
       queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.success('Contact deleted');
       navigate('/contacts');
+    }
+  });
+
+  const updateTransactionMutation = useMutation({
+    mutationFn: ({ id, data }) => firstsavvy.entities.Transaction.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['transactions', 'contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      setExpandedTransactionId(null);
+      setEditingTransaction(null);
+      toast.success('Transaction updated successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update transaction: ${error.message}`);
     }
   });
 
@@ -219,6 +239,45 @@ export default function ContactDetail() {
   const handlePhoneChange = (value) => {
     const formatted = formatPhoneNumber(value);
     setFormData(prev => ({ ...prev, phone: formatted }));
+  };
+
+  const handleTransactionClick = (transaction) => {
+    if (expandedTransactionId === transaction.id) {
+      setExpandedTransactionId(null);
+      setEditingTransaction(null);
+    } else {
+      setExpandedTransactionId(transaction.id);
+      setEditingTransaction({
+        description: transaction.description || '',
+        date: transaction.date || '',
+        amount: transaction.amount || 0,
+        category_id: transaction.category_id || null,
+        contact_id: transaction.contact_id || null
+      });
+    }
+  };
+
+  const handleSaveTransaction = (transactionId) => {
+    if (!editingTransaction.description.trim()) {
+      toast.error('Description is required');
+      return;
+    }
+
+    updateTransactionMutation.mutate({
+      id: transactionId,
+      data: {
+        description: editingTransaction.description.trim(),
+        date: editingTransaction.date,
+        amount: editingTransaction.amount,
+        category_id: editingTransaction.category_id,
+        contact_id: editingTransaction.contact_id
+      }
+    });
+  };
+
+  const handleCancelTransaction = () => {
+    setExpandedTransactionId(null);
+    setEditingTransaction(null);
   };
 
   if (contactLoading) {
@@ -468,21 +527,110 @@ export default function ContactDetail() {
                           </TableHeader>
                           <TableBody>
                             {paidToThem.map((transaction) => (
-                              <TableRow
-                                key={transaction.id}
-                                className="hover:bg-slate-50 cursor-pointer"
-                                onClick={() => navigate(`/banking?account=${transaction.account_id}&transaction=${transaction.id}`)}
-                              >
-                                <TableCell className="text-sm">
-                                  {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                </TableCell>
-                                <TableCell className="font-medium text-sm">
-                                  {transaction.description}
-                                </TableCell>
-                                <TableCell className="text-right font-semibold text-sm text-burgundy">
-                                  {formatCurrency(transaction.amount)}
-                                </TableCell>
-                              </TableRow>
+                              <React.Fragment key={transaction.id}>
+                                <TableRow
+                                  className="hover:bg-slate-50 cursor-pointer"
+                                  onClick={() => handleTransactionClick(transaction)}
+                                >
+                                  <TableCell className="text-sm">
+                                    {format(new Date(transaction.date), 'MMM d, yyyy')}
+                                  </TableCell>
+                                  <TableCell className="font-medium text-sm">
+                                    {transaction.description}
+                                  </TableCell>
+                                  <TableCell className="text-right font-semibold text-sm text-burgundy">
+                                    <div className="flex items-center justify-end gap-2">
+                                      {formatCurrency(transaction.amount)}
+                                      {expandedTransactionId === transaction.id ? (
+                                        <ChevronUp className="w-4 h-4 text-slate-400" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {expandedTransactionId === transaction.id && editingTransaction && (
+                                  <TableRow>
+                                    <TableCell colSpan={3} className="bg-slate-50 p-6">
+                                      <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Date</Label>
+                                            <Popover>
+                                              <PopoverTrigger asChild>
+                                                <Button
+                                                  variant="outline"
+                                                  className="w-full justify-start text-left font-normal"
+                                                >
+                                                  <Calendar className="mr-2 h-4 w-4" />
+                                                  {editingTransaction.date ? format(new Date(editingTransaction.date), 'MMM d, yyyy') : 'Pick a date'}
+                                                </Button>
+                                              </PopoverTrigger>
+                                              <PopoverContent className="w-auto p-0">
+                                                <CalendarComponent
+                                                  mode="single"
+                                                  selected={editingTransaction.date ? new Date(editingTransaction.date) : undefined}
+                                                  onSelect={(date) => setEditingTransaction(prev => ({ ...prev, date: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                                                />
+                                              </PopoverContent>
+                                            </Popover>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Amount</Label>
+                                            <Input
+                                              type="number"
+                                              step="0.01"
+                                              value={editingTransaction.amount}
+                                              onChange={(e) => setEditingTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium mb-1.5">Description</Label>
+                                          <Input
+                                            value={editingTransaction.description}
+                                            onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Category</Label>
+                                            <CategoryDropdown
+                                              value={editingTransaction.category_id}
+                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Contact</Label>
+                                            <ContactDropdown
+                                              value={editingTransaction.contact_id}
+                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleCancelTransaction}
+                                          >
+                                            <X className="w-4 h-4 mr-1.5" />
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            onClick={() => handleSaveTransaction(transaction.id)}
+                                            disabled={updateTransactionMutation.isPending}
+                                          >
+                                            <Check className="w-4 h-4 mr-1.5" />
+                                            {updateTransactionMutation.isPending ? 'Saving...' : 'Save'}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
                             ))}
                           </TableBody>
                         </Table>
@@ -505,21 +653,110 @@ export default function ContactDetail() {
                           </TableHeader>
                           <TableBody>
                             {receivedFromThem.map((transaction) => (
-                              <TableRow
-                                key={transaction.id}
-                                className="hover:bg-slate-50 cursor-pointer"
-                                onClick={() => navigate(`/banking?account=${transaction.account_id}&transaction=${transaction.id}`)}
-                              >
-                                <TableCell className="text-sm">
-                                  {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                </TableCell>
-                                <TableCell className="font-medium text-sm">
-                                  {transaction.description}
-                                </TableCell>
-                                <TableCell className="text-right font-semibold text-sm text-forest-green">
-                                  {formatCurrency(transaction.amount)}
-                                </TableCell>
-                              </TableRow>
+                              <React.Fragment key={transaction.id}>
+                                <TableRow
+                                  className="hover:bg-slate-50 cursor-pointer"
+                                  onClick={() => handleTransactionClick(transaction)}
+                                >
+                                  <TableCell className="text-sm">
+                                    {format(new Date(transaction.date), 'MMM d, yyyy')}
+                                  </TableCell>
+                                  <TableCell className="font-medium text-sm">
+                                    {transaction.description}
+                                  </TableCell>
+                                  <TableCell className="text-right font-semibold text-sm text-forest-green">
+                                    <div className="flex items-center justify-end gap-2">
+                                      {formatCurrency(transaction.amount)}
+                                      {expandedTransactionId === transaction.id ? (
+                                        <ChevronUp className="w-4 h-4 text-slate-400" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                                {expandedTransactionId === transaction.id && editingTransaction && (
+                                  <TableRow>
+                                    <TableCell colSpan={3} className="bg-slate-50 p-6">
+                                      <div className="space-y-4">
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Date</Label>
+                                            <Popover>
+                                              <PopoverTrigger asChild>
+                                                <Button
+                                                  variant="outline"
+                                                  className="w-full justify-start text-left font-normal"
+                                                >
+                                                  <Calendar className="mr-2 h-4 w-4" />
+                                                  {editingTransaction.date ? format(new Date(editingTransaction.date), 'MMM d, yyyy') : 'Pick a date'}
+                                                </Button>
+                                              </PopoverTrigger>
+                                              <PopoverContent className="w-auto p-0">
+                                                <CalendarComponent
+                                                  mode="single"
+                                                  selected={editingTransaction.date ? new Date(editingTransaction.date) : undefined}
+                                                  onSelect={(date) => setEditingTransaction(prev => ({ ...prev, date: date ? format(date, 'yyyy-MM-dd') : '' }))}
+                                                />
+                                              </PopoverContent>
+                                            </Popover>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Amount</Label>
+                                            <Input
+                                              type="number"
+                                              step="0.01"
+                                              value={editingTransaction.amount}
+                                              onChange={(e) => setEditingTransaction(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium mb-1.5">Description</Label>
+                                          <Input
+                                            value={editingTransaction.description}
+                                            onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
+                                          />
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Category</Label>
+                                            <CategoryDropdown
+                                              value={editingTransaction.category_id}
+                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
+                                            />
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium mb-1.5">Contact</Label>
+                                            <ContactDropdown
+                                              value={editingTransaction.contact_id}
+                                              onChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
+                                            />
+                                          </div>
+                                        </div>
+                                        <div className="flex justify-end gap-2 pt-2">
+                                          <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={handleCancelTransaction}
+                                          >
+                                            <X className="w-4 h-4 mr-1.5" />
+                                            Cancel
+                                          </Button>
+                                          <Button
+                                            size="sm"
+                                            onClick={() => handleSaveTransaction(transaction.id)}
+                                            disabled={updateTransactionMutation.isPending}
+                                          >
+                                            <Check className="w-4 h-4 mr-1.5" />
+                                            {updateTransactionMutation.isPending ? 'Saving...' : 'Save'}
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </TableCell>
+                                  </TableRow>
+                                )}
+                              </React.Fragment>
                             ))}
                           </TableBody>
                         </Table>
