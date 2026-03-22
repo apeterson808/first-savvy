@@ -17,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   DropdownMenu,
@@ -176,18 +175,6 @@ export default function ContactDetail() {
       firstTransaction: sortedByDate[0]?.date,
       lastTransaction: sortedByDate[sortedByDate.length - 1]?.date
     };
-  }, [transactions]);
-
-  const paidToThem = useMemo(() => {
-    return transactions.filter(t => t.type === 'expense').sort((a, b) =>
-      new Date(b.date) - new Date(a.date)
-    );
-  }, [transactions]);
-
-  const receivedFromThem = useMemo(() => {
-    return transactions.filter(t => t.type === 'income').sort((a, b) =>
-      new Date(b.date) - new Date(a.date)
-    );
   }, [transactions]);
 
   const handleSave = () => {
@@ -493,34 +480,17 @@ export default function ContactDetail() {
                     <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
                   </div>
                 ) : (
-                  <Tabs defaultValue="paid" className="w-full">
-                    <div className="border-b px-6">
-                      <TabsList className="h-12 bg-transparent border-b-0">
-                        <TabsTrigger value="paid" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-                          Paid to them ({paidToThem.length})
-                        </TabsTrigger>
-                        <TabsTrigger value="received" className="data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none">
-                          Received from them ({receivedFromThem.length})
-                        </TabsTrigger>
-                      </TabsList>
-                    </div>
-
-                    <TabsContent value="paid" className="mt-0">
-                      {paidToThem.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-slate-500">
-                          No payments to this contact
-                        </div>
-                      ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-slate-50">
-                              <TableHead>Date</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {paidToThem.map((transaction) => (
+                  <div className="w-full">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-slate-50">
+                          <TableHead>Date</TableHead>
+                          <TableHead>Description</TableHead>
+                          <TableHead className="text-right">Amount</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {transactions.map((transaction) => (
                               <React.Fragment key={transaction.id}>
                                 <TableRow
                                   className="hover:bg-slate-50 cursor-pointer"
@@ -543,9 +513,11 @@ export default function ContactDetail() {
                                       </div>
                                     )}
                                   </TableCell>
-                                  <TableCell className="text-right font-semibold text-sm text-burgundy">
+                                  <TableCell className="text-right font-semibold text-sm">
                                     <div className="flex items-center justify-end gap-2">
-                                      {formatCurrency(transaction.amount)}
+                                      <span className={transaction.amount < 0 ? 'text-burgundy' : 'text-forest-green'}>
+                                        {formatCurrency(transaction.amount)}
+                                      </span>
                                       {expandedTransactionId === transaction.id ? (
                                         <ChevronUp className="w-4 h-4 text-slate-400" />
                                       ) : (
@@ -600,111 +572,9 @@ export default function ContactDetail() {
                                 )}
                               </React.Fragment>
                             ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </TabsContent>
-
-                    <TabsContent value="received" className="mt-0">
-                      {receivedFromThem.length === 0 ? (
-                        <div className="p-8 text-center text-sm text-slate-500">
-                          No income from this contact
-                        </div>
-                      ) : (
-                        <Table>
-                          <TableHeader>
-                            <TableRow className="bg-slate-50">
-                              <TableHead>Date</TableHead>
-                              <TableHead>Description</TableHead>
-                              <TableHead className="text-right">Amount</TableHead>
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {receivedFromThem.map((transaction) => (
-                              <React.Fragment key={transaction.id}>
-                                <TableRow
-                                  className="hover:bg-slate-50 cursor-pointer"
-                                  onClick={() => handleTransactionClick(transaction)}
-                                >
-                                  <TableCell className="text-sm">
-                                    {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                  </TableCell>
-                                  <TableCell className="font-medium text-sm">
-                                    {expandedTransactionId === transaction.id && editingTransaction ? (
-                                      <Input
-                                        value={editingTransaction.description}
-                                        onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
-                                        className="h-8"
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
-                                    ) : (
-                                      <div>
-                                        {transaction.description}
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-right font-semibold text-sm text-forest-green">
-                                    <div className="flex items-center justify-end gap-2">
-                                      {formatCurrency(transaction.amount)}
-                                      {expandedTransactionId === transaction.id ? (
-                                        <ChevronUp className="w-4 h-4 text-slate-400" />
-                                      ) : (
-                                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                                      )}
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                                {expandedTransactionId === transaction.id && editingTransaction && (
-                                  <TableRow>
-                                    <TableCell colSpan={3} className="bg-slate-50 p-6">
-                                      <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <Label className="text-sm font-medium mb-1.5">Category</Label>
-                                            <CategoryDropdown
-                                              value={editingTransaction.category_id}
-                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
-                                              transactionType={transaction.amount < 0 ? 'expense' : 'income'}
-                                              isTransactionTransfer={!!transaction.transfer_pair_id}
-                                            />
-                                          </div>
-                                          <div>
-                                            <Label className="text-sm font-medium mb-1.5">Contact</Label>
-                                            <ContactDropdown
-                                              value={editingTransaction.contact_id}
-                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
-                                            />
-                                          </div>
-                                        </div>
-                                        <div className="flex justify-end gap-2 pt-2">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleCancelTransaction}
-                                          >
-                                            <X className="w-4 h-4 mr-1.5" />
-                                            Cancel
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            onClick={() => handleSaveTransaction(transaction.id)}
-                                            disabled={updateTransactionMutation.isPending}
-                                          >
-                                            <Check className="w-4 h-4 mr-1.5" />
-                                            {updateTransactionMutation.isPending ? 'Saving...' : 'Save'}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </React.Fragment>
-                            ))}
-                          </TableBody>
-                        </Table>
-                      )}
-                    </TabsContent>
-                  </Tabs>
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
               </CardContent>
             </Card>
