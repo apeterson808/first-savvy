@@ -523,23 +523,41 @@ export default function ContactDetail() {
                             {paidToThem.map((transaction) => (
                               <React.Fragment key={transaction.id}>
                                 <TableRow
-                                  className="hover:bg-slate-50 cursor-pointer"
-                                  onClick={() => handleTransactionClick(transaction)}
+                                  className="hover:bg-slate-50"
                                 >
                                   <TableCell className="text-sm">
                                     {format(new Date(transaction.date), 'MMM d, yyyy')}
                                   </TableCell>
                                   <TableCell className="font-medium text-sm">
-                                    {transaction.description}
+                                    {expandedTransactionId === transaction.id && editingTransaction ? (
+                                      <Input
+                                        value={editingTransaction.description}
+                                        onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
+                                        className="h-8"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    ) : (
+                                      <div
+                                        className="cursor-pointer hover:text-primary"
+                                        onClick={() => handleTransactionClick(transaction)}
+                                      >
+                                        {transaction.description}
+                                      </div>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-sm text-burgundy">
                                     <div className="flex items-center justify-end gap-2">
                                       {formatCurrency(transaction.amount)}
-                                      {expandedTransactionId === transaction.id ? (
-                                        <ChevronUp className="w-4 h-4 text-slate-400" />
-                                      ) : (
-                                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                                      )}
+                                      <div
+                                        className="cursor-pointer"
+                                        onClick={() => handleTransactionClick(transaction)}
+                                      >
+                                        {expandedTransactionId === transaction.id ? (
+                                          <ChevronUp className="w-4 h-4 text-slate-400" />
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                                        )}
+                                      </div>
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -547,27 +565,6 @@ export default function ContactDetail() {
                                   <TableRow>
                                     <TableCell colSpan={3} className="bg-slate-50 p-6">
                                       <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Date</Label>
-                                            <div className="text-sm font-medium">
-                                              {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                            </div>
-                                          </div>
-                                          <div>
-                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Amount</Label>
-                                            <div className="text-sm font-semibold text-burgundy">
-                                              {formatCurrency(transaction.amount)}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium mb-1.5">Description</Label>
-                                          <Input
-                                            value={editingTransaction.description}
-                                            onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
-                                          />
-                                        </div>
                                         <div className="grid grid-cols-2 gap-4">
                                           <div>
                                             <Label className="text-sm font-medium mb-1.5">Category</Label>
@@ -631,23 +628,41 @@ export default function ContactDetail() {
                             {receivedFromThem.map((transaction) => (
                               <React.Fragment key={transaction.id}>
                                 <TableRow
-                                  className="hover:bg-slate-50 cursor-pointer"
-                                  onClick={() => handleTransactionClick(transaction)}
+                                  className="hover:bg-slate-50"
                                 >
                                   <TableCell className="text-sm">
                                     {format(new Date(transaction.date), 'MMM d, yyyy')}
                                   </TableCell>
                                   <TableCell className="font-medium text-sm">
-                                    {transaction.description}
+                                    {expandedTransactionId === transaction.id && editingTransaction ? (
+                                      <Input
+                                        value={editingTransaction.description}
+                                        onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
+                                        className="h-8"
+                                        onClick={(e) => e.stopPropagation()}
+                                      />
+                                    ) : (
+                                      <div
+                                        className="cursor-pointer hover:text-primary"
+                                        onClick={() => handleTransactionClick(transaction)}
+                                      >
+                                        {transaction.description}
+                                      </div>
+                                    )}
                                   </TableCell>
                                   <TableCell className="text-right font-semibold text-sm text-forest-green">
                                     <div className="flex items-center justify-end gap-2">
                                       {formatCurrency(transaction.amount)}
-                                      {expandedTransactionId === transaction.id ? (
-                                        <ChevronUp className="w-4 h-4 text-slate-400" />
-                                      ) : (
-                                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                                      )}
+                                      <div
+                                        className="cursor-pointer"
+                                        onClick={() => handleTransactionClick(transaction)}
+                                      >
+                                        {expandedTransactionId === transaction.id ? (
+                                          <ChevronUp className="w-4 h-4 text-slate-400" />
+                                        ) : (
+                                          <ChevronDown className="w-4 h-4 text-slate-400" />
+                                        )}
+                                      </div>
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -655,27 +670,6 @@ export default function ContactDetail() {
                                   <TableRow>
                                     <TableCell colSpan={3} className="bg-slate-50 p-6">
                                       <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Date</Label>
-                                            <div className="text-sm font-medium">
-                                              {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                            </div>
-                                          </div>
-                                          <div>
-                                            <Label className="text-sm font-medium text-slate-500 mb-1.5">Amount</Label>
-                                            <div className="text-sm font-semibold text-burgundy">
-                                              {formatCurrency(transaction.amount)}
-                                            </div>
-                                          </div>
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium mb-1.5">Description</Label>
-                                          <Input
-                                            value={editingTransaction.description}
-                                            onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
-                                          />
-                                        </div>
                                         <div className="grid grid-cols-2 gap-4">
                                           <div>
                                             <Label className="text-sm font-medium mb-1.5">Category</Label>
