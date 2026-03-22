@@ -572,6 +572,7 @@ export default function ContactDetail() {
                                               value={editingTransaction.category_id}
                                               onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
                                               transactionType={transaction.amount < 0 ? 'expense' : 'income'}
+                                              isTransactionTransfer={!!transaction.transfer_pair_id}
                                             />
                                           </div>
                                           <div>
@@ -678,6 +679,7 @@ export default function ContactDetail() {
                                               value={editingTransaction.category_id}
                                               onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_id: value }))}
                                               transactionType={transaction.amount < 0 ? 'expense' : 'income'}
+                                              isTransactionTransfer={!!transaction.transfer_pair_id}
                                             />
                                           </div>
                                           <div>
