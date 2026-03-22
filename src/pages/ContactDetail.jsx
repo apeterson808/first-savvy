@@ -523,7 +523,8 @@ export default function ContactDetail() {
                             {paidToThem.map((transaction) => (
                               <React.Fragment key={transaction.id}>
                                 <TableRow
-                                  className="hover:bg-slate-50"
+                                  className="hover:bg-slate-50 cursor-pointer"
+                                  onClick={() => handleTransactionClick(transaction)}
                                 >
                                   <TableCell className="text-sm">
                                     {format(new Date(transaction.date), 'MMM d, yyyy')}
@@ -537,10 +538,7 @@ export default function ContactDetail() {
                                         onClick={(e) => e.stopPropagation()}
                                       />
                                     ) : (
-                                      <div
-                                        className="cursor-pointer hover:text-primary"
-                                        onClick={() => handleTransactionClick(transaction)}
-                                      >
+                                      <div>
                                         {transaction.description}
                                       </div>
                                     )}
@@ -548,16 +546,11 @@ export default function ContactDetail() {
                                   <TableCell className="text-right font-semibold text-sm text-burgundy">
                                     <div className="flex items-center justify-end gap-2">
                                       {formatCurrency(transaction.amount)}
-                                      <div
-                                        className="cursor-pointer"
-                                        onClick={() => handleTransactionClick(transaction)}
-                                      >
-                                        {expandedTransactionId === transaction.id ? (
-                                          <ChevronUp className="w-4 h-4 text-slate-400" />
-                                        ) : (
-                                          <ChevronDown className="w-4 h-4 text-slate-400" />
-                                        )}
-                                      </div>
+                                      {expandedTransactionId === transaction.id ? (
+                                        <ChevronUp className="w-4 h-4 text-slate-400" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                                      )}
                                     </div>
                                   </TableCell>
                                 </TableRow>
@@ -630,7 +623,8 @@ export default function ContactDetail() {
                             {receivedFromThem.map((transaction) => (
                               <React.Fragment key={transaction.id}>
                                 <TableRow
-                                  className="hover:bg-slate-50"
+                                  className="hover:bg-slate-50 cursor-pointer"
+                                  onClick={() => handleTransactionClick(transaction)}
                                 >
                                   <TableCell className="text-sm">
                                     {format(new Date(transaction.date), 'MMM d, yyyy')}
@@ -644,10 +638,7 @@ export default function ContactDetail() {
                                         onClick={(e) => e.stopPropagation()}
                                       />
                                     ) : (
-                                      <div
-                                        className="cursor-pointer hover:text-primary"
-                                        onClick={() => handleTransactionClick(transaction)}
-                                      >
+                                      <div>
                                         {transaction.description}
                                       </div>
                                     )}
@@ -655,16 +646,11 @@ export default function ContactDetail() {
                                   <TableCell className="text-right font-semibold text-sm text-forest-green">
                                     <div className="flex items-center justify-end gap-2">
                                       {formatCurrency(transaction.amount)}
-                                      <div
-                                        className="cursor-pointer"
-                                        onClick={() => handleTransactionClick(transaction)}
-                                      >
-                                        {expandedTransactionId === transaction.id ? (
-                                          <ChevronUp className="w-4 h-4 text-slate-400" />
-                                        ) : (
-                                          <ChevronDown className="w-4 h-4 text-slate-400" />
-                                        )}
-                                      </div>
+                                      {expandedTransactionId === transaction.id ? (
+                                        <ChevronUp className="w-4 h-4 text-slate-400" />
+                                      ) : (
+                                        <ChevronDown className="w-4 h-4 text-slate-400" />
+                                      )}
                                     </div>
                                   </TableCell>
                                 </TableRow>

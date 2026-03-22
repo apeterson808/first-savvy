@@ -38,7 +38,7 @@ export default function CategoryDropdown({
       if (!activeProfile) return [];
       return await getIncomeAccounts(activeProfile.id);
     },
-    enabled: !!activeProfile && !isTransactionTransfer
+    enabled: !!activeProfile
   });
 
   const { data: expenseAccounts = [] } = useQuery({
@@ -47,7 +47,7 @@ export default function CategoryDropdown({
       if (!activeProfile) return [];
       return await getExpenseAccounts(activeProfile.id);
     },
-    enabled: !!activeProfile && !isTransactionTransfer
+    enabled: !!activeProfile
   });
 
   const transferIncomeAccount = incomeAccounts.find(a => a.account_detail === 'Transfer Income');
