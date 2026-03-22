@@ -468,7 +468,11 @@ export default function ContactDetail() {
                           </TableHeader>
                           <TableBody>
                             {paidToThem.map((transaction) => (
-                              <TableRow key={transaction.id} className="hover:bg-slate-50">
+                              <TableRow
+                                key={transaction.id}
+                                className="hover:bg-slate-50 cursor-pointer"
+                                onClick={() => navigate(`/banking?account=${transaction.account_id}&transaction=${transaction.id}`)}
+                              >
                                 <TableCell className="text-sm">
                                   {format(new Date(transaction.date), 'MMM d, yyyy')}
                                 </TableCell>
@@ -501,7 +505,11 @@ export default function ContactDetail() {
                           </TableHeader>
                           <TableBody>
                             {receivedFromThem.map((transaction) => (
-                              <TableRow key={transaction.id} className="hover:bg-slate-50">
+                              <TableRow
+                                key={transaction.id}
+                                className="hover:bg-slate-50 cursor-pointer"
+                                onClick={() => navigate(`/banking?account=${transaction.account_id}&transaction=${transaction.id}`)}
+                              >
                                 <TableCell className="text-sm">
                                   {format(new Date(transaction.date), 'MMM d, yyyy')}
                                 </TableCell>
