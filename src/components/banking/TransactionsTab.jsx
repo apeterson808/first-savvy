@@ -1272,7 +1272,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                 <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
                               ) : transaction.is_split ? (
                                 <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
-                              ) : statusFilter === 'pending' ? (
+                              ) : statusFilter === 'pending' || statusFilter === 'posted' ? (
                                 <Input
                                   defaultValue={formatTransactionDescription(transaction.description)}
                                   disabled={!activeAccountIds.includes(transaction.bank_account_id)}
@@ -1382,12 +1382,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                               );
                             }
 
-                            // For regular transactions, show editable contact dropdown (or read-only in posted)
-                            if (statusFilter === 'posted') {
-                              const contact = contacts.find(c => c.id === transaction.contact_id);
-                              return <span className="text-xs px-1">{contact?.name || '—'}</span>;
-                            }
-
+                            // For regular transactions, show editable contact dropdown
                             return (
                               <div onClick={(e) => e.stopPropagation()}>
                                 <ContactDropdown
@@ -1433,16 +1428,13 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             }
 
 
-                            // For regular transactions, show editable category dropdown (or read-only in posted)
-                            if (statusFilter === 'posted') {
+                            // For transfers and credit card payments in posted, show read-only labels
+                            if (statusFilter === 'posted' && (transaction.type === 'transfer' || transaction.type === 'credit_card_payment')) {
                               if (transaction.type === 'transfer') {
                                 return <span className="text-xs px-1">Bank Transfer</span>;
                               } else if (transaction.type === 'credit_card_payment') {
                                 return <span className="text-xs px-1">Credit Card Payment</span>;
                               }
-                              const category = chartAccounts.find(c => c.id === transaction.category_account_id);
-                              const displayName = category?.display_name || '—';
-                              return <span className="text-xs px-1">{displayName}</span>;
                             }
 
                             // Determine if we're in Match mode
@@ -1744,18 +1736,35 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             if (statusFilter === 'posted') {
                               return (
                                 <button
-                                  className="text-xs text-blue-600 hover:underline"
-                                  onClick={(e) => {
+                                  className="text-xs text-orange-600 hover:underline font-medium"
+                                  onClick={async (e) => {
                                     e?.stopPropagation();
-                                    if (transaction.current_journal_entry_id) {
-                                      setEditingJournalEntryId(transaction.current_journal_entry_id);
-                                      setEditJournalEntryDialogOpen(true);
-                                    } else {
+                                    if (!transaction.current_journal_entry_id) {
                                       toast.error('No journal entry found for this transaction');
+                                      return;
+                                    }
+
+                                    try {
+                                      const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                        p_transaction_id: transaction.id
+                                      });
+
+                                      if (error) throw error;
+
+                                      if (data.success) {
+                                        toast.success(`Transaction moved back to pending`);
+                                        queryClient.invalidateQueries(['transactions']);
+                                        queryClient.invalidateQueries(['journal-entries']);
+                                      } else {
+                                        toast.error(data.error || 'Failed to undo transaction');
+                                      }
+                                    } catch (error) {
+                                      console.error('Error undoing transaction:', error);
+                                      toast.error('Failed to undo transaction');
                                     }
                                   }}
                                 >
-                                  Edit
+                                  Undo
                                 </button>
                               );
                             }
