@@ -408,7 +408,7 @@ export async function getJournalLinesByContact(profileId, contactId) {
       description,
       contact_id,
       contact_type,
-      journal_entry:journal_entries!inner(
+      journal_entries!inner(
         id,
         entry_date,
         entry_number,
@@ -416,7 +416,7 @@ export async function getJournalLinesByContact(profileId, contactId) {
         status,
         profile_id
       ),
-      account:user_chart_of_accounts!inner(
+      user_chart_of_accounts!inner(
         id,
         account_number,
         account_name,
@@ -427,12 +427,17 @@ export async function getJournalLinesByContact(profileId, contactId) {
       )
     `)
     .eq('contact_id', contactId)
-    .eq('journal_entry.profile_id', profileId)
-    .eq('journal_entry.status', 'posted')
-    .order('journal_entry(entry_date)', { ascending: false });
+    .eq('journal_entries.profile_id', profileId)
+    .eq('journal_entries.status', 'posted')
+    .order('journal_entries(entry_date)', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+
+  return (data || []).map(line => ({
+    ...line,
+    journal_entry: line.journal_entries,
+    account: line.user_chart_of_accounts
+  }));
 }
 
 export async function updateJournalEntryLine({
