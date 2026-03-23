@@ -1522,7 +1522,13 @@ export default function AccountDetail() {
                                     profileId={activeProfile?.id}
                                   />
                                 ) : (
-                                  activity.category || '\u2014'
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.category || '\u2014'}
+                                  </button>
                                 )}
                               </TableCell>
                               <TableCell className="text-[11px] text-slate-600 py-1">
@@ -1535,7 +1541,13 @@ export default function AccountDetail() {
                                     allowClear
                                   />
                                 ) : (
-                                  activity.contact || '\u2014'
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.contact || '\u2014'}
+                                  </button>
                                 )}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
@@ -1574,17 +1586,6 @@ export default function AccountDetail() {
                                     </>
                                   ) : (
                                     <>
-                                      {activity.transactionId && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => startEditingTransaction(activity)}
-                                          className="h-6 w-6 p-0"
-                                          title="Edit"
-                                        >
-                                          <Edit2 className="w-3 h-3 text-slate-400" />
-                                        </Button>
-                                      )}
                                       {activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
@@ -1751,17 +1752,6 @@ export default function AccountDetail() {
                                     </>
                                   ) : (
                                     <>
-                                      {activity.transactionId && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => startEditingTransaction(activity)}
-                                          className="h-6 w-6 p-0"
-                                          title="Edit"
-                                        >
-                                          <Edit2 className="w-3 h-3 text-slate-400" />
-                                        </Button>
-                                      )}
                                       {activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
@@ -2548,7 +2538,13 @@ export default function AccountDetail() {
                                     profileId={activeProfile?.id}
                                   />
                                 ) : (
-                                  activity.category || '\u2014'
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.category || '\u2014'}
+                                  </button>
                                 )}
                               </TableCell>
                               <TableCell className="text-[11px] text-slate-600 py-1">
@@ -2561,7 +2557,13 @@ export default function AccountDetail() {
                                     allowClear
                                   />
                                 ) : (
-                                  activity.contact || '\u2014'
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.contact || '\u2014'}
+                                  </button>
                                 )}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
@@ -2600,17 +2602,6 @@ export default function AccountDetail() {
                                     </>
                                   ) : (
                                     <>
-                                      {activity.transactionId && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => startEditingTransaction(activity)}
-                                          className="h-6 w-6 p-0"
-                                          title="Edit"
-                                        >
-                                          <Edit2 className="w-3 h-3 text-slate-400" />
-                                        </Button>
-                                      )}
                                       {activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
