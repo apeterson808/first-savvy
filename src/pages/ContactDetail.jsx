@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import { updateJournalEntryWithLines, getJournalEntryWithLines } from '@/api/journalEntries';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
 
@@ -65,6 +66,7 @@ export default function ContactDetail() {
   });
   const [expandedTransactionId, setExpandedTransactionId] = useState(null);
   const [editingTransaction, setEditingTransaction] = useState(null);
+  const [isSavingTransaction, setIsSavingTransaction] = useState(false);
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -116,19 +118,6 @@ export default function ContactDetail() {
     }
   });
 
-  const updateTransactionMutation = useMutation({
-    mutationFn: ({ id, data }) => firstsavvy.entities.Transaction.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['transactions', 'contact', id] });
-      queryClient.invalidateQueries({ queryKey: ['transactions'] });
-      setExpandedTransactionId(null);
-      setEditingTransaction(null);
-      toast.success('Transaction updated successfully');
-    },
-    onError: (error) => {
-      toast.error(`Failed to update transaction: ${error.message}`);
-    }
-  });
 
   useEffect(() => {
     if (contact) {
@@ -240,20 +229,68 @@ export default function ContactDetail() {
     }
   };
 
-  const handleSaveTransaction = (transactionId) => {
+  const handleSaveTransaction = async (transactionId) => {
     if (!editingTransaction.description.trim()) {
       toast.error('Description is required');
       return;
     }
 
-    updateTransactionMutation.mutate({
-      id: transactionId,
-      data: {
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (!transaction) {
+      toast.error('Transaction not found');
+      return;
+    }
+
+    setIsSavingTransaction(true);
+    try {
+      await firstsavvy.entities.Transaction.update(transactionId, {
         description: editingTransaction.description.trim(),
         category_account_id: editingTransaction.category_account_id,
         contact_id: editingTransaction.contact_id
+      });
+
+      if (transaction.current_journal_entry_id && editingTransaction.category_account_id !== transaction.category_account_id) {
+        const journalEntry = await getJournalEntryWithLines(transaction.current_journal_entry_id);
+
+        if (journalEntry) {
+          const updatedLines = journalEntry.map(line => {
+            if (line.account_id === transaction.category_account_id) {
+              return {
+                account_id: editingTransaction.category_account_id,
+                debit_amount: line.debit_amount,
+                credit_amount: line.credit_amount,
+                description: line.description
+              };
+            }
+            return {
+              account_id: line.account_id,
+              debit_amount: line.debit_amount,
+              credit_amount: line.credit_amount,
+              description: line.description
+            };
+          });
+
+          await updateJournalEntryWithLines({
+            entryId: transaction.current_journal_entry_id,
+            profileId: activeProfile.id,
+            description: journalEntry[0]?.journal_entry_description || editingTransaction.description.trim(),
+            memo: journalEntry[0]?.journal_entry_memo || null,
+            lines: updatedLines
+          });
+        }
       }
-    });
+
+      queryClient.invalidateQueries({ queryKey: ['transactions', 'contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['budget-analytics'] });
+      setExpandedTransactionId(null);
+      setEditingTransaction(null);
+      toast.success('Transaction updated successfully');
+    } catch (error) {
+      toast.error(`Failed to update transaction: ${error.message}`);
+    } finally {
+      setIsSavingTransaction(false);
+    }
   };
 
   const handleCancelTransaction = () => {
@@ -560,10 +597,10 @@ export default function ContactDetail() {
                                           <Button
                                             size="sm"
                                             onClick={() => handleSaveTransaction(transaction.id)}
-                                            disabled={updateTransactionMutation.isPending}
+                                            disabled={isSavingTransaction}
                                           >
                                             <Check className="w-4 h-4 mr-1.5" />
-                                            {updateTransactionMutation.isPending ? 'Saving...' : 'Save'}
+                                            {isSavingTransaction ? 'Saving...' : 'Save'}
                                           </Button>
                                         </div>
                                       </div>
