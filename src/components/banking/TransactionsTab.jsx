@@ -1736,7 +1736,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                             if (statusFilter === 'posted') {
                               return (
                                 <button
-                                  className="text-xs text-orange-600 hover:underline font-medium"
+                                  className="text-xs text-blue-600 hover:underline"
                                   onClick={async (e) => {
                                     e?.stopPropagation();
                                     if (!transaction.current_journal_entry_id) {
@@ -1749,18 +1749,23 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         p_transaction_id: transaction.id
                                       });
 
-                                      if (error) throw error;
+                                      if (error) {
+                                        console.error('RPC Error:', error);
+                                        toast.error(error.message || 'Failed to undo transaction');
+                                        return;
+                                      }
 
-                                      if (data.success) {
+                                      if (data?.success) {
                                         toast.success(`Transaction moved back to pending`);
                                         queryClient.invalidateQueries(['transactions']);
                                         queryClient.invalidateQueries(['journal-entries']);
                                       } else {
-                                        toast.error(data.error || 'Failed to undo transaction');
+                                        console.error('Function returned error:', data);
+                                        toast.error(data?.error || 'Failed to undo transaction');
                                       }
                                     } catch (error) {
                                       console.error('Error undoing transaction:', error);
-                                      toast.error('Failed to undo transaction');
+                                      toast.error(error.message || 'Failed to undo transaction');
                                     }
                                   }}
                                 >
