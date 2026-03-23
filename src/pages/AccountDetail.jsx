@@ -55,6 +55,8 @@ import { BudgetOverviewCard } from '@/components/budgeting/BudgetOverviewCard';
 import { BudgetPerformanceCard } from '@/components/budgeting/BudgetPerformanceCard';
 import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorCard';
 import { ChildBudgetSection } from '@/components/budgeting/ChildBudgetSection';
+import CategoryDropdown from '@/components/common/CategoryDropdown';
+import ContactDropdown from '@/components/common/ContactDropdown';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -76,6 +78,10 @@ export default function AccountDetail() {
     maxAmount: '',
     contact: ''
   });
+  const [editingTransactionId, setEditingTransactionId] = useState(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editCategoryId, setEditCategoryId] = useState('');
+  const [editContactId, setEditContactId] = useState('');
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -487,6 +493,65 @@ export default function AccountDetail() {
     }
   });
 
+  const updateTransactionMutation = useMutation({
+    mutationFn: async ({ transactionId, updates }) => {
+      return await firstsavvy.entities.Transaction.update(transactionId, updates);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['journal-lines'] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['budget-analytics'] });
+      setEditingTransactionId(null);
+      toast.success('Transaction updated successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update transaction: ${error.message}`);
+    }
+  });
+
+  const startEditingTransaction = async (activity) => {
+    if (!activity.transactionId) return;
+
+    const { data: transaction, error } = await firstsavvy.supabase
+      .from('transactions')
+      .select('id, description, category_account_id, contact_id')
+      .eq('id', activity.transactionId)
+      .maybeSingle();
+
+    if (error) {
+      toast.error('Failed to load transaction details');
+      return;
+    }
+
+    if (!transaction) {
+      toast.error('Transaction not found');
+      return;
+    }
+
+    setEditingTransactionId(transaction.id);
+    setEditDescription(transaction.description || '');
+    setEditCategoryId(transaction.category_account_id || '');
+    setEditContactId(transaction.contact_id || '');
+  };
+
+  const cancelEditingTransaction = () => {
+    setEditingTransactionId(null);
+    setEditDescription('');
+    setEditCategoryId('');
+    setEditContactId('');
+  };
+
+  const saveTransactionEdit = async (transactionId) => {
+    if (!transactionId) return;
+
+    const updates = {
+      description: editDescription,
+      category_account_id: editCategoryId || null,
+      contact_id: editContactId || null
+    };
+
+    updateTransactionMutation.mutate({ transactionId, updates });
+  };
 
   // Determine if this is a bank account (asset/liability with bank-related detail)
   const isBankAccount = useMemo(() => {
@@ -1438,13 +1503,40 @@ export default function AccountDetail() {
                                 </span>
                               </TableCell>
                               <TableCell className="py-1 max-w-[300px]">
-                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                {editingTransactionId === activity.transactionId ? (
+                                  <Input
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    className="h-6 text-[11px] px-1.5 py-0.5"
+                                  />
+                                ) : (
+                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                )}
                               </TableCell>
                               <TableCell className="text-[11px] text-slate-600 py-1">
-                                {activity.category || '\u2014'}
+                                {editingTransactionId === activity.transactionId ? (
+                                  <CategoryDropdown
+                                    value={editCategoryId}
+                                    onChange={setEditCategoryId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                  />
+                                ) : (
+                                  activity.category || '\u2014'
+                                )}
                               </TableCell>
                               <TableCell className="text-[11px] text-slate-600 py-1">
-                                {activity.contact || '\u2014'}
+                                {editingTransactionId === activity.transactionId ? (
+                                  <ContactDropdown
+                                    value={editContactId}
+                                    onChange={setEditContactId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                    allowClear
+                                  />
+                                ) : (
+                                  activity.contact || '\u2014'
+                                )}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
                                 {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
@@ -1457,27 +1549,65 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
-                                  {activity.journalEntryId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Journal Entry"
-                                    >
-                                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                  {activity.transactionId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Audit History"
-                                    >
-                                      <History className="w-3 h-3 text-slate-400" />
-                                    </Button>
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => saveTransactionEdit(activity.transactionId)}
+                                        className="h-6 w-6 p-0"
+                                        title="Save"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <Save className="w-3 h-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={cancelEditingTransaction}
+                                        className="h-6 w-6 p-0"
+                                        title="Cancel"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <X className="w-3 h-3 text-slate-400" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => startEditingTransaction(activity)}
+                                          className="h-6 w-6 p-0"
+                                          title="Edit"
+                                        >
+                                          <Edit2 className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Journal Entry"
+                                        >
+                                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Audit History"
+                                        >
+                                          <History className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               </TableCell>
@@ -1596,27 +1726,65 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
-                                  {activity.journalEntryId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Journal Entry"
-                                    >
-                                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                  {activity.transactionId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Audit History"
-                                    >
-                                      <History className="w-3 h-3 text-slate-400" />
-                                    </Button>
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => saveTransactionEdit(activity.transactionId)}
+                                        className="h-6 w-6 p-0"
+                                        title="Save"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <Save className="w-3 h-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={cancelEditingTransaction}
+                                        className="h-6 w-6 p-0"
+                                        title="Cancel"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <X className="w-3 h-3 text-slate-400" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => startEditingTransaction(activity)}
+                                          className="h-6 w-6 p-0"
+                                          title="Edit"
+                                        >
+                                          <Edit2 className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Journal Entry"
+                                        >
+                                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Audit History"
+                                        >
+                                          <History className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               </TableCell>
@@ -2361,10 +2529,40 @@ export default function AccountDetail() {
                                 </span>
                               </TableCell>
                               <TableCell className="py-1 max-w-[300px]">
-                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                {editingTransactionId === activity.transactionId ? (
+                                  <Input
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    className="h-6 text-[11px] px-1.5 py-0.5"
+                                  />
+                                ) : (
+                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                )}
                               </TableCell>
                               <TableCell className="text-[11px] text-slate-600 py-1">
-                                {activity.offsettingAccounts || '—'}
+                                {editingTransactionId === activity.transactionId ? (
+                                  <CategoryDropdown
+                                    value={editCategoryId}
+                                    onChange={setEditCategoryId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                  />
+                                ) : (
+                                  activity.category || '\u2014'
+                                )}
+                              </TableCell>
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <ContactDropdown
+                                    value={editContactId}
+                                    onChange={setEditContactId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                    allowClear
+                                  />
+                                ) : (
+                                  activity.contact || '\u2014'
+                                )}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
                                 {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
@@ -2377,27 +2575,65 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
-                                  {activity.journalEntryId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Journal Entry"
-                                    >
-                                      <ExternalLink className="w-3 h-3 text-slate-400" />
-                                    </Button>
-                                  )}
-                                  {activity.transactionId && (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                      className="h-6 w-6 p-0"
-                                      title="View Audit History"
-                                    >
-                                      <History className="w-3 h-3 text-slate-400" />
-                                    </Button>
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => saveTransactionEdit(activity.transactionId)}
+                                        className="h-6 w-6 p-0"
+                                        title="Save"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <Save className="w-3 h-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={cancelEditingTransaction}
+                                        className="h-6 w-6 p-0"
+                                        title="Cancel"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <X className="w-3 h-3 text-slate-400" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => startEditingTransaction(activity)}
+                                          className="h-6 w-6 p-0"
+                                          title="Edit"
+                                        >
+                                          <Edit2 className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Journal Entry"
+                                        >
+                                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Audit History"
+                                        >
+                                          <History className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                    </>
                                   )}
                                 </div>
                               </TableCell>
