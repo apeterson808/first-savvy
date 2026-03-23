@@ -395,3 +395,64 @@ export async function getMultiAccountAuditHistoryPaginated({
     hasMore: offset + data.length < (data[0]?.total_count || 0)
   };
 }
+
+export async function getJournalLinesByContact(profileId, contactId) {
+  const { data, error } = await supabase
+    .from('journal_entry_lines')
+    .select(`
+      id,
+      journal_entry_id,
+      account_id,
+      debit_amount,
+      credit_amount,
+      description,
+      contact_id,
+      contact_type,
+      journal_entry:journal_entries!inner(
+        id,
+        entry_date,
+        entry_number,
+        description,
+        status,
+        profile_id
+      ),
+      account:user_chart_of_accounts!inner(
+        id,
+        account_number,
+        account_name,
+        account_class,
+        account_type,
+        icon,
+        color
+      )
+    `)
+    .eq('contact_id', contactId)
+    .eq('journal_entry.profile_id', profileId)
+    .eq('journal_entry.status', 'posted')
+    .order('journal_entry(entry_date)', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
+export async function updateJournalEntryLine({
+  lineId,
+  description,
+  contactId,
+  accountId
+}) {
+  const updates = {};
+  if (description !== undefined) updates.description = description;
+  if (contactId !== undefined) updates.contact_id = contactId;
+  if (accountId !== undefined) updates.account_id = accountId;
+
+  const { data, error } = await supabase
+    .from('journal_entry_lines')
+    .update(updates)
+    .eq('id', lineId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}

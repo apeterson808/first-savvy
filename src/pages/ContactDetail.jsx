@@ -30,7 +30,7 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
-import { updateJournalEntryWithLines, getJournalEntryWithLines } from '@/api/journalEntries';
+import { updateJournalEntryWithLines, getJournalEntryWithLines, getJournalLinesByContact, updateJournalEntryLine } from '@/api/journalEntries';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
 
@@ -64,9 +64,9 @@ export default function ContactDetail() {
     notes: '',
     status: 'active'
   });
-  const [expandedTransactionId, setExpandedTransactionId] = useState(null);
-  const [editingTransaction, setEditingTransaction] = useState(null);
-  const [isSavingTransaction, setIsSavingTransaction] = useState(false);
+  const [expandedLineId, setExpandedLineId] = useState(null);
+  const [editingLine, setEditingLine] = useState(null);
+  const [isSavingLine, setIsSavingLine] = useState(false);
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -76,12 +76,11 @@ export default function ContactDetail() {
     enabled: !!id && !!activeProfile
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'contact', id, activeProfile?.id],
+  const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
+    queryKey: ['journal-lines', 'contact', id, activeProfile?.id],
     queryFn: async () => {
-      if (!id) return [];
-      const allTransactions = await firstsavvy.entities.Transaction.list('date', 'desc');
-      return allTransactions.filter(t => t.contact_id === id);
+      if (!id || !activeProfile) return [];
+      return await getJournalLinesByContact(activeProfile.id, id);
     },
     enabled: !!id && !!activeProfile
   });
@@ -133,7 +132,7 @@ export default function ContactDetail() {
   }, [contact]);
 
   const analytics = useMemo(() => {
-    if (!transactions || transactions.length === 0) {
+    if (!journalLines || journalLines.length === 0) {
       return {
         moneyOut: 0,
         moneyIn: 0,
@@ -144,27 +143,27 @@ export default function ContactDetail() {
       };
     }
 
-    const moneyOut = transactions
-      .filter(t => t.type === 'expense')
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
+    const moneyOut = journalLines
+      .filter(line => line.account?.account_class === 'Expense')
+      .reduce((sum, line) => sum + (line.debit_amount || 0), 0);
 
-    const moneyIn = transactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + (t.amount || 0), 0);
+    const moneyIn = journalLines
+      .filter(line => line.account?.account_class === 'Revenue')
+      .reduce((sum, line) => sum + (line.credit_amount || 0), 0);
 
-    const sortedByDate = [...transactions].sort((a, b) =>
-      new Date(a.date) - new Date(b.date)
+    const sortedByDate = [...journalLines].sort((a, b) =>
+      new Date(a.journal_entry.entry_date) - new Date(b.journal_entry.entry_date)
     );
 
     return {
       moneyOut,
       moneyIn,
       netBalance: moneyIn - moneyOut,
-      transactionCount: transactions.length,
-      firstTransaction: sortedByDate[0]?.date,
-      lastTransaction: sortedByDate[sortedByDate.length - 1]?.date
+      transactionCount: journalLines.length,
+      firstTransaction: sortedByDate[0]?.journal_entry.entry_date,
+      lastTransaction: sortedByDate[sortedByDate.length - 1]?.journal_entry.entry_date
     };
-  }, [transactions]);
+  }, [journalLines]);
 
   const handleSave = () => {
     if (!formData.name.trim()) {
@@ -215,87 +214,57 @@ export default function ContactDetail() {
     setFormData(prev => ({ ...prev, phone: formatted }));
   };
 
-  const handleTransactionClick = (transaction) => {
-    if (expandedTransactionId === transaction.id) {
-      setExpandedTransactionId(null);
-      setEditingTransaction(null);
+  const handleLineClick = (line) => {
+    if (expandedLineId === line.id) {
+      setExpandedLineId(null);
+      setEditingLine(null);
     } else {
-      setExpandedTransactionId(transaction.id);
-      setEditingTransaction({
-        description: transaction.description || '',
-        category_account_id: transaction.category_account_id || null,
-        contact_id: transaction.contact_id || null
+      setExpandedLineId(line.id);
+      setEditingLine({
+        description: line.description || '',
+        account_id: line.account_id || null,
+        contact_id: line.contact_id || null
       });
     }
   };
 
-  const handleSaveTransaction = async (transactionId) => {
-    if (!editingTransaction.description.trim()) {
+  const handleSaveLine = async (lineId) => {
+    if (!editingLine.description.trim()) {
       toast.error('Description is required');
       return;
     }
 
-    const transaction = transactions.find(t => t.id === transactionId);
-    if (!transaction) {
-      toast.error('Transaction not found');
+    const line = journalLines.find(l => l.id === lineId);
+    if (!line) {
+      toast.error('Journal line not found');
       return;
     }
 
-    setIsSavingTransaction(true);
+    setIsSavingLine(true);
     try {
-      await firstsavvy.entities.Transaction.update(transactionId, {
-        description: editingTransaction.description.trim(),
-        category_account_id: editingTransaction.category_account_id,
-        contact_id: editingTransaction.contact_id
+      await updateJournalEntryLine({
+        lineId: lineId,
+        description: editingLine.description.trim(),
+        accountId: editingLine.account_id,
+        contactId: editingLine.contact_id
       });
 
-      if (transaction.current_journal_entry_id && editingTransaction.category_account_id !== transaction.category_account_id) {
-        const journalEntry = await getJournalEntryWithLines(transaction.current_journal_entry_id);
-
-        if (journalEntry) {
-          const updatedLines = journalEntry.map(line => {
-            if (line.account_id === transaction.category_account_id) {
-              return {
-                account_id: editingTransaction.category_account_id,
-                debit_amount: line.debit_amount,
-                credit_amount: line.credit_amount,
-                description: line.description
-              };
-            }
-            return {
-              account_id: line.account_id,
-              debit_amount: line.debit_amount,
-              credit_amount: line.credit_amount,
-              description: line.description
-            };
-          });
-
-          await updateJournalEntryWithLines({
-            entryId: transaction.current_journal_entry_id,
-            profileId: activeProfile.id,
-            description: journalEntry[0]?.journal_entry_description || editingTransaction.description.trim(),
-            memo: journalEntry[0]?.journal_entry_memo || null,
-            lines: updatedLines
-          });
-        }
-      }
-
-      queryClient.invalidateQueries({ queryKey: ['transactions', 'contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['journal-lines', 'contact', id] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['budget-analytics'] });
-      setExpandedTransactionId(null);
-      setEditingTransaction(null);
+      setExpandedLineId(null);
+      setEditingLine(null);
       toast.success('Transaction updated successfully');
     } catch (error) {
       toast.error(`Failed to update transaction: ${error.message}`);
     } finally {
-      setIsSavingTransaction(false);
+      setIsSavingLine(false);
     }
   };
 
-  const handleCancelTransaction = () => {
-    setExpandedTransactionId(null);
-    setEditingTransaction(null);
+  const handleCancelLine = () => {
+    setExpandedLineId(null);
+    setEditingLine(null);
   };
 
   if (contactLoading) {
@@ -509,9 +478,9 @@ export default function ContactDetail() {
                 <CardTitle className="text-lg font-semibold">Transaction History</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {transactionsLoading ? (
+                {journalLinesLoading ? (
                   <div className="p-8 text-center text-slate-500">Loading transactions...</div>
-                ) : transactions.length === 0 ? (
+                ) : journalLines.length === 0 ? (
                   <div className="p-12 text-center">
                     <p className="text-slate-600 font-medium mb-1">No transactions yet</p>
                     <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
@@ -527,88 +496,94 @@ export default function ContactDetail() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {transactions.map((transaction) => (
-                              <React.Fragment key={transaction.id}>
-                                <TableRow
-                                  className="hover:bg-slate-50 cursor-pointer"
-                                  onClick={() => handleTransactionClick(transaction)}
-                                >
-                                  <TableCell className="text-sm">
-                                    {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                  </TableCell>
-                                  <TableCell className="font-medium text-sm">
-                                    {expandedTransactionId === transaction.id && editingTransaction ? (
-                                      <Input
-                                        value={editingTransaction.description}
-                                        onChange={(e) => setEditingTransaction(prev => ({ ...prev, description: e.target.value }))}
-                                        className="h-8"
-                                        onClick={(e) => e.stopPropagation()}
-                                      />
+                        {journalLines.map((line) => {
+                          const isExpense = line.account?.account_class === 'Expense';
+                          const isIncome = line.account?.account_class === 'Revenue';
+                          const amount = isExpense ? line.debit_amount : line.credit_amount;
+
+                          return (
+                            <React.Fragment key={line.id}>
+                              <TableRow
+                                className="hover:bg-slate-50 cursor-pointer"
+                                onClick={() => handleLineClick(line)}
+                              >
+                                <TableCell className="text-sm">
+                                  {format(new Date(line.journal_entry.entry_date), 'MMM d, yyyy')}
+                                </TableCell>
+                                <TableCell className="font-medium text-sm">
+                                  {expandedLineId === line.id && editingLine ? (
+                                    <Input
+                                      value={editingLine.description}
+                                      onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
+                                      className="h-8"
+                                      onClick={(e) => e.stopPropagation()}
+                                    />
+                                  ) : (
+                                    <div>
+                                      {line.description}
+                                    </div>
+                                  )}
+                                </TableCell>
+                                <TableCell className="text-right font-semibold text-sm">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <span className={isExpense ? 'text-burgundy' : 'text-forest-green'}>
+                                      {formatCurrency(isExpense ? -Math.abs(amount) : Math.abs(amount))}
+                                    </span>
+                                    {expandedLineId === line.id ? (
+                                      <ChevronUp className="w-4 h-4 text-slate-400" />
                                     ) : (
-                                      <div>
-                                        {transaction.description}
-                                      </div>
+                                      <ChevronDown className="w-4 h-4 text-slate-400" />
                                     )}
-                                  </TableCell>
-                                  <TableCell className="text-right font-semibold text-sm">
-                                    <div className="flex items-center justify-end gap-2">
-                                      <span className={transaction.type === 'expense' ? 'text-burgundy' : 'text-forest-green'}>
-                                        {formatCurrency(transaction.type === 'expense' ? -Math.abs(transaction.amount) : Math.abs(transaction.amount))}
-                                      </span>
-                                      {expandedTransactionId === transaction.id ? (
-                                        <ChevronUp className="w-4 h-4 text-slate-400" />
-                                      ) : (
-                                        <ChevronDown className="w-4 h-4 text-slate-400" />
-                                      )}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                              {expandedLineId === line.id && editingLine && (
+                                <TableRow>
+                                  <TableCell colSpan={3} className="bg-slate-50 p-6">
+                                    <div className="space-y-4">
+                                      <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                          <Label className="text-sm font-medium mb-1.5">Category</Label>
+                                          <CategoryDropdown
+                                            value={editingLine.account_id}
+                                            onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                                            transactionType={isExpense ? 'expense' : 'income'}
+                                            isTransactionTransfer={false}
+                                          />
+                                        </div>
+                                        <div>
+                                          <Label className="text-sm font-medium mb-1.5">Contact</Label>
+                                          <ContactDropdown
+                                            value={editingLine.contact_id}
+                                            onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                                          />
+                                        </div>
+                                      </div>
+                                      <div className="flex justify-end gap-2 pt-2">
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={handleCancelLine}
+                                        >
+                                          <X className="w-4 h-4 mr-1.5" />
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveLine(line.id)}
+                                          disabled={isSavingLine}
+                                        >
+                                          <Check className="w-4 h-4 mr-1.5" />
+                                          {isSavingLine ? 'Saving...' : 'Save'}
+                                        </Button>
+                                      </div>
                                     </div>
                                   </TableCell>
                                 </TableRow>
-                                {expandedTransactionId === transaction.id && editingTransaction && (
-                                  <TableRow>
-                                    <TableCell colSpan={3} className="bg-slate-50 p-6">
-                                      <div className="space-y-4">
-                                        <div className="grid grid-cols-2 gap-4">
-                                          <div>
-                                            <Label className="text-sm font-medium mb-1.5">Category</Label>
-                                            <CategoryDropdown
-                                              value={editingTransaction.category_account_id}
-                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, category_account_id: value }))}
-                                              transactionType={transaction.type}
-                                              isTransactionTransfer={!!transaction.is_transfer_pair}
-                                            />
-                                          </div>
-                                          <div>
-                                            <Label className="text-sm font-medium mb-1.5">Contact</Label>
-                                            <ContactDropdown
-                                              value={editingTransaction.contact_id}
-                                              onValueChange={(value) => setEditingTransaction(prev => ({ ...prev, contact_id: value }))}
-                                            />
-                                          </div>
-                                        </div>
-                                        <div className="flex justify-end gap-2 pt-2">
-                                          <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={handleCancelTransaction}
-                                          >
-                                            <X className="w-4 h-4 mr-1.5" />
-                                            Cancel
-                                          </Button>
-                                          <Button
-                                            size="sm"
-                                            onClick={() => handleSaveTransaction(transaction.id)}
-                                            disabled={isSavingTransaction}
-                                          >
-                                            <Check className="w-4 h-4 mr-1.5" />
-                                            {isSavingTransaction ? 'Saving...' : 'Save'}
-                                          </Button>
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                )}
-                              </React.Fragment>
-                            ))}
+                              )}
+                            </React.Fragment>
+                          );
+                        })}
                       </TableBody>
                     </Table>
                   </div>
