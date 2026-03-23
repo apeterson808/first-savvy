@@ -398,46 +398,83 @@ export async function getMultiAccountAuditHistoryPaginated({
 
 export async function getJournalLinesByContact(profileId, contactId) {
   const { data, error } = await supabase
-    .from('journal_entry_lines')
+    .from('transactions')
     .select(`
       id,
-      journal_entry_id,
-      account_id,
-      debit_amount,
-      credit_amount,
-      description,
       contact_id,
-      contact_type,
-      journal_entries!inner(
+      date,
+      current_journal_entry_id,
+      journal_entries:current_journal_entry_id(
         id,
         entry_date,
         entry_number,
         description,
         status,
-        profile_id
-      ),
-      user_chart_of_accounts!inner(
-        id,
-        account_number,
-        account_name,
-        account_class,
-        account_type,
-        icon,
-        color
+        profile_id,
+        journal_entry_lines(
+          id,
+          account_id,
+          debit_amount,
+          credit_amount,
+          description,
+          user_chart_of_accounts(
+            id,
+            account_number,
+            display_name,
+            class,
+            account_type,
+            icon,
+            color
+          )
+        )
       )
     `)
     .eq('contact_id', contactId)
-    .eq('journal_entries.profile_id', profileId)
-    .eq('journal_entries.status', 'posted')
-    .order('journal_entries(entry_date)', { ascending: false });
+    .eq('profile_id', profileId)
+    .eq('status', 'posted')
+    .not('current_journal_entry_id', 'is', null)
+    .order('date', { ascending: false });
 
   if (error) throw error;
 
-  return (data || []).map(line => ({
-    ...line,
-    journal_entry: line.journal_entries,
-    account: line.user_chart_of_accounts
-  }));
+  const lines = [];
+
+  (data || []).forEach(transaction => {
+    if (transaction.journal_entries?.journal_entry_lines) {
+      transaction.journal_entries.journal_entry_lines.forEach(line => {
+        lines.push({
+          id: line.id,
+          journal_entry_id: transaction.journal_entries.id,
+          account_id: line.account_id,
+          debit_amount: line.debit_amount,
+          credit_amount: line.credit_amount,
+          description: line.description,
+          journal_entry: {
+            id: transaction.journal_entries.id,
+            entry_date: transaction.journal_entries.entry_date,
+            entry_number: transaction.journal_entries.entry_number,
+            description: transaction.journal_entries.description,
+            status: transaction.journal_entries.status,
+            profile_id: transaction.journal_entries.profile_id
+          },
+          account: {
+            id: line.user_chart_of_accounts.id,
+            account_number: line.user_chart_of_accounts.account_number,
+            account_name: line.user_chart_of_accounts.display_name,
+            account_class: line.user_chart_of_accounts.class,
+            account_type: line.user_chart_of_accounts.account_type,
+            icon: line.user_chart_of_accounts.icon,
+            color: line.user_chart_of_accounts.color
+          },
+          contact_id: transaction.contact_id
+        });
+      });
+    }
+  });
+
+  lines.sort((a, b) => new Date(b.journal_entry.entry_date) - new Date(a.journal_entry.entry_date));
+
+  return lines;
 }
 
 export async function updateJournalEntryLine({
@@ -446,16 +483,40 @@ export async function updateJournalEntryLine({
   contactId,
   accountId
 }) {
-  const updates = {};
-  if (description !== undefined) updates.description = description;
-  if (contactId !== undefined) updates.contact_id = contactId;
-  if (accountId !== undefined) updates.account_id = accountId;
+  const lineUpdates = {};
+  if (description !== undefined) lineUpdates.description = description;
+  if (accountId !== undefined) lineUpdates.account_id = accountId;
+
+  if (Object.keys(lineUpdates).length > 0) {
+    const { error: lineError } = await supabase
+      .from('journal_entry_lines')
+      .update(lineUpdates)
+      .eq('id', lineId);
+
+    if (lineError) throw lineError;
+  }
+
+  if (contactId !== undefined) {
+    const { data: lineData } = await supabase
+      .from('journal_entry_lines')
+      .select('journal_entry_id')
+      .eq('id', lineId)
+      .single();
+
+    if (lineData) {
+      const { error: txError } = await supabase
+        .from('transactions')
+        .update({ contact_id: contactId })
+        .eq('current_journal_entry_id', lineData.journal_entry_id);
+
+      if (txError) throw txError;
+    }
+  }
 
   const { data, error } = await supabase
     .from('journal_entry_lines')
-    .update(updates)
-    .eq('id', lineId)
     .select()
+    .eq('id', lineId)
     .single();
 
   if (error) throw error;
