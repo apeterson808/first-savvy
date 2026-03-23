@@ -30,7 +30,6 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
-import { updateJournalEntryWithLines, getJournalEntryWithLines, getJournalLinesByContact, updateJournalEntryLine } from '@/api/journalEntries';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
 
@@ -76,11 +75,14 @@ export default function ContactDetail() {
     enabled: !!id && !!activeProfile
   });
 
-  const { data: journalLines = [], isLoading: journalLinesLoading } = useQuery({
-    queryKey: ['journal-lines', 'contact', id, activeProfile?.id],
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ['transactions', 'contact', id, activeProfile?.id],
     queryFn: async () => {
       if (!id || !activeProfile) return [];
-      return await getJournalLinesByContact(activeProfile.id, id);
+      return await firstsavvy.entities.Transaction.filter({
+        contact_id: id,
+        status: 'posted'
+      }, '-date,id', 10000);
     },
     enabled: !!id && !!activeProfile
   });
@@ -132,7 +134,7 @@ export default function ContactDetail() {
   }, [contact]);
 
   const analytics = useMemo(() => {
-    if (!journalLines || journalLines.length === 0) {
+    if (!transactions || transactions.length === 0) {
       return {
         moneyOut: 0,
         moneyIn: 0,
@@ -143,27 +145,27 @@ export default function ContactDetail() {
       };
     }
 
-    const moneyOut = journalLines
-      .filter(line => line.account?.account_class === 'Expense')
-      .reduce((sum, line) => sum + (line.debit_amount || 0), 0);
+    const moneyOut = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
 
-    const moneyIn = journalLines
-      .filter(line => line.account?.account_class === 'Revenue')
-      .reduce((sum, line) => sum + (line.credit_amount || 0), 0);
+    const moneyIn = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
 
-    const sortedByDate = [...journalLines].sort((a, b) =>
-      new Date(a.journal_entry.entry_date) - new Date(b.journal_entry.entry_date)
+    const sortedByDate = [...transactions].sort((a, b) =>
+      new Date(a.date) - new Date(b.date)
     );
 
     return {
       moneyOut,
       moneyIn,
       netBalance: moneyIn - moneyOut,
-      transactionCount: journalLines.length,
-      firstTransaction: sortedByDate[0]?.journal_entry.entry_date,
-      lastTransaction: sortedByDate[sortedByDate.length - 1]?.journal_entry.entry_date
+      transactionCount: transactions.length,
+      firstTransaction: sortedByDate[0]?.date,
+      lastTransaction: sortedByDate[sortedByDate.length - 1]?.date
     };
-  }, [journalLines]);
+  }, [transactions]);
 
   const handleSave = () => {
     if (!formData.name.trim()) {
@@ -214,42 +216,41 @@ export default function ContactDetail() {
     setFormData(prev => ({ ...prev, phone: formatted }));
   };
 
-  const handleLineClick = (line) => {
-    if (expandedLineId === line.id) {
+  const handleTransactionClick = (transaction) => {
+    if (expandedLineId === transaction.id) {
       setExpandedLineId(null);
       setEditingLine(null);
     } else {
-      setExpandedLineId(line.id);
+      setExpandedLineId(transaction.id);
       setEditingLine({
-        description: line.description || '',
-        account_id: line.account_id || null,
-        contact_id: line.contact_id || null
+        description: transaction.description || '',
+        account_id: transaction.category_account_id || null,
+        contact_id: transaction.contact_id || null
       });
     }
   };
 
-  const handleSaveLine = async (lineId) => {
+  const handleSaveLine = async (transactionId) => {
     if (!editingLine.description.trim()) {
       toast.error('Description is required');
       return;
     }
 
-    const line = journalLines.find(l => l.id === lineId);
-    if (!line) {
-      toast.error('Journal line not found');
+    const transaction = transactions.find(t => t.id === transactionId);
+    if (!transaction) {
+      toast.error('Transaction not found');
       return;
     }
 
     setIsSavingLine(true);
     try {
-      await updateJournalEntryLine({
-        lineId: lineId,
+      await firstsavvy.entities.Transaction.update(transactionId, {
         description: editingLine.description.trim(),
-        accountId: editingLine.account_id,
-        contactId: editingLine.contact_id
+        category_account_id: editingLine.account_id,
+        contact_id: editingLine.contact_id
       });
 
-      queryClient.invalidateQueries({ queryKey: ['journal-lines', 'contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions', 'contact', id] });
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['budget-analytics'] });
       setExpandedLineId(null);
@@ -478,9 +479,9 @@ export default function ContactDetail() {
                 <CardTitle className="text-lg font-semibold">Transaction History</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {journalLinesLoading ? (
+                {transactionsLoading ? (
                   <div className="p-8 text-center text-slate-500">Loading transactions...</div>
-                ) : journalLines.length === 0 ? (
+                ) : transactions.length === 0 ? (
                   <div className="p-12 text-center">
                     <p className="text-slate-600 font-medium mb-1">No transactions yet</p>
                     <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
@@ -496,22 +497,22 @@ export default function ContactDetail() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {journalLines.map((line) => {
-                          const isExpense = line.account?.account_class === 'Expense';
-                          const isIncome = line.account?.account_class === 'Revenue';
-                          const amount = isExpense ? line.debit_amount : line.credit_amount;
+                        {transactions.map((transaction) => {
+                          const isExpense = transaction.type === 'expense';
+                          const isIncome = transaction.type === 'income';
+                          const amount = Math.abs(transaction.amount || 0);
 
                           return (
-                            <React.Fragment key={line.id}>
+                            <React.Fragment key={transaction.id}>
                               <TableRow
                                 className="hover:bg-slate-50 cursor-pointer"
-                                onClick={() => handleLineClick(line)}
+                                onClick={() => handleTransactionClick(transaction)}
                               >
                                 <TableCell className="text-sm">
-                                  {format(new Date(line.journal_entry.entry_date), 'MMM d, yyyy')}
+                                  {format(new Date(transaction.date), 'MMM d, yyyy')}
                                 </TableCell>
                                 <TableCell className="font-medium text-sm">
-                                  {expandedLineId === line.id && editingLine ? (
+                                  {expandedLineId === transaction.id && editingLine ? (
                                     <Input
                                       value={editingLine.description}
                                       onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
@@ -520,16 +521,16 @@ export default function ContactDetail() {
                                     />
                                   ) : (
                                     <div>
-                                      {line.description}
+                                      {transaction.description}
                                     </div>
                                   )}
                                 </TableCell>
                                 <TableCell className="text-right font-semibold text-sm">
                                   <div className="flex items-center justify-end gap-2">
                                     <span className={isExpense ? 'text-burgundy' : 'text-forest-green'}>
-                                      {formatCurrency(isExpense ? -Math.abs(amount) : Math.abs(amount))}
+                                      {formatCurrency(isExpense ? -amount : amount)}
                                     </span>
-                                    {expandedLineId === line.id ? (
+                                    {expandedLineId === transaction.id ? (
                                       <ChevronUp className="w-4 h-4 text-slate-400" />
                                     ) : (
                                       <ChevronDown className="w-4 h-4 text-slate-400" />
@@ -537,7 +538,7 @@ export default function ContactDetail() {
                                   </div>
                                 </TableCell>
                               </TableRow>
-                              {expandedLineId === line.id && editingLine && (
+                              {expandedLineId === transaction.id && editingLine && (
                                 <TableRow>
                                   <TableCell colSpan={3} className="bg-slate-50 p-6">
                                     <div className="space-y-4">
@@ -570,7 +571,7 @@ export default function ContactDetail() {
                                         </Button>
                                         <Button
                                           size="sm"
-                                          onClick={() => handleSaveLine(line.id)}
+                                          onClick={() => handleSaveLine(transaction.id)}
                                           disabled={isSavingLine}
                                         >
                                           <Check className="w-4 h-4 mr-1.5" />
