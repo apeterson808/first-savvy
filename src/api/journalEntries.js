@@ -417,6 +417,7 @@ export async function getJournalLinesByContact(profileId, contactId) {
           debit_amount,
           credit_amount,
           description,
+          contact_id,
           user_chart_of_accounts(
             id,
             account_number,
@@ -442,32 +443,38 @@ export async function getJournalLinesByContact(profileId, contactId) {
   (data || []).forEach(transaction => {
     if (transaction.journal_entries?.journal_entry_lines) {
       transaction.journal_entries.journal_entry_lines.forEach(line => {
-        lines.push({
-          id: line.id,
-          journal_entry_id: transaction.journal_entries.id,
-          account_id: line.account_id,
-          debit_amount: line.debit_amount,
-          credit_amount: line.credit_amount,
-          description: line.description,
-          journal_entry: {
-            id: transaction.journal_entries.id,
-            entry_date: transaction.journal_entries.entry_date,
-            entry_number: transaction.journal_entries.entry_number,
-            description: transaction.journal_entries.description,
-            status: transaction.journal_entries.status,
-            profile_id: transaction.journal_entries.profile_id
-          },
-          account: {
-            id: line.user_chart_of_accounts.id,
-            account_number: line.user_chart_of_accounts.account_number,
-            account_name: line.user_chart_of_accounts.display_name,
-            account_class: line.user_chart_of_accounts.class,
-            account_type: line.user_chart_of_accounts.account_type,
-            icon: line.user_chart_of_accounts.icon,
-            color: line.user_chart_of_accounts.color
-          },
-          contact_id: transaction.contact_id
-        });
+        const accountClass = line.user_chart_of_accounts.class;
+        const isExpenseOrIncome = accountClass === 'Expense' || accountClass === 'Revenue';
+        const lineMatchesContact = line.contact_id === contactId;
+
+        if (isExpenseOrIncome && lineMatchesContact) {
+          lines.push({
+            id: line.id,
+            journal_entry_id: transaction.journal_entries.id,
+            account_id: line.account_id,
+            debit_amount: line.debit_amount,
+            credit_amount: line.credit_amount,
+            description: line.description,
+            journal_entry: {
+              id: transaction.journal_entries.id,
+              entry_date: transaction.journal_entries.entry_date,
+              entry_number: transaction.journal_entries.entry_number,
+              description: transaction.journal_entries.description,
+              status: transaction.journal_entries.status,
+              profile_id: transaction.journal_entries.profile_id
+            },
+            account: {
+              id: line.user_chart_of_accounts.id,
+              account_number: line.user_chart_of_accounts.account_number,
+              account_name: line.user_chart_of_accounts.display_name,
+              account_class: line.user_chart_of_accounts.class,
+              account_type: line.user_chart_of_accounts.account_type,
+              icon: line.user_chart_of_accounts.icon,
+              color: line.user_chart_of_accounts.color
+            },
+            contact_id: line.contact_id
+          });
+        }
       });
     }
   });
