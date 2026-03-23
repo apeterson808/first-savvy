@@ -511,18 +511,7 @@ export default function AccountDetail() {
 
     // ALL accounts show only posted journal lines (no pending transactions)
     let combined = journalLines.map(jl => {
-      // For transfers and credit card payments, show special labels
-      // For regular transactions, show contact name
       const entryType = jl.entry_type || 'adjustment';
-      let fromToDisplay = '';
-
-      if (entryType === 'transfer') {
-        fromToDisplay = jl.offsetting_accounts || 'Transfer';
-      } else if (entryType === 'credit_card_payment') {
-        fromToDisplay = 'Credit Card Payment';
-      } else if (jl.contact_name) {
-        fromToDisplay = jl.contact_name;
-      }
 
       return {
         ...jl,
@@ -536,7 +525,9 @@ export default function AccountDetail() {
         journalEntryId: jl.entry_id,
         transactionId: jl.transaction_id,
         entryType,
-        offsettingAccounts: fromToDisplay,
+        category: jl.offsetting_accounts,
+        contact: jl.contact_name,
+        offsettingAccounts: jl.offsetting_accounts,
         runningBalance: parseFloat(jl.running_balance || 0)
       };
     });
@@ -1412,7 +1403,8 @@ export default function AccountDetail() {
                             )}
                             <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'From/To'}</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
@@ -1449,7 +1441,10 @@ export default function AccountDetail() {
                                 <div className="text-[11px] truncate">{activity.displayDescription}</div>
                               </TableCell>
                               <TableCell className="text-[11px] text-slate-600 py-1">
-                                {activity.offsettingAccounts || '\u2014'}
+                                {activity.category || '\u2014'}
+                              </TableCell>
+                              <TableCell className="text-[11px] text-slate-600 py-1">
+                                {activity.contact || '\u2014'}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
                                 {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
@@ -2336,7 +2331,8 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">{isTransactionBasedAccount ? 'Category' : 'From/To'}</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
