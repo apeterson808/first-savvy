@@ -1490,11 +1490,11 @@ export default function AccountDetail() {
                                 {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                               </TableCell>
                               {hasChildAccounts && (
-                                <TableCell className="text-[11px] text-slate-600 py-1">
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                   {activity.account_name || '\u2014'}
                                 </TableCell>
                               )}
-                              <TableCell className="py-1">
+                              <TableCell className="whitespace-nowrap py-1">
                                 <span
                                   className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
                                   onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
@@ -1502,7 +1502,7 @@ export default function AccountDetail() {
                                   {activity.entryNumber}
                                 </span>
                               </TableCell>
-                              <TableCell className="py-1 max-w-[300px]">
+                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
                                 {editingTransactionId === activity.transactionId ? (
                                   <Input
                                     value={editDescription}
@@ -1513,7 +1513,7 @@ export default function AccountDetail() {
                                   <div className="text-[11px] truncate">{activity.displayDescription}</div>
                                 )}
                               </TableCell>
-                              <TableCell className="text-[11px] text-slate-600 py-1">
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
@@ -1531,7 +1531,7 @@ export default function AccountDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-[11px] text-slate-600 py-1">
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
@@ -1550,13 +1550,13 @@ export default function AccountDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
                               </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
                               </TableCell>
-                              <TableCell className="text-right font-semibold text-[11px] py-1">
+                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
                                 {formatCurrency(activity.runningBalance)}
                               </TableCell>
                               <TableCell className="py-1">
@@ -2510,7 +2510,7 @@ export default function AccountDetail() {
                               <TableCell className="whitespace-nowrap text-[11px] py-1">
                                 {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                               </TableCell>
-                              <TableCell className="py-1">
+                              <TableCell className="whitespace-nowrap py-1">
                                 <span
                                   className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
                                   onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
@@ -2518,7 +2518,7 @@ export default function AccountDetail() {
                                   {activity.entryNumber}
                                 </span>
                               </TableCell>
-                              <TableCell className="py-1 max-w-[300px]">
+                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
                                 {editingTransactionId === activity.transactionId ? (
                                   <Input
                                     value={editDescription}
@@ -2529,7 +2529,7 @@ export default function AccountDetail() {
                                   <div className="text-[11px] truncate">{activity.displayDescription}</div>
                                 )}
                               </TableCell>
-                              <TableCell className="text-[11px] text-slate-600 py-1">
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
@@ -2547,7 +2547,7 @@ export default function AccountDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-[11px] text-slate-600 py-1">
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
@@ -2566,13 +2566,13 @@ export default function AccountDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
                               </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
                               </TableCell>
-                              <TableCell className="text-right font-semibold text-[11px] py-1">
+                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
                                 {formatCurrency(activity.runningBalance)}
                               </TableCell>
                               <TableCell className="py-1">
