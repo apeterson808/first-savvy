@@ -15,6 +15,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -28,7 +30,7 @@ import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
   Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
-  Target
+  Target, Settings, Eye, EyeOff
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -57,6 +59,7 @@ import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorC
 import { ChildBudgetSection } from '@/components/budgeting/ChildBudgetSection';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
+import ChartAccountDropdown from '@/components/common/ChartAccountDropdown';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -82,6 +85,19 @@ export default function AccountDetail() {
   const [editDescription, setEditDescription] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editContactId, setEditContactId] = useState('');
+  const [editChartAccountId, setEditChartAccountId] = useState('');
+  const [visibleColumns, setVisibleColumns] = useState({
+    date: true,
+    category: true,
+    reference: true,
+    description: true,
+    fromTo: false,
+    contact: true,
+    moneyIn: true,
+    moneyOut: true,
+    balance: true
+  });
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -514,7 +530,7 @@ export default function AccountDetail() {
 
     const { data: transaction, error } = await firstsavvy.supabase
       .from('transactions')
-      .select('id, description, category_account_id, contact_id')
+      .select('id, description, category_account_id, contact_id, account_id')
       .eq('id', activity.transactionId)
       .maybeSingle();
 
@@ -532,6 +548,7 @@ export default function AccountDetail() {
     setEditDescription(transaction.description || '');
     setEditCategoryId(transaction.category_account_id || '');
     setEditContactId(transaction.contact_id || '');
+    setEditChartAccountId(transaction.account_id || '');
   };
 
   const cancelEditingTransaction = () => {
@@ -539,6 +556,7 @@ export default function AccountDetail() {
     setEditDescription('');
     setEditCategoryId('');
     setEditContactId('');
+    setEditChartAccountId('');
   };
 
   const saveTransactionEdit = async (transactionId) => {
@@ -547,7 +565,8 @@ export default function AccountDetail() {
     const updates = {
       description: editDescription,
       category_account_id: editCategoryId || null,
-      contact_id: editContactId || null
+      contact_id: editContactId || null,
+      account_id: editChartAccountId || null
     };
 
     updateTransactionMutation.mutate({ transactionId, updates });
@@ -1374,6 +1393,51 @@ export default function AccountDetail() {
                         </Badge>
                       )}
                     </Button>
+                    <Popover open={showColumnSettings} onOpenChange={setShowColumnSettings}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 gap-2"
+                        >
+                          <Settings className="w-3.5 h-3.5" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-56" align="end">
+                        <div className="space-y-3">
+                          <h4 className="font-medium text-sm">Show/Hide Columns</h4>
+                          <div className="space-y-2">
+                            {[
+                              { key: 'date', label: 'Date' },
+                              { key: 'category', label: 'Category' },
+                              { key: 'reference', label: 'Reference' },
+                              { key: 'description', label: 'Description' },
+                              { key: 'fromTo', label: 'From/To' },
+                              { key: 'contact', label: 'Contact' },
+                              { key: 'moneyIn', label: 'Money In' },
+                              { key: 'moneyOut', label: 'Money Out' },
+                              { key: 'balance', label: 'Balance' }
+                            ].map((col) => (
+                              <div key={col.key} className="flex items-center space-x-2">
+                                <Checkbox
+                                  id={`col-${col.key}`}
+                                  checked={visibleColumns[col.key]}
+                                  onCheckedChange={(checked) =>
+                                    setVisibleColumns({ ...visibleColumns, [col.key]: checked })
+                                  }
+                                />
+                                <label
+                                  htmlFor={`col-${col.key}`}
+                                  className="text-sm cursor-pointer"
+                                >
+                                  {col.label}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
 
@@ -1462,17 +1526,35 @@ export default function AccountDetail() {
                       <Table>
                         <TableHeader>
                           <TableRow className="h-8 bg-slate-100">
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            {hasChildAccounts && (
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
+                            {visibleColumns.date && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                             )}
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            {visibleColumns.category && (hasChildAccounts || !hasChildAccounts) && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">
+                                {hasChildAccounts ? 'Account' : 'Category'}
+                              </TableHead>
+                            )}
+                            {visibleColumns.reference && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            )}
+                            {visibleColumns.description && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            )}
+                            {visibleColumns.fromTo && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
+                            )}
+                            {visibleColumns.contact && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
+                            )}
+                            {visibleColumns.moneyIn && (
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            )}
+                            {visibleColumns.moneyOut && (
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            )}
+                            {visibleColumns.balance && (
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            )}
                             <TableHead className="w-[40px] py-1.5"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1486,79 +1568,97 @@ export default function AccountDetail() {
                                   : 'bg-slate-50/50 hover:bg-slate-100'
                               }`}
                             >
-                              <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                              </TableCell>
-                              {hasChildAccounts && (
-                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                  {activity.account_name || '\u2014'}
+                              {visibleColumns.date && (
+                                <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                  {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
                                 </TableCell>
                               )}
-                              <TableCell className="whitespace-nowrap py-1">
-                                <span
-                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                                >
-                                  {activity.entryNumber}
-                                </span>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <Input
-                                    value={editDescription}
-                                    onChange={(e) => setEditDescription(e.target.value)}
-                                    className="h-6 text-[11px] px-1.5 py-0.5"
-                                  />
-                                ) : (
-                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
-                                )}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <CategoryDropdown
-                                    value={editCategoryId}
-                                    onChange={setEditCategoryId}
-                                    className="h-6 text-[11px]"
-                                    profileId={activeProfile?.id}
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
-                                    disabled={!activity.transactionId}
+                              {visibleColumns.category && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {hasChildAccounts ? (
+                                    activity.account_name || '\u2014'
+                                  ) : editingTransactionId === activity.transactionId ? (
+                                    <ChartAccountDropdown
+                                      value={editChartAccountId}
+                                      onChange={setEditChartAccountId}
+                                      className="h-6 text-[11px]"
+                                      profileId={activeProfile?.id}
+                                    />
+                                  ) : (
+                                    <button
+                                      onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                      className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                      disabled={!activity.transactionId}
+                                    >
+                                      {activity.account_name || '\u2014'}
+                                    </button>
+                                  )}
+                                </TableCell>
+                              )}
+                              {visibleColumns.reference && (
+                                <TableCell className="whitespace-nowrap py-1">
+                                  <span
+                                    className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                    onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
                                   >
-                                    {activity.category || '\u2014'}
-                                  </button>
-                                )}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <ContactDropdown
-                                    value={editContactId}
-                                    onChange={setEditContactId}
-                                    className="h-6 text-[11px]"
-                                    profileId={activeProfile?.id}
-                                    allowClear
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
-                                    disabled={!activity.transactionId}
-                                  >
-                                    {activity.contact || '\u2014'}
-                                  </button>
-                                )}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
-                                {formatCurrency(activity.runningBalance)}
-                              </TableCell>
+                                    {activity.entryNumber}
+                                  </span>
+                                </TableCell>
+                              )}
+                              {visibleColumns.description && (
+                                <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <Input
+                                      value={editDescription}
+                                      onChange={(e) => setEditDescription(e.target.value)}
+                                      className="h-6 text-[11px] px-1.5 py-0.5"
+                                    />
+                                  ) : (
+                                    <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                  )}
+                                </TableCell>
+                              )}
+                              {visibleColumns.fromTo && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {activity.category || '\u2014'}
+                                </TableCell>
+                              )}
+                              {visibleColumns.contact && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <ContactDropdown
+                                      value={editContactId}
+                                      onChange={setEditContactId}
+                                      className="h-6 text-[11px]"
+                                      profileId={activeProfile?.id}
+                                      allowClear
+                                    />
+                                  ) : (
+                                    <button
+                                      onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                      className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                      disabled={!activity.transactionId}
+                                    >
+                                      {activity.contact || '\u2014'}
+                                    </button>
+                                  )}
+                                </TableCell>
+                              )}
+                              {visibleColumns.moneyIn && (
+                                <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                  {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                                </TableCell>
+                              )}
+                              {visibleColumns.moneyOut && (
+                                <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                  {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                                </TableCell>
+                              )}
+                              {visibleColumns.balance && (
+                                <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
+                                  {formatCurrency(activity.runningBalance)}
+                                </TableCell>
+                              )}
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
                                   {editingTransactionId === activity.transactionId ? (
@@ -2486,14 +2586,33 @@ export default function AccountDetail() {
                       <Table>
                         <TableHeader>
                           <TableRow className="h-8 bg-slate-100">
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            {visibleColumns.date && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            )}
+                            {visibleColumns.category && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
+                            )}
+                            {visibleColumns.reference && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            )}
+                            {visibleColumns.description && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            )}
+                            {visibleColumns.fromTo && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
+                            )}
+                            {visibleColumns.contact && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
+                            )}
+                            {visibleColumns.moneyIn && (
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            )}
+                            {visibleColumns.moneyOut && (
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            )}
+                            {visibleColumns.balance && (
+                              <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            )}
                             <TableHead className="w-[40px] py-1.5"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -2507,74 +2626,95 @@ export default function AccountDetail() {
                                   : 'bg-slate-50/50 hover:bg-slate-100'
                               }`}
                             >
-                              <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap py-1">
-                                <span
-                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                                >
-                                  {activity.entryNumber}
-                                </span>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <Input
-                                    value={editDescription}
-                                    onChange={(e) => setEditDescription(e.target.value)}
-                                    className="h-6 text-[11px] px-1.5 py-0.5"
-                                  />
-                                ) : (
-                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
-                                )}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <CategoryDropdown
-                                    value={editCategoryId}
-                                    onChange={setEditCategoryId}
-                                    className="h-6 text-[11px]"
-                                    profileId={activeProfile?.id}
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
-                                    disabled={!activity.transactionId}
+                              {visibleColumns.date && (
+                                <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                  {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                                </TableCell>
+                              )}
+                              {visibleColumns.category && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <ChartAccountDropdown
+                                      value={editChartAccountId}
+                                      onChange={setEditChartAccountId}
+                                      className="h-6 text-[11px]"
+                                      profileId={activeProfile?.id}
+                                    />
+                                  ) : (
+                                    <button
+                                      onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                      className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                      disabled={!activity.transactionId}
+                                    >
+                                      {activity.account_name || '\u2014'}
+                                    </button>
+                                  )}
+                                </TableCell>
+                              )}
+                              {visibleColumns.reference && (
+                                <TableCell className="whitespace-nowrap py-1">
+                                  <span
+                                    className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                    onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
                                   >
-                                    {activity.category || '\u2014'}
-                                  </button>
-                                )}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <ContactDropdown
-                                    value={editContactId}
-                                    onChange={setEditContactId}
-                                    className="h-6 text-[11px]"
-                                    profileId={activeProfile?.id}
-                                    allowClear
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
-                                    disabled={!activity.transactionId}
-                                  >
-                                    {activity.contact || '\u2014'}
-                                  </button>
-                                )}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
-                                {formatCurrency(activity.runningBalance)}
-                              </TableCell>
+                                    {activity.entryNumber}
+                                  </span>
+                                </TableCell>
+                              )}
+                              {visibleColumns.description && (
+                                <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <Input
+                                      value={editDescription}
+                                      onChange={(e) => setEditDescription(e.target.value)}
+                                      className="h-6 text-[11px] px-1.5 py-0.5"
+                                    />
+                                  ) : (
+                                    <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                  )}
+                                </TableCell>
+                              )}
+                              {visibleColumns.fromTo && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {activity.category || '\u2014'}
+                                </TableCell>
+                              )}
+                              {visibleColumns.contact && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <ContactDropdown
+                                      value={editContactId}
+                                      onChange={setEditContactId}
+                                      className="h-6 text-[11px]"
+                                      profileId={activeProfile?.id}
+                                      allowClear
+                                    />
+                                  ) : (
+                                    <button
+                                      onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                      className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                      disabled={!activity.transactionId}
+                                    >
+                                      {activity.contact || '\u2014'}
+                                    </button>
+                                  )}
+                                </TableCell>
+                              )}
+                              {visibleColumns.moneyIn && (
+                                <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                  {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                                </TableCell>
+                              )}
+                              {visibleColumns.moneyOut && (
+                                <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                  {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                                </TableCell>
+                              )}
+                              {visibleColumns.balance && (
+                                <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
+                                  {formatCurrency(activity.runningBalance)}
+                                </TableCell>
+                              )}
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
                                   {editingTransactionId === activity.transactionId ? (
