@@ -1518,6 +1518,7 @@ export default function AccountDetail() {
                       account: id,
                       status: 'posted'
                     }}
+                    compact={true}
                   />
                 </TabsContent>
 
@@ -2352,6 +2353,7 @@ export default function AccountDetail() {
                       account: id,
                       status: 'posted'
                     }}
+                    compact={true}
                   />
                 </TabsContent>
 
