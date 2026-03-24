@@ -15,8 +15,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Table,
   TableBody,
@@ -30,7 +28,7 @@ import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
   Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
-  Target, Settings, Eye, EyeOff
+  Target
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -59,8 +57,6 @@ import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorC
 import { ChildBudgetSection } from '@/components/budgeting/ChildBudgetSection';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
-import ChartAccountDropdown from '@/components/common/ChartAccountDropdown';
-import TransactionsTab from '@/components/banking/TransactionsTab';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -86,19 +82,6 @@ export default function AccountDetail() {
   const [editDescription, setEditDescription] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editContactId, setEditContactId] = useState('');
-  const [editChartAccountId, setEditChartAccountId] = useState('');
-  const [visibleColumns, setVisibleColumns] = useState({
-    date: true,
-    category: true,
-    reference: true,
-    description: true,
-    fromTo: false,
-    contact: true,
-    moneyIn: true,
-    moneyOut: true,
-    balance: true
-  });
-  const [showColumnSettings, setShowColumnSettings] = useState(false);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -531,7 +514,7 @@ export default function AccountDetail() {
 
     const { data: transaction, error } = await firstsavvy.supabase
       .from('transactions')
-      .select('id, description, category_account_id, contact_id, account_id')
+      .select('id, description, category_account_id, contact_id')
       .eq('id', activity.transactionId)
       .maybeSingle();
 
@@ -549,7 +532,6 @@ export default function AccountDetail() {
     setEditDescription(transaction.description || '');
     setEditCategoryId(transaction.category_account_id || '');
     setEditContactId(transaction.contact_id || '');
-    setEditChartAccountId(transaction.account_id || '');
   };
 
   const cancelEditingTransaction = () => {
@@ -557,7 +539,6 @@ export default function AccountDetail() {
     setEditDescription('');
     setEditCategoryId('');
     setEditContactId('');
-    setEditChartAccountId('');
   };
 
   const saveTransactionEdit = async (transactionId) => {
@@ -566,8 +547,7 @@ export default function AccountDetail() {
     const updates = {
       description: editDescription,
       category_account_id: editCategoryId || null,
-      contact_id: editContactId || null,
-      account_id: editChartAccountId || null
+      contact_id: editContactId || null
     };
 
     updateTransactionMutation.mutate({ transactionId, updates });
@@ -1394,51 +1374,6 @@ export default function AccountDetail() {
                         </Badge>
                       )}
                     </Button>
-                    <Popover open={showColumnSettings} onOpenChange={setShowColumnSettings}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 gap-2"
-                        >
-                          <Settings className="w-3.5 h-3.5" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-56" align="end">
-                        <div className="space-y-3">
-                          <h4 className="font-medium text-sm">Show/Hide Columns</h4>
-                          <div className="space-y-2">
-                            {[
-                              { key: 'date', label: 'Date' },
-                              { key: 'category', label: 'Category' },
-                              { key: 'reference', label: 'Reference' },
-                              { key: 'description', label: 'Description' },
-                              { key: 'fromTo', label: 'From/To' },
-                              { key: 'contact', label: 'Contact' },
-                              { key: 'moneyIn', label: 'Money In' },
-                              { key: 'moneyOut', label: 'Money Out' },
-                              { key: 'balance', label: 'Balance' }
-                            ].map((col) => (
-                              <div key={col.key} className="flex items-center space-x-2">
-                                <Checkbox
-                                  id={`col-${col.key}`}
-                                  checked={visibleColumns[col.key]}
-                                  onCheckedChange={(checked) =>
-                                    setVisibleColumns({ ...visibleColumns, [col.key]: checked })
-                                  }
-                                />
-                                <label
-                                  htmlFor={`col-${col.key}`}
-                                  className="text-sm cursor-pointer"
-                                >
-                                  {col.label}
-                                </label>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
                   </div>
                 </div>
 
@@ -1513,13 +1448,202 @@ export default function AccountDetail() {
                 )}
 
                 <TabsContent value="register" className="mt-0">
-                  <TransactionsTab
-                    initialFilters={{
-                      account: id,
-                      status: 'posted'
-                    }}
-                    compact={true}
-                  />
+                  {journalLinesLoading ? (
+                    <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
+                  ) : journalLinesError ? (
+                    <div className="text-center py-6 space-y-2">
+                      <p className="text-sm text-red-600">Failed to load register data</p>
+                      <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+                    </div>
+                  ) : allActivity.length === 0 ? (
+                    <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
+                  ) : (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="h-8 bg-slate-100">
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            {hasChildAccounts && (
+                              <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
+                            )}
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            <TableHead className="w-[40px] py-1.5"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allActivity.map((activity, index) => (
+                            <TableRow
+                              key={`${activity.id || index}`}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                              </TableCell>
+                              {hasChildAccounts && (
+                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                  {activity.account_name || '\u2014'}
+                                </TableCell>
+                              )}
+                              <TableCell className="whitespace-nowrap py-1">
+                                <span
+                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                                >
+                                  {activity.entryNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <Input
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    className="h-6 text-[11px] px-1.5 py-0.5"
+                                  />
+                                ) : (
+                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <CategoryDropdown
+                                    value={editCategoryId}
+                                    onChange={setEditCategoryId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.category || '\u2014'}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <ContactDropdown
+                                    value={editContactId}
+                                    onChange={setEditContactId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                    allowClear
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.contact || '\u2014'}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
+                                {formatCurrency(activity.runningBalance)}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <div className="flex items-center gap-1">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => saveTransactionEdit(activity.transactionId)}
+                                        className="h-6 w-6 p-0"
+                                        title="Save"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <Save className="w-3 h-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={cancelEditingTransaction}
+                                        className="h-6 w-6 p-0"
+                                        title="Cancel"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <X className="w-3 h-3 text-slate-400" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Journal Entry"
+                                        >
+                                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Audit History"
+                                        >
+                                          <History className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {totalJournalLines > 0 && (
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                          <span>Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines} transactions</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToPreviousPage}
+                              disabled={!hasPreviousPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToNextPage}
+                              disabled={!hasNextPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="audit" className="mt-0">
@@ -2348,13 +2472,194 @@ export default function AccountDetail() {
                 </TabsList>
 
                 <TabsContent value="register" className="mt-0">
-                  <TransactionsTab
-                    initialFilters={{
-                      account: id,
-                      status: 'posted'
-                    }}
-                    compact={true}
-                  />
+                  {journalLinesLoading ? (
+                    <p className="text-center text-slate-500 py-3 text-sm">Loading register...</p>
+                  ) : journalLinesError ? (
+                    <div className="text-center py-6 space-y-2">
+                      <p className="text-sm text-red-600">Failed to load register data</p>
+                      <p className="text-xs text-slate-500">{journalLinesError.message}</p>
+                    </div>
+                  ) : allActivity.length === 0 ? (
+                    <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
+                  ) : (
+                    <div className="rounded-md border overflow-x-auto">
+                      <Table>
+                        <TableHeader>
+                          <TableRow className="h-8 bg-slate-100">
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
+                            <TableHead className="w-[40px] py-1.5"></TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {allActivity.map((activity, index) => (
+                            <TableRow
+                              key={`${activity.id || index}`}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap py-1">
+                                <span
+                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
+                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
+                                >
+                                  {activity.entryNumber}
+                                </span>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <Input
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    className="h-6 text-[11px] px-1.5 py-0.5"
+                                  />
+                                ) : (
+                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <CategoryDropdown
+                                    value={editCategoryId}
+                                    onChange={setEditCategoryId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.category || '\u2014'}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <ContactDropdown
+                                    value={editContactId}
+                                    onChange={setEditContactId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                    allowClear
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.contact || '\u2014'}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
+                                {formatCurrency(activity.runningBalance)}
+                              </TableCell>
+                              <TableCell className="py-1">
+                                <div className="flex items-center gap-1">
+                                  {editingTransactionId === activity.transactionId ? (
+                                    <>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => saveTransactionEdit(activity.transactionId)}
+                                        className="h-6 w-6 p-0"
+                                        title="Save"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <Save className="w-3 h-3 text-green-600" />
+                                      </Button>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={cancelEditingTransaction}
+                                        className="h-6 w-6 p-0"
+                                        title="Cancel"
+                                        disabled={updateTransactionMutation.isPending}
+                                      >
+                                        <X className="w-3 h-3 text-slate-400" />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      {activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Journal Entry"
+                                        >
+                                          <ExternalLink className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.transactionId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
+                                          className="h-6 w-6 p-0"
+                                          title="View Audit History"
+                                        >
+                                          <History className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                    </>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {totalJournalLines > 0 && (
+                        <div className="text-xs text-slate-500 text-center py-1.5 border-t flex items-center justify-between px-3">
+                          <span>Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalJournalLines)} of {totalJournalLines} transactions</span>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToPreviousPage}
+                              disabled={!hasPreviousPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Previous
+                            </Button>
+                            <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={goToNextPage}
+                              disabled={!hasNextPage || journalLinesLoading}
+                              className="h-7 text-xs"
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </TabsContent>
 
               <TabsContent value="audit" className="mt-0">

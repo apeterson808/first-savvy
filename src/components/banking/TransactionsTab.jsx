@@ -58,7 +58,7 @@ import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/sim
 import { autoLearnRule } from '@/utils/autoLearnRule';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
-export default function TransactionsTab({ initialFilters, onFiltersApplied, compact = false }) {
+export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
   const { activeProfile } = useProfile();
   const { user } = useAuth();
 
@@ -1062,65 +1062,63 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied, comp
 
   return (
       <>
-        <Card className={compact ? "border-0 shadow-none" : "shadow-sm border-slate-200"}>
+        <Card className="shadow-sm border-slate-200">
         <CardContent className="p-0">
-          {!compact && (
-            <>
-              {/* Tabs & Top Actions */}
-              <div className="border-b border-slate-200 px-4 pt-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <AccountDropdown
-                      value={selectedAccount}
-                      onValueChange={setSelectedAccount}
-                      showPendingCounts={true}
-                      transactions={fullPendingTransactions}
-                      accounts={accounts}
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-9 w-9"
-                      onClick={() => setAddAccountSheetOpen(true)}
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+          {/* Tabs & Top Actions */}
+          <div className="border-b border-slate-200 px-4 pt-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <AccountDropdown
+                  value={selectedAccount}
+                  onValueChange={setSelectedAccount}
+                  showPendingCounts={true}
+                  transactions={fullPendingTransactions}
+                  accounts={accounts}
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9"
+                  onClick={() => setAddAccountSheetOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-                {/* Search & Filters */}
-                <div className="flex items-center gap-2 pb-4">
-                  <Tabs value={statusFilter} onValueChange={setStatusFilter}>
-                    <TabsList>
-                      <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
-                      <TabsTrigger value="posted">Posted</TabsTrigger>
-                      <TabsTrigger value="excluded">Excluded</TabsTrigger>
-                    </TabsList>
-                  </Tabs>
+            {/* Search & Filters */}
+            <div className="flex items-center gap-2 pb-4">
+              <Tabs value={statusFilter} onValueChange={setStatusFilter}>
+                <TabsList>
+                  <TabsTrigger value="pending">Pending ({pendingCount})</TabsTrigger>
+                  <TabsTrigger value="posted">Posted</TabsTrigger>
+                  <TabsTrigger value="excluded">Excluded</TabsTrigger>
+                </TabsList>
+              </Tabs>
 
-                  <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <Input
-                      placeholder="Search"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-9 h-9"
-                    />
-                  </div>
-
-                  <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-9 w-9 relative"
-                                        onClick={() => setFilterPanelOpen(true)}
-                                      >
-                                        <SlidersHorizontal className="w-4 h-4" />
-                                        {getActiveFilterCount() > 0 && (
-                                          <span className="absolute -top-1 -right-1 bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-semibold">
-                                            {getActiveFilterCount()}
-                                          </span>
-                                        )}
-                                      </Button>
+              <div className="relative w-64">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Input
+                  placeholder="Search"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-9 h-9"
+                />
+              </div>
+              
+              <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="h-9 w-9 relative"
+                                    onClick={() => setFilterPanelOpen(true)}
+                                  >
+                                    <SlidersHorizontal className="w-4 h-4" />
+                                    {getActiveFilterCount() > 0 && (
+                                      <span className="absolute -top-1 -right-1 bg-blue-600 text-white rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-semibold">
+                                        {getActiveFilterCount()}
+                                      </span>
+                                    )}
+                                  </Button>
 
               <TooltipProvider>
                 <Tooltip>
@@ -1172,8 +1170,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied, comp
               </div>
             </div>
           </div>
-            </>
-          )}
 
           {/* Table */}
           <div ref={tableContainerRef} className="max-h-[520px] overflow-auto relative">
