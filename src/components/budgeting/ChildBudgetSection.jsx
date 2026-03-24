@@ -424,45 +424,29 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                         <div className="rounded-md border overflow-x-auto max-h-[520px]">
                           <table className="w-max min-w-full" style={{ tableLayout: 'auto' }}>
                             <colgroup>
-                              <col style={{ width: 70, minWidth: 70 }} />
-                              <col style={{ width: columnWidths.account, minWidth: 50 }} />
+                              <col style={{ width: 90, minWidth: 90 }} />
+                              <col style={{ width: 100, minWidth: 100 }} />
                               <col style={{ width: columnWidths.description, minWidth: 100 }} />
-                              <col style={{ width: 80, minWidth: 80 }} />
-                              <col style={{ width: 80, minWidth: 80 }} />
-                              <col style={{ width: columnWidths.contact, minWidth: 50 }} />
                               <col style={{ width: columnWidths.category, minWidth: 100 }} />
-                              <col style={{ width: 80, minWidth: 80 }} />
+                              <col style={{ width: columnWidths.contact, minWidth: 50 }} />
+                              <col style={{ width: 90, minWidth: 90 }} />
+                              <col style={{ width: 90, minWidth: 90 }} />
+                              <col style={{ width: 100, minWidth: 100 }} />
+                              <col style={{ width: 60, minWidth: 60 }} />
                             </colgroup>
                             <thead className="sticky top-0 z-30 bg-slate-100 shadow-sm">
                               <tr className="h-8">
                                 <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2">
                                   Date
                                 </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.account }}>
-                                  Account
-                                  <div
-                                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
-                                    onMouseDown={(e) => startResize('account', e)}
-                                  />
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2">
+                                  Reference
                                 </th>
                                 <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.description }}>
                                   Description
                                   <div
                                     className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
                                     onMouseDown={(e) => startResize('description', e)}
-                                  />
-                                </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap">
-                                  Spent
-                                </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap">
-                                  Received
-                                </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.contact }}>
-                                  Contact
-                                  <div
-                                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
-                                    onMouseDown={(e) => startResize('contact', e)}
                                   />
                                 </th>
                                 <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.category }}>
@@ -472,8 +456,24 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                     onMouseDown={(e) => startResize('category', e)}
                                   />
                                 </th>
-                                <th className="font-semibold text-slate-700 bg-slate-100 text-left pl-2 pr-0 py-2 whitespace-nowrap">
-                                  Action
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.contact }}>
+                                  Contact
+                                  <div
+                                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
+                                    onMouseDown={(e) => startResize('contact', e)}
+                                  />
+                                </th>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-right pr-2 py-2 whitespace-nowrap">
+                                  Money In
+                                </th>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-right pr-2 py-2 whitespace-nowrap">
+                                  Money Out
+                                </th>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-right pr-2 py-2 whitespace-nowrap">
+                                  Balance
+                                </th>
+                                <th className="font-semibold text-slate-700 bg-slate-100 text-center px-2 py-2 whitespace-nowrap">
+
                                 </th>
                               </tr>
                             </thead>
@@ -482,6 +482,8 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                 const transaction = activity.transaction;
                                 const account = transaction ? accounts.find(a => a.id === transaction.bank_account_id) : null;
                                 const isInactive = transaction && !activeAccountIds.includes(transaction.bank_account_id);
+                                const category = transaction && transaction.category_account_id ? chartAccounts.find(c => c.id === transaction.category_account_id) : null;
+                                const contact = transaction && transaction.contact_id ? contacts.find(c => c.id === transaction.contact_id) : null;
 
                                 return (
                                   <tr
@@ -490,11 +492,11 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                   >
                                     <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
                                       {activity.displayDate && !isNaN(new Date(activity.displayDate).getTime())
-                                        ? format(parseISO(activity.displayDate), 'MM/dd/yy')
+                                        ? format(parseISO(activity.displayDate), 'MMM d, yyyy')
                                         : '—'}
                                     </td>
-                                    <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 whitespace-nowrap overflow-hidden text-ellipsis" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
-                                      {account ? `${getAccountDisplayName(account)}${account.account_number ? ` (${account.account_number})` : ''}` : '—'}
+                                    <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1 text-slate-500">
+                                      {activity.entryNumber || '—'}
                                     </td>
                                     <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
                                       {transaction ? (
@@ -518,46 +520,6 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                         />
                                       ) : (
                                         <span className="text-xs px-1">{activity.displayDescription || '—'}</span>
-                                      )}
-                                    </td>
-                                    <td className="text-sm border-r border-slate-200 py-1 px-2 text-right">
-                                      {activity.creditAmount > 0 ? formatCurrency(activity.creditAmount) : ''}
-                                    </td>
-                                    <td className="text-sm border-r border-slate-200 py-1 px-2 text-right">
-                                      {activity.debitAmount > 0 ? formatCurrency(activity.debitAmount) : ''}
-                                    </td>
-                                    <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.contact, minWidth: columnWidths.contact, maxWidth: columnWidths.contact }}>
-                                      {transaction ? (
-                                        activity.entryType === 'transfer' || activity.entryType === 'credit_card_payment' ? (
-                                          <span className="text-xs px-1">{activity.entryType === 'transfer' ? 'Transfer' : 'Credit Card Payment'}</span>
-                                        ) : (
-                                          <div onClick={(e) => e.stopPropagation()}>
-                                            <ContactDropdown
-                                              value={transaction.contact_id}
-                                              onValueChange={(value) => {
-                                                if (isInactive) return;
-                                                updateMutation.mutate({
-                                                  id: transaction.id,
-                                                  data: {
-                                                    contact_id: value,
-                                                    contact_manually_set: true
-                                                  }
-                                                });
-                                              }}
-                                              transactionDescription={transaction.description}
-                                              disabled={isInactive}
-                                              onAddNew={(searchTerm) => {
-                                                setContactSearchTerm(searchTerm);
-                                                setTriggeringContactTransactionId(transaction.id);
-                                                setAddContactSheetOpen(true);
-                                              }}
-                                              triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                              placeholder="Select contact"
-                                            />
-                                          </div>
-                                        )
-                                      ) : (
-                                        <span className="text-xs px-1">—</span>
                                       )}
                                     </td>
                                     <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.category, minWidth: columnWidths.category, maxWidth: columnWidths.category }}>
@@ -598,42 +560,97 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                           </div>
                                         )
                                       ) : (
-                                        <span className="text-xs px-1">—</span>
+                                        <span className="text-xs px-1">{category?.display_name || category?.name || '—'}</span>
                                       )}
                                     </td>
-                                    <td className="py-1 pl-2">
-                                      {transaction && transaction.status === 'posted' && (
-                                        <button
-                                          className="text-xs text-blue-600 hover:underline"
-                                          onClick={async () => {
-                                            try {
-                                              const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
-                                                p_transaction_id: transaction.id
-                                              });
-
-                                              if (error) {
-                                                console.error('RPC Error:', error);
-                                                toast.error(error.message || 'Failed to undo transaction');
-                                                return;
-                                              }
-
-                                              if (data?.success) {
-                                                toast.success('Transaction undone successfully');
-                                                queryClient.invalidateQueries(['journal-lines-paginated']);
-                                                queryClient.invalidateQueries(['journal-entries']);
-                                              } else {
-                                                console.error('Function returned error:', data);
-                                                toast.error(data?.error || 'Failed to undo transaction');
-                                              }
-                                            } catch (error) {
-                                              console.error('Error undoing transaction:', error);
-                                              toast.error(error.message || 'Failed to undo transaction');
-                                            }
-                                          }}
-                                        >
-                                          Undo
-                                        </button>
+                                    <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.contact, minWidth: columnWidths.contact, maxWidth: columnWidths.contact }}>
+                                      {transaction ? (
+                                        activity.entryType === 'transfer' || activity.entryType === 'credit_card_payment' ? (
+                                          <span className="text-xs px-1">—</span>
+                                        ) : (
+                                          <div onClick={(e) => e.stopPropagation()}>
+                                            <ContactDropdown
+                                              value={transaction.contact_id}
+                                              onValueChange={(value) => {
+                                                if (isInactive) return;
+                                                updateMutation.mutate({
+                                                  id: transaction.id,
+                                                  data: {
+                                                    contact_id: value,
+                                                    contact_manually_set: true
+                                                  }
+                                                });
+                                              }}
+                                              transactionDescription={transaction.description}
+                                              disabled={isInactive}
+                                              onAddNew={(searchTerm) => {
+                                                setContactSearchTerm(searchTerm);
+                                                setTriggeringContactTransactionId(transaction.id);
+                                                setAddContactSheetOpen(true);
+                                              }}
+                                              triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                              placeholder="Select contact"
+                                            />
+                                          </div>
+                                        )
+                                      ) : (
+                                        <span className="text-xs px-1">{contact?.display_name || '—'}</span>
                                       )}
+                                    </td>
+                                    <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                                      {activity.debitAmount > 0 ? formatCurrency(activity.debitAmount) : ''}
+                                    </td>
+                                    <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
+                                      {activity.creditAmount > 0 ? formatCurrency(activity.creditAmount) : ''}
+                                    </td>
+                                    <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap font-semibold">
+                                      {formatCurrency(activity.runningBalance)}
+                                    </td>
+                                    <td className="py-1 px-2 text-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        {activity.journalEntryId && (
+                                          <button
+                                            className="text-slate-500 hover:text-slate-700 p-0.5"
+                                            onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                            title="View journal entry"
+                                          >
+                                            <FileText className="h-4 w-4" />
+                                          </button>
+                                        )}
+                                        {transaction && transaction.status === 'posted' && (
+                                          <button
+                                            className="text-slate-500 hover:text-slate-700 p-0.5"
+                                            onClick={async () => {
+                                              try {
+                                                const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                                  p_transaction_id: transaction.id
+                                                });
+
+                                                if (error) {
+                                                  console.error('RPC Error:', error);
+                                                  toast.error(error.message || 'Failed to undo transaction');
+                                                  return;
+                                                }
+
+                                                if (data?.success) {
+                                                  toast.success('Transaction undone successfully');
+                                                  queryClient.invalidateQueries(['journal-lines-paginated']);
+                                                  queryClient.invalidateQueries(['journal-entries']);
+                                                } else {
+                                                  console.error('Function returned error:', data);
+                                                  toast.error(data?.error || 'Failed to undo transaction');
+                                                }
+                                              } catch (error) {
+                                                console.error('Error undoing transaction:', error);
+                                                toast.error(error.message || 'Failed to undo transaction');
+                                              }
+                                            }}
+                                            title="Undo transaction"
+                                          >
+                                            <History className="h-4 w-4" />
+                                          </button>
+                                        )}
+                                      </div>
                                     </td>
                                   </tr>
                                 );
