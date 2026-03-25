@@ -616,14 +616,43 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                       </td>
                                       <td className="py-1 pl-2 pr-0 text-xs text-blue-600 font-medium whitespace-nowrap text-center">
                                         {transaction ? (
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-5 px-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                                            onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          <button
+                                            className="text-xs text-blue-600 hover:underline"
+                                            onClick={async (e) => {
+                                              e?.stopPropagation();
+                                              if (!transaction.current_journal_entry_id) {
+                                                toast.error('No journal entry found for this transaction');
+                                                return;
+                                              }
+
+                                              try {
+                                                const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                                  p_transaction_id: transaction.id
+                                                });
+
+                                                if (error) {
+                                                  console.error('RPC Error:', error);
+                                                  toast.error(error.message || 'Failed to undo transaction');
+                                                  return;
+                                                }
+
+                                                if (data?.success) {
+                                                  toast.success('Transaction moved back to pending');
+                                                  queryClient.invalidateQueries(['journal-lines']);
+                                                  queryClient.invalidateQueries(['transactions']);
+                                                  queryClient.invalidateQueries(['budget-analytics']);
+                                                } else {
+                                                  console.error('Function returned error:', data);
+                                                  toast.error(data?.error || 'Failed to undo transaction');
+                                                }
+                                              } catch (error) {
+                                                console.error('Error undoing transaction:', error);
+                                                toast.error(error.message || 'Failed to undo transaction');
+                                              }
+                                            }}
                                           >
-                                            View
-                                          </Button>
+                                            Undo
+                                          </button>
                                         ) : (
                                           '—'
                                         )}
