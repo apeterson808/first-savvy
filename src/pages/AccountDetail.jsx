@@ -1463,17 +1463,13 @@ export default function AccountDetail() {
                         <TableHeader>
                           <TableRow className="h-8 bg-slate-100">
                             <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            {hasChildAccounts && (
-                              <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
-                            )}
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Reference</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Spent</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Received</TableHead>
+                            <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
-                            <TableHead className="w-[40px] py-1.5"></TableHead>
+                            <TableHead className="w-[60px] py-1.5 text-[11px] font-semibold">Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1487,49 +1483,19 @@ export default function AccountDetail() {
                               }`}
                             >
                               <TableCell className="whitespace-nowrap text-[11px] py-1">
-                                {format(parseISO(activity.displayDate), 'MMM d, yyyy')}
-                              </TableCell>
-                              {hasChildAccounts && (
-                                <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                  {activity.account_name || '\u2014'}
-                                </TableCell>
-                              )}
-                              <TableCell className="whitespace-nowrap py-1">
-                                <span
-                                  className="font-mono text-[10px] text-slate-600 cursor-pointer hover:text-slate-900 transition-colors"
-                                  onClick={() => activity.journalEntryId && setSelectedJournalEntryId(activity.journalEntryId)}
-                                >
-                                  {activity.entryNumber}
-                                </span>
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <Input
-                                    value={editDescription}
-                                    onChange={(e) => setEditDescription(e.target.value)}
-                                    className="h-6 text-[11px] px-1.5 py-0.5"
-                                  />
-                                ) : (
-                                  <div className="text-[11px] truncate">{activity.displayDescription}</div>
-                                )}
+                                {format(parseISO(activity.displayDate), 'MM/dd/yy')}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
-                                  <CategoryDropdown
-                                    value={editCategoryId}
-                                    onChange={setEditCategoryId}
-                                    className="h-6 text-[11px]"
-                                    profileId={activeProfile?.id}
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
-                                    disabled={!activity.transactionId}
-                                  >
-                                    {activity.category || '\u2014'}
-                                  </button>
-                                )}
+                                {activity.account_name || '\u2014'}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
@@ -1550,103 +1516,60 @@ export default function AccountDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
-                                {formatCurrency(activity.runningBalance)}
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {editingTransactionId === activity.transactionId ? (
+                                  <CategoryDropdown
+                                    value={editCategoryId}
+                                    onChange={setEditCategoryId}
+                                    className="h-6 text-[11px]"
+                                    profileId={activeProfile?.id}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.category || '\u2014'}
+                                  </button>
+                                )}
                               </TableCell>
                               <TableCell className="py-1">
-                                <div className="flex items-center gap-1">
-                                  {editingTransactionId === activity.transactionId ? (
-                                    <>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => saveTransactionEdit(activity.transactionId)}
-                                        className="h-6 w-6 p-0"
-                                        title="Save"
-                                        disabled={updateTransactionMutation.isPending}
-                                      >
-                                        <Save className="w-3 h-3 text-green-600" />
-                                      </Button>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={cancelEditingTransaction}
-                                        className="h-6 w-6 p-0"
-                                        title="Cancel"
-                                        disabled={updateTransactionMutation.isPending}
-                                      >
-                                        <X className="w-3 h-3 text-slate-400" />
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      {activity.journalEntryId && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
-                                          className="h-6 w-6 p-0"
-                                          title="View Journal Entry"
-                                        >
-                                          <ExternalLink className="w-3 h-3 text-slate-400" />
-                                        </Button>
-                                      )}
-                                      {activity.transactionId && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => setSelectedTransactionForAudit(activity.transactionId)}
-                                          className="h-6 w-6 p-0"
-                                          title="View Audit History"
-                                        >
-                                          <History className="w-3 h-3 text-slate-400" />
-                                        </Button>
-                                      )}
-                                      {activity.transactionId && activity.journalEntryId && (
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={async (e) => {
-                                            e?.stopPropagation();
-                                            try {
-                                              const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
-                                                p_transaction_id: activity.transactionId
-                                              });
+                                {activity.transactionId && activity.journalEntryId && (
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    onClick={async (e) => {
+                                      e?.stopPropagation();
+                                      try {
+                                        const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                          p_transaction_id: activity.transactionId
+                                        });
 
-                                              if (error) {
-                                                console.error('RPC Error:', error);
-                                                toast.error(error.message || 'Failed to undo transaction');
-                                                return;
-                                              }
+                                        if (error) {
+                                          console.error('RPC Error:', error);
+                                          toast.error(error.message || 'Failed to undo transaction');
+                                          return;
+                                        }
 
-                                              if (data?.success) {
-                                                toast.success('Transaction moved back to pending');
-                                                queryClient.invalidateQueries(['journal-lines-paginated']);
-                                                queryClient.invalidateQueries(['transactions']);
-                                              } else {
-                                                console.error('Function returned error:', data);
-                                                toast.error(data?.error || 'Failed to undo transaction');
-                                              }
-                                            } catch (error) {
-                                              console.error('Error undoing transaction:', error);
-                                              toast.error(error.message || 'Failed to undo transaction');
-                                            }
-                                          }}
-                                          className="h-6 w-6 p-0"
-                                          title="Undo Transaction"
-                                        >
-                                          <Undo className="w-3 h-3 text-slate-400" />
-                                        </Button>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
+                                        if (data?.success) {
+                                          toast.success('Transaction moved back to pending');
+                                          queryClient.invalidateQueries(['journal-lines-paginated']);
+                                          queryClient.invalidateQueries(['transactions']);
+                                        } else {
+                                          console.error('Function returned error:', data);
+                                          toast.error(data?.error || 'Failed to undo transaction');
+                                        }
+                                      } catch (error) {
+                                        console.error('Error undoing transaction:', error);
+                                        toast.error(error.message || 'Failed to undo transaction');
+                                      }
+                                    }}
+                                    className="h-auto p-0 text-blue-600 hover:text-blue-700 text-[11px]"
+                                  >
+                                    Undo
+                                  </Button>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}
