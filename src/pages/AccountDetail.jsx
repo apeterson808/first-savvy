@@ -887,7 +887,7 @@ export default function AccountDetail() {
     const csvContent = [
       ['Date', 'Description', 'Reference', 'From/To', 'Amount', 'Balance'].join(','),
       ...allActivity.map(activity => {
-        const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+        const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
         return [
           format(new Date(activity.displayDate), 'yyyy-MM-dd'),
           `"${activity.displayDescription}"`,
@@ -1495,7 +1495,7 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {(() => {
-                                  const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                  const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                   return (
                                     <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
                                       {formatCurrency(amount)}
@@ -2378,7 +2378,7 @@ export default function AccountDetail() {
                       </TableHeader>
                       <TableBody>
                         {allActivity.map((activity, index) => {
-                          const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                          const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                           return (
                             <TableRow
                               key={`${activity.id || index}`}
@@ -2571,7 +2571,7 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {(() => {
-                                  const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                  const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                   return (
                                     <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
                                       {formatCurrency(amount)}
@@ -2784,7 +2784,7 @@ export default function AccountDetail() {
                             </TableCell>
                             <TableCell className="text-right text-[11px] py-1">
                               {(() => {
-                                const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                 return (
                                   <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
                                     {formatCurrency(amount)}
