@@ -41,8 +41,8 @@ export function ChildBudgetSection({ childAccount, profileId }) {
   const [columnWidths, setColumnWidths] = useState({
     account: 200,
     description: 250,
-    contact: 150,
-    category: 200
+    fromTo: 150,
+    categorize: 200
   });
   const [isResizing, setIsResizing] = useState(false);
   const [resizingColumn, setResizingColumn] = useState(null);
@@ -426,17 +426,16 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                             <colgroup>
                               <col style={{ width: 110, minWidth: 110 }} />
                               <col style={{ width: columnWidths.account, minWidth: 100 }} />
-                              <col style={{ width: 100, minWidth: 100 }} />
                               <col style={{ width: columnWidths.description, minWidth: 150 }} />
-                              <col style={{ width: columnWidths.category, minWidth: 100 }} />
-                              <col style={{ width: columnWidths.contact, minWidth: 100 }} />
-                              <col style={{ width: 90, minWidth: 90 }} />
-                              <col style={{ width: 90, minWidth: 90 }} />
-                              <col style={{ width: 100, minWidth: 100 }} />
+                              <col style={{ width: 1 }} />
+                              <col style={{ width: 1 }} />
+                              <col style={{ width: columnWidths.fromTo, minWidth: 100 }} />
+                              <col style={{ width: columnWidths.categorize, minWidth: 100 }} />
+                              <col style={{ width: 20, minWidth: 20, maxWidth: 20 }} />
                             </colgroup>
                             <thead className="sticky top-0 z-30 bg-slate-100 shadow-sm">
-                              <tr className="h-8">
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2">
+                              <tr className="bg-slate-100 h-8">
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 pr-1 py-2">
                                   Date
                                 </th>
                                 <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.account }}>
@@ -446,9 +445,6 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                     onMouseDown={(e) => startResize('account', e)}
                                   />
                                 </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2">
-                                  Reference
-                                </th>
                                 <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.description }}>
                                   Description
                                   <div
@@ -456,166 +452,186 @@ export function ChildBudgetSection({ childAccount, profileId }) {
                                     onMouseDown={(e) => startResize('description', e)}
                                   />
                                 </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.category }}>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap">
+                                  Spent
+                                </th>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-left pl-2 py-2 whitespace-nowrap">
+                                  Received
+                                </th>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.fromTo }}>
+                                  From/To
+                                  <div
+                                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
+                                    onMouseDown={(e) => startResize('fromTo', e)}
+                                  />
+                                </th>
+                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.categorize }}>
                                   Category
                                   <div
                                     className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
-                                    onMouseDown={(e) => startResize('category', e)}
+                                    onMouseDown={(e) => startResize('categorize', e)}
                                   />
                                 </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 relative bg-slate-100 text-left px-4 pl-2 py-2" style={{ width: columnWidths.contact }}>
-                                  Contact
-                                  <div
-                                    className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-400"
-                                    onMouseDown={(e) => startResize('contact', e)}
-                                  />
-                                </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-right pr-2 py-2 whitespace-nowrap">
-                                  Money In
-                                </th>
-                                <th className="font-semibold text-slate-700 border-r border-slate-200 bg-slate-100 text-right pr-2 py-2 whitespace-nowrap">
-                                  Money Out
-                                </th>
-                                <th className="font-semibold text-slate-700 bg-slate-100 text-right pr-2 py-2 whitespace-nowrap">
-                                  Balance
+                                <th className="font-semibold text-slate-700 bg-slate-100 text-left pl-2 pr-0 py-2 whitespace-nowrap">
+                                  Action
                                 </th>
                               </tr>
                             </thead>
                             <tbody>
-                              {paginatedActivity.map((activity, index) => {
-                                const transaction = activity.transaction;
-                                const account = transaction ? accounts.find(a => a.id === transaction.bank_account_id) : null;
-                                const isInactive = transaction && !activeAccountIds.includes(transaction.bank_account_id);
-                                const category = transaction && transaction.category_account_id ? chartAccounts.find(c => c.id === transaction.category_account_id) : null;
-                                const contact = transaction && transaction.contact_id ? contacts.find(c => c.id === transaction.contact_id) : null;
+                              {paginatedActivity.length === 0 ? (
+                                <tr>
+                                  <td colSpan={8} className="text-center py-12 text-slate-500">
+                                    No transactions found
+                                  </td>
+                                </tr>
+                              ) : (
+                                paginatedActivity.map((activity, index) => {
+                                  const transaction = activity.transaction;
+                                  const account = transaction ? accounts.find(a => a.id === transaction.bank_account_id) : null;
+                                  const isInactive = transaction && !activeAccountIds.includes(transaction.bank_account_id);
+                                  const category = transaction && transaction.category_account_id ? chartAccounts.find(c => c.id === transaction.category_account_id) : null;
+                                  const contact = transaction && transaction.contact_id ? contacts.find(c => c.id === transaction.contact_id) : null;
 
-                                return (
-                                  <tr
-                                    key={`${activity.id || index}`}
-                                    className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}
-                                  >
-                                    <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
-                                      {activity.displayDate && !isNaN(new Date(activity.displayDate).getTime())
-                                        ? format(parseISO(activity.displayDate), 'MMM d, yyyy')
-                                        : '—'}
-                                    </td>
-                                    <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 whitespace-nowrap overflow-hidden text-ellipsis" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
-                                      {account ? `${getAccountDisplayName(account)}` : '—'}
-                                    </td>
-                                    <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1 text-slate-500">
-                                      {activity.entryNumber || '—'}
-                                    </td>
-                                    <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
-                                      {transaction ? (
-                                        <Input
-                                          defaultValue={formatTransactionDescription(transaction.description)}
-                                          disabled={isInactive}
-                                          className="h-7 text-xs border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors px-1 disabled:opacity-50 disabled:cursor-not-allowed"
-                                          onBlur={(e) => {
-                                            if (e.target.value !== formatTransactionDescription(transaction.description)) {
-                                              updateMutation.mutate({
-                                                id: transaction.id,
-                                                data: { description: e.target.value }
-                                              });
-                                            }
-                                          }}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter') {
-                                              e.target.blur();
-                                            }
-                                          }}
-                                        />
-                                      ) : (
-                                        <span className="text-xs px-1">{activity.displayDescription || '—'}</span>
-                                      )}
-                                    </td>
-                                    <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.category, minWidth: columnWidths.category, maxWidth: columnWidths.category }}>
-                                      {transaction ? (
-                                        transaction.is_split ? (
-                                          <span className="text-xs px-1 text-blue-600 font-medium">Split</span>
-                                        ) : transaction.type === 'income' && transaction.original_type === 'expense' ? (
-                                          <span className="text-xs px-1 text-emerald-600 font-medium">Refund</span>
-                                        ) : activity.entryType === 'transfer' ? (
-                                          <span className="text-xs px-1">Bank Transfer</span>
-                                        ) : activity.entryType === 'credit_card_payment' ? (
-                                          <span className="text-xs px-1">Credit Card Payment</span>
-                                        ) : (
-                                          <div onClick={(e) => e.stopPropagation()}>
-                                            <CategoryDropdown
-                                              value={transaction.category_account_id}
-                                              matchMode={false}
-                                              onValueChange={async (value) => {
-                                                if (isInactive) return;
-                                                const categoryValue = value === '' ? null : value;
+                                  return (
+                                    <tr
+                                      key={`${activity.id || index}`}
+                                      className={`${index % 2 === 0 ? 'bg-white' : 'bg-slate-50'} h-8`}
+                                    >
+                                      <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
+                                        {activity.displayDate && !isNaN(new Date(activity.displayDate).getTime())
+                                          ? format(parseISO(activity.displayDate), 'MM/dd/yy')
+                                          : '—'}
+                                      </td>
+                                      <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 whitespace-nowrap overflow-hidden text-ellipsis" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
+                                        {account ? `${getAccountDisplayName(account)}` : '—'}
+                                      </td>
+                                      <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.description, minWidth: columnWidths.description, maxWidth: columnWidths.description }}>
+                                        {transaction ? (
+                                          <Input
+                                            defaultValue={formatTransactionDescription(transaction.description)}
+                                            disabled={isInactive}
+                                            className="h-6 text-xs border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            onBlur={(e) => {
+                                              if (e.target.value !== formatTransactionDescription(transaction.description)) {
                                                 updateMutation.mutate({
                                                   id: transaction.id,
-                                                  data: { category_account_id: categoryValue }
+                                                  data: { description: e.target.value }
                                                 });
-                                              }}
-                                              transactionType={transaction.type}
-                                              disabled={isInactive}
-                                              onAddNew={(searchTerm) => {
-                                                setCategorySearchTerm(searchTerm);
-                                                setTriggeringTransactionId(transaction.id);
-                                                setAddAccountSheetOpen(true);
-                                              }}
-                                              triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                              placeholder="Select category"
-                                              isTransactionTransfer={false}
-                                              transactionAmount={transaction.amount}
-                                            />
-                                          </div>
-                                        )
-                                      ) : (
-                                        <span className="text-xs px-1">{category?.display_name || category?.name || '—'}</span>
-                                      )}
-                                    </td>
-                                    <td className="border-r border-slate-200 py-1 px-4 pl-2" style={{ width: columnWidths.contact, minWidth: columnWidths.contact, maxWidth: columnWidths.contact }}>
-                                      {transaction ? (
-                                        activity.entryType === 'transfer' || activity.entryType === 'credit_card_payment' ? (
-                                          <span className="text-xs px-1">—</span>
+                                              }
+                                            }}
+                                            onClick={(e) => e.stopPropagation()}
+                                          />
                                         ) : (
-                                          <div onClick={(e) => e.stopPropagation()}>
-                                            <ContactDropdown
-                                              value={transaction.contact_id}
-                                              onValueChange={(value) => {
-                                                if (isInactive) return;
-                                                updateMutation.mutate({
-                                                  id: transaction.id,
-                                                  data: {
-                                                    contact_id: value,
-                                                    contact_manually_set: true
-                                                  }
-                                                });
-                                              }}
-                                              transactionDescription={transaction.description}
-                                              disabled={isInactive}
-                                              onAddNew={(searchTerm) => {
-                                                setContactSearchTerm(searchTerm);
-                                                setTriggeringContactTransactionId(transaction.id);
-                                                setAddContactSheetOpen(true);
-                                              }}
-                                              triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
-                                              placeholder="Select contact"
-                                            />
-                                          </div>
-                                        )
-                                      ) : (
-                                        <span className="text-xs px-1">{contact?.display_name || '—'}</span>
-                                      )}
-                                    </td>
-                                    <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                      {activity.debitAmount > 0 ? formatCurrency(activity.debitAmount) : ''}
-                                    </td>
-                                    <td className="text-right text-sm border-r border-slate-200 py-1 pl-1 pr-2 whitespace-nowrap">
-                                      {activity.creditAmount > 0 ? formatCurrency(activity.creditAmount) : ''}
-                                    </td>
-                                    <td className="text-right text-sm py-1 pl-1 pr-2 whitespace-nowrap font-semibold">
-                                      {formatCurrency(activity.runningBalance)}
-                                    </td>
-                                  </tr>
-                                );
-                              })}
+                                          <span className="text-xs">{activity.displayDescription || '—'}</span>
+                                        )}
+                                      </td>
+                                      <td className="border-r border-slate-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                        {transaction && (transaction.type === 'expense' || transaction.type === 'transfer' || transaction.type === 'credit_card_payment') && (
+                                          <span className="font-medium">
+                                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="border-r border-slate-200 py-1 pl-2 text-left whitespace-nowrap text-xs">
+                                        {transaction && transaction.type === 'income' && (
+                                          <span className="font-medium">
+                                            ${Math.abs(transaction.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                          </span>
+                                        )}
+                                      </td>
+                                      <td className="border-r border-slate-200 py-1 px-4 pl-2 truncate text-xs" style={{ width: columnWidths.fromTo, minWidth: columnWidths.fromTo, maxWidth: columnWidths.fromTo }}>
+                                        {transaction ? (
+                                          activity.entryType === 'transfer' || activity.entryType === 'credit_card_payment' ? (
+                                            <span>—</span>
+                                          ) : (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                              <ContactDropdown
+                                                value={transaction.contact_id}
+                                                onValueChange={(value) => {
+                                                  if (isInactive) return;
+                                                  updateMutation.mutate({
+                                                    id: transaction.id,
+                                                    data: {
+                                                      contact_id: value,
+                                                      contact_manually_set: true
+                                                    }
+                                                  });
+                                                }}
+                                                transactionDescription={transaction.description}
+                                                disabled={isInactive}
+                                                onAddNew={(searchTerm) => {
+                                                  setContactSearchTerm(searchTerm);
+                                                  setTriggeringContactTransactionId(transaction.id);
+                                                  setAddContactSheetOpen(true);
+                                                }}
+                                                triggerClassName="h-6 border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-xs"
+                                                placeholder="Select contact"
+                                              />
+                                            </div>
+                                          )
+                                        ) : (
+                                          <span>{contact?.display_name || '—'}</span>
+                                        )}
+                                      </td>
+                                      <td className="border-r border-slate-200 py-1 px-4 pl-2 truncate text-xs" style={{ width: columnWidths.categorize, minWidth: columnWidths.categorize, maxWidth: columnWidths.categorize }}>
+                                        {transaction ? (
+                                          transaction.is_split ? (
+                                            <span className="text-blue-600 font-medium">Split</span>
+                                          ) : transaction.type === 'income' && transaction.original_type === 'expense' ? (
+                                            <span className="text-emerald-600 font-medium">Refund</span>
+                                          ) : activity.entryType === 'transfer' ? (
+                                            <span>Transfer</span>
+                                          ) : activity.entryType === 'credit_card_payment' ? (
+                                            <span>Credit Card Payment</span>
+                                          ) : (
+                                            <div onClick={(e) => e.stopPropagation()}>
+                                              <CategoryDropdown
+                                                value={transaction.category_account_id}
+                                                matchMode={false}
+                                                onValueChange={async (value) => {
+                                                  if (isInactive) return;
+                                                  const categoryValue = value === '' ? null : value;
+                                                  updateMutation.mutate({
+                                                    id: transaction.id,
+                                                    data: { category_account_id: categoryValue }
+                                                  });
+                                                }}
+                                                transactionType={transaction.type}
+                                                disabled={isInactive}
+                                                onAddNew={(searchTerm) => {
+                                                  setCategorySearchTerm(searchTerm);
+                                                  setTriggeringTransactionId(transaction.id);
+                                                  setAddAccountSheetOpen(true);
+                                                }}
+                                                triggerClassName="h-6 border-0 bg-transparent px-0 focus-visible:ring-0 focus-visible:ring-offset-0 text-xs"
+                                                placeholder="Select category"
+                                                isTransactionTransfer={false}
+                                                transactionAmount={transaction.amount}
+                                              />
+                                            </div>
+                                          )
+                                        ) : (
+                                          <span>{category?.display_name || category?.name || '—'}</span>
+                                        )}
+                                      </td>
+                                      <td className="py-1 pl-2 pr-0 text-xs text-blue-600 font-medium whitespace-nowrap text-center">
+                                        {transaction ? (
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-5 px-1 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                            onClick={() => setSelectedJournalEntryId(activity.journalEntryId)}
+                                          >
+                                            View
+                                          </Button>
+                                        ) : (
+                                          '—'
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })
+                              )}
                             </tbody>
                           </table>
                         </div>
