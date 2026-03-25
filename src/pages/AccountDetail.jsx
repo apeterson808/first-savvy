@@ -885,16 +885,18 @@ export default function AccountDetail() {
 
   const handleExport = () => {
     const csvContent = [
-      ['Date', 'Description', 'Reference', 'From/To', 'Money In', 'Money Out', 'Balance'].join(','),
-      ...allActivity.map(activity => [
-        format(new Date(activity.displayDate), 'yyyy-MM-dd'),
-        `"${activity.displayDescription}"`,
-        activity.entryNumber || '',
-        `"${activity.offsettingAccounts || ''}"`,
-        activity.calculatedDebit || '',
-        activity.calculatedCredit || '',
-        activity.runningBalance
-      ].join(','))
+      ['Date', 'Description', 'Reference', 'From/To', 'Amount', 'Balance'].join(','),
+      ...allActivity.map(activity => {
+        const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+        return [
+          format(new Date(activity.displayDate), 'yyyy-MM-dd'),
+          `"${activity.displayDescription}"`,
+          activity.entryNumber || '',
+          `"${activity.offsettingAccounts || ''}"`,
+          amount,
+          activity.runningBalance
+        ].join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
@@ -1466,8 +1468,7 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Spent</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Received</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
                             <TableHead className="w-[60px] py-1.5 text-[11px] font-semibold">Action</TableHead>
@@ -1493,10 +1494,14 @@ export default function AccountDetail() {
                                 <div className="text-[11px] truncate">{activity.displayDescription}</div>
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
+                                {(() => {
+                                  const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                  return (
+                                    <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
+                                      {formatCurrency(amount)}
+                                    </span>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
@@ -1630,8 +1635,7 @@ export default function AccountDetail() {
                               <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
                             )}
                             <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                             <TableHead className="w-[40px] py-1.5"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1680,10 +1684,14 @@ export default function AccountDetail() {
                                 {activity.offsettingAccounts || '\u2014'}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                                {(() => {
+                                  const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                  return (
+                                    <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
+                                      {formatCurrency(amount)}
+                                    </span>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
@@ -2487,8 +2495,7 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">Contact</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
                             <TableHead className="w-[40px] py-1.5"></TableHead>
                           </TableRow>
@@ -2563,10 +2570,14 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                              </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
-                                {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                                {(() => {
+                                  const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                  return (
+                                    <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
+                                      {formatCurrency(amount)}
+                                    </span>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-right font-semibold text-[11px] py-1">
                                 {formatCurrency(activity.runningBalance)}
@@ -2723,8 +2734,7 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
                           )}
                           <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money In</TableHead>
-                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Money Out</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2773,10 +2783,14 @@ export default function AccountDetail() {
                               {activity.offsettingAccounts || '—'}
                             </TableCell>
                             <TableCell className="text-right text-[11px] py-1">
-                              {activity.calculatedDebit > 0 ? formatCurrency(activity.calculatedDebit) : ''}
-                            </TableCell>
-                            <TableCell className="text-right text-[11px] py-1">
-                              {activity.calculatedCredit > 0 ? formatCurrency(activity.calculatedCredit) : ''}
+                              {(() => {
+                                const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                return (
+                                  <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
+                                    {formatCurrency(amount)}
+                                  </span>
+                                );
+                              })()}
                             </TableCell>
                             <TableCell className="py-1">
                               <div className="flex items-center gap-1">
