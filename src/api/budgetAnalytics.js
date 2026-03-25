@@ -90,19 +90,26 @@ export const budgetAnalytics = {
 
       const vendorMap = {};
       transactions.forEach(t => {
+        let vendorId, vendorName;
+
         if (t.contact_id && t.contacts) {
-          const vendorId = t.contact_id;
-          if (!vendorMap[vendorId]) {
-            vendorMap[vendorId] = {
-              id: vendorId,
-              name: t.contacts.name,
-              totalSpent: 0,
-              transactionCount: 0
-            };
-          }
-          vendorMap[vendorId].totalSpent += Math.abs(t.amount);
-          vendorMap[vendorId].transactionCount += 1;
+          vendorId = t.contact_id;
+          vendorName = t.contacts.name;
+        } else {
+          vendorId = 'uncategorized';
+          vendorName = 'Other';
         }
+
+        if (!vendorMap[vendorId]) {
+          vendorMap[vendorId] = {
+            id: vendorId,
+            name: vendorName,
+            totalSpent: 0,
+            transactionCount: 0
+          };
+        }
+        vendorMap[vendorId].totalSpent += Math.abs(t.amount);
+        vendorMap[vendorId].transactionCount += 1;
       });
 
       monthlyData.push({
