@@ -18,7 +18,11 @@ function mergeData(historicalData, vendorData) {
 
   const vendorColorMap = {};
   allVendors.forEach((name, i) => {
-    vendorColorMap[name] = VENDOR_COLORS[i % VENDOR_COLORS.length];
+    if (name === 'Other') {
+      vendorColorMap[name] = '#94a3b8';
+    } else {
+      vendorColorMap[name] = VENDOR_COLORS[i % VENDOR_COLORS.length];
+    }
   });
 
   const totalsByVendor = {};
