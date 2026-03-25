@@ -590,8 +590,8 @@ export default function AccountDetail() {
         journalEntryId: jl.entry_id,
         transactionId: jl.transaction_id,
         entryType,
-        account_name: jl.account_name,
-        category: jl.offsetting_accounts,
+        account_name: jl.offsetting_accounts,
+        category: jl.account_name,
         contact: jl.contact_name,
         offsettingAccounts: jl.offsetting_accounts,
         runningBalance: parseFloat(jl.running_balance || 0)
