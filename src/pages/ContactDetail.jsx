@@ -82,8 +82,8 @@ export default function ContactDetail() {
       const { data, error } = await firstsavvy.from('transactions')
         .select(`
           *,
-          bank_account:bank_account_id(id, name),
-          category_account:category_account_id(id, name)
+          bank_account:user_chart_of_accounts!bank_account_id(id, name),
+          category_account:user_chart_of_accounts!category_account_id(id, name)
         `)
         .eq('profile_id', activeProfile.id)
         .eq('contact_id', id)
