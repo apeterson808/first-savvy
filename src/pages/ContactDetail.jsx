@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check, ChevronUp } from 'lucide-react';
+import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
@@ -487,102 +487,110 @@ export default function ContactDetail() {
                     <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
                   </div>
                 ) : (
-                  <div className="w-full">
+                  <div className="rounded-md border-t overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
+                        <TableRow className="h-8 bg-slate-100">
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {transactions.map((transaction) => {
+                        {transactions.map((transaction, index) => {
                           const isExpense = transaction.type === 'expense';
                           const isIncome = transaction.type === 'income';
                           const amount = Math.abs(transaction.amount || 0);
+                          const isEditing = expandedLineId === transaction.id;
 
                           return (
-                            <React.Fragment key={transaction.id}>
-                              <TableRow
-                                className="hover:bg-slate-50 cursor-pointer"
-                                onClick={() => handleTransactionClick(transaction)}
-                              >
-                                <TableCell className="text-sm">
-                                  {format(new Date(transaction.date), 'MMM d, yyyy')}
-                                </TableCell>
-                                <TableCell className="font-medium text-sm">
-                                  {expandedLineId === transaction.id && editingLine ? (
-                                    <Input
-                                      value={editingLine.description}
-                                      onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
-                                      className="h-8"
-                                      onClick={(e) => e.stopPropagation()}
-                                    />
-                                  ) : (
-                                    <div>
-                                      {transaction.description}
-                                    </div>
-                                  )}
-                                </TableCell>
-                                <TableCell className="text-right font-semibold text-sm">
-                                  <div className="flex items-center justify-end gap-2">
-                                    <span className={isExpense ? 'text-burgundy' : 'text-forest-green'}>
-                                      {formatCurrency(isExpense ? -amount : amount)}
-                                    </span>
-                                    {expandedLineId === transaction.id ? (
-                                      <ChevronUp className="w-4 h-4 text-slate-400" />
-                                    ) : (
-                                      <ChevronDown className="w-4 h-4 text-slate-400" />
-                                    )}
+                            <TableRow
+                              key={transaction.id}
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
+                            >
+                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                                {format(new Date(transaction.date), 'MMM d, yyyy')}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                                {isEditing ? (
+                                  <Input
+                                    value={editingLine.description}
+                                    onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
+                                    className="h-6 text-[11px] px-1.5 py-0.5"
+                                  />
+                                ) : (
+                                  <div className="text-[11px] truncate">{transaction.description}</div>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {isEditing ? (
+                                  <CategoryDropdown
+                                    value={editingLine.account_id}
+                                    onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                                    transactionType={isExpense ? 'expense' : 'income'}
+                                    isTransactionTransfer={false}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => handleTransactionClick(transaction)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                  >
+                                    {chartAccounts.find(a => a.id === transaction.category_account_id)?.name || '\u2014'}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                                {isEditing ? (
+                                  <ContactDropdown
+                                    value={editingLine.contact_id}
+                                    onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => handleTransactionClick(transaction)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                  >
+                                    {transaction.account_name || '\u2014'}
+                                  </button>
+                                )}
+                              </TableCell>
+                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                                {isEditing ? (
+                                  <div className="flex items-center justify-end gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleSaveLine(transaction.id)}
+                                      className="h-6 w-6 p-0"
+                                      title="Save"
+                                      disabled={isSavingLine}
+                                    >
+                                      <Check className="w-3 h-3 text-green-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={handleCancelLine}
+                                      className="h-6 w-6 p-0"
+                                      title="Cancel"
+                                      disabled={isSavingLine}
+                                    >
+                                      <X className="w-3 h-3 text-slate-400" />
+                                    </Button>
                                   </div>
-                                </TableCell>
-                              </TableRow>
-                              {expandedLineId === transaction.id && editingLine && (
-                                <TableRow>
-                                  <TableCell colSpan={3} className="bg-slate-50 p-6">
-                                    <div className="space-y-4">
-                                      <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                          <Label className="text-sm font-medium mb-1.5">Category</Label>
-                                          <CategoryDropdown
-                                            value={editingLine.account_id}
-                                            onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
-                                            transactionType={isExpense ? 'expense' : 'income'}
-                                            isTransactionTransfer={false}
-                                          />
-                                        </div>
-                                        <div>
-                                          <Label className="text-sm font-medium mb-1.5">Contact</Label>
-                                          <ContactDropdown
-                                            value={editingLine.contact_id}
-                                            onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
-                                          />
-                                        </div>
-                                      </div>
-                                      <div className="flex justify-end gap-2 pt-2">
-                                        <Button
-                                          variant="outline"
-                                          size="sm"
-                                          onClick={handleCancelLine}
-                                        >
-                                          <X className="w-4 h-4 mr-1.5" />
-                                          Cancel
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          onClick={() => handleSaveLine(transaction.id)}
-                                          disabled={isSavingLine}
-                                        >
-                                          <Check className="w-4 h-4 mr-1.5" />
-                                          {isSavingLine ? 'Saving...' : 'Save'}
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </React.Fragment>
+                                ) : (
+                                  <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
+                                    {formatCurrency(isExpense ? -amount : amount)}
+                                  </span>
+                                )}
+                              </TableCell>
+                            </TableRow>
                           );
                         })}
                       </TableBody>
