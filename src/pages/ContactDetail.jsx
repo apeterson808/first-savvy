@@ -79,10 +79,21 @@ export default function ContactDetail() {
     queryKey: ['transactions', 'contact', id, activeProfile?.id],
     queryFn: async () => {
       if (!id || !activeProfile) return [];
-      return await firstsavvy.entities.Transaction.filter({
-        contact_id: id,
-        status: 'posted'
-      }, '-date,id', 10000);
+      const { data, error } = await firstsavvy.from('transactions')
+        .select(`
+          *,
+          account:bank_account_id(id, name),
+          category:category_account_id(id, name)
+        `)
+        .eq('profile_id', activeProfile.id)
+        .eq('contact_id', id)
+        .eq('status', 'posted')
+        .order('date', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(10000);
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!id && !!activeProfile
   });
@@ -541,7 +552,7 @@ export default function ContactDetail() {
                                     onClick={() => handleTransactionClick(transaction)}
                                     className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
                                   >
-                                    {chartAccounts.find(a => a.id === transaction.category_account_id)?.name || '\u2014'}
+                                    {transaction.category?.name || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
@@ -556,7 +567,7 @@ export default function ContactDetail() {
                                     onClick={() => handleTransactionClick(transaction)}
                                     className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
                                   >
-                                    {transaction.account_name || '\u2014'}
+                                    {transaction.account?.name || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
