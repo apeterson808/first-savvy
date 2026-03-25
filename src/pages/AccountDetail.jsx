@@ -28,7 +28,7 @@ import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
   Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
-  Target
+  Target, Undo
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -1608,6 +1608,42 @@ export default function AccountDetail() {
                                           <History className="w-3 h-3 text-slate-400" />
                                         </Button>
                                       )}
+                                      {activity.transactionId && activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={async (e) => {
+                                            e?.stopPropagation();
+                                            try {
+                                              const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                                p_transaction_id: activity.transactionId
+                                              });
+
+                                              if (error) {
+                                                console.error('RPC Error:', error);
+                                                toast.error(error.message || 'Failed to undo transaction');
+                                                return;
+                                              }
+
+                                              if (data?.success) {
+                                                toast.success('Transaction moved back to pending');
+                                                queryClient.invalidateQueries(['journal-lines-paginated']);
+                                                queryClient.invalidateQueries(['transactions']);
+                                              } else {
+                                                console.error('Function returned error:', data);
+                                                toast.error(data?.error || 'Failed to undo transaction');
+                                              }
+                                            } catch (error) {
+                                              console.error('Error undoing transaction:', error);
+                                              toast.error(error.message || 'Failed to undo transaction');
+                                            }
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                          title="Undo Transaction"
+                                        >
+                                          <Undo className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
                                     </>
                                   )}
                                 </div>
@@ -1772,6 +1808,42 @@ export default function AccountDetail() {
                                           title="View Audit History"
                                         >
                                           <History className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
+                                      {activity.transactionId && activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={async (e) => {
+                                            e?.stopPropagation();
+                                            try {
+                                              const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                                p_transaction_id: activity.transactionId
+                                              });
+
+                                              if (error) {
+                                                console.error('RPC Error:', error);
+                                                toast.error(error.message || 'Failed to undo transaction');
+                                                return;
+                                              }
+
+                                              if (data?.success) {
+                                                toast.success('Transaction moved back to pending');
+                                                queryClient.invalidateQueries(['journal-lines-paginated']);
+                                                queryClient.invalidateQueries(['transactions']);
+                                              } else {
+                                                console.error('Function returned error:', data);
+                                                toast.error(data?.error || 'Failed to undo transaction');
+                                              }
+                                            } catch (error) {
+                                              console.error('Error undoing transaction:', error);
+                                              toast.error(error.message || 'Failed to undo transaction');
+                                            }
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                          title="Undo Transaction"
+                                        >
+                                          <Undo className="w-3 h-3 text-slate-400" />
                                         </Button>
                                       )}
                                     </>
@@ -2624,6 +2696,42 @@ export default function AccountDetail() {
                                           <History className="w-3 h-3 text-slate-400" />
                                         </Button>
                                       )}
+                                      {activity.transactionId && activity.journalEntryId && (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={async (e) => {
+                                            e?.stopPropagation();
+                                            try {
+                                              const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                                p_transaction_id: activity.transactionId
+                                              });
+
+                                              if (error) {
+                                                console.error('RPC Error:', error);
+                                                toast.error(error.message || 'Failed to undo transaction');
+                                                return;
+                                              }
+
+                                              if (data?.success) {
+                                                toast.success('Transaction moved back to pending');
+                                                queryClient.invalidateQueries(['journal-lines-paginated']);
+                                                queryClient.invalidateQueries(['transactions']);
+                                              } else {
+                                                console.error('Function returned error:', data);
+                                                toast.error(data?.error || 'Failed to undo transaction');
+                                              }
+                                            } catch (error) {
+                                              console.error('Error undoing transaction:', error);
+                                              toast.error(error.message || 'Failed to undo transaction');
+                                            }
+                                          }}
+                                          className="h-6 w-6 p-0"
+                                          title="Undo Transaction"
+                                        >
+                                          <Undo className="w-3 h-3 text-slate-400" />
+                                        </Button>
+                                      )}
                                     </>
                                   )}
                                 </div>
@@ -2768,6 +2876,42 @@ export default function AccountDetail() {
                                     title="View Audit History"
                                   >
                                     <History className="w-3 h-3 text-slate-400" />
+                                  </Button>
+                                )}
+                                {activity.transactionId && activity.journalEntryId && (
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={async (e) => {
+                                      e?.stopPropagation();
+                                      try {
+                                        const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                          p_transaction_id: activity.transactionId
+                                        });
+
+                                        if (error) {
+                                          console.error('RPC Error:', error);
+                                          toast.error(error.message || 'Failed to undo transaction');
+                                          return;
+                                        }
+
+                                        if (data?.success) {
+                                          toast.success('Transaction moved back to pending');
+                                          queryClient.invalidateQueries(['audit-history-paginated']);
+                                          queryClient.invalidateQueries(['transactions']);
+                                        } else {
+                                          console.error('Function returned error:', data);
+                                          toast.error(data?.error || 'Failed to undo transaction');
+                                        }
+                                      } catch (error) {
+                                        console.error('Error undoing transaction:', error);
+                                        toast.error(error.message || 'Failed to undo transaction');
+                                      }
+                                    }}
+                                    className="h-6 w-6 p-0"
+                                    title="Undo Transaction"
+                                  >
+                                    <Undo className="w-3 h-3 text-slate-400" />
                                   </Button>
                                 )}
                               </div>
