@@ -82,8 +82,8 @@ export default function ContactDetail() {
       const { data, error } = await firstsavvy.from('transactions')
         .select(`
           *,
-          account:bank_account_id(id, name),
-          category:category_account_id(id, name)
+          bank_account:bank_account_id(id, name),
+          category_account:category_account_id(id, name)
         `)
         .eq('profile_id', activeProfile.id)
         .eq('contact_id', id)
@@ -92,7 +92,10 @@ export default function ContactDetail() {
         .order('id', { ascending: false })
         .limit(10000);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching transactions:', error);
+        throw error;
+      }
       return data || [];
     },
     enabled: !!id && !!activeProfile
@@ -552,7 +555,7 @@ export default function ContactDetail() {
                                     onClick={() => handleTransactionClick(transaction)}
                                     className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
                                   >
-                                    {transaction.category?.name || '\u2014'}
+                                    {transaction.category_account?.name || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
@@ -567,7 +570,7 @@ export default function ContactDetail() {
                                     onClick={() => handleTransactionClick(transaction)}
                                     className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
                                   >
-                                    {transaction.account?.name || '\u2014'}
+                                    {transaction.bank_account?.name || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
