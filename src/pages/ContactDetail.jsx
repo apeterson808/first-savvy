@@ -67,8 +67,11 @@ export default function ContactDetail() {
   const [editingLineId, setEditingLineId] = useState(null);
   const [editingLine, setEditingLine] = useState(null);
   const [isSavingLine, setIsSavingLine] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
+
+  const PAGE_SIZE = 10;
 
   const { data: contact, isLoading: contactLoading, error: contactError } = useQuery({
     queryKey: ['contact', id, activeProfile?.id],
@@ -86,11 +89,21 @@ export default function ContactDetail() {
     enabled: !!activeProfile
   });
 
-  const { data: rawTransactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'contact', id, activeProfile?.id],
+  const { data: rawTransactionsData, isLoading: transactionsLoading } = useQuery({
+    queryKey: ['transactions', 'contact', id, activeProfile?.id, currentPage],
     queryFn: async () => {
-      if (!id || !activeProfile) return [];
-      const { data, error } = await firstsavvy.supabase
+      if (!id || !activeProfile) return { transactions: [], totalCount: 0 };
+
+      const offset = currentPage * PAGE_SIZE;
+
+      const countQuery = firstsavvy.supabase
+        .from('transactions')
+        .select('*', { count: 'exact', head: true })
+        .eq('contact_id', id)
+        .eq('status', 'posted')
+        .eq('profile_id', activeProfile.id);
+
+      const dataQuery = firstsavvy.supabase
         .from('transactions')
         .select('*')
         .eq('contact_id', id)
@@ -98,13 +111,27 @@ export default function ContactDetail() {
         .eq('profile_id', activeProfile.id)
         .order('date', { ascending: false })
         .order('id', { ascending: false })
-        .limit(10000);
+        .range(offset, offset + PAGE_SIZE - 1);
 
-      if (error) throw error;
-      return data || [];
+      const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
+
+      if (countResult.error) throw countResult.error;
+      if (dataResult.error) throw dataResult.error;
+
+      return {
+        transactions: dataResult.data || [],
+        totalCount: countResult.count || 0
+      };
     },
-    enabled: !!id && !!activeProfile
+    enabled: !!id && !!activeProfile,
+    keepPreviousData: true
   });
+
+  const rawTransactions = rawTransactionsData?.transactions || [];
+  const totalTransactions = rawTransactionsData?.totalCount || 0;
+  const totalPages = Math.ceil(totalTransactions / PAGE_SIZE);
+  const hasNextPage = currentPage < totalPages - 1;
+  const hasPreviousPage = currentPage > 0;
 
   // Enrich transactions with account data
   const transactions = useMemo(() => {
@@ -226,6 +253,18 @@ export default function ContactDetail() {
   const handleDelete = () => {
     if (confirm('Are you sure you want to delete this contact?')) {
       deleteMutation.mutate(contact.id);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (hasNextPage) {
+      setCurrentPage(prev => prev + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (hasPreviousPage) {
+      setCurrentPage(prev => prev - 1);
     }
   };
 
@@ -656,6 +695,34 @@ export default function ContactDetail() {
                         })}
                       </TableBody>
                     </Table>
+                    {totalPages > 1 && (
+                      <div className="flex justify-between items-center p-4 border-t">
+                        <div className="text-xs text-slate-500">
+                          Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalTransactions)} of {totalTransactions} transactions
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={goToPreviousPage}
+                            disabled={!hasPreviousPage || transactionsLoading}
+                            className="h-7 text-xs"
+                          >
+                            Previous
+                          </Button>
+                          <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={goToNextPage}
+                            disabled={!hasNextPage || transactionsLoading}
+                            className="h-7 text-xs"
+                          >
+                            Next
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </CardContent>
