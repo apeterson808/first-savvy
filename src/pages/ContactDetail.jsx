@@ -76,30 +76,6 @@ export default function ContactDetail() {
     enabled: !!id && !!activeProfile
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'contact', id, activeProfile?.id],
-    queryFn: async () => {
-      if (!id || !activeProfile) return [];
-      const { data, error } = await firstsavvy
-        .from('transactions')
-        .select(`
-          *,
-          bank_account:transactions_account_id_fkey(id, account_name, display_name),
-          category_account:transactions_chart_account_id_fkey(id, account_name, display_name)
-        `)
-        .eq('contact_id', id)
-        .eq('status', 'posted')
-        .eq('profile_id', activeProfile.id)
-        .order('date', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(10000);
-
-      if (error) throw error;
-      return data || [];
-    },
-    enabled: !!id && !!activeProfile
-  });
-
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts', activeProfile?.id],
     queryFn: async () => {
@@ -108,6 +84,32 @@ export default function ContactDetail() {
       return accounts;
     },
     enabled: !!activeProfile
+  });
+
+  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ['transactions', 'contact', id, activeProfile?.id, chartAccounts.length],
+    queryFn: async () => {
+      if (!id || !activeProfile) return [];
+      const { data, error } = await firstsavvy.supabase
+        .from('transactions')
+        .select('*')
+        .eq('contact_id', id)
+        .eq('status', 'posted')
+        .eq('profile_id', activeProfile.id)
+        .order('date', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(10000);
+
+      if (error) throw error;
+
+      // Enrich transactions with account data
+      return (data || []).map(txn => ({
+        ...txn,
+        bank_account: chartAccounts.find(acc => acc.id === txn.bank_account_id),
+        category_account: chartAccounts.find(acc => acc.id === txn.category_account_id)
+      }));
+    },
+    enabled: !!id && !!activeProfile && chartAccounts.length > 0
   });
 
   const updateMutation = useMutation({
