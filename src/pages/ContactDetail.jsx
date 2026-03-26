@@ -80,25 +80,10 @@ export default function ContactDetail() {
     queryKey: ['transactions', 'contact', id, activeProfile?.id],
     queryFn: async () => {
       if (!id || !activeProfile) return [];
-      const { data, error } = await firstsavvy.from('transactions')
-        .select(`
-          *,
-          bank_account:user_chart_of_accounts!transactions_account_id_fkey(account_name),
-          category_account:user_chart_of_accounts!transactions_chart_account_id_fkey(id, account_name, display_name, class)
-        `)
-        .eq('profile_id', activeProfile.id)
-        .eq('contact_id', id)
-        .eq('status', 'posted')
-        .order('date', { ascending: false })
-        .order('id', { ascending: false })
-        .limit(10000);
-
-      if (error) throw error;
-
-      return (data || []).map(t => ({
-        ...t,
-        account_name: t.bank_account?.account_name
-      }));
+      return await firstsavvy.entities.Transaction.filter({
+        contact_id: id,
+        status: 'posted'
+      }, '-date,id', 10000);
     },
     enabled: !!id && !!activeProfile
   });
@@ -547,7 +532,7 @@ export default function ContactDetail() {
                           const isIncome = transaction.type === 'income';
                           const amount = Math.abs(transaction.amount || 0);
                           const isEditing = editingLineId === transaction.id;
-                          const categoryAccount = transaction.category_account || chartAccounts.find(a => a.id === transaction.category_account_id);
+                          const categoryAccount = chartAccounts.find(a => a.id === transaction.category_account_id);
 
                           return (
                             <TableRow key={transaction.id} className={getRowClassName(index)}>
