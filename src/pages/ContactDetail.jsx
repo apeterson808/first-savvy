@@ -507,27 +507,27 @@ export default function ContactDetail() {
               </CardHeader>
               <CardContent className="p-0">
                 {transactionsLoading ? (
-                  <div className="p-8 text-center text-slate-500">Loading transactions...</div>
+                  <div className="p-8 text-center text-slate-500 text-sm">Loading transactions...</div>
                 ) : transactions.length === 0 ? (
                   <div className="p-12 text-center">
                     <p className="text-slate-600 font-medium mb-1">No transactions yet</p>
                     <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
                   </div>
                 ) : (
-                  <div className="w-full">
+                  <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="bg-slate-50">
-                          <TableHead>Date</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Contact</TableHead>
-                          <TableHead className="text-right">Amount</TableHead>
-                          <TableHead className="text-right w-24">Actions</TableHead>
+                        <TableRow className="h-8 bg-slate-100">
+                          <TableHead className="w-[90px] py-1.5 text-[11px] font-semibold">Date</TableHead>
+                          <TableHead className="w-[300px] py-1.5 text-[11px] font-semibold">Description</TableHead>
+                          <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">Category</TableHead>
+                          <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">Contact</TableHead>
+                          <TableHead className="w-[100px] text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
+                          <TableHead className="w-[80px] py-1.5 text-[11px] font-semibold">Action</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {transactions.map((transaction) => {
+                        {transactions.map((transaction, index) => {
                           const isExpense = transaction.type === 'expense';
                           const isIncome = transaction.type === 'income';
                           const amount = Math.abs(transaction.amount || 0);
@@ -537,75 +537,96 @@ export default function ContactDetail() {
                           return (
                             <TableRow
                               key={transaction.id}
-                              className="hover:bg-slate-50"
+                              className={`h-7 ${
+                                index % 2 === 0
+                                  ? 'bg-white hover:bg-slate-50'
+                                  : 'bg-slate-50/50 hover:bg-slate-100'
+                              }`}
                             >
-                              <TableCell className="text-sm">
-                                {format(new Date(transaction.date), 'MMM d, yyyy')}
+                              <TableCell className="w-[90px] whitespace-nowrap text-[11px] py-1">
+                                {format(new Date(transaction.date), 'MM/dd/yy')}
                               </TableCell>
-                              <TableCell className="font-medium text-sm">
+                              <TableCell className="w-[300px] py-1">
                                 {isEditing && editingLine ? (
-                                  <Input
+                                  <input
+                                    type="text"
                                     value={editingLine.description}
                                     onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
-                                    className="h-8"
+                                    className="w-full h-6 text-[11px] px-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                                     onClick={(e) => e.stopPropagation()}
+                                    autoFocus
                                   />
                                 ) : (
-                                  <div onClick={(e) => handleEditTransaction(transaction, e)} className="cursor-pointer">
+                                  <button
+                                    onClick={(e) => handleEditTransaction(transaction, e)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full text-[11px] truncate block"
+                                  >
                                     {transaction.description}
-                                  </div>
+                                  </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-sm">
+                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
                                 {isEditing && editingLine ? (
                                   <CategoryDropdown
                                     value={editingLine.account_id}
-                                    onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
-                                    transactionType={isExpense ? 'expense' : 'income'}
-                                    isTransactionTransfer={false}
+                                    onChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                                    className="h-6 text-[11px] w-full"
+                                    profileId={activeProfile?.id}
                                   />
                                 ) : (
-                                  <div onClick={(e) => handleEditTransaction(transaction, e)} className="cursor-pointer text-slate-700">
-                                    {categoryAccount ? getDisplayName(categoryAccount) : '-'}
-                                  </div>
+                                  <button
+                                    onClick={(e) => handleEditTransaction(transaction, e)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
+                                  >
+                                    {categoryAccount ? getDisplayName(categoryAccount) : '\u2014'}
+                                  </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-sm">
+                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
                                 {isEditing && editingLine ? (
                                   <ContactDropdown
                                     value={editingLine.contact_id}
-                                    onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                                    onChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                                    className="h-6 text-[11px] w-full"
+                                    profileId={activeProfile?.id}
+                                    allowClear
                                   />
                                 ) : (
-                                  <div onClick={(e) => handleEditTransaction(transaction, e)} className="cursor-pointer text-slate-700">
-                                    {contact?.name || '-'}
-                                  </div>
+                                  <button
+                                    onClick={(e) => handleEditTransaction(transaction, e)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
+                                  >
+                                    {contact?.name || '\u2014'}
+                                  </button>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right">
-                                <span className={`font-semibold text-sm ${isExpense ? 'text-burgundy' : 'text-forest-green'}`}>
+                              <TableCell className="w-[100px] whitespace-nowrap text-right text-[11px] py-1">
+                                <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
                                   {formatCurrency(isExpense ? -amount : amount)}
                                 </span>
                               </TableCell>
-                              <TableCell className="text-right">
+                              <TableCell className="w-[80px] py-1">
                                 {isEditing ? (
-                                  <div className="flex items-center justify-end gap-1">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={handleCancelLine}
-                                      className="h-7 px-2"
+                                  <div className="flex items-center gap-1">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleCancelLine();
+                                      }}
+                                      className="text-slate-400 hover:text-red-600 transition-colors"
                                     >
                                       <X className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      onClick={() => handleSaveLine(transaction.id)}
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleSaveLine(transaction.id);
+                                      }}
                                       disabled={isSavingLine}
-                                      className="h-7 px-2"
+                                      className="text-slate-400 hover:text-green-600 transition-colors disabled:opacity-50"
                                     >
                                       <Check className="w-4 h-4" />
-                                    </Button>
+                                    </button>
                                   </div>
                                 ) : (
                                   <Button
