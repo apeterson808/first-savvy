@@ -24,7 +24,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check } from 'lucide-react';
+import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check, Undo2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
@@ -262,6 +262,26 @@ export default function ContactDetail() {
   const handleCancelLine = () => {
     setEditingLineId(null);
     setEditingLine(null);
+  };
+
+  const handleUndoTransaction = async (transactionId, e) => {
+    e.stopPropagation();
+
+    if (!confirm('Are you sure you want to undo this transaction? This will move it back to unposted status.')) {
+      return;
+    }
+
+    try {
+      await firstsavvy.rpc('undo_posted_transaction', { p_transaction_id: transactionId });
+
+      queryClient.invalidateQueries({ queryKey: ['transactions', 'contact', id] });
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['budget-analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      toast.success('Transaction undone successfully');
+    } catch (error) {
+      toast.error(`Failed to undo transaction: ${error.message}`);
+    }
   };
 
   useEffect(() => {
@@ -503,6 +523,7 @@ export default function ContactDetail() {
                           <TableHead>Category</TableHead>
                           <TableHead>Contact</TableHead>
                           <TableHead className="text-right">Amount</TableHead>
+                          <TableHead className="text-right w-24">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -562,8 +583,13 @@ export default function ContactDetail() {
                                 )}
                               </TableCell>
                               <TableCell className="text-right">
+                                <span className={`font-semibold text-sm ${isExpense ? 'text-burgundy' : 'text-forest-green'}`}>
+                                  {formatCurrency(isExpense ? -amount : amount)}
+                                </span>
+                              </TableCell>
+                              <TableCell className="text-right">
                                 {isEditing ? (
-                                  <div className="flex items-center justify-end gap-2">
+                                  <div className="flex items-center justify-end gap-1">
                                     <Button
                                       variant="ghost"
                                       size="sm"
@@ -582,9 +608,14 @@ export default function ContactDetail() {
                                     </Button>
                                   </div>
                                 ) : (
-                                  <span className={`font-semibold text-sm ${isExpense ? 'text-burgundy' : 'text-forest-green'}`}>
-                                    {formatCurrency(isExpense ? -amount : amount)}
-                                  </span>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => handleUndoTransaction(transaction.id, e)}
+                                    className="h-7 px-2"
+                                  >
+                                    <Undo2 className="w-4 h-4" />
+                                  </Button>
                                 )}
                               </TableCell>
                             </TableRow>
