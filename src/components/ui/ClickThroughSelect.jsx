@@ -17,7 +17,8 @@ export function ClickThroughSelect({
   name,
   enableSearch = false,
   onSearchTermChange,
-  disabled = false
+  disabled = false,
+  displayValue
 }) {
   const dropdownId = useId();
   const { registerDropdown, openDropdownId } = useDropdownContext();
@@ -182,9 +183,9 @@ export function ClickThroughSelect({
 
   const options = extractOptions(children);
   const selectedOption = options.find(opt => opt.props.value === selectedValue && !opt.props.isAction);
-  const displayText = selectedOption
+  const displayText = displayValue || (selectedOption
     ? (selectedOption.props['data-display'] || getDisplayText(selectedOption.props.children))
-    : placeholder;
+    : placeholder);
 
   const getVisibleItems = () => {
     const flattenChildren = (nodes) => {
