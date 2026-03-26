@@ -1479,13 +1479,13 @@ export default function AccountDetail() {
                       <Table>
                         <TableHeader>
                           <TableRow className="h-8 bg-slate-100">
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                            <TableHead className="py-1.5 text-[11px] font-semibold">Category</TableHead>
-                            <TableHead className="w-[60px] py-1.5 text-[11px] font-semibold">Action</TableHead>
+                            <TableHead className="w-[90px] py-1.5 text-[11px] font-semibold">Date</TableHead>
+                            <TableHead className="w-[140px] py-1.5 text-[11px] font-semibold">Account</TableHead>
+                            <TableHead className="w-[300px] py-1.5 text-[11px] font-semibold">Description</TableHead>
+                            <TableHead className="w-[100px] text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
+                            <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">From/To</TableHead>
+                            <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">Category</TableHead>
+                            <TableHead className="w-[80px] py-1.5 text-[11px] font-semibold">Action</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1498,13 +1498,13 @@ export default function AccountDetail() {
                                   : 'bg-slate-50/50 hover:bg-slate-100'
                               }`}
                             >
-                              <TableCell className="whitespace-nowrap text-[11px] py-1">
+                              <TableCell className="w-[90px] whitespace-nowrap text-[11px] py-1">
                                 {format(parseISO(activity.displayDate), 'MM/dd/yy')}
                               </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                              <TableCell className="w-[140px] whitespace-nowrap text-[11px] text-slate-600 py-1">
                                 {activity.account_name || '\u2014'}
                               </TableCell>
-                              <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
+                              <TableCell className="w-[300px] py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <input
                                     type="text"
@@ -1516,14 +1516,14 @@ export default function AccountDetail() {
                                 ) : (
                                   <button
                                     onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full text-[11px] truncate"
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full text-[11px] truncate block"
                                     disabled={!activity.transactionId}
                                   >
                                     {activity.displayDescription}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
+                              <TableCell className="w-[100px] whitespace-nowrap text-right text-[11px] py-1">
                                 {(() => {
                                   const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                   return (
@@ -1533,44 +1533,44 @@ export default function AccountDetail() {
                                   );
                                 })()}
                               </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
                                     onChange={setEditContactId}
-                                    className="h-6 text-[11px]"
+                                    className="h-6 text-[11px] w-full"
                                     profileId={activeProfile?.id}
                                     allowClear
                                   />
                                 ) : (
                                   <button
                                     onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
                                     disabled={!activity.transactionId}
                                   >
                                     {activity.contact || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
+                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
                                 {editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
                                     onChange={setEditCategoryId}
-                                    className="h-6 text-[11px]"
+                                    className="h-6 text-[11px] w-full"
                                     profileId={activeProfile?.id}
                                   />
                                 ) : (
                                   <button
                                     onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full"
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
                                     disabled={!activity.transactionId}
                                   >
                                     {activity.category || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="py-1">
+                              <TableCell className="w-[80px] py-1">
                                 {activity.transactionId && activity.journalEntryId && (
                                   editingTransactionId === activity.transactionId ? (
                                     <div className="flex items-center gap-1">
