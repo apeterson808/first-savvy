@@ -1179,7 +1179,7 @@ export default function AccountDetail() {
   if (accountLoading) {
     return (
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto">
           <div className="text-center text-slate-500">Loading account...</div>
         </div>
       </div>
@@ -1189,7 +1189,7 @@ export default function AccountDetail() {
   if (!account) {
     return (
       <div className="p-8">
-        <div className="max-w-6xl mx-auto">
+        <div className="mx-auto">
           <div className="text-center text-slate-500">Account not found</div>
           <div className="text-center mt-4">
             <Button onClick={() => navigate(-1)} variant="outline">
@@ -1213,7 +1213,7 @@ export default function AccountDetail() {
 
   return (
     <div className="p-3 md:p-4">
-      <div className="max-w-6xl mx-auto space-y-3">
+      <div className="mx-auto space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button

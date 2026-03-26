@@ -89,7 +89,7 @@ export default function Budgeting() {
 
   if (isLoading) {
     return (
-      <div className="p-3 max-w-6xl mx-auto">
+      <div className="p-3 mx-auto">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-slate-200 rounded w-48"></div>
           <div className="h-32 bg-slate-200 rounded"></div>

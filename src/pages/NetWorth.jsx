@@ -120,7 +120,7 @@ export default function NetWorth() {
   if (isLoading) {
     return (
       <div className="p-4 md:p-6">
-        <div className="max-w-5xl mx-auto">
+        <div className="mx-auto">
           <div className="flex items-center justify-center py-12">
             <div className="text-slate-500">Loading...</div>
           </div>
@@ -131,7 +131,7 @@ export default function NetWorth() {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="mx-auto space-y-6">
 
         {/* Header - Net Worth Card */}
         <Card className="shadow-md border-slate-200 bg-gradient-to-br from-white to-slate-50">

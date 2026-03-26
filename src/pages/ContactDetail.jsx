@@ -299,7 +299,7 @@ export default function ContactDetail() {
   if (contactLoading) {
     return (
       <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto">
           <div className="text-center text-slate-500">Loading contact...</div>
         </div>
       </div>
@@ -309,7 +309,7 @@ export default function ContactDetail() {
   if (contactError || !contact) {
     return (
       <div className="min-h-screen bg-slate-50 p-8">
-        <div className="max-w-7xl mx-auto">
+        <div className="mx-auto">
           <div className="text-center space-y-4">
             <div className="text-red-600">Failed to load contact</div>
             {contactError && <div className="text-sm text-slate-500">{contactError.message}</div>}
@@ -324,7 +324,7 @@ export default function ContactDetail() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="mb-6 flex items-center justify-between">
           <Button
             variant="ghost"
