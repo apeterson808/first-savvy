@@ -1519,16 +1519,6 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
-                                {(() => {
-                                  const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
-                                  return (
-                                    <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
-                                      {formatCurrency(amount)}
-                                    </span>
-                                  );
-                                })()}
-                              </TableCell>
-                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                                 {editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
@@ -1547,7 +1537,7 @@ export default function AccountDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                                 {editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
@@ -1564,6 +1554,16 @@ export default function AccountDetail() {
                                     {activity.category || '\u2014'}
                                   </button>
                                 )}
+                              </TableCell>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                                {(() => {
+                                  const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
+                                  return (
+                                    <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
+                                      {formatCurrency(amount)}
+                                    </span>
+                                  );
+                                })()}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
                                 {activity.transactionId && activity.journalEntryId && (

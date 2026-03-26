@@ -32,13 +32,6 @@ export const TRANSACTION_TABLE_CONFIG = {
       className: ""
     },
     {
-      id: "amount",
-      label: "Amount",
-      width: "w-[100px]",
-      align: "right",
-      className: "whitespace-nowrap"
-    },
-    {
       id: "contact",
       label: "From/To",
       width: "w-[180px]",
@@ -51,6 +44,13 @@ export const TRANSACTION_TABLE_CONFIG = {
       width: "w-[180px]",
       align: "left",
       className: "text-slate-600"
+    },
+    {
+      id: "amount",
+      label: "Amount",
+      width: "w-[100px]",
+      align: "right",
+      className: "whitespace-nowrap"
     },
     {
       id: "action",

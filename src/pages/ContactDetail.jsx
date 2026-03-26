@@ -562,11 +562,6 @@ export default function ContactDetail() {
                                 )}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
-                                <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
-                                  {formatCurrency(isExpense ? -amount : amount)}
-                                </span>
-                              </TableCell>
-                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                                 {isEditing && editingLine ? (
                                   <ContactDropdown
                                     value={editingLine.contact_id}
@@ -584,7 +579,7 @@ export default function ContactDetail() {
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                                 {isEditing && editingLine ? (
                                   <CategoryDropdown
                                     value={editingLine.account_id}
@@ -600,6 +595,11 @@ export default function ContactDetail() {
                                     {categoryAccount ? getDisplayName(categoryAccount) : '\u2014'}
                                   </button>
                                 )}
+                              </TableCell>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                                <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
+                                  {formatCurrency(isExpense ? -amount : amount)}
+                                </span>
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
                                 {isEditing ? (
