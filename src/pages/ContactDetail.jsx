@@ -608,14 +608,12 @@ export default function ContactDetail() {
                                     </Button>
                                   </div>
                                 ) : (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
+                                  <button
                                     onClick={(e) => handleUndoTransaction(transaction.id, e)}
-                                    className="h-7 px-2"
+                                    className="p-1 hover:bg-slate-100 rounded text-slate-600 hover:text-slate-900 transition-colors"
                                   >
                                     <Undo2 className="w-4 h-4" />
-                                  </Button>
+                                  </button>
                                 )}
                               </TableCell>
                             </TableRow>
