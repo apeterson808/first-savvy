@@ -1574,28 +1574,25 @@ export default function AccountDetail() {
                                 {activity.transactionId && activity.journalEntryId && (
                                   editingTransactionId === activity.transactionId ? (
                                     <div className="flex items-center gap-1">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
+                                      <button
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           cancelEditingTransaction();
                                         }}
-                                        className="h-6 w-6 p-0"
+                                        className="text-slate-400 hover:text-red-600 transition-colors"
                                       >
-                                        <X className="w-3.5 h-3.5" />
-                                      </Button>
-                                      <Button
-                                        size="sm"
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                      <button
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           saveTransactionEdit(activity.transactionId);
                                         }}
                                         disabled={updateTransactionMutation.isPending}
-                                        className="h-6 w-6 p-0"
+                                        className="text-slate-400 hover:text-green-600 transition-colors disabled:opacity-50"
                                       >
-                                        <Check className="w-3.5 h-3.5" />
-                                      </Button>
+                                        <Check className="w-4 h-4" />
+                                      </button>
                                     </div>
                                   ) : (
                                     <Button
