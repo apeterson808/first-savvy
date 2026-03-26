@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,7 +28,7 @@ import {
   Building2, Hash, DollarSign, Calendar, Edit2, Save, X, Trash2, ArrowLeft,
   TrendingUp, TrendingDown, Link2, Car, CreditCard as CreditCardIcon, Wallet,
   Download, Printer, Search, Filter, ExternalLink, FileText, Minus, Equal, History, Upload,
-  Target, Undo
+  Target, Undo, Check, Undo2
 } from 'lucide-react';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { toast } from 'sonner';
@@ -82,6 +82,7 @@ export default function AccountDetail() {
   const [editDescription, setEditDescription] = useState('');
   const [editCategoryId, setEditCategoryId] = useState('');
   const [editContactId, setEditContactId] = useState('');
+  const registerTableRef = useRef(null);
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const { activeProfile } = useProfile();
@@ -105,6 +106,19 @@ export default function AccountDetail() {
   const returnUrl = urlParams.get('from') || '?tab=accounts';
 
   const dateRange = useMemo(() => getDateRangeFromPreset(datePreset), [datePreset]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (editingTransactionId && registerTableRef.current && !registerTableRef.current.contains(event.target)) {
+        cancelEditingTransaction();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [editingTransactionId]);
 
   // Hooks for fetching account types and details in edit mode
   const { accountTypes = [] } = useAccountTypesByClass(editClass);
@@ -1461,7 +1475,7 @@ export default function AccountDetail() {
                   ) : allActivity.length === 0 ? (
                     <p className="text-center text-slate-500 py-6 text-sm">No activity found</p>
                   ) : (
-                    <div className="rounded-md border overflow-x-auto">
+                    <div ref={registerTableRef} className="rounded-md border overflow-x-auto">
                       <Table>
                         <TableHeader>
                           <TableRow className="h-8 bg-slate-100">
@@ -1491,7 +1505,23 @@ export default function AccountDetail() {
                                 {activity.account_name || '\u2014'}
                               </TableCell>
                               <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
-                                <div className="text-[11px] truncate">{activity.displayDescription}</div>
+                                {editingTransactionId === activity.transactionId ? (
+                                  <input
+                                    type="text"
+                                    value={editDescription}
+                                    onChange={(e) => setEditDescription(e.target.value)}
+                                    className="w-full h-6 text-[11px] px-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    autoFocus
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={() => activity.transactionId && startEditingTransaction(activity)}
+                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full text-[11px] truncate"
+                                    disabled={!activity.transactionId}
+                                  >
+                                    {activity.displayDescription}
+                                  </button>
+                                )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-right text-[11px] py-1">
                                 {(() => {
@@ -1542,39 +1572,66 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="py-1">
                                 {activity.transactionId && activity.journalEntryId && (
-                                  <Button
-                                    variant="link"
-                                    size="sm"
-                                    onClick={async (e) => {
-                                      e?.stopPropagation();
-                                      try {
-                                        const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
-                                          p_transaction_id: activity.transactionId
-                                        });
+                                  editingTransactionId === activity.transactionId ? (
+                                    <div className="flex items-center gap-1">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          cancelEditingTransaction();
+                                        }}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          saveTransactionEdit(activity.transactionId);
+                                        }}
+                                        disabled={updateTransactionMutation.isPending}
+                                        className="h-6 w-6 p-0"
+                                      >
+                                        <Check className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </div>
+                                  ) : (
+                                    <Button
+                                      variant="link"
+                                      size="sm"
+                                      onClick={async (e) => {
+                                        e?.stopPropagation();
+                                        try {
+                                          const { data, error } = await firstsavvy.rpc('undo_posted_transaction', {
+                                            p_transaction_id: activity.transactionId
+                                          });
 
-                                        if (error) {
-                                          console.error('RPC Error:', error);
+                                          if (error) {
+                                            console.error('RPC Error:', error);
+                                            toast.error(error.message || 'Failed to undo transaction');
+                                            return;
+                                          }
+
+                                          if (data?.success) {
+                                            toast.success('Transaction moved back to pending');
+                                            queryClient.invalidateQueries(['journal-lines-paginated']);
+                                            queryClient.invalidateQueries(['transactions']);
+                                          } else {
+                                            console.error('Function returned error:', data);
+                                            toast.error(data?.error || 'Failed to undo transaction');
+                                          }
+                                        } catch (error) {
+                                          console.error('Error undoing transaction:', error);
                                           toast.error(error.message || 'Failed to undo transaction');
-                                          return;
                                         }
-
-                                        if (data?.success) {
-                                          toast.success('Transaction moved back to pending');
-                                          queryClient.invalidateQueries(['journal-lines-paginated']);
-                                          queryClient.invalidateQueries(['transactions']);
-                                        } else {
-                                          console.error('Function returned error:', data);
-                                          toast.error(data?.error || 'Failed to undo transaction');
-                                        }
-                                      } catch (error) {
-                                        console.error('Error undoing transaction:', error);
-                                        toast.error(error.message || 'Failed to undo transaction');
-                                      }
-                                    }}
-                                    className="h-auto p-0 text-blue-600 hover:text-blue-700 text-[11px]"
-                                  >
-                                    Undo
-                                  </Button>
+                                      }}
+                                      className="h-auto p-0 text-blue-600 hover:text-blue-700 text-[11px]"
+                                    >
+                                      Undo
+                                    </Button>
+                                  )
                                 )}
                               </TableCell>
                             </TableRow>
