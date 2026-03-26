@@ -80,10 +80,22 @@ export default function ContactDetail() {
     queryKey: ['transactions', 'contact', id, activeProfile?.id],
     queryFn: async () => {
       if (!id || !activeProfile) return [];
-      return await firstsavvy.entities.Transaction.filter({
-        contact_id: id,
-        status: 'posted'
-      }, '-date,id', 10000);
+      const { data, error } = await firstsavvy
+        .from('transactions')
+        .select(`
+          *,
+          bank_account:user_chart_of_accounts!bank_account_id(id, account_name, display_name),
+          category_account:user_chart_of_accounts!category_account_id(id, account_name, display_name)
+        `)
+        .eq('contact_id', id)
+        .eq('status', 'posted')
+        .eq('profile_id', activeProfile.id)
+        .order('date', { ascending: false })
+        .order('id', { ascending: false })
+        .limit(10000);
+
+      if (error) throw error;
+      return data || [];
     },
     enabled: !!id && !!activeProfile
   });
@@ -532,14 +544,8 @@ export default function ContactDetail() {
                           const isIncome = transaction.type === 'income';
                           const amount = Math.abs(transaction.amount || 0);
                           const isEditing = editingLineId === transaction.id;
-                          const categoryAccount = chartAccounts.find(a => a.id === transaction.category_account_id);
-                          const bankAccount = chartAccounts.find(a => a.id === transaction.bank_account_id);
-
-                          if (index === 0 && !bankAccount) {
-                            console.log('Transaction:', transaction);
-                            console.log('Bank Account ID:', transaction.bank_account_id);
-                            console.log('Chart Accounts:', chartAccounts.map(a => ({ id: a.id, name: a.account_name, display_name: a.display_name })));
-                          }
+                          const categoryAccount = transaction.category_account;
+                          const bankAccount = transaction.bank_account;
 
                           return (
                             <TableRow key={transaction.id} className={getRowClassName(index)}>
