@@ -86,8 +86,8 @@ export default function ContactDetail() {
     enabled: !!activeProfile
   });
 
-  const { data: transactions = [], isLoading: transactionsLoading } = useQuery({
-    queryKey: ['transactions', 'contact', id, activeProfile?.id, chartAccounts.length],
+  const { data: rawTransactions = [], isLoading: transactionsLoading } = useQuery({
+    queryKey: ['transactions', 'contact', id, activeProfile?.id],
     queryFn: async () => {
       if (!id || !activeProfile) return [];
       const { data, error } = await firstsavvy.supabase
@@ -101,16 +101,19 @@ export default function ContactDetail() {
         .limit(10000);
 
       if (error) throw error;
-
-      // Enrich transactions with account data
-      return (data || []).map(txn => ({
-        ...txn,
-        bank_account: chartAccounts.find(acc => acc.id === txn.bank_account_id),
-        category_account: chartAccounts.find(acc => acc.id === txn.category_account_id)
-      }));
+      return data || [];
     },
-    enabled: !!id && !!activeProfile && chartAccounts.length > 0
+    enabled: !!id && !!activeProfile
   });
+
+  // Enrich transactions with account data
+  const transactions = useMemo(() => {
+    return rawTransactions.map(txn => ({
+      ...txn,
+      bank_account: chartAccounts.find(acc => acc.id === txn.bank_account_id),
+      category_account: chartAccounts.find(acc => acc.id === txn.category_account_id)
+    }));
+  }, [rawTransactions, chartAccounts]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => firstsavvy.entities.Contact.update(id, data),
