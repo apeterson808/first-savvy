@@ -93,7 +93,7 @@ export default function ContactDetail() {
     queryFn: async () => {
       if (!activeProfile) return [];
       const accounts = await getUserChartOfAccounts(activeProfile.id);
-      return accounts.filter(a => a.level === 3);
+      return accounts;
     },
     enabled: !!activeProfile
   });
@@ -516,7 +516,7 @@ export default function ContactDetail() {
                   </div>
                 ) : (
                   <div className="rounded-md border overflow-x-auto">
-                    <Table>
+                    <Table style={{ tableLayout: 'fixed', width: '100%' }}>
                       <TableHeader>
                         <TableRow className={TRANSACTION_TABLE_CONFIG.header.rowClass}>
                           {TRANSACTION_TABLE_CONFIG.columns.map((col) => (
@@ -533,6 +533,7 @@ export default function ContactDetail() {
                           const amount = Math.abs(transaction.amount || 0);
                           const isEditing = editingLineId === transaction.id;
                           const categoryAccount = chartAccounts.find(a => a.id === transaction.category_account_id);
+                          const bankAccount = chartAccounts.find(a => a.id === transaction.bank_account_id);
 
                           return (
                             <TableRow key={transaction.id} className={getRowClassName(index)}>
@@ -540,7 +541,7 @@ export default function ContactDetail() {
                                 {format(new Date(transaction.date), 'MM/dd/yy')}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
-                                {transaction.account_name || '\u2014'}
+                                {bankAccount ? getDisplayName(bankAccount) : '\u2014'}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
                                 {isEditing && editingLine ? (
@@ -565,10 +566,8 @@ export default function ContactDetail() {
                                 {isEditing && editingLine ? (
                                   <ContactDropdown
                                     value={editingLine.contact_id}
-                                    onChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
-                                    className={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
-                                    profileId={activeProfile?.id}
-                                    allowClear
+                                    onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                                    triggerClassName={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
                                   />
                                 ) : (
                                   <button
@@ -583,9 +582,9 @@ export default function ContactDetail() {
                                 {isEditing && editingLine ? (
                                   <CategoryDropdown
                                     value={editingLine.account_id}
-                                    onChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
-                                    className={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
-                                    profileId={activeProfile?.id}
+                                    onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                                    triggerClassName={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
+                                    transactionType={transaction.type}
                                   />
                                 ) : (
                                   <button
