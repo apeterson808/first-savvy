@@ -83,8 +83,8 @@ export default function ContactDetail() {
       const { data, error } = await firstsavvy.from('transactions')
         .select(`
           *,
-          account:user_chart_of_accounts!transactions_account_id_fkey(account_name),
-          category_account:user_chart_of_accounts!transactions_category_account_id_fkey(id, account_name, display_name, class)
+          bank_account:user_chart_of_accounts!transactions_account_id_fkey(account_name),
+          category_account:user_chart_of_accounts!transactions_chart_account_id_fkey(id, account_name, display_name, class)
         `)
         .eq('profile_id', activeProfile.id)
         .eq('contact_id', id)
@@ -97,7 +97,7 @@ export default function ContactDetail() {
 
       return (data || []).map(t => ({
         ...t,
-        account_name: t.account?.account_name
+        account_name: t.bank_account?.account_name
       }));
     },
     enabled: !!id && !!activeProfile
