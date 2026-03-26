@@ -535,6 +535,12 @@ export default function ContactDetail() {
                           const categoryAccount = chartAccounts.find(a => a.id === transaction.category_account_id);
                           const bankAccount = chartAccounts.find(a => a.id === transaction.bank_account_id);
 
+                          if (index === 0 && !bankAccount) {
+                            console.log('Transaction:', transaction);
+                            console.log('Bank Account ID:', transaction.bank_account_id);
+                            console.log('Chart Accounts:', chartAccounts.map(a => ({ id: a.id, name: a.account_name, display_name: a.display_name })));
+                          }
+
                           return (
                             <TableRow key={transaction.id} className={getRowClassName(index)}>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
