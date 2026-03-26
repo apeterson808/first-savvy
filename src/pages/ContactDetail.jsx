@@ -264,6 +264,17 @@ export default function ContactDetail() {
     setEditingLine(null);
   };
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (editingLineId && !e.target.closest('tr')) {
+        handleCancelLine();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [editingLineId]);
+
   if (contactLoading) {
     return (
       <div className="min-h-screen bg-slate-50 p-8">
