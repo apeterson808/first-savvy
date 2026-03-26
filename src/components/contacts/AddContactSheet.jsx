@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,11 +14,19 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
 import ColorPicker from '@/components/common/ColorPicker';
 import { toast } from 'sonner';
 import { X, Plus } from 'lucide-react';
+import { useProfile } from '@/contexts/ProfileContext';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -51,7 +59,25 @@ export default function AddContactSheet({
   });
   const [tagInput, setTagInput] = useState('');
   const [detectedUser, setDetectedUser] = useState(null);
+  const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
   const queryClient = useQueryClient();
+  const { activeProfile } = useProfile();
+
+  const { data: allContacts = [] } = useQuery({
+    queryKey: ['contacts', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Contact.list('name'),
+    enabled: !!activeProfile
+  });
+
+  const existingGroups = React.useMemo(() => {
+    const groups = new Set();
+    allContacts.forEach(contact => {
+      if (contact.group_name) {
+        groups.add(contact.group_name);
+      }
+    });
+    return Array.from(groups).sort();
+  }, [allContacts]);
 
   useEffect(() => {
     if (open && initialName) {
@@ -88,6 +114,7 @@ export default function AddContactSheet({
       color: '#6B7280',
     });
     setTagInput('');
+    setIsCreatingNewGroup(false);
     setDetectedUser(null);
   };
 
@@ -239,12 +266,73 @@ export default function AddContactSheet({
 
           <div>
             <Label htmlFor="group_name">Group</Label>
-            <Input
-              id="group_name"
-              value={formData.group_name}
-              onChange={(e) => updateFormField('group_name', e.target.value)}
-              placeholder="e.g., Vendors, Clients, Personal"
-            />
+            {!isCreatingNewGroup ? (
+              <div className="flex gap-2">
+                <Select
+                  value={formData.group_name}
+                  onValueChange={(value) => {
+                    if (value === '__new__') {
+                      setIsCreatingNewGroup(true);
+                      updateFormField('group_name', '');
+                    } else {
+                      updateFormField('group_name', value);
+                    }
+                  }}
+                >
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="Select or create group" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {existingGroups.length === 0 ? (
+                      <SelectItem value="__new__">
+                        <span className="flex items-center">
+                          <Plus className="w-3 h-3 mr-2" />
+                          Create new group
+                        </span>
+                      </SelectItem>
+                    ) : (
+                      <>
+                        <SelectItem value="">No group</SelectItem>
+                        {existingGroups.map(group => (
+                          <SelectItem key={group} value={group}>
+                            {group}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="__new__">
+                          <span className="flex items-center">
+                            <Plus className="w-3 h-3 mr-2" />
+                            Create new group
+                          </span>
+                        </SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  id="group_name"
+                  value={formData.group_name}
+                  onChange={(e) => updateFormField('group_name', e.target.value)}
+                  placeholder="Enter new group name..."
+                  autoFocus
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsCreatingNewGroup(false);
+                    if (!formData.group_name) {
+                      updateFormField('group_name', '');
+                    }
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
             <p className="text-xs text-slate-500 mt-1">
               Primary category for this contact
             </p>
