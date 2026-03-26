@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import {
   Sheet,
   SheetContent,
@@ -15,7 +16,9 @@ import {
 } from "@/components/ui/sheet";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
+import ColorPicker from '@/components/common/ColorPicker';
 import { toast } from 'sonner';
+import { X, Plus } from 'lucide-react';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -42,7 +45,11 @@ export default function AddContactSheet({
     phone: '',
     address: '',
     notes: '',
+    group_name: '',
+    tags: [],
+    color: '#6B7280',
   });
+  const [tagInput, setTagInput] = useState('');
   const [detectedUser, setDetectedUser] = useState(null);
   const queryClient = useQueryClient();
 
@@ -76,7 +83,11 @@ export default function AddContactSheet({
       phone: '',
       address: '',
       notes: '',
+      group_name: '',
+      tags: [],
+      color: '#6B7280',
     });
+    setTagInput('');
     setDetectedUser(null);
   };
 
@@ -168,6 +179,9 @@ export default function AddContactSheet({
       phone: formData.phone || undefined,
       address: formData.address.trim() || undefined,
       notes: formData.notes.trim() || undefined,
+      group_name: formData.group_name.trim() || undefined,
+      tags: formData.tags.length > 0 ? formData.tags : undefined,
+      color: formData.color || '#6B7280',
       linked_user_id: detectedUser?.id || undefined,
       connection_status: detectedUser ? 'platform_user' : 'not_checked'
     };
@@ -221,6 +235,90 @@ export default function AddContactSheet({
               <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
               <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
             </ClickThroughSelect>
+          </div>
+
+          <div>
+            <Label htmlFor="group_name">Group</Label>
+            <Input
+              id="group_name"
+              value={formData.group_name}
+              onChange={(e) => updateFormField('group_name', e.target.value)}
+              placeholder="e.g., Vendors, Clients, Personal"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Primary category for this contact
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="tags">Tags</Label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <Input
+                  id="tags"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+                        setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+                        setTagInput('');
+                      }
+                    }
+                  }}
+                  placeholder="Add tags (press Enter)"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+                      setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+                      setTagInput('');
+                    }
+                  }}
+                >
+                  <Plus className="w-4 h-4" />
+                </Button>
+              </div>
+              {formData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {formData.tags.map((tag, idx) => (
+                    <Badge key={idx} variant="secondary" className="pl-2 pr-1">
+                      {tag}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            tags: prev.tags.filter((_, i) => i !== idx)
+                          }));
+                        }}
+                        className="ml-1 hover:bg-slate-300 rounded-full p-0.5"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-xs text-slate-500 mt-1">
+              Add multiple tags for flexible organization
+            </p>
+          </div>
+
+          <div>
+            <Label htmlFor="color">Color</Label>
+            <ColorPicker
+              value={formData.color}
+              onChange={(color) => updateFormField('color', color)}
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Visual indicator for this contact
+            </p>
           </div>
 
           <div>

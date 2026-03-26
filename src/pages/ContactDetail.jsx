@@ -24,10 +24,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check, Undo2 } from 'lucide-react';
+import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check, Undo2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
+import ColorPicker from '@/components/common/ColorPicker';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
@@ -62,8 +63,12 @@ export default function ContactDetail() {
     phone: '',
     address: '',
     notes: '',
-    status: 'active'
+    status: 'active',
+    group_name: '',
+    tags: [],
+    color: '#6B7280'
   });
+  const [tagInput, setTagInput] = useState('');
   const [editingLineId, setEditingLineId] = useState(null);
   const [editingLine, setEditingLine] = useState(null);
   const [isSavingLine, setIsSavingLine] = useState(false);
@@ -173,7 +178,10 @@ export default function ContactDetail() {
         phone: contact.phone || '',
         address: contact.address || '',
         notes: contact.notes || '',
-        status: contact.status || 'active'
+        status: contact.status || 'active',
+        group_name: contact.group_name || '',
+        tags: contact.tags || [],
+        color: contact.color || '#6B7280'
       });
     }
   }, [contact]);
@@ -230,7 +238,10 @@ export default function ContactDetail() {
       phone: formData.phone || undefined,
       address: formData.address.trim() || undefined,
       notes: formData.notes.trim() || undefined,
-      status: formData.status
+      status: formData.status,
+      group_name: formData.group_name.trim() || undefined,
+      tags: formData.tags.length > 0 ? formData.tags : undefined,
+      color: formData.color || '#6B7280'
     };
 
     updateMutation.mutate({ id: contact.id, data });
@@ -238,6 +249,7 @@ export default function ContactDetail() {
 
   const handleCancel = () => {
     setIsEditMode(false);
+    setTagInput('');
     if (contact) {
       setFormData({
         name: contact.name || '',
@@ -245,7 +257,10 @@ export default function ContactDetail() {
         phone: contact.phone || '',
         address: contact.address || '',
         notes: contact.notes || '',
-        status: contact.status || 'active'
+        status: contact.status || 'active',
+        group_name: contact.group_name || '',
+        tags: contact.tags || [],
+        color: contact.color || '#6B7280'
       });
     }
   };
@@ -507,6 +522,81 @@ export default function ContactDetail() {
                             className="mt-1.5"
                           />
                         </div>
+                        <div>
+                          <Label htmlFor="group_name" className="text-sm font-medium">Group</Label>
+                          <Input
+                            id="group_name"
+                            value={formData.group_name}
+                            onChange={(e) => setFormData(prev => ({ ...prev, group_name: e.target.value }))}
+                            placeholder="e.g., Vendors, Clients, Personal"
+                            className="mt-1.5"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="tags" className="text-sm font-medium">Tags</Label>
+                          <div className="space-y-2 mt-1.5">
+                            <div className="flex gap-2">
+                              <Input
+                                id="tags"
+                                value={tagInput}
+                                onChange={(e) => setTagInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault();
+                                    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+                                      setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+                                      setTagInput('');
+                                    }
+                                  }
+                                }}
+                                placeholder="Add tags (press Enter)"
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+                                    setFormData(prev => ({ ...prev, tags: [...prev.tags, tagInput.trim()] }));
+                                    setTagInput('');
+                                  }
+                                }}
+                              >
+                                <Plus className="w-4 h-4" />
+                              </Button>
+                            </div>
+                            {formData.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {formData.tags.map((tag, idx) => (
+                                  <Badge key={idx} variant="secondary" className="pl-2 pr-1">
+                                    {tag}
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setFormData(prev => ({
+                                          ...prev,
+                                          tags: prev.tags.filter((_, i) => i !== idx)
+                                        }));
+                                      }}
+                                      className="ml-1 hover:bg-slate-300 rounded-full p-0.5"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Label htmlFor="color" className="text-sm font-medium">Color</Label>
+                          <div className="mt-1.5">
+                            <ColorPicker
+                              value={formData.color}
+                              onChange={(color) => setFormData(prev => ({ ...prev, color }))}
+                            />
+                          </div>
+                        </div>
                       </div>
                     ) : (
                       <div className="space-y-4">
@@ -548,6 +638,30 @@ export default function ContactDetail() {
                             <div className="flex items-start gap-3 text-sm pt-2">
                               <FileText className="w-4 h-4 text-slate-400 mt-0.5" />
                               <span className="text-slate-700 whitespace-pre-wrap">{contact.notes}</span>
+                            </div>
+                          )}
+                          {((contact.group_name) || (contact.tags && contact.tags.length > 0)) && (
+                            <div className="pt-3 border-t">
+                              <div className="flex flex-wrap gap-1.5">
+                                {contact.group_name && (
+                                  <Badge
+                                    variant="outline"
+                                    className="font-medium"
+                                    style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined, borderColor: contact.color }}
+                                  >
+                                    {contact.group_name}
+                                  </Badge>
+                                )}
+                                {contact.tags && contact.tags.map((tag, idx) => (
+                                  <Badge
+                                    key={idx}
+                                    variant="secondary"
+                                    style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined }}
+                                  >
+                                    {tag}
+                                  </Badge>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
