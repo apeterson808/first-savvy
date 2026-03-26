@@ -1357,7 +1357,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       accounts={allActiveAccounts}
                                       showAllOption={false}
                                       disabled={true}
-                                      triggerClassName="h-7 border-transparent bg-transparent shadow-none text-xs pointer-events-none"
+                                      triggerClassName="w-full h-7 border-transparent bg-transparent shadow-none text-xs pointer-events-none"
                                       placeholder="Select account"
                                     />
                                   </div>
@@ -1375,7 +1375,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     accounts={allActiveAccounts}
                                     showAllOption={false}
                                     disabled={true}
-                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                    triggerClassName="w-full h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                     placeholder="Select account"
                                   />
                                 </div>
@@ -1404,7 +1404,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                     setTriggeringContactTransactionId(transaction.id);
                                     setAddContactSheetOpen(true);
                                   }}
-                                  triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                  triggerClassName="w-full h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                   placeholder="Select contact"
                                 />
                               </div>
@@ -1563,7 +1563,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                       setTriggeringTransactionType(transaction.type);
                                       setAddAccountSheetOpen(true);
                                     }}
-                                    triggerClassName="h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
+                                    triggerClassName="w-full h-7 border-transparent bg-transparent shadow-none hover:border-slate-300 hover:bg-white focus:border-slate-300 focus:bg-white transition-colors text-xs"
                                     placeholder="Select category"
                                     isTransactionTransfer={transaction.type === 'transfer'}
                                     transactionAmount={transaction.amount}

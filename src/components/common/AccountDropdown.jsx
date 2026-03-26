@@ -74,7 +74,7 @@ export default function AccountDropdown({
 
   const renderValue = (selectedValue, displayText) => {
     if (!showPendingCounts) return <span className="truncate">{displayText}</span>;
-    
+
     const count = getPendingCount(selectedValue);
     return (
       <div className="flex items-center justify-between w-full">
@@ -88,6 +88,13 @@ export default function AccountDropdown({
     );
   };
 
+  const selectedAccount = accounts.find(a => a.id === value);
+  const displayValue = value === 'all'
+    ? 'All Accounts'
+    : (selectedAccount
+      ? `${getAccountDisplayName(selectedAccount)}${selectedAccount.account_number ? ` (${selectedAccount.account_number})` : ''}`
+      : null);
+
   return (
     <ClickThroughSelect
       value={value}
@@ -95,6 +102,7 @@ export default function AccountDropdown({
       triggerClassName={triggerClassName}
       placeholder={placeholder}
       renderValue={showPendingCounts ? renderValue : undefined}
+      displayValue={!showPendingCounts ? displayValue : undefined}
       enableSearch={false}
     >
       {showAllOption && (

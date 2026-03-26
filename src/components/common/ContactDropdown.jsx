@@ -50,6 +50,9 @@ export default function ContactDropdown({
     availableContacts = [suggestedContact, ...availableContacts];
   }
 
+  const selectedContact = contacts.find(c => c.id === currentDisplayValue);
+  const displayValue = selectedContact ? selectedContact.name : null;
+
   const handleOpenChange = (open) => {
     setIsOpen(open);
     if (!open) {
@@ -72,6 +75,7 @@ export default function ContactDropdown({
       placeholder={placeholder}
       triggerClassName={`${triggerClassName} ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
       enableSearch={true}
+      displayValue={displayValue}
     >
       {onAddNew && (
         <ClickThroughSelectItem value="__add_new__" className="text-blue-600 font-medium whitespace-nowrap" isAction>
