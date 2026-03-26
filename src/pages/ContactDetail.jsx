@@ -84,8 +84,8 @@ export default function ContactDetail() {
         .from('transactions')
         .select(`
           *,
-          bank_account:bank_account_id(id, account_name, display_name),
-          category_account:category_account_id(id, account_name, display_name)
+          bank_account:transactions_account_id_fkey(id, account_name, display_name),
+          category_account:transactions_chart_account_id_fkey(id, account_name, display_name)
         `)
         .eq('contact_id', id)
         .eq('status', 'posted')
