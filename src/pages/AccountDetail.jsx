@@ -57,6 +57,7 @@ import { SpendingAndVendorCard } from '@/components/budgeting/SpendingAndVendorC
 import { ChildBudgetSection } from '@/components/budgeting/ChildBudgetSection';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
+import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '@/components/common/TransactionTableConfig';
 
 export default function AccountDetail() {
   const { id } = useParams();
@@ -1478,52 +1479,46 @@ export default function AccountDetail() {
                     <div ref={registerTableRef} className="rounded-md border overflow-x-auto">
                       <Table>
                         <TableHeader>
-                          <TableRow className="h-8 bg-slate-100">
-                            <TableHead className="w-[90px] py-1.5 text-[11px] font-semibold">Date</TableHead>
-                            <TableHead className="w-[140px] py-1.5 text-[11px] font-semibold">Account</TableHead>
-                            <TableHead className="w-[300px] py-1.5 text-[11px] font-semibold">Description</TableHead>
-                            <TableHead className="w-[100px] text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
-                            <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">From/To</TableHead>
-                            <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">Category</TableHead>
-                            <TableHead className="w-[80px] py-1.5 text-[11px] font-semibold">Action</TableHead>
+                          <TableRow className={TRANSACTION_TABLE_CONFIG.header.rowClass}>
+                            {TRANSACTION_TABLE_CONFIG.columns.map((col) => (
+                              <TableHead key={col.id} className={getHeaderCellClassName(col)}>
+                                {col.label}
+                              </TableHead>
+                            ))}
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {allActivity.map((activity, index) => (
                             <TableRow
                               key={`${activity.id || index}`}
-                              className={`h-7 ${
-                                index % 2 === 0
-                                  ? 'bg-white hover:bg-slate-50'
-                                  : 'bg-slate-50/50 hover:bg-slate-100'
-                              }`}
+                              className={getRowClassName(index)}
                             >
-                              <TableCell className="w-[90px] whitespace-nowrap text-[11px] py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
                                 {format(parseISO(activity.displayDate), 'MM/dd/yy')}
                               </TableCell>
-                              <TableCell className="w-[140px] whitespace-nowrap text-[11px] text-slate-600 py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
                                 {activity.account_name || '\u2014'}
                               </TableCell>
-                              <TableCell className="w-[300px] py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
                                 {editingTransactionId === activity.transactionId ? (
                                   <input
                                     type="text"
                                     value={editDescription}
                                     onChange={(e) => setEditDescription(e.target.value)}
-                                    className="w-full h-6 text-[11px] px-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.inputClass}
                                     autoFocus
                                   />
                                 ) : (
                                   <button
                                     onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full text-[11px] truncate block"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
                                     disabled={!activity.transactionId}
                                   >
                                     {activity.displayDescription}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="w-[100px] whitespace-nowrap text-right text-[11px] py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
                                 {(() => {
                                   const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                   return (
@@ -1533,44 +1528,44 @@ export default function AccountDetail() {
                                   );
                                 })()}
                               </TableCell>
-                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                                 {editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
                                     onChange={setEditContactId}
-                                    className="h-6 text-[11px] w-full"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
                                     profileId={activeProfile?.id}
                                     allowClear
                                   />
                                 ) : (
                                   <button
                                     onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
                                     disabled={!activity.transactionId}
                                   >
                                     {activity.contact || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
                                 {editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
                                     onChange={setEditCategoryId}
-                                    className="h-6 text-[11px] w-full"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
                                     profileId={activeProfile?.id}
                                   />
                                 ) : (
                                   <button
                                     onClick={() => activity.transactionId && startEditingTransaction(activity)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
                                     disabled={!activity.transactionId}
                                   >
                                     {activity.category || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="w-[80px] py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
                                 {activity.transactionId && activity.journalEntryId && (
                                   editingTransactionId === activity.transactionId ? (
                                     <div className="flex items-center gap-1">
@@ -1579,7 +1574,7 @@ export default function AccountDetail() {
                                           e.stopPropagation();
                                           cancelEditingTransaction();
                                         }}
-                                        className="text-slate-400 hover:text-red-600 transition-colors"
+                                        className={TRANSACTION_TABLE_CONFIG.actionButtons.cancelClass}
                                       >
                                         <X className="w-4 h-4" />
                                       </button>
@@ -1589,7 +1584,7 @@ export default function AccountDetail() {
                                           saveTransactionEdit(activity.transactionId);
                                         }}
                                         disabled={updateTransactionMutation.isPending}
-                                        className="text-slate-400 hover:text-green-600 transition-colors disabled:opacity-50"
+                                        className={TRANSACTION_TABLE_CONFIG.actionButtons.saveClass}
                                       >
                                         <Check className="w-4 h-4" />
                                       </button>
@@ -1624,7 +1619,7 @@ export default function AccountDetail() {
                                           toast.error(error.message || 'Failed to undo transaction');
                                         }
                                       }}
-                                      className="h-auto p-0 text-blue-600 hover:text-blue-700 text-[11px]"
+                                      className={TRANSACTION_TABLE_CONFIG.actionButtons.undoClass}
                                     >
                                       Undo
                                     </Button>

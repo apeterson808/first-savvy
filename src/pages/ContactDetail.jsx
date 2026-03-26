@@ -32,6 +32,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
+import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '@/components/common/TransactionTableConfig';
 
 function formatPhoneNumber(value) {
   if (!value) return value;
@@ -517,13 +518,12 @@ export default function ContactDetail() {
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
-                        <TableRow className="h-8 bg-slate-100">
-                          <TableHead className="w-[90px] py-1.5 text-[11px] font-semibold">Date</TableHead>
-                          <TableHead className="w-[300px] py-1.5 text-[11px] font-semibold">Description</TableHead>
-                          <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">Category</TableHead>
-                          <TableHead className="w-[180px] py-1.5 text-[11px] font-semibold">Contact</TableHead>
-                          <TableHead className="w-[100px] text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
-                          <TableHead className="w-[80px] py-1.5 text-[11px] font-semibold">Action</TableHead>
+                        <TableRow className={TRANSACTION_TABLE_CONFIG.header.rowClass}>
+                          {TRANSACTION_TABLE_CONFIG.columns.map((col) => (
+                            <TableHead key={col.id} className={getHeaderCellClassName(col)}>
+                              {col.label}
+                            </TableHead>
+                          ))}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -535,77 +535,73 @@ export default function ContactDetail() {
                           const categoryAccount = chartAccounts.find(a => a.id === transaction.category_account_id);
 
                           return (
-                            <TableRow
-                              key={transaction.id}
-                              className={`h-7 ${
-                                index % 2 === 0
-                                  ? 'bg-white hover:bg-slate-50'
-                                  : 'bg-slate-50/50 hover:bg-slate-100'
-                              }`}
-                            >
-                              <TableCell className="w-[90px] whitespace-nowrap text-[11px] py-1">
+                            <TableRow key={transaction.id} className={getRowClassName(index)}>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
                                 {format(new Date(transaction.date), 'MM/dd/yy')}
                               </TableCell>
-                              <TableCell className="w-[300px] py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
+                                {transaction.account_name || '\u2014'}
+                              </TableCell>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
                                 {isEditing && editingLine ? (
                                   <input
                                     type="text"
                                     value={editingLine.description}
                                     onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
-                                    className="w-full h-6 text-[11px] px-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.inputClass}
                                     onClick={(e) => e.stopPropagation()}
                                     autoFocus
                                   />
                                 ) : (
                                   <button
                                     onClick={(e) => handleEditTransaction(transaction, e)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full text-[11px] truncate block"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
                                   >
                                     {transaction.description}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
-                                {isEditing && editingLine ? (
-                                  <CategoryDropdown
-                                    value={editingLine.account_id}
-                                    onChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
-                                    className="h-6 text-[11px] w-full"
-                                    profileId={activeProfile?.id}
-                                  />
-                                ) : (
-                                  <button
-                                    onClick={(e) => handleEditTransaction(transaction, e)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
-                                  >
-                                    {categoryAccount ? getDisplayName(categoryAccount) : '\u2014'}
-                                  </button>
-                                )}
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
+                                <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
+                                  {formatCurrency(isExpense ? -amount : amount)}
+                                </span>
                               </TableCell>
-                              <TableCell className="w-[180px] text-[11px] text-slate-600 py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                                 {isEditing && editingLine ? (
                                   <ContactDropdown
                                     value={editingLine.contact_id}
                                     onChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
-                                    className="h-6 text-[11px] w-full"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
                                     profileId={activeProfile?.id}
                                     allowClear
                                   />
                                 ) : (
                                   <button
                                     onClick={(e) => handleEditTransaction(transaction, e)}
-                                    className="text-left hover:bg-slate-100 px-1 py-0.5 rounded transition-colors w-full truncate block"
+                                    className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
                                   >
                                     {contact?.name || '\u2014'}
                                   </button>
                                 )}
                               </TableCell>
-                              <TableCell className="w-[100px] whitespace-nowrap text-right text-[11px] py-1">
-                                <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
-                                  {formatCurrency(isExpense ? -amount : amount)}
-                                </span>
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                                {isEditing && editingLine ? (
+                                  <CategoryDropdown
+                                    value={editingLine.account_id}
+                                    onChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                                    className={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
+                                    profileId={activeProfile?.id}
+                                  />
+                                ) : (
+                                  <button
+                                    onClick={(e) => handleEditTransaction(transaction, e)}
+                                    className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                                  >
+                                    {categoryAccount ? getDisplayName(categoryAccount) : '\u2014'}
+                                  </button>
+                                )}
                               </TableCell>
-                              <TableCell className="w-[80px] py-1">
+                              <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
                                 {isEditing ? (
                                   <div className="flex items-center gap-1">
                                     <button
@@ -613,7 +609,7 @@ export default function ContactDetail() {
                                         e.stopPropagation();
                                         handleCancelLine();
                                       }}
-                                      className="text-slate-400 hover:text-red-600 transition-colors"
+                                      className={TRANSACTION_TABLE_CONFIG.actionButtons.cancelClass}
                                     >
                                       <X className="w-4 h-4" />
                                     </button>
@@ -623,7 +619,7 @@ export default function ContactDetail() {
                                         handleSaveLine(transaction.id);
                                       }}
                                       disabled={isSavingLine}
-                                      className="text-slate-400 hover:text-green-600 transition-colors disabled:opacity-50"
+                                      className={TRANSACTION_TABLE_CONFIG.actionButtons.saveClass}
                                     >
                                       <Check className="w-4 h-4" />
                                     </button>
@@ -633,7 +629,7 @@ export default function ContactDetail() {
                                     variant="link"
                                     size="sm"
                                     onClick={(e) => handleUndoTransaction(transaction.id, e)}
-                                    className="h-auto p-0 text-blue-600 hover:text-blue-700 text-[11px]"
+                                    className={TRANSACTION_TABLE_CONFIG.actionButtons.undoClass}
                                   >
                                     Undo
                                   </Button>
