@@ -782,75 +782,74 @@ export default function ContactDetail() {
 
           <div className="space-y-6">
             <Card className="shadow-sm">
-              <CardHeader className="border-b">
-                <CardTitle className="text-base font-semibold">Quick Stats</CardTitle>
+              <CardHeader className="border-b py-3 px-4">
+                <CardTitle className="text-sm font-semibold">Quick Stats</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="p-4">
                 {analytics.transactionCount > 0 ? (
-                  <div className="space-y-4">
-                    <div>
-                      <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <Hash className="w-4 h-4" />
-                        <p className="text-xs font-medium uppercase tracking-wider">Total Transactions</p>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <Hash className="w-3.5 h-3.5" />
+                        <p className="text-xs font-medium">Total</p>
                       </div>
-                      <p className="text-xl font-bold text-slate-900">{analytics.transactionCount}</p>
+                      <p className="text-base font-bold text-slate-900">{analytics.transactionCount}</p>
                     </div>
 
-                    <div>
-                      <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <TrendingUp className="w-4 h-4" />
-                        <p className="text-xs font-medium uppercase tracking-wider">Average Transaction</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-slate-600">
+                        <TrendingUp className="w-3.5 h-3.5" />
+                        <p className="text-xs font-medium">Average</p>
                       </div>
-                      <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.averageTransaction)}</p>
+                      <p className="text-base font-bold text-slate-900">{formatCurrency(analytics.averageTransaction)}</p>
                     </div>
 
                     {analytics.largestTransaction && (
-                      <div>
-                        <div className="flex items-center gap-2 text-slate-600 mb-1">
-                          <TrendingUp className="w-4 h-4" />
-                          <p className="text-xs font-medium uppercase tracking-wider">Largest Transaction</p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-slate-600">
+                          <TrendingUp className="w-3.5 h-3.5" />
+                          <p className="text-xs font-medium">Largest</p>
                         </div>
-                        <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.largestTransaction.amount)}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">
-                          {format(new Date(analytics.largestTransaction.date), 'MMM d, yyyy')}
-                        </p>
+                        <div className="text-right">
+                          <p className="text-base font-bold text-slate-900">{formatCurrency(analytics.largestTransaction.amount)}</p>
+                          <p className="text-xs text-slate-500">
+                            {format(new Date(analytics.largestTransaction.date), 'MMM d, yyyy')}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>
                 ) : (
-                  <div className="py-8 text-center">
-                    <p className="text-slate-600 font-medium mb-1">No transaction data</p>
-                    <p className="text-sm text-slate-500">Stats will appear once transactions are recorded</p>
+                  <div className="py-4 text-center">
+                    <p className="text-sm text-slate-500">No transaction data</p>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             <Card className="shadow-sm">
-              <CardHeader className="border-b">
-                <CardTitle className="text-base font-semibold">Connection Status</CardTitle>
+              <CardHeader className="border-b py-3 px-4">
+                <CardTitle className="text-sm font-semibold">Connection</CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    {contact.connection_status === 'connected' ? (
-                      <Badge className="bg-light-blue/20 text-sky-blue font-normal">
-                        Connected
-                      </Badge>
-                    ) : contact.connection_status === 'invited' ? (
-                      <Badge className="bg-yellow-100 text-yellow-800 font-normal">
-                        Invited
-                      </Badge>
-                    ) : contact.connection_status === 'platform_user' ? (
-                      <Badge className="bg-lavender/20 text-burgundy font-normal">
-                        On Platform
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="font-normal">
-                        Not Connected
-                      </Badge>
-                    )}
-                  </div>
+              <CardContent className="p-4">
+                <div className="space-y-3">
+                  {contact.connection_status === 'connected' ? (
+                    <Badge className="bg-light-blue/20 text-sky-blue font-normal">
+                      Connected
+                    </Badge>
+                  ) : contact.connection_status === 'invited' ? (
+                    <Badge className="bg-yellow-100 text-yellow-800 font-normal">
+                      Invited
+                    </Badge>
+                  ) : contact.connection_status === 'platform_user' ? (
+                    <Badge className="bg-lavender/20 text-burgundy font-normal">
+                      On Platform
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="font-normal">
+                      Not Connected
+                    </Badge>
+                  )}
 
                   <TooltipProvider>
                     <Tooltip>
@@ -860,9 +859,9 @@ export default function ContactDetail() {
                             variant="outline"
                             size="sm"
                             disabled
-                            className="w-full gap-2 opacity-50 cursor-not-allowed"
+                            className="w-full gap-2 opacity-50 cursor-not-allowed text-xs py-1.5"
                           >
-                            <Send className="w-4 h-4" />
+                            <Send className="w-3.5 h-3.5" />
                             Invite to platform
                           </Button>
                         </div>
