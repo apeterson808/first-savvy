@@ -310,11 +310,12 @@ export default function Contacts() {
                   </CollapsibleTrigger>
                   <div className="flex items-center gap-2 flex-1">
                     {editingGroup === groupName ? (
-                      <div className="flex items-center gap-1 flex-1">
+                      <div className="flex items-center gap-1">
                         <Input
                           value={editingValue}
                           onChange={(e) => setEditingValue(e.target.value)}
-                          className="h-7 text-base font-semibold"
+                          className="h-7 text-base font-semibold w-auto"
+                          style={{ width: `${Math.max(editingValue.length * 8 + 20, 100)}px` }}
                           autoFocus
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') {
