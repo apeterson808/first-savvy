@@ -24,6 +24,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar, Edit2, ArrowLeft, ChevronDown, Trash2, Send, X, Check, Undo2, Plus } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -73,6 +80,7 @@ export default function ContactDetail() {
   const [editingLine, setEditingLine] = useState(null);
   const [isSavingLine, setIsSavingLine] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
+  const [isCreatingNewGroup, setIsCreatingNewGroup] = useState(false);
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -83,6 +91,22 @@ export default function ContactDetail() {
     queryFn: () => firstsavvy.entities.Contact.get(id),
     enabled: !!id && !!activeProfile
   });
+
+  const { data: allContacts = [] } = useQuery({
+    queryKey: ['contacts', activeProfile?.id],
+    queryFn: () => firstsavvy.entities.Contact.list('name'),
+    enabled: !!activeProfile
+  });
+
+  const existingGroups = useMemo(() => {
+    const groups = new Set();
+    allContacts.forEach(contact => {
+      if (contact.group_name) {
+        groups.add(contact.group_name);
+      }
+    });
+    return Array.from(groups).sort();
+  }, [allContacts]);
 
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chart-accounts', activeProfile?.id],
@@ -250,6 +274,7 @@ export default function ContactDetail() {
   const handleCancel = () => {
     setIsEditMode(false);
     setTagInput('');
+    setIsCreatingNewGroup(false);
     if (contact) {
       setFormData({
         name: contact.name || '',
@@ -524,13 +549,73 @@ export default function ContactDetail() {
                         </div>
                         <div>
                           <Label htmlFor="group_name" className="text-sm font-medium">Group</Label>
-                          <Input
-                            id="group_name"
-                            value={formData.group_name}
-                            onChange={(e) => setFormData(prev => ({ ...prev, group_name: e.target.value }))}
-                            placeholder="e.g., Vendors, Clients, Personal"
-                            className="mt-1.5"
-                          />
+                          {!isCreatingNewGroup ? (
+                            <div className="flex gap-2 mt-1.5">
+                              <Select
+                                value={formData.group_name}
+                                onValueChange={(value) => {
+                                  if (value === '__new__') {
+                                    setIsCreatingNewGroup(true);
+                                    setFormData(prev => ({ ...prev, group_name: '' }));
+                                  } else {
+                                    setFormData(prev => ({ ...prev, group_name: value }));
+                                  }
+                                }}
+                              >
+                                <SelectTrigger className="flex-1">
+                                  <SelectValue placeholder="General Contact (Default)" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {existingGroups.length === 0 ? (
+                                    <SelectItem value="__new__">
+                                      <span className="flex items-center">
+                                        <Plus className="w-3 h-3 mr-2" />
+                                        Create new group
+                                      </span>
+                                    </SelectItem>
+                                  ) : (
+                                    <>
+                                      <SelectItem value="">General Contact (Default)</SelectItem>
+                                      {existingGroups.map(group => (
+                                        <SelectItem key={group} value={group}>
+                                          {group}
+                                        </SelectItem>
+                                      ))}
+                                      <SelectItem value="__new__">
+                                        <span className="flex items-center">
+                                          <Plus className="w-3 h-3 mr-2" />
+                                          Create new group
+                                        </span>
+                                      </SelectItem>
+                                    </>
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 mt-1.5">
+                              <Input
+                                id="group_name"
+                                value={formData.group_name}
+                                onChange={(e) => setFormData(prev => ({ ...prev, group_name: e.target.value }))}
+                                placeholder="Enter new group name..."
+                                autoFocus
+                              />
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => {
+                                  setIsCreatingNewGroup(false);
+                                  if (!formData.group_name) {
+                                    setFormData(prev => ({ ...prev, group_name: '' }));
+                                  }
+                                }}
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                         <div>
                           <Label htmlFor="tags" className="text-sm font-medium">Tags</Label>

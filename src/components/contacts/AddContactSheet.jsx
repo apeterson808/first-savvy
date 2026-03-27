@@ -280,7 +280,7 @@ export default function AddContactSheet({
                   }}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="Select or create group" />
+                    <SelectValue placeholder="General Contact (Default)" />
                   </SelectTrigger>
                   <SelectContent>
                     {existingGroups.length === 0 ? (
@@ -292,7 +292,7 @@ export default function AddContactSheet({
                       </SelectItem>
                     ) : (
                       <>
-                        <SelectItem value="">No group</SelectItem>
+                        <SelectItem value="">General Contact (Default)</SelectItem>
                         {existingGroups.map(group => (
                           <SelectItem key={group} value={group}>
                             {group}
