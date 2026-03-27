@@ -717,18 +717,17 @@ export default function ContactDetail() {
                               <span className="text-slate-700 whitespace-pre-wrap">{contact.notes}</span>
                             </div>
                           )}
-                          {((contact.group_name) || (contact.tags && contact.tags.length > 0)) && (
-                            <div className="pt-3 border-t">
-                              <div className="flex flex-wrap gap-1.5">
-                                {contact.group_name && (
-                                  <Badge
-                                    variant="outline"
-                                    className="font-medium"
-                                    style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined, borderColor: contact.color }}
-                                  >
-                                    {contact.group_name}
-                                  </Badge>
-                                )}
+                          <div className="pt-3 border-t">
+                            <div className="flex flex-wrap gap-1.5">
+                              <Badge
+                                variant="outline"
+                                className="font-medium"
+                                style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined, borderColor: contact.color }}
+                              >
+                                {contact.group_name || 'General Contact'}
+                              </Badge>
+                              {(contact.tags && contact.tags.length > 0) && (
+                                <>
                                 {contact.tags && contact.tags.map((tag, idx) => (
                                   <Badge
                                     key={idx}
@@ -738,9 +737,10 @@ export default function ContactDetail() {
                                     {tag}
                                   </Badge>
                                 ))}
-                              </div>
+                                </>
+                              )}
                             </div>
-                          )}
+                          </div>
                         </div>
                       </div>
                     )}
