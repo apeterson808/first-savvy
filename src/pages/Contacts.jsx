@@ -19,9 +19,19 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Pencil } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
 import { useProfile } from '@/contexts/ProfileContext';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 const ROWS_PER_PAGE = 10;
 
@@ -129,6 +139,7 @@ export default function Contacts() {
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPages, setCurrentPages] = useState({});
   const [collapsedGroups, setCollapsedGroups] = useState({});
+  const [editGroupDialog, setEditGroupDialog] = useState({ open: false, groupName: '', newName: '' });
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -183,6 +194,41 @@ export default function Contacts() {
 
   const toggleGroupCollapse = (groupName) => {
     setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
+  };
+
+  const handleEditGroup = (groupName) => {
+    setEditGroupDialog({ open: true, groupName, newName: groupName });
+  };
+
+  const handleSaveGroupName = async () => {
+    const { groupName, newName } = editGroupDialog;
+
+    if (!newName.trim()) {
+      toast.error('Group name cannot be empty');
+      return;
+    }
+
+    if (newName === groupName) {
+      setEditGroupDialog({ open: false, groupName: '', newName: '' });
+      return;
+    }
+
+    try {
+      const contactsInGroup = groupedContacts[groupName];
+
+      for (const contact of contactsInGroup) {
+        await firstsavvy.entities.Contact.update(contact.id, {
+          group_name: newName
+        });
+      }
+
+      await queryClient.invalidateQueries(['contacts']);
+      toast.success(`Group renamed from "${groupName}" to "${newName}"`);
+      setEditGroupDialog({ open: false, groupName: '', newName: '' });
+    } catch (error) {
+      console.error('Error renaming group:', error);
+      toast.error('Failed to rename group');
+    }
   };
 
   return (
@@ -252,19 +298,32 @@ export default function Contacts() {
           >
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="pb-2 pt-4 px-4 border-b">
-                <CollapsibleTrigger className="flex items-center w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
-                  {collapsedGroups[groupName] ? (
-                    <ChevronDown className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
-                  ) : (
-                    <ChevronUp className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
-                  )}
-                  <div className="flex items-center gap-2">
-                    <CardTitle className="text-base font-semibold">{groupName}</CardTitle>
-                    <Badge variant="secondary" className="text-xs">
-                      {groupContacts.length}
-                    </Badge>
-                  </div>
-                </CollapsibleTrigger>
+                <div className="flex items-center justify-between w-full">
+                  <CollapsibleTrigger className="flex items-center flex-1 hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+                    {collapsedGroups[groupName] ? (
+                      <ChevronDown className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                    ) : (
+                      <ChevronUp className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                    )}
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base font-semibold">{groupName}</CardTitle>
+                      <Badge variant="secondary" className="text-xs">
+                        {groupContacts.length}
+                      </Badge>
+                    </div>
+                  </CollapsibleTrigger>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0 hover:bg-slate-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditGroup(groupName);
+                    }}
+                  >
+                    <Pencil className="w-3.5 h-3.5 text-slate-500" />
+                  </Button>
+                </div>
               </CardHeader>
               <CollapsibleContent>
                 <CardContent className="p-4">
@@ -287,6 +346,41 @@ export default function Contacts() {
         open={dialogOpen}
         onOpenChange={setDialogOpen}
       />
+
+      <Dialog open={editGroupDialog.open} onOpenChange={(open) => setEditGroupDialog({ ...editGroupDialog, open })}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Group Name</DialogTitle>
+            <DialogDescription>
+              Rename "{editGroupDialog.groupName}" group. This will update all contacts in this group.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="group-name">Group Name</Label>
+              <Input
+                id="group-name"
+                value={editGroupDialog.newName}
+                onChange={(e) => setEditGroupDialog({ ...editGroupDialog, newName: e.target.value })}
+                placeholder="Enter group name"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleSaveGroupName();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditGroupDialog({ open: false, groupName: '', newName: '' })}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveGroupName}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
