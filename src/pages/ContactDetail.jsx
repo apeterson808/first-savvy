@@ -565,7 +565,7 @@ export default function ContactDetail() {
                                 }}
                               >
                                 <SelectTrigger className="flex-1">
-                                  <SelectValue placeholder="General Contact (Default)" />
+                                  <SelectValue placeholder="General Contact" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {existingGroups.length === 0 ? (
@@ -577,7 +577,7 @@ export default function ContactDetail() {
                                     </SelectItem>
                                   ) : (
                                     <>
-                                      <SelectItem value="__none__">General Contact (Default)</SelectItem>
+                                      <SelectItem value="__none__">General Contact</SelectItem>
                                       {existingGroups.map(group => (
                                         <SelectItem key={group} value={group}>
                                           {group}
