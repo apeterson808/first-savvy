@@ -507,8 +507,8 @@ export default function ContactDetail() {
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-sm">
+          <div className="space-y-6">
+            <Card className="shadow-sm h-full">
               <CardContent className="p-6">
                 <div className="flex items-start gap-6 mb-6">
                   <Avatar className="w-20 h-20 bg-gradient-to-br from-slate-200 to-slate-300">
@@ -781,6 +781,103 @@ export default function ContactDetail() {
 
             <Card className="shadow-sm">
               <CardHeader className="border-b">
+                <CardTitle className="text-base font-semibold">Quick Stats</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                {analytics.transactionCount > 0 ? (
+                  <div className="space-y-4">
+                    <div>
+                      <div className="flex items-center gap-2 text-slate-600 mb-1">
+                        <Hash className="w-4 h-4" />
+                        <p className="text-xs font-medium uppercase tracking-wider">Total Transactions</p>
+                      </div>
+                      <p className="text-xl font-bold text-slate-900">{analytics.transactionCount}</p>
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2 text-slate-600 mb-1">
+                        <TrendingUp className="w-4 h-4" />
+                        <p className="text-xs font-medium uppercase tracking-wider">Average Transaction</p>
+                      </div>
+                      <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.averageTransaction)}</p>
+                    </div>
+
+                    {analytics.largestTransaction && (
+                      <div>
+                        <div className="flex items-center gap-2 text-slate-600 mb-1">
+                          <TrendingUp className="w-4 h-4" />
+                          <p className="text-xs font-medium uppercase tracking-wider">Largest Transaction</p>
+                        </div>
+                        <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.largestTransaction.amount)}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {format(new Date(analytics.largestTransaction.date), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <p className="text-slate-600 font-medium mb-1">No transaction data</p>
+                    <p className="text-sm text-slate-500">Stats will appear once transactions are recorded</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-sm">
+              <CardHeader className="border-b">
+                <CardTitle className="text-base font-semibold">Connection Status</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-4">
+                  <div>
+                    {contact.connection_status === 'connected' ? (
+                      <Badge className="bg-light-blue/20 text-sky-blue font-normal">
+                        Connected
+                      </Badge>
+                    ) : contact.connection_status === 'invited' ? (
+                      <Badge className="bg-yellow-100 text-yellow-800 font-normal">
+                        Invited
+                      </Badge>
+                    ) : contact.connection_status === 'platform_user' ? (
+                      <Badge className="bg-lavender/20 text-burgundy font-normal">
+                        On Platform
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="font-normal">
+                        Not Connected
+                      </Badge>
+                    )}
+                  </div>
+
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled
+                            className="w-full gap-2 opacity-50 cursor-not-allowed"
+                          >
+                            <Send className="w-4 h-4" />
+                            Invite to platform
+                          </Button>
+                        </div>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Coming soon</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="lg:col-span-2">
+            <Card className="shadow-sm">
+              <CardHeader className="border-b">
                 <CardTitle className="text-lg font-semibold">Transaction History</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
@@ -949,167 +1046,178 @@ export default function ContactDetail() {
               </CardContent>
             </Card>
           </div>
+        </div>
 
-          <div className="space-y-6">
-            <Card className="shadow-sm">
-              <CardHeader className="border-b">
-                <CardTitle className="text-base font-semibold">Spending by Category</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                {analytics.categoryBreakdown.length > 0 ? (
-                  <div className="space-y-6">
-                    <div className="h-56">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={analytics.categoryBreakdown}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={60}
-                            outerRadius={90}
-                            paddingAngle={3}
-                            dataKey="value"
-                          >
-                            {analytics.categoryBreakdown.map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={[
-                                  '#3b82f6',
-                                  '#8b5cf6',
-                                  '#ec4899',
-                                  '#f59e0b',
-                                  '#10b981'
-                                ][index % 5]}
-                              />
-                            ))}
-                          </Pie>
-                          <RechartsTooltip
-                            formatter={(value) => formatCurrency(value)}
-                            contentStyle={{
-                              backgroundColor: 'white',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '6px',
-                              padding: '8px 12px'
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </div>
-
-                    <div className="space-y-2">
-                      {analytics.categoryBreakdown.map((category, index) => (
-                        <div key={index} className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <div
-                              className="w-3 h-3 rounded-full flex-shrink-0"
-                              style={{
-                                backgroundColor: [
-                                  '#3b82f6',
-                                  '#8b5cf6',
-                                  '#ec4899',
-                                  '#f59e0b',
-                                  '#10b981'
-                                ][index % 5]
-                              }}
-                            ></div>
-                            <span className="text-slate-700 truncate">{category.name}</span>
-                          </div>
-                          <span className="font-semibold text-slate-900 ml-2">{formatCurrency(category.value)}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="border-t pt-5 space-y-4">
-                      <div>
-                        <div className="flex items-center gap-2 text-slate-600 mb-1">
-                          <Hash className="w-4 h-4" />
-                          <p className="text-xs font-medium uppercase tracking-wider">Average Transaction</p>
-                        </div>
-                        <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.averageTransaction)}</p>
-                      </div>
-
-                      {analytics.largestTransaction && (
-                        <div>
-                          <div className="flex items-center gap-2 text-slate-600 mb-1">
-                            <TrendingUp className="w-4 h-4" />
-                            <p className="text-xs font-medium uppercase tracking-wider">Largest Transaction</p>
-                          </div>
-                          <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.largestTransaction.amount)}</p>
-                          <p className="text-xs text-slate-500 mt-0.5">
-                            {format(new Date(analytics.largestTransaction.date), 'MMM d, yyyy')}
-                            {analytics.largestTransaction.description && ` • ${analytics.largestTransaction.description}`}
-                          </p>
-                        </div>
-                      )}
-
-                      <div>
-                        <div className="flex items-center gap-2 text-slate-600 mb-1">
-                          <Hash className="w-4 h-4" />
-                          <p className="text-xs font-medium uppercase tracking-wider">Total Transactions</p>
-                        </div>
-                        <p className="text-xl font-bold text-slate-900">{analytics.transactionCount}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="py-12 text-center">
-                    <p className="text-slate-600 font-medium mb-1">No transaction data</p>
-                    <p className="text-sm text-slate-500">Analytics will appear once transactions are recorded</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader className="border-b">
-                <CardTitle className="text-base font-semibold">Connection Status</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div>
-                    {contact.connection_status === 'connected' ? (
-                      <Badge className="bg-light-blue/20 text-sky-blue font-normal">
-                        Connected
-                      </Badge>
-                    ) : contact.connection_status === 'invited' ? (
-                      <Badge className="bg-yellow-100 text-yellow-800 font-normal">
-                        Invited
-                      </Badge>
-                    ) : contact.connection_status === 'platform_user' ? (
-                      <Badge className="bg-lavender/20 text-burgundy font-normal">
-                        On Platform
-                      </Badge>
-                    ) : (
-                      <Badge variant="outline" className="font-normal">
-                        Not Connected
-                      </Badge>
-                    )}
-                  </div>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <div>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled
-                            className="w-full gap-2 opacity-50 cursor-not-allowed"
-                          >
-                            <Send className="w-4 h-4" />
-                            Invite to platform
-                          </Button>
-                        </div>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Coming soon</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+        <div className="mt-6">
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
+              <CardTitle className="text-lg font-semibold">Transaction History</CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {transactionsLoading ? (
+                <div className="p-8 text-center text-slate-500 text-sm">Loading transactions...</div>
+              ) : transactions.length === 0 ? (
+                <div className="p-12 text-center">
+                  <p className="text-slate-600 font-medium mb-1">No transactions yet</p>
+                  <p className="text-sm text-slate-500">Transactions with this contact will appear here</p>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+              ) : (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table style={{ tableLayout: 'fixed', width: '100%' }}>
+                    <TableHeader>
+                      <TableRow className={TRANSACTION_TABLE_CONFIG.header.rowClass}>
+                        {TRANSACTION_TABLE_CONFIG.columns.map((col) => (
+                          <TableHead key={col.id} className={getHeaderCellClassName(col)}>
+                            {col.label}
+                          </TableHead>
+                        ))}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {transactions.map((transaction, index) => {
+                        const isExpense = transaction.type === 'expense';
+                        const isIncome = transaction.type === 'income';
+                        const amount = Math.abs(transaction.amount || 0);
+                        const isEditing = editingLineId === transaction.id;
+                        const categoryAccount = transaction.category_account;
+                        const bankAccount = transaction.bank_account;
+
+                        return (
+                          <TableRow key={transaction.id} className={getRowClassName(index)}>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
+                              {format(new Date(transaction.date), 'MM/dd/yy')}
+                            </TableCell>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
+                              {bankAccount ? getDisplayName(bankAccount) : '\u2014'}
+                            </TableCell>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
+                              {isEditing && editingLine ? (
+                                <input
+                                  type="text"
+                                  value={editingLine.description}
+                                  onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
+                                  className={TRANSACTION_TABLE_CONFIG.editField.inputClass}
+                                  onClick={(e) => e.stopPropagation()}
+                                  autoFocus
+                                />
+                              ) : (
+                                <button
+                                  onClick={(e) => handleEditTransaction(transaction, e)}
+                                  className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                                >
+                                  {transaction.description}
+                                </button>
+                              )}
+                            </TableCell>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
+                              {isEditing && editingLine ? (
+                                <ContactDropdown
+                                  value={editingLine.contact_id}
+                                  onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                                  triggerClassName={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
+                                />
+                              ) : (
+                                <button
+                                  onClick={(e) => handleEditTransaction(transaction, e)}
+                                  className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                                >
+                                  {contact?.name || '\u2014'}
+                                </button>
+                              )}
+                            </TableCell>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
+                              {isEditing && editingLine ? (
+                                <CategoryDropdown
+                                  value={editingLine.account_id}
+                                  onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                                  triggerClassName={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
+                                  transactionType={transaction.type}
+                                />
+                              ) : (
+                                <button
+                                  onClick={(e) => handleEditTransaction(transaction, e)}
+                                  className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                                >
+                                  {categoryAccount ? getDisplayName(categoryAccount) : '\u2014'}
+                                </button>
+                              )}
+                            </TableCell>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                              <span className={isExpense ? 'text-red-600' : isIncome ? 'text-green-600' : ''}>
+                                {formatCurrency(isExpense ? -amount : amount)}
+                              </span>
+                            </TableCell>
+                            <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
+                              {isEditing ? (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleCancelLine();
+                                    }}
+                                    className={TRANSACTION_TABLE_CONFIG.actionButtons.cancelClass}
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleSaveLine(transaction.id);
+                                    }}
+                                    disabled={isSavingLine}
+                                    className={TRANSACTION_TABLE_CONFIG.actionButtons.saveClass}
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  onClick={(e) => handleUndoTransaction(transaction.id, e)}
+                                  className={TRANSACTION_TABLE_CONFIG.actionButtons.undoClass}
+                                >
+                                  Undo
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                  {totalPages > 1 && (
+                    <div className="flex justify-between items-center p-4 border-t">
+                      <div className="text-xs text-slate-500">
+                        Showing {currentPage * PAGE_SIZE + 1}-{Math.min((currentPage + 1) * PAGE_SIZE, totalTransactions)} of {totalTransactions} transactions
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={goToPreviousPage}
+                          disabled={!hasPreviousPage || transactionsLoading}
+                          className="h-7 text-xs"
+                        >
+                          Previous
+                        </Button>
+                        <span className="text-xs text-slate-600">Page {currentPage + 1} of {totalPages}</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={goToNextPage}
+                          disabled={!hasNextPage || transactionsLoading}
+                          className="h-7 text-xs"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>
