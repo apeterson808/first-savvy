@@ -263,7 +263,7 @@ export default function ContactDetail() {
       address: formData.address.trim() || undefined,
       notes: formData.notes.trim() || undefined,
       status: formData.status,
-      group_name: formData.group_name.trim() || undefined,
+      group_name: formData.group_name.trim() || null,
       tags: formData.tags.length > 0 ? formData.tags : undefined,
       color: formData.color || '#6B7280'
     };
