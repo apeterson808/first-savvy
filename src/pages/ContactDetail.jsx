@@ -37,7 +37,7 @@ import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
 import ColorPicker from '@/components/common/ColorPicker';
 import { useProfile } from '@/contexts/ProfileContext';
-import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
+import { getDisplayName } from '@/api/chartOfAccounts';
 import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
 import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '@/components/common/TransactionTableConfig';
@@ -108,17 +108,6 @@ export default function ContactDetail() {
     return Array.from(groups).sort();
   }, [allContacts]);
 
-  const { data: chartAccounts = [], isLoading: chartAccountsLoading } = useQuery({
-    queryKey: ['chart-accounts', activeProfile?.id],
-    queryFn: async () => {
-      if (!activeProfile) return [];
-      const accounts = await getUserChartOfAccounts(activeProfile.id);
-      return accounts;
-    },
-    enabled: !!activeProfile,
-    staleTime: 5 * 60 * 1000
-  });
-
   const { data: rawTransactionsData, isLoading: transactionsLoading } = useQuery({
     queryKey: ['transactions', 'contact', id, activeProfile?.id, currentPage],
     queryFn: async () => {
@@ -135,7 +124,11 @@ export default function ContactDetail() {
 
       const dataQuery = firstsavvy.supabase
         .from('transactions')
-        .select('*')
+        .select(`
+          *,
+          bank_account:bank_account_id(id, display_name, account_type, account_detail),
+          category_account:category_account_id(id, display_name, account_type, account_detail)
+        `)
         .eq('contact_id', id)
         .eq('status', 'posted')
         .eq('profile_id', activeProfile.id)
@@ -157,20 +150,11 @@ export default function ContactDetail() {
     keepPreviousData: true
   });
 
-  const rawTransactions = rawTransactionsData?.transactions || [];
+  const transactions = rawTransactionsData?.transactions || [];
   const totalTransactions = rawTransactionsData?.totalCount || 0;
   const totalPages = Math.ceil(totalTransactions / PAGE_SIZE);
   const hasNextPage = currentPage < totalPages - 1;
   const hasPreviousPage = currentPage > 0;
-
-  // Enrich transactions with account data
-  const transactions = useMemo(() => {
-    return rawTransactions.map(txn => ({
-      ...txn,
-      bank_account: chartAccounts.find(acc => acc.id === txn.bank_account_id),
-      category_account: chartAccounts.find(acc => acc.id === txn.category_account_id)
-    }));
-  }, [rawTransactions, chartAccounts]);
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }) => firstsavvy.entities.Contact.update(id, data),
@@ -757,7 +741,7 @@ export default function ContactDetail() {
                 <CardTitle className="text-lg font-semibold">Transaction History</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {(transactionsLoading || chartAccountsLoading) ? (
+                {transactionsLoading ? (
                   <div className="p-8 text-center text-slate-500 text-sm">Loading transactions...</div>
                 ) : transactions.length === 0 ? (
                   <div className="p-12 text-center">
