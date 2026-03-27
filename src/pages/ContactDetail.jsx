@@ -35,6 +35,7 @@ import { Mail, Phone, MapPin, FileText, TrendingUp, TrendingDown, Hash, Calendar
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/components/utils/formatters';
+import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip as RechartsTooltip } from 'recharts';
 import ColorPicker from '@/components/common/ColorPicker';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getDisplayName } from '@/api/chartOfAccounts';
@@ -910,75 +911,117 @@ export default function ContactDetail() {
           <div className="space-y-6">
             <Card className="shadow-sm">
               <CardHeader className="border-b">
-                <CardTitle className="text-base font-semibold">Stats</CardTitle>
+                <CardTitle className="text-base font-semibold">Financial Overview</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-5">
-                  <div>
-                    <div className="flex items-center gap-2 text-slate-600 mb-1">
-                      <TrendingDown className="w-4 h-4" />
-                      <p className="text-xs font-medium uppercase tracking-wider">Money Out</p>
+                {analytics.transactionCount > 0 ? (
+                  <div className="space-y-6">
+                    <div className="h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={[
+                              { name: 'Money Out', value: Math.abs(analytics.moneyOut), color: '#dc2626' },
+                              { name: 'Money In', value: analytics.moneyIn, color: '#16a34a' }
+                            ]}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={50}
+                            outerRadius={80}
+                            paddingAngle={2}
+                            dataKey="value"
+                          >
+                            {[
+                              { name: 'Money Out', value: Math.abs(analytics.moneyOut), color: '#dc2626' },
+                              { name: 'Money In', value: analytics.moneyIn, color: '#16a34a' }
+                            ].map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip
+                            formatter={(value) => formatCurrency(value)}
+                            contentStyle={{
+                              backgroundColor: 'white',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '6px',
+                              padding: '8px 12px'
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
                     </div>
-                    <p className="text-2xl font-bold text-burgundy">{formatCurrency(analytics.moneyOut)}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Total paid to them</p>
-                  </div>
 
-                  <div className="border-t pt-5">
-                    <div className="flex items-center gap-2 text-slate-600 mb-1">
-                      <TrendingUp className="w-4 h-4" />
-                      <p className="text-xs font-medium uppercase tracking-wider">Money In</p>
-                    </div>
-                    <p className="text-2xl font-bold text-forest-green">{formatCurrency(analytics.moneyIn)}</p>
-                    <p className="text-xs text-slate-500 mt-0.5">Total received from them</p>
-                  </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          <div className="w-3 h-3 rounded-full bg-red-600"></div>
+                          <p className="text-xs font-medium text-slate-600">Money Out</p>
+                        </div>
+                        <p className="text-xl font-bold text-red-600">{formatCurrency(analytics.moneyOut)}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Paid to them</p>
+                      </div>
 
-                  <div className="border-t pt-5">
-                    <div className="flex items-center gap-2 text-slate-600 mb-1">
-                      <Hash className="w-4 h-4" />
-                      <p className="text-xs font-medium uppercase tracking-wider">Net Balance</p>
+                      <div className="text-center">
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                          <div className="w-3 h-3 rounded-full bg-green-600"></div>
+                          <p className="text-xs font-medium text-slate-600">Money In</p>
+                        </div>
+                        <p className="text-xl font-bold text-green-600">{formatCurrency(analytics.moneyIn)}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">Received from them</p>
+                      </div>
                     </div>
-                    <p className={`text-2xl font-bold ${analytics.netBalance >= 0 ? 'text-forest-green' : 'text-burgundy'}`}>
-                      {formatCurrency(Math.abs(analytics.netBalance))}
-                    </p>
-                    {analytics.transactionCount > 0 && (
+
+                    <div className="border-t pt-5">
+                      <div className="flex items-center gap-2 text-slate-600 mb-1">
+                        <Hash className="w-4 h-4" />
+                        <p className="text-xs font-medium uppercase tracking-wider">Net Balance</p>
+                      </div>
+                      <p className={`text-2xl font-bold ${analytics.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {formatCurrency(Math.abs(analytics.netBalance))}
+                      </p>
                       <p className="text-xs text-slate-500 mt-0.5">
                         {analytics.netBalance >= 0 ? 'They owe you' : 'You owe them'}
                       </p>
+                    </div>
+
+                    <div className="border-t pt-5">
+                      <div className="flex items-center gap-2 text-slate-600 mb-1">
+                        <Hash className="w-4 h-4" />
+                        <p className="text-xs font-medium uppercase tracking-wider">Transaction Count</p>
+                      </div>
+                      <p className="text-2xl font-bold text-slate-900">{analytics.transactionCount}</p>
+                    </div>
+
+                    {analytics.firstTransaction && (
+                      <div className="border-t pt-5">
+                        <div className="flex items-center gap-2 text-slate-600 mb-1">
+                          <Calendar className="w-4 h-4" />
+                          <p className="text-xs font-medium uppercase tracking-wider">First Transaction</p>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}
+                        </p>
+                      </div>
+                    )}
+
+                    {analytics.lastTransaction && (
+                      <div className="border-t pt-5">
+                        <div className="flex items-center gap-2 text-slate-600 mb-1">
+                          <Calendar className="w-4 h-4" />
+                          <p className="text-xs font-medium uppercase tracking-wider">Last Transaction</p>
+                        </div>
+                        <p className="text-sm font-semibold text-slate-900">
+                          {format(new Date(analytics.lastTransaction), 'MMM d, yyyy')}
+                        </p>
+                      </div>
                     )}
                   </div>
-
-                  <div className="border-t pt-5">
-                    <div className="flex items-center gap-2 text-slate-600 mb-1">
-                      <Hash className="w-4 h-4" />
-                      <p className="text-xs font-medium uppercase tracking-wider">Transaction Count</p>
-                    </div>
-                    <p className="text-2xl font-bold text-slate-900">{analytics.transactionCount}</p>
+                ) : (
+                  <div className="py-12 text-center">
+                    <p className="text-slate-600 font-medium mb-1">No transaction data</p>
+                    <p className="text-sm text-slate-500">Analytics will appear once transactions are recorded</p>
                   </div>
-
-                  {analytics.firstTransaction && (
-                    <div className="border-t pt-5">
-                      <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <Calendar className="w-4 h-4" />
-                        <p className="text-xs font-medium uppercase tracking-wider">First Transaction</p>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  )}
-
-                  {analytics.lastTransaction && (
-                    <div className="border-t pt-5">
-                      <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <Calendar className="w-4 h-4" />
-                        <p className="text-xs font-medium uppercase tracking-wider">Last Transaction</p>
-                      </div>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {format(new Date(analytics.lastTransaction), 'MMM d, yyyy')}
-                      </p>
-                    </div>
-                  )}
-                </div>
+                )}
               </CardContent>
             </Card>
 
