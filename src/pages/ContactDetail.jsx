@@ -108,14 +108,15 @@ export default function ContactDetail() {
     return Array.from(groups).sort();
   }, [allContacts]);
 
-  const { data: chartAccounts = [] } = useQuery({
+  const { data: chartAccounts = [], isLoading: chartAccountsLoading } = useQuery({
     queryKey: ['chart-accounts', activeProfile?.id],
     queryFn: async () => {
       if (!activeProfile) return [];
       const accounts = await getUserChartOfAccounts(activeProfile.id);
       return accounts;
     },
-    enabled: !!activeProfile
+    enabled: !!activeProfile,
+    staleTime: 5 * 60 * 1000
   });
 
   const { data: rawTransactionsData, isLoading: transactionsLoading } = useQuery({
@@ -756,7 +757,7 @@ export default function ContactDetail() {
                 <CardTitle className="text-lg font-semibold">Transaction History</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
-                {transactionsLoading ? (
+                {(transactionsLoading || chartAccountsLoading) ? (
                   <div className="p-8 text-center text-slate-500 text-sm">Loading transactions...</div>
                 ) : transactions.length === 0 ? (
                   <div className="p-12 text-center">
