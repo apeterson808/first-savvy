@@ -282,7 +282,9 @@ export default function AddContactSheet({
                   }}
                 >
                   <SelectTrigger className="flex-1">
-                    <SelectValue placeholder="General Contact" />
+                    <SelectValue>
+                      {formData.group_name || 'General Contact'}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
                     {existingGroups.length === 0 ? (
