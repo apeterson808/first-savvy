@@ -186,7 +186,7 @@ export default function Contacts() {
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-3">
       <div className="flex items-center justify-between gap-3">
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -212,18 +212,18 @@ export default function Contacts() {
       <Collapsible open={!collapsedGroups['ungrouped']} onOpenChange={() => toggleGroupCollapse('ungrouped')}>
         <Card className="shadow-sm border-slate-200">
           <CardHeader className="pb-2 pt-4 px-4 border-b">
-            <CollapsibleTrigger className="flex items-center justify-between w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+            <CollapsibleTrigger className="flex items-center w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+              {collapsedGroups['ungrouped'] ? (
+                <ChevronDown className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+              )}
               <div className="flex items-center gap-2">
                 <CardTitle className="text-base font-semibold">General Contacts</CardTitle>
                 <Badge variant="secondary" className="text-xs">
                   {groupedContacts.ungrouped.length}
                 </Badge>
               </div>
-              {collapsedGroups['ungrouped'] ? (
-                <ChevronDown className="w-4 h-4 text-slate-500" />
-              ) : (
-                <ChevronUp className="w-4 h-4 text-slate-500" />
-              )}
             </CollapsibleTrigger>
           </CardHeader>
           <CollapsibleContent>
@@ -252,18 +252,18 @@ export default function Contacts() {
           >
             <Card className="shadow-sm border-slate-200">
               <CardHeader className="pb-2 pt-4 px-4 border-b">
-                <CollapsibleTrigger className="flex items-center justify-between w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+                <CollapsibleTrigger className="flex items-center w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+                  {collapsedGroups[groupName] ? (
+                    <ChevronDown className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 text-slate-500 mr-2 flex-shrink-0" />
+                  )}
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-base font-semibold">{groupName}</CardTitle>
                     <Badge variant="secondary" className="text-xs">
                       {groupContacts.length}
                     </Badge>
                   </div>
-                  {collapsedGroups[groupName] ? (
-                    <ChevronDown className="w-4 h-4 text-slate-500" />
-                  ) : (
-                    <ChevronUp className="w-4 h-4 text-slate-500" />
-                  )}
                 </CollapsibleTrigger>
               </CardHeader>
               <CollapsibleContent>
