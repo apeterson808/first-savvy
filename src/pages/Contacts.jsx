@@ -214,7 +214,7 @@ export default function Contacts() {
           <CardHeader className="pb-2 pt-4 px-4 border-b">
             <CollapsibleTrigger className="flex items-center justify-between w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
               <div className="flex items-center gap-2">
-                <CardTitle className="text-base font-semibold">Ungrouped</CardTitle>
+                <CardTitle className="text-base font-semibold">General Contacts</CardTitle>
                 <Badge variant="secondary" className="text-xs">
                   {groupedContacts.ungrouped.length}
                 </Badge>
