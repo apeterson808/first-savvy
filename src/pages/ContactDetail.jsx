@@ -204,7 +204,11 @@ export default function ContactDetail() {
         netBalance: 0,
         transactionCount: 0,
         firstTransaction: null,
-        lastTransaction: null
+        lastTransaction: null,
+        categoryBreakdown: [],
+        averageTransaction: 0,
+        largestTransaction: null,
+        monthlyPattern: []
       };
     }
 
@@ -220,13 +224,51 @@ export default function ContactDetail() {
       new Date(a.date) - new Date(b.date)
     );
 
+    // Category breakdown (top 5)
+    const categoryMap = new Map();
+    transactions.forEach(t => {
+      if (t.category_account?.display_name) {
+        const current = categoryMap.get(t.category_account.display_name) || 0;
+        categoryMap.set(t.category_account.display_name, current + Math.abs(t.amount || 0));
+      }
+    });
+    const categoryBreakdown = Array.from(categoryMap.entries())
+      .map(([name, value]) => ({ name, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+
+    // Average transaction
+    const totalAmount = transactions.reduce((sum, t) => sum + Math.abs(t.amount || 0), 0);
+    const averageTransaction = transactions.length > 0 ? totalAmount / transactions.length : 0;
+
+    // Largest transaction
+    const largestTransaction = transactions.reduce((max, t) => {
+      const amount = Math.abs(t.amount || 0);
+      return amount > (max?.amount || 0) ? { amount, date: t.date, description: t.description } : max;
+    }, null);
+
+    // Monthly pattern (last 6 months)
+    const monthlyMap = new Map();
+    transactions.forEach(t => {
+      const month = format(new Date(t.date), 'MMM yyyy');
+      const current = monthlyMap.get(month) || 0;
+      monthlyMap.set(month, current + Math.abs(t.amount || 0));
+    });
+    const monthlyPattern = Array.from(monthlyMap.entries())
+      .map(([month, amount]) => ({ month, amount }))
+      .slice(-6);
+
     return {
       moneyOut,
       moneyIn,
       netBalance: moneyIn - moneyOut,
       transactionCount: transactions.length,
       firstTransaction: sortedByDate[0]?.date,
-      lastTransaction: sortedByDate[sortedByDate.length - 1]?.date
+      lastTransaction: sortedByDate[sortedByDate.length - 1]?.date,
+      categoryBreakdown,
+      averageTransaction,
+      largestTransaction,
+      monthlyPattern
     };
   }, [transactions]);
 
@@ -911,31 +953,34 @@ export default function ContactDetail() {
           <div className="space-y-6">
             <Card className="shadow-sm">
               <CardHeader className="border-b">
-                <CardTitle className="text-base font-semibold">Financial Overview</CardTitle>
+                <CardTitle className="text-base font-semibold">Spending by Category</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                {analytics.transactionCount > 0 ? (
+                {analytics.categoryBreakdown.length > 0 ? (
                   <div className="space-y-6">
-                    <div className="h-48">
+                    <div className="h-56">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie
-                            data={[
-                              { name: 'Money Out', value: Math.abs(analytics.moneyOut), color: '#dc2626' },
-                              { name: 'Money In', value: analytics.moneyIn, color: '#16a34a' }
-                            ]}
+                            data={analytics.categoryBreakdown}
                             cx="50%"
                             cy="50%"
-                            innerRadius={50}
-                            outerRadius={80}
-                            paddingAngle={2}
+                            innerRadius={60}
+                            outerRadius={90}
+                            paddingAngle={3}
                             dataKey="value"
                           >
-                            {[
-                              { name: 'Money Out', value: Math.abs(analytics.moneyOut), color: '#dc2626' },
-                              { name: 'Money In', value: analytics.moneyIn, color: '#16a34a' }
-                            ].map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            {analytics.categoryBreakdown.map((entry, index) => (
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={[
+                                  '#3b82f6',
+                                  '#8b5cf6',
+                                  '#ec4899',
+                                  '#f59e0b',
+                                  '#10b981'
+                                ][index % 5]}
+                              />
                             ))}
                           </Pie>
                           <RechartsTooltip
@@ -951,70 +996,60 @@ export default function ContactDetail() {
                       </ResponsiveContainer>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <div className="w-3 h-3 rounded-full bg-red-600"></div>
-                          <p className="text-xs font-medium text-slate-600">Money Out</p>
+                    <div className="space-y-2">
+                      {analytics.categoryBreakdown.map((category, index) => (
+                        <div key={index} className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <div
+                              className="w-3 h-3 rounded-full flex-shrink-0"
+                              style={{
+                                backgroundColor: [
+                                  '#3b82f6',
+                                  '#8b5cf6',
+                                  '#ec4899',
+                                  '#f59e0b',
+                                  '#10b981'
+                                ][index % 5]
+                              }}
+                            ></div>
+                            <span className="text-slate-700 truncate">{category.name}</span>
+                          </div>
+                          <span className="font-semibold text-slate-900 ml-2">{formatCurrency(category.value)}</span>
                         </div>
-                        <p className="text-xl font-bold text-red-600">{formatCurrency(analytics.moneyOut)}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Paid to them</p>
-                      </div>
-
-                      <div className="text-center">
-                        <div className="flex items-center justify-center gap-2 mb-1">
-                          <div className="w-3 h-3 rounded-full bg-green-600"></div>
-                          <p className="text-xs font-medium text-slate-600">Money In</p>
-                        </div>
-                        <p className="text-xl font-bold text-green-600">{formatCurrency(analytics.moneyIn)}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">Received from them</p>
-                      </div>
+                      ))}
                     </div>
 
-                    <div className="border-t pt-5">
-                      <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <Hash className="w-4 h-4" />
-                        <p className="text-xs font-medium uppercase tracking-wider">Net Balance</p>
-                      </div>
-                      <p className={`text-2xl font-bold ${analytics.netBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {formatCurrency(Math.abs(analytics.netBalance))}
-                      </p>
-                      <p className="text-xs text-slate-500 mt-0.5">
-                        {analytics.netBalance >= 0 ? 'They owe you' : 'You owe them'}
-                      </p>
-                    </div>
-
-                    <div className="border-t pt-5">
-                      <div className="flex items-center gap-2 text-slate-600 mb-1">
-                        <Hash className="w-4 h-4" />
-                        <p className="text-xs font-medium uppercase tracking-wider">Transaction Count</p>
-                      </div>
-                      <p className="text-2xl font-bold text-slate-900">{analytics.transactionCount}</p>
-                    </div>
-
-                    {analytics.firstTransaction && (
-                      <div className="border-t pt-5">
+                    <div className="border-t pt-5 space-y-4">
+                      <div>
                         <div className="flex items-center gap-2 text-slate-600 mb-1">
-                          <Calendar className="w-4 h-4" />
-                          <p className="text-xs font-medium uppercase tracking-wider">First Transaction</p>
+                          <Hash className="w-4 h-4" />
+                          <p className="text-xs font-medium uppercase tracking-wider">Average Transaction</p>
                         </div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {format(new Date(analytics.firstTransaction), 'MMM d, yyyy')}
-                        </p>
+                        <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.averageTransaction)}</p>
                       </div>
-                    )}
 
-                    {analytics.lastTransaction && (
-                      <div className="border-t pt-5">
-                        <div className="flex items-center gap-2 text-slate-600 mb-1">
-                          <Calendar className="w-4 h-4" />
-                          <p className="text-xs font-medium uppercase tracking-wider">Last Transaction</p>
+                      {analytics.largestTransaction && (
+                        <div>
+                          <div className="flex items-center gap-2 text-slate-600 mb-1">
+                            <TrendingUp className="w-4 h-4" />
+                            <p className="text-xs font-medium uppercase tracking-wider">Largest Transaction</p>
+                          </div>
+                          <p className="text-xl font-bold text-slate-900">{formatCurrency(analytics.largestTransaction.amount)}</p>
+                          <p className="text-xs text-slate-500 mt-0.5">
+                            {format(new Date(analytics.largestTransaction.date), 'MMM d, yyyy')}
+                            {analytics.largestTransaction.description && ` • ${analytics.largestTransaction.description}`}
+                          </p>
                         </div>
-                        <p className="text-sm font-semibold text-slate-900">
-                          {format(new Date(analytics.lastTransaction), 'MMM d, yyyy')}
-                        </p>
+                      )}
+
+                      <div>
+                        <div className="flex items-center gap-2 text-slate-600 mb-1">
+                          <Hash className="w-4 h-4" />
+                          <p className="text-xs font-medium uppercase tracking-wider">Total Transactions</p>
+                        </div>
+                        <p className="text-xl font-bold text-slate-900">{analytics.transactionCount}</p>
                       </div>
-                    )}
+                    </div>
                   </div>
                 ) : (
                   <div className="py-12 text-center">
