@@ -264,8 +264,7 @@ export default function ContactDetail() {
       notes: formData.notes.trim() || undefined,
       status: formData.status,
       group_name: formData.group_name.trim() || null,
-      tags: formData.tags.length > 0 ? formData.tags : undefined,
-      color: formData.color || '#6B7280'
+      tags: formData.tags.length > 0 ? formData.tags : undefined
     };
 
     updateMutation.mutate({ id: contact.id, data });
@@ -673,15 +672,6 @@ export default function ContactDetail() {
                                 ))}
                               </div>
                             )}
-                          </div>
-                        </div>
-                        <div>
-                          <Label htmlFor="color" className="text-sm font-medium">Color</Label>
-                          <div className="mt-1.5">
-                            <ColorPicker
-                              value={formData.color}
-                              onChange={(color) => setFormData(prev => ({ ...prev, color }))}
-                            />
                           </div>
                         </div>
                       </div>
