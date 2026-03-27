@@ -7,6 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Table,
   TableBody,
   TableCell,
@@ -14,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, Check, X } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
 import { useProfile } from '@/contexts/ProfileContext';
 
@@ -33,10 +38,10 @@ function ContactsTable({ contacts, isLoading, onContactClick, currentPage, setCu
         <Table>
           <TableHeader>
             <TableRow className="h-7">
-              <TableHead className="h-7">Name</TableHead>
-              <TableHead className="h-7">Email</TableHead>
-              <TableHead className="h-7">Phone</TableHead>
-              <TableHead className="h-7">Status</TableHead>
+              <TableHead className="h-7 w-[300px]">Name</TableHead>
+              <TableHead className="h-7 w-[250px]">Email</TableHead>
+              <TableHead className="h-7 w-[200px]">Phone</TableHead>
+              <TableHead className="h-7 w-[150px]">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -59,12 +64,12 @@ function ContactsTable({ contacts, isLoading, onContactClick, currentPage, setCu
                   className="h-8 cursor-pointer hover:bg-slate-50"
                   onClick={() => onContactClick(contact.id)}
                 >
-                  <TableCell className="font-medium py-1">
+                  <TableCell className="font-medium py-1 w-[300px]">
                     {contact.name}
                   </TableCell>
-                  <TableCell className="py-1">{contact.email || '-'}</TableCell>
-                  <TableCell className="py-1">{contact.phone || '-'}</TableCell>
-                  <TableCell className="py-1">
+                  <TableCell className="py-1 w-[250px]">{contact.email || '-'}</TableCell>
+                  <TableCell className="py-1 w-[200px]">{contact.phone || '-'}</TableCell>
+                  <TableCell className="py-1 w-[150px]">
                     {contact.status ? (
                       <span className={`inline-flex items-center px-2 py-0 rounded-full text-xs font-medium capitalize ${
                         contact.status.toLowerCase() === 'active'
@@ -123,8 +128,7 @@ export default function Contacts() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPages, setCurrentPages] = useState({});
-  const [newGroupName, setNewGroupName] = useState('');
-  const [showNewGroupInput, setShowNewGroupInput] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState({});
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -143,7 +147,6 @@ export default function Contacts() {
     enabled: !!activeProfile
   });
 
-  // Group contacts by their group_name
   const groupedContacts = useMemo(() => {
     const groups = { ungrouped: [] };
 
@@ -178,11 +181,8 @@ export default function Contacts() {
     setCurrentPages(prev => ({ ...prev, [groupName]: page }));
   };
 
-  const handleAddGroup = () => {
-    if (newGroupName.trim() && !groupNames.includes(newGroupName.trim())) {
-      setNewGroupName('');
-      setShowNewGroupInput(false);
-    }
+  const toggleGroupCollapse = (groupName) => {
+    setCollapsedGroups(prev => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
   return (
@@ -198,54 +198,6 @@ export default function Contacts() {
           />
         </div>
         <div className="flex gap-2">
-          {!showNewGroupInput ? (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setShowNewGroupInput(true)}
-              className="h-9"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              New Group
-            </Button>
-          ) : (
-            <div className="flex gap-2 items-center">
-              <Input
-                placeholder="Group name..."
-                value={newGroupName}
-                onChange={(e) => setNewGroupName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddGroup();
-                  } else if (e.key === 'Escape') {
-                    setNewGroupName('');
-                    setShowNewGroupInput(false);
-                  }
-                }}
-                className="h-9 w-48"
-                autoFocus
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleAddGroup}
-                className="h-9"
-              >
-                <Check className="w-4 h-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => {
-                  setNewGroupName('');
-                  setShowNewGroupInput(false);
-                }}
-                className="h-9"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          )}
           <Button
             size="sm"
             onClick={() => setDialogOpen(true)}
@@ -257,61 +209,77 @@ export default function Contacts() {
         </div>
       </div>
 
-      {/* All Contacts Card */}
-      <Card className="shadow-sm border-slate-200">
-        <CardHeader className="pb-2 pt-4 px-4 border-b">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold">All Contacts</CardTitle>
-            <Badge variant="secondary" className="text-xs">
-              {groupedContacts.ungrouped.length + groupNames.reduce((sum, name) => sum + groupedContacts[name].length, 0)}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="p-4">
-          <ContactsTable
-            contacts={[...groupedContacts.ungrouped, ...groupNames.flatMap(name => groupedContacts[name])]}
-            isLoading={isLoading}
-            onContactClick={(id) => navigate(`/contacts/${id}`)}
-            currentPage={currentPages['all'] || 1}
-            setCurrentPage={(page) => setPageForGroup('all', page)}
-            groupName={null}
-          />
-        </CardContent>
-      </Card>
-
-      {/* Group Cards */}
-      {groupNames.map(groupName => {
-        const groupContacts = groupedContacts[groupName];
-        const firstContact = groupContacts[0];
-        const groupColor = firstContact?.color || '#6B7280';
-
-        return (
-          <Card key={groupName} className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4 border-b">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-3 h-3 rounded-full"
-                    style={{ backgroundColor: groupColor }}
-                  />
-                  <CardTitle className="text-base font-semibold">{groupName}</CardTitle>
-                </div>
+      <Collapsible open={!collapsedGroups['ungrouped']} onOpenChange={() => toggleGroupCollapse('ungrouped')}>
+        <Card className="shadow-sm border-slate-200">
+          <CardHeader className="pb-2 pt-4 px-4 border-b">
+            <CollapsibleTrigger className="flex items-center justify-between w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base font-semibold">Ungrouped</CardTitle>
                 <Badge variant="secondary" className="text-xs">
-                  {groupContacts.length}
+                  {groupedContacts.ungrouped.length}
                 </Badge>
               </div>
-            </CardHeader>
+              {collapsedGroups['ungrouped'] ? (
+                <ChevronDown className="w-4 h-4 text-slate-500" />
+              ) : (
+                <ChevronUp className="w-4 h-4 text-slate-500" />
+              )}
+            </CollapsibleTrigger>
+          </CardHeader>
+          <CollapsibleContent>
             <CardContent className="p-4">
               <ContactsTable
-                contacts={groupContacts}
+                contacts={groupedContacts.ungrouped}
                 isLoading={isLoading}
                 onContactClick={(id) => navigate(`/contacts/${id}`)}
-                currentPage={currentPages[groupName] || 1}
-                setCurrentPage={(page) => setPageForGroup(groupName, page)}
-                groupName={groupName}
+                currentPage={currentPages['ungrouped'] || 1}
+                setCurrentPage={(page) => setPageForGroup('ungrouped', page)}
+                groupName={null}
               />
             </CardContent>
-          </Card>
+          </CollapsibleContent>
+        </Card>
+      </Collapsible>
+
+      {groupNames.map(groupName => {
+        const groupContacts = groupedContacts[groupName];
+
+        return (
+          <Collapsible
+            key={groupName}
+            open={!collapsedGroups[groupName]}
+            onOpenChange={() => toggleGroupCollapse(groupName)}
+          >
+            <Card className="shadow-sm border-slate-200">
+              <CardHeader className="pb-2 pt-4 px-4 border-b">
+                <CollapsibleTrigger className="flex items-center justify-between w-full hover:bg-slate-50 -mx-4 px-4 py-1 rounded">
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base font-semibold">{groupName}</CardTitle>
+                    <Badge variant="secondary" className="text-xs">
+                      {groupContacts.length}
+                    </Badge>
+                  </div>
+                  {collapsedGroups[groupName] ? (
+                    <ChevronDown className="w-4 h-4 text-slate-500" />
+                  ) : (
+                    <ChevronUp className="w-4 h-4 text-slate-500" />
+                  )}
+                </CollapsibleTrigger>
+              </CardHeader>
+              <CollapsibleContent>
+                <CardContent className="p-4">
+                  <ContactsTable
+                    contacts={groupContacts}
+                    isLoading={isLoading}
+                    onContactClick={(id) => navigate(`/contacts/${id}`)}
+                    currentPage={currentPages[groupName] || 1}
+                    setCurrentPage={(page) => setPageForGroup(groupName, page)}
+                    groupName={groupName}
+                  />
+                </CardContent>
+              </CollapsibleContent>
+            </Card>
+          </Collapsible>
         );
       })}
 
