@@ -269,10 +269,12 @@ export default function AddContactSheet({
             {!isCreatingNewGroup ? (
               <div className="flex gap-2">
                 <Select
-                  value={formData.group_name}
+                  value={formData.group_name || '__none__'}
                   onValueChange={(value) => {
                     if (value === '__new__') {
                       setIsCreatingNewGroup(true);
+                      updateFormField('group_name', '');
+                    } else if (value === '__none__') {
                       updateFormField('group_name', '');
                     } else {
                       updateFormField('group_name', value);
@@ -292,7 +294,7 @@ export default function AddContactSheet({
                       </SelectItem>
                     ) : (
                       <>
-                        <SelectItem value="">General Contact (Default)</SelectItem>
+                        <SelectItem value="__none__">General Contact (Default)</SelectItem>
                         {existingGroups.map(group => (
                           <SelectItem key={group} value={group}>
                             {group}
