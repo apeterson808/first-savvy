@@ -507,8 +507,8 @@ export default function ContactDetail() {
           </div>
         </div>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
-            <Card className="shadow-sm">
+          <div className="lg:col-span-2 flex">
+            <Card className="shadow-sm flex-1">
             <CardContent className="p-6">
                 <div className="flex items-start gap-6 mb-6">
                   <Avatar className="w-20 h-20 bg-gradient-to-br from-slate-200 to-slate-300">
@@ -780,7 +780,7 @@ export default function ContactDetail() {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="flex flex-col gap-6">
             <Card className="shadow-sm">
               <CardHeader className="border-b py-3 px-4">
                 <CardTitle className="text-sm font-semibold">Quick Stats</CardTitle>
