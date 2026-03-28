@@ -5,7 +5,7 @@ import { Cable } from 'lucide-react';
 export default function Integrations() {
   return (
     <Layout currentPageName="Integrations">
-      <div className="flex items-center justify-center h-full">
+      <div className="flex items-center justify-center min-h-full bg-white">
         <div className="text-center">
           <div className="flex justify-center mb-6">
             <div className="p-6 bg-blue-50 rounded-full">
