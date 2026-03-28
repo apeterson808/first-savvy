@@ -23,7 +23,6 @@ import {
 } from "@/components/ui/select";
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
-import ColorPicker from '@/components/common/ColorPicker';
 import { toast } from 'sonner';
 import { X, Plus } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -399,17 +398,6 @@ export default function AddContactSheet({
             </div>
             <p className="text-xs text-slate-500 mt-1">
               Add multiple tags for flexible organization
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="color">Color</Label>
-            <ColorPicker
-              value={formData.color}
-              onChange={(color) => updateFormField('color', color)}
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Visual indicator for this contact
             </p>
           </div>
 
