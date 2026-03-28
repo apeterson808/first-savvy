@@ -252,6 +252,26 @@ export default function AddContactSheet({
           </div>
 
           <div>
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => updateFormField('email', e.target.value)}
+              placeholder="contact@example.com"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Add email or phone to check if they have an account
+            </p>
+            <AccountDetectionField
+              type="email"
+              value={formData.email}
+              onConnectionRequest={handleConnectionRequest}
+              onInviteSend={handleSendInvitation}
+            />
+          </div>
+
+          <div>
             <Label htmlFor="status">Status *</Label>
             <ClickThroughSelect
               value={formData.status}
@@ -399,26 +419,6 @@ export default function AddContactSheet({
             <p className="text-xs text-slate-500 mt-1">
               Add multiple tags for flexible organization
             </p>
-          </div>
-
-          <div>
-            <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => updateFormField('email', e.target.value)}
-              placeholder="contact@example.com"
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Add email or phone to check if they have an account
-            </p>
-            <AccountDetectionField
-              type="email"
-              value={formData.email}
-              onConnectionRequest={handleConnectionRequest}
-              onInviteSend={handleSendInvitation}
-            />
           </div>
 
           <div>
