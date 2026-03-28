@@ -266,7 +266,7 @@ export default function AddContactSheet({
           </div>
 
           <div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 mb-2">
               <Label htmlFor="email">Email</Label>
               <TooltipProvider>
                 <Tooltip>
@@ -295,7 +295,7 @@ export default function AddContactSheet({
           </div>
 
           <div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 mb-2">
               <Label htmlFor="phone">Phone</Label>
               <TooltipProvider>
                 <Tooltip>
