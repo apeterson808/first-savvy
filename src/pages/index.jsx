@@ -14,6 +14,7 @@ import Settings from "./Settings";
 import Goals from "./Goals";
 import Calendar from "./Calendar";
 import PasswordVault from "./PasswordVault";
+import Integrations from "./Integrations";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -34,6 +35,8 @@ const PAGES = {
     CreditScore: CreditScore,
 
     Contacts: Contacts,
+
+    Integrations: Integrations,
 
     PasswordVault: PasswordVault,
 
@@ -86,6 +89,7 @@ function PagesContent() {
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
+                    <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/PasswordVault" element={<PasswordVault />} />
                     <Route path="/Rules" element={<Navigate to="/Banking?tab=rules" replace />} />
                     <Route path="/Settings" element={<Settings />} />

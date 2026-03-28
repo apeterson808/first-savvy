@@ -71,6 +71,7 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Credit Score', icon: CreditCard, page: 'CreditScore' },
     { name: 'Net Worth', icon: Banknote, page: 'NetWorth' },
     { name: 'Contacts', icon: Users, page: 'Contacts' },
+    { name: 'Integrations', icon: Cable, page: 'Integrations' },
     { name: 'Collaboration', icon: UserCog, page: 'Collaboration' },
     { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
     { name: 'Affiliate', icon: Users, page: 'Affiliate' }
