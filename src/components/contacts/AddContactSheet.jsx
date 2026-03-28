@@ -50,8 +50,10 @@ export default function AddContactSheet({
     status: 'active',
     email: '',
     phone: '',
-    address: '',
-    notes: '',
+    street: '',
+    city: '',
+    state: '',
+    zip: '',
     group_name: '',
     tags: [],
     color: '#6B7280',
@@ -106,8 +108,10 @@ export default function AddContactSheet({
       status: 'active',
       email: '',
       phone: '',
-      address: '',
-      notes: '',
+      street: '',
+      city: '',
+      state: '',
+      zip: '',
       group_name: '',
       tags: [],
       color: '#6B7280',
@@ -198,13 +202,20 @@ export default function AddContactSheet({
       return;
     }
 
+    const addressParts = [
+      formData.street.trim(),
+      formData.city.trim(),
+      formData.state,
+      formData.zip.trim()
+    ].filter(Boolean);
+    const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : undefined;
+
     const contactData = {
       name: formData.name.trim(),
-      status: (formData.status || 'active').toLowerCase(),
+      status: 'active',
       email: formData.email.trim() || undefined,
       phone: formData.phone || undefined,
-      address: formData.address.trim() || undefined,
-      notes: formData.notes.trim() || undefined,
+      address: fullAddress,
       group_name: formData.group_name.trim() || undefined,
       tags: formData.tags.length > 0 ? formData.tags : undefined,
       color: formData.color || '#6B7280',
@@ -272,15 +283,110 @@ export default function AddContactSheet({
           </div>
 
           <div>
-            <Label htmlFor="status">Status *</Label>
-            <ClickThroughSelect
-              value={formData.status}
-              onValueChange={(value) => updateFormField('status', value)}
-              placeholder="Select status"
-            >
-              <ClickThroughSelectItem value="active">Active</ClickThroughSelectItem>
-              <ClickThroughSelectItem value="inactive">Inactive</ClickThroughSelectItem>
-            </ClickThroughSelect>
+            <Label htmlFor="phone">Phone</Label>
+            <Input
+              id="phone"
+              type="tel"
+              value={formData.phone}
+              onChange={handlePhoneChange}
+              placeholder="(555) 123-4567"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="street">Street Address</Label>
+            <Input
+              id="street"
+              value={formData.street}
+              onChange={(e) => updateFormField('street', e.target.value)}
+              placeholder="123 Main St"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => updateFormField('city', e.target.value)}
+                placeholder="City"
+              />
+            </div>
+            <div>
+              <Label htmlFor="state">State</Label>
+              <Select
+                value={formData.state}
+                onValueChange={(value) => updateFormField('state', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="State" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="AL">AL</SelectItem>
+                  <SelectItem value="AK">AK</SelectItem>
+                  <SelectItem value="AZ">AZ</SelectItem>
+                  <SelectItem value="AR">AR</SelectItem>
+                  <SelectItem value="CA">CA</SelectItem>
+                  <SelectItem value="CO">CO</SelectItem>
+                  <SelectItem value="CT">CT</SelectItem>
+                  <SelectItem value="DE">DE</SelectItem>
+                  <SelectItem value="FL">FL</SelectItem>
+                  <SelectItem value="GA">GA</SelectItem>
+                  <SelectItem value="HI">HI</SelectItem>
+                  <SelectItem value="ID">ID</SelectItem>
+                  <SelectItem value="IL">IL</SelectItem>
+                  <SelectItem value="IN">IN</SelectItem>
+                  <SelectItem value="IA">IA</SelectItem>
+                  <SelectItem value="KS">KS</SelectItem>
+                  <SelectItem value="KY">KY</SelectItem>
+                  <SelectItem value="LA">LA</SelectItem>
+                  <SelectItem value="ME">ME</SelectItem>
+                  <SelectItem value="MD">MD</SelectItem>
+                  <SelectItem value="MA">MA</SelectItem>
+                  <SelectItem value="MI">MI</SelectItem>
+                  <SelectItem value="MN">MN</SelectItem>
+                  <SelectItem value="MS">MS</SelectItem>
+                  <SelectItem value="MO">MO</SelectItem>
+                  <SelectItem value="MT">MT</SelectItem>
+                  <SelectItem value="NE">NE</SelectItem>
+                  <SelectItem value="NV">NV</SelectItem>
+                  <SelectItem value="NH">NH</SelectItem>
+                  <SelectItem value="NJ">NJ</SelectItem>
+                  <SelectItem value="NM">NM</SelectItem>
+                  <SelectItem value="NY">NY</SelectItem>
+                  <SelectItem value="NC">NC</SelectItem>
+                  <SelectItem value="ND">ND</SelectItem>
+                  <SelectItem value="OH">OH</SelectItem>
+                  <SelectItem value="OK">OK</SelectItem>
+                  <SelectItem value="OR">OR</SelectItem>
+                  <SelectItem value="PA">PA</SelectItem>
+                  <SelectItem value="RI">RI</SelectItem>
+                  <SelectItem value="SC">SC</SelectItem>
+                  <SelectItem value="SD">SD</SelectItem>
+                  <SelectItem value="TN">TN</SelectItem>
+                  <SelectItem value="TX">TX</SelectItem>
+                  <SelectItem value="UT">UT</SelectItem>
+                  <SelectItem value="VT">VT</SelectItem>
+                  <SelectItem value="VA">VA</SelectItem>
+                  <SelectItem value="WA">WA</SelectItem>
+                  <SelectItem value="WV">WV</SelectItem>
+                  <SelectItem value="WI">WI</SelectItem>
+                  <SelectItem value="WY">WY</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="zip">ZIP Code</Label>
+            <Input
+              id="zip"
+              value={formData.zip}
+              onChange={(e) => updateFormField('zip', e.target.value)}
+              placeholder="12345"
+              maxLength={10}
+            />
           </div>
 
           <div>
@@ -356,9 +462,6 @@ export default function AddContactSheet({
                 </Button>
               </div>
             )}
-            <p className="text-xs text-slate-500 mt-1">
-              Primary category for this contact
-            </p>
           </div>
 
           <div>
@@ -416,52 +519,6 @@ export default function AddContactSheet({
                 </div>
               )}
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Add multiple tags for flexible organization
-            </p>
-          </div>
-
-          <div>
-            <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              type="tel"
-              value={formData.phone}
-              onChange={handlePhoneChange}
-              placeholder="(555) 123-4567"
-              maxLength={14}
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Must include area code. Add to check if they have an account.
-            </p>
-            <AccountDetectionField
-              type="phone"
-              value={formData.phone}
-              onConnectionRequest={handleConnectionRequest}
-              onInviteSend={handleSendInvitation}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="address">Address</Label>
-            <Textarea
-              id="address"
-              value={formData.address}
-              onChange={(e) => updateFormField('address', e.target.value)}
-              placeholder="Street address, city, state, zip"
-              rows={2}
-            />
-          </div>
-
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => updateFormField('notes', e.target.value)}
-              placeholder="e.g., Recurring $15.99/month"
-              rows={3}
-            />
           </div>
 
           <SheetFooter className="pt-4">
