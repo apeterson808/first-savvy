@@ -303,8 +303,8 @@ export default function AddContactSheet({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
