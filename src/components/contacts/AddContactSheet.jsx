@@ -315,6 +315,12 @@ export default function AddContactSheet({
               onChange={handlePhoneChange}
               placeholder="(555) 123-4567"
             />
+            <AccountDetectionField
+              type="phone"
+              value={formData.phone}
+              onConnectionRequest={handleConnectionRequest}
+              onInviteSend={handleSendInvitation}
+            />
           </div>
 
           <div>
