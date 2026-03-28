@@ -8,12 +8,13 @@ export const accountDetectionService = {
 
     try {
       const { data, error } = await supabase
-        .from('auth.users')
-        .select('id, email, raw_user_meta_data')
+        .from('user_settings')
+        .select('id, email, full_name, avatar_url')
         .eq('email', email.toLowerCase())
         .maybeSingle();
 
       if (error) {
+        console.error('Email check error:', error);
         return { found: false, user: null, error };
       }
 
@@ -23,14 +24,15 @@ export const accountDetectionService = {
           user: {
             id: data.id,
             email: data.email,
-            name: data.raw_user_meta_data?.name || data.email,
-            avatar: data.raw_user_meta_data?.avatar_url
+            name: data.full_name || data.email,
+            avatar: data.avatar_url
           }
         };
       }
 
       return { found: false, user: null };
     } catch (err) {
+      console.error('Email check exception:', err);
       return { found: false, user: null, error: err };
     }
   },
@@ -47,12 +49,13 @@ export const accountDetectionService = {
 
     try {
       const { data, error } = await supabase
-        .from('auth.users')
-        .select('id, phone, email, raw_user_meta_data')
+        .from('user_settings')
+        .select('id, phone, email, full_name, avatar_url')
         .eq('phone', phoneDigits)
         .maybeSingle();
 
       if (error) {
+        console.error('Phone check error:', error);
         return { found: false, user: null, error };
       }
 
@@ -63,14 +66,15 @@ export const accountDetectionService = {
             id: data.id,
             phone: data.phone,
             email: data.email,
-            name: data.raw_user_meta_data?.name || data.email || data.phone,
-            avatar: data.raw_user_meta_data?.avatar_url
+            name: data.full_name || data.email || data.phone,
+            avatar: data.avatar_url
           }
         };
       }
 
       return { found: false, user: null };
     } catch (err) {
+      console.error('Phone check exception:', err);
       return { found: false, user: null, error: err };
     }
   },
