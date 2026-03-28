@@ -709,17 +709,39 @@ export default function ContactDetail() {
                       <div className="space-y-4">
                         <div>
                           <h2 className="text-2xl font-bold text-slate-900 mb-1">{contact.name}</h2>
-                          {contact.status && (
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {contact.status && (
+                              <Badge
+                                className={
+                                  contact.status.toLowerCase() === 'active'
+                                    ? 'bg-soft-green/30 text-forest-green font-normal'
+                                    : 'bg-gray-100 text-gray-800 font-normal'
+                                }
+                              >
+                                {contact.status}
+                              </Badge>
+                            )}
                             <Badge
-                              className={
-                                contact.status.toLowerCase() === 'active'
-                                  ? 'bg-soft-green/30 text-forest-green font-normal'
-                                  : 'bg-gray-100 text-gray-800 font-normal'
-                              }
+                              variant="outline"
+                              className="font-medium"
+                              style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined, borderColor: contact.color }}
                             >
-                              {contact.status}
+                              {contact.group_name || 'General Contact'}
                             </Badge>
-                          )}
+                            {(contact.tags && contact.tags.length > 0) && (
+                              <>
+                              {contact.tags && contact.tags.map((tag, idx) => (
+                                <Badge
+                                  key={idx}
+                                  variant="secondary"
+                                  style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined }}
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                              </>
+                            )}
+                          </div>
                         </div>
 
                         <div className="space-y-3">
@@ -747,30 +769,6 @@ export default function ContactDetail() {
                               <span className="text-slate-700 whitespace-pre-wrap">{contact.notes}</span>
                             </div>
                           )}
-                          <div className="pt-3 border-t">
-                            <div className="flex flex-wrap gap-1.5">
-                              <Badge
-                                variant="outline"
-                                className="font-medium"
-                                style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined, borderColor: contact.color }}
-                              >
-                                {contact.group_name || 'General Contact'}
-                              </Badge>
-                              {(contact.tags && contact.tags.length > 0) && (
-                                <>
-                                {contact.tags && contact.tags.map((tag, idx) => (
-                                  <Badge
-                                    key={idx}
-                                    variant="secondary"
-                                    style={{ backgroundColor: contact.color ? `${contact.color}20` : undefined }}
-                                  >
-                                    {tag}
-                                  </Badge>
-                                ))}
-                                </>
-                              )}
-                            </div>
-                          </div>
                         </div>
                       </div>
                     )}
