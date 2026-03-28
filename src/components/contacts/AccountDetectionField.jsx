@@ -111,22 +111,20 @@ export default function AccountDetectionField({
 
   if (accountFound && !accountFound.found && !accountFound.error) {
     return (
-      <Alert className="mt-2 bg-slate-50 border-slate-200">
-        <div className="flex items-center justify-between w-full">
-          <AlertDescription className="text-sm text-slate-600 flex items-center gap-2">
-            {type === 'email' ? <Mail className="w-4 h-4" /> : <PhoneIcon className="w-4 h-4" />}
-            <span>No account found</span>
-          </AlertDescription>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleInvite}
-            className="border-blue-600 text-blue-600 hover:bg-blue-50"
-          >
-            Send Invite
-          </Button>
+      <div className="mt-2 flex items-center justify-between gap-3 p-3 rounded-md bg-slate-50 border border-slate-200">
+        <div className="text-sm text-slate-600 flex items-center gap-2">
+          {type === 'email' ? <Mail className="w-4 h-4" /> : <PhoneIcon className="w-4 h-4" />}
+          <span>No account found</span>
         </div>
-      </Alert>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleInvite}
+          className="border-blue-600 text-blue-600 hover:bg-blue-50 shrink-0"
+        >
+          Send Invite
+        </Button>
+      </div>
     );
   }
 
