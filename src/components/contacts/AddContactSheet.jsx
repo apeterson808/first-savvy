@@ -303,8 +303,8 @@ export default function AddContactSheet({
             />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div className="col-span-2">
+          <div className="grid grid-cols-6 gap-3">
+            <div className="col-span-3">
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
@@ -313,7 +313,7 @@ export default function AddContactSheet({
                 placeholder="City"
               />
             </div>
-            <div>
+            <div className="col-span-1">
               <Label htmlFor="state">State</Label>
               <Select
                 value={formData.state}
@@ -376,17 +376,16 @@ export default function AddContactSheet({
                 </SelectContent>
               </Select>
             </div>
-          </div>
-
-          <div>
-            <Label htmlFor="zip">ZIP Code</Label>
-            <Input
-              id="zip"
-              value={formData.zip}
-              onChange={(e) => updateFormField('zip', e.target.value)}
-              placeholder="12345"
-              maxLength={10}
-            />
+            <div className="col-span-2">
+              <Label htmlFor="zip">ZIP Code</Label>
+              <Input
+                id="zip"
+                value={formData.zip}
+                onChange={(e) => updateFormField('zip', e.target.value)}
+                placeholder="12345"
+                maxLength={10}
+              />
+            </div>
           </div>
 
           <div>
