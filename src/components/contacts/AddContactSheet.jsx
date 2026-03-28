@@ -15,6 +15,12 @@ import {
   SheetFooter,
 } from "@/components/ui/sheet";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -24,7 +30,7 @@ import {
 import { ClickThroughSelect, ClickThroughSelectItem } from '@/components/ui/ClickThroughSelect';
 import AccountDetectionField from './AccountDetectionField';
 import { toast } from 'sonner';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Info } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
 
 function formatPhoneNumber(value) {
@@ -246,9 +252,6 @@ export default function AddContactSheet({
         <SheetContent className="overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Add Contact</SheetTitle>
-            <SheetDescription>
-              Add a new contact to your address book
-            </SheetDescription>
           </SheetHeader>
         <form onSubmit={handleSubmit} onKeyDown={handleKeyDown} className="space-y-4 mt-4">
           <div>
@@ -263,7 +266,19 @@ export default function AddContactSheet({
           </div>
 
           <div>
-            <Label htmlFor="email">Email</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="email">Email</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add email or phone to check if they have an account</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="email"
               type="email"
@@ -271,9 +286,6 @@ export default function AddContactSheet({
               onChange={(e) => updateFormField('email', e.target.value)}
               placeholder="contact@example.com"
             />
-            <p className="text-xs text-slate-500 mt-1">
-              Add email or phone to check if they have an account
-            </p>
             <AccountDetectionField
               type="email"
               value={formData.email}
@@ -283,7 +295,19 @@ export default function AddContactSheet({
           </div>
 
           <div>
-            <Label htmlFor="phone">Phone</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor="phone">Phone</Label>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Info className="h-3.5 w-3.5 text-slate-400 cursor-help" />
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add email or phone to check if they have an account</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <Input
               id="phone"
               type="tel"
@@ -303,8 +327,8 @@ export default function AddContactSheet({
             />
           </div>
 
-          <div className="grid grid-cols-6 gap-3">
-            <div className="col-span-3">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="col-span-2">
               <Label htmlFor="city">City</Label>
               <Input
                 id="city"
@@ -313,7 +337,7 @@ export default function AddContactSheet({
                 placeholder="City"
               />
             </div>
-            <div className="col-span-1">
+            <div>
               <Label htmlFor="state">State</Label>
               <Select
                 value={formData.state}
@@ -376,16 +400,17 @@ export default function AddContactSheet({
                 </SelectContent>
               </Select>
             </div>
-            <div className="col-span-2">
-              <Label htmlFor="zip">ZIP Code</Label>
-              <Input
-                id="zip"
-                value={formData.zip}
-                onChange={(e) => updateFormField('zip', e.target.value)}
-                placeholder="12345"
-                maxLength={10}
-              />
-            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="zip">ZIP Code</Label>
+            <Input
+              id="zip"
+              value={formData.zip}
+              onChange={(e) => updateFormField('zip', e.target.value)}
+              placeholder="12345"
+              maxLength={10}
+            />
           </div>
 
           <div>
