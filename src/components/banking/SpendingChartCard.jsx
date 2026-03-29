@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import MonthSelectorDropdown from '../common/MonthSelectorDropdown';
+import MonthSelectorArrows from '../common/MonthSelectorArrows';
 import AccountDropdown from '../common/AccountDropdown';
 import ComparisonPeriodDropdown from '../common/ComparisonPeriodDropdown';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -126,7 +126,7 @@ export default function SpendingChartCard({
     <Card className="shadow-sm border-slate-200 lg:col-span-2">
       <CardHeader className="pb-2 pt-4 px-4">
         <div className="flex items-center gap-2 flex-nowrap min-w-0">
-          <MonthSelectorDropdown value={selectedMonth} onValueChange={setSelectedMonth} />
+          <MonthSelectorArrows value={selectedMonth} onValueChange={setSelectedMonth} />
           <AccountDropdown
             value={selectedAccount}
             onValueChange={setSelectedAccount}
