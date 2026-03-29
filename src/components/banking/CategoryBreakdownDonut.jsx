@@ -100,30 +100,15 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
   // Calculate total from ALL categories first
   const totalSpending = Object.values(categoryTotals).reduce((sum, cat) => sum + cat.amount, 0);
 
-  // Then take top 6 for display, plus "other" for the rest
+  // Sort categories by spending amount and show ALL of them
   const sortedCategories = Object.entries(categoryTotals).sort(([, a], [, b]) => b.amount - a.amount);
-  const top6 = sortedCategories.slice(0, 6);
-  const restCategories = sortedCategories.slice(6);
-  const restTotal = restCategories.reduce((sum, [, cat]) => sum + cat.amount, 0);
 
-  const chartData = top6.map(([categoryName, cat], index) => ({
+  const chartData = sortedCategories.map(([categoryName, cat], index) => ({
     name: categoryName.replace(/_/g, ' '),
     value: cat.amount,
     color: cat.color || DEFAULT_COLORS[index % DEFAULT_COLORS.length],
     chartAccountId: cat.chartAccountId
   }));
-
-  // Add "other" category if there are more than 6 categories
-  if (restTotal > 0) {
-    const otherCategoryIds = restCategories.map(([, cat]) => cat.chartAccountId).filter(Boolean);
-    chartData.push({
-      name: 'other categories',
-      value: restTotal,
-      color: '#94a3b8',
-      chartAccountIds: otherCategoryIds,
-      isOther: true
-    });
-  }
 
   const renderActiveShape = (props) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -181,12 +166,8 @@ export default function CategoryBreakdownDonut({ transactions, selectedMonth, se
                     onMouseLeave={() => setActiveIndex(null)}
                     onClick={(data, index) => {
                       const entry = chartData[index];
-                      if (onCategoryClick) {
-                        if (entry?.isOther && entry?.chartAccountIds) {
-                          onCategoryClick(entry.chartAccountIds, entry.name);
-                        } else if (entry?.chartAccountId) {
-                          onCategoryClick(entry.chartAccountId, entry.name);
-                        }
+                      if (onCategoryClick && entry?.chartAccountId) {
+                        onCategoryClick(entry.chartAccountId, entry.name);
                       }
                     }}
                   >
