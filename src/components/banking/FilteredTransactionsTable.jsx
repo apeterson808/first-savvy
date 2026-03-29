@@ -13,47 +13,45 @@ export default function FilteredTransactionsTable({
   filters = null
 }) {
   const filteredTransactions = useMemo(() => {
+    // Don't show anything if no filters are provided
+    if (!filters) {
+      return [];
+    }
+
     let filtered = [...transactions];
 
-    // Apply filters if provided
-    if (filters) {
-      // Filter by date if provided
-      if (filters.date) {
-        filtered = filtered.filter(t => t.date === filters.date);
-      }
+    // Filter by date if provided
+    if (filters.date) {
+      filtered = filtered.filter(t => t.date === filters.date);
+    }
 
-      // Filter by month if provided
-      if (filters.month !== undefined) {
-        const targetDate = subMonths(new Date(), parseInt(filters.month));
-        const monthStart = startOfMonth(targetDate);
-        const monthEnd = endOfMonth(targetDate);
-        const startStr = format(monthStart, 'yyyy-MM-dd');
-        const endStr = format(monthEnd, 'yyyy-MM-dd');
-        filtered = filtered.filter(t => t.date >= startStr && t.date <= endStr);
-      }
+    // Filter by month if provided
+    if (filters.month !== undefined) {
+      const targetDate = subMonths(new Date(), parseInt(filters.month));
+      const monthStart = startOfMonth(targetDate);
+      const monthEnd = endOfMonth(targetDate);
+      const startStr = format(monthStart, 'yyyy-MM-dd');
+      const endStr = format(monthEnd, 'yyyy-MM-dd');
+      filtered = filtered.filter(t => t.date >= startStr && t.date <= endStr);
+    }
 
-      // Filter by account if provided
-      if (filters.account && filters.account !== 'all') {
-        filtered = filtered.filter(t => t.bank_account_id === filters.account);
-      } else if (filters.account === 'all') {
-        // Only include active accounts
-        const activeAccountIds = accounts.filter(a => a.is_active !== false).map(a => a.id);
-        filtered = filtered.filter(t => activeAccountIds.includes(t.bank_account_id));
-      }
-
-      // Filter by category if provided
-      if (filters.category) {
-        filtered = filtered.filter(t => t.category_id === filters.category);
-      }
-
-      // Filter by type (only expenses for spending chart)
-      if (filters.type) {
-        filtered = filtered.filter(t => t.type === filters.type);
-      }
-    } else {
-      // When no filters, only show active accounts
+    // Filter by account if provided
+    if (filters.account && filters.account !== 'all') {
+      filtered = filtered.filter(t => t.bank_account_id === filters.account);
+    } else if (filters.account === 'all') {
+      // Only include active accounts
       const activeAccountIds = accounts.filter(a => a.is_active !== false).map(a => a.id);
       filtered = filtered.filter(t => activeAccountIds.includes(t.bank_account_id));
+    }
+
+    // Filter by category if provided
+    if (filters.category) {
+      filtered = filtered.filter(t => t.category_id === filters.category);
+    }
+
+    // Filter by type (only expenses for spending chart)
+    if (filters.type) {
+      filtered = filtered.filter(t => t.type === filters.type);
     }
 
     // Always filter by status
@@ -65,11 +63,6 @@ export default function FilteredTransactionsTable({
       if (dateCompare !== 0) return dateCompare;
       return b.id.localeCompare(a.id);
     });
-
-    // Limit to 50 transactions when no filters are applied
-    if (!filters) {
-      return filtered.slice(0, 50);
-    }
 
     return filtered;
   }, [transactions, filters, accounts]);
@@ -159,7 +152,7 @@ export default function FilteredTransactionsTable({
       <CardContent className="px-4 pb-4">
         {filteredTransactions.length === 0 ? (
           <div className="text-center py-8 text-slate-500 text-sm">
-            No transactions found for the selected filters
+            {!filters ? 'Select filters to view transactions' : 'No transactions found for the selected filters'}
           </div>
         ) : (
           <div className="overflow-x-auto">
