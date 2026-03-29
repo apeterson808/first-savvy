@@ -6,6 +6,7 @@ import RulesTab from '../components/banking/RulesTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
 import SpendingChartCard from '../components/banking/SpendingChartCard';
 import AccountsTable from '../components/banking/AccountsTable';
+import FilteredTransactionsTable from '../components/banking/FilteredTransactionsTable';
 import useAllAccounts from '../components/hooks/useAllAccounts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -13,12 +14,15 @@ import { PageTabs } from '@/components/common/PageTabs';
 
 export default function Banking() {
   const urlParams = new URLSearchParams(window.location.search);
-  const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'overview');
+  const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'spending');
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedMonth, setSelectedMonth] = useState('0');
   const [selectedPastMonth, setSelectedPastMonth] = useState('avg3');
   const queryClient = useQueryClient();
-  
+
+  // State for filtered transactions table on spending tab
+  const [spendingTableFilters, setSpendingTableFilters] = useState(null);
+
   // Check for date param from Dashboard chart click - use a ref to track initial URL params
   const initialUrlDate = React.useRef(urlParams.get('date'));
   const initialUrlAccount = React.useRef(urlParams.get('account'));
@@ -30,21 +34,18 @@ export default function Banking() {
   const [filterKey, setFilterKey] = React.useState(0);
 
   const handleChartPointClick = ({ date, account }) => {
-    // Set filters and increment key to force remount
-    const newFilters = { date, account };
-    setTransactionFilters(newFilters);
-    setFilterKey(prev => prev + 1);
-    
-    // Navigate to transactions tab
-    const newUrl = `${window.location.pathname}?tab=transactions&date=${date}&account=${account}`;
-    window.history.pushState({}, '', newUrl);
-    setActiveTab('transactions');
+    // Set filters for the spending table instead of navigating away
+    setSpendingTableFilters({
+      date,
+      account,
+      type: 'expense'
+    });
   };
 
   React.useEffect(() => {
     const syncTabWithUrl = () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const newTab = urlParams.get('tab') || 'overview';
+      const newTab = urlParams.get('tab') || 'spending';
       setActiveTab(newTab);
 
       const dateParam = urlParams.get('date');
@@ -84,16 +85,30 @@ export default function Banking() {
     gcTime: 300000
   });
 
+  const { data: categories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => firstsavvy.entities.Category.list('name'),
+    staleTime: 30000,
+    gcTime: 300000
+  });
+
+  const { data: contacts = [] } = useQuery({
+    queryKey: ['contacts'],
+    queryFn: () => firstsavvy.entities.Contact.list('name'),
+    staleTime: 30000,
+    gcTime: 300000
+  });
+
   const totalBalance = accounts
     .filter((acc) => acc.is_active !== false)
     .reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
 
   return (
     <div className="p-4 md:p-6">
-      <PageTabs tabs={['overview', 'transactions', 'rules', 'recurring', 'accounts']} />
+      <PageTabs tabs={['spending', 'transactions', 'rules', 'recurring', 'accounts']} />
       <Tabs value={activeTab} className="w-full">
 
-        <TabsContent value="overview" className="space-y-4">
+        <TabsContent value="spending" className="space-y-4">
           {/* Chart and Categories Row */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <SpendingChartCard
@@ -115,11 +130,12 @@ export default function Banking() {
               accounts={accounts}
               onCategoryClick={(categoryId) => {
                 if (categoryId) {
-                  setTransactionFilters({ category: categoryId, account: selectedAccount, month: selectedMonth });
-                  setFilterKey(prev => prev + 1);
-                  const newUrl = `${window.location.pathname}?tab=transactions&category=${categoryId}&account=${selectedAccount}&month=${selectedMonth}`;
-                  window.history.pushState({}, '', newUrl);
-                  setActiveTab('transactions');
+                  setSpendingTableFilters({
+                    category: categoryId,
+                    account: selectedAccount,
+                    month: selectedMonth,
+                    type: 'expense'
+                  });
                 }
               }}
             />
@@ -149,14 +165,14 @@ export default function Banking() {
             </Card>
           </div>
 
-          <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Account Overview</p>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-600">Overview content coming soon</p>
-            </CardContent>
-          </Card>
+          {/* Filtered Transactions Table */}
+          <FilteredTransactionsTable
+            transactions={transactions}
+            accounts={accounts}
+            categories={categories}
+            contacts={contacts}
+            filters={spendingTableFilters}
+          />
         </TabsContent>
 
         <TabsContent value="transactions" className="space-y-4">
