@@ -147,7 +147,7 @@ export default function FilteredTransactionsTable({
   const totalAmount = useMemo(() => {
     return filteredTransactions.reduce((sum, t) => {
       const amount = parseFloat(t.amount) || 0;
-      return sum + (t.type === 'expense' ? -Math.abs(amount) : Math.abs(amount));
+      return sum + Math.abs(amount);
     }, 0);
   }, [filteredTransactions]);
 
@@ -172,8 +172,8 @@ export default function FilteredTransactionsTable({
             <p className="text-[10px] text-slate-500">
               Total =
             </p>
-            <p className={`text-[10px] font-semibold ${totalAmount < 0 ? 'text-red-600' : totalAmount > 0 ? 'text-green-600' : 'text-slate-500'}`}>
-              {formatCurrency(totalAmount)}
+            <p className="text-[10px] font-semibold text-slate-900">
+              ${totalAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </p>
           </div>
         </div>
