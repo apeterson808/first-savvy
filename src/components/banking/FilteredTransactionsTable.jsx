@@ -28,12 +28,29 @@ export default function FilteredTransactionsTable({
 
     // Filter by month if provided
     if (filters.month !== undefined) {
-      const targetDate = subMonths(new Date(), parseInt(filters.month));
+      const today = new Date();
+      const targetDate = subMonths(today, parseInt(filters.month));
       const monthStart = startOfMonth(targetDate);
+      const isCurrentMonth = parseInt(filters.month) === 0;
+      const currentDay = today.getDate();
+
+      // For current month, only include transactions up to today
+      // For past months, include the entire month
       const monthEnd = endOfMonth(targetDate);
       const startStr = format(monthStart, 'yyyy-MM-dd');
       const endStr = format(monthEnd, 'yyyy-MM-dd');
-      filtered = filtered.filter(t => t.date >= startStr && t.date <= endStr);
+
+      filtered = filtered.filter(t => {
+        if (t.date < startStr || t.date > endStr) return false;
+
+        // For current month, only include transactions up to today
+        if (isCurrentMonth) {
+          const tDate = new Date(t.date);
+          return tDate.getDate() <= currentDay;
+        }
+
+        return true;
+      });
     }
 
     // Filter by account if provided
