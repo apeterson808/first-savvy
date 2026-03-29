@@ -90,8 +90,10 @@ export default function FilteredTransactionsTable({
   };
 
   const formatAmount = (transaction) => {
-    const amount = Math.abs(transaction.amount || 0);
-    const formatted = `$${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const amount = transaction.amount || 0;
+    const absAmount = Math.abs(amount);
+    const sign = transaction.type === 'expense' ? '-' : '';
+    const formatted = `${sign}$${absAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
     if (transaction.type === 'expense') {
       return <span className="text-red-600 font-medium">{formatted}</span>;
@@ -124,15 +126,16 @@ export default function FilteredTransactionsTable({
   };
 
   const totalAmount = useMemo(() => {
-    return filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+    return filteredTransactions.reduce((sum, t) => {
+      const amount = parseFloat(t.amount) || 0;
+      return sum + (t.type === 'expense' ? -Math.abs(amount) : Math.abs(amount));
+    }, 0);
   }, [filteredTransactions]);
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 2
-    }).format(amount);
+    const absAmount = Math.abs(amount);
+    const sign = amount < 0 ? '-' : '';
+    return `${sign}$${absAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
   return (
