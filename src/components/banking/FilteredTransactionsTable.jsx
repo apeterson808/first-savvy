@@ -123,6 +123,18 @@ export default function FilteredTransactionsTable({
     return 'Filtered Transactions';
   };
 
+  const totalAmount = useMemo(() => {
+    return filteredTransactions.reduce((sum, t) => sum + (parseFloat(t.amount) || 0), 0);
+  }, [filteredTransactions]);
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
   return (
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="pb-2 pt-4 px-4">
@@ -130,9 +142,15 @@ export default function FilteredTransactionsTable({
           <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">
             {getTitle()}
           </p>
-          <p className="text-[10px] text-slate-500">
-            {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="text-[10px] text-slate-500">
+              {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+            </p>
+            <span className="text-[10px] text-slate-400">•</span>
+            <p className={`text-[10px] font-semibold ${totalAmount < 0 ? 'text-red-600' : totalAmount > 0 ? 'text-green-600' : 'text-slate-500'}`}>
+              {formatCurrency(totalAmount)}
+            </p>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-4">
