@@ -143,6 +143,9 @@ export default function FilteredTransactionsTable({
               {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
             </p>
             <span className="text-[10px] text-slate-400">•</span>
+            <p className="text-[10px] text-slate-500">
+              Total
+            </p>
             <p className={`text-[10px] font-semibold ${totalAmount < 0 ? 'text-red-600' : totalAmount > 0 ? 'text-green-600' : 'text-slate-500'}`}>
               {formatCurrency(totalAmount)}
             </p>
