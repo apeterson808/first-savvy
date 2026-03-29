@@ -13,45 +13,50 @@ export default function FilteredTransactionsTable({
   filters = null
 }) {
   const filteredTransactions = useMemo(() => {
-    if (!filters) return [];
-
     let filtered = [...transactions];
 
-    // Filter by date if provided
-    if (filters.date) {
-      filtered = filtered.filter(t => t.date === filters.date);
-    }
+    // Apply filters if provided
+    if (filters) {
+      // Filter by date if provided
+      if (filters.date) {
+        filtered = filtered.filter(t => t.date === filters.date);
+      }
 
-    // Filter by month if provided
-    if (filters.month !== undefined) {
-      const targetDate = subMonths(new Date(), parseInt(filters.month));
-      const monthStart = startOfMonth(targetDate);
-      const monthEnd = endOfMonth(targetDate);
-      const startStr = format(monthStart, 'yyyy-MM-dd');
-      const endStr = format(monthEnd, 'yyyy-MM-dd');
-      filtered = filtered.filter(t => t.date >= startStr && t.date <= endStr);
-    }
+      // Filter by month if provided
+      if (filters.month !== undefined) {
+        const targetDate = subMonths(new Date(), parseInt(filters.month));
+        const monthStart = startOfMonth(targetDate);
+        const monthEnd = endOfMonth(targetDate);
+        const startStr = format(monthStart, 'yyyy-MM-dd');
+        const endStr = format(monthEnd, 'yyyy-MM-dd');
+        filtered = filtered.filter(t => t.date >= startStr && t.date <= endStr);
+      }
 
-    // Filter by account if provided
-    if (filters.account && filters.account !== 'all') {
-      filtered = filtered.filter(t => t.bank_account_id === filters.account);
-    } else if (filters.account === 'all') {
-      // Only include active accounts
+      // Filter by account if provided
+      if (filters.account && filters.account !== 'all') {
+        filtered = filtered.filter(t => t.bank_account_id === filters.account);
+      } else if (filters.account === 'all') {
+        // Only include active accounts
+        const activeAccountIds = accounts.filter(a => a.is_active !== false).map(a => a.id);
+        filtered = filtered.filter(t => activeAccountIds.includes(t.bank_account_id));
+      }
+
+      // Filter by category if provided
+      if (filters.category) {
+        filtered = filtered.filter(t => t.category_id === filters.category);
+      }
+
+      // Filter by type (only expenses for spending chart)
+      if (filters.type) {
+        filtered = filtered.filter(t => t.type === filters.type);
+      }
+    } else {
+      // When no filters, only show active accounts
       const activeAccountIds = accounts.filter(a => a.is_active !== false).map(a => a.id);
       filtered = filtered.filter(t => activeAccountIds.includes(t.bank_account_id));
     }
 
-    // Filter by category if provided
-    if (filters.category) {
-      filtered = filtered.filter(t => t.category_id === filters.category);
-    }
-
-    // Filter by type (only expenses for spending chart)
-    if (filters.type) {
-      filtered = filtered.filter(t => t.type === filters.type);
-    }
-
-    // Filter by status
+    // Always filter by status
     filtered = filtered.filter(t => t.status === 'posted');
 
     // Sort by date descending
@@ -60,6 +65,11 @@ export default function FilteredTransactionsTable({
       if (dateCompare !== 0) return dateCompare;
       return b.id.localeCompare(a.id);
     });
+
+    // Limit to 50 transactions when no filters are applied
+    if (!filters) {
+      return filtered.slice(0, 50);
+    }
 
     return filtered;
   }, [transactions, filters, accounts]);
@@ -99,7 +109,7 @@ export default function FilteredTransactionsTable({
   };
 
   const getTitle = () => {
-    if (!filters) return 'Transactions';
+    if (!filters) return 'Recent Transactions';
 
     if (filters.date) {
       return `Transactions on ${format(new Date(filters.date), 'MMMM d, yyyy')}`;
@@ -112,10 +122,6 @@ export default function FilteredTransactionsTable({
 
     return 'Filtered Transactions';
   };
-
-  if (!filters) {
-    return null;
-  }
 
   return (
     <Card className="shadow-sm border-slate-200">
