@@ -47,7 +47,11 @@ export default function FilteredTransactionsTable({
 
     // Filter by category (chart account) if provided
     if (filters.category) {
-      filtered = filtered.filter(t => t.category_account_id === filters.category);
+      if (Array.isArray(filters.category)) {
+        filtered = filtered.filter(t => filters.category.includes(t.category_account_id));
+      } else {
+        filtered = filtered.filter(t => t.category_account_id === filters.category);
+      }
     }
 
     // Filter by type (only expenses for spending chart)
@@ -112,8 +116,12 @@ export default function FilteredTransactionsTable({
     }
 
     if (filters.category) {
-      const categoryName = getCategoryName(filters.category);
-      return `${categoryName} Transactions`;
+      if (Array.isArray(filters.category)) {
+        return 'Other Categories Transactions';
+      } else {
+        const categoryName = getCategoryName(filters.category);
+        return `${categoryName} Transactions`;
+      }
     }
 
     return 'Filtered Transactions';

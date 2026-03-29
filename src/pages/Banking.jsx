@@ -74,6 +74,11 @@ export default function Banking() {
     return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
   }, [queryClient]);
 
+  // Reset filtered transactions when month or account settings change
+  React.useEffect(() => {
+    setSpendingTableFilters(null);
+  }, [selectedMonth, selectedAccount]);
+
   const { allAccounts, isLoading: accountsLoading } = useAllAccounts();
 
   const accounts = allAccounts.filter(acc =>
