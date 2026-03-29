@@ -10,6 +10,7 @@ export default function FilteredTransactionsTable({
   accounts = [],
   categories = [],
   contacts = [],
+  chartAccounts = [],
   filters = null
 }) {
   const filteredTransactions = useMemo(() => {
@@ -44,9 +45,9 @@ export default function FilteredTransactionsTable({
       filtered = filtered.filter(t => activeAccountIds.includes(t.bank_account_id));
     }
 
-    // Filter by category if provided
+    // Filter by category (chart account) if provided
     if (filters.category) {
-      filtered = filtered.filter(t => t.category_id === filters.category);
+      filtered = filtered.filter(t => t.category_account_id === filters.category);
     }
 
     // Filter by type (only expenses for spending chart)
@@ -72,9 +73,9 @@ export default function FilteredTransactionsTable({
     return account?.name || 'Unknown';
   };
 
-  const getCategoryName = (categoryId) => {
-    const category = categories.find(c => c.id === categoryId);
-    return category?.name || 'Uncategorized';
+  const getCategoryName = (categoryAccountId) => {
+    const chartAccount = chartAccounts.find(c => c.id === categoryAccountId);
+    return chartAccount?.display_name || chartAccount?.account_detail || 'Uncategorized';
   };
 
   const getContactName = (contactId) => {
@@ -208,7 +209,7 @@ export default function FilteredTransactionsTable({
                     </TableCell>
                     <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
                       <span className="truncate block">
-                        {transaction.category_id ? getCategoryName(transaction.category_id) : 'Uncategorized'}
+                        {transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}
                       </span>
                     </TableCell>
                     <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>

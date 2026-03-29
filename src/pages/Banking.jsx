@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useProfile } from '@/contexts/ProfileContext';
+import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
 import TransactionsTab from '../components/banking/TransactionsTab';
 import RulesTab from '../components/banking/RulesTab';
 import CategoryBreakdownDonut from '../components/banking/CategoryBreakdownDonut';
@@ -13,6 +15,7 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { PageTabs } from '@/components/common/PageTabs';
 
 export default function Banking() {
+  const { activeProfile } = useProfile();
   const urlParams = new URLSearchParams(window.location.search);
   const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'spending');
   const [selectedAccount, setSelectedAccount] = useState('all');
@@ -99,6 +102,17 @@ export default function Banking() {
     gcTime: 300000
   });
 
+  const { data: chartAccounts = [] } = useQuery({
+    queryKey: ['chartAccounts', activeProfile?.id],
+    queryFn: async () => {
+      if (!activeProfile?.id) return [];
+      const accounts = await getUserChartOfAccounts(activeProfile.id);
+      return accounts.filter(a => a.is_active);
+    },
+    enabled: !!activeProfile?.id,
+    staleTime: 30000
+  });
+
   const totalBalance = accounts
     .filter((acc) => acc.is_active !== false)
     .reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
@@ -171,6 +185,7 @@ export default function Banking() {
             accounts={accounts}
             categories={categories}
             contacts={contacts}
+            chartAccounts={chartAccounts}
             filters={spendingTableFilters}
           />
         </TabsContent>
