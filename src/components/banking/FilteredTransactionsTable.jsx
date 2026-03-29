@@ -30,22 +30,22 @@ export default function FilteredTransactionsTable({
     if (filters.month !== undefined) {
       const today = new Date();
       const targetDate = subMonths(today, parseInt(filters.month));
-      const monthStart = startOfMonth(targetDate);
       const isCurrentMonth = parseInt(filters.month) === 0;
       const currentDay = today.getDate();
 
-      // For current month, only include transactions up to today
-      // For past months, include the entire month
-      const monthEnd = endOfMonth(targetDate);
-      const startStr = format(monthStart, 'yyyy-MM-dd');
-      const endStr = format(monthEnd, 'yyyy-MM-dd');
-
       filtered = filtered.filter(t => {
-        if (t.date < startStr || t.date > endStr) return false;
+        if (!t.date) return false;
+        const tDate = new Date(t.date);
+        if (isNaN(tDate.getTime())) return false;
+
+        // Check if transaction is in the target month and year
+        const matchesMonth = tDate.getMonth() === targetDate.getMonth() &&
+                            tDate.getFullYear() === targetDate.getFullYear();
+
+        if (!matchesMonth) return false;
 
         // For current month, only include transactions up to today
         if (isCurrentMonth) {
-          const tDate = new Date(t.date);
           return tDate.getDate() <= currentDay;
         }
 
