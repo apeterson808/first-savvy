@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '../common/TransactionTableConfig';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useQueryClient } from '@tanstack/react-query';
@@ -214,6 +215,25 @@ export default function FilteredTransactionsTable({
     setEditingLine(null);
   };
 
+  const handleUndoTransaction = async (transactionId, e) => {
+    e.stopPropagation();
+
+    if (!confirm('Are you sure you want to undo this transaction? This will move it back to unposted status.')) {
+      return;
+    }
+
+    try {
+      await firstsavvy.rpc('undo_posted_transaction', { p_transaction_id: transactionId });
+
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      queryClient.invalidateQueries({ queryKey: ['budget-analytics'] });
+      queryClient.invalidateQueries({ queryKey: ['accounts'] });
+      toast.success('Transaction undone successfully');
+    } catch (error) {
+      toast.error(`Failed to undo transaction: ${error.message}`);
+    }
+  };
+
   return (
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="pb-2 pt-4 px-4">
@@ -332,8 +352,7 @@ export default function FilteredTransactionsTable({
                                 e.stopPropagation();
                                 handleCancelLine();
                               }}
-                              disabled={isSavingLine}
-                              className="text-slate-400 hover:text-slate-600 p-1 disabled:opacity-50"
+                              className={TRANSACTION_TABLE_CONFIG.actionButtons.cancelClass}
                             >
                               <X className="w-4 h-4" />
                             </button>
@@ -343,12 +362,21 @@ export default function FilteredTransactionsTable({
                                 handleSaveLine(transaction.id);
                               }}
                               disabled={isSavingLine}
-                              className="text-emerald-500 hover:text-emerald-700 p-1 disabled:opacity-50"
+                              className={TRANSACTION_TABLE_CONFIG.actionButtons.saveClass}
                             >
                               <Check className="w-4 h-4" />
                             </button>
                           </div>
-                        ) : null}
+                        ) : (
+                          <Button
+                            variant="link"
+                            size="sm"
+                            onClick={(e) => handleUndoTransaction(transaction.id, e)}
+                            className={TRANSACTION_TABLE_CONFIG.actionButtons.undoClass}
+                          >
+                            Undo
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
