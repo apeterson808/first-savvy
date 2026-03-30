@@ -58,15 +58,21 @@ export default function Children() {
       let pendingApprovals = 0;
       let activeChores = 0;
 
-      for (const child of childProfiles) {
-        totalPoints += child.points_balance;
+      if (childProfiles.length > 0) {
+        const choresPromises = childProfiles.map(child =>
+          choresAPI.getChoresByChild(child.id).catch(() => [])
+        );
+        const choresResults = await Promise.all(choresPromises);
 
-        const chores = await choresAPI.getChoresByChild(child.id);
-        const pendingChores = chores.filter(c => c.status === 'completed').length;
-        const activeChoresCount = chores.filter(c => c.status === 'pending' || c.status === 'in_progress').length;
+        childProfiles.forEach((child, index) => {
+          totalPoints += child.points_balance;
+          const chores = choresResults[index] || [];
+          const pendingChores = chores.filter(c => c.status === 'completed').length;
+          const activeChoresCount = chores.filter(c => c.status === 'pending' || c.status === 'in_progress').length;
 
-        pendingApprovals += pendingChores;
-        activeChores += activeChoresCount;
+          pendingApprovals += pendingChores;
+          activeChores += activeChoresCount;
+        });
       }
 
       setStats({
