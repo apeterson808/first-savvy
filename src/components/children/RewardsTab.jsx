@@ -1,0 +1,139 @@
+import { useState, useEffect } from 'react';
+import { useProfile } from '@/contexts/ProfileContext';
+import { rewardsAPI } from '@/api/rewards';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Plus, Award } from 'lucide-react';
+import { toast } from 'sonner';
+
+export function RewardsTab({ childId, child, onUpdate }) {
+  const { selectedProfile } = useProfile();
+  const [rewards, setRewards] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadRewardsData();
+  }, [childId]);
+
+  const loadRewardsData = async () => {
+    try {
+      setLoading(true);
+      const [rewardsData, redemptionsData] = await Promise.all([
+        rewardsAPI.getRewards(selectedProfile.id),
+        rewardsAPI.getRedemptions(childId),
+      ]);
+      setRewards(rewardsData);
+      setRedemptions(redemptionsData);
+    } catch (error) {
+      console.error('Error loading rewards:', error);
+      toast.error('Failed to load rewards');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="text-center py-8">Loading rewards...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Reward Catalog</h3>
+          <Button size="sm">
+            <Plus className="mr-2 h-4 w-4" />
+            Add Reward
+          </Button>
+        </div>
+
+        {rewards.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-8">
+                <Award className="mx-auto h-12 w-12 text-slate-400" />
+                <p className="mt-2 text-slate-600">No rewards yet</p>
+                <Button className="mt-4" size="sm">
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create First Reward
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {rewards.map((reward) => (
+              <Card key={reward.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">{reward.title}</CardTitle>
+                  {reward.description && (
+                    <p className="text-sm text-slate-600">{reward.description}</p>
+                  )}
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      {reward.points_cost > 0 && (
+                        <span className="font-semibold text-green-600">
+                          {reward.points_cost} points
+                        </span>
+                      )}
+                      {reward.cash_cost > 0 && (
+                        <span className="font-semibold text-blue-600">
+                          ${parseFloat(reward.cash_cost).toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    {reward.stock_quantity !== null && (
+                      <Badge variant="outline">
+                        {reward.stock_quantity} left
+                      </Badge>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div>
+        <h3 className="text-lg font-semibold mb-4">Recent Redemptions</h3>
+        {redemptions.length === 0 ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-center text-slate-600 py-4">No redemptions yet</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-3">
+            {redemptions.slice(0, 5).map((redemption) => (
+              <Card key={redemption.id}>
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{redemption.rewards?.title}</p>
+                      <p className="text-sm text-slate-600">
+                        {new Date(redemption.requested_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <Badge variant={
+                      redemption.status === 'fulfilled' ? 'default' :
+                      redemption.status === 'approved' ? 'secondary' :
+                      redemption.status === 'pending' ? 'outline' :
+                      'destructive'
+                    }>
+                      {redemption.status}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

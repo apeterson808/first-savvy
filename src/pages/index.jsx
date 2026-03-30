@@ -16,6 +16,8 @@ import Calendar from "./Calendar";
 import PasswordVault from "./PasswordVault";
 import Integrations from "./Integrations";
 import Affiliate from "./Affiliate";
+import Children from "./Children";
+import ChildDetail from "./ChildDetail";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -36,6 +38,8 @@ const PAGES = {
     CreditScore: CreditScore,
 
     Contacts: Contacts,
+
+    Children: Children,
 
     Integrations: Integrations,
 
@@ -92,6 +96,8 @@ function PagesContent() {
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
+                    <Route path="/Children" element={<Children />} />
+                    <Route path="/Children/:id" element={<ChildDetail />} />
                     <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/PasswordVault" element={<PasswordVault />} />
                     <Route path="/Affiliate" element={<Affiliate />} />
