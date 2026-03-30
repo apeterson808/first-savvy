@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
-  Calendar, CreditCard, Banknote, Lock, Users, Cable, Baby,
+  Calendar, CreditCard, Banknote, Lock, Users, Cable,
   Menu, X, Bell, Search, LogOut, User, ChevronLeft
 } from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
@@ -71,7 +71,6 @@ export default function Layout({ children, currentPageName }) {
     { name: 'Credit Score', icon: CreditCard, page: 'CreditScore' },
     { name: 'Net Worth', icon: Banknote, page: 'NetWorth' },
     { name: 'Contacts', icon: Users, page: 'Contacts' },
-    { name: 'Children', icon: Baby, page: 'Children' },
     { name: 'Integrations', icon: Cable, page: 'Integrations' },
     { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
     { name: 'Affiliate', icon: Users, page: 'Affiliate' }
