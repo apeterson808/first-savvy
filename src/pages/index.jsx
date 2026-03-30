@@ -16,6 +16,10 @@ import Calendar from "./Calendar";
 import PasswordVault from "./PasswordVault";
 import Integrations from "./Integrations";
 import Affiliate from "./Affiliate";
+import Connections from "./Connections";
+import Children from "./Children";
+import ChildDetail from "./ChildDetail";
+import ClaimProfile from "./ClaimProfile";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -36,6 +40,10 @@ const PAGES = {
     CreditScore: CreditScore,
 
     Contacts: Contacts,
+
+    Connections: Connections,
+
+    Children: Children,
 
     Integrations: Integrations,
 
@@ -65,13 +73,16 @@ function PagesContent() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
 
-    const isAuthRoute = location.pathname === '/login' || location.pathname === '/auth/callback';
+    const isAuthRoute = location.pathname === '/login' ||
+                        location.pathname === '/auth/callback' ||
+                        location.pathname.startsWith('/invite/');
 
     if (isAuthRoute) {
         return (
             <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
+                <Route path="/invite/:token" element={<ClaimProfile />} />
             </Routes>
         );
     }
@@ -92,6 +103,9 @@ function PagesContent() {
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
+                    <Route path="/Connections" element={<Connections />} />
+                    <Route path="/Children" element={<Children />} />
+                    <Route path="/Children/:id" element={<ChildDetail />} />
                     <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/PasswordVault" element={<PasswordVault />} />
                     <Route path="/Affiliate" element={<Affiliate />} />

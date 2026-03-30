@@ -12,12 +12,57 @@ export const childProfilesAPI = {
           level_description
         )
       `)
-      .eq('parent_profile_id', profileId)
+      .or(`parent_profile_id.eq.${profileId},owned_by_profile_id.eq.${profileId}`)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
     return data;
+  },
+
+  async getOwnedChildProfiles(profileId) {
+    const { data, error } = await supabase
+      .from('child_profiles')
+      .select(`
+        *,
+        permission_levels (
+          level_number,
+          level_name,
+          level_description
+        )
+      `)
+      .eq('owned_by_profile_id', profileId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getSharedChildProfiles(profileId) {
+    const { data, error } = await supabase
+      .from('profile_shares')
+      .select(`
+        *,
+        child_profile:child_profiles(
+          *,
+          permission_levels (
+            level_number,
+            level_name,
+            level_description
+          )
+        )
+      `)
+      .eq('shared_with_profile_id', profileId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data?.map(share => ({
+      ...share.child_profile,
+      share_permission_level: share.permission_level,
+      shared_access: true
+    })) || [];
   },
 
   async getChildProfileById(childId) {
@@ -43,6 +88,7 @@ export const childProfilesAPI = {
       .from('child_profiles')
       .insert({
         parent_profile_id: profileId,
+        owned_by_profile_id: profileId,
         child_name: childData.child_name,
         date_of_birth: childData.date_of_birth,
         avatar_url: childData.avatar_url,

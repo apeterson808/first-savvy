@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { choresAPI } from '@/api/chores';
 import { rewardsAPI } from '@/api/rewards';
@@ -35,6 +36,7 @@ const LEVEL_NAMES = {
 export default function ChildDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { activeProfile } = useProfile();
   const [child, setChild] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showLevelTransition, setShowLevelTransition] = useState(false);
@@ -212,7 +214,7 @@ export default function ChildDetail() {
         </TabsContent>
 
         <TabsContent value="settings">
-          <SettingsTab child={child} onUpdate={loadChildData} />
+          <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
         </TabsContent>
       </Tabs>
 

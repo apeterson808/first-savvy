@@ -3,12 +3,13 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { choresAPI } from '@/api/chores';
 import { rewardsAPI } from '@/api/rewards';
+import { profileInvitationsAPI } from '@/api/profileInvitations';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, TrendingUp, Award, Clock } from 'lucide-react';
+import { Plus, Users, TrendingUp, Award, Clock, CheckCircle, Mail, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { AddChildSheet } from '@/components/children/AddChildSheet';
 import { toast } from 'sonner';
@@ -35,6 +36,7 @@ export default function Children() {
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAddChild, setShowAddChild] = useState(false);
+  const [invitations, setInvitations] = useState({});
   const [stats, setStats] = useState({
     totalChildren: 0,
     totalPoints: 0,
@@ -58,11 +60,21 @@ export default function Children() {
       let pendingApprovals = 0;
       let activeChores = 0;
 
+      const invitationsMap = {};
+
       if (childProfiles.length > 0) {
         const choresPromises = childProfiles.map(child =>
           choresAPI.getChoresByChild(child.id).catch(() => [])
         );
-        const choresResults = await Promise.all(choresPromises);
+
+        const invitationPromises = childProfiles.map(child =>
+          profileInvitationsAPI.getActiveInvitation(child.id).catch(() => null)
+        );
+
+        const [choresResults, invitationResults] = await Promise.all([
+          Promise.all(choresPromises),
+          Promise.all(invitationPromises)
+        ]);
 
         childProfiles.forEach((child, index) => {
           totalPoints += child.points_balance;
@@ -72,8 +84,15 @@ export default function Children() {
 
           pendingApprovals += pendingChores;
           activeChores += activeChoresCount;
+
+          const invitation = invitationResults[index];
+          if (invitation) {
+            invitationsMap[child.id] = invitation;
+          }
         });
       }
+
+      setInvitations(invitationsMap);
 
       setStats({
         totalChildren: childProfiles.length,
@@ -114,6 +133,42 @@ export default function Children() {
     if (score >= 80) return 'text-green-600';
     if (score >= 50) return 'text-amber-600';
     return 'text-slate-600';
+  };
+
+  const getInvitationStatusBadge = (child) => {
+    if (child.user_id) {
+      return (
+        <Badge className="bg-green-100 text-green-800 text-xs">
+          <CheckCircle className="h-3 w-3 mr-1" />
+          Active
+        </Badge>
+      );
+    }
+
+    const invitation = invitations[child.id];
+    if (!invitation) {
+      return null;
+    }
+
+    if (invitation.status === 'pending') {
+      const isExpired = new Date(invitation.invitation_expires_at) < new Date();
+      if (isExpired) {
+        return (
+          <Badge className="bg-red-100 text-red-800 text-xs">
+            <XCircle className="h-3 w-3 mr-1" />
+            Expired
+          </Badge>
+        );
+      }
+      return (
+        <Badge className="bg-amber-100 text-amber-800 text-xs">
+          <Clock className="h-3 w-3 mr-1" />
+          Pending
+        </Badge>
+      );
+    }
+
+    return null;
   };
 
   if (loading) {
@@ -234,9 +289,12 @@ export default function Children() {
                         )}
                       </div>
                     </div>
-                    <Badge className={LEVEL_COLORS[child.current_permission_level]}>
-                      Level {child.current_permission_level}
-                    </Badge>
+                    <div className="flex flex-col items-end gap-1">
+                      <Badge className={LEVEL_COLORS[child.current_permission_level]}>
+                        Level {child.current_permission_level}
+                      </Badge>
+                      {getInvitationStatusBadge(child)}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
