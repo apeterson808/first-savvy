@@ -4,6 +4,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '../common/TransactionTableConfig';
+import { firstsavvy } from '@/api/firstsavvyClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import CategoryDropdown from '../common/CategoryDropdown';
+import ContactDropdown from '../common/ContactDropdown';
+import { Check, X } from 'lucide-react';
 
 export default function FilteredTransactionsTable({
   transactions = [],
@@ -13,6 +19,10 @@ export default function FilteredTransactionsTable({
   chartAccounts = [],
   filters = null
 }) {
+  const [editingLineId, setEditingLineId] = useState(null);
+  const [editingLine, setEditingLine] = useState(null);
+  const [isSavingLine, setIsSavingLine] = useState(false);
+  const queryClient = useQueryClient();
   const filteredTransactions = useMemo(() => {
     // Don't show anything if no filters are provided
     if (!filters) {
@@ -157,6 +167,53 @@ export default function FilteredTransactionsTable({
     return `${sign}$${absAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   };
 
+  const handleEditTransaction = (transaction, e) => {
+    e.stopPropagation();
+    setEditingLineId(transaction.id);
+    setEditingLine({
+      description: transaction.description || '',
+      account_id: transaction.category_account_id || null,
+      contact_id: transaction.contact_id || null
+    });
+  };
+
+  const handleSaveLine = async (transactionId) => {
+    if (!editingLine.description.trim()) {
+      toast.error('Description is required');
+      return;
+    }
+
+    const transaction = filteredTransactions.find(t => t.id === transactionId);
+    if (!transaction) {
+      toast.error('Transaction not found');
+      return;
+    }
+
+    setIsSavingLine(true);
+    try {
+      await firstsavvy.entities.Transaction.update(transactionId, {
+        description: editingLine.description.trim(),
+        category_account_id: editingLine.account_id,
+        contact_id: editingLine.contact_id
+      });
+
+      queryClient.invalidateQueries({ queryKey: ['transactions'] });
+      toast.success('Transaction updated');
+      setEditingLineId(null);
+      setEditingLine(null);
+    } catch (error) {
+      console.error('Error updating transaction:', error);
+      toast.error('Failed to update transaction');
+    } finally {
+      setIsSavingLine(false);
+    }
+  };
+
+  const handleCancelLine = () => {
+    setEditingLineId(null);
+    setEditingLine(null);
+  };
+
   return (
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="pb-2 pt-4 px-4">
@@ -188,60 +245,114 @@ export default function FilteredTransactionsTable({
             <Table>
               <TableHeader>
                 <TableRow className={TRANSACTION_TABLE_CONFIG.header.rowClass}>
-                  <TableHead className={getHeaderCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
-                    Date
-                  </TableHead>
-                  <TableHead className={getHeaderCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
-                    Account
-                  </TableHead>
-                  <TableHead className={getHeaderCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
-                    Description
-                  </TableHead>
-                  <TableHead className={getHeaderCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
-                    From/To
-                  </TableHead>
-                  <TableHead className={getHeaderCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
-                    Category
-                  </TableHead>
-                  <TableHead className={getHeaderCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
-                    Amount
-                  </TableHead>
+                  {TRANSACTION_TABLE_CONFIG.columns.map((col) => (
+                    <TableHead key={col.id} className={getHeaderCellClassName(col)}>
+                      {col.label}
+                    </TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredTransactions.map((transaction, index) => (
-                  <TableRow key={transaction.id} className={getRowClassName(index)}>
-                    <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
-                      {transaction.date ? format(new Date(transaction.date), 'MMM d, yyyy') : '—'}
-                      {transaction.status === 'pending' && (
-                        <span className="ml-1">{getStatusBadge(transaction.status)}</span>
-                      )}
-                    </TableCell>
-                    <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
-                      <span className="truncate block">
-                        {getAccountName(transaction.bank_account_id)}
-                      </span>
-                    </TableCell>
-                    <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
-                      <span className="line-clamp-1" title={transaction.description}>
-                        {transaction.description || '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
-                      <span className="truncate block">
-                        {transaction.contact_id ? getContactName(transaction.contact_id) : '—'}
-                      </span>
-                    </TableCell>
-                    <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
-                      <span className="truncate block">
-                        {transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}
-                      </span>
-                    </TableCell>
-                    <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
-                      {formatAmount(transaction)}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {filteredTransactions.map((transaction, index) => {
+                  const isEditing = editingLineId === transaction.id;
+
+                  return (
+                    <TableRow key={transaction.id} className={getRowClassName(index)}>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[0])}>
+                        {transaction.date ? format(new Date(transaction.date), 'MMM d, yyyy') : '—'}
+                        {transaction.status === 'pending' && (
+                          <span className="ml-1">{getStatusBadge(transaction.status)}</span>
+                        )}
+                      </TableCell>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[1])}>
+                        <span className="truncate block">
+                          {getAccountName(transaction.bank_account_id)}
+                        </span>
+                      </TableCell>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
+                        {isEditing && editingLine ? (
+                          <input
+                            type="text"
+                            value={editingLine.description}
+                            onChange={(e) => setEditingLine(prev => ({ ...prev, description: e.target.value }))}
+                            className={TRANSACTION_TABLE_CONFIG.editField.inputClass}
+                            onClick={(e) => e.stopPropagation()}
+                            autoFocus
+                          />
+                        ) : (
+                          <button
+                            onClick={(e) => handleEditTransaction(transaction, e)}
+                            className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                          >
+                            {transaction.description || '—'}
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
+                        {isEditing && editingLine ? (
+                          <ContactDropdown
+                            value={editingLine.contact_id}
+                            onValueChange={(value) => setEditingLine(prev => ({ ...prev, contact_id: value }))}
+                            triggerClassName={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
+                          />
+                        ) : (
+                          <button
+                            onClick={(e) => handleEditTransaction(transaction, e)}
+                            className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                          >
+                            {transaction.contact_id ? getContactName(transaction.contact_id) : '—'}
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
+                        {isEditing && editingLine ? (
+                          <CategoryDropdown
+                            value={editingLine.account_id}
+                            onValueChange={(value) => setEditingLine(prev => ({ ...prev, account_id: value }))}
+                            triggerClassName={TRANSACTION_TABLE_CONFIG.editField.dropdownClass}
+                            transactionType={transaction.type}
+                          />
+                        ) : (
+                          <button
+                            onClick={(e) => handleEditTransaction(transaction, e)}
+                            className={TRANSACTION_TABLE_CONFIG.editField.buttonClass}
+                          >
+                            {transaction.category_account_id ? getCategoryName(transaction.category_account_id) : 'Uncategorized'}
+                          </button>
+                        )}
+                      </TableCell>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[5])}>
+                        {formatAmount(transaction)}
+                      </TableCell>
+                      <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
+                        {isEditing ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCancelLine();
+                              }}
+                              disabled={isSavingLine}
+                              className="text-slate-400 hover:text-slate-600 p-1 disabled:opacity-50"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveLine(transaction.id);
+                              }}
+                              disabled={isSavingLine}
+                              className="text-emerald-500 hover:text-emerald-700 p-1 disabled:opacity-50"
+                            >
+                              <Check className="w-4 h-4" />
+                            </button>
+                          </div>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
