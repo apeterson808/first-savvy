@@ -1,5 +1,5 @@
-import React from 'react';
-import { User, Users, Briefcase, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { User, Users, Briefcase, Check, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,11 +9,14 @@ import {
 } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useProfile } from '@/contexts/ProfileContext';
 import { toast } from 'sonner';
+import { AddProfileDialog } from './AddProfileDialog';
 
 export function ProfileSelector({ open, onOpenChange }) {
-  const { profiles, activeProfile, switchProfile, loading } = useProfile();
+  const { profiles, activeProfile, switchProfile, loading, refreshProfiles } = useProfile();
+  const [showAddProfile, setShowAddProfile] = useState(false);
 
   const handleSelectProfile = async (profile) => {
     try {
@@ -23,6 +26,12 @@ export function ProfileSelector({ open, onOpenChange }) {
     } catch (error) {
       toast.error('Failed to switch profile');
     }
+  };
+
+  const handleProfileCreated = async (newProfile) => {
+    await refreshProfiles();
+    await switchProfile(newProfile);
+    onOpenChange(false);
   };
 
   const getInitials = (name) => {
@@ -140,18 +149,23 @@ export function ProfileSelector({ open, onOpenChange }) {
           </div>
         )}
 
-        <div className="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200">
-          <div className="flex items-start gap-2">
-            <Users className="w-4 h-4 text-slate-400 mt-0.5" />
-            <div className="text-xs text-slate-600">
-              <p className="font-medium mb-1">Coming Soon: Create New Profiles</p>
-              <p className="text-slate-500">
-                Create household or business profiles to share financial data with others.
-              </p>
-            </div>
-          </div>
+        <div className="mt-4">
+          <Button
+            onClick={() => setShowAddProfile(true)}
+            variant="outline"
+            className="w-full"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Create New Profile
+          </Button>
         </div>
       </DialogContent>
+
+      <AddProfileDialog
+        open={showAddProfile}
+        onOpenChange={setShowAddProfile}
+        onProfileCreated={handleProfileCreated}
+      />
     </Dialog>
   );
 }
