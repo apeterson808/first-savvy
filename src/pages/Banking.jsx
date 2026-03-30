@@ -160,30 +160,6 @@ export default function Banking() {
             />
           </div>
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Balance</p>
-                <CardTitle className="text-2xl font-bold">${totalBalance.toLocaleString()}</CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Active Accounts</p>
-                <CardTitle className="text-2xl font-bold">
-                  {accounts.filter((acc) => acc.is_active).length}
-                </CardTitle>
-              </CardHeader>
-            </Card>
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Accounts</p>
-                <CardTitle className="text-2xl font-bold">{accounts.length}</CardTitle>
-              </CardHeader>
-            </Card>
-          </div>
-
           {/* Filtered Transactions Table */}
           <FilteredTransactionsTable
             transactions={transactions}
