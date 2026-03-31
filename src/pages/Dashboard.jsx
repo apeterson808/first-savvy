@@ -18,6 +18,7 @@ import AnimatedProgressBar from '../components/dashboard/AnimatedProgressBar';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import ChildDashboard from '../components/dashboard/ChildDashboard';
+import ParentViewOfChildDashboard from '../components/dashboard/ParentViewOfChildDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
@@ -505,12 +506,20 @@ export default function Dashboard() {
 
   const upcomingBills = [];
 
-  // Only show child dashboard if the logged-in user is a child
+  // Scenario 1: Logged-in user IS a child (Tucker logs in)
+  // Show simplified, gamified ChildDashboard
   if (isLoggedInAsChild) {
     return <ChildDashboard />;
   }
 
-  // Parents viewing child profiles will see the normal dashboard with all their data
+  // Scenario 2: Logged-in user is NOT a child BUT is viewing a child profile (Andrew views Tucker's tab)
+  // Show ParentViewOfChildDashboard with full controls and child's data
+  if (!isLoggedInAsChild && activeProfile?.is_child_profile) {
+    return <ParentViewOfChildDashboard />;
+  }
+
+  // Scenario 3: Logged-in user is viewing their own profile (Andrew views his own data)
+  // Show regular Dashboard
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-col lg:flex-row gap-4">
