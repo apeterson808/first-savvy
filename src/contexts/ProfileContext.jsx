@@ -65,9 +65,37 @@ export const ProfileProvider = ({ children }) => {
           role: m.role
         }));
 
+      const ownerProfileIds = memberships
+        .filter(m => m.profile && m.role === 'owner')
+        .map(m => m.profile.id);
+
+      let childProfilesList = [];
+      if (ownerProfileIds.length > 0) {
+        const { data: childProfiles, error: childError } = await firstsavvy
+          .from('child_profiles')
+          .select('*')
+          .in('parent_profile_id', ownerProfileIds)
+          .eq('is_active', true);
+
+        if (!childError && childProfiles) {
+          childProfilesList = childProfiles.map(child => ({
+            id: `child_${child.id}`,
+            child_profile_id: child.id,
+            display_name: child.child_name,
+            profile_type: 'child',
+            is_child_profile: true,
+            parent_profile_id: child.parent_profile_id,
+            permission_level: child.current_permission_level,
+            role: 'child'
+          }));
+        }
+      }
+
+      const allProfiles = [...profilesList, ...childProfilesList];
+
       setProfiles(prev => {
-        const hasChanged = JSON.stringify(prev) !== JSON.stringify(profilesList);
-        return hasChanged ? profilesList : prev;
+        const hasChanged = JSON.stringify(prev) !== JSON.stringify(allProfiles);
+        return hasChanged ? allProfiles : prev;
       });
 
       const { data: activeTabs, error: tabError } = await firstsavvy
@@ -102,15 +130,17 @@ export const ProfileProvider = ({ children }) => {
         }
       }
 
-      if (!activeProfileToSet && profilesList.length > 0) {
-        activeProfileToSet = profilesList[0];
-        const { error: activateError } = await firstsavvy
-          .from('profile_tabs')
-          .update({ is_active: true })
-          .eq('owner_user_id', user.id)
-          .eq('profile_id', activeProfileToSet.id);
+      if (!activeProfileToSet && allProfiles.length > 0) {
+        activeProfileToSet = allProfiles[0];
+        if (!activeProfileToSet.is_child_profile) {
+          const { error: activateError } = await firstsavvy
+            .from('profile_tabs')
+            .update({ is_active: true })
+            .eq('owner_user_id', user.id)
+            .eq('profile_id', activeProfileToSet.id);
 
-        if (activateError) {
+          if (activateError) {
+          }
         }
       }
 
@@ -162,21 +192,23 @@ export const ProfileProvider = ({ children }) => {
     if (!user || !profile) return;
 
     try {
-      const { error: deactivateError } = await firstsavvy
-        .from('profile_tabs')
-        .update({ is_active: false })
-        .eq('owner_user_id', user.id);
+      if (!profile.is_child_profile) {
+        const { error: deactivateError } = await firstsavvy
+          .from('profile_tabs')
+          .update({ is_active: false })
+          .eq('owner_user_id', user.id);
 
-      if (deactivateError) {
-      }
+        if (deactivateError) {
+        }
 
-      const { error: activateError } = await firstsavvy
-        .from('profile_tabs')
-        .update({ is_active: true })
-        .eq('owner_user_id', user.id)
-        .eq('profile_id', profile.id);
+        const { error: activateError } = await firstsavvy
+          .from('profile_tabs')
+          .update({ is_active: true })
+          .eq('owner_user_id', user.id)
+          .eq('profile_id', profile.id);
 
-      if (activateError) {
+        if (activateError) {
+        }
       }
 
       setActiveProfile(prev => {
