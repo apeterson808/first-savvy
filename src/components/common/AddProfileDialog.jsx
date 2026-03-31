@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 
 export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
   const [displayName, setDisplayName] = useState('');
-  const [profileType, setProfileType] = useState('household');
+  const [profileType, setProfileType] = useState('family');
   const [permissionLevel, setPermissionLevel] = useState(1);
   const [creating, setCreating] = useState(false);
 
@@ -84,7 +84,7 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
 
       setDisplayName('');
       setPermissionLevel(1);
-      setProfileType('household');
+      setProfileType('family');
       onOpenChange(false);
 
       if (onProfileCreated) {
@@ -100,10 +100,10 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
 
   const profileTypes = [
     {
-      type: 'household',
+      type: 'family',
       icon: Users,
-      title: 'Household',
-      description: 'Shared household finances',
+      title: 'Family',
+      description: 'Shared family finances',
       color: 'bg-green-500',
     },
     {
@@ -136,7 +136,7 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
         <DialogHeader>
           <DialogTitle>Create New Profile</DialogTitle>
           <DialogDescription>
-            Create a household, business, or child profile to manage separate finances.
+            Create a family, business, or child profile to manage separate finances.
           </DialogDescription>
         </DialogHeader>
 
