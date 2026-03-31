@@ -297,39 +297,45 @@ export default function Connections() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card className="border-slate-200 shadow-sm hover:shadow-md transition-shadow">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Connections</p>
-                <p className="text-2xl font-bold mt-1">{totalConnections}</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-slate-600 mb-1">Total Connections</p>
+                <p className="text-3xl font-bold text-slate-900">{totalConnections}</p>
               </div>
-              <Users className="h-8 w-8 text-slate-400" />
+              <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center">
+                <Users className="h-6 w-6 text-slate-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-amber-200 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-white to-amber-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Profiles You Own</p>
-                <p className="text-2xl font-bold mt-1">{ownedProfiles.length}</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-amber-900 mb-1">Profiles You Own</p>
+                <p className="text-3xl font-bold text-amber-900">{ownedProfiles.length}</p>
               </div>
-              <Crown className="h-8 w-8 text-amber-400" />
+              <div className="h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center">
+                <Crown className="h-6 w-6 text-amber-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-blue-200 shadow-sm hover:shadow-md transition-shadow bg-gradient-to-br from-white to-blue-50">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Shared With You</p>
-                <p className="text-2xl font-bold mt-1">{sharedProfiles.length}</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-blue-900 mb-1">Shared With You</p>
+                <p className="text-3xl font-bold text-blue-900">{sharedProfiles.length}</p>
               </div>
-              <UserCheck className="h-8 w-8 text-blue-400" />
+              <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
+                <UserCheck className="h-6 w-6 text-blue-600" />
+              </div>
             </div>
           </CardContent>
         </Card>
