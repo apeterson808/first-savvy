@@ -859,6 +859,18 @@ const CategoriesTab = forwardRef((props, ref) => {
 
   const expenseBudgets = budgets.filter(b => b.chartAccount?.class === 'expense' && b.is_active);
 
+  if (budgets.length === 0) {
+    return (
+      <div className="min-h-[600px] flex items-center justify-center bg-slate-50/30 rounded-lg border border-slate-200">
+        <div className="text-center max-w-xl px-6">
+          <h2 className="text-2xl font-semibold text-slate-900 mb-3">No Budget Categories Yet</h2>
+          <p className="text-slate-600 mb-6 leading-relaxed">
+            Get started by creating budget categories to track your income and expenses.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
