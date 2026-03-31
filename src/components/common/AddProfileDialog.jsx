@@ -16,8 +16,6 @@ import { toast } from 'sonner';
 export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
   const [displayName, setDisplayName] = useState('');
   const [profileType, setProfileType] = useState('household');
-  const [childEmail, setChildEmail] = useState('');
-  const [childPassword, setChildPassword] = useState('');
   const [permissionLevel, setPermissionLevel] = useState(1);
   const [creating, setCreating] = useState(false);
 
@@ -25,17 +23,6 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
     if (!displayName.trim()) {
       toast.error('Please enter a profile name');
       return;
-    }
-
-    if (profileType === 'child') {
-      if (!childEmail.trim()) {
-        toast.error('Please enter an email for the child');
-        return;
-      }
-      if (!childPassword || childPassword.length < 6) {
-        toast.error('Password must be at least 6 characters');
-        return;
-      }
     }
 
     setCreating(true);
@@ -46,66 +33,56 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
         throw new Error('Not authenticated');
       }
 
-      if (profileType === 'child') {
-        const { data: { session } } = await firstsavvy.auth.getSession();
+      const { data: profile, error: profileError } = await firstsavvy
+        .from('profiles')
+        .insert({
+          user_id: parentUser.id,
+          profile_type: profileType === 'child' ? 'personal' : profileType,
+          display_name: displayName.trim(),
+          is_deleted: false,
+        })
+        .select()
+        .single();
 
-        if (!session) {
-          throw new Error('No active session');
-        }
+      if (profileError) throw profileError;
 
-        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-child-user`;
-
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${session.access_token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            childEmail: childEmail.trim(),
-            childPassword,
-            childName: displayName.trim(),
-            permissionLevel,
-          }),
+      const { error: membershipError } = await firstsavvy
+        .from('profile_memberships')
+        .insert({
+          profile_id: profile.id,
+          user_id: parentUser.id,
+          role: 'owner',
         });
 
-        const result = await response.json();
+      if (membershipError) throw membershipError;
 
-        if (!result.success) {
-          throw new Error(result.error || 'Failed to create child profile');
-        }
-
-        toast.success(`Child profile "${displayName}" created successfully`);
-      } else {
-        const { data: profile, error: profileError } = await firstsavvy
-          .from('profiles')
-          .insert({
-            user_id: parentUser.id,
-            profile_type: profileType,
-            display_name: displayName.trim(),
-            is_deleted: false,
-          })
-          .select()
+      if (profileType === 'child') {
+        const { data: parentProfile } = await firstsavvy
+          .from('profile_memberships')
+          .select('profile_id')
+          .eq('user_id', parentUser.id)
+          .eq('role', 'owner')
+          .limit(1)
           .single();
 
-        if (profileError) throw profileError;
+        if (parentProfile) {
+          const { error: childProfileError } = await firstsavvy
+            .from('child_profiles')
+            .insert({
+              parent_profile_id: parentProfile.profile_id,
+              user_id: parentUser.id,
+              child_name: displayName.trim(),
+              current_permission_level: permissionLevel,
+              is_active: true,
+            });
 
-        const { error: membershipError } = await firstsavvy
-          .from('profile_memberships')
-          .insert({
-            profile_id: profile.id,
-            user_id: parentUser.id,
-            role: 'owner',
-          });
-
-        if (membershipError) throw membershipError;
-
-        toast.success(`Profile "${displayName}" created successfully`);
+          if (childProfileError) throw childProfileError;
+        }
       }
 
+      toast.success(`Profile "${displayName}" created successfully`);
+
       setDisplayName('');
-      setChildEmail('');
-      setChildPassword('');
       setPermissionLevel(1);
       setProfileType('household');
       onOpenChange(false);
@@ -218,33 +195,6 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
           {profileType === 'child' && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="childEmail">Email Address</Label>
-                <Input
-                  id="childEmail"
-                  type="email"
-                  placeholder="child@example.com"
-                  value={childEmail}
-                  onChange={(e) => setChildEmail(e.target.value)}
-                  disabled={creating}
-                />
-                <p className="text-xs text-slate-500">
-                  Child will use this email to log in
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="childPassword">Password</Label>
-                <Input
-                  id="childPassword"
-                  type="password"
-                  placeholder="Minimum 6 characters"
-                  value={childPassword}
-                  onChange={(e) => setChildPassword(e.target.value)}
-                  disabled={creating}
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label>Permission Level</Label>
                 <div className="space-y-2">
                   {permissionLevels.map((level) => (
@@ -292,7 +242,7 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
           </Button>
           <Button
             onClick={handleCreate}
-            disabled={creating || !displayName.trim() || (profileType === 'child' && (!childEmail.trim() || !childPassword))}
+            disabled={creating || !displayName.trim()}
             className="flex-1"
           >
             {creating ? 'Creating...' : 'Create Profile'}
