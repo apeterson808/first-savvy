@@ -47,57 +47,33 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
       }
 
       if (profileType === 'child') {
-        const signUpData = await firstsavvy.auth.signUp(
-          childEmail.trim(),
-          childPassword,
-          displayName.trim()
-        );
+        const { data: { session } } = await firstsavvy.auth.getSession();
 
-        if (!signUpData.user) throw new Error('Failed to create user account');
+        if (!session) {
+          throw new Error('No active session');
+        }
 
-        const childUserId = signUpData.user.id;
+        const apiUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-child-user`;
 
-        const { data: profile, error: profileError } = await firstsavvy
-          .from('profiles')
-          .insert({
-            user_id: childUserId,
-            profile_type: 'personal',
-            display_name: displayName.trim(),
-            is_deleted: false,
-          })
-          .select()
-          .single();
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            childEmail: childEmail.trim(),
+            childPassword,
+            childName: displayName.trim(),
+            permissionLevel,
+          }),
+        });
 
-        if (profileError) throw profileError;
+        const result = await response.json();
 
-        const { error: membershipError } = await firstsavvy
-          .from('profile_memberships')
-          .insert({
-            profile_id: profile.id,
-            user_id: childUserId,
-            role: 'owner',
-          });
-
-        if (membershipError) throw membershipError;
-
-        const { data: parentProfile } = await firstsavvy
-          .from('profile_memberships')
-          .select('profile_id')
-          .eq('user_id', parentUser.id)
-          .eq('role', 'owner')
-          .single();
-
-        const { error: childProfileError } = await firstsavvy
-          .from('child_profiles')
-          .insert({
-            parent_profile_id: parentProfile.profile_id,
-            user_id: childUserId,
-            child_name: displayName.trim(),
-            current_permission_level: permissionLevel,
-            is_active: true,
-          });
-
-        if (childProfileError) throw childProfileError;
+        if (!result.success) {
+          throw new Error(result.error || 'Failed to create child profile');
+        }
 
         toast.success(`Child profile "${displayName}" created successfully`);
       } else {
