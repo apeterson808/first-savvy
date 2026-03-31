@@ -27,6 +27,7 @@ export function useBudgetData(selectedMonth = null) {
             parent_account_id
           )
         `)
+        .eq('profile_id', activeProfile.id)
         .order('order', { ascending: true, nullsFirst: false });
       if (error) throw error;
       return data || [];

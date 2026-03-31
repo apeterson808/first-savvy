@@ -17,8 +17,38 @@ const getActiveProfileId = () => {
 };
 
 const TABLES_WITH_PROFILE_ID = [
-  'transactions', 'budgets', 'contacts',
-  'user_chart_of_accounts', 'transaction_rules'
+  'transactions',
+  'budgets',
+  'contacts',
+  'user_chart_of_accounts',
+  'transaction_rules',
+  'journal_entries',
+  'journal_entry_lines',
+  'transaction_splits',
+  'chores',
+  'rewards',
+  'chore_templates',
+  'vault_folders',
+  'vault_items',
+  'vault_encryption_keys',
+  'csv_column_mapping_configs',
+  'ai_category_suggestions',
+  'ai_contact_suggestions',
+  'transfer_match_suggestions',
+  'journal_entry_attachments',
+  'transaction_match_history',
+  'detection_jobs',
+  'transaction_processing_state',
+  'transfer_match_history',
+  'cc_payment_match_history',
+  'job_execution_metrics',
+  'detection_jobs_archive',
+  'transfer_registry',
+  'transfer_patterns',
+  'credit_card_payment_registry',
+  'credit_card_payment_patterns',
+  'transaction_categorization_memory',
+  'audit_logs'
 ];
 
 const createEntityAPI = (tableName) => {
