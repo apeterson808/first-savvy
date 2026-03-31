@@ -123,7 +123,7 @@ export default function AccountsTable() {
   const initialFilter = urlParams.get('filter') || 'all';
 
   const [accountTypeFilter, setAccountTypeFilter] = useState(initialFilter);
-  const [showInactive, setShowInactive] = useState(false);
+  const [showInactive, setShowInactive] = useState(true);
   const [sortColumn, setSortColumn] = useState('accountNumber');
   const [sortDirection, setSortDirection] = useState('asc');
   const [visibleColumns, setVisibleColumns] = useState({
