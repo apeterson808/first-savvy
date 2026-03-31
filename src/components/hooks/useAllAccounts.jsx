@@ -8,7 +8,7 @@ export default function useAllAccounts() {
   const { user } = useAuth();
   const { activeProfile, loading: profileLoading } = useProfile();
 
-  const profileIdToUse = activeProfile?.parent_profile_id || activeProfile?.id;
+  const profileIdToUse = activeProfile?.id;
 
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
     queryKey: ['chart-accounts', profileIdToUse],

@@ -7,7 +7,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 export function useBudgetData(selectedMonth = null) {
   const { activeProfile } = useProfile();
 
-  const profileIdForAccounts = activeProfile?.parent_profile_id || activeProfile?.id;
+  const profileIdForAccounts = activeProfile?.id;
 
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets', activeProfile?.id],

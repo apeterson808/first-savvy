@@ -79,7 +79,7 @@ export const ProfileProvider = ({ children }) => {
 
         if (!childError && childProfiles) {
           childProfilesList = childProfiles.map(child => ({
-            id: child.owned_by_profile_id || child.parent_profile_id,
+            id: child.owned_by_profile_id,
             child_profile_id: child.id,
             display_name: child.child_name,
             profile_type: 'child',

@@ -107,7 +107,7 @@ export default function Banking() {
     gcTime: 300000
   });
 
-  const profileIdToUse = activeProfile?.parent_profile_id || activeProfile?.id;
+  const profileIdToUse = activeProfile?.id;
 
   const { data: chartAccounts = [] } = useQuery({
     queryKey: ['chartAccounts', profileIdToUse],
