@@ -256,15 +256,18 @@ export const createSupabaseClient = () => {
     },
     auth: {
       async signUp(email, password, fullName) {
-        const options = fullName ? {
-          data: { full_name: fullName }
-        } : undefined;
-
-        const { data, error } = await supabase.auth.signUp({
+        const signUpParams = {
           email,
-          password,
-          options
-        });
+          password
+        };
+
+        if (fullName) {
+          signUpParams.options = {
+            data: { full_name: fullName }
+          };
+        }
+
+        const { data, error } = await supabase.auth.signUp(signUpParams);
         if (error) throw error;
         return data;
       },

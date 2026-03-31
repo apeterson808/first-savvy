@@ -47,12 +47,13 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
       }
 
       if (profileType === 'child') {
-        const { data: signUpData, error: signUpError } = await firstsavvy.auth.signUp({
-          email: childEmail.trim(),
-          password: childPassword,
-        });
+        const signUpData = await firstsavvy.auth.signUp(
+          childEmail.trim(),
+          childPassword,
+          displayName.trim()
+        );
 
-        if (signUpError) throw signUpError;
+        if (!signUpData.user) throw new Error('Failed to create user account');
 
         const childUserId = signUpData.user.id;
 
