@@ -20,17 +20,17 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
 
   const handleSelectProfile = async (profile) => {
     try {
-      if (profile.is_child_profile && onOpenChildTab) {
+      if (onOpenChildTab) {
         onOpenChildTab(profile);
         onOpenChange(false);
         toast.success(`Opened ${profile.display_name}`);
       } else {
         await switchProfile(profile);
         onOpenChange(false);
-        toast.success(`Switched to ${profile.display_name}`);
+        toast.success(`Opened ${profile.display_name}`);
       }
     } catch (error) {
-      toast.error('Failed to switch profile');
+      toast.error('Failed to open profile');
     }
   };
 
@@ -86,9 +86,9 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Switch Profile</DialogTitle>
+          <DialogTitle>Open Profile</DialogTitle>
           <DialogDescription>
-            Select a profile to switch to. All financial data is scoped to the active profile.
+            Select a profile to open as a new tab. All financial data is scoped to the active profile.
           </DialogDescription>
         </DialogHeader>
 

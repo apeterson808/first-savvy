@@ -1,12 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Loader2, X } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { ProfileSelector } from './ProfileSelector';
 
 export function ProfileTabBar({ onAddProfileClick }) {
-  const { profiles, activeProfile, switchProfile, loading } = useProfile();
-  const [openChildTabs, setOpenChildTabs] = useState([]);
+  const { profiles, activeProfile, switchProfile, loading, availableChildProfiles } = useProfile();
+  const [openTabs, setOpenTabs] = useState([]);
   const [showProfileSelector, setShowProfileSelector] = useState(false);
+
+  const allAvailableProfiles = [...profiles, ...availableChildProfiles];
+
+  useEffect(() => {
+    if (activeProfile && openTabs.length === 0) {
+      setOpenTabs([activeProfile]);
+    }
+  }, [activeProfile]);
 
   const handleTabClick = (profile) => {
     if (profile.id !== activeProfile?.id) {
@@ -14,25 +22,23 @@ export function ProfileTabBar({ onAddProfileClick }) {
     }
   };
 
-  const openChildTab = (childProfile) => {
-    if (!openChildTabs.find(t => t.id === childProfile.id)) {
-      setOpenChildTabs(prev => [...prev, childProfile]);
+  const openProfileTab = (profile) => {
+    if (!openTabs.find(t => t.id === profile.id)) {
+      setOpenTabs(prev => [...prev, profile]);
     }
-    switchProfile(childProfile);
+    switchProfile(profile);
   };
 
-  const closeChildTab = (e, childProfileId) => {
+  const closeTab = (e, profileId) => {
     e.stopPropagation();
-    setOpenChildTabs(prev => prev.filter(t => t.id !== childProfileId));
-    if (activeProfile?.id === childProfileId) {
-      const parentProfile = profiles.find(p => !p.is_child_profile);
-      if (parentProfile) {
-        switchProfile(parentProfile);
+    setOpenTabs(prev => prev.filter(t => t.id !== profileId));
+    if (activeProfile?.id === profileId && openTabs.length > 1) {
+      const remainingTabs = openTabs.filter(t => t.id !== profileId);
+      if (remainingTabs.length > 0) {
+        switchProfile(remainingTabs[remainingTabs.length - 1]);
       }
     }
   };
-
-  const parentProfiles = profiles.filter(p => !p.is_child_profile);
 
   const handleProfileSelectorClick = () => {
     if (onAddProfileClick) {
@@ -51,8 +57,9 @@ export function ProfileTabBar({ onAddProfileClick }) {
         </div>
       ) : profiles && profiles.length > 0 ? (
         <>
-          {parentProfiles.map((profile) => {
+          {openTabs.map((profile) => {
             const isActive = profile.id === activeProfile?.id;
+            const isChildProfile = profile.is_child_profile;
 
             return (
               <div
@@ -60,13 +67,29 @@ export function ProfileTabBar({ onAddProfileClick }) {
                 onClick={() => handleTabClick(profile)}
                 className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
                   isActive
-                    ? 'bg-slate-100 text-slate-900 z-10'
+                    ? isChildProfile
+                      ? 'bg-blue-100 text-blue-900 z-10'
+                      : 'bg-slate-100 text-slate-900 z-10'
+                    : isChildProfile
+                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-900'
                     : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
                 style={{
-                  borderTop: isActive ? '2px solid #cbd5e1' : '2px solid transparent',
-                  borderLeft: isActive ? '2px solid #cbd5e1' : '2px solid transparent',
-                  borderRight: isActive ? '2px solid #cbd5e1' : '2px solid transparent',
+                  borderTop: isActive
+                    ? isChildProfile
+                      ? '2px solid #93c5fd'
+                      : '2px solid #cbd5e1'
+                    : '2px solid transparent',
+                  borderLeft: isActive
+                    ? isChildProfile
+                      ? '2px solid #93c5fd'
+                      : '2px solid #cbd5e1'
+                    : '2px solid transparent',
+                  borderRight: isActive
+                    ? isChildProfile
+                      ? '2px solid #93c5fd'
+                      : '2px solid #cbd5e1'
+                    : '2px solid transparent',
                   borderBottom: isActive ? '2px solid #f1f5f9' : 'none',
                   borderTopLeftRadius: '12px',
                   borderTopRightRadius: '12px',
@@ -77,39 +100,13 @@ export function ProfileTabBar({ onAddProfileClick }) {
                 <span className="text-sm font-medium truncate flex-1">
                   {profile.display_name}
                 </span>
-              </div>
-            );
-          })}
-
-          {openChildTabs.map((childProfile) => {
-            const isActive = childProfile.id === activeProfile?.id;
-
-            return (
-              <div
-                key={childProfile.id}
-                onClick={() => handleTabClick(childProfile)}
-                className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
-                  isActive
-                    ? 'bg-blue-100 text-blue-900 z-10'
-                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-900'
-                }`}
-                style={{
-                  borderTop: isActive ? '2px solid #93c5fd' : '2px solid transparent',
-                  borderLeft: isActive ? '2px solid #93c5fd' : '2px solid transparent',
-                  borderRight: isActive ? '2px solid #93c5fd' : '2px solid transparent',
-                  borderBottom: isActive ? '2px solid #f1f5f9' : 'none',
-                  borderTopLeftRadius: '12px',
-                  borderTopRightRadius: '12px',
-                  marginBottom: isActive ? '-2px' : '0',
-                  paddingBottom: isActive ? 'calc(0.25rem + 2px)' : '0.25rem',
-                }}
-              >
-                <span className="text-sm font-medium truncate flex-1">
-                  {childProfile.display_name}
-                </span>
                 <button
-                  onClick={(e) => closeChildTab(e, childProfile.id)}
-                  className="flex-shrink-0 hover:bg-blue-200 rounded p-0.5 transition-colors"
+                  onClick={(e) => closeTab(e, profile.id)}
+                  className={`flex-shrink-0 rounded p-0.5 transition-colors ${
+                    isChildProfile
+                      ? 'hover:bg-blue-200'
+                      : 'hover:bg-slate-200'
+                  }`}
                 >
                   <X className="w-3 h-3" />
                 </button>
@@ -143,7 +140,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
       <ProfileSelector
         open={showProfileSelector}
         onOpenChange={setShowProfileSelector}
-        onOpenChildTab={openChildTab}
+        onOpenChildTab={openProfileTab}
       />
     </div>
   );
