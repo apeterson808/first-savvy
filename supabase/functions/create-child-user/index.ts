@@ -105,6 +105,39 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create membership: ${membershipError.message}`);
     }
 
+    const { data: templates, error: templatesError } = await supabaseAdmin
+      .from('chart_of_accounts_templates')
+      .select('*')
+      .order('account_number');
+
+    if (templatesError) {
+      throw new Error(`Failed to fetch templates: ${templatesError.message}`);
+    }
+
+    const chartAccountsToInsert = templates.map((template: any) => ({
+      profile_id: profile.id,
+      account_number: template.account_number,
+      template_account_number: template.account_number,
+      account_type: template.account_type,
+      account_detail: template.account_detail,
+      display_name: template.display_name,
+      class: template.class,
+      current_balance: 0,
+      is_active: false,
+      is_user_created: false,
+      icon: template.icon,
+      color: template.color,
+      parent_account_id: null,
+    }));
+
+    const { error: chartError } = await supabaseAdmin
+      .from('user_chart_of_accounts')
+      .insert(chartAccountsToInsert);
+
+    if (chartError) {
+      throw new Error(`Failed to create chart of accounts: ${chartError.message}`);
+    }
+
     const { data: parentProfile } = await supabaseAdmin
       .from('profile_memberships')
       .select('profile_id')
