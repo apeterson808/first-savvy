@@ -48,6 +48,14 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     connectionError,
+    signUp: async (email, password, fullName) => {
+      try {
+        const data = await firstsavvy.auth.signUp(email, password, fullName);
+        return { user: data.user, error: null };
+      } catch (error) {
+        return { user: null, error };
+      }
+    },
     signOut: async () => {
       await firstsavvy.auth.signOut();
       setUser(null);
