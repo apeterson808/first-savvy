@@ -19,6 +19,7 @@ export const ProfileProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [viewingChildProfile, setViewingChildProfile] = useState(null);
+  const [availableChildProfiles, setAvailableChildProfiles] = useState([]);
 
   const loadProfiles = useCallback(async () => {
     if (!user) {
@@ -71,6 +72,7 @@ export const ProfileProvider = ({ children }) => {
         .map(m => m.profile.id);
 
       let childProfilesList = [];
+      let allChildProfiles = [];
       if (ownerProfileIds.length > 0) {
         const { data: childProfiles, error: childError } = await firstsavvy
           .from('child_profiles')
@@ -79,24 +81,27 @@ export const ProfileProvider = ({ children }) => {
           .eq('is_active', true);
 
         if (!childError && childProfiles) {
-          childProfilesList = childProfiles
-            .filter(child => child.user_id !== null)
-            .map(child => ({
-              id: child.owned_by_profile_id,
-              child_profile_id: child.id,
-              display_name: child.child_name,
-              profile_type: 'child',
-              is_child_profile: true,
-              parent_profile_id: child.parent_profile_id,
-              owned_by_profile_id: child.owned_by_profile_id,
-              permission_level: child.current_permission_level,
-              points_balance: child.points_balance || 0,
-              cash_balance: child.cash_balance || 0,
-              daily_spending_limit: child.daily_spending_limit,
-              weekly_spending_limit: child.weekly_spending_limit,
-              monthly_spending_limit: child.monthly_spending_limit,
-              role: 'child'
-            }));
+          allChildProfiles = childProfiles.map(child => ({
+            id: child.owned_by_profile_id,
+            child_profile_id: child.id,
+            display_name: child.child_name,
+            profile_type: 'child',
+            is_child_profile: true,
+            parent_profile_id: child.parent_profile_id,
+            owned_by_profile_id: child.owned_by_profile_id,
+            permission_level: child.current_permission_level,
+            points_balance: child.points_balance || 0,
+            cash_balance: child.cash_balance || 0,
+            daily_spending_limit: child.daily_spending_limit,
+            weekly_spending_limit: child.weekly_spending_limit,
+            monthly_spending_limit: child.monthly_spending_limit,
+            date_of_birth: child.date_of_birth,
+            role: 'child'
+          }));
+
+          childProfilesList = allChildProfiles.filter(child => childProfiles.find(cp => cp.owned_by_profile_id === child.id)?.user_id !== null);
+
+          setAvailableChildProfiles(allChildProfiles);
         }
       }
 
@@ -259,8 +264,9 @@ export const ProfileProvider = ({ children }) => {
     switchProfile,
     refreshProfiles,
     viewingChildProfile,
-    exitChildView
-  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles, viewingChildProfile, exitChildView]);
+    exitChildView,
+    availableChildProfiles
+  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles, viewingChildProfile, exitChildView, availableChildProfiles]);
 
   return (
     <ProfileContext.Provider value={value}>

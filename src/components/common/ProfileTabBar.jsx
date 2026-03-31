@@ -1,9 +1,16 @@
-import React from 'react';
-import { Plus, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Loader2, X } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export function ProfileTabBar({ onAddProfileClick }) {
-  const { profiles, activeProfile, switchProfile, loading } = useProfile();
+  const { profiles, activeProfile, switchProfile, loading, availableChildProfiles } = useProfile();
+  const [openChildTabs, setOpenChildTabs] = useState([]);
 
   const handleTabClick = (profile) => {
     if (profile.id !== activeProfile?.id) {
@@ -11,8 +18,31 @@ export function ProfileTabBar({ onAddProfileClick }) {
     }
   };
 
+  const openChildTab = (childProfile) => {
+    if (!openChildTabs.find(t => t.id === childProfile.id)) {
+      setOpenChildTabs(prev => [...prev, childProfile]);
+    }
+    switchProfile(childProfile);
+  };
+
+  const closeChildTab = (e, childProfileId) => {
+    e.stopPropagation();
+    setOpenChildTabs(prev => prev.filter(t => t.id !== childProfileId));
+    if (activeProfile?.id === childProfileId) {
+      const parentProfile = profiles.find(p => !p.is_child_profile);
+      if (parentProfile) {
+        switchProfile(parentProfile);
+      }
+    }
+  };
+
+  const parentProfiles = profiles.filter(p => !p.is_child_profile);
+  const closedChildProfiles = availableChildProfiles.filter(
+    child => !openChildTabs.find(t => t.id === child.id)
+  );
+
   return (
-    <div className="flex items-center gap-1 overflow-hidden min-h-[36px]">
+    <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden min-h-[36px] scrollbar-thin">
       {loading ? (
         <div className="flex items-center gap-2 px-3 py-1 text-sm text-slate-500">
           <Loader2 className="w-4 h-4 animate-spin" />
@@ -20,14 +50,14 @@ export function ProfileTabBar({ onAddProfileClick }) {
         </div>
       ) : profiles && profiles.length > 0 ? (
         <>
-          {profiles.map((profile) => {
+          {parentProfiles.map((profile) => {
             const isActive = profile.id === activeProfile?.id;
 
             return (
               <div
                 key={profile.id}
                 onClick={() => handleTabClick(profile)}
-                className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative ${
+                className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
                   isActive
                     ? 'bg-slate-100 text-slate-900 z-10'
                     : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
@@ -50,10 +80,69 @@ export function ProfileTabBar({ onAddProfileClick }) {
             );
           })}
 
+          {openChildTabs.map((childProfile) => {
+            const isActive = childProfile.id === activeProfile?.id;
+
+            return (
+              <div
+                key={childProfile.id}
+                onClick={() => handleTabClick(childProfile)}
+                className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
+                  isActive
+                    ? 'bg-blue-100 text-blue-900 z-10'
+                    : 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-900'
+                }`}
+                style={{
+                  borderTop: isActive ? '2px solid #93c5fd' : '2px solid transparent',
+                  borderLeft: isActive ? '2px solid #93c5fd' : '2px solid transparent',
+                  borderRight: isActive ? '2px solid #93c5fd' : '2px solid transparent',
+                  borderBottom: isActive ? '2px solid #f1f5f9' : 'none',
+                  borderTopLeftRadius: '12px',
+                  borderTopRightRadius: '12px',
+                  marginBottom: isActive ? '-2px' : '0',
+                  paddingBottom: isActive ? 'calc(0.25rem + 2px)' : '0.25rem',
+                }}
+              >
+                <span className="text-sm font-medium truncate flex-1">
+                  {childProfile.display_name}
+                </span>
+                <button
+                  onClick={(e) => closeChildTab(e, childProfile.id)}
+                  className="flex-shrink-0 hover:bg-blue-200 rounded p-0.5 transition-colors"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            );
+          })}
+
+          {closedChildProfiles.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+                  title="Open child profile"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {closedChildProfiles.map((child) => (
+                  <DropdownMenuItem
+                    key={child.id}
+                    onClick={() => openChildTab(child)}
+                  >
+                    {child.display_name}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {profiles.length < 10 && onAddProfileClick && (
             <button
               onClick={onAddProfileClick}
-              className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 transition-colors"
+              className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
               title="Add profile"
             >
               <Plus className="w-4 h-4" />
