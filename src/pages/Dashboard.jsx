@@ -17,6 +17,7 @@ import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCa
 import AnimatedProgressBar from '../components/dashboard/AnimatedProgressBar';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
+import ChildDashboard from '../components/dashboard/ChildDashboard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { getUserChartOfAccounts, getDisplayName } from '@/api/chartOfAccounts';
@@ -52,6 +53,9 @@ export default function Dashboard() {
   const [userProfileData, setUserProfileData] = useState(null);
 
   const { budgets: budgetData, spendingWithChildren } = useBudgetData();
+
+  const isChildProfile = activeProfile?.is_child_profile;
+  const permissionLevel = activeProfile?.permission_level || 1;
 
   const handleChartPointClick = (data) => {
     if ((chartView === 'spending' || chartView === 'balance') && data?.fullDate) {
@@ -492,6 +496,10 @@ export default function Dashboard() {
 
 
   const upcomingBills = [];
+
+  if (isChildProfile) {
+    return <ChildDashboard />;
+  }
 
   return (
     <div className="p-4 md:p-6">
