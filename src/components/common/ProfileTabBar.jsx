@@ -1,16 +1,12 @@
 import React, { useState } from 'react';
 import { Plus, Loader2, X } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { ProfileSelector } from './ProfileSelector';
 
 export function ProfileTabBar({ onAddProfileClick }) {
-  const { profiles, activeProfile, switchProfile, loading, availableChildProfiles } = useProfile();
+  const { profiles, activeProfile, switchProfile, loading } = useProfile();
   const [openChildTabs, setOpenChildTabs] = useState([]);
+  const [showProfileSelector, setShowProfileSelector] = useState(false);
 
   const handleTabClick = (profile) => {
     if (profile.id !== activeProfile?.id) {
@@ -37,9 +33,14 @@ export function ProfileTabBar({ onAddProfileClick }) {
   };
 
   const parentProfiles = profiles.filter(p => !p.is_child_profile);
-  const closedChildProfiles = availableChildProfiles.filter(
-    child => !openChildTabs.find(t => t.id === child.id)
-  );
+
+  const handleProfileSelectorClick = () => {
+    if (onAddProfileClick) {
+      onAddProfileClick();
+    } else {
+      setShowProfileSelector(true);
+    }
+  };
 
   return (
     <div className="flex items-center gap-1 overflow-x-auto overflow-y-hidden min-h-[36px] scrollbar-thin">
@@ -116,38 +117,13 @@ export function ProfileTabBar({ onAddProfileClick }) {
             );
           })}
 
-          {closedChildProfiles.length > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button
-                  className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
-                  title="Open child profile"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                {closedChildProfiles.map((child) => (
-                  <DropdownMenuItem
-                    key={child.id}
-                    onClick={() => openChildTab(child)}
-                  >
-                    {child.display_name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-
-          {profiles.length < 10 && onAddProfileClick && (
-            <button
-              onClick={onAddProfileClick}
-              className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
-              title="Add profile"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={handleProfileSelectorClick}
+            className="flex items-center justify-center px-2.5 py-1.5 flex-shrink-0 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded transition-colors"
+            title="Switch or add profile"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
         </>
       ) : (
         <div className="flex items-center gap-2 px-3 py-1 text-sm text-slate-500">
@@ -163,6 +139,12 @@ export function ProfileTabBar({ onAddProfileClick }) {
           )}
         </div>
       )}
+
+      <ProfileSelector
+        open={showProfileSelector}
+        onOpenChange={setShowProfileSelector}
+        onOpenChildTab={openChildTab}
+      />
     </div>
   );
 }

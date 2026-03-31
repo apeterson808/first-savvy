@@ -14,15 +14,21 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { toast } from 'sonner';
 import { AddProfileDialog } from './AddProfileDialog';
 
-export function ProfileSelector({ open, onOpenChange }) {
-  const { profiles, activeProfile, switchProfile, loading, refreshProfiles } = useProfile();
+export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
+  const { profiles, activeProfile, switchProfile, loading, refreshProfiles, availableChildProfiles } = useProfile();
   const [showAddProfile, setShowAddProfile] = useState(false);
 
   const handleSelectProfile = async (profile) => {
     try {
-      await switchProfile(profile);
-      onOpenChange(false);
-      toast.success(`Switched to ${profile.display_name}`);
+      if (profile.is_child_profile && onOpenChildTab) {
+        onOpenChildTab(profile);
+        onOpenChange(false);
+        toast.success(`Opened ${profile.display_name}`);
+      } else {
+        await switchProfile(profile);
+        onOpenChange(false);
+        toast.success(`Switched to ${profile.display_name}`);
+      }
     } catch (error) {
       toast.error('Failed to switch profile');
     }
@@ -57,8 +63,12 @@ export function ProfileSelector({ open, onOpenChange }) {
     }
   };
 
-  const getProfileDescription = (profileType) => {
-    switch (profileType) {
+  const getProfileDescription = (profile) => {
+    if (profile.is_child_profile) {
+      return `Child profile - Level ${profile.permission_level || 1}`;
+    }
+
+    switch (profile.profile_type) {
       case 'personal':
         return 'Your personal financial profile';
       case 'household':
@@ -69,6 +79,8 @@ export function ProfileSelector({ open, onOpenChange }) {
         return 'Financial profile';
     }
   };
+
+  const allProfiles = [...profiles, ...availableChildProfiles];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,9 +98,9 @@ export function ProfileSelector({ open, onOpenChange }) {
           </div>
         ) : (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
-            {profiles.map((profile) => {
+            {allProfiles.map((profile) => {
               const isActive = activeProfile?.id === profile.id;
-              const Icon = getProfileIcon(profile.profile_type);
+              const Icon = profile.is_child_profile ? User : getProfileIcon(profile.profile_type);
 
               return (
                 <button
@@ -107,7 +119,9 @@ export function ProfileSelector({ open, onOpenChange }) {
                     </Avatar>
                     <div
                       className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${
-                        profile.profile_type === 'personal'
+                        profile.is_child_profile
+                          ? 'bg-blue-500'
+                          : profile.profile_type === 'personal'
                           ? 'bg-blue-500'
                           : profile.profile_type === 'household'
                           ? 'bg-green-500'
@@ -131,7 +145,7 @@ export function ProfileSelector({ open, onOpenChange }) {
                       )}
                     </div>
                     <p className="text-xs text-slate-400 mt-0.5">
-                      {getProfileDescription(profile.profile_type)}
+                      {getProfileDescription(profile)}
                     </p>
                     <p className="text-xs text-slate-500 mt-0.5 capitalize">
                       Role: {profile.role}
@@ -141,7 +155,7 @@ export function ProfileSelector({ open, onOpenChange }) {
               );
             })}
 
-            {profiles.length === 0 && (
+            {allProfiles.length === 0 && (
               <div className="py-8 text-center text-sm text-slate-500">
                 No profiles available
               </div>
