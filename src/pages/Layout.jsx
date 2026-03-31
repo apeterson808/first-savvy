@@ -5,7 +5,8 @@ import { createPageUrl } from './utils';
 import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
   Calendar, CreditCard, Banknote, Lock, Users, Cable, UserCheck,
-  Menu, X, Bell, Search, LogOut, User, ChevronLeft
+  Menu, X, Bell, Search, LogOut, User, ChevronLeft, CheckCircle,
+  Star, Settings
 } from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -16,6 +17,7 @@ import ProtectedChangeWarningDialog from '@/components/common/ProtectedChangeWar
 import { useProtectedChangeDialog } from '@/hooks/useProtectedConfiguration';
 import { ProfileTabBar } from '@/components/common/ProfileTabBar';
 import { ProfileSelector } from '@/components/common/ProfileSelector';
+import { useProfile } from '@/contexts/ProfileContext';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -25,6 +27,7 @@ export default function Layout({ children, currentPageName }) {
   const [profileSelectorOpen, setProfileSelectorOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+  const { activeProfile } = useProfile();
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
@@ -62,20 +65,60 @@ export default function Layout({ children, currentPageName }) {
     };
   }, []);
 
-  const navigation = [
-    { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard' },
-    { name: 'Banking', icon: CircleDollarSign, page: 'Banking' },
-    { name: 'Budgeting', icon: ClipboardList, page: 'Budgeting' },
-    { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals' },
-    { name: 'Calendar', icon: Calendar, page: 'Calendar' },
-    { name: 'Credit Score', icon: CreditCard, page: 'CreditScore' },
-    { name: 'Net Worth', icon: Banknote, page: 'NetWorth' },
-    { name: 'Contacts', icon: Users, page: 'Contacts' },
-    { name: 'Connections', icon: UserCheck, page: 'Connections' },
-    { name: 'Integrations', icon: Cable, page: 'Integrations' },
-    { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
-    { name: 'Affiliate', icon: Users, page: 'Affiliate' }
-  ];
+  const isChildProfile = activeProfile?.is_child_profile;
+  const permissionLevel = activeProfile?.permission_level || 1;
+
+  const getNavigation = () => {
+    if (!isChildProfile) {
+      return [
+        { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard' },
+        { name: 'Banking', icon: CircleDollarSign, page: 'Banking' },
+        { name: 'Budgeting', icon: ClipboardList, page: 'Budgeting' },
+        { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals' },
+        { name: 'Calendar', icon: Calendar, page: 'Calendar' },
+        { name: 'Credit Score', icon: CreditCard, page: 'CreditScore' },
+        { name: 'Net Worth', icon: Banknote, page: 'NetWorth' },
+        { name: 'Contacts', icon: Users, page: 'Contacts' },
+        { name: 'Connections', icon: UserCheck, page: 'Connections' },
+        { name: 'Integrations', icon: Cable, page: 'Integrations' },
+        { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
+        { name: 'Affiliate', icon: Users, page: 'Affiliate' }
+      ];
+    }
+
+    const childNav = [
+      { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard', minLevel: 1 },
+    ];
+
+    if (permissionLevel >= 2) {
+      childNav.push({ name: 'My Rewards', icon: Star, page: 'Goals', minLevel: 2 });
+    }
+
+    if (permissionLevel >= 3) {
+      childNav.push(
+        { name: 'My Money', icon: CircleDollarSign, page: 'Banking', minLevel: 3 },
+        { name: 'My Budget', icon: ClipboardList, page: 'Budgeting', minLevel: 3 }
+      );
+    }
+
+    if (permissionLevel >= 4) {
+      childNav.push(
+        { name: 'Calendar', icon: Calendar, page: 'Calendar', minLevel: 4 },
+        { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', minLevel: 4 }
+      );
+    }
+
+    if (permissionLevel >= 5) {
+      childNav.push(
+        { name: 'Net Worth', icon: Banknote, page: 'NetWorth', minLevel: 5 },
+        { name: 'Contacts', icon: Users, page: 'Contacts', minLevel: 5 }
+      );
+    }
+
+    return childNav;
+  };
+
+  const navigation = getNavigation();
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
