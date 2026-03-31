@@ -1,41 +1,33 @@
 import React, { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useProfile } from '@/contexts/ProfileContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import {
-  ArrowUp,
   Plus,
   Settings,
-  TrendingUp,
   DollarSign,
-  Calendar,
   Gift,
   CheckCircle,
-  AlertCircle,
-  Lock,
-  Unlock,
-  ArrowUpDown
+  ArrowUpDown,
+  Star,
+  Zap,
+  Trophy,
+  Calendar,
+  Edit,
+  Shield
 } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/pages/utils';
-import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
-import { getUserChartOfAccounts } from '@/api/chartOfAccounts';
-import { useBudgetData } from '@/hooks/useBudgetData';
-import { convertCadence } from '@/utils/cadenceUtils';
-import RecentTransactionsCard from './RecentTransactionsCard';
-import AnimatedProgressBar from './AnimatedProgressBar';
+import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export default function ParentViewOfChildDashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
-  const [chartView, setChartView] = useState('spending');
-  const [timeRange, setTimeRange] = useState('30d');
 
   const childProfileId = activeProfile?.child_profile_id;
 
@@ -52,32 +44,6 @@ export default function ParentViewOfChildDashboard() {
     enabled: !!childProfileId
   });
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['transactions', 'posted', activeProfile?.id],
-    queryFn: () => firstsavvy.entities.Transaction.filter({ status: 'posted' }, '-date,id', 10000),
-    enabled: !!activeProfile?.id,
-    staleTime: 30000
-  });
-
-  const { data: assets = [] } = useQuery({
-    queryKey: ['assets', activeProfile?.id],
-    queryFn: async () => {
-      if (!activeProfile?.id) return [];
-      const accounts = await getUserChartOfAccounts(activeProfile.id);
-      return accounts.filter(acc => acc.class === 'asset' && acc.is_active);
-    },
-    enabled: !!activeProfile?.id
-  });
-
-  const { data: liabilities = [] } = useQuery({
-    queryKey: ['liabilities', activeProfile?.id],
-    queryFn: async () => {
-      if (!activeProfile?.id) return [];
-      const accounts = await getUserChartOfAccounts(activeProfile.id);
-      return accounts.filter(acc => acc.class === 'liability' && acc.is_active);
-    },
-    enabled: !!activeProfile?.id
-  });
 
   const { data: chores = [] } = useQuery({
     queryKey: ['chores', childProfileId],
@@ -105,135 +71,126 @@ export default function ParentViewOfChildDashboard() {
     enabled: !!childProfileId
   });
 
-  const { budgets: budgetData, spendingWithChildren } = useBudgetData();
-
-  const totalAssets = assets.reduce((sum, asset) => sum + (asset.current_balance || 0), 0);
-  const totalLiabilities = liabilities.reduce((sum, liability) => sum + (liability.current_balance || 0), 0);
-  const netWorth = totalAssets - totalLiabilities;
-
-  const pendingChores = chores.filter(c => c.status === 'assigned');
+  const assignedChores = chores.filter(c => c.status === 'assigned');
   const completedChores = chores.filter(c => c.status === 'completed');
+  const approvedChores = chores.filter(c => c.status === 'approved');
 
-  const thisMonthExpenses = transactions
-    .filter(t => {
-      const tDate = new Date(t.date);
-      const monthStart = startOfMonth(new Date());
-      return t.type === 'expense' && tDate >= monthStart;
-    })
-    .reduce((sum, t) => sum + Math.abs(t.amount), 0);
+  const approveChore = useMutation({
+    mutationFn: async (choreId) => {
+      const chore = chores.find(c => c.id === choreId);
+      if (!chore) throw new Error('Chore not found');
 
-  const categorySpending = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((acc, t) => {
-      const category = t.category || 'Uncategorized';
-      acc[category] = (acc[category] || 0) + Math.abs(t.amount);
-      return acc;
-    }, {});
+      const { error: updateError } = await firstsavvy
+        .from('chores')
+        .update({ status: 'approved', approved_at: new Date().toISOString() })
+        .eq('id', choreId);
 
-  const spendingByCategory = Object.entries(categorySpending)
-    .map(([name, value]) => ({ name, value }))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 5);
+      if (updateError) throw updateError;
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+      let newPointsBalance = childProfile.points_balance || 0;
+      let newCashBalance = parseFloat(childProfile.cash_balance || 0);
 
-  const budgetUtilization = budgetData
-    .filter(b => b.chartAccount?.class === 'expense')
-    .map(budget => {
-      const categoryData = budget.chartAccount;
-      const budgetedAmount = convertCadence(
-        parseFloat(budget.allocated_amount || 0),
-        budget.cadence || 'monthly',
-        'monthly'
-      );
-      const spent = spendingWithChildren(budget.chart_account_id);
-      const percentage = budgetedAmount > 0 ? (spent / budgetedAmount) * 100 : 0;
-
-      const isOverBudget = percentage >= 100;
-      const isNearLimit = percentage >= 75 && percentage < 100;
-
-      let progressColor, bgColor;
-      if (isOverBudget) {
-        progressColor = 'rgba(254, 202, 202, 0.85)';
-        bgColor = '#f8fafc';
-      } else if (isNearLimit) {
-        progressColor = 'rgba(254, 243, 199, 0.85)';
-        bgColor = '#f8fafc';
-      } else {
-        progressColor = 'rgba(220, 252, 231, 0.85)';
-        bgColor = '#f8fafc';
+      if (chore.points_reward) {
+        newPointsBalance += chore.points_reward;
+      }
+      if (chore.cash_reward) {
+        newCashBalance += parseFloat(chore.cash_reward);
       }
 
-      return {
-        categoryName: categoryData?.display_name || 'Unknown',
-        icon: categoryData?.icon || 'Circle',
-        spent,
-        limit: budgetedAmount,
-        percentage,
-        progressColor,
-        bgColor
-      };
-    })
-    .filter(item => item.limit > 0)
-    .sort((a, b) => b.percentage - a.percentage);
+      const { error: profileError } = await firstsavvy
+        .from('child_profiles')
+        .update({
+          points_balance: newPointsBalance,
+          cash_balance: newCashBalance
+        })
+        .eq('id', childProfileId);
+
+      if (profileError) throw profileError;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['chores', childProfileId]);
+      queryClient.invalidateQueries(['child-profile', childProfileId]);
+      toast.success('Chore approved and rewards granted!');
+    },
+    onError: () => {
+      toast.error('Failed to approve chore');
+    }
+  });
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">{activeProfile?.display_name}'s Dashboard</h1>
-          <p className="text-sm text-slate-600 mt-1">Parent View - Full Access</p>
+          <h1 className="text-2xl font-bold text-slate-900">{activeProfile?.display_name}'s Profile</h1>
+          <p className="text-sm text-slate-600 mt-1 flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Parent View - Manage permissions, chores, and rewards
+          </p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            Manage Profile
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Full Settings
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="pb-2 pt-3 px-3">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Cash Balance</p>
-          </CardHeader>
-          <CardContent className="px-3 pb-3">
-            <p className="text-2xl font-bold text-slate-900">${(childProfile?.cash_balance || 0).toFixed(2)}</p>
-            <p className="text-xs text-slate-500 mt-1">Available to spend</p>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-green-50 to-emerald-50">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
+                <DollarSign className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-green-700 uppercase tracking-wide">Cash</p>
+                <p className="text-2xl font-black text-green-900">${(childProfile?.cash_balance || 0).toFixed(2)}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="pb-2 pt-3 px-3">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Points Balance</p>
-          </CardHeader>
-          <CardContent className="px-3 pb-3">
-            <p className="text-2xl font-bold text-amber-600">{childProfile?.points_balance || 0}</p>
-            <p className="text-xs text-slate-500 mt-1">Earned points</p>
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-amber-50 to-yellow-50">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yellow-400 to-amber-500 flex items-center justify-center">
+                <Star className="w-5 h-5 text-white fill-white" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-amber-700 uppercase tracking-wide">Points</p>
+                <p className="text-2xl font-black text-amber-900">{childProfile?.points_balance || 0}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="pb-2 pt-3 px-3">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">This Month</p>
-          </CardHeader>
-          <CardContent className="px-3 pb-3">
-            <p className="text-2xl font-bold text-slate-900">${thisMonthExpenses.toFixed(2)}</p>
-            <p className="text-xs text-slate-500 mt-1">Total spending</p>
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-sky-50 to-blue-50">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 flex items-center justify-center">
+                <Zap className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-sky-700 uppercase tracking-wide">Chores</p>
+                <p className="text-2xl font-black text-sky-900">{approvedChores.length + completedChores.length}/{chores.length}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="shadow-sm border-slate-200">
-          <CardHeader className="pb-2 pt-3 px-3">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Chores</p>
-          </CardHeader>
-          <CardContent className="px-3 pb-3">
-            <p className="text-2xl font-bold text-slate-900">{completedChores.length}/{chores.length}</p>
-            <p className="text-xs text-slate-500 mt-1">Completed this period</p>
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-violet-50">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center">
+                <Trophy className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <p className="text-xs font-medium text-purple-700 uppercase tracking-wide">Level</p>
+                <p className="text-2xl font-black text-purple-900">{childProfile?.current_permission_level || 1}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -241,157 +198,190 @@ export default function ParentViewOfChildDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2 space-y-4">
           <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4">
+            <CardHeader className="pb-3 pt-5 px-5">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold">Spending Limits</CardTitle>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
-                  <Settings className="w-3 h-3 mr-1" />
-                  Adjust
+                <CardTitle className="text-base font-bold">Chore Management</CardTitle>
+                <Button size="sm" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Chore
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="space-y-3">
-                {childProfile?.daily_spending_limit && (
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium">Daily Limit</p>
-                      <p className="text-xs text-slate-600">Resets each day</p>
-                    </div>
-                    <p className="text-lg font-bold text-sky-blue">${childProfile.daily_spending_limit.toFixed(2)}</p>
-                  </div>
-                )}
-                {childProfile?.weekly_spending_limit && (
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium">Weekly Limit</p>
-                      <p className="text-xs text-slate-600">Resets each week</p>
-                    </div>
-                    <p className="text-lg font-bold text-sky-blue">${childProfile.weekly_spending_limit.toFixed(2)}</p>
-                  </div>
-                )}
-                {childProfile?.monthly_spending_limit && (
-                  <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                    <div>
-                      <p className="text-sm font-medium">Monthly Limit</p>
-                      <p className="text-xs text-slate-600">Resets each month</p>
-                    </div>
-                    <p className="text-lg font-bold text-sky-blue">${childProfile.monthly_spending_limit.toFixed(2)}</p>
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold">Spending by Category</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {spendingByCategory.length > 0 ? (
-                <ResponsiveContainer width="100%" height={200}>
-                  <PieChart>
-                    <Pie
-                      data={spendingByCategory}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {spendingByCategory.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => `$${value.toFixed(2)}`} />
-                  </PieChart>
-                </ResponsiveContainer>
+            <CardContent className="px-5 pb-5">
+              {chores.length === 0 ? (
+                <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg">
+                  <Zap className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                  <p className="text-sm font-medium">No chores yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Add chores to help {activeProfile?.display_name} learn responsibility</p>
+                  <Button size="sm" className="mt-4" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create First Chore
+                  </Button>
+                </div>
               ) : (
-                <div className="flex items-center justify-center h-48 text-sm text-slate-500">
-                  No spending data yet
+                <div className="space-y-3">
+                  {chores.map((chore) => (
+                    <div
+                      key={chore.id}
+                      className={`p-4 rounded-lg border-2 ${
+                        chore.status === 'approved'
+                          ? 'border-green-200 bg-green-50'
+                          : chore.status === 'completed'
+                          ? 'border-amber-200 bg-amber-50'
+                          : 'border-slate-200 bg-slate-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-3 flex-1">
+                          {chore.status === 'approved' ? (
+                            <CheckCircle className="w-5 h-5 text-green-600 fill-green-600 shrink-0 mt-0.5" />
+                          ) : chore.status === 'completed' ? (
+                            <CheckCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-slate-400 shrink-0 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-slate-900">{chore.title}</p>
+                            {chore.description && (
+                              <p className="text-xs text-slate-600 mt-1">{chore.description}</p>
+                            )}
+                            <div className="flex items-center gap-3 mt-2">
+                              {chore.due_date && (
+                                <div className="flex items-center gap-1 text-xs text-slate-500">
+                                  <Calendar className="w-3 h-3" />
+                                  {format(new Date(chore.due_date), 'MMM d')}
+                                </div>
+                              )}
+                              {(chore.points_reward > 0 || chore.cash_reward > 0) && (
+                                <div className="flex items-center gap-2">
+                                  {chore.points_reward > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      <Star className="w-3 h-3 mr-1 text-amber-500" />
+                                      {chore.points_reward}
+                                    </Badge>
+                                  )}
+                                  {chore.cash_reward > 0 && (
+                                    <Badge variant="secondary" className="text-xs">
+                                      <DollarSign className="w-3 h-3 mr-1 text-green-600" />
+                                      {chore.cash_reward.toFixed(2)}
+                                    </Badge>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        {chore.status === 'completed' && (
+                          <Button
+                            size="sm"
+                            onClick={() => approveChore.mutate(chore.id)}
+                            disabled={approveChore.isPending}
+                          >
+                            Approve
+                          </Button>
+                        )}
+                        {chore.status === 'approved' && (
+                          <Badge className="bg-green-100 text-green-700">Approved</Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
-
-          <RecentTransactionsCard />
         </div>
 
         <div className="space-y-4">
           <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold">Permission Level</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <div className="flex items-center justify-between mb-2">
-                <Badge variant="secondary" className="text-xs">
-                  Level {childProfile?.current_permission_level || 1}
-                </Badge>
-                <Button variant="ghost" size="sm" className="h-8 text-xs">
+            <CardHeader className="pb-3 pt-5 px-5">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-bold">Permission Level</CardTitle>
+                <Button variant="ghost" size="sm" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
+                  <Edit className="w-3 h-3 mr-1" />
                   Change
                 </Button>
               </div>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                {childProfile?.current_permission_level === 1 && 'Basic access - Dashboard only'}
-                {childProfile?.current_permission_level === 2 && 'Rewards access - Can view and redeem rewards'}
-                {childProfile?.current_permission_level === 3 && 'Money management - Can view accounts and budgets'}
-                {childProfile?.current_permission_level === 4 && 'Advanced - Calendar and goals access'}
-                {childProfile?.current_permission_level === 5 && 'Full access - All features enabled'}
-              </p>
+            </CardHeader>
+            <CardContent className="px-5 pb-5">
+              <div className="p-4 bg-slate-50 rounded-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <Badge variant="secondary" className="text-sm px-3 py-1">
+                    Level {childProfile?.current_permission_level || 1}
+                  </Badge>
+                  <Shield className="w-5 h-5 text-slate-400" />
+                </div>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  {childProfile?.current_permission_level === 1 && 'Basic access - Dashboard and chores only'}
+                  {childProfile?.current_permission_level === 2 && 'Rewards - Can view and redeem rewards'}
+                  {childProfile?.current_permission_level === 3 && 'Money - View accounts and budgets'}
+                  {childProfile?.current_permission_level === 4 && 'Advanced - Calendar and goals'}
+                  {childProfile?.current_permission_level === 5 && 'Full access - All features'}
+                </p>
+              </div>
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4 flex flex-row items-center justify-between">
-              <CardTitle className="text-sm font-semibold">Pending Chores</CardTitle>
-              <Badge variant="outline" className="text-xs">{pendingChores.length}</Badge>
+            <CardHeader className="pb-3 pt-5 px-5">
+              <CardTitle className="text-base font-bold">Spending Limits</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
-              {pendingChores.length > 0 ? (
-                <div className="space-y-2">
-                  {pendingChores.slice(0, 5).map((chore) => (
-                    <div key={chore.id} className="flex items-start justify-between p-2 bg-slate-50 rounded-lg">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">{chore.title}</p>
-                        <p className="text-xs text-slate-600">
-                          {chore.points_reward ? `${chore.points_reward} points` : ''}
-                          {chore.points_reward && chore.cash_reward ? ' + ' : ''}
-                          {chore.cash_reward ? `$${chore.cash_reward.toFixed(2)}` : ''}
-                        </p>
-                      </div>
-                      {chore.due_date && (
-                        <p className="text-xs text-slate-500">
-                          {format(new Date(chore.due_date), 'MMM d')}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+            <CardContent className="px-5 pb-5">
+              {!childProfile?.daily_spending_limit && !childProfile?.weekly_spending_limit && !childProfile?.monthly_spending_limit ? (
+                <div className="text-center py-6 text-slate-500">
+                  <p className="text-xs">No spending limits set</p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-3"
+                    onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}
+                  >
+                    <Settings className="w-3 h-3 mr-2" />
+                    Set Limits
+                  </Button>
                 </div>
               ) : (
-                <p className="text-sm text-slate-500 text-center py-4">No pending chores</p>
+                <div className="space-y-2">
+                  {childProfile?.daily_spending_limit && (
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs font-medium text-slate-700">Daily</p>
+                      <p className="text-sm font-bold text-slate-900">${childProfile.daily_spending_limit.toFixed(2)}</p>
+                    </div>
+                  )}
+                  {childProfile?.weekly_spending_limit && (
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs font-medium text-slate-700">Weekly</p>
+                      <p className="text-sm font-bold text-slate-900">${childProfile.weekly_spending_limit.toFixed(2)}</p>
+                    </div>
+                  )}
+                  {childProfile?.monthly_spending_limit && (
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <p className="text-xs font-medium text-slate-700">Monthly</p>
+                      <p className="text-sm font-bold text-slate-900">${childProfile.monthly_spending_limit.toFixed(2)}</p>
+                    </div>
+                  )}
+                </div>
               )}
             </CardContent>
           </Card>
 
           <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-2 pt-4 px-4">
-              <CardTitle className="text-sm font-semibold">Quick Actions</CardTitle>
+            <CardHeader className="pb-3 pt-5 px-5">
+              <CardTitle className="text-base font-bold">Quick Actions</CardTitle>
             </CardHeader>
-            <CardContent className="px-4 pb-4">
+            <CardContent className="px-5 pb-5">
               <div className="space-y-2">
                 <Button variant="outline" className="w-full justify-start" size="sm">
                   <ArrowUpDown className="w-4 h-4 mr-2" />
                   Transfer Money
                 </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Chore
-                </Button>
-                <Button variant="outline" className="w-full justify-start" size="sm">
+                <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
                   <Gift className="w-4 h-4 mr-2" />
-                  Add Reward
+                  Manage Rewards
+                </Button>
+                <Button variant="outline" className="w-full justify-start" size="sm" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
+                  <Settings className="w-4 h-4 mr-2" />
+                  Profile Settings
                 </Button>
               </div>
             </CardContent>
