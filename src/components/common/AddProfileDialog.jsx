@@ -33,29 +33,6 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
         throw new Error('Not authenticated');
       }
 
-      const { data: profile, error: profileError } = await firstsavvy
-        .from('profiles')
-        .insert({
-          user_id: parentUser.id,
-          profile_type: profileType === 'child' ? 'personal' : profileType,
-          display_name: displayName.trim(),
-          is_deleted: false,
-        })
-        .select()
-        .single();
-
-      if (profileError) throw profileError;
-
-      const { error: membershipError } = await firstsavvy
-        .from('profile_memberships')
-        .insert({
-          profile_id: profile.id,
-          user_id: parentUser.id,
-          role: 'owner',
-        });
-
-      if (membershipError) throw membershipError;
-
       if (profileType === 'child') {
         const { data: parentProfile } = await firstsavvy
           .from('profile_memberships')
@@ -63,21 +40,46 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
           .eq('user_id', parentUser.id)
           .eq('role', 'owner')
           .limit(1)
+          .maybeSingle();
+
+        if (!parentProfile) {
+          throw new Error('No parent profile found');
+        }
+
+        const { error: childProfileError } = await firstsavvy
+          .from('child_profiles')
+          .insert({
+            parent_profile_id: parentProfile.profile_id,
+            user_id: null,
+            child_name: displayName.trim(),
+            current_permission_level: permissionLevel,
+            is_active: true,
+          });
+
+        if (childProfileError) throw childProfileError;
+      } else {
+        const { data: profile, error: profileError } = await firstsavvy
+          .from('profiles')
+          .insert({
+            user_id: parentUser.id,
+            profile_type: profileType,
+            display_name: displayName.trim(),
+            is_deleted: false,
+          })
+          .select()
           .single();
 
-        if (parentProfile) {
-          const { error: childProfileError } = await firstsavvy
-            .from('child_profiles')
-            .insert({
-              parent_profile_id: parentProfile.profile_id,
-              user_id: parentUser.id,
-              child_name: displayName.trim(),
-              current_permission_level: permissionLevel,
-              is_active: true,
-            });
+        if (profileError) throw profileError;
 
-          if (childProfileError) throw childProfileError;
-        }
+        const { error: membershipError } = await firstsavvy
+          .from('profile_memberships')
+          .insert({
+            profile_id: profile.id,
+            user_id: parentUser.id,
+            role: 'owner',
+          });
+
+        if (membershipError) throw membershipError;
       }
 
       toast.success(`Profile "${displayName}" created successfully`);
