@@ -79,22 +79,24 @@ export const ProfileProvider = ({ children }) => {
           .eq('is_active', true);
 
         if (!childError && childProfiles) {
-          childProfilesList = childProfiles.map(child => ({
-            id: child.owned_by_profile_id,
-            child_profile_id: child.id,
-            display_name: child.child_name,
-            profile_type: 'child',
-            is_child_profile: true,
-            parent_profile_id: child.parent_profile_id,
-            owned_by_profile_id: child.owned_by_profile_id,
-            permission_level: child.current_permission_level,
-            points_balance: child.points_balance || 0,
-            cash_balance: child.cash_balance || 0,
-            daily_spending_limit: child.daily_spending_limit,
-            weekly_spending_limit: child.weekly_spending_limit,
-            monthly_spending_limit: child.monthly_spending_limit,
-            role: 'child'
-          }));
+          childProfilesList = childProfiles
+            .filter(child => child.user_id !== null)
+            .map(child => ({
+              id: child.owned_by_profile_id,
+              child_profile_id: child.id,
+              display_name: child.child_name,
+              profile_type: 'child',
+              is_child_profile: true,
+              parent_profile_id: child.parent_profile_id,
+              owned_by_profile_id: child.owned_by_profile_id,
+              permission_level: child.current_permission_level,
+              points_balance: child.points_balance || 0,
+              cash_balance: child.cash_balance || 0,
+              daily_spending_limit: child.daily_spending_limit,
+              weekly_spending_limit: child.weekly_spending_limit,
+              monthly_spending_limit: child.monthly_spending_limit,
+              role: 'child'
+            }));
         }
       }
 
