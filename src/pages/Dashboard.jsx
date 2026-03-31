@@ -45,7 +45,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { activeProfile } = useProfile();
+  const { activeProfile, viewingChildProfile } = useProfile();
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [chartView, setChartView] = useState('spending');
   const [timeRange, setTimeRange] = useState('ytd');
@@ -512,7 +512,13 @@ export default function Dashboard() {
     return <ChildDashboard />;
   }
 
-  // Scenario 2: Logged-in user is NOT a child BUT is viewing a child profile (Andrew views Tucker's tab)
+  // Scenario 2: Parent is viewing a child profile via "Sign In for Child" flow
+  // Show ParentViewOfChildDashboard with the child's data
+  if (viewingChildProfile) {
+    return <ParentViewOfChildDashboard childProfileId={viewingChildProfile.childProfileId} />;
+  }
+
+  // Scenario 3: Logged-in user is NOT a child BUT is viewing a child profile (Andrew views Tucker's tab)
   // Show ParentViewOfChildDashboard with full controls and child's data
   if (!isLoggedInAsChild && activeProfile?.is_child_profile) {
     return <ParentViewOfChildDashboard />;

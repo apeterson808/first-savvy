@@ -18,6 +18,7 @@ import { useProtectedChangeDialog } from '@/hooks/useProtectedConfiguration';
 import { ProfileTabBar } from '@/components/common/ProfileTabBar';
 import { ProfileSelector } from '@/components/common/ProfileSelector';
 import { useProfile } from '@/contexts/ProfileContext';
+import { Button } from '@/components/ui/button';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,7 +30,7 @@ export default function Layout({ children, currentPageName }) {
   const [childPermissionLevel, setChildPermissionLevel] = useState(1);
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeProfile } = useProfile();
+  const { activeProfile, viewingChildProfile, exitChildView } = useProfile();
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
@@ -245,8 +246,38 @@ export default function Layout({ children, currentPageName }) {
               </div>
             </div>
 
-            {/* Profile Tabs */}
-            <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
+            {/* Profile Tabs - Hide when viewing as child */}
+            {!viewingChildProfile && (
+              <ProfileTabBar onAddProfileClick={() => setProfileSelectorOpen(true)} />
+            )}
+
+            {/* Child Viewing Indicator */}
+            {viewingChildProfile && (
+              <div className="flex items-center justify-between py-2 px-3 bg-gradient-to-r from-blue-50 to-purple-50 border-t border-blue-200">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">
+                    {viewingChildProfile.childName.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-slate-900">
+                      {viewingChildProfile.childName}'s Profile
+                    </p>
+                    <p className="text-xs text-slate-600">Parent viewing mode</p>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    exitChildView();
+                    navigate('/Dashboard');
+                  }}
+                  className="text-xs"
+                >
+                  Exit Child View
+                </Button>
+              </div>
+            )}
           </div>
           {/* Prominent horizontal border line - spans full width */}
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-300 z-0"></div>

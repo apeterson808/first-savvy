@@ -68,6 +68,7 @@ export function UserAvatarDropdown() {
 
   const handleSignOut = async () => {
     try {
+      sessionStorage.removeItem('viewingChildProfile');
       await supabase.auth.signOut();
       navigate('/login');
     } catch (error) {

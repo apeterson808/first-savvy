@@ -18,6 +18,7 @@ export const ProfileProvider = ({ children }) => {
   const [activeProfile, setActiveProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewingChildProfile, setViewingChildProfile] = useState(null);
 
   const loadProfiles = useCallback(async () => {
     if (!user) {
@@ -192,6 +193,16 @@ export const ProfileProvider = ({ children }) => {
 
   useEffect(() => {
     loadProfiles();
+
+    const childViewingData = sessionStorage.getItem('viewingChildProfile');
+    if (childViewingData) {
+      try {
+        const parsed = JSON.parse(childViewingData);
+        setViewingChildProfile(parsed);
+      } catch (err) {
+        sessionStorage.removeItem('viewingChildProfile');
+      }
+    }
   }, [loadProfiles]);
 
   const switchProfile = useCallback(async (profile) => {
@@ -233,14 +244,21 @@ export const ProfileProvider = ({ children }) => {
     await loadProfiles();
   }, [loadProfiles]);
 
+  const exitChildView = useCallback(() => {
+    sessionStorage.removeItem('viewingChildProfile');
+    setViewingChildProfile(null);
+  }, []);
+
   const value = React.useMemo(() => ({
     profiles,
     activeProfile,
     loading,
     error,
     switchProfile,
-    refreshProfiles
-  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles]);
+    refreshProfiles,
+    viewingChildProfile,
+    exitChildView
+  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles, viewingChildProfile, exitChildView]);
 
   return (
     <ProfileContext.Provider value={value}>
