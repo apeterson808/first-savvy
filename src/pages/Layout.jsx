@@ -25,6 +25,8 @@ export default function Layout({ children, currentPageName }) {
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [profileSelectorOpen, setProfileSelectorOpen] = useState(false);
+  const [isLoggedInAsChild, setIsLoggedInAsChild] = useState(false);
+  const [childPermissionLevel, setChildPermissionLevel] = useState(1);
   const navigate = useNavigate();
   const location = useLocation();
   const { activeProfile } = useProfile();
@@ -47,6 +49,22 @@ export default function Layout({ children, currentPageName }) {
         if (authUser?.id) {
           const profile = await getUserProfile(authUser.id);
           setUserProfile(profile);
+
+          // Check if the logged-in user is a child user
+          const { data: childProfile } = await firstsavvy
+            .from('child_profiles')
+            .select('current_permission_level')
+            .eq('user_id', authUser.id)
+            .eq('is_active', true)
+            .maybeSingle();
+
+          if (childProfile) {
+            setIsLoggedInAsChild(true);
+            setChildPermissionLevel(childProfile.current_permission_level || 1);
+          } else {
+            setIsLoggedInAsChild(false);
+            setChildPermissionLevel(1);
+          }
         }
       } catch (error) {
       }
@@ -65,11 +83,9 @@ export default function Layout({ children, currentPageName }) {
     };
   }, []);
 
-  const isChildProfile = activeProfile?.is_child_profile;
-  const permissionLevel = activeProfile?.permission_level || 1;
-
   const getNavigation = () => {
-    if (!isChildProfile) {
+    // If the logged-in user is NOT a child, show full parent navigation
+    if (!isLoggedInAsChild) {
       return [
         { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard' },
         { name: 'Banking', icon: CircleDollarSign, page: 'Banking' },
@@ -86,29 +102,30 @@ export default function Layout({ children, currentPageName }) {
       ];
     }
 
+    // If the logged-in user IS a child, show restricted navigation based on their permission level
     const childNav = [
       { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard', minLevel: 1 },
     ];
 
-    if (permissionLevel >= 2) {
+    if (childPermissionLevel >= 2) {
       childNav.push({ name: 'My Rewards', icon: Star, page: 'Goals', minLevel: 2 });
     }
 
-    if (permissionLevel >= 3) {
+    if (childPermissionLevel >= 3) {
       childNav.push(
         { name: 'My Money', icon: CircleDollarSign, page: 'Banking', minLevel: 3 },
         { name: 'My Budget', icon: ClipboardList, page: 'Budgeting', minLevel: 3 }
       );
     }
 
-    if (permissionLevel >= 4) {
+    if (childPermissionLevel >= 4) {
       childNav.push(
         { name: 'Calendar', icon: Calendar, page: 'Calendar', minLevel: 4 },
         { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', minLevel: 4 }
       );
     }
 
-    if (permissionLevel >= 5) {
+    if (childPermissionLevel >= 5) {
       childNav.push(
         { name: 'Net Worth', icon: Banknote, page: 'NetWorth', minLevel: 5 },
         { name: 'Contacts', icon: Users, page: 'Contacts', minLevel: 5 }

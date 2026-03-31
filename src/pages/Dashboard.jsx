@@ -51,11 +51,9 @@ export default function Dashboard() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
   const [userProfileData, setUserProfileData] = useState(null);
+  const [isLoggedInAsChild, setIsLoggedInAsChild] = useState(false);
 
   const { budgets: budgetData, spendingWithChildren } = useBudgetData();
-
-  const isChildProfile = activeProfile?.is_child_profile;
-  const permissionLevel = activeProfile?.permission_level || 1;
 
   const handleChartPointClick = (data) => {
     if ((chartView === 'spending' || chartView === 'balance') && data?.fullDate) {
@@ -113,6 +111,16 @@ export default function Dashboard() {
   useEffect(() => {
     const checkProfileSetup = async () => {
       if (!user?.id || !activeProfile) return;
+
+      // Check if logged-in user is a child
+      const { data: childProfile } = await firstsavvy
+        .from('child_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      setIsLoggedInAsChild(!!childProfile);
 
       const hasShownDialog = sessionStorage.getItem('profileSetupShown');
       if (hasShownDialog) return;
@@ -497,10 +505,12 @@ export default function Dashboard() {
 
   const upcomingBills = [];
 
-  if (isChildProfile) {
+  // Only show child dashboard if the logged-in user is a child
+  if (isLoggedInAsChild) {
     return <ChildDashboard />;
   }
 
+  // Parents viewing child profiles will see the normal dashboard with all their data
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-col lg:flex-row gap-4">
