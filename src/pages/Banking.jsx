@@ -107,14 +107,16 @@ export default function Banking() {
     gcTime: 300000
   });
 
+  const profileIdToUse = activeProfile?.parent_profile_id || activeProfile?.id;
+
   const { data: chartAccounts = [] } = useQuery({
-    queryKey: ['chartAccounts', activeProfile?.id],
+    queryKey: ['chartAccounts', profileIdToUse],
     queryFn: async () => {
-      if (!activeProfile?.id) return [];
-      const accounts = await getUserChartOfAccounts(activeProfile.id);
+      if (!profileIdToUse) return [];
+      const accounts = await getUserChartOfAccounts(profileIdToUse);
       return accounts.filter(a => a.is_active);
     },
-    enabled: !!activeProfile?.id,
+    enabled: !!profileIdToUse,
     staleTime: 30000
   });
 

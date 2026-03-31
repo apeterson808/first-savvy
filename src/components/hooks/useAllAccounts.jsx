@@ -8,13 +8,15 @@ export default function useAllAccounts() {
   const { user } = useAuth();
   const { activeProfile, loading: profileLoading } = useProfile();
 
+  const profileIdToUse = activeProfile?.parent_profile_id || activeProfile?.id;
+
   const { data: chartAccounts = [], isLoading: loadingChartAccounts } = useQuery({
-    queryKey: ['chart-accounts', activeProfile?.id],
+    queryKey: ['chart-accounts', profileIdToUse],
     queryFn: async () => {
-      const accounts = await getUserChartOfAccounts(activeProfile.id);
+      const accounts = await getUserChartOfAccounts(profileIdToUse);
       return accounts;
     },
-    enabled: !!activeProfile?.id,
+    enabled: !!profileIdToUse,
     staleTime: 0,
     gcTime: 300000,
     refetchOnMount: true,

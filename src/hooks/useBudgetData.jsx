@@ -7,6 +7,8 @@ import { useProfile } from '@/contexts/ProfileContext';
 export function useBudgetData(selectedMonth = null) {
   const { activeProfile } = useProfile();
 
+  const profileIdForAccounts = activeProfile?.parent_profile_id || activeProfile?.id;
+
   const { data: budgets = [], isLoading: budgetsLoading } = useQuery({
     queryKey: ['budgets', activeProfile?.id],
     queryFn: async () => {
@@ -41,34 +43,35 @@ export function useBudgetData(selectedMonth = null) {
   });
 
   const { data: accounts = [], isLoading: accountsLoading } = useQuery({
-    queryKey: ['accounts', activeProfile?.id],
+    queryKey: ['accounts', profileIdForAccounts],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
         .select('*')
+        .eq('profile_id', profileIdForAccounts)
         .eq('is_active', true)
         .in('class', ['asset', 'liability']);
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile?.id,
+    enabled: !!profileIdForAccounts,
     refetchOnMount: true
   });
 
   const { data: categories = [], isLoading: categoriesLoading } = useQuery({
-    queryKey: ['user-chart-accounts-income-expense', activeProfile?.id],
+    queryKey: ['user-chart-accounts-income-expense', profileIdForAccounts],
     queryFn: async () => {
       const { data, error } = await firstsavvy.supabase
         .from('user_chart_of_accounts')
         .select('*')
-        .eq('profile_id', activeProfile.id)
+        .eq('profile_id', profileIdForAccounts)
         .eq('is_active', true)
         .in('class', ['income', 'expense'])
         .order('display_name', { ascending: true });
       if (error) throw error;
       return data || [];
     },
-    enabled: !!activeProfile?.id,
+    enabled: !!profileIdForAccounts,
     refetchOnMount: true
   });
 
