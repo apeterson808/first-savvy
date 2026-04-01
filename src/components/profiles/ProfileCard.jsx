@@ -35,7 +35,7 @@ export function ProfileCard({
       .slice(0, 2);
   };
 
-  const isFamily = profile.profile_type === 'household';
+  const isFamily = profile.profile_type === 'family';
   const isBusiness = profile.profile_type === 'business';
   const colorClass = isFamily ? 'border-green-500' : 'border-orange-500';
   const bgClass = isFamily ? 'bg-green-50' : 'bg-orange-50';

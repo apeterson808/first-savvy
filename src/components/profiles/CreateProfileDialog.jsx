@@ -47,7 +47,7 @@ export function CreateProfileDialog({ open, onOpenChange, onProfileCreated }) {
 
       if (error) throw error;
 
-      toast.success(`${selectedType === 'household' ? 'Family' : 'Business'} profile created`);
+      toast.success(`${selectedType === 'family' ? 'Family' : 'Business'} profile created`);
       setProfileName('');
       setSelectedType(null);
       onOpenChange(false);
@@ -85,15 +85,15 @@ export function CreateProfileDialog({ open, onOpenChange, onProfileCreated }) {
             <Label>Profile Type</Label>
             <div className="grid grid-cols-2 gap-4">
               <button
-                onClick={() => setSelectedType('household')}
+                onClick={() => setSelectedType('family')}
                 className={`p-4 rounded-lg border-2 transition-all ${
-                  selectedType === 'household'
+                  selectedType === 'family'
                     ? 'border-green-500 bg-green-50'
                     : 'border-slate-200 hover:border-slate-300'
                 }`}
               >
                 <Users className={`h-8 w-8 mx-auto mb-2 ${
-                  selectedType === 'household' ? 'text-green-600' : 'text-slate-400'
+                  selectedType === 'family' ? 'text-green-600' : 'text-slate-400'
                 }`} />
                 <div className="text-sm font-medium">Family</div>
                 <div className="text-xs text-slate-500 mt-1">Household finances</div>
@@ -119,7 +119,7 @@ export function CreateProfileDialog({ open, onOpenChange, onProfileCreated }) {
             <Label htmlFor="profile-name">Profile Name</Label>
             <Input
               id="profile-name"
-              placeholder={selectedType === 'household' ? 'e.g., Smith Family' : 'e.g., My Business'}
+              placeholder={selectedType === 'family' ? 'e.g., Smith Family' : 'e.g., My Business'}
               value={profileName}
               onChange={(e) => setProfileName(e.target.value)}
               disabled={isCreating}

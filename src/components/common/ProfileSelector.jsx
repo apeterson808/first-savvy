@@ -55,7 +55,7 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
     switch (profileType) {
       case 'personal':
         return User;
-      case 'household':
+      case 'family':
         return Users;
       case 'business':
         return Briefcase;
@@ -86,8 +86,8 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
     switch (profile.profile_type) {
       case 'personal':
         return 'Your personal financial profile';
-      case 'household':
-        return 'Shared household finances';
+      case 'family':
+        return 'Shared family finances';
       case 'business':
         return 'Business financial management';
       default:
@@ -142,7 +142,7 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
                           ? 'bg-blue-500'
                           : profile.profile_type === 'personal'
                           ? 'bg-blue-500'
-                          : profile.profile_type === 'household'
+                          : profile.profile_type === 'family'
                           ? 'bg-green-500'
                           : 'bg-orange-500'
                       }`}

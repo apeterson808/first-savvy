@@ -51,7 +51,7 @@ export default function Connections() {
 
       if (error) throw error;
 
-      const family = profiles.filter(p => p.profile_type === 'household');
+      const family = profiles.filter(p => p.profile_type === 'family');
       const business = profiles.filter(p => p.profile_type === 'business');
 
       setFamilyProfiles(family);
@@ -358,7 +358,7 @@ export default function Connections() {
         description="This will permanently delete this profile and all associated data."
         confirmText="DELETE"
         warningMessage={
-          selectedProfile?.profile_type === 'household' && childProfilesMap[selectedProfile?.id]?.length > 0
+          selectedProfile?.profile_type === 'family' && childProfilesMap[selectedProfile?.id]?.length > 0
             ? `This family profile has ${childProfilesMap[selectedProfile.id].length} child profile(s). Deleting this profile will also delete all child profiles.`
             : 'This action cannot be undone.'
         }
