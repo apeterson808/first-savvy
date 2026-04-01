@@ -173,7 +173,7 @@ export function SettingsTab({ child, onUpdate, currentProfileId }) {
         <CardHeader>
           <CardTitle>Spending Limits</CardTitle>
           <CardDescription>
-            Set spending limits for cash mode (Level 3+)
+            Set spending limits for Tier 3 (Money access)
           </CardDescription>
         </CardHeader>
         <CardContent>

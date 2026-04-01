@@ -17,20 +17,16 @@ import { ActivityTab } from '@/components/children/ActivityTab';
 import { SettingsTab } from '@/components/children/SettingsTab';
 import { toast } from 'sonner';
 
-const LEVEL_COLORS = {
+const TIER_COLORS = {
   1: 'bg-slate-100 text-slate-800',
   2: 'bg-blue-100 text-blue-800',
   3: 'bg-green-100 text-green-800',
-  4: 'bg-purple-100 text-purple-800',
-  5: 'bg-amber-100 text-amber-800',
 };
 
-const LEVEL_NAMES = {
-  1: 'Supervised',
-  2: 'Monitored',
-  3: 'Semi-Independent',
-  4: 'Independent',
-  5: 'Full Control',
+const TIER_NAMES = {
+  1: 'Basic Access',
+  2: 'Rewards',
+  3: 'Money',
 };
 
 export default function ChildDetail() {
@@ -77,10 +73,10 @@ export default function ChildDetail() {
     }
   };
 
-  const handleLevelChange = async () => {
+  const handleTierChange = async () => {
     setShowLevelTransition(false);
     await loadChildData();
-    toast.success('Permission level updated successfully');
+    toast.success('Permission tier updated successfully');
   };
 
   if (loading) {
@@ -126,8 +122,8 @@ export default function ChildDetail() {
             <div>
               <h1 className="text-3xl font-bold">{child.child_name}</h1>
               <div className="flex items-center space-x-2 mt-1">
-                <Badge className={LEVEL_COLORS[child.current_permission_level]}>
-                  Level {child.current_permission_level}: {LEVEL_NAMES[child.current_permission_level]}
+                <Badge className={TIER_COLORS[child.current_permission_level]}>
+                  Tier {child.current_permission_level}: {TIER_NAMES[child.current_permission_level]}
                 </Badge>
                 {child.date_of_birth && (
                   <span className="text-slate-600">
@@ -139,7 +135,7 @@ export default function ChildDetail() {
           </div>
         </div>
         <Button onClick={() => setShowLevelTransition(true)}>
-          Manage Level
+          Manage Tier
         </Button>
       </div>
 
@@ -222,7 +218,7 @@ export default function ChildDetail() {
         open={showLevelTransition}
         onOpenChange={setShowLevelTransition}
         child={child}
-        onLevelChanged={handleLevelChange}
+        onLevelChanged={handleTierChange}
       />
     </div>
   );

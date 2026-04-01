@@ -14,20 +14,16 @@ import { useNavigate } from 'react-router-dom';
 import { AddChildSheet } from '@/components/children/AddChildSheet';
 import { toast } from 'sonner';
 
-const LEVEL_COLORS = {
+const TIER_COLORS = {
   1: 'bg-slate-100 text-slate-800',
   2: 'bg-blue-100 text-blue-800',
   3: 'bg-green-100 text-green-800',
-  4: 'bg-purple-100 text-purple-800',
-  5: 'bg-amber-100 text-amber-800',
 };
 
-const LEVEL_NAMES = {
-  1: 'Supervised',
-  2: 'Monitored',
-  3: 'Semi-Independent',
-  4: 'Independent',
-  5: 'Full Control',
+const TIER_NAMES = {
+  1: 'Basic Access',
+  2: 'Rewards',
+  3: 'Money',
 };
 
 export default function Children() {
@@ -127,7 +123,7 @@ export default function Children() {
   };
 
   const getReadinessScore = (child) => {
-    if (child.current_permission_level === 5) return 100;
+    if (child.current_permission_level === 3) return 100;
 
     let score = 50;
 
@@ -302,8 +298,8 @@ export default function Children() {
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
-                      <Badge className={LEVEL_COLORS[child.current_permission_level]}>
-                        Level {child.current_permission_level}
+                      <Badge className={TIER_COLORS[child.current_permission_level]}>
+                        Tier {child.current_permission_level}
                       </Badge>
                       {getInvitationStatusBadge(child)}
                     </div>
@@ -313,8 +309,8 @@ export default function Children() {
                   <div className="space-y-4">
                     <div>
                       <div className="flex items-center justify-between text-sm mb-1">
-                        <span className="text-slate-600">Permission Level</span>
-                        <span className="font-medium">{LEVEL_NAMES[child.current_permission_level]}</span>
+                        <span className="text-slate-600">Permission Tier</span>
+                        <span className="font-medium">{TIER_NAMES[child.current_permission_level]}</span>
                       </div>
                     </div>
 
@@ -331,7 +327,7 @@ export default function Children() {
 
                     <div>
                       <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-slate-600">Readiness for Next Level</span>
+                        <span className="text-slate-600">Readiness for Next Tier</span>
                         <span className={`font-medium ${getReadinessColor(readinessScore)}`}>
                           {readinessScore}%
                         </span>

@@ -59,23 +59,23 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
 
   const handleUpdateLevel = async () => {
     if (newLevel === child.current_permission_level) {
-      toast.error('Please select a different level');
+      toast.error('Please select a different tier');
       return;
     }
 
     if (!reason.trim()) {
-      toast.error('Please provide a reason for the level change');
+      toast.error('Please provide a reason for the tier change');
       return;
     }
 
     try {
       setLoading(true);
       await childProfilesAPI.updateChildLevel(child.id, newLevel, user.id, reason);
-      toast.success('Permission level updated successfully');
+      toast.success('Permission tier updated successfully');
       onLevelChanged();
     } catch (error) {
-      console.error('Error updating level:', error);
-      toast.error('Failed to update permission level');
+      console.error('Error updating tier:', error);
+      toast.error('Failed to update permission tier');
     } finally {
       setLoading(false);
     }
@@ -91,18 +91,18 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Manage Permission Level</DialogTitle>
+          <DialogTitle>Manage Permission Tier</DialogTitle>
           <DialogDescription>
-            Change {child.child_name}'s permission level based on demonstrated responsibility
+            Change {child.child_name}'s permission tier based on demonstrated responsibility
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           <div className="space-y-2">
-            <Label>Current Level</Label>
+            <Label>Current Tier</Label>
             <div className="flex items-center space-x-2">
               <Badge variant="outline">
-                Level {child.current_permission_level}: {LEVEL_INFO[child.current_permission_level].name}
+                Tier {child.current_permission_level}: {LEVEL_INFO[child.current_permission_level].name}
               </Badge>
               {isUpgrade && <TrendingUp className="h-4 w-4 text-green-600" />}
               {isDowngrade && <AlertCircle className="h-4 w-4 text-amber-600" />}
@@ -165,12 +165,12 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
               id="reason"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Explain why you're changing the permission level..."
+              placeholder="Explain why you're changing the permission tier..."
               rows={3}
               required
             />
             <p className="text-sm text-slate-600">
-              This will be recorded in the level transition history
+              This will be recorded in the tier transition history
             </p>
           </div>
 
@@ -187,7 +187,7 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
               onClick={handleUpdateLevel}
               disabled={loading || newLevel === child.current_permission_level}
             >
-              {loading ? 'Updating...' : 'Update Level'}
+              {loading ? 'Updating...' : 'Update Tier'}
             </Button>
           </div>
         </div>
