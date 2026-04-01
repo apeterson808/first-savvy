@@ -10,6 +10,8 @@ import { supabase } from '@/api/supabaseClient';
 import { CreateChildProfileSheet } from '@/components/profiles/CreateChildProfileSheet';
 import { EditChildProfileSheet } from '@/components/profiles/EditChildProfileSheet';
 import { DeleteConfirmationDialog } from '@/components/profiles/DeleteConfirmationDialog';
+import { ProfileTypeSelector } from '@/components/profiles/ProfileTypeSelector';
+import { CreateProfileDialog } from '@/components/profiles/CreateProfileDialog';
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInYears } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -21,7 +23,9 @@ export default function Connections() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
 
+  const [showProfileTypeSelector, setShowProfileTypeSelector] = useState(false);
   const [showCreateChild, setShowCreateChild] = useState(false);
+  const [showCreateBusiness, setShowCreateBusiness] = useState(false);
   const [selectedChild, setSelectedChild] = useState(null);
 
   const [showEditChild, setShowEditChild] = useState(false);
@@ -124,6 +128,14 @@ export default function Connections() {
     }
   };
 
+  const handleSelectProfileType = (type) => {
+    if (type === 'child') {
+      setShowCreateChild(true);
+    } else if (type === 'business') {
+      setShowCreateBusiness(true);
+    }
+  };
+
   const filterChildren = (children) => {
     if (!searchQuery) return children;
     return children.filter(child =>
@@ -170,27 +182,20 @@ export default function Connections() {
 
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Connections</h1>
-          <p className="text-slate-600 mt-1">
-            Manage child and business profiles
-          </p>
+      <div className="flex items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Search profiles..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
-        <Button onClick={() => setShowCreateChild(true)}>
+        <Button onClick={() => setShowProfileTypeSelector(true)}>
           <Plus className="mr-2 h-4 w-4" />
-          Add Child
+          Create Profile
         </Button>
-      </div>
-
-      <div className="relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Search profiles..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9"
-        />
       </div>
 
       <div className="space-y-8">
@@ -211,9 +216,9 @@ export default function Connections() {
                       : 'Create child profiles to give them access to their own financial dashboard'}
                   </p>
                   {!searchQuery && (
-                    <Button onClick={() => setShowCreateChild(true)} className="mt-4">
+                    <Button onClick={() => setShowProfileTypeSelector(true)} className="mt-4">
                       <Plus className="mr-2 h-4 w-4" />
-                      Add Child
+                      Create Profile
                     </Button>
                   )}
                 </div>
@@ -375,6 +380,12 @@ export default function Connections() {
         </div>
       </div>
 
+      <ProfileTypeSelector
+        open={showProfileTypeSelector}
+        onOpenChange={setShowProfileTypeSelector}
+        onSelectType={handleSelectProfileType}
+      />
+
       <CreateChildProfileSheet
         open={showCreateChild}
         onOpenChange={setShowCreateChild}
@@ -382,6 +393,15 @@ export default function Connections() {
           loadAllProfiles();
         }}
         profileId={activeProfile?.id}
+      />
+
+      <CreateProfileDialog
+        open={showCreateBusiness}
+        onOpenChange={setShowCreateBusiness}
+        onProfileCreated={() => {
+          loadAllProfiles();
+        }}
+        profileType="business"
       />
 
       <EditChildProfileSheet
