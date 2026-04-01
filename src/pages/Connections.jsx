@@ -221,12 +221,6 @@ export default function Connections() {
                       ? 'No family members match your search'
                       : 'Create profiles for family members to give them access to their own financial dashboard'}
                   </p>
-                  {!searchQuery && (
-                    <Button onClick={() => setShowProfileTypeSelector(true)} className="mt-4">
-                      <Plus className="mr-2 h-4 w-4" />
-                      Create Profile
-                    </Button>
-                  )}
                 </div>
               </CardContent>
             </Card>
