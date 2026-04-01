@@ -125,11 +125,9 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
   ];
 
   const permissionLevels = [
-    { level: 1, name: 'Supervised', description: 'View chores, parent approves all' },
-    { level: 2, name: 'Monitored', description: 'Small rewards, daily summaries' },
-    { level: 3, name: 'Semi-Independent', description: 'Goals, cash with limits' },
-    { level: 4, name: 'Independent', description: 'Full self-management' },
-    { level: 5, name: 'Full Control', description: 'Complete ownership' },
+    { level: 1, name: 'Basic Access', description: 'Dashboard and chores only' },
+    { level: 2, name: 'Rewards', description: 'Can view and redeem rewards' },
+    { level: 3, name: 'Money', description: 'View accounts and budgets' },
   ];
 
   return (
@@ -197,7 +195,7 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
           {profileType === 'child' && (
             <>
               <div className="space-y-2">
-                <Label>Permission Level</Label>
+                <Label>Permission Tier</Label>
                 <div className="space-y-2">
                   {permissionLevels.map((level) => (
                     <button
@@ -220,7 +218,7 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
                         )}
                       </div>
                       <div className="flex-1">
-                        <div className="font-medium text-sm">Level {level.level}: {level.name}</div>
+                        <div className="font-medium text-sm">Tier {level.level}: {level.name}</div>
                         <div className="text-xs text-slate-500 mt-0.5">
                           {level.description}
                         </div>
