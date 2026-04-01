@@ -11,8 +11,16 @@ export function ProfileTabBar({ onAddProfileClick }) {
   const allAvailableProfiles = [...profiles, ...availableChildProfiles];
 
   useEffect(() => {
-    if (activeProfile && openTabs.length === 0) {
-      setOpenTabs([activeProfile]);
+    if (activeProfile) {
+      setOpenTabs(prev => {
+        if (prev.length === 0) {
+          return [activeProfile];
+        }
+        if (!prev.find(t => t.id === activeProfile.id)) {
+          return [...prev, activeProfile];
+        }
+        return prev;
+      });
     }
   }, [activeProfile]);
 
