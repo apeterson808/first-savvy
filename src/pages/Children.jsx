@@ -31,7 +31,7 @@ const LEVEL_NAMES = {
 };
 
 export default function Children() {
-  const { selectedProfile } = useProfile();
+  const { selectedProfile, switchProfile, availableChildProfiles } = useProfile();
   const navigate = useNavigate();
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,6 +49,18 @@ export default function Children() {
       loadChildren();
     }
   }, [selectedProfile]);
+
+  const handleOpenProfile = async (e, child) => {
+    e.stopPropagation();
+    const childProfile = availableChildProfiles.find(p => p.child_profile_id === child.id);
+    if (childProfile) {
+      await switchProfile(childProfile);
+      navigate('/Dashboard');
+      toast.success(`Opened ${child.child_name}'s profile`);
+    } else {
+      toast.error('Unable to open profile');
+    }
+  };
 
   const loadChildren = async () => {
     try {
@@ -339,6 +351,16 @@ export default function Children() {
                     {child.notes && (
                       <p className="text-sm text-slate-600 line-clamp-2">{child.notes}</p>
                     )}
+
+                    <div className="pt-4 border-t">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={(e) => handleOpenProfile(e, child)}
+                      >
+                        Open Profile
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
