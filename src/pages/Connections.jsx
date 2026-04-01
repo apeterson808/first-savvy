@@ -49,14 +49,7 @@ export default function Connections() {
 
       const { data: children, error: childrenError } = await supabase
         .from('child_profiles')
-        .select(`
-          *,
-          permission_levels (
-            level_number,
-            level_name,
-            level_description
-          )
-        `)
+        .select('*')
         .eq('parent_profile_id', ownerProfile.id)
         .order('child_name', { ascending: true });
 
