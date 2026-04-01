@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { useProfile } from '@/contexts/ProfileContext';
 import { toast } from 'sonner';
 import { AddProfileDialog } from './AddProfileDialog';
+import ChildAvatar from '../children/ChildAvatar';
+import { differenceInYears } from 'date-fns';
 
 export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
   const { profiles, activeProfile, switchProfile, loading, refreshProfiles, availableChildProfiles } = useProfile();
@@ -65,7 +67,21 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
 
   const getProfileDescription = (profile) => {
     if (profile.is_child_profile) {
-      return `Child profile - Level ${profile.permission_level || 1}`;
+      const level = profile.current_permission_level || profile.permission_level || 1;
+      const tierNames = {
+        1: 'Basic access',
+        2: 'Rewards',
+        3: 'Money'
+      };
+      const tierName = tierNames[level] || `Tier ${level}`;
+
+      let ageText = '';
+      if (profile.date_of_birth) {
+        const age = differenceInYears(new Date(), new Date(profile.date_of_birth));
+        ageText = ` - Age ${age}`;
+      }
+
+      return `Tier ${level} (${tierName})${ageText}`;
     }
 
     switch (profile.profile_type) {
@@ -114,9 +130,13 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
                   }`}
                 >
                   <div className="relative">
-                    <Avatar className="w-12 h-12">
-                      <AvatarFallback>{getInitials(profile.display_name)}</AvatarFallback>
-                    </Avatar>
+                    {profile.is_child_profile ? (
+                      <ChildAvatar child={profile} size="default" />
+                    ) : (
+                      <Avatar className="w-12 h-12">
+                        <AvatarFallback>{getInitials(profile.display_name)}</AvatarFallback>
+                      </Avatar>
+                    )}
                     <div
                       className={`absolute -bottom-1 -right-1 w-6 h-6 rounded-full border-2 border-white flex items-center justify-center ${
                         profile.is_child_profile

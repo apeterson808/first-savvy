@@ -315,8 +315,6 @@ export default function ParentViewOfChildDashboard() {
                   {childProfile?.current_permission_level === 1 && 'Basic access - Dashboard and chores only'}
                   {childProfile?.current_permission_level === 2 && 'Rewards - Can view and redeem rewards'}
                   {childProfile?.current_permission_level === 3 && 'Money - View accounts and budgets'}
-                  {childProfile?.current_permission_level === 4 && 'Advanced - Calendar and goals'}
-                  {childProfile?.current_permission_level === 5 && 'Full access - All features'}
                 </p>
               </div>
             </CardContent>

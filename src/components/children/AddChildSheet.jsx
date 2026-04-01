@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -7,13 +7,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
+import AvatarSelector from './AvatarSelector';
+import { differenceInYears } from 'date-fns';
 
 export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
   const { user } = useAuth();
   const [formData, setFormData] = useState({
-    child_name: '',
+    first_name: '',
+    last_name: '',
     date_of_birth: '',
+    sex: '',
+    avatar: null,
     current_permission_level: 1,
     daily_spending_limit: '',
     weekly_spending_limit: '',
@@ -21,33 +27,81 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
     notes: '',
   });
   const [loading, setLoading] = useState(false);
+  const [age, setAge] = useState(null);
+
+  useEffect(() => {
+    if (formData.date_of_birth) {
+      const birthDate = new Date(formData.date_of_birth);
+      const calculatedAge = differenceInYears(new Date(), birthDate);
+      setAge(calculatedAge);
+
+      let suggestedLevel = 1;
+      if (calculatedAge >= 15) {
+        suggestedLevel = 3;
+      } else if (calculatedAge >= 11) {
+        suggestedLevel = 2;
+      }
+
+      if (formData.current_permission_level !== suggestedLevel) {
+        setFormData(prev => ({ ...prev, current_permission_level: suggestedLevel }));
+      }
+    } else {
+      setAge(null);
+    }
+  }, [formData.date_of_birth]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.child_name.trim()) {
-      toast.error('Please enter a name');
+    if (!formData.first_name.trim()) {
+      toast.error('Please enter first name');
+      return;
+    }
+
+    if (!formData.last_name.trim()) {
+      toast.error('Please enter last name');
+      return;
+    }
+
+    if (formData.first_name.length < 2 || formData.first_name.length > 50) {
+      toast.error('First name must be between 2 and 50 characters');
+      return;
+    }
+
+    if (formData.last_name.length < 2 || formData.last_name.length > 50) {
+      toast.error('Last name must be between 2 and 50 characters');
       return;
     }
 
     try {
       setLoading(true);
       await childProfilesAPI.createChildProfile(profileId, {
-        ...formData,
+        first_name: formData.first_name,
+        last_name: formData.last_name,
+        child_name: `${formData.first_name} ${formData.last_name}`,
+        date_of_birth: formData.date_of_birth || null,
+        sex: formData.sex || null,
+        avatar: formData.avatar,
+        current_permission_level: formData.current_permission_level,
         daily_spending_limit: formData.daily_spending_limit ? parseFloat(formData.daily_spending_limit) : null,
         weekly_spending_limit: formData.weekly_spending_limit ? parseFloat(formData.weekly_spending_limit) : null,
         monthly_spending_limit: formData.monthly_spending_limit ? parseFloat(formData.monthly_spending_limit) : null,
+        notes: formData.notes || null,
       });
 
       setFormData({
-        child_name: '',
+        first_name: '',
+        last_name: '',
         date_of_birth: '',
+        sex: '',
+        avatar: null,
         current_permission_level: 1,
         daily_spending_limit: '',
         weekly_spending_limit: '',
         monthly_spending_limit: '',
         notes: '',
       });
+      setAge(null);
 
       onChildAdded();
     } catch (error) {
@@ -69,29 +123,86 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-6">
-          <div className="space-y-2">
-            <Label htmlFor="child_name">Child's Name *</Label>
-            <Input
-              id="child_name"
-              value={formData.child_name}
-              onChange={(e) => setFormData({ ...formData, child_name: e.target.value })}
-              placeholder="Enter child's name"
-              required
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700">Basic Information</h3>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="first_name">First Name *</Label>
+                <Input
+                  id="first_name"
+                  value={formData.first_name}
+                  onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                  placeholder="Enter first name"
+                  maxLength={50}
+                  required
+                />
+                <p className="text-xs text-slate-500">{formData.first_name.length}/50</p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="last_name">Last Name *</Label>
+                <Input
+                  id="last_name"
+                  value={formData.last_name}
+                  onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                  placeholder="Enter last name"
+                  maxLength={50}
+                  required
+                />
+                <p className="text-xs text-slate-500">{formData.last_name.length}/50</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="date_of_birth">Date of Birth</Label>
+              <Input
+                id="date_of_birth"
+                type="date"
+                value={formData.date_of_birth}
+                onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                max={new Date().toISOString().split('T')[0]}
+              />
+              {age !== null && (
+                <p className="text-xs text-slate-600">Age: {age} years old</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="sex">Sex (Optional)</Label>
+              <Select
+                value={formData.sex}
+                onValueChange={(value) => setFormData({ ...formData, sex: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select sex" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                  <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-slate-700">Avatar</h3>
+            <AvatarSelector
+              value={formData.avatar}
+              onChange={(avatar) => setFormData({ ...formData, avatar })}
+              firstName={formData.first_name}
+              lastName={formData.last_name}
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="date_of_birth">Date of Birth</Label>
-            <Input
-              id="date_of_birth"
-              type="date"
-              value={formData.date_of_birth}
-              onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-            />
-          </div>
+          <Separator />
 
           <div className="space-y-2">
-            <Label htmlFor="current_permission_level">Starting Permission Level</Label>
+            <Label htmlFor="current_permission_level">Permission Tier</Label>
             <Select
               value={formData.current_permission_level.toString()}
               onValueChange={(value) => setFormData({ ...formData, current_permission_level: parseInt(value) })}
@@ -100,22 +211,27 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="1">Level 1 - Supervised (Ages 5+)</SelectItem>
-                <SelectItem value="2">Level 2 - Monitored (Ages 8+)</SelectItem>
-                <SelectItem value="3">Level 3 - Semi-Independent (Ages 12+)</SelectItem>
-                <SelectItem value="4">Level 4 - Independent (Ages 15+)</SelectItem>
-                <SelectItem value="5">Level 5 - Full Control (Ages 18+)</SelectItem>
+                <SelectItem value="1">Tier 1 - Basic access (Ages 5-10)</SelectItem>
+                <SelectItem value="2">Tier 2 - Rewards (Ages 11-14)</SelectItem>
+                <SelectItem value="3">Tier 3 - Money (Ages 15+)</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-sm text-slate-600">
+            <p className="text-xs text-slate-600">
+              {formData.current_permission_level === 1 && 'Dashboard and chores only'}
+              {formData.current_permission_level === 2 && 'Can view and redeem rewards'}
+              {formData.current_permission_level === 3 && 'View accounts and budgets'}
+            </p>
+            <p className="text-xs text-slate-500">
               You can change this later based on demonstrated responsibility
             </p>
           </div>
 
+          <Separator />
+
           <div className="space-y-4">
-            <Label>Spending Limits (Optional)</Label>
-            <p className="text-sm text-slate-600">
-              Set spending limits for when the child reaches Level 3 (cash access)
+            <h3 className="text-sm font-semibold text-slate-700">Spending Limits (Optional)</h3>
+            <p className="text-xs text-slate-600">
+              Set spending limits for when the child uses Tier 3 features
             </p>
 
             <div className="grid grid-cols-3 gap-3">
@@ -160,8 +276,10 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
             </div>
           </div>
 
+          <Separator />
+
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <h3 className="text-sm font-semibold text-slate-700">Notes (Optional)</h3>
             <Textarea
               id="notes"
               value={formData.notes}

@@ -84,14 +84,44 @@ export const childProfilesAPI = {
   },
 
   async createChildProfile(profileId, childData) {
+    let avatarUrl = null;
+
+    if (childData.avatar) {
+      if (childData.avatar.type === 'upload' && childData.avatar.file) {
+        const fileExt = childData.avatar.file.name.split('.').pop();
+        const fileName = `${profileId}/${Date.now()}.${fileExt}`;
+
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('child-avatars')
+          .upload(fileName, childData.avatar.file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Avatar upload error:', uploadError);
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('child-avatars')
+            .getPublicUrl(fileName);
+          avatarUrl = publicUrl;
+        }
+      } else if (childData.avatar.type === 'preset') {
+        avatarUrl = `preset:${childData.avatar.value}`;
+      }
+    }
+
     const { data, error } = await supabase
       .from('child_profiles')
       .insert({
         parent_profile_id: profileId,
         owned_by_profile_id: profileId,
+        first_name: childData.first_name,
+        last_name: childData.last_name,
         child_name: childData.child_name,
         date_of_birth: childData.date_of_birth,
-        avatar_url: childData.avatar_url,
+        sex: childData.sex,
+        avatar_url: avatarUrl,
         current_permission_level: childData.current_permission_level || 1,
         points_balance: 0,
         cash_balance: 0,

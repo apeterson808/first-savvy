@@ -13,29 +13,19 @@ import { toast } from 'sonner';
 
 const LEVEL_INFO = {
   1: {
-    name: 'Supervised',
-    description: 'Can view assigned chores and mark complete. Parent must approve all actions.',
-    features: ['View chores', 'Mark complete (needs approval)', 'View points balance'],
+    name: 'Basic Access',
+    description: 'Dashboard and chores only. Can view assigned chores and mark complete. Parent must approve all actions.',
+    features: ['View dashboard', 'View chores', 'Mark chores complete (needs approval)', 'View points balance'],
   },
   2: {
-    name: 'Monitored',
-    description: 'Can suggest chores, redeem small rewards independently. Parent gets daily summaries.',
-    features: ['Suggest chores', 'Redeem rewards under 100 points', 'View transaction history'],
+    name: 'Rewards',
+    description: 'Can view and redeem rewards. Can suggest chores and redeem rewards independently. Parent gets notifications.',
+    features: ['All Tier 1 features', 'Suggest chores', 'Redeem rewards', 'View reward history'],
   },
   3: {
-    name: 'Semi-Independent',
-    description: 'Can create goals, access cash with limits, create basic budgets with parent review.',
-    features: ['Create own goals', 'Access cash mode', 'Create budgets', 'Higher reward limits'],
-  },
-  4: {
-    name: 'Independent',
-    description: 'Full self-management of chores and budgets. Unrestricted cash access.',
-    features: ['Full chore management', 'Unrestricted cash', 'Link bank accounts', 'Complete independence'],
-  },
-  5: {
-    name: 'Full Control',
-    description: 'Complete ownership. Child controls everything and grants parent access.',
-    features: ['Profile ownership', 'Manage parent access', 'All features unlimited'],
+    name: 'Money',
+    description: 'View accounts and budgets. Can create goals, access allowance tracking, and view financial data.',
+    features: ['All Tier 2 features', 'View accounts', 'View budgets', 'Create goals', 'Allowance tracking'],
   },
 };
 
@@ -120,7 +110,7 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="newLevel">New Permission Level</Label>
+            <Label htmlFor="newLevel">New Permission Tier</Label>
             <Select
               value={newLevel.toString()}
               onValueChange={(value) => setNewLevel(parseInt(value))}
@@ -129,9 +119,9 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {[1, 2, 3, 4, 5].map((level) => (
+                {[1, 2, 3].map((level) => (
                   <SelectItem key={level} value={level.toString()}>
-                    Level {level} - {LEVEL_INFO[level].name}
+                    Tier {level} - {LEVEL_INFO[level].name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -141,7 +131,7 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
           {levelInfo && (
             <div className="rounded-lg border bg-slate-50 p-4 space-y-3">
               <div>
-                <h4 className="font-semibold text-sm">Level {newLevel}: {levelInfo.name}</h4>
+                <h4 className="font-semibold text-sm">Tier {newLevel}: {levelInfo.name}</h4>
                 <p className="text-sm text-slate-600 mt-1">{levelInfo.description}</p>
               </div>
               <div>
@@ -168,15 +158,6 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
             </Alert>
           )}
 
-          {newLevel === 5 && child.current_permission_level < 5 && (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Level 5 transfers complete ownership to {child.child_name}. They will control what access you have to
-                their profile. This is ideal for young adults (18+) who are financially independent.
-              </AlertDescription>
-            </Alert>
-          )}
 
           <div className="space-y-2">
             <Label htmlFor="reason">Reason for Change *</Label>
