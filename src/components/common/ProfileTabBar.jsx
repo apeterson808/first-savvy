@@ -75,30 +75,22 @@ export function ProfileTabBar({ onAddProfileClick }) {
                 onClick={() => handleTabClick(profile)}
                 className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
                   isActive
-                    ? isChildProfile
-                      ? 'bg-blue-100 text-blue-900 z-10'
-                      : 'bg-slate-100 text-slate-900 z-10'
+                    ? 'bg-slate-50 text-slate-900 z-10'
                     : isChildProfile
-                    ? 'bg-blue-50 text-blue-700 hover:bg-blue-100 hover:text-blue-900'
-                    : 'bg-slate-50 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    ? 'bg-blue-50 text-blue-700 hover:bg-slate-50 hover:text-slate-900'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
                 style={{
                   borderTop: isActive
-                    ? isChildProfile
-                      ? '2px solid #93c5fd'
-                      : '2px solid #cbd5e1'
+                    ? '2px solid #cbd5e1'
                     : '2px solid transparent',
                   borderLeft: isActive
-                    ? isChildProfile
-                      ? '2px solid #93c5fd'
-                      : '2px solid #cbd5e1'
+                    ? '2px solid #cbd5e1'
                     : '2px solid transparent',
                   borderRight: isActive
-                    ? isChildProfile
-                      ? '2px solid #93c5fd'
-                      : '2px solid #cbd5e1'
+                    ? '2px solid #cbd5e1'
                     : '2px solid transparent',
-                  borderBottom: isActive ? '2px solid #f1f5f9' : 'none',
+                  borderBottom: isActive ? '2px solid #f8fafc' : 'none',
                   borderTopLeftRadius: '12px',
                   borderTopRightRadius: '12px',
                   marginBottom: isActive ? '-2px' : '0',
