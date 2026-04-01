@@ -9,9 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Users, TrendingUp, Award, Clock, CheckCircle, Mail, XCircle } from 'lucide-react';
+import { Users, TrendingUp, Award, Clock, CheckCircle, Mail, XCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { AddChildSheet } from '@/components/children/AddChildSheet';
 import { toast } from 'sonner';
 
 const TIER_COLORS = {
@@ -31,7 +30,6 @@ export default function Children() {
   const navigate = useNavigate();
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showAddChild, setShowAddChild] = useState(false);
   const [invitations, setInvitations] = useState({});
   const [stats, setStats] = useState({
     totalChildren: 0,
@@ -116,11 +114,6 @@ export default function Children() {
     }
   };
 
-  const handleChildAdded = () => {
-    setShowAddChild(false);
-    loadChildren();
-    toast.success('Child profile created successfully');
-  };
 
   const getReadinessScore = (child) => {
     if (child.current_permission_level === 3) return 100;
@@ -197,10 +190,6 @@ export default function Children() {
           <h1 className="text-3xl font-bold">Children</h1>
           <p className="text-slate-600 mt-1">Manage your children's financial learning journey</p>
         </div>
-        <Button onClick={() => setShowAddChild(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Child
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -260,11 +249,10 @@ export default function Children() {
               <Users className="mx-auto h-12 w-12 text-slate-400" />
               <h3 className="mt-4 text-lg font-semibold">No children yet</h3>
               <p className="mt-2 text-slate-600">
-                Create your first child profile to start teaching financial responsibility
+                Add child profiles from the Connections page to start teaching financial responsibility
               </p>
-              <Button onClick={() => setShowAddChild(true)} className="mt-4">
-                <Plus className="mr-2 h-4 w-4" />
-                Add Your First Child
+              <Button onClick={() => navigate('/Connections')} className="mt-4">
+                Go to Connections
               </Button>
             </div>
           </CardContent>
@@ -364,13 +352,6 @@ export default function Children() {
           })}
         </div>
       )}
-
-      <AddChildSheet
-        open={showAddChild}
-        onOpenChange={setShowAddChild}
-        onChildAdded={handleChildAdded}
-        profileId={selectedProfile?.id}
-      />
     </div>
   );
 }

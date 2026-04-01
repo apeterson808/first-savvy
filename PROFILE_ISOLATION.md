@@ -6,18 +6,25 @@ This application implements a **multi-profile system** where each profile is an 
 
 ## Profile Types
 
-### 1. Personal Profiles
-- Created for each user account
-- Linked via `profile_memberships` table
-- Users can have multiple personal profiles
+### 1. Family Profiles (profile_type: 'household')
+- Top-level profiles for managing household finances
+- Created by users to manage family financial data
+- Can contain multiple child profiles
 - Each profile has completely isolated financial data
 
-### 2. Child Profiles
-- Virtual profiles for children managed by parents
-- Use `owned_by_profile_id` as their virtual profile ID
-- Can be shared with up to 4 adults via `profile_shares`
-- Have graduated permission levels (1-5)
-- Isolated from parent's financial data unless explicitly shared
+### 2. Business Profiles (profile_type: 'business')
+- Top-level profiles for managing business finances
+- Created by users to separate business and personal finances
+- Cannot contain child profiles
+- Each profile has completely isolated financial data
+
+### 3. Child Profiles
+- Sub-profiles that belong to a Family profile
+- Reference their parent via `parent_profile_id` foreign key
+- Cannot exist independently - must belong to a Family profile
+- Have graduated permission levels (1-3, three-tier system)
+- Can be shared with other adults via `profile_shares`
+- Isolated from parent profile's financial data unless explicitly shared
 
 ## Data Isolation Mechanisms
 
@@ -174,6 +181,32 @@ To verify isolation is working:
 4. Verify profile A's data is NOT visible
 5. Try to query profile A's data with profile B's ID
 6. Verify RLS blocks the query
+
+## Profile Management UI
+
+All profile creation and management is centralized on the **Connections** page:
+
+### Creating Profiles
+- Family and Business profiles are created via the "Create Profile" button
+- Users select the profile type (Family or Business) and provide a name
+- Child profiles are created within Family profile cards via "Add Child" button
+
+### Profile Hierarchy Display
+- Family profiles display with a green accent color
+- Business profiles display with an orange accent color
+- Child profiles are nested within their parent Family profile card
+- Each child shows their name, age, and permission tier badge
+
+### Managing Profiles
+- Edit profile name via the Edit button on profile cards
+- Delete profiles with a two-step confirmation dialog
+- Child profiles can only be added to Family profiles
+- Deleting a Family profile cascades to delete all child profiles
+
+### Navigation
+- ProfileSelector dialog shows all available profiles for switching
+- "Manage Profiles" button in ProfileSelector navigates to Connections page
+- Children page removed profile creation - redirects to Connections
 
 ## Updates to This Document
 

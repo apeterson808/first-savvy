@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { User, Users, Briefcase, Check, Plus } from 'lucide-react';
+import React from 'react';
+import { User, Users, Briefcase, Check, Settings } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,13 +12,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/contexts/ProfileContext';
 import { toast } from 'sonner';
-import { AddProfileDialog } from './AddProfileDialog';
 import ChildAvatar from '../children/ChildAvatar';
 import { differenceInYears } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
-  const { profiles, activeProfile, switchProfile, loading, refreshProfiles, availableChildProfiles } = useProfile();
-  const [showAddProfile, setShowAddProfile] = useState(false);
+  const { profiles, activeProfile, switchProfile, loading, availableChildProfiles } = useProfile();
+  const navigate = useNavigate();
 
   const handleSelectProfile = async (profile) => {
     try {
@@ -36,10 +36,9 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
     }
   };
 
-  const handleProfileCreated = async (newProfile) => {
-    await refreshProfiles();
-    await switchProfile(newProfile);
+  const handleManageProfiles = () => {
     onOpenChange(false);
+    navigate('/Connections');
   };
 
   const getInitials = (name) => {
@@ -104,7 +103,7 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
         <DialogHeader>
           <DialogTitle>Open Profile</DialogTitle>
           <DialogDescription>
-            Select a profile to open as a new tab. All financial data is scoped to the active profile.
+            Select a profile to open. Create or manage profiles from the Connections page.
           </DialogDescription>
         </DialogHeader>
 
@@ -185,21 +184,15 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
 
         <div className="mt-4">
           <Button
-            onClick={() => setShowAddProfile(true)}
+            onClick={handleManageProfiles}
             variant="outline"
             className="w-full"
           >
-            <Plus className="w-4 h-4 mr-2" />
-            Create New Profile
+            <Settings className="w-4 h-4 mr-2" />
+            Manage Profiles
           </Button>
         </div>
       </DialogContent>
-
-      <AddProfileDialog
-        open={showAddProfile}
-        onOpenChange={setShowAddProfile}
-        onProfileCreated={handleProfileCreated}
-      />
     </Dialog>
   );
 }
