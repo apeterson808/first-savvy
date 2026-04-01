@@ -37,17 +37,14 @@ export function ProfileTypeSelector({ open, onOpenChange, onSelectType }) {
           </Button>
           <Button
             variant="outline"
-            className="h-auto py-6 flex flex-col items-center gap-3 hover:bg-orange-50 hover:border-orange-300"
-            onClick={() => {
-              onSelectType('business');
-              onOpenChange(false);
-            }}
+            className="h-auto py-6 flex flex-col items-center gap-3 hover:bg-orange-50 hover:border-orange-300 opacity-50 cursor-not-allowed"
+            disabled
           >
             <Briefcase className="h-8 w-8 text-orange-600" />
             <div className="text-center">
               <div className="font-semibold text-base">Business Profile</div>
               <div className="text-xs text-slate-600 mt-1">
-                Create a separate profile for business finances
+                Coming soon
               </div>
             </div>
           </Button>

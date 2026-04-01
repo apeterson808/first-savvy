@@ -4,7 +4,7 @@ import { childProfilesAPI } from '@/api/childProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Search, Plus, Calendar, Briefcase } from 'lucide-react';
+import { Users, Search, Plus, Calendar, Briefcase, Home, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/api/supabaseClient';
 import { CreateChildProfileSheet } from '@/components/profiles/CreateChildProfileSheet';
@@ -15,6 +15,12 @@ import { CreateProfileDialog } from '@/components/profiles/CreateProfileDialog';
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInYears } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function Connections() {
   const { switchProfile, activeProfile } = useProfile();
@@ -201,19 +207,19 @@ export default function Connections() {
       <div className="space-y-8">
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5 text-green-600" />
-            Children ({childProfiles.length})
+            <Home className="h-5 w-5 text-blue-600" />
+            Family ({childProfiles.length})
           </h2>
           {filteredChildren.length === 0 ? (
             <Card>
               <CardContent className="pt-6">
                 <div className="text-center py-12">
                   <Users className="mx-auto h-12 w-12 text-slate-400" />
-                  <h3 className="mt-4 text-lg font-semibold">No child profiles</h3>
+                  <h3 className="mt-4 text-lg font-semibold">No family profiles</h3>
                   <p className="mt-2 text-slate-600">
                     {searchQuery
-                      ? 'No children match your search'
-                      : 'Create child profiles to give them access to their own financial dashboard'}
+                      ? 'No family members match your search'
+                      : 'Create profiles for family members to give them access to their own financial dashboard'}
                   </p>
                   {!searchQuery && (
                     <Button onClick={() => setShowProfileTypeSelector(true)} className="mt-4">
@@ -225,10 +231,9 @@ export default function Connections() {
               </CardContent>
             </Card>
           ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
             {filteredChildren.map((child) => {
               const age = getAge(child.date_of_birth);
-              const tierInfo = getTierInfo(child.current_permission_level);
               const initials = child.child_name
                 .split(' ')
                 .map(n => n[0])
@@ -237,75 +242,61 @@ export default function Connections() {
                 .slice(0, 2);
 
               return (
-                <Card key={child.id} className="hover:shadow-md transition-shadow">
-                  <CardContent className="pt-6">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold text-lg">{child.child_name}</h3>
-                          {age && (
-                            <p className="text-sm text-slate-600 flex items-center gap-1">
-                              <Calendar className="h-3 w-3" />
-                              Age {age}
-                            </p>
-                          )}
-                        </div>
+                <Card
+                  key={child.id}
+                  className="hover:shadow-md transition-shadow cursor-pointer relative group"
+                >
+                  <CardContent className="pt-4 pb-3 px-3" onClick={() => handleOpenChild(child)}>
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditChild(child);
+                          }}>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteChild(child);
+                            }}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                    <div className="flex flex-col items-center text-center gap-2">
+                      <Avatar className="w-14 h-14">
+                        <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
+                          {initials}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="w-full">
+                        <h3 className="font-semibold text-sm truncate">{child.child_name}</h3>
+                        {age && (
+                          <p className="text-xs text-slate-600">
+                            Age {age}
+                          </p>
+                        )}
+                        <p className="text-xs text-slate-500 mt-1">
+                          Tier {child.current_permission_level}
+                        </p>
                       </div>
                       {!child.is_active && (
-                        <span className="px-2 py-1 text-xs rounded-full bg-slate-100 text-slate-600">
+                        <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-600">
                           Inactive
                         </span>
                       )}
-                    </div>
-
-                    <div className="space-y-3">
-                      <div>
-                        <p className="text-xs text-slate-600 mb-1">Permission Level</p>
-                        <span className={`px-2 py-1 text-xs rounded-full ${tierInfo.color}`}>
-                          Tier {child.current_permission_level} - {tierInfo.name}
-                        </span>
-                      </div>
-
-                      {child.allowance_amount > 0 && (
-                        <div>
-                          <p className="text-xs text-slate-600 mb-1">Allowance</p>
-                          <p className="text-sm font-medium">
-                            {formatCurrency(child.allowance_amount)} / {child.allowance_cadence}
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenChild(child)}
-                          className="flex-1"
-                        >
-                          Open
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditChild(child)}
-                          className="flex-1"
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteChild(child)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          Delete
-                        </Button>
-                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -318,65 +309,19 @@ export default function Connections() {
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Briefcase className="h-5 w-5 text-orange-600" />
-            Businesses ({businessProfiles.length})
+            Business
           </h2>
-          {filteredBusinesses.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <Briefcase className="mx-auto h-12 w-12 text-slate-400" />
-                  <h3 className="mt-4 text-lg font-semibold">No business profiles</h3>
-                  <p className="mt-2 text-slate-600">
-                    {searchQuery
-                      ? 'No businesses match your search'
-                      : 'Create business profiles to manage separate business finances'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredBusinesses.map((business) => {
-                const initials = business.display_name
-                  .split(' ')
-                  .map(n => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2);
-
-                return (
-                  <Card key={business.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-6">
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <Avatar className="w-12 h-12">
-                            <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold">
-                              {initials}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <h3 className="font-semibold text-lg">{business.display_name}</h3>
-                            <p className="text-xs text-slate-600">Business Profile</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-2 pt-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenBusiness(business)}
-                          className="flex-1"
-                        >
-                          Open
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center py-12">
+                <Briefcase className="mx-auto h-12 w-12 text-slate-400" />
+                <h3 className="mt-4 text-lg font-semibold">Coming Soon</h3>
+                <p className="mt-2 text-slate-600">
+                  Business profiles will be available in a future update
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
