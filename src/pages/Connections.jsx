@@ -183,44 +183,6 @@ export default function Connections() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Total Profiles</p>
-                <p className="text-2xl font-bold mt-1">{totalProfiles}</p>
-              </div>
-              <Users className="h-8 w-8 text-slate-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Children</p>
-                <p className="text-2xl font-bold mt-1">{childProfiles.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-green-400" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600">Businesses</p>
-                <p className="text-2xl font-bold mt-1">{businessProfiles.length}</p>
-              </div>
-              <Users className="h-8 w-8 text-orange-400" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <div className="relative">
         <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
         <Input
