@@ -77,7 +77,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
                   isActive
                     ? isChildProfile
                       ? 'bg-slate-50 text-slate-900 z-10'
-                      : 'bg-white text-slate-900 z-10'
+                      : 'bg-slate-100 text-slate-900 z-10'
                     : 'bg-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
                 style={{
@@ -93,7 +93,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
                   borderBottom: isActive
                     ? isChildProfile
                       ? '2px solid #f8fafc'
-                      : '2px solid white'
+                      : '2px solid #f1f5f9'
                     : 'none',
                   borderTopLeftRadius: '12px',
                   borderTopRightRadius: '12px',
