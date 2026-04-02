@@ -110,6 +110,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('icon');
   const [currentStep, setCurrentStep] = useState('icon');
+  const [showIconGrid, setShowIconGrid] = useState(false);
   const closeTimeoutRef = useRef(null);
 
   const selectedColor = color || DEFAULT_COLOR;
@@ -124,6 +125,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
       setSearch('');
       setActiveTab('icon');
       setCurrentStep('icon');
+      setShowIconGrid(false);
       if (closeTimeoutRef.current) {
         clearTimeout(closeTimeoutRef.current);
         closeTimeoutRef.current = null;
@@ -229,67 +231,100 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
           </TabsContent>
 
           <TabsContent value="icon" className="mt-4 space-y-3">
-            <Input
-              placeholder="Search icons..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 text-sm"
-            />
-            <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
-              {filteredIcons.map((iconName) => {
-                const Icon = ICON_MAP[iconName];
-                if (!Icon) return null;
-
-                return (
-                  <button
-                    key={iconName}
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      handleIconSelect(iconName);
-                    }}
-                    onMouseDown={(e) => e.preventDefault()}
-                    className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
-                      icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
-                    }`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </button>
-                );
-              })}
-            </div>
-            {onImageUpload && (
-              <div className="pt-2 border-t">
-                <div className="flex items-center justify-center gap-2">
+            {!showIconGrid ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setShowIconGrid(true)}
+                  className="w-full"
+                >
+                  Choose from Icon Library
+                </Button>
+                {onImageUpload && (
+                  <>
+                    <div className="relative w-full">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-white px-2 text-slate-500">or</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-center gap-2 w-full">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => document.getElementById('appearance-picker-upload')?.click()}
+                      >
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Image
+                      </Button>
+                      {imageUrl && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onImageUpload(null)}
+                        >
+                          Clear
+                        </Button>
+                      )}
+                      <input
+                        id="appearance-picker-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleFileUpload}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
                   <Button
                     type="button"
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
-                    onClick={() => document.getElementById('appearance-picker-upload')?.click()}
+                    onClick={() => setShowIconGrid(false)}
                   >
-                    <Upload className="w-4 h-4 mr-2" />
-                    Upload Image
+                    Back
                   </Button>
-                  {imageUrl && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => onImageUpload(null)}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                  <input
-                    id="appearance-picker-upload"
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handleFileUpload}
+                  <Input
+                    placeholder="Search icons..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="h-9 text-sm flex-1"
                   />
                 </div>
-              </div>
+                <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+                  {filteredIcons.map((iconName) => {
+                    const Icon = ICON_MAP[iconName];
+                    if (!Icon) return null;
+
+                    return (
+                      <button
+                        key={iconName}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleIconSelect(iconName);
+                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                        className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
+                          icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5" />
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
             )}
           </TabsContent>
         </Tabs>
