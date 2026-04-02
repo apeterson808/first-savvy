@@ -284,9 +284,9 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 flex flex-col overflow-hidden bg-slate-100">
+        <main className="flex-1 flex flex-col overflow-hidden">
           {/* Navigation Bar - Sticky */}
-          <div className="bg-white border-b border-slate-300 px-6 py-3 flex items-center gap-3">
+          <div className="bg-white border-b border-slate-300 px-6 flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
               className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
@@ -311,7 +311,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
