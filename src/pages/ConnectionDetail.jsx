@@ -169,19 +169,19 @@ export default function ConnectionDetail() {
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chores" className="flex-1 mt-0">
+        <TabsContent value="chores" className="flex-1 mt-0 pb-6">
           <ChoresTab childId={child.id} onUpdate={loadChildData} />
         </TabsContent>
 
-        <TabsContent value="rewards" className="flex-1 mt-0">
+        <TabsContent value="rewards" className="flex-1 mt-0 pb-6">
           <RewardsTab childId={child.id} child={child} onUpdate={loadChildData} />
         </TabsContent>
 
-        <TabsContent value="activity" className="flex-1 mt-0">
+        <TabsContent value="activity" className="flex-1 mt-0 pb-6">
           <ActivityTab childId={child.id} />
         </TabsContent>
 
-        <TabsContent value="settings" className="flex-1 mt-0">
+        <TabsContent value="settings" className="flex-1 mt-0 pb-6">
           <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
         </TabsContent>
       </Tabs>
