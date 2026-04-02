@@ -17,8 +17,7 @@ import PasswordVault from "./PasswordVault";
 import Integrations from "./Integrations";
 import Affiliate from "./Affiliate";
 import Connections from "./Connections";
-import Children from "./Children";
-import ChildDetail from "./ChildDetail";
+import ConnectionDetail from "./ConnectionDetail";
 import ClaimProfile from "./ClaimProfile";
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -42,8 +41,6 @@ const PAGES = {
     Contacts: Contacts,
 
     Connections: Connections,
-
-    Children: Children,
 
     Integrations: Integrations,
 
@@ -104,8 +101,7 @@ function PagesContent() {
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
                     <Route path="/Connections" element={<Connections />} />
-                    <Route path="/Children" element={<Children />} />
-                    <Route path="/Children/:id" element={<ChildDetail />} />
+                    <Route path="/Connections/:id" element={<ConnectionDetail />} />
                     <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/PasswordVault" element={<PasswordVault />} />
                     <Route path="/Affiliate" element={<Affiliate />} />

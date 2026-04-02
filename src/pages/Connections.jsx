@@ -1,28 +1,22 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Users, Search, Plus, Calendar, Briefcase, Home, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Users, Search, Plus, Calendar, Briefcase, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/api/supabaseClient';
 import { CreateChildProfileSheet } from '@/components/profiles/CreateChildProfileSheet';
-import { EditChildProfileSheet } from '@/components/profiles/EditChildProfileSheet';
-import { DeleteConfirmationDialog } from '@/components/profiles/DeleteConfirmationDialog';
 import { ProfileTypeSelector } from '@/components/profiles/ProfileTypeSelector';
 import { CreateProfileDialog } from '@/components/profiles/CreateProfileDialog';
 import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInYears } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 
 export default function Connections() {
+  const navigate = useNavigate();
   const { switchProfile, activeProfile } = useProfile();
   const [childProfiles, setChildProfiles] = useState([]);
   const [businessProfiles, setBusinessProfiles] = useState([]);
@@ -32,10 +26,6 @@ export default function Connections() {
   const [showProfileTypeSelector, setShowProfileTypeSelector] = useState(false);
   const [showCreateChild, setShowCreateChild] = useState(false);
   const [showCreateBusiness, setShowCreateBusiness] = useState(false);
-  const [selectedChild, setSelectedChild] = useState(null);
-
-  const [showEditChild, setShowEditChild] = useState(false);
-  const [showDeleteChild, setShowDeleteChild] = useState(false);
 
   useEffect(() => {
     loadAllProfiles();
@@ -85,22 +75,8 @@ export default function Connections() {
     }
   };
 
-  const handleOpenChild = async (child) => {
-    try {
-      const { data: virtualProfile } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', child.owned_by_profile_id)
-        .single();
-
-      if (virtualProfile) {
-        await switchProfile(virtualProfile);
-        toast.success(`Switched to ${child.child_name}`);
-      }
-    } catch (error) {
-      console.error('Error switching to child profile:', error);
-      toast.error('Failed to switch profile');
-    }
+  const handleOpenChild = (child) => {
+    navigate(`/Connections/${child.id}`);
   };
 
   const handleOpenBusiness = async (business) => {
@@ -110,27 +86,6 @@ export default function Connections() {
     } catch (error) {
       console.error('Error switching to business profile:', error);
       toast.error('Failed to switch profile');
-    }
-  };
-
-  const handleEditChild = (child) => {
-    setSelectedChild(child);
-    setShowEditChild(true);
-  };
-
-  const handleDeleteChild = (child) => {
-    setSelectedChild(child);
-    setShowDeleteChild(true);
-  };
-
-  const handleConfirmDeleteChild = async () => {
-    try {
-      await childProfilesAPI.deleteChildProfile(selectedChild.id);
-      toast.success('Child profile deleted successfully');
-      await loadAllProfiles();
-    } catch (error) {
-      console.error('Error deleting child profile:', error);
-      toast.error('Failed to delete child profile');
     }
   };
 
@@ -238,37 +193,10 @@ export default function Connections() {
               return (
                 <Card
                   key={child.id}
-                  className="hover:shadow-md transition-shadow cursor-pointer relative group"
+                  className="hover:shadow-md transition-shadow cursor-pointer"
+                  onClick={() => handleOpenChild(child)}
                 >
-                  <CardContent className="pt-4 pb-3 px-3" onClick={() => handleOpenChild(child)}>
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditChild(child);
-                          }}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteChild(child);
-                            }}
-                            className="text-red-600"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                  <CardContent className="pt-4 pb-3 px-3">
                     <div className="flex flex-col items-center text-center gap-2">
                       <Avatar className="w-14 h-14">
                         <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-lg">
@@ -341,26 +269,6 @@ export default function Connections() {
           loadAllProfiles();
         }}
         profileType="business"
-      />
-
-      <EditChildProfileSheet
-        open={showEditChild}
-        onOpenChange={setShowEditChild}
-        child={selectedChild}
-        onChildUpdated={() => {
-          loadAllProfiles();
-        }}
-      />
-
-      <DeleteConfirmationDialog
-        open={showDeleteChild}
-        onOpenChange={setShowDeleteChild}
-        onConfirm={handleConfirmDeleteChild}
-        title="Delete Child Profile"
-        description="This will permanently delete this child profile and all associated data."
-        confirmText="DELETE"
-        warningMessage="This action cannot be undone. All chores, rewards, and financial data will be lost."
-        itemName={selectedChild?.child_name}
       />
     </div>
   );

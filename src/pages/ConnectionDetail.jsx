@@ -29,7 +29,7 @@ const TIER_NAMES = {
   3: 'Money',
 };
 
-export default function ChildDetail() {
+export default function ConnectionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
@@ -94,8 +94,8 @@ export default function ChildDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-slate-600">Child not found</p>
-        <Button onClick={() => navigate('/Children')} className="mt-4">
-          Back to Children
+        <Button onClick={() => navigate('/Connections')} className="mt-4">
+          Back to Connections
         </Button>
       </div>
     );
@@ -108,7 +108,7 @@ export default function ChildDetail() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate('/Children')}
+            onClick={() => navigate('/Connections')}
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
