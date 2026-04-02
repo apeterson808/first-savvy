@@ -56,12 +56,16 @@ function _getCurrentPage(url) {
     if (url.endsWith('/')) {
         url = url.slice(0, -1);
     }
-    let urlLastPart = url.split('/').pop();
-    if (urlLastPart.includes('?')) {
-        urlLastPart = urlLastPart.split('?')[0];
+
+    const pathParts = url.split('/').filter(Boolean);
+
+    if (pathParts.length === 0) {
+        return 'Dashboard';
     }
 
-    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === urlLastPart.toLowerCase());
+    const firstPart = pathParts[0];
+    const pageName = Object.keys(PAGES).find(page => page.toLowerCase() === firstPart.toLowerCase());
+
     return pageName || Object.keys(PAGES)[0];
 }
 
