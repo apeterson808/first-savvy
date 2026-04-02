@@ -210,25 +210,25 @@ export default function Connections() {
             <Briefcase className="h-5 w-5 text-orange-600" />
             Business
           </h2>
-          <Card>
-            <CardContent className="pt-6">
-              <div className="text-center py-12">
-                <Briefcase className="mx-auto h-12 w-12 text-slate-400" />
-                <h3 className="mt-4 text-lg font-semibold">Coming Soon</h3>
-                <p className="mt-2 text-slate-600">
-                  Business profiles will be available in a future update
-                </p>
-                <Button
-                  className="mt-4"
-                  variant="outline"
-                  disabled
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Business Profile
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+            <Card
+              className="border-2 border-dashed border-slate-300 bg-slate-50 opacity-60 cursor-not-allowed"
+            >
+              <CardContent className="pt-4 pb-3 px-3">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center">
+                    <Plus className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="w-full">
+                    <h3 className="font-semibold text-sm">Create Business Profile</h3>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Coming soon
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
 
