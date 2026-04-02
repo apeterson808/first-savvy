@@ -199,36 +199,6 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
             </div>
           </div>
         )}
-        {onImageUpload && (
-          <div className="flex items-center justify-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => document.getElementById('appearance-picker-upload')?.click()}
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Image
-            </Button>
-            {imageUrl && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => onImageUpload(null)}
-              >
-                Clear
-              </Button>
-            )}
-            <input
-              id="appearance-picker-upload"
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-          </div>
-        )}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full grid grid-cols-2">
             <TabsTrigger value="color">Color</TabsTrigger>
@@ -258,12 +228,12 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
             </div>
           </TabsContent>
 
-          <TabsContent value="icon" className="mt-4">
+          <TabsContent value="icon" className="mt-4 space-y-3">
             <Input
               placeholder="Search icons..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="h-9 text-sm mb-3"
+              className="h-9 text-sm"
             />
             <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
               {filteredIcons.map((iconName) => {
@@ -289,6 +259,38 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
                 );
               })}
             </div>
+            {onImageUpload && (
+              <div className="pt-2 border-t">
+                <div className="flex items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => document.getElementById('appearance-picker-upload')?.click()}
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Image
+                  </Button>
+                  {imageUrl && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onImageUpload(null)}
+                    >
+                      Clear
+                    </Button>
+                  )}
+                  <input
+                    id="appearance-picker-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </div>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
