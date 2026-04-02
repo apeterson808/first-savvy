@@ -11,84 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { differenceInYears } from 'date-fns';
-import { Circle, Upload, X } from 'lucide-react';
-import {
-  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
-  Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
-  Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
-  Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
-  Shirt, Watch, Scissors, Paintbrush, Palette,
-  Gift, PartyPopper, Beer, Pizza, IceCream, Cake,
-  Bus, Train, Bike, Fuel, Wrench, Hammer,
-  Lightbulb, Zap, Droplet, Wifi, Phone, Mail,
-  ShoppingBag, Package, Tag, Store, Building, Factory,
-  Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
-  Moon, Star, Sparkles, Crown, Trophy, Award,
-  Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Baby,
-  Sandwich, Salad, Soup, Wine, CupSoda, Cherry, Carrot, Croissant, Milk,
-  ChefHat, UtensilsCrossed, CookingPot, ConciergeBell,
-  Truck, Ship, Sailboat, Rocket, Ambulance,
-  Navigation, MapPin, Compass,
-  Sofa, Bed, Bath, Refrigerator, WashingMachine, AirVent, Heater, Fan,
-  Drill, PaintRoller, Ruler, Shovel, Key,
-  Flame, Thermometer, BatteryCharging,
-  ShoppingBasket, Ticket, Receipt, Banknote, Coins, HandCoins,
-  Barcode, QrCode, Percent, BadgeDollarSign,
-  Syringe, Glasses, Bandage,
-  Droplets, Wind, TreePine,
-  Popcorn, Guitar, Piano,
-  Mountain, Tent, Footprints,
-  TrendingDown, Calculator, FileText, ChartBar, ChartLine, ChartPie,
-  Globe, Handshake, Users, UserPlus, Building2,
-  Smile, Flower,
-  School, BookOpen, Bookmark, Library, Pencil, PenTool, NotebookPen,
-  Repeat, RefreshCw, Calendar, Bell, Newspaper,
-  MessageCircle, Send, Monitor,
-  Rabbit, Squirrel,
-  AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
-  Cigarette
-} from 'lucide-react';
-
-const ICON_MAP = {
-  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
-  Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
-  Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
-  Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
-  Shirt, Watch, Scissors, Paintbrush, Palette,
-  Gift, PartyPopper, Beer, Pizza, IceCream, Cake,
-  Bus, Train, Bike, Fuel, Wrench, Hammer,
-  Lightbulb, Zap, Droplet, Wifi, Phone, Mail,
-  ShoppingBag, Package, Tag, Store, Building, Factory,
-  Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
-  Moon, Star, Sparkles, Crown, Trophy, Award,
-  Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby,
-  Sandwich, Salad, Soup, Wine, CupSoda, Cherry, Carrot, Croissant, Milk,
-  ChefHat, UtensilsCrossed, CookingPot, ConciergeBell,
-  Truck, Ship, Sailboat, Rocket, Ambulance,
-  Navigation, MapPin, Compass,
-  Sofa, Bed, Bath, Refrigerator, WashingMachine, AirVent, Heater, Fan,
-  Drill, PaintRoller, Ruler, Shovel, Key,
-  Flame, Thermometer, BatteryCharging,
-  ShoppingBasket, Ticket, Receipt, Banknote, Coins, HandCoins,
-  Barcode, QrCode, Percent, BadgeDollarSign,
-  Syringe, Glasses, Bandage,
-  Droplets, Wind, TreePine,
-  Popcorn, Guitar, Piano,
-  Mountain, Tent, Footprints,
-  TrendingDown, Calculator, FileText, ChartBar, ChartLine, ChartPie,
-  Globe, Handshake, Users, UserPlus, Building2,
-  Smile, Flower,
-  School, BookOpen, Bookmark, Library, Pencil, PenTool, NotebookPen,
-  Repeat, RefreshCw, Calendar, Bell, Newspaper,
-  MessageCircle, Send, Monitor,
-  Rabbit, Squirrel,
-  AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
-  Cigarette
-};
-
-const ICON_NAMES = Object.keys(ICON_MAP);
+import { Pencil } from 'lucide-react';
 
 const CUSTOM_COLOR_PALETTE = [
   { name: 'Tea Green', hex: '#AACC96' },
@@ -127,17 +50,15 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
   const [loading, setLoading] = useState(false);
   const [age, setAge] = useState(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('icon');
-  const [iconSearch, setIconSearch] = useState('');
+  const [activeTab, setActiveTab] = useState('color');
   const [uploading, setUploading] = useState(false);
 
-  const filteredIcons = ICON_NAMES.filter(iconName =>
-    iconName.toLowerCase().includes(iconSearch.toLowerCase())
-  );
-
-  const SelectedIcon = formData.avatar?.icon && ICON_MAP[formData.avatar.icon]
-    ? ICON_MAP[formData.avatar.icon]
-    : Circle;
+  const getInitials = () => {
+    const first = formData.first_name?.trim() || '';
+    const last = formData.last_name?.trim() || '';
+    if (!first && !last) return '';
+    return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
@@ -173,10 +94,11 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
 
       setFormData({
         ...formData,
-        avatar: { ...formData.avatar, imageUrl: publicUrl, icon: null }
+        avatar: { ...formData.avatar, imageUrl: publicUrl }
       });
 
       toast.success('Image uploaded successfully');
+      setPopoverOpen(false);
     } catch (error) {
       console.error('Error uploading image:', error);
       toast.error('Failed to upload image');
@@ -283,124 +205,114 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
 
         <form onSubmit={handleSubmit} className="space-y-6 mt-6">
           <div className="space-y-4">
-            <div className="space-y-3">
-              <Label>Avatar</Label>
-              <div className="flex items-center gap-4">
+            <div className="flex justify-center">
+              <div className="relative">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl font-semibold"
+                  style={{ backgroundColor: formData.avatar?.color || '#52A5CE' }}
+                >
+                  {formData.avatar?.imageUrl ? (
+                    <img
+                      src={formData.avatar.imageUrl}
+                      alt="Avatar"
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  ) : (
+                    getInitials()
+                  )}
+                </div>
+
                 <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
                   <PopoverTrigger asChild>
                     <button
                       type="button"
-                      className="relative w-24 h-24 rounded-full flex items-center justify-center flex-shrink-0 hover:opacity-80 transition-opacity cursor-pointer"
-                      style={{ backgroundColor: formData.avatar?.color || '#52A5CE' }}
+                      className="absolute bottom-0 right-0 w-8 h-8 bg-slate-800 hover:bg-slate-700 text-white rounded-full flex items-center justify-center transition-colors shadow-md"
                     >
-                      {formData.avatar?.imageUrl ? (
-                        <>
-                          <img
-                            src={formData.avatar.imageUrl}
-                            alt="Avatar"
-                            className="w-full h-full rounded-full object-cover"
-                          />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setFormData({ ...formData, avatar: { ...formData.avatar, imageUrl: null, icon: 'Circle' } });
-                            }}
-                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </>
-                      ) : (
-                        <SelectedIcon className="w-12 h-12 text-white" />
-                      )}
+                      <Pencil className="w-4 h-4" />
                     </button>
                   </PopoverTrigger>
                   <PopoverContent className="w-80 p-4" align="start">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                       <TabsList className="w-full grid grid-cols-2">
-                        <TabsTrigger value="icon">Icon</TabsTrigger>
                         <TabsTrigger value="color">Color</TabsTrigger>
+                        <TabsTrigger value="image">Image</TabsTrigger>
                       </TabsList>
 
-                      <TabsContent value="icon" className="mt-4 space-y-3">
-                        <Input
-                          placeholder="Search icons..."
-                          value={iconSearch}
-                          onChange={(e) => setIconSearch(e.target.value)}
-                          className="h-9 text-sm"
-                        />
-                        <div className="grid grid-cols-6 gap-1 max-h-64 overflow-y-auto pr-1">
-                          {filteredIcons.map((iconName) => {
-                            const Icon = ICON_MAP[iconName];
-                            if (!Icon) return null;
-
-                            return (
+                      <TabsContent value="color" className="mt-4">
+                        <div className="space-y-3">
+                          <p className="text-sm text-slate-600">Choose a background color</p>
+                          <div className="grid grid-cols-6 gap-2">
+                            {CUSTOM_COLOR_PALETTE.map((colorOption) => (
                               <button
-                                key={iconName}
+                                key={colorOption.hex}
                                 type="button"
                                 onClick={() => {
-                                  setFormData({ ...formData, avatar: { ...formData.avatar, icon: iconName, imageUrl: null } });
+                                  setFormData({ ...formData, avatar: { ...formData.avatar, color: colorOption.hex } });
                                 }}
-                                className={`w-10 h-10 flex items-center justify-center rounded hover:bg-slate-100 transition-all ${
-                                  formData.avatar?.icon === iconName ? 'bg-slate-800 text-white' : 'text-slate-600'
+                                className={`w-10 h-10 rounded-full border-2 transition-all ${
+                                  formData.avatar?.color === colorOption.hex
+                                    ? 'border-slate-800 scale-110'
+                                    : 'border-slate-300 hover:scale-105 hover:border-slate-400'
                                 }`}
-                              >
-                                <Icon className="w-5 h-5" />
-                              </button>
-                            );
-                          })}
+                                style={{ backgroundColor: colorOption.hex }}
+                              />
+                            ))}
+                          </div>
                         </div>
                       </TabsContent>
 
-                      <TabsContent value="color" className="mt-4">
-                        <div className="grid grid-cols-6 gap-2">
-                          {CUSTOM_COLOR_PALETTE.map((colorOption) => (
-                            <button
-                              key={colorOption.hex}
-                              type="button"
-                              onClick={() => {
-                                setFormData({ ...formData, avatar: { ...formData.avatar, color: colorOption.hex } });
-                              }}
-                              className={`w-10 h-10 rounded-full border-2 transition-all ${
-                                formData.avatar?.color === colorOption.hex
-                                  ? 'border-slate-800 scale-110'
-                                  : 'border-slate-300 hover:scale-105 hover:border-slate-400'
-                              }`}
-                              style={{ backgroundColor: colorOption.hex }}
+                      <TabsContent value="image" className="mt-4">
+                        <div className="space-y-3">
+                          {formData.avatar?.imageUrl && (
+                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
+                              <img
+                                src={formData.avatar.imageUrl}
+                                alt="Current avatar"
+                                className="w-12 h-12 rounded-full object-cover"
+                              />
+                              <div className="flex-1 text-sm text-slate-600">
+                                Current image
+                              </div>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setFormData({ ...formData, avatar: { ...formData.avatar, imageUrl: null } });
+                                }}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+                          )}
+
+                          <label htmlFor="avatar-upload">
+                            <input
+                              id="avatar-upload"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="hidden"
+                              disabled={uploading}
                             />
-                          ))}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              onClick={() => document.getElementById('avatar-upload')?.click()}
+                              disabled={uploading}
+                              className="w-full"
+                            >
+                              {uploading ? 'Uploading...' : formData.avatar?.imageUrl ? 'Change Image' : 'Upload Image'}
+                            </Button>
+                          </label>
+                          <p className="text-xs text-slate-500 text-center">
+                            JPG, PNG or GIF (max 5MB)
+                          </p>
                         </div>
                       </TabsContent>
                     </Tabs>
                   </PopoverContent>
                 </Popover>
-
-                <div className="flex-1">
-                  <label htmlFor="avatar-upload">
-                    <input
-                      id="avatar-upload"
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={uploading}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => document.getElementById('avatar-upload')?.click()}
-                      disabled={uploading}
-                      className="w-full"
-                    >
-                      <Upload className="w-4 h-4 mr-2" />
-                      {uploading ? 'Uploading...' : 'Upload Image'}
-                    </Button>
-                  </label>
-                  <p className="text-xs text-slate-500 mt-2">
-                    Or click the avatar to choose an icon and color
-                  </p>
-                </div>
               </div>
             </div>
 
