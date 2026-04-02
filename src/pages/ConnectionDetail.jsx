@@ -102,9 +102,9 @@ export default function ConnectionDetail() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
+    <div className="h-full flex flex-col">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
@@ -112,21 +112,21 @@ export default function ConnectionDetail() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-16 w-16">
+          <div className="flex items-center gap-4">
+            <Avatar className="h-20 w-20">
               <AvatarImage src={child.avatar_url} />
-              <AvatarFallback>
+              <AvatarFallback className="text-xl">
                 {child.child_name.split(' ').map(n => n[0]).join('').toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h1 className="text-3xl font-bold">{child.child_name}</h1>
-              <div className="flex items-center space-x-2 mt-1">
+              <h1 className="text-3xl font-bold mb-2">{child.child_name}</h1>
+              <div className="flex items-center gap-3">
                 <Badge className={TIER_COLORS[child.current_permission_level]}>
                   Tier {child.current_permission_level}: {TIER_NAMES[child.current_permission_level]}
                 </Badge>
                 {child.date_of_birth && (
-                  <span className="text-slate-600">
+                  <span className="text-sm text-slate-600">
                     Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
                   </span>
                 )}
@@ -139,77 +139,77 @@ export default function ConnectionDetail() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Points Balance</p>
-                <p className="text-2xl font-bold mt-1">{child.points_balance.toLocaleString()}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Points Balance</p>
+                <p className="text-3xl font-bold">{child.points_balance.toLocaleString()}</p>
               </div>
-              <Award className="h-8 w-8 text-slate-400" />
+              <Award className="h-10 w-10 text-slate-300" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Cash Balance</p>
-                <p className="text-2xl font-bold mt-1">${parseFloat(child.cash_balance).toFixed(2)}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Cash Balance</p>
+                <p className="text-3xl font-bold">${parseFloat(child.cash_balance).toFixed(2)}</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-slate-400" />
+              <TrendingUp className="h-10 w-10 text-slate-300" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Completed Chores</p>
-                <p className="text-2xl font-bold mt-1">{stats.completedChores}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Completed Chores</p>
+                <p className="text-3xl font-bold">{stats.completedChores}</p>
               </div>
-              <CheckCircle className="h-8 w-8 text-slate-400" />
+              <CheckCircle className="h-10 w-10 text-slate-300" />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600">Pending Approval</p>
-                <p className="text-2xl font-bold mt-1">{stats.pendingChores}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Pending Approval</p>
+                <p className="text-3xl font-bold">{stats.pendingChores}</p>
               </div>
-              <Clock className="h-8 w-8 text-slate-400" />
+              <Clock className="h-10 w-10 text-slate-300" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      <Tabs defaultValue="chores" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="chores" className="flex-1 flex flex-col">
+        <TabsList className="mb-4">
           <TabsTrigger value="chores">Chores</TabsTrigger>
           <TabsTrigger value="rewards">Rewards</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chores">
+        <TabsContent value="chores" className="flex-1 mt-0">
           <ChoresTab childId={child.id} onUpdate={loadChildData} />
         </TabsContent>
 
-        <TabsContent value="rewards">
+        <TabsContent value="rewards" className="flex-1 mt-0">
           <RewardsTab childId={child.id} child={child} onUpdate={loadChildData} />
         </TabsContent>
 
-        <TabsContent value="activity">
+        <TabsContent value="activity" className="flex-1 mt-0">
           <ActivityTab childId={child.id} />
         </TabsContent>
 
-        <TabsContent value="settings">
+        <TabsContent value="settings" className="flex-1 mt-0">
           <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
         </TabsContent>
       </Tabs>
