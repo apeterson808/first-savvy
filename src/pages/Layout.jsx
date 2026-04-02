@@ -284,7 +284,7 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto bg-slate-100">
+        <main className="flex-1 overflow-y-auto bg-slate-100 p-6">
           <ErrorBoundary>
             {children}
           </ErrorBoundary>
