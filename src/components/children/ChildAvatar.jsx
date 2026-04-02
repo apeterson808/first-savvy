@@ -1,7 +1,8 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { User, Cat, Dog, Bird, Fish, Rabbit, Sparkles, Star, Heart, Smile, Sun, Moon } from 'lucide-react';
+import { User, Cat, Dog, Bird, Fish, Rabbit, Sparkles, Star, Heart, Smile, Sun, Moon, Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ICON_MAP } from '@/components/utils/iconMapper';
 
 const PRESET_ICONS = {
   user: User,
@@ -67,6 +68,29 @@ export default function ChildAvatar({ child, size = 'default', className }) {
 
     return '?';
   };
+
+  const avatar = child?.avatar;
+
+  if (avatar?.imageUrl) {
+    return (
+      <Avatar className={cn(sizeClasses[size], className)}>
+        <AvatarImage src={avatar.imageUrl} alt={child?.child_name || child?.first_name || 'Avatar'} />
+        <AvatarFallback>{getInitials()}</AvatarFallback>
+      </Avatar>
+    );
+  }
+
+  if (avatar?.icon && avatar?.color) {
+    const Icon = ICON_MAP[avatar.icon] || Circle;
+    return (
+      <div
+        className={cn('rounded-full flex items-center justify-center', sizeClasses[size], className)}
+        style={{ backgroundColor: avatar.color }}
+      >
+        <Icon className={cn(iconSizes[size], 'text-white')} />
+      </div>
+    );
+  }
 
   const isPreset = child?.avatar_url?.startsWith('preset:');
   const presetId = isPreset ? child.avatar_url.replace('preset:', '') : null;

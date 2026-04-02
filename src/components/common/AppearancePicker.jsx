@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Upload } from 'lucide-react';
 import {
   Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
   Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
@@ -103,7 +105,7 @@ const CUSTOM_COLOR_PALETTE = [
 
 const DEFAULT_COLOR = '#52A5CE';
 
-export default function AppearancePicker({ color, icon, onColorChange, onIconChange, inline = false, showPreview = false, useTabs = false }) {
+export default function AppearancePicker({ color, icon, onColorChange, onIconChange, imageUrl, onImageUpload, inline = false, showPreview = false, useTabs = false }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('icon');
@@ -159,17 +161,72 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
     }
   };
 
+  const handleFileUpload = (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('File size must be less than 5MB');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      onImageUpload?.(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const pickerContent = inline ? (
     useTabs ? (
       <div className="space-y-4">
         {showPreview && (
           <div className="flex items-center justify-center">
             <div
-              className="w-16 h-16 rounded-full flex items-center justify-center shadow-md"
-              style={{ backgroundColor: selectedColor }}
+              className="w-16 h-16 rounded-full flex items-center justify-center shadow-md overflow-hidden"
+              style={{ backgroundColor: imageUrl ? 'transparent' : selectedColor }}
             >
-              <SelectedIcon className="w-8 h-8 text-white" />
+              {imageUrl ? (
+                <img src={imageUrl} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <SelectedIcon className="w-8 h-8 text-white" />
+              )}
             </div>
+          </div>
+        )}
+        {onImageUpload && (
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => document.getElementById('appearance-picker-upload')?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Image
+            </Button>
+            {imageUrl && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => onImageUpload(null)}
+              >
+                Clear
+              </Button>
+            )}
+            <input
+              id="appearance-picker-upload"
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
           </div>
         )}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

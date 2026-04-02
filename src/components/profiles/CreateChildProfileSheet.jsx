@@ -130,9 +130,13 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
               <AppearancePicker
                 color={formData.avatar?.color}
                 icon={formData.avatar?.icon}
-                onColorChange={(color) => setFormData({ ...formData, avatar: { ...formData.avatar, color } })}
-                onIconChange={(icon) => setFormData({ ...formData, avatar: { ...formData.avatar, icon } })}
+                imageUrl={formData.avatar?.imageUrl}
+                onColorChange={(color) => setFormData({ ...formData, avatar: { ...formData.avatar, color, imageUrl: null } })}
+                onIconChange={(icon) => setFormData({ ...formData, avatar: { ...formData.avatar, icon, imageUrl: null } })}
+                onImageUpload={(imageUrl) => setFormData({ ...formData, avatar: { ...formData.avatar, imageUrl } })}
                 showPreview={true}
+                useTabs={true}
+                inline={true}
               />
             </div>
 

@@ -14,7 +14,7 @@ import {
   Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
 } from 'lucide-react';
 
-const ICON_MAP = {
+export const ICON_MAP = {
   Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
   Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
   Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
