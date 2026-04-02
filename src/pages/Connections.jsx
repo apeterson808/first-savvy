@@ -1,17 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProfile } from '@/contexts/ProfileContext';
-import { childProfilesAPI } from '@/api/childProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Users, Search, Plus, Calendar, Briefcase, Home } from 'lucide-react';
+import { Plus, Briefcase, Home } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/api/supabaseClient';
 import { CreateChildProfileSheet } from '@/components/profiles/CreateChildProfileSheet';
-import { ProfileTypeSelector } from '@/components/profiles/ProfileTypeSelector';
 import { CreateProfileDialog } from '@/components/profiles/CreateProfileDialog';
-import { formatCurrency } from '@/components/utils/formatters';
 import { differenceInYears } from 'date-fns';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
@@ -21,9 +17,7 @@ export default function Connections() {
   const [childProfiles, setChildProfiles] = useState([]);
   const [businessProfiles, setBusinessProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
 
-  const [showProfileTypeSelector, setShowProfileTypeSelector] = useState(false);
   const [showCreateChild, setShowCreateChild] = useState(false);
   const [showCreateBusiness, setShowCreateBusiness] = useState(false);
 
@@ -89,27 +83,6 @@ export default function Connections() {
     }
   };
 
-  const handleSelectProfileType = (type) => {
-    if (type === 'child') {
-      setShowCreateChild(true);
-    } else if (type === 'business') {
-      setShowCreateBusiness(true);
-    }
-  };
-
-  const filterChildren = (children) => {
-    if (!searchQuery) return children;
-    return children.filter(child =>
-      child.child_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
-
-  const filterBusinesses = (businesses) => {
-    if (!searchQuery) return businesses;
-    return businesses.filter(business =>
-      business.display_name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  };
 
   const getAge = (dateOfBirth) => {
     if (!dateOfBirth) return null;
@@ -136,52 +109,38 @@ export default function Connections() {
     );
   }
 
-  const filteredChildren = filterChildren(childProfiles);
-  const filteredBusinesses = filterBusinesses(businessProfiles);
-  const activeChildren = childProfiles.filter(c => c.is_active);
-  const totalProfiles = childProfiles.length + businessProfiles.length;
-
   return (
     <div className="p-4 md:p-6 space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-          <Input
-            placeholder="Search profiles..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
-        <Button onClick={() => setShowProfileTypeSelector(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Profile
-        </Button>
-      </div>
-
       <div className="space-y-8">
         <div>
           <h2 className="text-xl font-semibold mb-4 flex items-center gap-2">
             <Home className="h-5 w-5 text-blue-600" />
             Family ({childProfiles.length})
           </h2>
-          {filteredChildren.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <div className="text-center py-12">
-                  <Users className="mx-auto h-12 w-12 text-slate-400" />
-                  <h3 className="mt-4 text-lg font-semibold">No family profiles</h3>
-                  <p className="mt-2 text-slate-600">
-                    {searchQuery
-                      ? 'No family members match your search'
-                      : 'Create profiles for family members to give them access to their own financial dashboard'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+          {childProfiles.length === 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+              <Card
+                className="hover:shadow-md transition-shadow cursor-pointer border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100"
+                onClick={() => setShowCreateChild(true)}
+              >
+                <CardContent className="pt-4 pb-3 px-3">
+                  <div className="flex flex-col items-center text-center gap-2">
+                    <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                      <Plus className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <div className="w-full">
+                      <h3 className="font-semibold text-sm">Add Family Member</h3>
+                      <p className="text-xs text-slate-600 mt-1">
+                        Create profile
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
-            {filteredChildren.map((child) => {
+            {childProfiles.map((child) => {
               const age = getAge(child.date_of_birth);
               const initials = child.child_name
                 .split(' ')
@@ -224,6 +183,24 @@ export default function Connections() {
                 </Card>
               );
             })}
+            <Card
+              className="hover:shadow-md transition-shadow cursor-pointer border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100"
+              onClick={() => setShowCreateChild(true)}
+            >
+              <CardContent className="pt-4 pb-3 px-3">
+                <div className="flex flex-col items-center text-center gap-2">
+                  <div className="w-14 h-14 rounded-full bg-blue-100 flex items-center justify-center">
+                    <Plus className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="w-full">
+                    <h3 className="font-semibold text-sm">Add Family Member</h3>
+                    <p className="text-xs text-slate-600 mt-1">
+                      Create profile
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
           )}
         </div>
@@ -241,17 +218,19 @@ export default function Connections() {
                 <p className="mt-2 text-slate-600">
                   Business profiles will be available in a future update
                 </p>
+                <Button
+                  className="mt-4"
+                  variant="outline"
+                  disabled
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  Create Business Profile
+                </Button>
               </div>
             </CardContent>
           </Card>
         </div>
       </div>
-
-      <ProfileTypeSelector
-        open={showProfileTypeSelector}
-        onOpenChange={setShowProfileTypeSelector}
-        onSelectType={handleSelectProfileType}
-      />
 
       <CreateChildProfileSheet
         open={showCreateChild}
