@@ -38,7 +38,8 @@ const PERMISSION_LEVELS = {
 
 export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
   const [formData, setFormData] = useState({
-    child_name: '',
+    first_name: '',
+    last_name: '',
     date_of_birth: '',
     gender: '',
     daily_spending_limit: '',
@@ -58,7 +59,8 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     loadAccessData();
     if (child) {
       setFormData({
-        child_name: child.child_name,
+        first_name: child.first_name || '',
+        last_name: child.last_name || '',
         date_of_birth: child.date_of_birth || '',
         gender: child.gender || '',
         daily_spending_limit: child.daily_spending_limit || '',
@@ -179,22 +181,34 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                   <AvatarSelector
                     value={avatar}
                     onChange={handleAvatarChange}
-                    firstName={formData.child_name.split(' ')[0]}
-                    lastName={formData.child_name.split(' ')[1] || ''}
+                    firstName={formData.first_name}
+                    lastName={formData.last_name}
                     currentAvatar={child.avatar_url}
                     compact={true}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="space-y-2">
-                    <Label htmlFor="child_name" className="text-xs text-slate-600">Name</Label>
-                    <Input
-                      id="child_name"
-                      value={formData.child_name}
-                      onChange={(e) => setFormData({ ...formData, child_name: e.target.value })}
-                      onBlur={(e) => handleFieldUpdate('child_name', e.target.value)}
-                      className="text-xl font-bold"
-                    />
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2 group">
+                      <Label htmlFor="first_name" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">First Name</Label>
+                      <Input
+                        id="first_name"
+                        value={formData.first_name}
+                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                        onBlur={(e) => handleFieldUpdate('first_name', e.target.value)}
+                        className="text-xl font-bold border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all"
+                      />
+                    </div>
+                    <div className="space-y-2 group">
+                      <Label htmlFor="last_name" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Last Name</Label>
+                      <Input
+                        id="last_name"
+                        value={formData.last_name}
+                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                        onBlur={(e) => handleFieldUpdate('last_name', e.target.value)}
+                        className="text-xl font-bold border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -227,18 +241,19 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="date_of_birth" className="text-xs text-slate-600">Date of Birth</Label>
+                  <div className="space-y-2 group">
+                    <Label htmlFor="date_of_birth" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Date of Birth</Label>
                     <Input
                       id="date_of_birth"
                       type="date"
                       value={formData.date_of_birth}
                       onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                       onBlur={(e) => handleFieldUpdate('date_of_birth', e.target.value)}
+                      className="border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all"
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="gender" className="text-xs text-slate-600">Gender</Label>
+                  <div className="space-y-2 group">
+                    <Label htmlFor="gender" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Gender</Label>
                     <Select
                       value={formData.gender}
                       onValueChange={(value) => {
@@ -246,7 +261,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                         handleFieldUpdate('gender', value);
                       }}
                     >
-                      <SelectTrigger id="gender">
+                      <SelectTrigger id="gender" className="border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -358,8 +373,8 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="notes" className="text-xs text-slate-600">Notes</Label>
+              <div className="space-y-2 group">
+                <Label htmlFor="notes" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Notes</Label>
                 <Textarea
                   id="notes"
                   value={formData.notes}
@@ -367,6 +382,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                   onBlur={(e) => handleFieldUpdate('notes', e.target.value)}
                   rows={3}
                   placeholder="Add notes about this child profile..."
+                  className="border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all resize-none"
                 />
               </div>
             </div>
