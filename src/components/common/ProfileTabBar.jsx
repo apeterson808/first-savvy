@@ -10,13 +10,18 @@ export function ProfileTabBar({ onAddProfileClick }) {
 
   const allAvailableProfiles = [...profiles, ...availableChildProfiles];
 
+  const getProfileKey = (profile) => {
+    return profile.is_child_profile ? profile.child_profile_id : profile.id;
+  };
+
   useEffect(() => {
     if (activeProfile) {
       setOpenTabs(prev => {
         if (prev.length === 0) {
           return [activeProfile];
         }
-        if (!prev.find(t => t.id === activeProfile.id)) {
+        const activeKey = getProfileKey(activeProfile);
+        if (!prev.find(t => getProfileKey(t) === activeKey)) {
           return [...prev, activeProfile];
         }
         return prev;
@@ -25,23 +30,29 @@ export function ProfileTabBar({ onAddProfileClick }) {
   }, [activeProfile]);
 
   const handleTabClick = (profile) => {
-    if (profile.id !== activeProfile?.id) {
+    const profileKey = getProfileKey(profile);
+    const activeKey = activeProfile ? getProfileKey(activeProfile) : null;
+    if (profileKey !== activeKey) {
       switchProfile(profile);
     }
   };
 
   const openProfileTab = (profile) => {
-    if (!openTabs.find(t => t.id === profile.id)) {
+    const profileKey = getProfileKey(profile);
+    if (!openTabs.find(t => getProfileKey(t) === profileKey)) {
       setOpenTabs(prev => [...prev, profile]);
     }
     switchProfile(profile);
   };
 
-  const closeTab = (e, profileId) => {
+  const closeTab = (e, profile) => {
     e.stopPropagation();
-    setOpenTabs(prev => prev.filter(t => t.id !== profileId));
-    if (activeProfile?.id === profileId && openTabs.length > 1) {
-      const remainingTabs = openTabs.filter(t => t.id !== profileId);
+    const profileKey = getProfileKey(profile);
+    setOpenTabs(prev => prev.filter(t => getProfileKey(t) !== profileKey));
+
+    const activeKey = activeProfile ? getProfileKey(activeProfile) : null;
+    if (activeKey === profileKey && openTabs.length > 1) {
+      const remainingTabs = openTabs.filter(t => getProfileKey(t) !== profileKey);
       if (remainingTabs.length > 0) {
         switchProfile(remainingTabs[remainingTabs.length - 1]);
       }
@@ -66,12 +77,14 @@ export function ProfileTabBar({ onAddProfileClick }) {
       ) : profiles && profiles.length > 0 ? (
         <>
           {openTabs.map((profile) => {
-            const isActive = profile.id === activeProfile?.id;
+            const profileKey = getProfileKey(profile);
+            const activeKey = activeProfile ? getProfileKey(activeProfile) : null;
+            const isActive = profileKey === activeKey;
             const isChildProfile = profile.is_child_profile;
 
             return (
               <div
-                key={profile.id}
+                key={profileKey}
                 onClick={() => handleTabClick(profile)}
                 className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
                   isActive
@@ -105,7 +118,7 @@ export function ProfileTabBar({ onAddProfileClick }) {
                   {profile.display_name}
                 </span>
                 <button
-                  onClick={(e) => closeTab(e, profile.id)}
+                  onClick={(e) => closeTab(e, profile)}
                   className={`flex-shrink-0 rounded p-0.5 transition-colors ${
                     isChildProfile
                       ? 'hover:bg-blue-200'
