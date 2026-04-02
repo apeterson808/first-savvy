@@ -95,16 +95,6 @@ export default function ConnectionDetail() {
 
   return (
     <div className="h-full flex flex-col pb-6">
-      <div className="flex items-center mb-6">
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => navigate('/Connections')}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-      </div>
-
       <ProfileHeaderCard
         child={child}
         currentProfileId={activeProfile?.id}
