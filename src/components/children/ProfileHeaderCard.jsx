@@ -85,44 +85,29 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     }
   };
 
-  const getInvitationStatusBadge = () => {
+  const getInvitationStatus = () => {
     if (child.user_id) {
-      return (
-        <Badge className="bg-green-100 text-green-800">
-          <CheckCircle className="h-3 w-3 mr-1" />
-          Account Active
-        </Badge>
-      );
+      return { text: 'Connected', variant: 'success' };
     }
 
     if (!invitation) {
-      return (
-        <Badge variant="secondary">
-          <Mail className="h-3 w-3 mr-1" />
-          Not Invited
-        </Badge>
-      );
+      return { text: 'Invite', variant: 'default' };
     }
 
     if (invitation.status === 'pending') {
       const isExpired = new Date(invitation.invitation_expires_at) < new Date();
       if (isExpired) {
-        return (
-          <Badge className="bg-red-100 text-red-800">
-            <XCircle className="h-3 w-3 mr-1" />
-            Invitation Expired
-          </Badge>
-        );
+        return { text: 'Invite', variant: 'default' };
       }
-      return (
-        <Badge className="bg-amber-100 text-amber-800">
-          <Clock className="h-3 w-3 mr-1" />
-          Invitation Pending
-        </Badge>
-      );
+      return { text: 'Resend Invite', variant: 'secondary' };
     }
 
-    return null;
+    return { text: 'Invite', variant: 'default' };
+  };
+
+  const handleInviteClick = () => {
+    if (child.user_id) return;
+    setShowInviteDialog(true);
   };
 
   const handleSave = async () => {
@@ -223,7 +208,18 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                           Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
                         </span>
                       )}
-                      {getInvitationStatusBadge()}
+                      <Badge
+                        className={
+                          getInvitationStatus().variant === 'success'
+                            ? 'bg-green-100 text-green-800'
+                            : getInvitationStatus().variant === 'secondary'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'
+                        }
+                        onClick={handleInviteClick}
+                      >
+                        {getInvitationStatus().text}
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -238,74 +234,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    Access Management
-                  </h3>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-600">Child Account</span>
-                        {getInvitationStatusBadge()}
-                      </div>
-                      {!child.user_id && (
-                        <Button
-                          onClick={() => setShowInviteDialog(true)}
-                          variant="outline"
-                          size="sm"
-                          className="w-full"
-                        >
-                          <Mail className="h-3 w-3 mr-2" />
-                          {invitation ? 'Resend Invitation' : 'Send Invitation'}
-                        </Button>
-                      )}
-                    </div>
-
-                    <Separator />
-
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-slate-600">
-                          Shared Access ({shares.length}/3)
-                        </span>
-                        <Button
-                          onClick={() => setShowShareDialog(true)}
-                          variant="ghost"
-                          size="sm"
-                          disabled={shares.length >= 3}
-                        >
-                          <Users className="h-3 w-3 mr-1" />
-                          Share
-                        </Button>
-                      </div>
-                      {shares.length > 0 && (
-                        <div className="space-y-1.5">
-                          {shares.map((share) => (
-                            <div
-                              key={share.id}
-                              className="flex items-center gap-2 text-xs p-2 bg-slate-50 rounded"
-                            >
-                              <Avatar className="h-5 w-5">
-                                <AvatarImage src={share.shared_with_profile?.avatar_url} />
-                                <AvatarFallback className="text-[10px]">
-                                  {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span className="flex-1 font-medium">
-                                {share.shared_with_profile?.display_name}
-                              </span>
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                {PERMISSION_LEVELS[share.permission_level]}
-                              </Badge>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
                 <div>
                   <h3 className="text-sm font-semibold text-slate-700 mb-3">Additional Information</h3>
                   <div className="space-y-2 text-sm">
@@ -338,6 +266,51 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                       </span>
                     </div>
                   </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Shared Access ({shares.length}/3)
+                    </h3>
+                    <Button
+                      onClick={() => setShowShareDialog(true)}
+                      variant="ghost"
+                      size="sm"
+                      disabled={shares.length >= 3}
+                    >
+                      <Users className="h-3 w-3 mr-1" />
+                      Share
+                    </Button>
+                  </div>
+                  {shares.length > 0 ? (
+                    <div className="space-y-1.5">
+                      {shares.map((share) => (
+                        <div
+                          key={share.id}
+                          className="flex items-center gap-2 text-xs p-2 bg-slate-50 rounded"
+                        >
+                          <Avatar className="h-5 w-5">
+                            <AvatarImage src={share.shared_with_profile?.avatar_url} />
+                            <AvatarFallback className="text-[10px]">
+                              {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="flex-1 font-medium">
+                            {share.shared_with_profile?.display_name}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {PERMISSION_LEVELS[share.permission_level]}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-500 text-center py-4">
+                      No shared access yet
+                    </div>
+                  )}
                 </div>
               </div>
             </>

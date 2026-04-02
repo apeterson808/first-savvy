@@ -4,16 +4,26 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Mail, AlertCircle, Check } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Mail, AlertCircle, Check, Phone } from 'lucide-react';
 import { profileInvitationsAPI } from '@/api/profileInvitations';
 import { toast } from 'sonner';
 
 export function InviteChildDialog({ open, onOpenChange, childProfile, currentProfileId }) {
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [inviteMethod, setInviteMethod] = useState('email');
   const [loading, setLoading] = useState(false);
 
   const handleSendInvite = async () => {
-    if (!email || !email.includes('@')) {
+    const contactValue = inviteMethod === 'email' ? email : phone;
+
+    if (!contactValue) {
+      toast.error(`Please enter a ${inviteMethod === 'email' ? 'email address' : 'phone number'}`);
+      return;
+    }
+
+    if (inviteMethod === 'email' && !contactValue.includes('@')) {
       toast.error('Please enter a valid email address');
       return;
     }
@@ -22,17 +32,18 @@ export function InviteChildDialog({ open, onOpenChange, childProfile, currentPro
       setLoading(true);
       const invitation = await profileInvitationsAPI.createInvitation(
         childProfile.id,
-        email,
+        contactValue,
         currentProfileId
       );
 
       const inviteUrl = `${window.location.origin}/invite/${invitation.invitation_token}`;
 
       toast.success('Invitation sent!', {
-        description: `We've sent an invitation to ${email}`
+        description: `We've sent an invitation to ${contactValue}`
       });
 
       setEmail('');
+      setPhone('');
       onOpenChange(false);
     } catch (error) {
       console.error('Error sending invitation:', error);
@@ -64,20 +75,48 @@ export function InviteChildDialog({ open, onOpenChange, childProfile, currentPro
             </AlertDescription>
           </Alert>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="child@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
-            <p className="text-xs text-slate-500">
-              The invitation will be valid for 7 days
-            </p>
-          </div>
+          <Tabs value={inviteMethod} onValueChange={setInviteMethod} className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="email">
+                <Mail className="h-4 w-4 mr-2" />
+                Email
+              </TabsTrigger>
+              <TabsTrigger value="phone">
+                <Phone className="h-4 w-4 mr-2" />
+                Phone
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="email" className="space-y-2 mt-4">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="child@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-slate-500">
+                The invitation will be valid for 7 days
+              </p>
+            </TabsContent>
+
+            <TabsContent value="phone" className="space-y-2 mt-4">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 (555) 123-4567"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                disabled={loading}
+              />
+              <p className="text-xs text-slate-500">
+                The invitation will be sent via SMS and valid for 7 days
+              </p>
+            </TabsContent>
+          </Tabs>
 
           {childProfile && !childProfile.user_id && (
             <div className="bg-green-50 border border-green-200 rounded-lg p-3 flex items-start gap-2">
@@ -104,7 +143,11 @@ export function InviteChildDialog({ open, onOpenChange, childProfile, currentPro
           </Button>
           <Button
             onClick={handleSendInvite}
-            disabled={loading || !email || childProfile?.user_id}
+            disabled={
+              loading ||
+              (inviteMethod === 'email' ? !email : !phone) ||
+              childProfile?.user_id
+            }
           >
             {loading ? 'Sending...' : 'Send Invitation'}
           </Button>
