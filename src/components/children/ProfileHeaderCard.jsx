@@ -179,6 +179,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                     firstName={formData.child_name.split(' ')[0]}
                     lastName={formData.child_name.split(' ')[1] || ''}
                     currentAvatar={child.avatar_url}
+                    compact={true}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -233,72 +234,57 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="notes" className="text-xs text-slate-600">Notes</Label>
-                  <Textarea
-                    id="notes"
-                    value={formData.notes}
-                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                    onBlur={(e) => handleFieldUpdate('notes', e.target.value)}
-                    rows={3}
-                    placeholder="Add notes about this child profile..."
-                  />
-                </div>
+                {child.current_permission_level === 3 && (
+                  <div className="space-y-3">
+                    <Label className="text-xs text-slate-600">Spending Limits (Tier 3)</Label>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-1">
+                        <Label htmlFor="daily_spending_limit" className="text-[10px] text-slate-500">Daily</Label>
+                        <Input
+                          id="daily_spending_limit"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.daily_spending_limit}
+                          onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
+                          onBlur={(e) => handleFieldUpdate('daily_spending_limit', e.target.value)}
+                          placeholder="$0.00"
+                          className="text-sm"
+                        />
+                      </div>
 
-                <div className="space-y-3">
-                  <Label className="text-xs text-slate-600">Spending Limits (Tier 3)</Label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="daily_spending_limit" className="text-[10px] text-slate-500">Daily</Label>
-                      <Input
-                        id="daily_spending_limit"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.daily_spending_limit}
-                        onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                        onBlur={(e) => handleFieldUpdate('daily_spending_limit', e.target.value)}
-                        placeholder="$0.00"
-                        className="text-sm"
-                      />
-                    </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="weekly_spending_limit" className="text-[10px] text-slate-500">Weekly</Label>
+                        <Input
+                          id="weekly_spending_limit"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.weekly_spending_limit}
+                          onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
+                          onBlur={(e) => handleFieldUpdate('weekly_spending_limit', e.target.value)}
+                          placeholder="$0.00"
+                          className="text-sm"
+                        />
+                      </div>
 
-                    <div className="space-y-1">
-                      <Label htmlFor="weekly_spending_limit" className="text-[10px] text-slate-500">Weekly</Label>
-                      <Input
-                        id="weekly_spending_limit"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.weekly_spending_limit}
-                        onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                        onBlur={(e) => handleFieldUpdate('weekly_spending_limit', e.target.value)}
-                        placeholder="$0.00"
-                        className="text-sm"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label htmlFor="monthly_spending_limit" className="text-[10px] text-slate-500">Monthly</Label>
-                      <Input
-                        id="monthly_spending_limit"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={formData.monthly_spending_limit}
-                        onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                        onBlur={(e) => handleFieldUpdate('monthly_spending_limit', e.target.value)}
-                        placeholder="$0.00"
-                        className="text-sm"
-                      />
+                      <div className="space-y-1">
+                        <Label htmlFor="monthly_spending_limit" className="text-[10px] text-slate-500">Monthly</Label>
+                        <Input
+                          id="monthly_spending_limit"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={formData.monthly_spending_limit}
+                          onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
+                          onBlur={(e) => handleFieldUpdate('monthly_spending_limit', e.target.value)}
+                          placeholder="$0.00"
+                          className="text-sm"
+                        />
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                <div className="flex items-start gap-2 pt-2 text-xs text-slate-500 border-t">
-                  <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                  <span>You have full access as the profile owner</span>
-                </div>
+                )}
               </div>
             </div>
 
@@ -347,7 +333,24 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                   </div>
                 )}
               </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-xs text-slate-600">Notes</Label>
+                <Textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                  onBlur={(e) => handleFieldUpdate('notes', e.target.value)}
+                  rows={3}
+                  placeholder="Add notes about this child profile..."
+                />
+              </div>
             </div>
+          </div>
+
+          <div className="flex items-start gap-2 pt-4 mt-4 text-xs text-slate-500 border-t">
+            <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
+            <span>You have full access as the profile owner</span>
           </div>
         </CardContent>
       </Card>

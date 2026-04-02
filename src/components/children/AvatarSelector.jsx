@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Upload, User, Cat, Dog, Bird, Fish, Rabbit, Sparkles, Star, Heart, Smile, Sun, Moon } from 'lucide-react';
+import { Upload, User, Cat, Dog, Bird, Fish, Rabbit, Sparkles, Star, Heart, Smile, Sun, Moon, Pencil } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const PRESET_AVATARS = [
@@ -19,7 +19,7 @@ const PRESET_AVATARS = [
   { id: 'moon', icon: Moon, color: 'bg-slate-100 text-slate-600' },
 ];
 
-export default function AvatarSelector({ value, onChange, firstName = '', lastName = '', currentAvatar = null }) {
+export default function AvatarSelector({ value, onChange, firstName = '', lastName = '', currentAvatar = null, compact = false }) {
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const handlePresetSelect = (presetId) => {
@@ -108,6 +108,32 @@ export default function AvatarSelector({ value, onChange, firstName = '', lastNa
       </div>
     );
   };
+
+  if (compact) {
+    return (
+      <div className="relative">
+        <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-slate-200 flex-shrink-0">
+          {renderPreview()}
+        </div>
+        <Button
+          type="button"
+          size="icon"
+          variant="default"
+          className="absolute bottom-0 right-0 h-8 w-8 rounded-full shadow-md"
+          onClick={() => document.getElementById('avatar-upload-compact')?.click()}
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+        <input
+          id="avatar-upload-compact"
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
