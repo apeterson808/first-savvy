@@ -152,7 +152,7 @@ export default function ConnectionDetail() {
       </div>
 
       <Tabs defaultValue="tasks" className="flex-1 flex flex-col">
-        <TabsList className="mb-4">
+        <TabsList className="mb-4 bg-slate-50">
           <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="rewards">Rewards</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
