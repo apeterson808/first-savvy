@@ -14,21 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Users, Crown } from 'lucide-react';
 import { InviteChildDialog } from './InviteChildDialog';
 import { ShareProfileDialog } from './ShareProfileDialog';
-import { LevelTransitionDialog } from './LevelTransitionDialog';
 import AvatarSelector from './AvatarSelector';
 import { toast } from 'sonner';
-
-const TIER_COLORS = {
-  1: 'bg-slate-100 text-slate-800',
-  2: 'bg-blue-100 text-blue-800',
-  3: 'bg-green-100 text-green-800',
-};
-
-const TIER_NAMES = {
-  1: 'Basic Access',
-  2: 'Rewards',
-  3: 'Money',
-};
 
 const PERMISSION_LEVELS = {
   view_only: 'View Only',
@@ -56,7 +43,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
-  const [showTierDialog, setShowTierDialog] = useState(false);
 
   useEffect(() => {
     loadAccessData();
@@ -239,11 +225,8 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
               </div>
 
               <div className="flex items-center gap-3 flex-wrap">
-                <Badge
-                  className={`${TIER_COLORS[child.current_permission_level]} cursor-pointer hover:opacity-80`}
-                  onClick={() => setShowTierDialog(true)}
-                >
-                  Tier {child.current_permission_level}: {TIER_NAMES[child.current_permission_level]}
+                <Badge className="bg-slate-100 text-slate-800">
+                  Beginner Profile
                 </Badge>
                 {child.date_of_birth && (
                   <span className="text-sm text-slate-600">
@@ -293,55 +276,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                     </Select>
                   </div>
                 </div>
-
-                {child.current_permission_level === 3 && (
-                  <div className="space-y-3">
-                    <Label className="text-xs text-slate-600">Spending Limits (Tier 3)</Label>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="space-y-1">
-                        <Label htmlFor="daily_spending_limit" className="text-[10px] text-slate-500">Daily</Label>
-                        <Input
-                          id="daily_spending_limit"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={formData.daily_spending_limit}
-                          onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                          placeholder="$0.00"
-                          className="text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label htmlFor="weekly_spending_limit" className="text-[10px] text-slate-500">Weekly</Label>
-                        <Input
-                          id="weekly_spending_limit"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={formData.weekly_spending_limit}
-                          onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                          placeholder="$0.00"
-                          className="text-sm"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <Label htmlFor="monthly_spending_limit" className="text-[10px] text-slate-500">Monthly</Label>
-                        <Input
-                          id="monthly_spending_limit"
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={formData.monthly_spending_limit}
-                          onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                          placeholder="$0.00"
-                          className="text-sm"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
 
@@ -432,16 +366,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
           </div>
         </CardContent>
       </Card>
-
-      <LevelTransitionDialog
-        open={showTierDialog}
-        onOpenChange={setShowTierDialog}
-        child={child}
-        onLevelChanged={() => {
-          onUpdate();
-          setShowTierDialog(false);
-        }}
-      />
 
       <InviteChildDialog
         open={showInviteDialog}

@@ -143,50 +143,6 @@ export function EditChildProfileDialog({ open, onOpenChange, child, currentProfi
               rows={3}
             />
           </div>
-
-          <div className="space-y-3">
-            <Label className="text-base">Spending Limits (Tier 3)</Label>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="daily_spending_limit" className="text-xs">Daily</Label>
-                <Input
-                  id="daily_spending_limit"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.daily_spending_limit}
-                  onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                  placeholder="$0.00"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="weekly_spending_limit" className="text-xs">Weekly</Label>
-                <Input
-                  id="weekly_spending_limit"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.weekly_spending_limit}
-                  onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                  placeholder="$0.00"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="monthly_spending_limit" className="text-xs">Monthly</Label>
-                <Input
-                  id="monthly_spending_limit"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.monthly_spending_limit}
-                  onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                  placeholder="$0.00"
-                />
-              </div>
-            </div>
-          </div>
         </div>
 
         <div className="flex justify-end gap-2">

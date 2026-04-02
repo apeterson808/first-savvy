@@ -8,12 +8,6 @@ import { format } from 'date-fns';
 import ChildAvatar from '../children/ChildAvatar';
 import { differenceInYears } from 'date-fns';
 
-const TIER_COLORS = {
-  1: 'bg-slate-100 text-slate-800',
-  2: 'bg-blue-100 text-blue-800',
-  3: 'bg-green-100 text-green-800',
-};
-
 export function ProfileCard({
   profile,
   children = [],
@@ -121,8 +115,8 @@ export function ProfileCard({
                           <div>
                             <div className="flex items-center gap-2">
                               <p className="font-medium text-sm">{child.child_name}</p>
-                              <Badge className={TIER_COLORS[child.current_permission_level]} variant="secondary">
-                                Tier {child.current_permission_level}
+                              <Badge className="bg-slate-100 text-slate-800" variant="secondary">
+                                Beginner
                               </Badge>
                             </div>
                             {age !== null && (

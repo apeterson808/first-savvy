@@ -94,7 +94,7 @@ export const childProfilesAPI = {
         date_of_birth: childData.date_of_birth,
         sex: childData.sex,
         avatar_url: avatarUrl,
-        current_permission_level: childData.current_permission_level || 1,
+        current_permission_level: 1,
         points_balance: 0,
         cash_balance: 0,
         daily_spending_limit: childData.daily_spending_limit,
@@ -116,70 +116,6 @@ export const childProfilesAPI = {
       .eq('id', childId)
       .select()
       .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async updateChildLevel(childId, newLevel, userId, reason) {
-    const { data: childData, error: childError } = await supabase
-      .from('child_profiles')
-      .select('current_permission_level')
-      .eq('id', childId)
-      .single();
-
-    if (childError) throw childError;
-
-    const { error: transitionError } = await supabase
-      .from('level_transition_history')
-      .insert({
-        child_profile_id: childId,
-        from_level: childData.current_permission_level,
-        to_level: newLevel,
-        changed_by_user_id: userId,
-        reason_note: reason,
-      });
-
-    if (transitionError) throw transitionError;
-
-    const { data, error } = await supabase
-      .from('child_profiles')
-      .update({ current_permission_level: newLevel })
-      .eq('id', childId)
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getLevelTransitionHistory(childId) {
-    const { data, error } = await supabase
-      .from('level_transition_history')
-      .select('*')
-      .eq('child_profile_id', childId)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getPermissionLevels() {
-    const { data, error } = await supabase
-      .from('permission_levels')
-      .select('*')
-      .order('level_number');
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getPermissionLevelFeatures(levelNumber) {
-    const { data, error } = await supabase
-      .from('permission_level_features')
-      .select('*')
-      .eq('level_number', levelNumber)
-      .eq('is_enabled', true);
 
     if (error) throw error;
     return data;

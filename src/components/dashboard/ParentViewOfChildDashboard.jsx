@@ -179,20 +179,6 @@ export default function ParentViewOfChildDashboard() {
             </div>
           </CardContent>
         </Card>
-
-        <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 to-violet-50">
-          <CardContent className="p-5">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-violet-500 flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <p className="text-xs font-medium text-purple-700 uppercase tracking-wide">Level</p>
-                <p className="text-2xl font-black text-purple-900">{childProfile?.current_permission_level || 1}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -295,73 +281,23 @@ export default function ParentViewOfChildDashboard() {
         <div className="space-y-4">
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-3 pt-5 px-5">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold">Permission Level</CardTitle>
-                <Button variant="ghost" size="sm" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
-                  <Edit className="w-3 h-3 mr-1" />
-                  Change
-                </Button>
-              </div>
+              <CardTitle className="text-base font-bold">Profile Type</CardTitle>
             </CardHeader>
             <CardContent className="px-5 pb-5">
               <div className="p-4 bg-slate-50 rounded-lg">
                 <div className="flex items-center justify-between mb-3">
                   <Badge variant="secondary" className="text-sm px-3 py-1">
-                    Level {childProfile?.current_permission_level || 1}
+                    Beginner
                   </Badge>
                   <Shield className="w-5 h-5 text-slate-400" />
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {childProfile?.current_permission_level === 1 && 'Basic access - Dashboard and tasks only'}
-                  {childProfile?.current_permission_level === 2 && 'Rewards - Can view and redeem rewards'}
-                  {childProfile?.current_permission_level === 3 && 'Money - View accounts and budgets'}
+                  Basic profile with access to tasks, rewards, and allowance tracking.
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm border-slate-200">
-            <CardHeader className="pb-3 pt-5 px-5">
-              <CardTitle className="text-base font-bold">Spending Limits</CardTitle>
-            </CardHeader>
-            <CardContent className="px-5 pb-5">
-              {!childProfile?.daily_spending_limit && !childProfile?.weekly_spending_limit && !childProfile?.monthly_spending_limit ? (
-                <div className="text-center py-6 text-slate-500">
-                  <p className="text-xs">No spending limits set</p>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="mt-3"
-                    onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}
-                  >
-                    <Settings className="w-3 h-3 mr-2" />
-                    Set Limits
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  {childProfile?.daily_spending_limit && (
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs font-medium text-slate-700">Daily</p>
-                      <p className="text-sm font-bold text-slate-900">${childProfile.daily_spending_limit.toFixed(2)}</p>
-                    </div>
-                  )}
-                  {childProfile?.weekly_spending_limit && (
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs font-medium text-slate-700">Weekly</p>
-                      <p className="text-sm font-bold text-slate-900">${childProfile.weekly_spending_limit.toFixed(2)}</p>
-                    </div>
-                  )}
-                  {childProfile?.monthly_spending_limit && (
-                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <p className="text-xs font-medium text-slate-700">Monthly</p>
-                      <p className="text-sm font-bold text-slate-900">${childProfile.monthly_spending_limit.toFixed(2)}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-3 pt-5 px-5">

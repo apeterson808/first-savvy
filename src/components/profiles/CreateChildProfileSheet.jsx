@@ -41,10 +41,6 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
     date_of_birth: '',
     sex: '',
     avatar: { icon: 'Circle', color: '#52A5CE' },
-    current_permission_level: 1,
-    daily_spending_limit: '',
-    weekly_spending_limit: '',
-    monthly_spending_limit: '',
     notes: '',
   });
   const [loading, setLoading] = useState(false);
@@ -112,17 +108,6 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
       const birthDate = new Date(formData.date_of_birth);
       const calculatedAge = differenceInYears(new Date(), birthDate);
       setAge(calculatedAge);
-
-      let suggestedLevel = 1;
-      if (calculatedAge >= 15) {
-        suggestedLevel = 3;
-      } else if (calculatedAge >= 11) {
-        suggestedLevel = 2;
-      }
-
-      if (formData.current_permission_level !== suggestedLevel) {
-        setFormData(prev => ({ ...prev, current_permission_level: suggestedLevel }));
-      }
     } else {
       setAge(null);
     }
@@ -160,10 +145,6 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         date_of_birth: formData.date_of_birth || null,
         sex: formData.sex || null,
         avatar: formData.avatar,
-        current_permission_level: formData.current_permission_level,
-        daily_spending_limit: formData.daily_spending_limit ? parseFloat(formData.daily_spending_limit) : null,
-        weekly_spending_limit: formData.weekly_spending_limit ? parseFloat(formData.weekly_spending_limit) : null,
-        monthly_spending_limit: formData.monthly_spending_limit ? parseFloat(formData.monthly_spending_limit) : null,
         notes: formData.notes || null,
       });
 
@@ -173,10 +154,6 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         date_of_birth: '',
         sex: '',
         avatar: { icon: 'Circle', color: '#52A5CE' },
-        current_permission_level: 1,
-        daily_spending_limit: '',
-        weekly_spending_limit: '',
-        monthly_spending_limit: '',
         notes: '',
       });
 
@@ -374,80 +351,6 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
                 </Select>
               </div>
             </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium mb-3">Permission Tier</h3>
-              <div className="space-y-2">
-                <Select
-                  value={String(formData.current_permission_level)}
-                  onValueChange={(value) => setFormData({ ...formData, current_permission_level: parseInt(value) })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">Tier 1 - Basic Access</SelectItem>
-                    <SelectItem value="2">Tier 2 - Rewards</SelectItem>
-                    <SelectItem value="3">Tier 3 - Money</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-slate-500">
-                  {formData.current_permission_level === 1 && 'Basic access to view tasks and points'}
-                  {formData.current_permission_level === 2 && 'Can earn and redeem rewards'}
-                  {formData.current_permission_level === 3 && 'Full access including money management'}
-                </p>
-              </div>
-            </div>
-
-            {formData.current_permission_level > 1 && (
-              <div>
-                <h3 className="text-sm font-medium mb-3">Spending Limits (Optional)</h3>
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="daily-limit">Daily Limit</Label>
-                    <Input
-                      id="daily-limit"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.daily_spending_limit}
-                      onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="weekly-limit">Weekly Limit</Label>
-                    <Input
-                      id="weekly-limit"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.weekly_spending_limit}
-                      onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="monthly-limit">Monthly Limit</Label>
-                    <Input
-                      id="monthly-limit"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={formData.monthly_spending_limit}
-                      onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <Separator />
