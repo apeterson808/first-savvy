@@ -10,7 +10,7 @@ export const profileSharesAPI = {
           id,
           profile_name,
           avatar_url,
-          user:user_id(email)
+          user_id
         ),
         granted_by_profile:profiles!profile_shares_granted_by_profile_id_fkey(
           id,

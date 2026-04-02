@@ -227,7 +227,7 @@ export const protectedConfigurationService = {
       .from('configuration_change_log')
       .select(`
         *,
-        user:user_id(id, email)
+        user_id
       `)
       .eq('configuration_id', configurationId)
       .order('created_at', { ascending: false });
