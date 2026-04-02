@@ -284,26 +284,26 @@ export default function Layout({ children, currentPageName }) {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 flex flex-col overflow-hidden bg-slate-100">
           {/* Navigation Bar - Sticky */}
-          <div className="bg-white border-b border-slate-300 px-6 flex items-center gap-3">
+          <div className="bg-slate-100 border-b border-slate-300 px-6 py-2 flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
-              className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="p-1.5 text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
               title="Go back"
             >
               <ArrowLeft className="w-4 h-4" />
             </button>
             <button
               onClick={() => navigate(1)}
-              className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="p-1.5 text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
               title="Go forward"
             >
               <ArrowRight className="w-4 h-4" />
             </button>
             <button
               onClick={() => window.location.reload()}
-              className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+              className="p-1.5 text-slate-600 hover:bg-slate-200 rounded-md transition-colors"
               title="Refresh page"
             >
               <RefreshCw className="w-4 h-4" />
@@ -311,7 +311,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-6 bg-slate-50">
+          <div className="flex-1 overflow-y-auto p-6">
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
