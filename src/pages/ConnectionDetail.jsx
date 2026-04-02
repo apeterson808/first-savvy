@@ -4,13 +4,12 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { choresAPI } from '@/api/chores';
 import { rewardsAPI } from '@/api/rewards';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock, Settings } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
 import { LevelTransitionDialog } from '@/components/children/LevelTransitionDialog';
+import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
 import { ChoresTab } from '@/components/children/ChoresTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
 import { ActivityTab } from '@/components/children/ActivityTab';
@@ -104,40 +103,23 @@ export default function ConnectionDetail() {
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate('/Connections')}
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={child.avatar_url} />
-              <AvatarFallback className="text-xl">
-                {child.child_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <h1 className="text-3xl font-bold mb-2">{child.child_name}</h1>
-              <div className="flex items-center gap-3">
-                <Badge className={TIER_COLORS[child.current_permission_level]}>
-                  Tier {child.current_permission_level}: {TIER_NAMES[child.current_permission_level]}
-                </Badge>
-                {child.date_of_birth && (
-                  <span className="text-sm text-slate-600">
-                    Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate('/Connections')}
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
         <Button onClick={() => setShowLevelTransition(true)}>
           Manage Tier
         </Button>
       </div>
+
+      <ProfileHeaderCard
+        child={child}
+        currentProfileId={activeProfile?.id}
+        onUpdate={loadChildData}
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
