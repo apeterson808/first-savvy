@@ -196,7 +196,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                         value={formData.first_name}
                         onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
                         onBlur={(e) => handleFieldUpdate('first_name', e.target.value)}
-                        className="text-xl font-bold border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all"
+                        className="text-xl font-bold border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
                       />
                     </div>
                     <div className="space-y-2 group">
@@ -206,7 +206,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                         value={formData.last_name}
                         onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
                         onBlur={(e) => handleFieldUpdate('last_name', e.target.value)}
-                        className="text-xl font-bold border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all"
+                        className="text-xl font-bold border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
                       />
                     </div>
                   </div>
@@ -249,7 +249,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                       value={formData.date_of_birth}
                       onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                       onBlur={(e) => handleFieldUpdate('date_of_birth', e.target.value)}
-                      className="border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all"
+                      className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
                     />
                   </div>
                   <div className="space-y-2 group">
@@ -261,7 +261,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                         handleFieldUpdate('gender', value);
                       }}
                     >
-                      <SelectTrigger id="gender" className="border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all">
+                      <SelectTrigger id="gender" className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm">
                         <SelectValue placeholder="Select" />
                       </SelectTrigger>
                       <SelectContent>
@@ -382,7 +382,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                   onBlur={(e) => handleFieldUpdate('notes', e.target.value)}
                   rows={3}
                   placeholder="Add notes about this child profile..."
-                  className="border-transparent hover:border-slate-300 focus:border-slate-400 bg-transparent hover:bg-slate-50 transition-all resize-none"
+                  className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all resize-none shadow-none hover:shadow-sm focus:shadow-sm"
                 />
               </div>
             </div>
