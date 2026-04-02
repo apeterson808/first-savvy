@@ -115,21 +115,11 @@ export default function Layout({ children, currentPageName }) {
     if (childPermissionLevel >= 3) {
       childNav.push(
         { name: 'My Money', icon: CircleDollarSign, page: 'Banking', minLevel: 3 },
-        { name: 'My Budget', icon: ClipboardList, page: 'Budgeting', minLevel: 3 }
-      );
-    }
-
-    if (childPermissionLevel >= 4) {
-      childNav.push(
-        { name: 'Calendar', icon: Calendar, page: 'Calendar', minLevel: 4 },
-        { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', minLevel: 4 }
-      );
-    }
-
-    if (childPermissionLevel >= 5) {
-      childNav.push(
-        { name: 'Net Worth', icon: Banknote, page: 'NetWorth', minLevel: 5 },
-        { name: 'Contacts', icon: Users, page: 'Contacts', minLevel: 5 }
+        { name: 'My Budget', icon: ClipboardList, page: 'Budgeting', minLevel: 3 },
+        { name: 'Calendar', icon: Calendar, page: 'Calendar', minLevel: 3 },
+        { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', minLevel: 3 },
+        { name: 'Net Worth', icon: Banknote, page: 'NetWorth', minLevel: 3 },
+        { name: 'Contacts', icon: Users, page: 'Contacts', minLevel: 3 }
       );
     }
 
