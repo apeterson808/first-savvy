@@ -4,14 +4,7 @@ export const childProfilesAPI = {
   async getChildProfiles(profileId) {
     const { data, error } = await supabase
       .from('child_profiles')
-      .select(`
-        *,
-        permission_levels (
-          level_number,
-          level_name,
-          level_description
-        )
-      `)
+      .select('*')
       .or(`parent_profile_id.eq.${profileId},owned_by_profile_id.eq.${profileId}`)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
@@ -23,14 +16,7 @@ export const childProfilesAPI = {
   async getOwnedChildProfiles(profileId) {
     const { data, error } = await supabase
       .from('child_profiles')
-      .select(`
-        *,
-        permission_levels (
-          level_number,
-          level_name,
-          level_description
-        )
-      `)
+      .select('*')
       .eq('owned_by_profile_id', profileId)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
@@ -44,14 +30,7 @@ export const childProfilesAPI = {
       .from('profile_shares')
       .select(`
         *,
-        child_profile:child_profiles(
-          *,
-          permission_levels (
-            level_number,
-            level_name,
-            level_description
-          )
-        )
+        child_profile:child_profiles(*)
       `)
       .eq('shared_with_profile_id', profileId)
       .eq('is_active', true)
@@ -68,14 +47,7 @@ export const childProfilesAPI = {
   async getChildProfileById(childId) {
     const { data, error } = await supabase
       .from('child_profiles')
-      .select(`
-        *,
-        permission_levels (
-          level_number,
-          level_name,
-          level_description
-        )
-      `)
+      .select('*')
       .eq('id', childId)
       .maybeSingle();
 
