@@ -47,6 +47,9 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     monthly_spending_limit: '',
     notes: '',
   });
+  const [originalData, setOriginalData] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [avatar, setAvatar] = useState(null);
   const [shares, setShares] = useState([]);
   const [invitation, setInvitation] = useState(null);
@@ -58,7 +61,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
   useEffect(() => {
     loadAccessData();
     if (child) {
-      setFormData({
+      const data = {
         first_name: child.first_name || '',
         last_name: child.last_name || '',
         date_of_birth: child.date_of_birth || '',
@@ -67,9 +70,17 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
         weekly_spending_limit: child.weekly_spending_limit || '',
         monthly_spending_limit: child.monthly_spending_limit || '',
         notes: child.notes || '',
-      });
+      };
+      setFormData(data);
+      setOriginalData(data);
+      setHasChanges(false);
     }
   }, [child]);
+
+  useEffect(() => {
+    const changed = JSON.stringify(formData) !== JSON.stringify(originalData);
+    setHasChanges(changed);
+  }, [formData, originalData]);
 
   const loadAccessData = async () => {
     try {
@@ -112,21 +123,37 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     setShowInviteDialog(true);
   };
 
-  const handleFieldUpdate = async (field, value) => {
+  const handleSave = async () => {
     try {
-      const updates = { [field]: value || null };
+      setIsSaving(true);
+      const updates = { ...formData };
 
-      if (field.includes('limit') && value) {
-        updates[field] = parseFloat(value);
+      if (updates.daily_spending_limit) {
+        updates.daily_spending_limit = parseFloat(updates.daily_spending_limit);
+      }
+      if (updates.weekly_spending_limit) {
+        updates.weekly_spending_limit = parseFloat(updates.weekly_spending_limit);
+      }
+      if (updates.monthly_spending_limit) {
+        updates.monthly_spending_limit = parseFloat(updates.monthly_spending_limit);
       }
 
       await childProfilesAPI.updateChildProfile(child.id, updates);
-      toast.success('Updated successfully');
+      toast.success('Changes saved successfully');
+      setOriginalData(formData);
+      setHasChanges(false);
       onUpdate();
     } catch (error) {
-      console.error('Error updating field:', error);
-      toast.error('Failed to update');
+      console.error('Error saving changes:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setIsSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    setFormData(originalData);
+    setHasChanges(false);
   };
 
   const handleAvatarChange = async (newAvatar) => {
@@ -195,7 +222,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                         id="first_name"
                         value={formData.first_name}
                         onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        onBlur={(e) => handleFieldUpdate('first_name', e.target.value)}
                         className="text-xl font-bold border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
                       />
                     </div>
@@ -205,7 +231,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                         id="last_name"
                         value={formData.last_name}
                         onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        onBlur={(e) => handleFieldUpdate('last_name', e.target.value)}
                         className="text-xl font-bold border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
                       />
                     </div>
@@ -248,7 +273,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                       type="date"
                       value={formData.date_of_birth}
                       onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      onBlur={(e) => handleFieldUpdate('date_of_birth', e.target.value)}
                       className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
                     />
                   </div>
@@ -256,10 +280,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                     <Label htmlFor="gender" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Gender</Label>
                     <Select
                       value={formData.gender}
-                      onValueChange={(value) => {
-                        setFormData({ ...formData, gender: value });
-                        handleFieldUpdate('gender', value);
-                      }}
+                      onValueChange={(value) => setFormData({ ...formData, gender: value })}
                     >
                       <SelectTrigger id="gender" className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm">
                         <SelectValue placeholder="Select" />
@@ -286,7 +307,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                           min="0"
                           value={formData.daily_spending_limit}
                           onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                          onBlur={(e) => handleFieldUpdate('daily_spending_limit', e.target.value)}
                           placeholder="$0.00"
                           className="text-sm"
                         />
@@ -301,7 +321,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                           min="0"
                           value={formData.weekly_spending_limit}
                           onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                          onBlur={(e) => handleFieldUpdate('weekly_spending_limit', e.target.value)}
                           placeholder="$0.00"
                           className="text-sm"
                         />
@@ -316,7 +335,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                           min="0"
                           value={formData.monthly_spending_limit}
                           onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                          onBlur={(e) => handleFieldUpdate('monthly_spending_limit', e.target.value)}
                           placeholder="$0.00"
                           className="text-sm"
                         />
@@ -379,18 +397,38 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                   id="notes"
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  onBlur={(e) => handleFieldUpdate('notes', e.target.value)}
                   rows={3}
                   placeholder="Add notes about this child profile..."
-                  className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all resize-none shadow-none hover:shadow-sm focus:shadow-sm"
+                  className="border border-slate-200 hover:border-slate-300 focus:border-slate-400 bg-white transition-all resize-none"
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex items-start gap-2 pt-4 mt-4 text-xs text-slate-500 border-t">
-            <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
-            <span>You have full access as the profile owner</span>
+          <div className="flex items-center justify-between pt-4 mt-4 border-t">
+            <div className="flex items-start gap-2 text-xs text-slate-500">
+              <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
+              <span>You have full access as the profile owner</span>
+            </div>
+            {hasChanges && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancel}
+                  disabled={isSaving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                >
+                  {isSaving ? 'Saving...' : 'Save Changes'}
+                </Button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
