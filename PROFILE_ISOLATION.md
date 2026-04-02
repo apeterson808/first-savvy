@@ -44,7 +44,7 @@ profile_id IN (SELECT id FROM profiles WHERE user_id = auth.uid())
 - journal_entries
 - journal_entry_lines
 - transaction_splits
-- chores
+- tasks
 - rewards
 - vault_items
 - vault_folders

@@ -45,11 +45,11 @@ export default function ParentViewOfChildDashboard() {
   });
 
 
-  const { data: chores = [] } = useQuery({
-    queryKey: ['chores', childProfileId],
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks', childProfileId],
     queryFn: async () => {
       const { data } = await firstsavvy
-        .from('chores')
+        .from('tasks')
         .select('*')
         .eq('child_profile_id', childProfileId)
         .order('due_date', { ascending: true });
@@ -71,17 +71,17 @@ export default function ParentViewOfChildDashboard() {
     enabled: !!childProfileId
   });
 
-  const assignedChores = chores.filter(c => c.status === 'assigned');
-  const completedChores = chores.filter(c => c.status === 'completed');
-  const approvedChores = chores.filter(c => c.status === 'approved');
+  const assignedTasks = tasks.filter(c => c.status === 'assigned');
+  const completedTasks = tasks.filter(c => c.status === 'completed');
+  const approvedTasks = tasks.filter(c => c.status === 'approved');
 
-  const approveChore = useMutation({
+  const approveTask = useMutation({
     mutationFn: async (choreId) => {
-      const chore = chores.find(c => c.id === choreId);
-      if (!chore) throw new Error('Chore not found');
+      const chore = tasks.find(c => c.id === choreId);
+      if (!chore) throw new Error('Task not found');
 
       const { error: updateError } = await firstsavvy
-        .from('chores')
+        .from('tasks')
         .update({ status: 'approved', approved_at: new Date().toISOString() })
         .eq('id', choreId);
 
@@ -108,9 +108,9 @@ export default function ParentViewOfChildDashboard() {
       if (profileError) throw profileError;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['chores', childProfileId]);
+      queryClient.invalidateQueries(['tasks', childProfileId]);
       queryClient.invalidateQueries(['child-profile', childProfileId]);
-      toast.success('Chore approved and rewards granted!');
+      toast.success('Task approved and rewards granted!');
     },
     onError: () => {
       toast.error('Failed to approve chore');
@@ -124,7 +124,7 @@ export default function ParentViewOfChildDashboard() {
           <h1 className="text-2xl font-bold text-slate-900">{activeProfile?.display_name}'s Profile</h1>
           <p className="text-sm text-slate-600 mt-1 flex items-center gap-2">
             <Shield className="w-4 h-4" />
-            Parent View - Manage permissions, chores, and rewards
+            Parent View - Manage permissions, tasks, and rewards
           </p>
         </div>
         <Button
@@ -173,8 +173,8 @@ export default function ParentViewOfChildDashboard() {
                 <Zap className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="text-xs font-medium text-sky-700 uppercase tracking-wide">Chores</p>
-                <p className="text-2xl font-black text-sky-900">{approvedChores.length + completedChores.length}/{chores.length}</p>
+                <p className="text-xs font-medium text-sky-700 uppercase tracking-wide">Tasks</p>
+                <p className="text-2xl font-black text-sky-900">{approvedTasks.length + completedTasks.length}/{tasks.length}</p>
               </div>
             </div>
           </CardContent>
@@ -200,27 +200,27 @@ export default function ParentViewOfChildDashboard() {
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-3 pt-5 px-5">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-bold">Chore Management</CardTitle>
+                <CardTitle className="text-base font-bold">Task Management</CardTitle>
                 <Button size="sm" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
                   <Plus className="w-4 h-4 mr-2" />
-                  Add Chore
+                  Add Task
                 </Button>
               </div>
             </CardHeader>
             <CardContent className="px-5 pb-5">
-              {chores.length === 0 ? (
+              {tasks.length === 0 ? (
                 <div className="text-center py-12 text-slate-500 bg-slate-50 rounded-lg">
                   <Zap className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                  <p className="text-sm font-medium">No chores yet</p>
-                  <p className="text-xs text-slate-400 mt-1">Add chores to help {activeProfile?.display_name} learn responsibility</p>
+                  <p className="text-sm font-medium">No tasks yet</p>
+                  <p className="text-xs text-slate-400 mt-1">Add tasks to help {activeProfile?.display_name} learn responsibility</p>
                   <Button size="sm" className="mt-4" onClick={() => navigate(createPageUrl('Children') + `/${childProfileId}`)}>
                     <Plus className="w-4 h-4 mr-2" />
-                    Create First Chore
+                    Create First Task
                   </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {chores.map((chore) => (
+                  {tasks.map((chore) => (
                     <div
                       key={chore.id}
                       className={`p-4 rounded-lg border-2 ${
@@ -274,8 +274,8 @@ export default function ParentViewOfChildDashboard() {
                         {chore.status === 'completed' && (
                           <Button
                             size="sm"
-                            onClick={() => approveChore.mutate(chore.id)}
-                            disabled={approveChore.isPending}
+                            onClick={() => approveTask.mutate(chore.id)}
+                            disabled={approveTask.isPending}
                           >
                             Approve
                           </Button>
@@ -312,7 +312,7 @@ export default function ParentViewOfChildDashboard() {
                   <Shield className="w-5 h-5 text-slate-400" />
                 </div>
                 <p className="text-xs text-slate-600 leading-relaxed">
-                  {childProfile?.current_permission_level === 1 && 'Basic access - Dashboard and chores only'}
+                  {childProfile?.current_permission_level === 1 && 'Basic access - Dashboard and tasks only'}
                   {childProfile?.current_permission_level === 2 && 'Rewards - Can view and redeem rewards'}
                   {childProfile?.current_permission_level === 3 && 'Money - View accounts and budgets'}
                 </p>

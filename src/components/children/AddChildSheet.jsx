@@ -397,7 +397,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
               </SelectContent>
             </Select>
             <p className="text-xs text-slate-600">
-              {formData.current_permission_level === 1 && 'Dashboard and chores only'}
+              {formData.current_permission_level === 1 && 'Dashboard and tasks only'}
               {formData.current_permission_level === 2 && 'Can view and redeem rewards'}
               {formData.current_permission_level === 3 && 'View accounts and budgets'}
             </p>

@@ -1,9 +1,9 @@
 import { supabase } from './supabaseClient';
 
-export const choresAPI = {
-  async getChores(profileId, filters = {}) {
+export const tasksAPI = {
+  async getTasks(profileId, filters = {}) {
     let query = supabase
-      .from('chores')
+      .from('tasks')
       .select(`
         *,
         child_profiles (
@@ -35,9 +35,9 @@ export const choresAPI = {
     return data;
   },
 
-  async getChoresByChild(childId) {
+  async getTasksByChild(childId) {
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .select('*')
       .eq('assigned_to_child_id', childId)
       .eq('is_active', true)
@@ -47,23 +47,23 @@ export const choresAPI = {
     return data;
   },
 
-  async createChore(profileId, choreData) {
+  async createTask(profileId, taskData) {
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .insert({
         profile_id: profileId,
-        assigned_to_child_id: choreData.assigned_to_child_id,
-        title: choreData.title,
-        description: choreData.description,
-        points_value: choreData.points_value || 0,
-        due_date: choreData.due_date,
-        recurrence_pattern: choreData.recurrence_pattern || 'once',
-        is_recurring: choreData.is_recurring || false,
-        next_recurrence_date: choreData.next_recurrence_date,
-        created_by_user_id: choreData.created_by_user_id,
-        icon: choreData.icon,
-        color: choreData.color,
-        metadata: choreData.metadata,
+        assigned_to_child_id: taskData.assigned_to_child_id,
+        title: taskData.title,
+        description: taskData.description,
+        points_value: taskData.points_value || 0,
+        due_date: taskData.due_date,
+        recurrence_pattern: taskData.recurrence_pattern || 'once',
+        is_recurring: taskData.is_recurring || false,
+        next_recurrence_date: taskData.next_recurrence_date,
+        created_by_user_id: taskData.created_by_user_id,
+        icon: taskData.icon,
+        color: taskData.color,
+        metadata: taskData.metadata,
       })
       .select()
       .single();
@@ -72,11 +72,11 @@ export const choresAPI = {
     return data;
   },
 
-  async updateChore(choreId, updates) {
+  async updateTask(taskId, updates) {
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .update(updates)
-      .eq('id', choreId)
+      .eq('id', taskId)
       .select()
       .single();
 
@@ -84,14 +84,14 @@ export const choresAPI = {
     return data;
   },
 
-  async completeChore(choreId, userId) {
+  async completeTask(taskId, userId) {
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .update({
         status: 'completed',
         completed_at: new Date().toISOString(),
       })
-      .eq('id', choreId)
+      .eq('id', taskId)
       .select(`
         *,
         child_profiles (
@@ -106,23 +106,23 @@ export const choresAPI = {
     return data;
   },
 
-  async approveChore(choreId, userId, profileId) {
-    const { data: chore, error: fetchError } = await supabase
-      .from('chores')
+  async approveTask(taskId, userId, profileId) {
+    const { data: task, error: fetchError } = await supabase
+      .from('tasks')
       .select('*, child_profiles(*)')
-      .eq('id', choreId)
+      .eq('id', taskId)
       .single();
 
     if (fetchError) throw fetchError;
 
-    const pointsToAward = Math.round(chore.points_value * (chore.bonus_multiplier || 1.0));
+    const pointsToAward = Math.round(task.points_value * (task.bonus_multiplier || 1.0));
 
     const { data: updatedChild, error: balanceError } = await supabase
       .from('child_profiles')
       .update({
-        points_balance: chore.child_profiles.points_balance + pointsToAward,
+        points_balance: task.child_profiles.points_balance + pointsToAward,
       })
-      .eq('id', chore.assigned_to_child_id)
+      .eq('id', task.assigned_to_child_id)
       .select()
       .single();
 
@@ -131,50 +131,50 @@ export const choresAPI = {
     const { error: txError } = await supabase
       .from('child_transactions')
       .insert({
-        child_profile_id: chore.assigned_to_child_id,
-        transaction_type: 'chore_payment',
+        child_profile_id: task.assigned_to_child_id,
+        transaction_type: 'task_payment',
         amount: pointsToAward,
         currency_type: 'points',
-        description: `Completed: ${chore.title}`,
+        description: `Completed: ${task.title}`,
         status: 'completed',
         approved_by_user_id: userId,
         approved_at: new Date().toISOString(),
-        related_chore_id: choreId,
+        related_task_id: taskId,
         balance_after: updatedChild.points_balance,
       });
 
     if (txError) throw txError;
 
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .update({
         status: 'approved',
         approved_by_user_id: userId,
         approved_at: new Date().toISOString(),
       })
-      .eq('id', choreId)
+      .eq('id', taskId)
       .select()
       .single();
 
     if (error) throw error;
 
-    if (chore.is_recurring && chore.next_recurrence_date) {
-      await this.createRecurringChoreInstance(chore, profileId, userId);
+    if (task.is_recurring && task.next_recurrence_date) {
+      await this.createRecurringTaskInstance(task, profileId, userId);
     }
 
     return data;
   },
 
-  async rejectChore(choreId, userId, reason) {
+  async rejectTask(taskId, userId, reason) {
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .update({
         status: 'rejected',
         approved_by_user_id: userId,
         rejected_at: new Date().toISOString(),
         rejection_reason: reason,
       })
-      .eq('id', choreId)
+      .eq('id', taskId)
       .select()
       .single();
 
@@ -182,28 +182,28 @@ export const choresAPI = {
     return data;
   },
 
-  async createRecurringChoreInstance(originalChore, profileId, userId) {
+  async createRecurringTaskInstance(originalTask, profileId, userId) {
     const nextDate = this.calculateNextRecurrence(
-      originalChore.next_recurrence_date,
-      originalChore.recurrence_pattern
+      originalTask.next_recurrence_date,
+      originalTask.recurrence_pattern
     );
 
     const { data, error } = await supabase
-      .from('chores')
+      .from('tasks')
       .insert({
         profile_id: profileId,
-        assigned_to_child_id: originalChore.assigned_to_child_id,
-        title: originalChore.title,
-        description: originalChore.description,
-        points_value: originalChore.points_value,
+        assigned_to_child_id: originalTask.assigned_to_child_id,
+        title: originalTask.title,
+        description: originalTask.description,
+        points_value: originalTask.points_value,
         due_date: nextDate,
-        recurrence_pattern: originalChore.recurrence_pattern,
+        recurrence_pattern: originalTask.recurrence_pattern,
         is_recurring: true,
-        next_recurrence_date: this.calculateNextRecurrence(nextDate, originalChore.recurrence_pattern),
+        next_recurrence_date: this.calculateNextRecurrence(nextDate, originalTask.recurrence_pattern),
         created_by_user_id: userId,
-        icon: originalChore.icon,
-        color: originalChore.color,
-        metadata: originalChore.metadata,
+        icon: originalTask.icon,
+        color: originalTask.color,
+        metadata: originalTask.metadata,
       })
       .select()
       .single();
@@ -235,18 +235,18 @@ export const choresAPI = {
     return date.toISOString();
   },
 
-  async deleteChore(choreId) {
+  async deleteTask(taskId) {
     const { error } = await supabase
-      .from('chores')
+      .from('tasks')
       .update({ is_active: false })
-      .eq('id', choreId);
+      .eq('id', taskId);
 
     if (error) throw error;
   },
 
-  async getChoreTemplates(profileId = null) {
+  async getTaskTemplates(profileId = null) {
     let query = supabase
-      .from('chore_templates')
+      .from('task_templates')
       .select('*');
 
     if (profileId) {
@@ -262,9 +262,9 @@ export const choresAPI = {
     return data;
   },
 
-  async createChoreFromTemplate(profileId, templateId, childId, userId) {
+  async createTaskFromTemplate(profileId, templateId, childId, userId) {
     const { data: template, error: templateError } = await supabase
-      .from('chore_templates')
+      .from('task_templates')
       .select('*')
       .eq('id', templateId)
       .single();
@@ -272,11 +272,11 @@ export const choresAPI = {
     if (templateError) throw templateError;
 
     await supabase
-      .from('chore_templates')
+      .from('task_templates')
       .update({ times_used: template.times_used + 1 })
       .eq('id', templateId);
 
-    return await this.createChore(profileId, {
+    return await this.createTask(profileId, {
       assigned_to_child_id: childId,
       title: template.title,
       description: template.description,

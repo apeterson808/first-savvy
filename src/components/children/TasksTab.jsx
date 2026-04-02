@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { choresAPI } from '@/api/chores';
+import { tasksAPI } from '@/api/tasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,90 +14,90 @@ const STATUS_COLORS = {
   rejected: 'bg-red-100 text-red-800',
 };
 
-export function ChoresTab({ childId, onUpdate }) {
-  const [chores, setChores] = useState([]);
+export function TasksTab({ childId, onUpdate }) {
+  const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadChores();
+    loadTasks();
   }, [childId]);
 
-  const loadChores = async () => {
+  const loadTasks = async () => {
     try {
       setLoading(true);
-      const data = await choresAPI.getChoresByChild(childId);
-      setChores(data);
+      const data = await tasksAPI.getTasksByChild(childId);
+      setTasks(data);
     } catch (error) {
-      console.error('Error loading chores:', error);
-      toast.error('Failed to load chores');
+      console.error('Error loading tasks:', error);
+      toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApprove = async (choreId) => {
+  const handleApprove = async (taskId) => {
     try {
-      await choresAPI.approveChore(choreId, null, null);
-      toast.success('Chore approved!');
-      loadChores();
+      await tasksAPI.approveTask(taskId, null, null);
+      toast.success('Task approved!');
+      loadTasks();
       onUpdate();
     } catch (error) {
-      console.error('Error approving chore:', error);
-      toast.error('Failed to approve chore');
+      console.error('Error approving task:', error);
+      toast.error('Failed to approve task');
     }
   };
 
-  const handleReject = async (choreId) => {
+  const handleReject = async (taskId) => {
     try {
-      await choresAPI.rejectChore(choreId, null, 'Did not meet requirements');
-      toast.success('Chore rejected');
-      loadChores();
+      await tasksAPI.rejectTask(taskId, null, 'Did not meet requirements');
+      toast.success('Task rejected');
+      loadTasks();
     } catch (error) {
-      console.error('Error rejecting chore:', error);
-      toast.error('Failed to reject chore');
+      console.error('Error rejecting task:', error);
+      toast.error('Failed to reject task');
     }
   };
 
   if (loading) {
-    return <div className="text-center py-8">Loading chores...</div>;
+    return <div className="text-center py-8">Loading tasks...</div>;
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold">Chores</h3>
+        <h3 className="text-lg font-semibold">Tasks</h3>
         <Button size="sm">
           <Plus className="mr-2 h-4 w-4" />
-          Add Chore
+          Add Task
         </Button>
       </div>
 
-      {chores.length === 0 ? (
+      {tasks.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <p className="text-slate-600">No chores yet</p>
+              <p className="text-slate-600">No tasks yet</p>
               <Button className="mt-4" size="sm">
                 <Plus className="mr-2 h-4 w-4" />
-                Create First Chore
+                Create First Task
               </Button>
             </div>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-3">
-          {chores.map((chore) => (
-            <Card key={chore.id}>
+          {tasks.map((task) => (
+            <Card key={task.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
-                    <CardTitle className="text-base">{chore.title}</CardTitle>
-                    {chore.description && (
-                      <p className="text-sm text-slate-600">{chore.description}</p>
+                    <CardTitle className="text-base">{task.title}</CardTitle>
+                    {task.description && (
+                      <p className="text-sm text-slate-600">{task.description}</p>
                     )}
                   </div>
-                  <Badge className={STATUS_COLORS[chore.status]}>
-                    {chore.status}
+                  <Badge className={STATUS_COLORS[task.status]}>
+                    {task.status}
                   </Badge>
                 </div>
               </CardHeader>
@@ -105,27 +105,27 @@ export function ChoresTab({ childId, onUpdate }) {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4 text-sm">
                     <span className="font-semibold text-green-600">
-                      {chore.points_value} points
+                      {task.points_value} points
                     </span>
-                    {chore.due_date && (
+                    {task.due_date && (
                       <span className="text-slate-600">
-                        Due: {new Date(chore.due_date).toLocaleDateString()}
+                        Due: {new Date(task.due_date).toLocaleDateString()}
                       </span>
                     )}
                   </div>
-                  {chore.status === 'completed' && (
+                  {task.status === 'completed' && (
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleReject(chore.id)}
+                        onClick={() => handleReject(task.id)}
                       >
                         <XCircle className="mr-2 h-4 w-4" />
                         Reject
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handleApprove(chore.id)}
+                        onClick={() => handleApprove(task.id)}
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Approve

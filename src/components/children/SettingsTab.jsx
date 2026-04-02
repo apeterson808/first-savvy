@@ -215,7 +215,7 @@ export function SettingsTab({ child, onUpdate, currentProfileId }) {
           <Alert className="mb-4 border-red-300 bg-red-100">
             <AlertTriangle className="h-4 w-4 text-red-600" />
             <AlertDescription className="text-red-800">
-              Deleting this profile will remove all associated data including chores, rewards, achievements, and financial history. This action is permanent and cannot be reversed.
+              Deleting this profile will remove all associated data including tasks, rewards, achievements, and financial history. This action is permanent and cannot be reversed.
             </AlertDescription>
           </Alert>
           <Button

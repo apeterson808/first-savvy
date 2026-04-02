@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
-import { choresAPI } from '@/api/chores';
+import { tasksAPI } from '@/api/tasks';
 import { rewardsAPI } from '@/api/rewards';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
 import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
-import { ChoresTab } from '@/components/children/ChoresTab';
+import { TasksTab } from '@/components/children/TasksTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
 import { ActivityTab } from '@/components/children/ActivityTab';
 import { SettingsTab } from '@/components/children/SettingsTab';
@@ -34,8 +34,8 @@ export default function ConnectionDetail() {
   const [child, setChild] = useState(null);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
-    completedChores: 0,
-    pendingChores: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
     totalRedemptions: 0,
     achievementsEarned: 0,
   });
@@ -52,13 +52,13 @@ export default function ConnectionDetail() {
       const childData = await childProfilesAPI.getChildProfileById(id);
       setChild(childData);
 
-      const chores = await choresAPI.getChoresByChild(id);
+      const tasks = await tasksAPI.getTasksByChild(id);
       const redemptions = await rewardsAPI.getRedemptions(id);
       const achievements = await childProfilesAPI.getChildAchievements(id);
 
       setStats({
-        completedChores: chores.filter(c => c.status === 'approved').length,
-        pendingChores: chores.filter(c => c.status === 'completed').length,
+        completedTasks: tasks.filter(c => c.status === 'approved').length,
+        pendingTasks: tasks.filter(c => c.status === 'completed').length,
         totalRedemptions: redemptions.length,
         achievementsEarned: achievements.length,
       });
@@ -130,8 +130,8 @@ export default function ConnectionDetail() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-600 mb-2">Completed Chores</p>
-                <p className="text-3xl font-bold">{stats.completedChores}</p>
+                <p className="text-sm font-medium text-slate-600 mb-2">Completed Tasks</p>
+                <p className="text-3xl font-bold">{stats.completedTasks}</p>
               </div>
               <CheckCircle className="h-10 w-10 text-slate-300" />
             </div>
@@ -143,7 +143,7 @@ export default function ConnectionDetail() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-slate-600 mb-2">Pending Approval</p>
-                <p className="text-3xl font-bold">{stats.pendingChores}</p>
+                <p className="text-3xl font-bold">{stats.pendingTasks}</p>
               </div>
               <Clock className="h-10 w-10 text-slate-300" />
             </div>
@@ -151,16 +151,16 @@ export default function ConnectionDetail() {
         </Card>
       </div>
 
-      <Tabs defaultValue="chores" className="flex-1 flex flex-col">
+      <Tabs defaultValue="tasks" className="flex-1 flex flex-col">
         <TabsList className="mb-4">
-          <TabsTrigger value="chores">Chores</TabsTrigger>
+          <TabsTrigger value="tasks">Tasks</TabsTrigger>
           <TabsTrigger value="rewards">Rewards</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
           <TabsTrigger value="settings">Settings</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chores" className="flex-1 mt-0 pb-6">
-          <ChoresTab childId={child.id} onUpdate={loadChildData} />
+        <TabsContent value="tasks" className="flex-1 mt-0 pb-6">
+          <TasksTab childId={child.id} onUpdate={loadChildData} />
         </TabsContent>
 
         <TabsContent value="rewards" className="flex-1 mt-0 pb-6">

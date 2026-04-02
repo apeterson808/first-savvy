@@ -33,7 +33,7 @@ export function ActivityTab({ childId }) {
 
   const getTransactionIcon = (type) => {
     switch (type) {
-      case 'chore_payment':
+      case 'task_payment':
         return <Award className="h-5 w-5 text-green-600" />;
       case 'reward_redemption':
         return <Gift className="h-5 w-5 text-purple-600" />;

@@ -9,7 +9,7 @@
     - Clean up any references to tiers 4-5
 
   2. Tier Definitions
-    - Tier 1: Basic Access - Dashboard and chores only
+    - Tier 1: Basic Access - Dashboard and tasks only
     - Tier 2: Rewards - Can view and redeem rewards
     - Tier 3: Money - Full access to accounts, budgets, and financial data
 
@@ -94,7 +94,7 @@ BEGIN
   VALUES (
     1,
     'Basic Access',
-    'Dashboard and chores only. Can view assigned chores and mark complete. Parent must approve all actions.',
+    'Dashboard and tasks only. Can view assigned tasks and mark complete. Parent must approve all actions.',
     5
   )
   ON CONFLICT (level_number) DO UPDATE
@@ -108,7 +108,7 @@ BEGIN
   VALUES (
     2,
     'Rewards',
-    'Can view and redeem rewards. Can suggest chores and redeem rewards independently. Parent gets notifications.',
+    'Can view and redeem rewards. Can suggest tasks and redeem rewards independently. Parent gets notifications.',
     8
   )
   ON CONFLICT (level_number) DO UPDATE

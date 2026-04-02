@@ -14,13 +14,13 @@ import { toast } from 'sonner';
 const LEVEL_INFO = {
   1: {
     name: 'Basic Access',
-    description: 'Dashboard and chores only. Can view assigned chores and mark complete. Parent must approve all actions.',
-    features: ['View dashboard', 'View chores', 'Mark chores complete (needs approval)', 'View points balance'],
+    description: 'Dashboard and tasks only. Can view assigned tasks and mark complete. Parent must approve all actions.',
+    features: ['View dashboard', 'View tasks', 'Mark tasks complete (needs approval)', 'View points balance'],
   },
   2: {
     name: 'Rewards',
-    description: 'Can view and redeem rewards. Can suggest chores and redeem rewards independently. Parent gets notifications.',
-    features: ['All Tier 1 features', 'Suggest chores', 'Redeem rewards', 'View reward history'],
+    description: 'Can view and redeem rewards. Can suggest tasks and redeem rewards independently. Parent gets notifications.',
+    features: ['All Tier 1 features', 'Suggest tasks', 'Redeem rewards', 'View reward history'],
   },
   3: {
     name: 'Money',

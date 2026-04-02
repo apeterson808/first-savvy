@@ -32,7 +32,7 @@ export default function ChildDashboard() {
   const queryClient = useQueryClient();
   const permissionLevel = activeProfile?.permission_level || 1;
   const childProfileId = activeProfile?.child_profile_id;
-  const [selectedChore, setSelectedChore] = useState(null);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const { data: childProfile } = useQuery({
     queryKey: ['child-profile', childProfileId],
@@ -48,11 +48,11 @@ export default function ChildDashboard() {
     enabled: !!childProfileId
   });
 
-  const { data: chores = [] } = useQuery({
-    queryKey: ['child-chores', childProfileId],
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['child-tasks', childProfileId],
     queryFn: async () => {
       const { data, error } = await firstsavvy
-        .from('chores')
+        .from('tasks')
         .select('*')
         .eq('child_profile_id', childProfileId)
         .eq('is_active', true)
@@ -81,32 +81,32 @@ export default function ChildDashboard() {
   const pointsBalance = childProfile?.points_balance || 0;
   const cashBalance = parseFloat(childProfile?.cash_balance || 0);
 
-  const assignedChores = chores.filter(c => c.status === 'assigned');
-  const completedChores = chores.filter(c => c.status === 'completed');
-  const approvedChores = chores.filter(c => c.status === 'approved');
+  const assignedTasks = tasks.filter(c => c.status === 'assigned');
+  const completedTasks = tasks.filter(c => c.status === 'completed');
+  const approvedTasks = tasks.filter(c => c.status === 'approved');
 
   const affordableRewards = rewards.filter(r =>
     r.reward_type === 'points' ? r.points_cost <= pointsBalance : r.cash_cost <= cashBalance
   );
 
-  const completionRate = chores.length > 0
-    ? Math.round(((completedChores.length + approvedChores.length) / chores.length) * 100)
+  const completionRate = tasks.length > 0
+    ? Math.round(((completedTasks.length + approvedTasks.length) / tasks.length) * 100)
     : 0;
 
-  const markChoreComplete = useMutation({
-    mutationFn: async (choreId) => {
+  const markTaskComplete = useMutation({
+    mutationFn: async (taskId) => {
       const { error } = await firstsavvy
-        .from('chores')
+        .from('tasks')
         .update({ status: 'completed', completed_at: new Date().toISOString() })
-        .eq('id', choreId);
+        .eq('id', taskId);
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['child-chores', childProfileId]);
-      toast.success('Chore marked complete! Awaiting parent approval.');
+      queryClient.invalidateQueries(['child-tasks', childProfileId]);
+      toast.success('Task marked complete! Awaiting parent approval.');
     },
     onError: () => {
-      toast.error('Failed to mark chore complete');
+      toast.error('Failed to mark task complete');
     }
   });
 
@@ -212,35 +212,35 @@ export default function ChildDashboard() {
                 <div className="w-10 h-10 rounded-full bg-sky-100 flex items-center justify-center">
                   <Zap className="w-5 h-5 text-sky-600" />
                 </div>
-                <CardTitle className="text-lg font-bold text-slate-900">My Chores</CardTitle>
+                <CardTitle className="text-lg font-bold text-slate-900">My Tasks</CardTitle>
               </div>
               <Badge variant="secondary" className="text-xs px-3 py-1">
-                {assignedChores.length} active
+                {assignedTasks.length} active
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="px-6 pb-6">
-            {chores.length === 0 ? (
+            {tasks.length === 0 ? (
               <div className="text-center py-12 text-slate-500">
                 <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-slate-100 flex items-center justify-center">
                   <Circle className="w-8 h-8 text-slate-300" />
                 </div>
-                <p className="text-sm font-medium">No chores yet</p>
+                <p className="text-sm font-medium">No tasks yet</p>
                 <p className="text-xs text-slate-400 mt-1">Check back later for new tasks</p>
               </div>
             ) : (
               <div className="space-y-3">
-                {chores.slice(0, 6).map((chore) => {
-                  const daysUntilDue = chore.due_date ? differenceInDays(new Date(chore.due_date), new Date()) : null;
+                {tasks.slice(0, 6).map((task) => {
+                  const daysUntilDue = task.due_date ? differenceInDays(new Date(task.due_date), new Date()) : null;
                   const isUrgent = daysUntilDue !== null && daysUntilDue <= 1;
 
                   return (
                     <div
-                      key={chore.id}
+                      key={task.id}
                       className={`p-4 rounded-xl border-2 transition-all hover:shadow-md ${
-                        chore.status === 'approved'
+                        task.status === 'approved'
                           ? 'border-green-200 bg-green-50'
-                          : chore.status === 'completed'
+                          : task.status === 'completed'
                           ? 'border-amber-200 bg-amber-50'
                           : isUrgent
                           ? 'border-red-200 bg-red-50'
@@ -250,45 +250,45 @@ export default function ChildDashboard() {
                       <div className="flex items-start gap-3">
                         <button
                           onClick={() => {
-                            if (chore.status === 'assigned') {
-                              markChoreComplete.mutate(chore.id);
+                            if (task.status === 'assigned') {
+                              markTaskComplete.mutate(task.id);
                             }
                           }}
-                          disabled={chore.status !== 'assigned'}
+                          disabled={task.status !== 'assigned'}
                           className="mt-1"
                         >
-                          {chore.status === 'approved' ? (
+                          {task.status === 'approved' ? (
                             <CheckCircle className="w-6 h-6 text-green-600 fill-green-600" />
-                          ) : chore.status === 'completed' ? (
+                          ) : task.status === 'completed' ? (
                             <CheckCircle className="w-6 h-6 text-amber-600" />
                           ) : (
-                            <Circle className={`w-6 h-6 ${chore.status === 'assigned' ? 'text-sky-600 hover:text-sky-700 cursor-pointer' : 'text-slate-400'}`} />
+                            <Circle className={`w-6 h-6 ${task.status === 'assigned' ? 'text-sky-600 hover:text-sky-700 cursor-pointer' : 'text-slate-400'}`} />
                           )}
                         </button>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-slate-900">{chore.title}</p>
-                          {chore.description && (
-                            <p className="text-xs text-slate-600 mt-1">{chore.description}</p>
+                          <p className="text-sm font-semibold text-slate-900">{task.title}</p>
+                          {task.description && (
+                            <p className="text-xs text-slate-600 mt-1">{task.description}</p>
                           )}
                           <div className="flex items-center gap-3 mt-2">
-                            {chore.due_date && (
+                            {task.due_date && (
                               <div className={`flex items-center gap-1 text-xs ${isUrgent ? 'text-red-700 font-semibold' : 'text-slate-500'}`}>
                                 <Calendar className="w-3 h-3" />
-                                {daysUntilDue === 0 ? 'Due today' : daysUntilDue === 1 ? 'Due tomorrow' : format(new Date(chore.due_date), 'MMM d')}
+                                {daysUntilDue === 0 ? 'Due today' : daysUntilDue === 1 ? 'Due tomorrow' : format(new Date(task.due_date), 'MMM d')}
                               </div>
                             )}
-                            {(chore.points_reward > 0 || chore.cash_reward > 0) && (
+                            {(task.points_reward > 0 || task.cash_reward > 0) && (
                               <div className="flex items-center gap-2">
-                                {chore.points_reward > 0 && (
+                                {task.points_reward > 0 && (
                                   <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-100 rounded-full">
                                     <Star className="w-3 h-3 text-amber-600 fill-amber-600" />
-                                    <span className="text-xs font-semibold text-amber-700">{chore.points_reward}</span>
+                                    <span className="text-xs font-semibold text-amber-700">{task.points_reward}</span>
                                   </div>
                                 )}
-                                {chore.cash_reward > 0 && (
+                                {task.cash_reward > 0 && (
                                   <div className="flex items-center gap-1 px-2 py-0.5 bg-green-100 rounded-full">
                                     <DollarSign className="w-3 h-3 text-green-600" />
-                                    <span className="text-xs font-semibold text-green-700">{chore.cash_reward.toFixed(2)}</span>
+                                    <span className="text-xs font-semibold text-green-700">{task.cash_reward.toFixed(2)}</span>
                                   </div>
                                 )}
                               </div>
@@ -412,7 +412,7 @@ export default function ChildDashboard() {
                   🌟 Level Up to Unlock More Features!
                 </p>
                 <p className="text-sm text-amber-800 leading-relaxed">
-                  You're at Level 1 (Supervised). Complete your chores and show responsibility
+                  You're at Level 1 (Supervised). Complete your tasks and show responsibility
                   to unlock rewards, cash management, and more cool features! Keep up the great work!
                 </p>
               </div>

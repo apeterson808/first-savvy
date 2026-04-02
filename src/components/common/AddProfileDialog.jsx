@@ -125,7 +125,7 @@ export function AddProfileDialog({ open, onOpenChange, onProfileCreated }) {
   ];
 
   const permissionLevels = [
-    { level: 1, name: 'Basic Access', description: 'Dashboard and chores only' },
+    { level: 1, name: 'Basic Access', description: 'Dashboard and tasks only' },
     { level: 2, name: 'Rewards', description: 'Can view and redeem rewards' },
     { level: 3, name: 'Money', description: 'View accounts and budgets' },
   ];

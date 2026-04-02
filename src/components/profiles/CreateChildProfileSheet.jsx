@@ -396,7 +396,7 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
                   </SelectContent>
                 </Select>
                 <p className="text-sm text-slate-500">
-                  {formData.current_permission_level === 1 && 'Basic access to view chores and points'}
+                  {formData.current_permission_level === 1 && 'Basic access to view tasks and points'}
                   {formData.current_permission_level === 2 && 'Can earn and redeem rewards'}
                   {formData.current_permission_level === 3 && 'Full access including money management'}
                 </p>
