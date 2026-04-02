@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
 import AppearancePicker from '../common/AppearancePicker';
 import { differenceInYears } from 'date-fns';
+import { getIconComponent } from '../utils/iconMapper';
 
 export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdated }) {
   const [formData, setFormData] = useState({
@@ -17,7 +18,8 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
     last_name: '',
     date_of_birth: '',
     sex: '',
-    avatar: null,
+    avatar_icon: 'User',
+    avatar_color: '#52A5CE',
     current_permission_level: 1,
     daily_spending_limit: '',
     weekly_spending_limit: '',
@@ -34,7 +36,8 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
         last_name: child.last_name || '',
         date_of_birth: child.date_of_birth || '',
         sex: child.sex || '',
-        avatar: child.avatar || null,
+        avatar_icon: child.avatar_icon || 'User',
+        avatar_color: child.avatar_color || '#52A5CE',
         current_permission_level: child.current_permission_level || 1,
         daily_spending_limit: child.daily_spending_limit || '',
         weekly_spending_limit: child.weekly_spending_limit || '',
@@ -85,7 +88,8 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
         child_name: `${formData.first_name} ${formData.last_name}`,
         date_of_birth: formData.date_of_birth || null,
         sex: formData.sex || null,
-        avatar: formData.avatar,
+        avatar_icon: formData.avatar_icon,
+        avatar_color: formData.avatar_color,
         current_permission_level: formData.current_permission_level,
         daily_spending_limit: formData.daily_spending_limit ? parseFloat(formData.daily_spending_limit) : null,
         weekly_spending_limit: formData.weekly_spending_limit ? parseFloat(formData.weekly_spending_limit) : null,
@@ -120,17 +124,25 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Avatar</Label>
-              <AppearancePicker
-                color={formData.avatar?.color}
-                icon={formData.avatar?.icon}
-                imageUrl={formData.avatar?.imageUrl}
-                onColorChange={(color) => setFormData({ ...formData, avatar: { ...formData.avatar, color, imageUrl: null } })}
-                onIconChange={(icon) => setFormData({ ...formData, avatar: { ...formData.avatar, icon, imageUrl: null } })}
-                onImageUpload={(imageUrl) => setFormData({ ...formData, avatar: { ...formData.avatar, imageUrl } })}
-                showPreview={true}
-                useTabs={true}
-                inline={true}
-              />
+              <div className="flex items-start gap-4">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: formData.avatar_color }}
+                >
+                  {(() => {
+                    const IconComponent = getIconComponent(formData.avatar_icon);
+                    return IconComponent ? <IconComponent className="w-12 h-12 text-white" /> : null;
+                  })()}
+                </div>
+                <div className="flex-1">
+                  <AppearancePicker
+                    icon={formData.avatar_icon}
+                    color={formData.avatar_color}
+                    onIconChange={(icon) => setFormData({ ...formData, avatar_icon: icon })}
+                    onColorChange={(color) => setFormData({ ...formData, avatar_color: color })}
+                  />
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">

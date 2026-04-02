@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import AvatarSelector from './AvatarSelector';
+import AppearancePicker from '@/components/common/AppearancePicker';
 import { differenceInYears } from 'date-fns';
+import { getIconComponent } from '@/components/utils/iconMapper';
 
 export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
   const { user } = useAuth();
@@ -19,7 +20,8 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
     last_name: '',
     date_of_birth: '',
     sex: '',
-    avatar: null,
+    avatar_icon: 'User',
+    avatar_color: '#52A5CE',
     current_permission_level: 1,
     daily_spending_limit: '',
     weekly_spending_limit: '',
@@ -81,7 +83,8 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
         child_name: `${formData.first_name} ${formData.last_name}`,
         date_of_birth: formData.date_of_birth || null,
         sex: formData.sex || null,
-        avatar: formData.avatar,
+        avatar_icon: formData.avatar_icon,
+        avatar_color: formData.avatar_color,
         current_permission_level: formData.current_permission_level,
         daily_spending_limit: formData.daily_spending_limit ? parseFloat(formData.daily_spending_limit) : null,
         weekly_spending_limit: formData.weekly_spending_limit ? parseFloat(formData.weekly_spending_limit) : null,
@@ -94,7 +97,8 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
         last_name: '',
         date_of_birth: '',
         sex: '',
-        avatar: null,
+        avatar_icon: 'User',
+        avatar_color: '#52A5CE',
         current_permission_level: 1,
         daily_spending_limit: '',
         weekly_spending_limit: '',
@@ -190,13 +194,28 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
           <Separator />
 
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-slate-700">Avatar</h3>
-            <AvatarSelector
-              value={formData.avatar}
-              onChange={(avatar) => setFormData({ ...formData, avatar })}
-              firstName={formData.first_name}
-              lastName={formData.last_name}
-            />
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700 mb-2">Avatar</h3>
+              <div className="flex items-start gap-4">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center flex-shrink-0"
+                  style={{ backgroundColor: formData.avatar_color }}
+                >
+                  {(() => {
+                    const IconComponent = getIconComponent(formData.avatar_icon);
+                    return IconComponent ? <IconComponent className="w-12 h-12 text-white" /> : null;
+                  })()}
+                </div>
+                <div className="flex-1">
+                  <AppearancePicker
+                    icon={formData.avatar_icon}
+                    color={formData.avatar_color}
+                    onIconChange={(icon) => setFormData({ ...formData, avatar_icon: icon })}
+                    onColorChange={(color) => setFormData({ ...formData, avatar_color: color })}
+                  />
+                </div>
+              </div>
+            </div>
           </div>
 
           <Separator />
