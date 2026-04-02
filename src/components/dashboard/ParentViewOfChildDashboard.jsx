@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/pages/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { BeginnerProfileView } from '@/components/children/BeginnerProfileView';
 
 export default function ParentViewOfChildDashboard() {
   const navigate = useNavigate();
@@ -43,6 +44,10 @@ export default function ParentViewOfChildDashboard() {
     },
     enabled: !!childProfileId
   });
+
+  if (childProfile && childProfile.current_permission_level === 1) {
+    return <BeginnerProfileView childProfile={childProfile} isParentViewing={true} />;
+  }
 
 
   const { data: tasks = [] } = useQuery({

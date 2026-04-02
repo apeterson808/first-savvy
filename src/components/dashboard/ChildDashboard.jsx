@@ -25,9 +25,10 @@ import { format, differenceInDays } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
+import { BeginnerProfileView } from '@/components/children/BeginnerProfileView';
 
 export default function ChildDashboard() {
-  const { activeProfile } = useProfile();
+  const { activeProfile, viewingChildProfile } = useProfile();
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const permissionLevel = activeProfile?.permission_level || 1;
@@ -47,6 +48,10 @@ export default function ChildDashboard() {
     },
     enabled: !!childProfileId
   });
+
+  if (childProfile && childProfile.current_permission_level === 1) {
+    return <BeginnerProfileView childProfile={childProfile} isParentViewing={!!viewingChildProfile} />;
+  }
 
   const { data: tasks = [] } = useQuery({
     queryKey: ['child-tasks', childProfileId],

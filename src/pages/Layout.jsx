@@ -128,6 +128,19 @@ export default function Layout({ children, currentPageName }) {
 
   const navigation = getNavigation();
 
+  if (isLoggedInAsChild) {
+    return (
+      <div className="flex h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <main className="flex-1 flex flex-col overflow-hidden">
+          <ErrorBoundary>
+            {children}
+          </ErrorBoundary>
+        </main>
+        <NetworkStatus />
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50">
       {/* Sidebar */}
