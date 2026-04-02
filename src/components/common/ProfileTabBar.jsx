@@ -88,7 +88,9 @@ export function ProfileTabBar({ onAddProfileClick }) {
                 onClick={() => handleTabClick(profile)}
                 className={`group flex items-center gap-1.5 px-3 py-1 cursor-pointer transition-all min-w-[120px] max-w-[160px] relative flex-shrink-0 ${
                   isActive
-                    ? 'bg-slate-100 text-slate-900 z-10'
+                    ? isChildProfile
+                      ? 'bg-slate-50 text-slate-900 z-10'
+                      : 'bg-slate-100 text-slate-900 z-10'
                     : 'bg-slate-200 text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                 }`}
                 style={{
@@ -102,7 +104,9 @@ export function ProfileTabBar({ onAddProfileClick }) {
                     ? '2px solid #cbd5e1'
                     : '2px solid transparent',
                   borderBottom: isActive
-                    ? '2px solid #f1f5f9'
+                    ? isChildProfile
+                      ? '2px solid #f8fafc'
+                      : '2px solid #f1f5f9'
                     : 'none',
                   borderTopLeftRadius: '12px',
                   borderTopRightRadius: '12px',
