@@ -289,11 +289,11 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                               <Avatar className="h-5 w-5">
                                 <AvatarImage src={share.shared_with_profile?.avatar_url} />
                                 <AvatarFallback className="text-[10px]">
-                                  {share.shared_with_profile?.profile_name?.[0]?.toUpperCase() || 'U'}
+                                  {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
                                 </AvatarFallback>
                               </Avatar>
                               <span className="flex-1 font-medium">
-                                {share.shared_with_profile?.profile_name}
+                                {share.shared_with_profile?.display_name}
                               </span>
                               <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                                 {PERMISSION_LEVELS[share.permission_level]}

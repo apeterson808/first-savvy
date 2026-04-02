@@ -8,7 +8,7 @@ export const parentAccessGrantsAPI = {
         *,
         profiles (
           id,
-          profile_name
+          display_name
         )
       `)
       .eq('child_profile_id', childId)

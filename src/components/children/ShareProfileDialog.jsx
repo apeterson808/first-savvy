@@ -71,7 +71,7 @@ export function ShareProfileDialog({ open, onOpenChange, childProfile, currentPr
 
       const { data: userData, error: userError } = await supabase
         .from('profiles')
-        .select('id, profile_name, user_id')
+        .select('id, display_name, user_id')
         .eq('user_id', (
           await supabase.auth.admin.getUserByEmail(email)
         )?.data?.user?.id)
@@ -92,7 +92,7 @@ export function ShareProfileDialog({ open, onOpenChange, childProfile, currentPr
       );
 
       toast.success('Profile shared successfully', {
-        description: `${userData.profile_name} can now access this profile`
+        description: `${userData.display_name} can now access this profile`
       });
 
       setEmail('');
@@ -203,12 +203,12 @@ export function ShareProfileDialog({ open, onOpenChange, childProfile, currentPr
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={share.shared_with_profile?.avatar_url} />
                             <AvatarFallback>
-                              {share.shared_with_profile?.profile_name?.[0]?.toUpperCase() || 'U'}
+                              {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="text-sm font-medium">
-                              {share.shared_with_profile?.profile_name}
+                              {share.shared_with_profile?.display_name}
                             </p>
                             <div className="flex items-center gap-2">
                               <p className="text-xs text-slate-500">

@@ -38,7 +38,7 @@ export const profileInvitationsAPI = {
         ),
         invited_by:profiles!profile_invitations_invited_by_profile_id_fkey(
           id,
-          profile_name
+          display_name
         )
       `)
       .eq('invitation_token', token)
