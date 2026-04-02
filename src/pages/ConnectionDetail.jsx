@@ -8,7 +8,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
-import { LevelTransitionDialog } from '@/components/children/LevelTransitionDialog';
 import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
 import { ChoresTab } from '@/components/children/ChoresTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
@@ -34,7 +33,6 @@ export default function ConnectionDetail() {
   const { activeProfile } = useProfile();
   const [child, setChild] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [showLevelTransition, setShowLevelTransition] = useState(false);
   const [stats, setStats] = useState({
     completedChores: 0,
     pendingChores: 0,
@@ -72,11 +70,6 @@ export default function ConnectionDetail() {
     }
   };
 
-  const handleTierChange = async () => {
-    setShowLevelTransition(false);
-    await loadChildData();
-    toast.success('Permission tier updated successfully');
-  };
 
   if (loading) {
     return (
@@ -101,17 +94,14 @@ export default function ConnectionDetail() {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center justify-between mb-6">
+    <div className="h-full flex flex-col pb-6">
+      <div className="flex items-center mb-6">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate('/Connections')}
         >
           <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <Button onClick={() => setShowLevelTransition(true)}>
-          Manage Tier
         </Button>
       </div>
 
@@ -121,7 +111,7 @@ export default function ConnectionDetail() {
         onUpdate={loadChildData}
       />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
         <Card>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
@@ -195,13 +185,6 @@ export default function ConnectionDetail() {
           <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
         </TabsContent>
       </Tabs>
-
-      <LevelTransitionDialog
-        open={showLevelTransition}
-        onOpenChange={setShowLevelTransition}
-        child={child}
-        onLevelChanged={handleTierChange}
-      />
     </div>
   );
 }
