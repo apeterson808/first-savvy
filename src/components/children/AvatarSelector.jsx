@@ -19,7 +19,7 @@ const PRESET_AVATARS = [
   { id: 'moon', icon: Moon, color: 'bg-slate-100 text-slate-600' },
 ];
 
-export default function AvatarSelector({ value, onChange, firstName = '', lastName = '' }) {
+export default function AvatarSelector({ value, onChange, firstName = '', lastName = '', currentAvatar = null }) {
   const [uploadedFile, setUploadedFile] = useState(null);
 
   const handlePresetSelect = (presetId) => {
@@ -77,6 +77,29 @@ export default function AvatarSelector({ value, onChange, firstName = '', lastNa
           </div>
         );
       }
+    }
+
+    if (currentAvatar && currentAvatar.startsWith('preset:')) {
+      const presetId = currentAvatar.replace('preset:', '');
+      const preset = PRESET_AVATARS.find(p => p.id === presetId);
+      if (preset) {
+        const Icon = preset.icon;
+        return (
+          <div className={cn('w-full h-full flex items-center justify-center', preset.color)}>
+            <Icon className="w-12 h-12" />
+          </div>
+        );
+      }
+    }
+
+    if (currentAvatar) {
+      return (
+        <img
+          src={currentAvatar}
+          alt="Current avatar"
+          className="w-full h-full object-cover"
+        />
+      );
     }
 
     return (

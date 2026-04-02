@@ -10,8 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Edit, Users, Mail, CheckCircle, Clock, XCircle, Crown, Save, X as CloseIcon } from 'lucide-react';
+import { Users, Crown } from 'lucide-react';
 import { InviteChildDialog } from './InviteChildDialog';
 import { ShareProfileDialog } from './ShareProfileDialog';
 import { LevelTransitionDialog } from './LevelTransitionDialog';
@@ -37,7 +36,6 @@ const PERMISSION_LEVELS = {
 };
 
 export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
-  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     child_name: '',
     date_of_birth: '',
@@ -47,7 +45,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     notes: '',
   });
   const [avatar, setAvatar] = useState(null);
-  const [saving, setSaving] = useState(false);
   const [shares, setShares] = useState([]);
   const [invitation, setInvitation] = useState(null);
   const [loadingAccess, setLoadingAccess] = useState(true);
@@ -110,316 +107,248 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     setShowInviteDialog(true);
   };
 
-  const handleSave = async () => {
+  const handleFieldUpdate = async (field, value) => {
     try {
-      setSaving(true);
+      const updates = { [field]: value || null };
 
-      const updates = {
-        child_name: formData.child_name,
-        date_of_birth: formData.date_of_birth || null,
-        daily_spending_limit: formData.daily_spending_limit ? parseFloat(formData.daily_spending_limit) : null,
-        weekly_spending_limit: formData.weekly_spending_limit ? parseFloat(formData.weekly_spending_limit) : null,
-        monthly_spending_limit: formData.monthly_spending_limit ? parseFloat(formData.monthly_spending_limit) : null,
-        notes: formData.notes,
-      };
-
-      if (avatar) {
-        let avatarUrl = null;
-        if (avatar.type === 'upload' && avatar.file) {
-          const fileExt = avatar.file.name.split('.').pop();
-          const fileName = `${currentProfileId}/${Date.now()}.${fileExt}`;
-
-          const { error: uploadError } = await supabase.storage
-            .from('avatars')
-            .upload(fileName, avatar.file, {
-              cacheControl: '3600',
-              upsert: false
-            });
-
-          if (uploadError) {
-            console.error('Avatar upload error:', uploadError);
-            toast.error('Failed to upload avatar');
-          } else {
-            const { data: { publicUrl } } = supabase.storage
-              .from('avatars')
-              .getPublicUrl(fileName);
-            avatarUrl = publicUrl;
-          }
-        } else if (avatar.type === 'preset') {
-          avatarUrl = `preset:${avatar.value}`;
-        }
-
-        if (avatarUrl) {
-          updates.avatar_url = avatarUrl;
-        }
+      if (field.includes('limit') && value) {
+        updates[field] = parseFloat(value);
       }
 
       await childProfilesAPI.updateChildProfile(child.id, updates);
-      toast.success('Profile updated successfully');
-      setIsEditing(false);
-      setAvatar(null);
+      toast.success('Updated successfully');
       onUpdate();
     } catch (error) {
-      console.error('Error updating child:', error);
-      toast.error('Failed to update profile');
-    } finally {
-      setSaving(false);
+      console.error('Error updating field:', error);
+      toast.error('Failed to update');
     }
   };
 
-  const handleCancel = () => {
-    setFormData({
-      child_name: child.child_name,
-      date_of_birth: child.date_of_birth || '',
-      daily_spending_limit: child.daily_spending_limit || '',
-      weekly_spending_limit: child.weekly_spending_limit || '',
-      monthly_spending_limit: child.monthly_spending_limit || '',
-      notes: child.notes || '',
-    });
-    setAvatar(null);
-    setIsEditing(false);
+  const handleAvatarChange = async (newAvatar) => {
+    try {
+      let avatarUrl = null;
+
+      if (newAvatar.type === 'upload' && newAvatar.file) {
+        const fileExt = newAvatar.file.name.split('.').pop();
+        const fileName = `${currentProfileId}/${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(fileName, newAvatar.file, {
+            cacheControl: '3600',
+            upsert: false
+          });
+
+        if (uploadError) {
+          console.error('Avatar upload error:', uploadError);
+          toast.error('Failed to upload avatar');
+          return;
+        } else {
+          const { data: { publicUrl } } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(fileName);
+          avatarUrl = publicUrl;
+        }
+      } else if (newAvatar.type === 'preset') {
+        avatarUrl = `preset:${newAvatar.value}`;
+      }
+
+      if (avatarUrl) {
+        await childProfilesAPI.updateChildProfile(child.id, { avatar_url: avatarUrl });
+        toast.success('Avatar updated successfully');
+        setAvatar(null);
+        onUpdate();
+      }
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      toast.error('Failed to update avatar');
+    }
   };
 
   return (
     <>
       <Card>
         <CardContent className="p-6">
-          {!isEditing ? (
-            <>
-              <div className="flex items-start justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={child.avatar_url} />
-                    <AvatarFallback className="text-xl">
-                      {child.child_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <h2 className="text-2xl font-bold mb-2">{child.child_name}</h2>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <Badge
-                        className={`${TIER_COLORS[child.current_permission_level]} cursor-pointer hover:opacity-80`}
-                        onClick={() => setShowTierDialog(true)}
-                      >
-                        Tier {child.current_permission_level}: {TIER_NAMES[child.current_permission_level]}
-                      </Badge>
-                      {child.date_of_birth && (
-                        <span className="text-sm text-slate-600">
-                          Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
-                        </span>
-                      )}
-                      <Badge
-                        className={
-                          getInvitationStatus().variant === 'success'
-                            ? 'bg-green-100 text-green-800'
-                            : getInvitationStatus().variant === 'secondary'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'
-                        }
-                        onClick={handleInviteClick}
-                      >
-                        {getInvitationStatus().text}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsEditing(true)}
-                >
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-3">Additional Information</h3>
-                  <div className="space-y-2 text-sm">
-                    {child.notes && (
-                      <div>
-                        <span className="text-slate-600">Notes: </span>
-                        <span className="text-slate-900">{child.notes}</span>
-                      </div>
-                    )}
-                    {(child.daily_spending_limit || child.weekly_spending_limit || child.monthly_spending_limit) && (
-                      <div>
-                        <span className="text-slate-600 block mb-1">Spending Limits:</span>
-                        <div className="space-y-0.5 text-xs pl-2">
-                          {child.daily_spending_limit && (
-                            <div>Daily: ${parseFloat(child.daily_spending_limit).toFixed(2)}</div>
-                          )}
-                          {child.weekly_spending_limit && (
-                            <div>Weekly: ${parseFloat(child.weekly_spending_limit).toFixed(2)}</div>
-                          )}
-                          {child.monthly_spending_limit && (
-                            <div>Monthly: ${parseFloat(child.monthly_spending_limit).toFixed(2)}</div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-start gap-2 pt-2 text-xs text-slate-500">
-                      <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
-                      <span>
-                        You have full access as the profile owner
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                      <Users className="h-4 w-4" />
-                      Shared Access ({shares.length}/3)
-                    </h3>
-                    <Button
-                      onClick={() => setShowShareDialog(true)}
-                      variant="ghost"
-                      size="sm"
-                      disabled={shares.length >= 3}
-                    >
-                      <Users className="h-3 w-3 mr-1" />
-                      Share
-                    </Button>
-                  </div>
-                  {shares.length > 0 ? (
-                    <div className="space-y-1.5">
-                      {shares.map((share) => (
-                        <div
-                          key={share.id}
-                          className="flex items-center gap-2 text-xs p-2 bg-slate-50 rounded"
-                        >
-                          <Avatar className="h-5 w-5">
-                            <AvatarImage src={share.shared_with_profile?.avatar_url} />
-                            <AvatarFallback className="text-[10px]">
-                              {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="flex-1 font-medium">
-                            {share.shared_with_profile?.display_name}
-                          </span>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {PERMISSION_LEVELS[share.permission_level]}
-                          </Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-sm text-slate-500 text-center py-4">
-                      No shared access yet
-                    </div>
-                  )}
-                </div>
-              </div>
-            </>
-          ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold mb-4">Edit Profile</h3>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                      <AvatarSelector
-                        value={avatar}
-                        onChange={setAvatar}
-                        firstName={formData.child_name.split(' ')[0]}
-                        lastName={formData.child_name.split(' ')[1] || ''}
-                      />
-
-                      <div className="space-y-2">
-                        <Label htmlFor="child_name">Name</Label>
-                        <Input
-                          id="child_name"
-                          value={formData.child_name}
-                          onChange={(e) => setFormData({ ...formData, child_name: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="date_of_birth">Date of Birth</Label>
-                        <Input
-                          id="date_of_birth"
-                          type="date"
-                          value={formData.date_of_birth}
-                          onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                        />
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="notes">Notes</Label>
-                        <Textarea
-                          id="notes"
-                          value={formData.notes}
-                          onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                          rows={3}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="space-y-3">
-                        <Label className="text-base">Spending Limits (Tier 3)</Label>
-                        <div className="space-y-3">
-                          <div className="space-y-2">
-                            <Label htmlFor="daily_spending_limit" className="text-sm">Daily</Label>
-                            <Input
-                              id="daily_spending_limit"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={formData.daily_spending_limit}
-                              onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                              placeholder="$0.00"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="weekly_spending_limit" className="text-sm">Weekly</Label>
-                            <Input
-                              id="weekly_spending_limit"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={formData.weekly_spending_limit}
-                              onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                              placeholder="$0.00"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="monthly_spending_limit" className="text-sm">Monthly</Label>
-                            <Input
-                              id="monthly_spending_limit"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={formData.monthly_spending_limit}
-                              onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                              placeholder="$0.00"
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <AvatarSelector
+                    value={avatar}
+                    onChange={handleAvatarChange}
+                    firstName={formData.child_name.split(' ')[0]}
+                    lastName={formData.child_name.split(' ')[1] || ''}
+                    currentAvatar={child.avatar_url}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="space-y-2">
+                    <Label htmlFor="child_name" className="text-xs text-slate-600">Name</Label>
+                    <Input
+                      id="child_name"
+                      value={formData.child_name}
+                      onChange={(e) => setFormData({ ...formData, child_name: e.target.value })}
+                      onBlur={(e) => handleFieldUpdate('child_name', e.target.value)}
+                      className="text-xl font-bold"
+                    />
                   </div>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-4 border-t">
-                <Button variant="outline" onClick={handleCancel} disabled={saving}>
-                  <CloseIcon className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
-                <Button onClick={handleSave} disabled={saving}>
-                  <Save className="h-4 w-4 mr-2" />
-                  {saving ? 'Saving...' : 'Save Changes'}
-                </Button>
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge
+                  className={`${TIER_COLORS[child.current_permission_level]} cursor-pointer hover:opacity-80`}
+                  onClick={() => setShowTierDialog(true)}
+                >
+                  Tier {child.current_permission_level}: {TIER_NAMES[child.current_permission_level]}
+                </Badge>
+                {child.date_of_birth && (
+                  <span className="text-sm text-slate-600">
+                    Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
+                  </span>
+                )}
+                <Badge
+                  className={
+                    getInvitationStatus().variant === 'success'
+                      ? 'bg-green-100 text-green-800'
+                      : getInvitationStatus().variant === 'secondary'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200'
+                  }
+                  onClick={handleInviteClick}
+                >
+                  {getInvitationStatus().text}
+                </Badge>
+              </div>
+
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="date_of_birth" className="text-xs text-slate-600">Date of Birth</Label>
+                  <Input
+                    id="date_of_birth"
+                    type="date"
+                    value={formData.date_of_birth}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                    onBlur={(e) => handleFieldUpdate('date_of_birth', e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="notes" className="text-xs text-slate-600">Notes</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    onBlur={(e) => handleFieldUpdate('notes', e.target.value)}
+                    rows={3}
+                    placeholder="Add notes about this child profile..."
+                  />
+                </div>
+
+                <div className="space-y-3">
+                  <Label className="text-xs text-slate-600">Spending Limits (Tier 3)</Label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="daily_spending_limit" className="text-[10px] text-slate-500">Daily</Label>
+                      <Input
+                        id="daily_spending_limit"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.daily_spending_limit}
+                        onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
+                        onBlur={(e) => handleFieldUpdate('daily_spending_limit', e.target.value)}
+                        placeholder="$0.00"
+                        className="text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="weekly_spending_limit" className="text-[10px] text-slate-500">Weekly</Label>
+                      <Input
+                        id="weekly_spending_limit"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.weekly_spending_limit}
+                        onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
+                        onBlur={(e) => handleFieldUpdate('weekly_spending_limit', e.target.value)}
+                        placeholder="$0.00"
+                        className="text-sm"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label htmlFor="monthly_spending_limit" className="text-[10px] text-slate-500">Monthly</Label>
+                      <Input
+                        id="monthly_spending_limit"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        value={formData.monthly_spending_limit}
+                        onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
+                        onBlur={(e) => handleFieldUpdate('monthly_spending_limit', e.target.value)}
+                        placeholder="$0.00"
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 pt-2 text-xs text-slate-500 border-t">
+                  <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
+                  <span>You have full access as the profile owner</span>
+                </div>
               </div>
             </div>
-          )}
+
+            <div className="space-y-6">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    Shared Access ({shares.length}/3)
+                  </h3>
+                  <Button
+                    onClick={() => setShowShareDialog(true)}
+                    variant="ghost"
+                    size="sm"
+                    disabled={shares.length >= 3}
+                  >
+                    <Users className="h-3 w-3 mr-1" />
+                    Share
+                  </Button>
+                </div>
+                {shares.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {shares.map((share) => (
+                      <div
+                        key={share.id}
+                        className="flex items-center gap-2 text-xs p-2 bg-slate-50 rounded"
+                      >
+                        <Avatar className="h-5 w-5">
+                          <AvatarImage src={share.shared_with_profile?.avatar_url} />
+                          <AvatarFallback className="text-[10px]">
+                            {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="flex-1 font-medium">
+                          {share.shared_with_profile?.display_name}
+                        </span>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                          {PERMISSION_LEVELS[share.permission_level]}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-slate-500 text-center py-8 border border-dashed rounded">
+                    No shared access yet
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
