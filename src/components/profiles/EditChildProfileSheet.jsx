@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import AvatarSelector from '../children/AvatarSelector';
+import AppearancePicker from '../common/AppearancePicker';
 import { differenceInYears } from 'date-fns';
 
 export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdated }) {
@@ -120,9 +120,12 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Avatar</Label>
-              <AvatarSelector
-                value={formData.avatar}
-                onChange={(avatar) => setFormData({ ...formData, avatar })}
+              <AppearancePicker
+                color={formData.avatar?.color}
+                icon={formData.avatar?.icon}
+                onColorChange={(color) => setFormData({ ...formData, avatar: { ...formData.avatar, color } })}
+                onIconChange={(icon) => setFormData({ ...formData, avatar: { ...formData.avatar, icon } })}
+                showPreview={true}
               />
             </div>
 
@@ -180,8 +183,6 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
                   <SelectContent>
                     <SelectItem value="male">Male</SelectItem>
                     <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                    <SelectItem value="prefer_not_to_say">Prefer not to say</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -215,49 +216,51 @@ export function EditChildProfileSheet({ open, onOpenChange, child, onChildUpdate
               </div>
             </div>
 
-            <div>
-              <h3 className="text-sm font-medium mb-3">Spending Limits (Optional)</h3>
-              <div className="space-y-3">
-                <div className="space-y-2">
-                  <Label htmlFor="daily-limit">Daily Limit</Label>
-                  <Input
-                    id="daily-limit"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.daily_spending_limit}
-                    onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
+            {formData.current_permission_level > 1 && (
+              <div>
+                <h3 className="text-sm font-medium mb-3">Spending Limits (Optional)</h3>
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <Label htmlFor="daily-limit">Daily Limit</Label>
+                    <Input
+                      id="daily-limit"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.daily_spending_limit}
+                      onChange={(e) => setFormData({ ...formData, daily_spending_limit: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="weekly-limit">Weekly Limit</Label>
-                  <Input
-                    id="weekly-limit"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.weekly_spending_limit}
-                    onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
-                    placeholder="0.00"
-                  />
-                </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="weekly-limit">Weekly Limit</Label>
+                    <Input
+                      id="weekly-limit"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.weekly_spending_limit}
+                      onChange={(e) => setFormData({ ...formData, weekly_spending_limit: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="monthly-limit">Monthly Limit</Label>
-                  <Input
-                    id="monthly-limit"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={formData.monthly_spending_limit}
-                    onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
-                    placeholder="0.00"
-                  />
+                  <div className="space-y-2">
+                    <Label htmlFor="monthly-limit">Monthly Limit</Label>
+                    <Input
+                      id="monthly-limit"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.monthly_spending_limit}
+                      onChange={(e) => setFormData({ ...formData, monthly_spending_limit: e.target.value })}
+                      placeholder="0.00"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
 
           <Separator />
