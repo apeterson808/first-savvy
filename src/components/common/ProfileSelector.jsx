@@ -114,18 +114,19 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
         ) : (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {allProfiles.map((profile) => {
-              const isActive = activeProfile?.id === profile.id;
+              const isActive = profile.is_child_profile
+                ? activeProfile?.child_profile_id === profile.child_profile_id
+                : activeProfile?.id === profile.id && !activeProfile?.is_child_profile;
               const Icon = profile.is_child_profile ? User : getProfileIcon(profile.profile_type);
 
               return (
                 <button
-                  key={profile.id}
-                  onClick={() => !isActive && handleSelectProfile(profile)}
-                  disabled={isActive}
+                  key={profile.is_child_profile ? profile.child_profile_id : profile.id}
+                  onClick={() => handleSelectProfile(profile)}
                   className={`w-full flex items-center gap-3 p-4 rounded-lg border transition-all text-left ${
                     isActive
-                      ? 'bg-slate-50 border-slate-200 cursor-not-allowed opacity-60'
-                      : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm'
+                      ? 'bg-slate-50 border-slate-200 cursor-default opacity-60'
+                      : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer'
                   }`}
                 >
                   <div className="relative">
