@@ -58,8 +58,8 @@ CREATE POLICY "Users can update their child profiles"
       SELECT id FROM profiles WHERE user_id = auth.uid()
     )
     OR
-    -- Child with permission level 4+ can update their own
-    (user_id = auth.uid() AND current_permission_level >= 4)
+    -- Child with permission level 3 (Money tier) can update their own
+    (user_id = auth.uid() AND current_permission_level >= 3)
   );
 
 -- Create simple DELETE policy
