@@ -13,7 +13,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 export default function Connections() {
   const navigate = useNavigate();
-  const { switchProfile, activeProfile } = useProfile();
+  const { switchProfile, activeProfile, refreshProfiles } = useProfile();
   const [childProfiles, setChildProfiles] = useState([]);
   const [businessProfiles, setBusinessProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -235,8 +235,9 @@ export default function Connections() {
       <CreateChildProfileSheet
         open={showCreateChild}
         onOpenChange={setShowCreateChild}
-        onChildCreated={() => {
-          loadAllProfiles();
+        onChildCreated={async () => {
+          await loadAllProfiles();
+          await refreshProfiles();
         }}
         profileId={activeProfile?.id}
       />
@@ -244,8 +245,9 @@ export default function Connections() {
       <CreateProfileDialog
         open={showCreateBusiness}
         onOpenChange={setShowCreateBusiness}
-        onProfileCreated={() => {
-          loadAllProfiles();
+        onProfileCreated={async () => {
+          await loadAllProfiles();
+          await refreshProfiles();
         }}
         profileType="business"
       />

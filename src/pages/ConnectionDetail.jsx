@@ -32,7 +32,7 @@ const TIER_NAMES = {
 export default function ConnectionDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { activeProfile } = useProfile();
+  const { activeProfile, refreshProfiles } = useProfile();
   const [child, setChild] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -78,6 +78,7 @@ export default function ConnectionDetail() {
     try {
       setDeleting(true);
       await childProfilesAPI.deleteChildProfile(child.id);
+      await refreshProfiles();
       toast.success('Profile deleted successfully');
       navigate('/Connections');
     } catch (error) {
