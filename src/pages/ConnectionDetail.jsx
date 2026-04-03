@@ -4,10 +4,12 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { tasksAPI } from '@/api/tasks';
 import { rewardsAPI } from '@/api/rewards';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock, Trash2, AlertTriangle } from 'lucide-react';
 import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
 import { TasksTab } from '@/components/children/TasksTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
@@ -33,6 +35,8 @@ export default function ConnectionDetail() {
   const { activeProfile } = useProfile();
   const [child, setChild] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [stats, setStats] = useState({
     completedTasks: 0,
     pendingTasks: 0,
@@ -67,6 +71,19 @@ export default function ConnectionDetail() {
       toast.error('Failed to load child data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setDeleting(true);
+      await childProfilesAPI.deleteChildProfile(child.id);
+      toast.success('Profile deleted successfully');
+      navigate('/Connections');
+    } catch (error) {
+      console.error('Error deleting profile:', error);
+      toast.error('Failed to delete profile');
+      setDeleting(false);
     }
   };
 
@@ -175,6 +192,56 @@ export default function ConnectionDetail() {
           <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
         </TabsContent>
       </Tabs>
+
+      <Card className="mt-6 border-red-200 bg-red-50">
+        <CardHeader>
+          <CardTitle className="text-red-900 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Danger Zone
+          </CardTitle>
+          <CardDescription className="text-red-700">
+            Permanently delete this child profile. This action cannot be undone.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert className="mb-4 border-red-300 bg-red-100">
+            <AlertTriangle className="h-4 w-4 text-red-600" />
+            <AlertDescription className="text-red-800">
+              Deleting this profile will remove all associated data including tasks, rewards, achievements, and financial history. This action is permanent and cannot be reversed.
+            </AlertDescription>
+          </Alert>
+          <Button
+            variant="destructive"
+            onClick={() => setShowDeleteDialog(true)}
+            className="w-full"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Delete Profile
+          </Button>
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete <strong>{child.child_name}'s</strong> profile and all associated data.
+              This action cannot be undone and all data will be lost forever.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleting ? 'Deleting...' : 'Delete Profile'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
