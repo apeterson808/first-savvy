@@ -45,11 +45,6 @@ export default function ParentViewOfChildDashboard() {
     enabled: !!childProfileId
   });
 
-  if (childProfile && childProfile.current_permission_level === 1) {
-    return <BeginnerProfileView childProfile={childProfile} isParentViewing={true} />;
-  }
-
-
   const { data: tasks = [] } = useQuery({
     queryKey: ['tasks', childProfileId],
     queryFn: async () => {
@@ -121,6 +116,10 @@ export default function ParentViewOfChildDashboard() {
       toast.error('Failed to approve chore');
     }
   });
+
+  if (childProfile && childProfile.current_permission_level === 1) {
+    return <BeginnerProfileView childProfile={childProfile} isParentViewing={true} />;
+  }
 
   return (
     <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
