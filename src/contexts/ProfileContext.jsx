@@ -241,9 +241,9 @@ export const ProfileProvider = ({ children }) => {
         sessionStorage.removeItem('viewingChildProfile');
       } else {
         const childData = {
-          child_profile_id: profile.child_profile_id,
-          child_name: profile.display_name,
-          permission_level: profile.permission_level
+          childProfileId: profile.child_profile_id,
+          childName: profile.display_name,
+          permissionLevel: profile.permission_level
         };
         setViewingChildProfile(childData);
         sessionStorage.setItem('viewingChildProfile', JSON.stringify(childData));
