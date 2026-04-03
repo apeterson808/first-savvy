@@ -203,28 +203,7 @@ export const ProfileProvider = ({ children }) => {
 
   useEffect(() => {
     loadProfiles();
-
-    const childViewingData = sessionStorage.getItem('viewingChildProfile');
-    if (childViewingData) {
-      try {
-        const parsed = JSON.parse(childViewingData);
-
-        const migratedData = {
-          childProfileId: parsed.childProfileId || parsed.child_profile_id,
-          childName: parsed.childName || parsed.child_name,
-          permissionLevel: parsed.permissionLevel || parsed.permission_level
-        };
-
-        if (!migratedData.childName) {
-          sessionStorage.removeItem('viewingChildProfile');
-        } else {
-          setViewingChildProfile(migratedData);
-          sessionStorage.setItem('viewingChildProfile', JSON.stringify(migratedData));
-        }
-      } catch (err) {
-        sessionStorage.removeItem('viewingChildProfile');
-      }
-    }
+    sessionStorage.removeItem('viewingChildProfile');
   }, [loadProfiles]);
 
   const switchProfile = useCallback(async (profile) => {
@@ -248,18 +227,10 @@ export const ProfileProvider = ({ children }) => {
 
         if (activateError) {
         }
-
-        setViewingChildProfile(null);
-        sessionStorage.removeItem('viewingChildProfile');
-      } else {
-        const childData = {
-          childProfileId: profile.child_profile_id,
-          childName: profile.display_name,
-          permissionLevel: profile.permission_level
-        };
-        setViewingChildProfile(childData);
-        sessionStorage.setItem('viewingChildProfile', JSON.stringify(childData));
       }
+
+      setViewingChildProfile(null);
+      sessionStorage.removeItem('viewingChildProfile');
 
       setActiveProfile(prev => {
         const hasChanged = JSON.stringify(prev) !== JSON.stringify(profile);
