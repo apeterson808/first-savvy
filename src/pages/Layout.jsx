@@ -255,7 +255,7 @@ export default function Layout({ children, currentPageName }) {
             )}
 
             {/* Child Viewing Indicator */}
-            {viewingChildProfile && (
+            {viewingChildProfile && viewingChildProfile.childName && (
               <div className="flex items-center justify-between py-2 px-3 bg-gradient-to-r from-blue-50 to-purple-50 border-t border-blue-200">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-semibold text-sm">

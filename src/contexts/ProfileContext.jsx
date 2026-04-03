@@ -208,7 +208,19 @@ export const ProfileProvider = ({ children }) => {
     if (childViewingData) {
       try {
         const parsed = JSON.parse(childViewingData);
-        setViewingChildProfile(parsed);
+
+        const migratedData = {
+          childProfileId: parsed.childProfileId || parsed.child_profile_id,
+          childName: parsed.childName || parsed.child_name,
+          permissionLevel: parsed.permissionLevel || parsed.permission_level
+        };
+
+        if (!migratedData.childName) {
+          sessionStorage.removeItem('viewingChildProfile');
+        } else {
+          setViewingChildProfile(migratedData);
+          sessionStorage.setItem('viewingChildProfile', JSON.stringify(migratedData));
+        }
       } catch (err) {
         sessionStorage.removeItem('viewingChildProfile');
       }
