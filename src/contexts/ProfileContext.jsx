@@ -73,6 +73,7 @@ export const ProfileProvider = ({ children }) => {
 
       let childProfilesList = [];
       let allChildProfiles = [];
+
       if (ownerProfileIds.length > 0) {
         const { data: childProfiles, error: childError } = await firstsavvy
           .from('child_profiles')
@@ -103,9 +104,53 @@ export const ProfileProvider = ({ children }) => {
             last_name: child.last_name,
             role: 'child'
           }));
-
-          setAvailableChildProfiles(allChildProfiles);
         }
+
+        const { data: grantedAccess, error: grantError } = await firstsavvy
+          .from('parent_access_grants')
+          .select(`
+            child_profile_id,
+            child_profiles!inner (*)
+          `)
+          .in('parent_profile_id', ownerProfileIds)
+          .eq('is_active', true)
+          .is('revoked_at', null);
+
+        if (!grantError && grantedAccess) {
+          const grantedChildProfiles = grantedAccess.map(grant => {
+            const child = grant.child_profiles;
+            return {
+              id: child.owned_by_profile_id,
+              child_profile_id: child.id,
+              display_name: child.child_name,
+              profile_type: 'child',
+              is_child_profile: true,
+              parent_profile_id: child.parent_profile_id,
+              owned_by_profile_id: child.owned_by_profile_id,
+              permission_level: child.current_permission_level,
+              current_permission_level: child.current_permission_level,
+              points_balance: child.points_balance || 0,
+              cash_balance: child.cash_balance || 0,
+              daily_spending_limit: child.daily_spending_limit,
+              weekly_spending_limit: child.weekly_spending_limit,
+              monthly_spending_limit: child.monthly_spending_limit,
+              date_of_birth: child.date_of_birth,
+              avatar_url: child.avatar_url,
+              child_name: child.child_name,
+              first_name: child.first_name,
+              last_name: child.last_name,
+              role: 'child'
+            };
+          });
+
+          const uniqueChildIds = new Set(allChildProfiles.map(c => c.child_profile_id));
+          const newGrantedProfiles = grantedChildProfiles.filter(
+            c => !uniqueChildIds.has(c.child_profile_id)
+          );
+          allChildProfiles = [...allChildProfiles, ...newGrantedProfiles];
+        }
+
+        setAvailableChildProfiles(allChildProfiles);
       }
 
       const allProfiles = [...profilesList, ...childProfilesList];
