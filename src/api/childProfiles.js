@@ -216,7 +216,7 @@ export const childProfilesAPI = {
   async deleteChildProfile(childId) {
     const { error } = await supabase
       .from('child_profiles')
-      .update({ is_active: false })
+      .delete()
       .eq('id', childId);
 
     if (error) throw error;
