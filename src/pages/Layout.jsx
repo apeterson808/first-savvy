@@ -30,7 +30,7 @@ export default function Layout({ children, currentPageName }) {
   const [childPermissionLevel, setChildPermissionLevel] = useState(1);
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeProfile, viewingChildProfile, exitChildView } = useProfile();
+  const { activeProfile } = useProfile();
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 

@@ -56,7 +56,7 @@ export default function ParentViewOfChildDashboard() {
       const { data } = await firstsavvy
         .from('tasks')
         .select('*')
-        .eq('child_profile_id', childProfileId)
+        .eq('assigned_to_child_id', childProfileId)
         .order('due_date', { ascending: true });
       return data || [];
     },
@@ -69,11 +69,11 @@ export default function ParentViewOfChildDashboard() {
       const { data } = await firstsavvy
         .from('rewards')
         .select('*')
-        .eq('child_profile_id', childProfileId)
+        .eq('profile_id', activeProfile?.profile_id)
         .order('created_at', { ascending: false });
       return data || [];
     },
-    enabled: !!childProfileId
+    enabled: !!childProfileId && !!activeProfile?.profile_id
   });
 
   const assignedTasks = tasks.filter(c => c.status === 'assigned');
