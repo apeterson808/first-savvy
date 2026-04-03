@@ -11,11 +11,14 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Crown } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Users, Crown, Check, AlertCircle, Edit, Lock, LockOpen, Shield, Key } from 'lucide-react';
 import { InviteChildDialog } from './InviteChildDialog';
 import { ShareProfileDialog } from './ShareProfileDialog';
+import { PINManagementDialog } from './PINManagementDialog';
 import AvatarSelector from './AvatarSelector';
 import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 const PERMISSION_LEVELS = {
   view_only: 'View Only',
@@ -24,6 +27,7 @@ const PERMISSION_LEVELS = {
 };
 
 export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
+  const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
@@ -33,6 +37,8 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     weekly_spending_limit: '',
     monthly_spending_limit: '',
     notes: '',
+    username: '',
+    login_enabled: false,
   });
   const [originalData, setOriginalData] = useState({});
   const [hasChanges, setHasChanges] = useState(false);
@@ -43,6 +49,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
   const [loadingAccess, setLoadingAccess] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showPINDialog, setShowPINDialog] = useState(false);
 
   useEffect(() => {
     loadAccessData();
@@ -56,6 +63,8 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
         weekly_spending_limit: child.weekly_spending_limit || '',
         monthly_spending_limit: child.monthly_spending_limit || '',
         notes: child.notes || '',
+        username: child.username || '',
+        login_enabled: child.login_enabled || false,
       };
       setFormData(data);
       setOriginalData(data);
@@ -128,6 +137,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
       toast.success('Changes saved successfully');
       setOriginalData(formData);
       setHasChanges(false);
+      setIsEditMode(false);
       onUpdate();
     } catch (error) {
       console.error('Error saving changes:', error);
@@ -140,6 +150,28 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
   const handleCancel = () => {
     setFormData(originalData);
     setHasChanges(false);
+    setIsEditMode(false);
+  };
+
+  const handleUnlockAccount = async () => {
+    try {
+      await childProfilesAPI.unlockChildAccount(child.id);
+      toast.success('Account unlocked successfully');
+      onUpdate();
+    } catch (error) {
+      console.error('Error unlocking account:', error);
+      toast.error('Failed to unlock account');
+    }
+  };
+
+  const getLoginStatusBadge = () => {
+    if (child.account_locked) {
+      return { text: 'Locked', variant: 'destructive', icon: Lock };
+    }
+    if (child.login_enabled) {
+      return { text: 'Enabled', variant: 'success', icon: LockOpen };
+    }
+    return { text: 'Disabled', variant: 'secondary', icon: Shield };
   };
 
   const handleAvatarChange = async (newAvatar) => {
@@ -183,10 +215,118 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
     }
   };
 
+  const loginStatus = getLoginStatusBadge();
+  const LoginIcon = loginStatus.icon;
+
   return (
     <>
       <Card>
         <CardContent className="p-6">
+          <div className="bg-slate-50 -mx-6 -mt-6 px-6 py-4 mb-6 border-b">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                <Key className="h-4 w-4" />
+                Child Login Credentials
+              </h3>
+              <Badge variant={loginStatus.variant} className="flex items-center gap-1">
+                <LoginIcon className="h-3 w-3" />
+                {loginStatus.text}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-xs text-slate-500">Username</Label>
+                {isEditMode ? (
+                  <Input
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                    placeholder="username"
+                    className="font-mono"
+                    maxLength={20}
+                  />
+                ) : (
+                  <div className="text-sm font-mono bg-white px-3 py-2 rounded border">
+                    {child.username || <span className="text-slate-400">Not set</span>}
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-slate-500">PIN Status</Label>
+                <div className="flex items-center gap-2">
+                  {child.pin_hash ? (
+                    <Badge variant="success" className="flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      PIN Set
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      No PIN
+                    </Badge>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPINDialog(true)}
+                  >
+                    {child.pin_hash ? 'Change PIN' : 'Set PIN'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-slate-500 flex items-center gap-2">
+                  Login Enabled
+                </Label>
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={formData.login_enabled}
+                    onCheckedChange={(checked) => setFormData({ ...formData, login_enabled: checked })}
+                    disabled={!isEditMode}
+                  />
+                  <span className="text-sm text-slate-600">
+                    {formData.login_enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-xs text-slate-500">Last Login</Label>
+                <div className="text-sm text-slate-600">
+                  {child.last_login_at
+                    ? formatDistanceToNow(new Date(child.last_login_at), { addSuffix: true })
+                    : 'Never'}
+                </div>
+              </div>
+            </div>
+
+            {child.account_locked && (
+              <div className="mt-4 flex items-center justify-between bg-red-50 border border-red-200 rounded px-3 py-2">
+                <div className="flex items-center gap-2 text-sm text-red-700">
+                  <Lock className="h-4 w-4" />
+                  <span>Account is locked due to failed login attempts</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleUnlockAccount}
+                  className="border-red-300 hover:bg-red-100"
+                >
+                  Unlock
+                </Button>
+              </div>
+            )}
+
+            {child.failed_login_attempts > 0 && !child.account_locked && (
+              <div className="mt-4 text-xs text-amber-600 flex items-center gap-2">
+                <AlertCircle className="h-3 w-3" />
+                <span>{child.failed_login_attempts} failed login attempt{child.failed_login_attempts > 1 ? 's' : ''}</span>
+              </div>
+            )}
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-6">
               <div className="flex items-start gap-4">
@@ -202,23 +342,35 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-2 group">
-                      <Label htmlFor="first_name" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">First Name</Label>
-                      <Input
-                        id="first_name"
-                        value={formData.first_name}
-                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        className="text-xl font-bold border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="first_name" className="text-xs text-slate-500">First Name</Label>
+                      {isEditMode ? (
+                        <Input
+                          id="first_name"
+                          value={formData.first_name}
+                          onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                          className="text-xl font-bold"
+                        />
+                      ) : (
+                        <div className="text-xl font-bold text-slate-900">
+                          {child.first_name || <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
                     </div>
-                    <div className="space-y-2 group">
-                      <Label htmlFor="last_name" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Last Name</Label>
-                      <Input
-                        id="last_name"
-                        value={formData.last_name}
-                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        className="text-xl font-bold border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
-                      />
+                    <div className="space-y-2">
+                      <Label htmlFor="last_name" className="text-xs text-slate-500">Last Name</Label>
+                      {isEditMode ? (
+                        <Input
+                          id="last_name"
+                          value={formData.last_name}
+                          onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                          className="text-xl font-bold"
+                        />
+                      ) : (
+                        <div className="text-xl font-bold text-slate-900">
+                          {child.last_name || <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -249,31 +401,42 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2 group">
-                    <Label htmlFor="date_of_birth" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Date of Birth</Label>
-                    <Input
-                      id="date_of_birth"
-                      type="date"
-                      value={formData.date_of_birth}
-                      onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                      className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm"
-                    />
+                  <div className="space-y-2">
+                    <Label htmlFor="date_of_birth" className="text-xs text-slate-500">Date of Birth</Label>
+                    {isEditMode ? (
+                      <Input
+                        id="date_of_birth"
+                        type="date"
+                        value={formData.date_of_birth}
+                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                      />
+                    ) : (
+                      <div className="text-sm text-slate-900">
+                        {child.date_of_birth || <span className="text-slate-400">Not set</span>}
+                      </div>
+                    )}
                   </div>
-                  <div className="space-y-2 group">
-                    <Label htmlFor="gender" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Gender</Label>
-                    <Select
-                      value={formData.gender}
-                      onValueChange={(value) => setFormData({ ...formData, gender: value })}
-                    >
-                      <SelectTrigger id="gender" className="border-none hover:border hover:border-slate-300 focus:border focus:border-slate-400 bg-transparent hover:bg-slate-50 focus:bg-white transition-all shadow-none hover:shadow-sm focus:shadow-sm">
-                        <SelectValue placeholder="Select" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="male">Male</SelectItem>
-                        <SelectItem value="female">Female</SelectItem>
-                        <SelectItem value="other">Other</SelectItem>
-                      </SelectContent>
-                    </Select>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender" className="text-xs text-slate-500">Gender</Label>
+                    {isEditMode ? (
+                      <Select
+                        value={formData.gender}
+                        onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                      >
+                        <SelectTrigger id="gender">
+                          <SelectValue placeholder="Select" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="male">Male</SelectItem>
+                          <SelectItem value="female">Female</SelectItem>
+                          <SelectItem value="other">Other</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="text-sm text-slate-900">
+                        {child.gender ? child.gender.charAt(0).toUpperCase() + child.gender.slice(1) : <span className="text-slate-400">Not set</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -325,16 +488,22 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                 )}
               </div>
 
-              <div className="space-y-2 group">
-                <Label htmlFor="notes" className="text-xs text-slate-400 group-hover:text-slate-600 transition-colors">Notes</Label>
-                <Textarea
-                  id="notes"
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                  rows={3}
-                  placeholder="Add notes about this child profile..."
-                  className="border border-slate-200 hover:border-slate-300 focus:border-slate-400 bg-white transition-all resize-none"
-                />
+              <div className="space-y-2">
+                <Label htmlFor="notes" className="text-xs text-slate-500">Notes</Label>
+                {isEditMode ? (
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                    rows={3}
+                    placeholder="Add notes about this child profile..."
+                    className="resize-none"
+                  />
+                ) : (
+                  <div className="text-sm text-slate-900 min-h-[60px] whitespace-pre-wrap">
+                    {child.notes || <span className="text-slate-400">No notes</span>}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -344,25 +513,36 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
               <Crown className="h-3 w-3 mt-0.5 flex-shrink-0" />
               <span>You have full access as the profile owner</span>
             </div>
-            {hasChanges && (
-              <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2">
+              {isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={isSaving || !hasChanges}
+                  >
+                    {isSaving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </>
+              ) : (
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={handleCancel}
-                  disabled={isSaving}
+                  onClick={() => setIsEditMode(true)}
                 >
-                  Cancel
+                  <Edit className="h-3 w-3 mr-1" />
+                  Edit
                 </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Saving...' : 'Save Changes'}
-                </Button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -385,6 +565,13 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
         }}
         childProfile={child}
         currentProfileId={currentProfileId}
+      />
+
+      <PINManagementDialog
+        open={showPINDialog}
+        onOpenChange={setShowPINDialog}
+        childProfile={child}
+        onSuccess={onUpdate}
       />
     </>
   );

@@ -6,12 +6,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { differenceInYears } from 'date-fns';
-import { Pencil } from 'lucide-react';
+import { Pencil, Check, X, Loader2 as LoaderIcon } from 'lucide-react';
 
 const CUSTOM_COLOR_PALETTE = [
   { name: 'Tea Green', hex: '#AACC96' },
@@ -42,12 +43,18 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
     sex: '',
     avatar: { icon: 'Circle', color: '#52A5CE' },
     notes: '',
+    username: '',
+    pin: '',
+    confirmPin: '',
+    login_enabled: false,
   });
   const [loading, setLoading] = useState(false);
   const [age, setAge] = useState(null);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('color');
   const [uploading, setUploading] = useState(false);
+  const [usernameAvailable, setUsernameAvailable] = useState(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
 
   const getInitials = () => {
     const first = formData.first_name?.trim() || '';
@@ -113,6 +120,29 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
     }
   }, [formData.date_of_birth]);
 
+  useEffect(() => {
+    if (!formData.username || formData.username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    const checkUsername = async () => {
+      setCheckingUsername(true);
+      try {
+        const result = await childProfilesAPI.checkUsernameAvailability(formData.username);
+        setUsernameAvailable(result.available);
+      } catch (error) {
+        console.error('Error checking username:', error);
+        setUsernameAvailable(null);
+      } finally {
+        setCheckingUsername(false);
+      }
+    };
+
+    const timeoutId = setTimeout(checkUsername, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.username]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -136,9 +166,29 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
       return;
     }
 
+    if (formData.username && formData.username.length < 3) {
+      toast.error('Username must be at least 3 characters');
+      return;
+    }
+
+    if (formData.username && !usernameAvailable) {
+      toast.error('Username is not available');
+      return;
+    }
+
+    if (formData.pin && formData.pin !== formData.confirmPin) {
+      toast.error('PINs do not match');
+      return;
+    }
+
+    if (formData.pin && (formData.pin.length !== 4 || !/^\d{4}$/.test(formData.pin))) {
+      toast.error('PIN must be exactly 4 digits');
+      return;
+    }
+
     try {
       setLoading(true);
-      await childProfilesAPI.createChildProfile(profileId, {
+      const childProfile = await childProfilesAPI.createChildProfile(profileId, {
         first_name: formData.first_name,
         last_name: formData.last_name,
         child_name: `${formData.first_name} ${formData.last_name}`,
@@ -146,7 +196,13 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         sex: formData.sex || null,
         avatar: formData.avatar,
         notes: formData.notes || null,
+        username: formData.username || null,
+        login_enabled: formData.login_enabled && formData.pin,
       });
+
+      if (formData.pin && formData.username) {
+        await childProfilesAPI.setChildPin(childProfile.id, formData.pin);
+      }
 
       setFormData({
         first_name: '',
@@ -155,6 +211,10 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         sex: '',
         avatar: { icon: 'Circle', color: '#52A5CE' },
         notes: '',
+        username: '',
+        pin: '',
+        confirmPin: '',
+        login_enabled: false,
       });
 
       toast.success('Child profile created successfully');
@@ -351,6 +411,103 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
                 </Select>
               </div>
             </div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-slate-700">Login Credentials (Optional)</h3>
+              <Switch
+                checked={formData.login_enabled}
+                onCheckedChange={(checked) => setFormData({ ...formData, login_enabled: checked })}
+              />
+            </div>
+            <p className="text-sm text-slate-500">
+              Set up a username and PIN for your child to log in directly
+            </p>
+
+            {formData.login_enabled && (
+              <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
+                <div className="space-y-2">
+                  <Label htmlFor="username">Username</Label>
+                  <div className="relative">
+                    <Input
+                      id="username"
+                      value={formData.username}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                      placeholder="username"
+                      className="font-mono"
+                      maxLength={20}
+                    />
+                    {formData.username.length >= 3 && (
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                        {checkingUsername ? (
+                          <LoaderIcon className="h-4 w-4 animate-spin text-slate-400" />
+                        ) : usernameAvailable ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <X className="h-4 w-4 text-red-600" />
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {formData.username.length > 0 && formData.username.length < 3 && (
+                    <p className="text-xs text-slate-500">Must be at least 3 characters</p>
+                  )}
+                  {formData.username.length >= 3 && usernameAvailable === false && (
+                    <p className="text-xs text-red-600">Username is already taken</p>
+                  )}
+                  {formData.username.length >= 3 && usernameAvailable === true && (
+                    <p className="text-xs text-green-600">Username is available</p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="pin">PIN (4 digits)</Label>
+                    <Input
+                      id="pin"
+                      type="password"
+                      inputMode="numeric"
+                      value={formData.pin}
+                      onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                      placeholder="••••"
+                      maxLength={4}
+                      className="text-center text-lg tracking-widest"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPin">Confirm PIN</Label>
+                    <Input
+                      id="confirmPin"
+                      type="password"
+                      inputMode="numeric"
+                      value={formData.confirmPin}
+                      onChange={(e) => setFormData({ ...formData, confirmPin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                      placeholder="••••"
+                      maxLength={4}
+                      className="text-center text-lg tracking-widest"
+                    />
+                  </div>
+                </div>
+
+                {formData.pin.length === 4 && formData.confirmPin.length === 4 && (
+                  formData.pin === formData.confirmPin ? (
+                    <p className="text-xs text-green-600 flex items-center gap-1">
+                      <Check className="h-3 w-3" />
+                      PINs match
+                    </p>
+                  ) : (
+                    <p className="text-xs text-red-600 flex items-center gap-1">
+                      <X className="h-3 w-3" />
+                      PINs do not match
+                    </p>
+                  )
+                )}
+              </div>
+            )}
           </div>
 
           <Separator />

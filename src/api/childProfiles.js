@@ -221,4 +221,196 @@ export const childProfilesAPI = {
 
     if (error) throw error;
   },
+
+  async checkUsernameAvailability(username) {
+    if (!username || username.length < 3) {
+      return { available: false, message: 'Username must be at least 3 characters' };
+    }
+
+    const { data, error } = await supabase
+      .from('child_profiles')
+      .select('id')
+      .ilike('username', username)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return {
+      available: !data,
+      message: data ? 'Username is already taken' : 'Username is available'
+    };
+  },
+
+  async authenticateChild(username, pin) {
+    if (!username || !pin) {
+      throw new Error('Username and PIN are required');
+    }
+
+    const { data: child, error: fetchError } = await supabase
+      .from('child_profiles')
+      .select('*')
+      .ilike('username', username)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    if (!child) {
+      await this.logLoginAttempt(null, false, 'Username not found');
+      throw new Error('Invalid credentials');
+    }
+
+    if (!child.login_enabled) {
+      await this.logLoginAttempt(child.id, false, 'Login not enabled');
+      throw new Error('Login is not enabled for this account');
+    }
+
+    if (child.account_locked) {
+      await this.logLoginAttempt(child.id, false, 'Account locked');
+      throw new Error('Account is locked. Please contact your parent.');
+    }
+
+    if (!child.pin_hash) {
+      await this.logLoginAttempt(child.id, false, 'No PIN set');
+      throw new Error('No PIN has been set for this account');
+    }
+
+    const pinMatches = await this.verifyPin(pin, child.pin_hash);
+
+    if (!pinMatches) {
+      const newFailedAttempts = child.failed_login_attempts + 1;
+      const shouldLock = newFailedAttempts >= 5;
+
+      await supabase
+        .from('child_profiles')
+        .update({
+          failed_login_attempts: newFailedAttempts,
+          account_locked: shouldLock
+        })
+        .eq('id', child.id);
+
+      await this.logLoginAttempt(child.id, false, `Invalid PIN (attempt ${newFailedAttempts})`);
+
+      if (shouldLock) {
+        throw new Error('Account has been locked due to too many failed attempts. Please contact your parent.');
+      }
+
+      throw new Error('Invalid credentials');
+    }
+
+    await supabase
+      .from('child_profiles')
+      .update({
+        failed_login_attempts: 0,
+        last_login_at: new Date().toISOString()
+      })
+      .eq('id', child.id);
+
+    await this.logLoginAttempt(child.id, true, null);
+
+    return child;
+  },
+
+  async verifyPin(pin, pinHash) {
+    try {
+      const response = await supabase.functions.invoke('verify-child-pin', {
+        body: { pin, pinHash }
+      });
+
+      if (response.error) throw response.error;
+      return response.data.matches;
+    } catch (error) {
+      console.error('PIN verification error:', error);
+      return false;
+    }
+  },
+
+  async hashPin(pin) {
+    try {
+      const response = await supabase.functions.invoke('hash-child-pin', {
+        body: { pin }
+      });
+
+      if (response.error) throw response.error;
+      return response.data.hash;
+    } catch (error) {
+      console.error('PIN hashing error:', error);
+      throw new Error('Failed to hash PIN');
+    }
+  },
+
+  async setChildPin(childId, pin) {
+    if (!pin || pin.length !== 4 || !/^\d{4}$/.test(pin)) {
+      throw new Error('PIN must be exactly 4 digits');
+    }
+
+    const pinHash = await this.hashPin(pin);
+
+    const { data, error } = await supabase
+      .from('child_profiles')
+      .update({
+        pin_hash: pinHash,
+        pin_last_changed: new Date().toISOString()
+      })
+      .eq('id', childId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async unlockChildAccount(childId) {
+    const { data, error } = await supabase
+      .from('child_profiles')
+      .update({
+        account_locked: false,
+        failed_login_attempts: 0
+      })
+      .eq('id', childId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async logLoginAttempt(childId, success, failureReason = null) {
+    try {
+      await supabase
+        .from('child_login_audit_log')
+        .insert({
+          child_profile_id: childId,
+          success,
+          failure_reason: failureReason,
+          timestamp: new Date().toISOString()
+        });
+    } catch (error) {
+      console.error('Failed to log login attempt:', error);
+    }
+  },
+
+  async getLoginHistory(childId, limit = 20) {
+    const { data, error } = await supabase
+      .from('child_login_audit_log')
+      .select('*')
+      .eq('child_profile_id', childId)
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async resetFailedAttempts(childId) {
+    const { data, error } = await supabase
+      .from('child_profiles')
+      .update({ failed_login_attempts: 0 })
+      .eq('id', childId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
 };
