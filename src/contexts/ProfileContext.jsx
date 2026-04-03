@@ -90,16 +90,19 @@ export const ProfileProvider = ({ children }) => {
             parent_profile_id: child.parent_profile_id,
             owned_by_profile_id: child.owned_by_profile_id,
             permission_level: child.current_permission_level,
+            current_permission_level: child.current_permission_level,
             points_balance: child.points_balance || 0,
             cash_balance: child.cash_balance || 0,
             daily_spending_limit: child.daily_spending_limit,
             weekly_spending_limit: child.weekly_spending_limit,
             monthly_spending_limit: child.monthly_spending_limit,
             date_of_birth: child.date_of_birth,
+            avatar_url: child.avatar_url,
+            child_name: child.child_name,
+            first_name: child.first_name,
+            last_name: child.last_name,
             role: 'child'
           }));
-
-          childProfilesList = allChildProfiles.filter(child => childProfiles.find(cp => cp.owned_by_profile_id === child.id)?.user_id !== null);
 
           setAvailableChildProfiles(allChildProfiles);
         }
@@ -233,6 +236,17 @@ export const ProfileProvider = ({ children }) => {
 
         if (activateError) {
         }
+
+        setViewingChildProfile(null);
+        sessionStorage.removeItem('viewingChildProfile');
+      } else {
+        const childData = {
+          child_profile_id: profile.child_profile_id,
+          child_name: profile.display_name,
+          permission_level: profile.permission_level
+        };
+        setViewingChildProfile(childData);
+        sessionStorage.setItem('viewingChildProfile', JSON.stringify(childData));
       }
 
       setActiveProfile(prev => {
