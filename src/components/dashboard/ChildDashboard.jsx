@@ -143,12 +143,23 @@ export default function ChildDashboard() {
             </h1>
             <p className="text-sm text-slate-600 mt-1">Let's see what you've got today</p>
           </div>
-          {completionRate > 0 && (
-            <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-sm">
-              <Flame className="w-5 h-5 text-orange-500" />
-              <span className="text-sm font-semibold text-slate-900">{completionRate}% Complete</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 px-6 py-3 rounded-2xl shadow-xl border-2 border-white">
+              <div className="bg-white rounded-full p-2 shadow-md">
+                <Star className="w-7 h-7 text-yellow-500 fill-yellow-500" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Points</p>
+                <p className="text-3xl font-black text-white">{pointsBalance}</p>
+              </div>
             </div>
-          )}
+            {completionRate > 0 && (
+              <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-full shadow-md">
+                <Flame className="w-5 h-5 text-orange-500" />
+                <span className="text-sm font-semibold text-slate-900">{completionRate}% Complete</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
