@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,9 +43,9 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
     avatar: { icon: 'Circle', color: '#52A5CE' },
     notes: '',
     username: '',
+    email: '',
     pin: '',
     confirmPin: '',
-    login_enabled: false,
   });
   const [loading, setLoading] = useState(false);
   const [age, setAge] = useState(null);
@@ -166,22 +165,33 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
       return;
     }
 
-    if (formData.username && formData.username.length < 3) {
-      toast.error('Username must be at least 3 characters');
+    if (!formData.username || formData.username.length < 3) {
+      toast.error('Username is required and must be at least 3 characters');
       return;
     }
 
-    if (formData.username && !usernameAvailable) {
+    if (!usernameAvailable) {
       toast.error('Username is not available');
       return;
     }
 
-    if (formData.pin && formData.pin !== formData.confirmPin) {
+    if (!formData.email || !formData.email.trim()) {
+      toast.error('Email is required');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+
+    if (!formData.pin || formData.pin !== formData.confirmPin) {
       toast.error('PINs do not match');
       return;
     }
 
-    if (formData.pin && (formData.pin.length !== 4 || !/^\d{4}$/.test(formData.pin))) {
+    if (formData.pin.length !== 4 || !/^\d{4}$/.test(formData.pin)) {
       toast.error('PIN must be exactly 4 digits');
       return;
     }
@@ -196,13 +206,12 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         sex: formData.sex || null,
         avatar: formData.avatar,
         notes: formData.notes || null,
-        username: formData.username || null,
-        login_enabled: formData.login_enabled && formData.pin,
+        username: formData.username,
+        email: formData.email,
+        login_enabled: true,
       });
 
-      if (formData.pin && formData.username) {
-        await childProfilesAPI.setChildPin(childProfile.id, formData.pin);
-      }
+      await childProfilesAPI.setChildPin(childProfile.id, formData.pin);
 
       setFormData({
         first_name: '',
@@ -212,9 +221,9 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         avatar: { icon: 'Circle', color: '#52A5CE' },
         notes: '',
         username: '',
+        email: '',
         pin: '',
         confirmPin: '',
-        login_enabled: false,
       });
 
       toast.success('Child profile created successfully');
@@ -416,98 +425,115 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
           <Separator />
 
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-700">Login Credentials (Optional)</h3>
-              <Switch
-                checked={formData.login_enabled}
-                onCheckedChange={(checked) => setFormData({ ...formData, login_enabled: checked })}
-              />
+            <div>
+              <h3 className="text-sm font-semibold text-slate-700">Login Credentials</h3>
+              <p className="text-sm text-slate-500 mt-1">
+                Set up a username, email, and PIN for your child to log in directly
+              </p>
             </div>
-            <p className="text-sm text-slate-500">
-              Set up a username and PIN for your child to log in directly
-            </p>
 
-            {formData.login_enabled && (
-              <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
-                <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
-                  <div className="relative">
-                    <Input
-                      id="username"
-                      value={formData.username}
-                      onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-                      placeholder="username"
-                      className="font-mono"
-                      maxLength={20}
-                    />
-                    {formData.username.length >= 3 && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        {checkingUsername ? (
-                          <LoaderIcon className="h-4 w-4 animate-spin text-slate-400" />
-                        ) : usernameAvailable ? (
-                          <Check className="h-4 w-4 text-green-600" />
-                        ) : (
-                          <X className="h-4 w-4 text-red-600" />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  {formData.username.length > 0 && formData.username.length < 3 && (
-                    <p className="text-xs text-slate-500">Must be at least 3 characters</p>
-                  )}
-                  {formData.username.length >= 3 && usernameAvailable === false && (
-                    <p className="text-xs text-red-600">Username is already taken</p>
-                  )}
-                  {formData.username.length >= 3 && usernameAvailable === true && (
-                    <p className="text-xs text-green-600">Username is available</p>
+            <div className="space-y-4 p-4 bg-slate-50 rounded-lg">
+              <div className="space-y-2">
+                <Label htmlFor="username">
+                  Username <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative">
+                  <Input
+                    id="username"
+                    value={formData.username}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                    placeholder="username"
+                    className="font-mono"
+                    maxLength={20}
+                    required
+                  />
+                  {formData.username.length >= 3 && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {checkingUsername ? (
+                        <LoaderIcon className="h-4 w-4 animate-spin text-slate-400" />
+                      ) : usernameAvailable ? (
+                        <Check className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <X className="h-4 w-4 text-red-600" />
+                      )}
+                    </div>
                   )}
                 </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="pin">PIN (4 digits)</Label>
-                    <Input
-                      id="pin"
-                      type="password"
-                      inputMode="numeric"
-                      value={formData.pin}
-                      onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="••••"
-                      maxLength={4}
-                      className="text-center text-lg tracking-widest"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPin">Confirm PIN</Label>
-                    <Input
-                      id="confirmPin"
-                      type="password"
-                      inputMode="numeric"
-                      value={formData.confirmPin}
-                      onChange={(e) => setFormData({ ...formData, confirmPin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                      placeholder="••••"
-                      maxLength={4}
-                      className="text-center text-lg tracking-widest"
-                    />
-                  </div>
-                </div>
-
-                {formData.pin.length === 4 && formData.confirmPin.length === 4 && (
-                  formData.pin === formData.confirmPin ? (
-                    <p className="text-xs text-green-600 flex items-center gap-1">
-                      <Check className="h-3 w-3" />
-                      PINs match
-                    </p>
-                  ) : (
-                    <p className="text-xs text-red-600 flex items-center gap-1">
-                      <X className="h-3 w-3" />
-                      PINs do not match
-                    </p>
-                  )
+                {formData.username.length > 0 && formData.username.length < 3 && (
+                  <p className="text-xs text-slate-500">Must be at least 3 characters</p>
+                )}
+                {formData.username.length >= 3 && usernameAvailable === false && (
+                  <p className="text-xs text-red-600">Username is already taken</p>
+                )}
+                {formData.username.length >= 3 && usernameAvailable === true && (
+                  <p className="text-xs text-green-600">Username is available</p>
                 )}
               </div>
-            )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email">
+                  Email <span className="text-red-500">*</span>
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="child@example.com"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="pin">
+                    PIN (4 digits) <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="pin"
+                    type="password"
+                    inputMode="numeric"
+                    value={formData.pin}
+                    onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                    placeholder="••••"
+                    maxLength={4}
+                    className="text-center text-lg tracking-widest"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPin">
+                    Confirm PIN <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="confirmPin"
+                    type="password"
+                    inputMode="numeric"
+                    value={formData.confirmPin}
+                    onChange={(e) => setFormData({ ...formData, confirmPin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
+                    placeholder="••••"
+                    maxLength={4}
+                    className="text-center text-lg tracking-widest"
+                    required
+                  />
+                </div>
+              </div>
+
+              {formData.pin.length === 4 && formData.confirmPin.length === 4 && (
+                formData.pin === formData.confirmPin ? (
+                  <p className="text-xs text-green-600 flex items-center gap-1">
+                    <Check className="h-3 w-3" />
+                    PINs match
+                  </p>
+                ) : (
+                  <p className="text-xs text-red-600 flex items-center gap-1">
+                    <X className="h-3 w-3" />
+                    PINs do not match
+                  </p>
+                )
+              )}
+            </div>
           </div>
 
           <Separator />
