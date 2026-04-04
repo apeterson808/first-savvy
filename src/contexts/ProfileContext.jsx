@@ -1,8 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useAuth } from './AuthContext';
 
 const ProfileContext = createContext(null);
+
+const getProfileNavigationKey = (profileId) => `profile_nav_${profileId}`;
+
+const saveProfileNavigation = (profileId, pathname) => {
+  if (profileId && pathname) {
+    localStorage.setItem(getProfileNavigationKey(profileId), pathname);
+  }
+};
+
+const getProfileNavigation = (profileId) => {
+  if (!profileId) return null;
+  return localStorage.getItem(getProfileNavigationKey(profileId));
+};
 
 export const useProfile = () => {
   const context = useContext(ProfileContext);
@@ -14,6 +28,8 @@ export const useProfile = () => {
 
 export const ProfileProvider = ({ children }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [profiles, setProfiles] = useState([]);
   const [activeProfile, setActiveProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -251,6 +267,12 @@ export const ProfileProvider = ({ children }) => {
     sessionStorage.removeItem('viewingChildProfile');
   }, [loadProfiles]);
 
+  useEffect(() => {
+    if (activeProfile?.id && location.pathname !== '/login' && location.pathname !== '/auth/callback') {
+      saveProfileNavigation(activeProfile.id, location.pathname);
+    }
+  }, [activeProfile?.id, location.pathname]);
+
   const switchProfile = useCallback(async (profile) => {
     if (!user || !profile) return;
 
@@ -283,11 +305,16 @@ export const ProfileProvider = ({ children }) => {
       });
       localStorage.setItem('activeProfileId', profile.id);
 
+      const savedPath = getProfileNavigation(profile.id);
+      if (savedPath && savedPath !== location.pathname) {
+        navigate(savedPath);
+      }
+
       window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
     } catch (err) {
       throw err;
     }
-  }, [user]);
+  }, [user, navigate, location.pathname]);
 
   const refreshProfiles = useCallback(async () => {
     await loadProfiles();
