@@ -71,7 +71,7 @@ export default function Investments() {
 
   return (
     <div className="p-4 md:p-6">
-      <PageTabs tabs={['overview', 'stocks', 'crypto', 'accounts']} defaultTab="overview" />
+      <PageTabs tabs={['overview', 'stocks', 'crypto']} defaultTab="overview" />
       <Tabs value={activeTab} className="w-full">
 
         <TabsContent value="overview" className="space-y-4">
@@ -296,64 +296,6 @@ export default function Investments() {
           )}
         </TabsContent>
 
-        <TabsContent value="accounts" className="space-y-4">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-slate-900">All Investment Accounts</h3>
-            <Button onClick={() => openWizard('investments')} size="sm">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Account
-            </Button>
-          </div>
-
-          <Card className="shadow-sm border-slate-200">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-200 bg-slate-50">
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Account</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Type</th>
-                      <th className="text-left p-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Institution</th>
-                      <th className="text-right p-3 text-xs font-semibold text-slate-600 uppercase tracking-wide">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chartAccounts.length === 0 && (
-                      <tr>
-                        <td colSpan="4" className="p-8 text-center text-slate-500">
-                          No investment accounts found
-                        </td>
-                      </tr>
-                    )}
-                    {chartAccounts.map((account) => (
-                      <tr key={account.id} className="border-b border-slate-100 hover:bg-slate-50">
-                        <td className="p-3">
-                          <div className="font-medium text-slate-900">{account.display_name || account.account_name}</div>
-                          {account.account_number_last4 && (
-                            <div className="text-xs text-slate-500">••••{account.account_number_last4}</div>
-                          )}
-                        </td>
-                        <td className="p-3 text-sm text-slate-600">
-                          {account.account_detail === 'brokerage_account' && 'Brokerage'}
-                          {account.account_detail === 'crypto_wallet' && 'Crypto Wallet'}
-                          {account.account_detail === 'account_401k' && '401(k)'}
-                          {account.account_detail === 'traditional_ira' && 'Traditional IRA'}
-                          {account.account_detail === 'roth_ira' && 'Roth IRA'}
-                        </td>
-                        <td className="p-3 text-sm text-slate-600">
-                          {account.institution_name || '-'}
-                        </td>
-                        <td className="p-3 text-right font-semibold text-slate-900">
-                          {formatCurrency(account.current_balance || 0)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
       </Tabs>
 
       <AccountCreationWizard
