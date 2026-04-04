@@ -5,6 +5,7 @@ import Dashboard from "./Dashboard";
 import Banking from "./Banking";
 import Budgeting from "./Budgeting";
 import NetWorth from "./NetWorth";
+import Investments from "./Investments";
 import CreditScore from "./CreditScore";
 import Contacts from "./Contacts";
 import ContactDetail from "./ContactDetail";
@@ -35,6 +36,8 @@ const PAGES = {
     Calendar: Calendar,
 
     NetWorth: NetWorth,
+
+    Investments: Investments,
 
     CreditScore: CreditScore,
 
@@ -101,6 +104,7 @@ function PagesContent() {
                     <Route path="/Goals" element={<Goals />} />
                     <Route path="/Calendar" element={<Calendar />} />
                     <Route path="/NetWorth" element={<NetWorth />} />
+                    <Route path="/Investments" element={<Investments />} />
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />

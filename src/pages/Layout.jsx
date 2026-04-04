@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
   Calendar, CreditCard, Banknote, Lock, Users, Cable, UserCheck,
   Menu, X, Bell, Search, LogOut, User, ChevronLeft, CheckCircle,
-  Star, Settings, ArrowLeft, ArrowRight, RefreshCw
+  Star, Settings, ArrowLeft, ArrowRight, RefreshCw, TrendingUp
 } from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -95,6 +95,7 @@ export default function Layout({ children, currentPageName }) {
         { name: 'Calendar', icon: Calendar, page: 'Calendar' },
         { name: 'Credit Score', icon: CreditCard, page: 'CreditScore' },
         { name: 'Net Worth', icon: Banknote, page: 'NetWorth' },
+        { name: 'Investments', icon: TrendingUp, page: 'Investments' },
         { name: 'Contacts', icon: Users, page: 'Contacts' },
         { name: 'Connections', icon: UserCheck, page: 'Connections' },
         { name: 'Integrations', icon: Cable, page: 'Integrations' },
