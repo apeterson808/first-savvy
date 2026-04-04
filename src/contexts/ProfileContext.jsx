@@ -18,6 +18,45 @@ const getProfileNavigation = (profileId) => {
   return localStorage.getItem(getProfileNavigationKey(profileId));
 };
 
+const getDefaultPageForProfile = (profile) => {
+  if (!profile) return '/dashboard';
+
+  if (profile.is_child_profile) {
+    const permissionLevel = profile.current_permission_level || 1;
+    return '/dashboard';
+  }
+
+  return '/dashboard';
+};
+
+const isPageAllowedForProfile = (pathname, profile) => {
+  if (!profile) return false;
+
+  if (!profile.is_child_profile) {
+    return true;
+  }
+
+  const permissionLevel = profile.current_permission_level || 1;
+
+  const allowedPages = {
+    '/dashboard': 1,
+  };
+
+  if (permissionLevel >= 2) {
+    allowedPages['/goals'] = 2;
+  }
+
+  if (permissionLevel >= 3) {
+    allowedPages['/banking'] = 3;
+    allowedPages['/budgeting'] = 3;
+    allowedPages['/calendar'] = 3;
+    allowedPages['/net-worth'] = 3;
+    allowedPages['/contacts'] = 3;
+  }
+
+  return allowedPages.hasOwnProperty(pathname);
+};
+
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (!context) {
@@ -269,7 +308,9 @@ export const ProfileProvider = ({ children }) => {
 
   useEffect(() => {
     if (activeProfile?.id && location.pathname !== '/login' && location.pathname !== '/auth/callback') {
-      saveProfileNavigation(activeProfile.id, location.pathname);
+      if (isPageAllowedForProfile(location.pathname, activeProfile)) {
+        saveProfileNavigation(activeProfile.id, location.pathname);
+      }
     }
   }, [activeProfile?.id, location.pathname]);
 
@@ -306,8 +347,16 @@ export const ProfileProvider = ({ children }) => {
       localStorage.setItem('activeProfileId', profile.id);
 
       const savedPath = getProfileNavigation(profile.id);
-      if (savedPath && savedPath !== location.pathname) {
-        navigate(savedPath);
+      let targetPath = savedPath;
+
+      if (savedPath && !isPageAllowedForProfile(savedPath, profile)) {
+        targetPath = getDefaultPageForProfile(profile);
+      } else if (!savedPath) {
+        targetPath = getDefaultPageForProfile(profile);
+      }
+
+      if (targetPath && targetPath !== location.pathname) {
+        navigate(targetPath);
       }
 
       window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
