@@ -263,7 +263,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete 
                       {child.first_name} {child.last_name}
                     </h2>
                   )}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="secondary" className="text-xs font-normal">
                       Beginner Profile
                     </Badge>
@@ -272,6 +272,13 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete 
                         Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
                       </span>
                     )}
+                    <Badge
+                      variant={getInvitationStatus().variant === 'success' ? 'default' : 'outline'}
+                      className={`text-xs ${getInvitationStatus().variant !== 'success' ? 'cursor-pointer hover:bg-slate-100' : ''}`}
+                      onClick={handleInviteClick}
+                    >
+                      {getInvitationStatus().text}
+                    </Badge>
                   </div>
                 </div>
               </div>
@@ -498,14 +505,6 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete 
                     <Users className="h-4 w-4 mr-2" />
                     Share Profile
                   </Button>
-
-                  <Badge
-                    variant={getInvitationStatus().variant === 'success' ? 'default' : 'outline'}
-                    className={`w-full justify-center py-2 ${getInvitationStatus().variant !== 'success' ? 'cursor-pointer hover:bg-slate-100' : ''}`}
-                    onClick={handleInviteClick}
-                  >
-                    {getInvitationStatus().text}
-                  </Badge>
                 </div>
 
                 {shares.length > 0 && (
