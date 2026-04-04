@@ -33,12 +33,19 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
     try {
       setLoading(true);
 
+      const { data: childData } = await firstsavvy
+        .from('child_profiles')
+        .select('parent_profile_id')
+        .eq('id', childProfile.id)
+        .single();
+
       const [balanceData, tasksData, rewardsData, completionsData] = await Promise.all([
         taskCompletionsAPI.getChildStarBalance(childProfile.id),
         tasksAPI.getTasksByChild(childProfile.id),
         firstsavvy
           .from('rewards')
           .select('*')
+          .eq('profile_id', childData.parent_profile_id)
           .or(`assigned_to_child_id.eq.${childProfile.id},assigned_to_child_id.is.null`)
           .eq('is_active', true)
           .order('created_at', { ascending: false }),

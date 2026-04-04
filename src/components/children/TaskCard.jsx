@@ -164,7 +164,7 @@ export function TaskCard({
                   size="lg"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  {isParentViewing ? 'Complete (as child)' : 'Complete Task'}
+                  Complete Task
                 </Button>
               )}
 

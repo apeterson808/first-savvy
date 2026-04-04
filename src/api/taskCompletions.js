@@ -61,20 +61,18 @@ export const taskCompletionsAPI = {
 
     if (error) throw error;
 
+    const { data: childData } = await supabase
+      .from('child_profiles')
+      .select('stars_pending')
+      .eq('id', childProfileId)
+      .single();
+
     await supabase
       .from('child_profiles')
       .update({
-        stars_pending: supabase.raw(`stars_pending + ${task.star_reward}`),
+        stars_pending: (childData?.stars_pending || 0) + task.star_reward,
       })
       .eq('id', childProfileId);
-
-    await supabase
-      .from('tasks')
-      .update({
-        status: 'pending_approval',
-        completed_at: new Date().toISOString(),
-      })
-      .eq('id', taskId);
 
     return data;
   },
