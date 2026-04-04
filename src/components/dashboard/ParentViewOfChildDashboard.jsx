@@ -75,6 +75,23 @@ export default function ParentViewOfChildDashboard() {
   const completedTasks = tasks.filter(c => c.status === 'completed');
   const approvedTasks = tasks.filter(c => c.status === 'approved');
 
+  const markTaskComplete = useMutation({
+    mutationFn: async (taskId) => {
+      const { error } = await firstsavvy
+        .from('tasks')
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
+        .eq('id', taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries(['tasks', childProfileId]);
+      toast.success('Task marked complete! Ready for approval.');
+    },
+    onError: () => {
+      toast.error('Failed to mark task complete');
+    }
+  });
+
   const approveTask = useMutation({
     mutationFn: async (choreId) => {
       const chore = tasks.find(c => c.id === choreId);
@@ -213,13 +230,18 @@ export default function ParentViewOfChildDashboard() {
                   {tasks.map((chore) => (
                     <div
                       key={chore.id}
-                      className={`p-4 rounded-lg border-2 ${
+                      className={`p-4 rounded-lg border-2 transition-all ${
                         chore.status === 'approved'
                           ? 'border-green-200 bg-green-50'
                           : chore.status === 'completed'
                           ? 'border-amber-200 bg-amber-50'
-                          : 'border-slate-200 bg-slate-50'
+                          : 'border-blue-200 bg-blue-50 hover:border-blue-400 hover:shadow-md cursor-pointer'
                       }`}
+                      onClick={() => {
+                        if (chore.status === 'in_progress') {
+                          markTaskComplete.mutate(chore.id);
+                        }
+                      }}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex items-start gap-3 flex-1">
@@ -228,7 +250,7 @@ export default function ParentViewOfChildDashboard() {
                           ) : chore.status === 'completed' ? (
                             <CheckCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                           ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-slate-400 shrink-0 mt-0.5" />
+                            <div className="w-5 h-5 rounded-full border-2 border-blue-500 shrink-0 mt-0.5 hover:bg-blue-100" />
                           )}
                           <div className="flex-1">
                             <p className="text-sm font-semibold text-slate-900">{chore.title}</p>
@@ -246,7 +268,7 @@ export default function ParentViewOfChildDashboard() {
                                 <div className="flex items-center gap-2">
                                   {chore.points_reward > 0 && (
                                     <Badge variant="secondary" className="text-xs">
-                                      <Star className="w-3 h-3 mr-1 text-amber-500" />
+                                      <Star className="w-3 h-3 mr-1 text-amber-500 fill-amber-500" />
                                       {chore.points_reward}
                                     </Badge>
                                   )}
@@ -264,7 +286,10 @@ export default function ParentViewOfChildDashboard() {
                         {chore.status === 'completed' && (
                           <Button
                             size="sm"
-                            onClick={() => approveTask.mutate(chore.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              approveTask.mutate(chore.id);
+                            }}
                             disabled={approveTask.isPending}
                           >
                             Approve
