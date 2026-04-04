@@ -71,7 +71,7 @@ export default function ParentViewOfChildDashboard() {
     enabled: !!childProfileId && !!activeProfile?.profile_id
   });
 
-  const assignedTasks = tasks.filter(c => c.status === 'assigned');
+  const assignedTasks = tasks.filter(c => c.status === 'in_progress');
   const completedTasks = tasks.filter(c => c.status === 'completed');
   const approvedTasks = tasks.filter(c => c.status === 'approved');
 

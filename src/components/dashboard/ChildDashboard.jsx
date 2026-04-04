@@ -86,7 +86,7 @@ export default function ChildDashboard() {
   const pointsBalance = childProfile?.points_balance || 0;
   const cashBalance = parseFloat(childProfile?.cash_balance || 0);
 
-  const assignedTasks = tasks.filter(c => c.status === 'assigned');
+  const assignedTasks = tasks.filter(c => c.status === 'in_progress');
   const completedTasks = tasks.filter(c => c.status === 'completed');
   const approvedTasks = tasks.filter(c => c.status === 'approved');
 
@@ -267,11 +267,11 @@ export default function ChildDashboard() {
                       <div className="flex items-start gap-3">
                         <button
                           onClick={() => {
-                            if (task.status === 'assigned') {
+                            if (task.status === 'in_progress') {
                               markTaskComplete.mutate(task.id);
                             }
                           }}
-                          disabled={task.status !== 'assigned'}
+                          disabled={task.status !== 'in_progress'}
                           className="mt-1"
                         >
                           {task.status === 'approved' ? (
@@ -279,7 +279,7 @@ export default function ChildDashboard() {
                           ) : task.status === 'completed' ? (
                             <CheckCircle className="w-6 h-6 text-amber-600" />
                           ) : (
-                            <Circle className={`w-6 h-6 ${task.status === 'assigned' ? 'text-sky-600 hover:text-sky-700 cursor-pointer' : 'text-slate-400'}`} />
+                            <Circle className={`w-6 h-6 ${task.status === 'in_progress' ? 'text-sky-600 hover:text-sky-700 cursor-pointer' : 'text-slate-400'}`} />
                           )}
                         </button>
                         <div className="flex-1 min-w-0">

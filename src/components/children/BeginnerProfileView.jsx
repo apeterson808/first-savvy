@@ -118,7 +118,7 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
     window.location.href = '/login';
   };
 
-  const availableTasks = tasks.filter(t => t.status === 'assigned');
+  const availableTasks = tasks.filter(t => t.status === 'in_progress');
   const pendingTasks = completions.filter(c => c.status === 'pending');
   const availableRewards = rewards.filter(r => r.status === 'available');
   const redeemedRewards = rewards.filter(r => r.status === 'redeemed');

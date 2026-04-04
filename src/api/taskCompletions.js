@@ -124,7 +124,7 @@ export const taskCompletionsAPI = {
       await supabase
         .from('tasks')
         .update({
-          status: 'assigned',
+          status: 'in_progress',
           completed_at: null,
         })
         .eq('id', completion.task_id);
