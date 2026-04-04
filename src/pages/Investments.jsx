@@ -6,14 +6,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { PageTabs } from '@/components/common/PageTabs';
 import { Button } from '@/components/ui/button';
-import { Plus, TrendingUp, Wallet, Bitcoin, PiggyBank } from 'lucide-react';
+import { Plus, TrendingUp, Bitcoin, PiggyBank } from 'lucide-react';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import { formatCurrency } from '../components/utils/formatters';
 
 export default function Investments() {
   const { activeProfile } = useProfile();
   const urlParams = new URLSearchParams(window.location.search);
-  const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'overview');
+  const [activeTab, setActiveTab] = useState(urlParams.get('tab') || 'stocks');
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardDefaultType, setWizardDefaultType] = useState(null);
   const queryClient = useQueryClient();
@@ -21,7 +21,7 @@ export default function Investments() {
   React.useEffect(() => {
     const syncTabWithUrl = () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const newTab = urlParams.get('tab') || 'overview';
+      const newTab = urlParams.get('tab') || 'stocks';
       setActiveTab(newTab);
     };
 
@@ -60,10 +60,6 @@ export default function Investments() {
     ['account_401k', 'traditional_ira', 'roth_ira'].includes(acc.account_detail)
   );
 
-  const totalInvestments = chartAccounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
-  const totalStocksRetirement = [...brokerageAccounts, ...retirementAccounts].reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
-  const totalCrypto = cryptoAccounts.reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
-
   const openWizard = (type = null) => {
     setWizardDefaultType(type);
     setWizardOpen(true);
@@ -71,87 +67,8 @@ export default function Investments() {
 
   return (
     <div className="p-4 md:p-6">
-      <PageTabs tabs={['overview', 'stocks', 'crypto']} defaultTab="overview" />
+      <PageTabs tabs={['stocks', 'crypto']} defaultTab="stocks" />
       <Tabs value={activeTab} className="w-full">
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Total Investments</p>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalInvestments)}</p>
-                    <p className="text-xs text-slate-500 mt-1">{chartAccounts.length} accounts</p>
-                  </div>
-                  <TrendingUp className="w-8 h-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Stocks & Retirement</p>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalStocksRetirement)}</p>
-                    <p className="text-xs text-slate-500 mt-1">{brokerageAccounts.length + retirementAccounts.length} accounts</p>
-                  </div>
-                  <PiggyBank className="w-8 h-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Crypto</p>
-              </CardHeader>
-              <CardContent className="px-4 pb-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-2xl font-bold text-slate-900">{formatCurrency(totalCrypto)}</p>
-                    <p className="text-xs text-slate-500 mt-1">{cryptoAccounts.length} wallets</p>
-                  </div>
-                  <Bitcoin className="w-8 h-8 text-orange-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {chartAccounts.length === 0 && !isLoading && (
-            <Card className="shadow-sm border-slate-200">
-              <CardContent className="p-8 text-center">
-                <Wallet className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                <p className="text-slate-600 mb-4">No investment accounts yet</p>
-                <Button onClick={() => openWizard('investments')}>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add Investment Account
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-
-          {chartAccounts.length > 0 && (
-            <Card className="shadow-sm border-slate-200">
-              <CardHeader className="pb-2 pt-4 px-4">
-                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Performance</p>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="h-64 flex items-center justify-center text-slate-500">
-                  <div className="text-center">
-                    <TrendingUp className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-                    <p>Performance tracking coming soon</p>
-                    <p className="text-xs text-slate-400 mt-2">Connect your accounts to see investment performance</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
 
         <TabsContent value="stocks" className="space-y-4">
           <div className="flex justify-between items-center mb-4">
