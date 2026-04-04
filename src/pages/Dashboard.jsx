@@ -15,6 +15,7 @@ import { format, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, startOf
 import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AnimatedProgressBar from '../components/dashboard/AnimatedProgressBar';
+import FamilyConnectionsCard from '../components/dashboard/FamilyConnectionsCard';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import ChildDashboard from '../components/dashboard/ChildDashboard';
@@ -767,6 +768,9 @@ export default function Dashboard() {
 
           {/* Credit Score Card */}
           <CreditScoreCard creditScore={latestCreditScore} />
+
+          {/* Family Connections Card */}
+          <FamilyConnectionsCard />
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 gap-4">
