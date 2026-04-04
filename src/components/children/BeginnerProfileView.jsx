@@ -121,8 +121,13 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
     window.location.href = '/login';
   };
 
-  const availableTasks = tasks.filter(t => t.status === 'in_progress');
-  const pendingTasks = completions.filter(c => c.status === 'pending');
+  const tasksWithCompletions = tasks.map(task => {
+    const completion = completions.find(c => c.task_id === task.id &&
+      (c.status === 'pending' || (isParentViewing && (c.status === 'approved' || c.status === 'rejected')))
+    );
+    return { task, completion };
+  });
+
   const availableRewards = rewards.filter(r => r.status === 'available');
   const redeemedRewards = rewards.filter(r => r.status === 'redeemed');
 
@@ -209,11 +214,11 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                 Your Tasks
               </h2>
               <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
-                {availableTasks.length} available
+                {tasksWithCompletions.length} total
               </Badge>
             </div>
 
-            {availableTasks.length === 0 && pendingTasks.length === 0 ? (
+            {tasksWithCompletions.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-slate-500">No tasks right now. Check back soon!</p>
@@ -221,22 +226,14 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
               </Card>
             ) : (
               <>
-                {pendingTasks.map((completion) => (
+                {tasksWithCompletions.map(({ task, completion }) => (
                   <TaskCard
-                    key={completion.id}
-                    task={completion.tasks}
+                    key={task.id}
+                    task={task}
                     completion={completion}
                     onComplete={handleTaskComplete}
                     onApprove={handleApproveCompletion}
                     onReject={handleRejectCompletion}
-                    isParentViewing={isParentViewing}
-                  />
-                ))}
-                {availableTasks.map((task) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    onComplete={handleTaskComplete}
                     isParentViewing={isParentViewing}
                   />
                 ))}

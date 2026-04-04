@@ -32,6 +32,8 @@ export function TaskCard({
   const isApproved = completion?.status === 'approved';
   const isRejected = completion?.status === 'rejected';
 
+  const showCompletion = isPending || (isApproved && isParentViewing) || (isRejected && isParentViewing);
+
   const IconComponent = task.icon ? getIconComponent(task.icon) : Star;
 
   const handleCompleteClick = () => {
@@ -61,14 +63,14 @@ export function TaskCard({
   };
 
   const getBorderColor = () => {
-    if (isPending) return 'border-yellow-400 shadow-yellow-200';
-    if (isApproved) return 'border-green-400 shadow-green-200';
-    if (isRejected) return 'border-red-400 shadow-red-200';
+    if (isPending && showCompletion) return 'border-yellow-400 shadow-yellow-200';
+    if (isApproved && showCompletion) return 'border-green-400 shadow-green-200';
+    if (isRejected && showCompletion) return 'border-red-400 shadow-red-200';
     return 'border-blue-400 shadow-blue-200';
   };
 
   const getStatusBadge = () => {
-    if (isPending) {
+    if (isPending && showCompletion) {
       return (
         <Badge className="bg-yellow-500 text-white">
           <Clock className="w-3 h-3 mr-1" />
@@ -76,7 +78,7 @@ export function TaskCard({
         </Badge>
       );
     }
-    if (isApproved) {
+    if (isApproved && showCompletion) {
       return (
         <Badge className="bg-green-500 text-white">
           <Check className="w-3 h-3 mr-1" />
@@ -84,7 +86,7 @@ export function TaskCard({
         </Badge>
       );
     }
-    if (isRejected) {
+    if (isRejected && showCompletion) {
       return (
         <Badge className="bg-red-500 text-white">
           <X className="w-3 h-3 mr-1" />
@@ -104,11 +106,11 @@ export function TaskCard({
       >
         <Card
           className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${
-            isPending ? 'animate-pulse' : ''
-          } ${!isPending && !isApproved && !isRejected && !isParentViewing ? 'cursor-pointer hover:border-blue-400' : ''}`}
+            isPending && showCompletion ? 'animate-pulse' : ''
+          } ${!showCompletion && !isParentViewing ? 'cursor-pointer hover:border-blue-400' : ''}`}
           style={{ borderColor: task.color || undefined }}
           onClick={() => {
-            if (!isPending && !isApproved && !isRejected && !isParentViewing) {
+            if (!showCompletion && !isParentViewing) {
               handleCompleteClick();
             }
           }}
@@ -130,13 +132,13 @@ export function TaskCard({
                   {task.description && (
                     <p className="text-sm text-slate-600 mt-1">{task.description}</p>
                   )}
-                  {completion?.submission_notes && (
+                  {completion?.submission_notes && showCompletion && (
                     <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
                       <p className="font-medium text-blue-900">Notes:</p>
                       <p className="text-blue-700">{completion.submission_notes}</p>
                     </div>
                   )}
-                  {completion?.review_notes && (
+                  {completion?.review_notes && showCompletion && (
                     <div className="mt-2 p-2 bg-purple-50 rounded text-sm">
                       <p className="font-medium text-purple-900">Parent's Feedback:</p>
                       <p className="text-purple-700">{completion.review_notes}</p>
@@ -154,7 +156,7 @@ export function TaskCard({
             </div>
 
             <div className="flex items-center justify-end gap-2">
-              {!isPending && !isApproved && !isRejected && (
+              {!showCompletion && (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -168,7 +170,7 @@ export function TaskCard({
                 </Button>
               )}
 
-              {isPending && isParentViewing && (
+              {showCompletion && isPending && isParentViewing && (
                 <>
                   <Button
                     variant="outline"
