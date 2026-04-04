@@ -3,7 +3,7 @@ import { tasksAPI } from '@/api/tasks';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, CheckCircle, Clock, XCircle } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star } from 'lucide-react';
 import { toast } from 'sonner';
 import { TaskDialog } from './TaskDialog';
 
@@ -113,9 +113,21 @@ export function TasksTab({ childId, profileId, onUpdate }) {
               <CardContent>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4 text-sm">
-                    <span className="font-semibold text-green-600">
-                      {task.points_value} points
-                    </span>
+                    {task.star_reward ? (
+                      <span className="font-semibold text-yellow-600 flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-500" />
+                        {task.star_reward} {task.star_reward === 1 ? 'star' : 'stars'}
+                      </span>
+                    ) : (
+                      <span className="font-semibold text-green-600">
+                        {task.points_value} points
+                      </span>
+                    )}
+                    {task.frequency && task.frequency !== 'one_time' && (
+                      <Badge variant="outline" className="text-xs">
+                        {task.frequency}
+                      </Badge>
+                    )}
                     {task.due_date && (
                       <span className="text-slate-600">
                         Due: {new Date(task.due_date).toLocaleDateString()}
