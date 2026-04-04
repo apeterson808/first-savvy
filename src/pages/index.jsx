@@ -20,7 +20,7 @@ import Affiliate from "./Affiliate";
 import Connections from "./Connections";
 import ConnectionDetail from "./ConnectionDetail";
 import ClaimProfile from "./ClaimProfile";
-import { BrowserRouter as Router, Route, Routes, useLocation, Navigate } from 'react-router-dom';
+import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
 const PAGES = {
@@ -72,8 +72,7 @@ function _getCurrentPage(url) {
     return pageName || Object.keys(PAGES)[0];
 }
 
-// Create a wrapper component that uses useLocation inside the Router context
-function PagesContent() {
+export default function Pages() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
 
@@ -118,13 +117,5 @@ function PagesContent() {
                 </Routes>
             </Layout>
         </ProtectedRoute>
-    );
-}
-
-export default function Pages() {
-    return (
-        <Router>
-            <PagesContent />
-        </Router>
     );
 }
