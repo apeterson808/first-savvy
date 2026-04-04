@@ -88,19 +88,19 @@ export default function Layout({ children, currentPageName }) {
     // If the logged-in user is NOT a child, show full parent navigation
     if (!isLoggedInAsChild) {
       return [
-        { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard' },
-        { name: 'Banking', icon: CircleDollarSign, page: 'Banking' },
-        { name: 'Budgeting', icon: ClipboardList, page: 'Budgeting' },
-        { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals' },
-        { name: 'Calendar', icon: Calendar, page: 'Calendar' },
-        { name: 'Credit Score', icon: CreditCard, page: 'CreditScore' },
-        { name: 'Net Worth', icon: Banknote, page: 'NetWorth' },
-        { name: 'Investments', icon: TrendingUp, page: 'Investments' },
-        { name: 'Contacts', icon: Users, page: 'Contacts' },
-        { name: 'Connections', icon: UserCheck, page: 'Connections' },
-        { name: 'Integrations', icon: Cable, page: 'Integrations' },
-        { name: 'Password Vault', icon: Lock, page: 'PasswordVault' },
-        { name: 'Affiliate', icon: Users, page: 'Affiliate' }
+        { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard', availableForChildProfile: true },
+        { name: 'Banking', icon: CircleDollarSign, page: 'Banking', availableForChildProfile: false },
+        { name: 'Budgeting', icon: ClipboardList, page: 'Budgeting', availableForChildProfile: false },
+        { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', availableForChildProfile: false },
+        { name: 'Calendar', icon: Calendar, page: 'Calendar', availableForChildProfile: false },
+        { name: 'Credit Score', icon: CreditCard, page: 'CreditScore', availableForChildProfile: false },
+        { name: 'Net Worth', icon: Banknote, page: 'NetWorth', availableForChildProfile: false },
+        { name: 'Investments', icon: TrendingUp, page: 'Investments', availableForChildProfile: false },
+        { name: 'Contacts', icon: Users, page: 'Contacts', availableForChildProfile: false },
+        { name: 'Connections', icon: UserCheck, page: 'Connections', availableForChildProfile: false },
+        { name: 'Integrations', icon: Cable, page: 'Integrations', availableForChildProfile: false },
+        { name: 'Password Vault', icon: Lock, page: 'PasswordVault', availableForChildProfile: false },
+        { name: 'Affiliate', icon: Users, page: 'Affiliate', availableForChildProfile: false }
       ];
     }
 
@@ -177,10 +177,14 @@ export default function Layout({ children, currentPageName }) {
             {navigation.map((item) => {
               const Icon = item.icon;
               const isActive = currentPageName === item.page;
+              const isViewingChildProfile = activeProfile?.is_child_profile === true;
+              const isDisabled = isViewingChildProfile && !item.availableForChildProfile;
+
               return (
                 <button
                     key={item.name}
                     onClick={() => {
+                      if (isDisabled) return;
                       // Navigate to page with default tab
                       const basePath = createPageUrl(item.page).split('?')[0];
                       navigate(basePath);
@@ -188,12 +192,15 @@ export default function Layout({ children, currentPageName }) {
                       window.history.replaceState({}, '', basePath);
                       window.dispatchEvent(new PopStateEvent('popstate'));
                     }}
+                    disabled={isDisabled}
                     className={`flex items-center w-full ${sidebarCollapsed ? 'justify-center px-3' : 'px-3'} py-1.5 text-sm font-medium rounded-lg transition-all ${
-                      isActive
+                      isDisabled
+                        ? 'text-slate-500 cursor-not-allowed opacity-40'
+                        : isActive
                         ? 'bg-slate-700 text-white shadow-lg'
                         : 'text-slate-300 hover:bg-slate-700/50 hover:text-white'
                     }`}
-                    title={sidebarCollapsed ? item.name : ''}
+                    title={sidebarCollapsed ? item.name : (isDisabled ? `Switch to your profile to access ${item.name}` : '')}
                   >
                   <Icon className={`w-4 h-4 ${!sidebarCollapsed && 'mr-3'}`} />
                   {!sidebarCollapsed && item.name}
