@@ -263,18 +263,20 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete 
                       {child.first_name} {child.last_name}
                     </h2>
                   )}
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <Badge variant="secondary" className="text-xs font-normal">
-                      Beginner Profile
-                    </Badge>
-                    {child.date_of_birth && (
-                      <span className="text-sm text-slate-500">
-                        Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
-                      </span>
-                    )}
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs font-normal">
+                        Beginner
+                      </Badge>
+                      {child.date_of_birth && (
+                        <span className="text-sm text-slate-500">
+                          Age {Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000)}
+                        </span>
+                      )}
+                    </div>
                     <Badge
                       variant={getInvitationStatus().variant === 'success' ? 'default' : 'outline'}
-                      className={`text-xs ${getInvitationStatus().variant !== 'success' ? 'cursor-pointer hover:bg-slate-100' : ''}`}
+                      className={`text-xs w-fit ${getInvitationStatus().variant !== 'success' ? 'cursor-pointer hover:bg-slate-100' : ''}`}
                       onClick={handleInviteClick}
                     >
                       {getInvitationStatus().text}
