@@ -150,13 +150,8 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
 
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative">
-              <ChildAvatar child={childProfile} size="lg" />
-              <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1.5 shadow-lg border-2 border-slate-100">
-                <Trophy className="w-5 h-5 text-amber-500" />
-              </div>
-            </div>
+          <div className="flex items-center gap-5">
+            <ChildAvatar child={childProfile} size="lg" />
             <div>
               <h1 className="text-4xl font-bold text-slate-900">
                 Hi, {childProfile.child_name}!

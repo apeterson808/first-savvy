@@ -38,15 +38,15 @@ export default function ChildAvatar({ child, size = 'default', className }) {
   const sizeClasses = {
     sm: 'w-8 h-8',
     default: 'w-12 h-12',
-    lg: 'w-16 h-16',
-    xl: 'w-24 h-24',
+    lg: 'w-20 h-20',
+    xl: 'w-28 h-28',
   };
 
   const iconSizes = {
     sm: 'w-4 h-4',
     default: 'w-6 h-6',
-    lg: 'w-8 h-8',
-    xl: 'w-12 h-12',
+    lg: 'w-10 h-10',
+    xl: 'w-14 h-14',
   };
 
   const getInitials = () => {
@@ -73,7 +73,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
 
   if (avatar?.imageUrl) {
     return (
-      <Avatar className={cn(sizeClasses[size], className)}>
+      <Avatar className={cn(sizeClasses[size], 'shadow-xl ring-4 ring-white', className)}>
         <AvatarImage src={avatar.imageUrl} alt={child?.child_name || child?.first_name || 'Avatar'} />
         <AvatarFallback>{getInitials()}</AvatarFallback>
       </Avatar>
@@ -84,7 +84,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
     const Icon = ICON_MAP[avatar.icon] || Circle;
     return (
       <div
-        className={cn('rounded-full flex items-center justify-center', sizeClasses[size], className)}
+        className={cn('rounded-full flex items-center justify-center shadow-xl ring-4 ring-white', sizeClasses[size], className)}
         style={{ backgroundColor: avatar.color }}
       >
         <Icon className={cn(iconSizes[size], 'text-white')} />
@@ -100,7 +100,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
     const colorClass = PRESET_COLORS[presetId] || 'bg-slate-100 text-slate-600';
 
     return (
-      <div className={cn('rounded-full flex items-center justify-center', sizeClasses[size], colorClass, className)}>
+      <div className={cn('rounded-full flex items-center justify-center shadow-xl ring-4 ring-white', sizeClasses[size], colorClass, className)}>
         <Icon className={iconSizes[size]} />
       </div>
     );
@@ -108,7 +108,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
 
   if (child?.avatar_url && !isPreset) {
     return (
-      <Avatar className={cn(sizeClasses[size], className)}>
+      <Avatar className={cn(sizeClasses[size], 'shadow-xl ring-4 ring-white', className)}>
         <AvatarImage src={child.avatar_url} alt={child?.child_name || 'Avatar'} />
         <AvatarFallback>{getInitials()}</AvatarFallback>
       </Avatar>
@@ -116,8 +116,8 @@ export default function ChildAvatar({ child, size = 'default', className }) {
   }
 
   return (
-    <Avatar className={cn(sizeClasses[size], className)}>
-      <AvatarFallback>{getInitials()}</AvatarFallback>
+    <Avatar className={cn(sizeClasses[size], 'shadow-xl ring-4 ring-white bg-gradient-to-br from-blue-500 to-cyan-500', className)}>
+      <AvatarFallback className="bg-transparent text-white text-xl font-bold">{getInitials()}</AvatarFallback>
     </Avatar>
   );
 }
