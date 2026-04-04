@@ -101,6 +101,9 @@ export const childProfilesAPI = {
         weekly_spending_limit: childData.weekly_spending_limit,
         monthly_spending_limit: childData.monthly_spending_limit,
         notes: childData.notes,
+        username: childData.username,
+        email: childData.email || null,
+        login_enabled: childData.login_enabled || false,
       })
       .select()
       .single();
@@ -241,22 +244,22 @@ export const childProfilesAPI = {
     };
   },
 
-  async authenticateChild(username, pin) {
-    if (!username || !pin) {
-      throw new Error('Username and PIN are required');
+  async authenticateChild(usernameOrEmail, pin) {
+    if (!usernameOrEmail || !pin) {
+      throw new Error('Username/Email and PIN are required');
     }
 
     const { data: child, error: fetchError } = await supabase
       .from('child_profiles')
       .select('*')
-      .ilike('username', username)
+      .or(`username.ilike.${usernameOrEmail},email.ilike.${usernameOrEmail}`)
       .eq('is_active', true)
       .maybeSingle();
 
     if (fetchError) throw fetchError;
 
     if (!child) {
-      await this.logLoginAttempt(null, false, 'Username not found');
+      await this.logLoginAttempt(null, false, 'Username/Email not found');
       throw new Error('Invalid credentials');
     }
 
