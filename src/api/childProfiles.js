@@ -92,7 +92,7 @@ export const childProfilesAPI = {
         last_name: childData.last_name,
         child_name: childData.child_name,
         date_of_birth: childData.date_of_birth,
-        sex: childData.sex,
+        gender: childData.sex || childData.gender,
         avatar_url: avatarUrl,
         current_permission_level: 1,
         points_balance: 0,

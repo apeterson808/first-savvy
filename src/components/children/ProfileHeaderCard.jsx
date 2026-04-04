@@ -18,7 +18,7 @@ import { ShareProfileDialog } from './ShareProfileDialog';
 import { PINManagementDialog } from './PINManagementDialog';
 import AvatarSelector from './AvatarSelector';
 import { toast } from 'sonner';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNow, format } from 'date-fns';
 
 const PERMISSION_LEVELS = {
   view_only: 'View Only',
@@ -338,7 +338,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
                       />
                     ) : (
                       <div className="text-sm text-slate-900">
-                        {child.date_of_birth || <span className="text-slate-400">Not set</span>}
+                        {child.date_of_birth ? format(new Date(child.date_of_birth), 'MMMM d, yyyy') : <span className="text-slate-400">Not set</span>}
                       </div>
                     )}
                   </div>
