@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkles, Trophy, LogOut } from 'lucide-react';
+import { Star, Sparkles, Trophy, LogOut, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ChildAvatar from './ChildAvatar';
 import { TaskCard } from './TaskCard';
 import { RewardCard } from './RewardCard';
+import { TaskDialog } from './TaskDialog';
+import { RewardDialog } from './RewardDialog';
 import { toast } from 'sonner';
 
 export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
@@ -21,7 +23,9 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
   const [completions, setCompletions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [celebrationStars, setCelebrationStars] = useState(0);
-  const { exitChildView } = useProfile();
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isRewardDialogOpen, setIsRewardDialogOpen] = useState(false);
+  const { exitChildView, currentProfile } = useProfile();
 
   useEffect(() => {
     if (childProfile?.id) {
@@ -205,9 +209,17 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                 </div>
                 Your Tasks
               </h2>
-              <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
-                {availableTasks.length} available
-              </Badge>
+              <div className="flex items-center gap-2">
+                {isParentViewing && (
+                  <Button size="sm" onClick={() => setIsTaskDialogOpen(true)} className="bg-blue-500 hover:bg-blue-600 text-white">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Task
+                  </Button>
+                )}
+                <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
+                  {availableTasks.length} available
+                </Badge>
+              </div>
             </div>
 
             {availableTasks.length === 0 && pendingTasks.length === 0 ? (
@@ -249,9 +261,17 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                 </div>
                 Rewards
               </h2>
-              <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
-                {availableRewards.length} available
-              </Badge>
+              <div className="flex items-center gap-2">
+                {isParentViewing && (
+                  <Button size="sm" onClick={() => setIsRewardDialogOpen(true)} className="bg-purple-500 hover:bg-purple-600 text-white">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Reward
+                  </Button>
+                )}
+                <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
+                  {availableRewards.length} available
+                </Badge>
+              </div>
             </div>
 
             {availableRewards.length === 0 && redeemedRewards.length === 0 ? (
@@ -292,6 +312,24 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
           </div>
         </div>
       </div>
+
+      {isParentViewing && (
+        <>
+          <TaskDialog
+            isOpen={isTaskDialogOpen}
+            onClose={() => setIsTaskDialogOpen(false)}
+            childId={childProfile.id}
+            onSuccess={loadData}
+          />
+          <RewardDialog
+            isOpen={isRewardDialogOpen}
+            onClose={() => setIsRewardDialogOpen(false)}
+            profileId={currentProfile?.id}
+            childId={childProfile.id}
+            onSuccess={loadData}
+          />
+        </>
+      )}
     </div>
   );
 }

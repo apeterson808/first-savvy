@@ -6,12 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { RewardDialog } from './RewardDialog';
 
 export function RewardsTab({ childId, child, onUpdate }) {
   const { selectedProfile } = useProfile();
   const [rewards, setRewards] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isRewardDialogOpen, setIsRewardDialogOpen] = useState(false);
 
   useEffect(() => {
     loadRewardsData();
@@ -38,12 +40,19 @@ export function RewardsTab({ childId, child, onUpdate }) {
     return <div className="text-center py-8">Loading rewards...</div>;
   }
 
+  const handleRewardSuccess = () => {
+    loadRewardsData();
+    if (onUpdate) {
+      onUpdate();
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Reward Catalog</h3>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setIsRewardDialogOpen(true)}>
             <Plus className="mr-2 h-4 w-4" />
             Add Reward
           </Button>
@@ -55,7 +64,7 @@ export function RewardsTab({ childId, child, onUpdate }) {
               <div className="text-center py-8">
                 <Award className="mx-auto h-12 w-12 text-slate-400" />
                 <p className="mt-2 text-slate-600">No rewards yet</p>
-                <Button className="mt-4" size="sm">
+                <Button className="mt-4" size="sm" onClick={() => setIsRewardDialogOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" />
                   Create First Reward
                 </Button>
@@ -134,6 +143,14 @@ export function RewardsTab({ childId, child, onUpdate }) {
           </div>
         )}
       </div>
+
+      <RewardDialog
+        isOpen={isRewardDialogOpen}
+        onClose={() => setIsRewardDialogOpen(false)}
+        profileId={selectedProfile.id}
+        childId={childId}
+        onSuccess={handleRewardSuccess}
+      />
     </div>
   );
 }

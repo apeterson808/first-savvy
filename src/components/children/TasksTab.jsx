@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus, CheckCircle, Clock, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
+import { TaskDialog } from './TaskDialog';
 
 const STATUS_COLORS = {
   pending: 'bg-slate-100 text-slate-800',
@@ -17,6 +18,7 @@ const STATUS_COLORS = {
 export function TasksTab({ childId, onUpdate }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -62,11 +64,18 @@ export function TasksTab({ childId, onUpdate }) {
     return <div className="text-center py-8">Loading tasks...</div>;
   }
 
+  const handleTaskSuccess = () => {
+    loadTasks();
+    if (onUpdate) {
+      onUpdate();
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Tasks</h3>
-        <Button size="sm">
+        <Button size="sm" onClick={() => setIsTaskDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Task
         </Button>
@@ -77,7 +86,7 @@ export function TasksTab({ childId, onUpdate }) {
           <CardContent className="pt-6">
             <div className="text-center py-8">
               <p className="text-slate-600">No tasks yet</p>
-              <Button className="mt-4" size="sm">
+              <Button className="mt-4" size="sm" onClick={() => setIsTaskDialogOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" />
                 Create First Task
               </Button>
@@ -138,6 +147,13 @@ export function TasksTab({ childId, onUpdate }) {
           ))}
         </div>
       )}
+
+      <TaskDialog
+        isOpen={isTaskDialogOpen}
+        onClose={() => setIsTaskDialogOpen(false)}
+        childId={childId}
+        onSuccess={handleTaskSuccess}
+      />
     </div>
   );
 }
