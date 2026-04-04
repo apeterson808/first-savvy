@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { useAuth } from './AuthContext';
 
@@ -14,6 +15,8 @@ export const useProfile = () => {
 
 export const ProfileProvider = ({ children }) => {
   const { user } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [profiles, setProfiles] = useState([]);
   const [activeProfile, setActiveProfile] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -284,10 +287,14 @@ export const ProfileProvider = ({ children }) => {
       localStorage.setItem('activeProfileId', profile.id);
 
       window.dispatchEvent(new CustomEvent('profileSwitched', { detail: { profileId: profile.id } }));
+
+      if (location.pathname !== '/') {
+        navigate('/');
+      }
     } catch (err) {
       throw err;
     }
-  }, [user]);
+  }, [user, navigate, location.pathname]);
 
   const refreshProfiles = useCallback(async () => {
     await loadProfiles();
