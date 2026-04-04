@@ -48,23 +48,62 @@ export const tasksAPI = {
   },
 
   async createTask(profileId, taskData) {
+    const insertData = {
+      profile_id: profileId,
+      assigned_to_child_id: taskData.assigned_to_child_id,
+      title: taskData.title,
+      description: taskData.description,
+      created_by_user_id: taskData.created_by_user_id,
+      icon: taskData.icon,
+      color: taskData.color,
+      metadata: taskData.metadata,
+    };
+
+    if (taskData.star_reward !== undefined) {
+      insertData.star_reward = taskData.star_reward;
+    }
+
+    if (taskData.frequency !== undefined) {
+      insertData.frequency = taskData.frequency;
+    }
+
+    if (taskData.repeatable !== undefined) {
+      insertData.repeatable = taskData.repeatable;
+    }
+
+    if (taskData.requires_approval !== undefined) {
+      insertData.requires_approval = taskData.requires_approval;
+    }
+
+    if (taskData.points_value !== undefined) {
+      insertData.points_value = taskData.points_value;
+    } else {
+      insertData.points_value = 0;
+    }
+
+    if (taskData.due_date !== undefined) {
+      insertData.due_date = taskData.due_date;
+    }
+
+    if (taskData.recurrence_pattern !== undefined) {
+      insertData.recurrence_pattern = taskData.recurrence_pattern;
+    } else if (!taskData.frequency) {
+      insertData.recurrence_pattern = 'once';
+    }
+
+    if (taskData.is_recurring !== undefined) {
+      insertData.is_recurring = taskData.is_recurring;
+    } else {
+      insertData.is_recurring = false;
+    }
+
+    if (taskData.next_recurrence_date !== undefined) {
+      insertData.next_recurrence_date = taskData.next_recurrence_date;
+    }
+
     const { data, error } = await supabase
       .from('tasks')
-      .insert({
-        profile_id: profileId,
-        assigned_to_child_id: taskData.assigned_to_child_id,
-        title: taskData.title,
-        description: taskData.description,
-        points_value: taskData.points_value || 0,
-        due_date: taskData.due_date,
-        recurrence_pattern: taskData.recurrence_pattern || 'once',
-        is_recurring: taskData.is_recurring || false,
-        next_recurrence_date: taskData.next_recurrence_date,
-        created_by_user_id: taskData.created_by_user_id,
-        icon: taskData.icon,
-        color: taskData.color,
-        metadata: taskData.metadata,
-      })
+      .insert(insertData)
       .select()
       .single();
 
