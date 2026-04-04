@@ -520,8 +520,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete 
                         className="flex items-center gap-3 p-2 bg-white rounded-lg border"
                       >
                         <Avatar className="h-8 w-8">
-                          <AvatarImage src={share.shared_with_profile?.avatar_url} />
-                          <AvatarFallback className="text-xs">
+                          <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
                             {share.shared_with_profile?.display_name?.[0]?.toUpperCase() || 'U'}
                           </AvatarFallback>
                         </Avatar>

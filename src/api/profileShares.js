@@ -9,7 +9,6 @@ export const profileSharesAPI = {
         shared_with_profile:profiles!profile_shares_shared_with_profile_id_fkey(
           id,
           display_name,
-          avatar_url,
           user_id
         ),
         granted_by_profile:profiles!profile_shares_granted_by_profile_id_fkey(
@@ -70,8 +69,7 @@ export const profileSharesAPI = {
         *,
         shared_with_profile:profiles!profile_shares_shared_with_profile_id_fkey(
           id,
-          display_name,
-          avatar_url
+          display_name
         )
       `)
       .single();
@@ -110,7 +108,7 @@ export const profileSharesAPI = {
   async getProfilesByEmail(email) {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, display_name, avatar_url, user_id')
+      .select('id, display_name, user_id')
       .eq('user_id', (
         await supabase.auth.admin.getUserByEmail(email)
       )?.data?.user?.id)

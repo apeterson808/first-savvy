@@ -60,6 +60,18 @@ export function TasksTab({ childId, profileId, onUpdate }) {
     }
   };
 
+  const handleMarkComplete = async (taskId) => {
+    try {
+      await tasksAPI.markTaskComplete(taskId);
+      toast.success('Task marked complete! Ready for approval.');
+      loadTasks();
+      onUpdate();
+    } catch (error) {
+      console.error('Error marking task complete:', error);
+      toast.error('Failed to mark task complete');
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading tasks...</div>;
   }
@@ -96,7 +108,15 @@ export function TasksTab({ childId, profileId, onUpdate }) {
       ) : (
         <div className="space-y-3">
           {tasks.map((task) => (
-            <Card key={task.id}>
+            <Card
+              key={task.id}
+              className={task.status === 'in_progress' ? 'cursor-pointer hover:shadow-md hover:border-blue-400 transition-all' : ''}
+              onClick={() => {
+                if (task.status === 'in_progress') {
+                  handleMarkComplete(task.id);
+                }
+              }}
+            >
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
@@ -118,6 +138,11 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                         <Star className="w-4 h-4 fill-yellow-500" />
                         {task.star_reward} {task.star_reward === 1 ? 'star' : 'stars'}
                       </span>
+                    ) : task.points_reward ? (
+                      <span className="font-semibold text-yellow-600 flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-500" />
+                        {task.points_reward} {task.points_reward === 1 ? 'star' : 'stars'}
+                      </span>
                     ) : (
                       <span className="font-semibold text-green-600">
                         {task.points_value} points
@@ -134,19 +159,37 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                       </span>
                     )}
                   </div>
+                  {task.status === 'in_progress' && (
+                    <Button
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleMarkComplete(task.id);
+                      }}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Complete
+                    </Button>
+                  )}
                   {task.status === 'completed' && (
                     <div className="flex space-x-2">
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleReject(task.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReject(task.id);
+                        }}
                       >
                         <XCircle className="mr-2 h-4 w-4" />
                         Reject
                       </Button>
                       <Button
                         size="sm"
-                        onClick={() => handleApprove(task.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleApprove(task.id);
+                        }}
                       >
                         <CheckCircle className="mr-2 h-4 w-4" />
                         Approve

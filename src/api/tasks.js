@@ -146,6 +146,10 @@ export const tasksAPI = {
     return data;
   },
 
+  async markTaskComplete(taskId, userId) {
+    return this.completeTask(taskId, userId);
+  },
+
   async approveTask(taskId, userId, profileId) {
     const { data: task, error: fetchError } = await supabase
       .from('tasks')
