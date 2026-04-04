@@ -127,12 +127,18 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
 
       if (updates.daily_spending_limit) {
         updates.daily_spending_limit = parseFloat(updates.daily_spending_limit);
+      } else {
+        delete updates.daily_spending_limit;
       }
       if (updates.weekly_spending_limit) {
         updates.weekly_spending_limit = parseFloat(updates.weekly_spending_limit);
+      } else {
+        delete updates.weekly_spending_limit;
       }
       if (updates.monthly_spending_limit) {
         updates.monthly_spending_limit = parseFloat(updates.monthly_spending_limit);
+      } else {
+        delete updates.monthly_spending_limit;
       }
 
       await childProfilesAPI.updateChildProfile(child.id, updates);
