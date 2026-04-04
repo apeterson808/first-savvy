@@ -154,7 +154,7 @@ export function TaskCard({
             </div>
 
             <div className="flex items-center justify-end gap-2">
-              {!isPending && !isApproved && !isRejected && !isParentViewing && (
+              {!isPending && !isApproved && !isRejected && (
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -164,7 +164,7 @@ export function TaskCard({
                   size="lg"
                 >
                   <Check className="w-4 h-4 mr-2" />
-                  Complete Task
+                  {isParentViewing ? 'Complete (as child)' : 'Complete Task'}
                 </Button>
               )}
 
