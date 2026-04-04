@@ -15,7 +15,7 @@ const STATUS_COLORS = {
   rejected: 'bg-red-100 text-red-800',
 };
 
-export function TasksTab({ childId, onUpdate }) {
+export function TasksTab({ childId, profileId, onUpdate }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
@@ -152,6 +152,7 @@ export function TasksTab({ childId, onUpdate }) {
         isOpen={isTaskDialogOpen}
         onClose={() => setIsTaskDialogOpen(false)}
         childId={childId}
+        profileId={profileId}
         onSuccess={handleTaskSuccess}
       />
     </div>

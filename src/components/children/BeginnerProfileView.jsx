@@ -319,12 +319,13 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
             isOpen={isTaskDialogOpen}
             onClose={() => setIsTaskDialogOpen(false)}
             childId={childProfile.id}
+            profileId={childProfile.parent_profile_id}
             onSuccess={loadData}
           />
           <RewardDialog
             isOpen={isRewardDialogOpen}
             onClose={() => setIsRewardDialogOpen(false)}
-            profileId={currentProfile?.id}
+            profileId={childProfile.parent_profile_id}
             childId={childProfile.id}
             onSuccess={loadData}
           />

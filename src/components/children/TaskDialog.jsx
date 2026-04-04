@@ -35,7 +35,7 @@ const TASK_COLORS = [
   { name: 'Coral', hex: '#FF9B82' }
 ];
 
-export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
+export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
   const { user } = useAuth();
   const { currentProfile } = useProfile();
   const [formData, setFormData] = useState({
@@ -78,7 +78,14 @@ export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
     setLoading(true);
 
     try {
-      await tasksAPI.createTask(currentProfile.id, {
+      const parentProfileId = profileId || currentProfile?.id;
+
+      if (!parentProfileId) {
+        toast.error('Unable to create task: Profile not found');
+        return;
+      }
+
+      await tasksAPI.createTask(parentProfileId, {
         assigned_to_child_id: childId,
         title: formData.title,
         description: formData.description || null,
