@@ -144,13 +144,14 @@ export default function ChildDashboard() {
             <p className="text-sm text-slate-600 mt-1">Let's see what you've got today</p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 px-6 py-3 rounded-2xl shadow-xl border-2 border-white">
-              <div className="bg-white rounded-full p-2 shadow-md">
-                <Star className="w-7 h-7 text-yellow-500 fill-yellow-500" />
+            <div className="relative flex items-center gap-3 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-6 py-3 rounded-2xl shadow-2xl border-3 border-yellow-300 animate-pulse-subtle">
+              <Sparkles className="absolute top-1 right-1 w-4 h-4 text-yellow-200 animate-pulse" />
+              <div className="bg-gradient-to-br from-yellow-100 to-white rounded-full p-2.5 shadow-lg ring-2 ring-yellow-300/50">
+                <Star className="w-7 h-7 text-amber-500 fill-amber-500 drop-shadow-md" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-amber-900/80 uppercase tracking-wide">Points</p>
-                <p className="text-4xl font-black text-amber-950 drop-shadow-sm">{pointsBalance}</p>
+                <p className="text-xs font-bold text-yellow-100 uppercase tracking-wider drop-shadow-sm">Your Stars</p>
+                <p className="text-5xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>{pointsBalance}</p>
               </div>
             </div>
             {completionRate > 0 && (

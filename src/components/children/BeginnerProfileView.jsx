@@ -160,13 +160,15 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 bg-gradient-to-r from-yellow-400 via-orange-400 to-amber-500 px-6 py-4 rounded-2xl shadow-xl border-2 border-white">
-              <div className="bg-white rounded-full p-2.5 shadow-md">
-                <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
+            <div className="relative flex items-center gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-8 py-5 rounded-3xl shadow-2xl border-3 border-yellow-300 animate-pulse-subtle">
+              <Sparkles className="absolute top-2 right-2 w-5 h-5 text-yellow-200 animate-pulse" />
+              <Sparkles className="absolute bottom-2 left-2 w-4 h-4 text-yellow-200 animate-pulse delay-75" />
+              <div className="bg-gradient-to-br from-yellow-100 to-white rounded-full p-3 shadow-lg ring-2 ring-yellow-300/50">
+                <Star className="w-10 h-10 text-amber-500 fill-amber-500 drop-shadow-md" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-amber-900/80 uppercase tracking-wide">Your Stars</p>
-                <p className="text-5xl font-black text-amber-950 drop-shadow-sm">{starBalance}</p>
+                <p className="text-sm font-bold text-yellow-100 uppercase tracking-widest drop-shadow-sm">Your Stars</p>
+                <p className="text-6xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
               </div>
             </div>
             {!isParentViewing && (
