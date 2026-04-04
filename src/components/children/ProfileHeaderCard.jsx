@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Users, Crown, Check, AlertCircle, Edit, Lock, LockOpen, Shield, Key } from 'lucide-react';
+import { Users, Crown, Check, AlertCircle, Edit, Lock, LockOpen, Shield, Key, Trash2 } from 'lucide-react';
 import { InviteChildDialog } from './InviteChildDialog';
 import { ShareProfileDialog } from './ShareProfileDialog';
 import { PINManagementDialog } from './PINManagementDialog';
@@ -26,7 +26,7 @@ const PERMISSION_LEVELS = {
   co_parent: 'Co-Parent'
 };
 
-export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
+export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete }) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [formData, setFormData] = useState({
     first_name: '',
@@ -277,23 +277,36 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate }) {
               </div>
               <div className="flex items-center gap-2">
                 {isEditMode ? (
-                  <>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={handleCancel}
-                      disabled={isSaving}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={handleSave}
-                      disabled={isSaving || !hasChanges}
-                    >
-                      {isSaving ? 'Saving...' : 'Save Changes'}
-                    </Button>
-                  </>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleCancel}
+                        disabled={isSaving}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={handleSave}
+                        disabled={isSaving || !hasChanges}
+                      >
+                        {isSaving ? 'Saving...' : 'Save Changes'}
+                      </Button>
+                    </div>
+                    {onDelete && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={onDelete}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 mr-1.5" />
+                        Delete Profile
+                      </Button>
+                    )}
+                  </div>
                 ) : (
                   <Button
                     variant="outline"

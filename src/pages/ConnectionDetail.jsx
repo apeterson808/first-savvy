@@ -7,9 +7,8 @@ import { rewardsAPI } from '@/api/rewards';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock, Trash2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
 import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
 import { TasksTab } from '@/components/children/TasksTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
@@ -117,6 +116,7 @@ export default function ConnectionDetail() {
         child={child}
         currentProfileId={activeProfile?.id}
         onUpdate={loadChildData}
+        onDelete={() => setShowDeleteDialog(true)}
       />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
@@ -193,34 +193,6 @@ export default function ConnectionDetail() {
           <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
         </TabsContent>
       </Tabs>
-
-      <Card className="mt-6 border-red-200 bg-red-50">
-        <CardHeader>
-          <CardTitle className="text-red-900 flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5" />
-            Danger Zone
-          </CardTitle>
-          <CardDescription className="text-red-700">
-            Permanently delete this child profile. This action cannot be undone.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Alert className="mb-4 border-red-300 bg-red-100">
-            <AlertTriangle className="h-4 w-4 text-red-600" />
-            <AlertDescription className="text-red-800">
-              Deleting this profile will remove all associated data including tasks, rewards, achievements, and financial history. This action is permanent and cannot be reversed.
-            </AlertDescription>
-          </Alert>
-          <Button
-            variant="destructive"
-            onClick={() => setShowDeleteDialog(true)}
-            className="w-full"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Profile
-          </Button>
-        </CardContent>
-      </Card>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
