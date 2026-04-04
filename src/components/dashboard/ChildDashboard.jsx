@@ -149,8 +149,8 @@ export default function ChildDashboard() {
                 <Star className="w-7 h-7 text-yellow-500 fill-yellow-500" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Points</p>
-                <p className="text-3xl font-black text-white">{pointsBalance}</p>
+                <p className="text-xs font-semibold text-amber-900/80 uppercase tracking-wide">Points</p>
+                <p className="text-4xl font-black text-amber-950 drop-shadow-sm">{pointsBalance}</p>
               </div>
             </div>
             {completionRate > 0 && (

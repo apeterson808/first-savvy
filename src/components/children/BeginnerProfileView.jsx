@@ -165,8 +165,8 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                 <Star className="w-8 h-8 text-yellow-500 fill-yellow-500" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-white/90 uppercase tracking-wide">Your Stars</p>
-                <p className="text-4xl font-black text-white">{starBalance}</p>
+                <p className="text-xs font-semibold text-amber-900/80 uppercase tracking-wide">Your Stars</p>
+                <p className="text-5xl font-black text-amber-950 drop-shadow-sm">{starBalance}</p>
               </div>
             </div>
             {!isParentViewing && (
