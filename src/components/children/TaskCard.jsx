@@ -105,8 +105,13 @@ export function TaskCard({
         <Card
           className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${
             isPending ? 'animate-pulse' : ''
-          }`}
+          } ${!isPending && !isApproved && !isRejected && !isParentViewing ? 'cursor-pointer hover:border-blue-400' : ''}`}
           style={{ borderColor: task.color || undefined }}
+          onClick={() => {
+            if (!isPending && !isApproved && !isRejected && !isParentViewing) {
+              handleCompleteClick();
+            }
+          }}
         >
           <CardContent className="pt-6">
             <div className="flex items-start justify-between mb-4">
@@ -151,8 +156,12 @@ export function TaskCard({
             <div className="flex items-center justify-end gap-2">
               {!isPending && !isApproved && !isRejected && !isParentViewing && (
                 <Button
-                  onClick={handleCompleteClick}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCompleteClick();
+                  }}
+                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold"
+                  size="lg"
                 >
                   <Check className="w-4 h-4 mr-2" />
                   Complete Task
@@ -163,7 +172,10 @@ export function TaskCard({
                 <>
                   <Button
                     variant="outline"
-                    onClick={handleApproveClick}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleApproveClick();
+                    }}
                     className="border-green-500 text-green-600 hover:bg-green-50"
                   >
                     <Check className="w-4 h-4 mr-2" />
