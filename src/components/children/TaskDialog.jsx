@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
@@ -42,7 +43,9 @@ export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
     description: '',
     star_reward: 1,
     icon: 'Star',
-    color: '#52A5CE'
+    color: '#52A5CE',
+    frequency: 'one_time',
+    repeatable: false
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
@@ -82,8 +85,8 @@ export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
         star_reward: parseInt(formData.star_reward),
         icon: formData.icon,
         color: formData.color,
-        frequency: 'one_time',
-        repeatable: false,
+        frequency: formData.frequency,
+        repeatable: formData.repeatable || formData.frequency !== 'one_time',
         requires_approval: true,
         created_by_user_id: user.id
       });
@@ -95,7 +98,9 @@ export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
         description: '',
         star_reward: 1,
         icon: 'Star',
-        color: '#52A5CE'
+        color: '#52A5CE',
+        frequency: 'one_time',
+        repeatable: false
       });
       setErrors({});
 
@@ -118,7 +123,9 @@ export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
       description: '',
       star_reward: 1,
       icon: 'Star',
-      color: '#52A5CE'
+      color: '#52A5CE',
+      frequency: 'one_time',
+      repeatable: false
     });
     setErrors({});
     onClose();
@@ -174,6 +181,28 @@ export function TaskDialog({ isOpen, onClose, childId, onSuccess }) {
             />
             {errors.star_reward && (
               <p className="text-sm text-destructive">{errors.star_reward}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="frequency">Frequency</Label>
+            <Select
+              value={formData.frequency}
+              onValueChange={(value) => setFormData({ ...formData, frequency: value })}
+            >
+              <SelectTrigger id="frequency">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="one_time">One Time</SelectItem>
+                <SelectItem value="daily">Daily</SelectItem>
+                <SelectItem value="weekly">Weekly</SelectItem>
+              </SelectContent>
+            </Select>
+            {formData.frequency !== 'one_time' && (
+              <p className="text-xs text-muted-foreground">
+                This task can be completed multiple times ({formData.frequency})
+              </p>
             )}
           </div>
 
