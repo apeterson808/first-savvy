@@ -176,7 +176,7 @@ export const tasksAPI = {
       .from('child_transactions')
       .insert({
         child_profile_id: task.assigned_to_child_id,
-        transaction_type: 'task_payment',
+        transaction_type: 'chore_payment',
         amount: pointsToAward,
         currency_type: 'points',
         description: `Completed: ${task.title}`,
