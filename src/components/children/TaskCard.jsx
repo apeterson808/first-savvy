@@ -132,12 +132,6 @@ export function TaskCard({
                   {task.description && (
                     <p className="text-sm text-slate-600 mt-1">{task.description}</p>
                   )}
-                  {completion?.submission_notes && showCompletion && (
-                    <div className="mt-2 p-2 bg-blue-50 rounded text-sm">
-                      <p className="font-medium text-blue-900">Notes:</p>
-                      <p className="text-blue-700">{completion.submission_notes}</p>
-                    </div>
-                  )}
                   {completion?.review_notes && showCompletion && (
                     <div className="mt-2 p-2 bg-purple-50 rounded text-sm">
                       <p className="font-medium text-purple-900">Parent's Feedback:</p>
