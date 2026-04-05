@@ -142,56 +142,6 @@ export default function ConnectionDetail() {
     <div className="h-full flex flex-col pb-6 p-4 md:p-6">
       <SimpleProfileHeader child={child} />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-2">Points Balance</p>
-                <p className="text-3xl font-bold">{child.points_balance.toLocaleString()}</p>
-              </div>
-              <Award className="h-10 w-10 text-slate-300" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-2">Cash Balance</p>
-                <p className="text-3xl font-bold">${parseFloat(child.cash_balance).toFixed(2)}</p>
-              </div>
-              <TrendingUp className="h-10 w-10 text-slate-300" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-2">Completed Tasks</p>
-                <p className="text-3xl font-bold">{stats.completedTasks}</p>
-              </div>
-              <CheckCircle className="h-10 w-10 text-slate-300" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-slate-600 mb-2">Pending Approval</p>
-                <p className="text-3xl font-bold">{stats.pendingTasks}</p>
-              </div>
-              <Clock className="h-10 w-10 text-slate-300" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
       <PageTabs tabs={['tasks', 'rewards', 'activity', 'settings']} defaultTab="tasks" />
 
       <Tabs value={activeTab} className="flex-1 flex flex-col">
