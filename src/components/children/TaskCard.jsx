@@ -20,7 +20,8 @@ export function TaskCard({
   completion,
   onComplete,
   onApprove,
-  onReject
+  onReject,
+  isParentView = false
 }) {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -131,6 +132,12 @@ export function TaskCard({
                   </div>
                   {task.description && (
                     <p className="text-sm text-slate-600 mt-1">{task.description}</p>
+                  )}
+                  {completion?.submission_notes && isParentView && isPending && (
+                    <div className="mt-2 p-2 bg-blue-100 rounded text-sm border border-blue-200">
+                      <p className="font-medium text-blue-900 text-xs">Notes from child:</p>
+                      <p className="text-blue-800 text-xs mt-0.5">{completion.submission_notes}</p>
+                    </div>
                   )}
                   {completion?.review_notes && showCompletion && (
                     <div className="mt-2 p-2 bg-purple-50 rounded text-sm">

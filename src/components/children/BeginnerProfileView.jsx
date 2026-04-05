@@ -13,7 +13,7 @@ import { TaskCard } from './TaskCard';
 import { RewardCard } from './RewardCard';
 import { toast } from 'sonner';
 
-export function BeginnerProfileView({ childProfile }) {
+export function BeginnerProfileView({ childProfile, isParentView = false }) {
   const [starBalance, setStarBalance] = useState(0);
   const [starsPending, setStarsPending] = useState(0);
   const [tasks, setTasks] = useState([]);
@@ -236,6 +236,7 @@ export function BeginnerProfileView({ childProfile }) {
                     onComplete={handleTaskComplete}
                     onApprove={handleApproveCompletion}
                     onReject={handleRejectCompletion}
+                    isParentView={isParentView}
                   />
                 ))}
               </>

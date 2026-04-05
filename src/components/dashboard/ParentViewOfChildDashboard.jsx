@@ -152,7 +152,7 @@ export default function ParentViewOfChildDashboard() {
   });
 
   if (childProfile && childProfile.current_permission_level === 1) {
-    return <BeginnerProfileView childProfile={childProfile} />;
+    return <BeginnerProfileView childProfile={childProfile} isParentView={true} />;
   }
 
   return (
