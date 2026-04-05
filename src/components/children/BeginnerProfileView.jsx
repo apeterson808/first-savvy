@@ -147,7 +147,17 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-4 md:p-8 relative">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleLogout}
+        className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-8 md:right-8 bg-white/90 hover:bg-white shadow-md z-10"
+      >
+        <LogOut className="w-4 h-4 sm:mr-2" />
+        <span className="hidden sm:inline">Logout</span>
+      </Button>
+
       <AnimatePresence>
         {celebrationStars > 0 && (
           <motion.div
@@ -175,7 +185,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
               <p className="text-sm sm:text-base md:text-lg text-slate-600 mt-1">Ready to earn some stars?</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
             <div className="relative flex items-center gap-2 sm:gap-3 md:gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border-2 sm:border-3 border-yellow-300 animate-pulse-subtle flex-1 sm:flex-initial">
               <Star className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-amber-500 fill-amber-500 drop-shadow-md" />
               <div>
@@ -183,10 +193,6 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
                 <p className="text-3xl sm:text-4xl md:text-6xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="bg-white/90 hover:bg-white shadow-md shrink-0">
-              <LogOut className="w-4 h-4 sm:mr-2" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
           </div>
         </div>
 
