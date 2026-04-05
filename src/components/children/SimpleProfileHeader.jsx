@@ -25,9 +25,9 @@ export function SimpleProfileHeader({ child }) {
 
   return (
     <div className="flex items-center gap-4 mb-6">
-      <Avatar className="h-20 w-20 text-3xl">
+      <Avatar className="h-20 w-20 text-3xl border-4 border-slate-200 shadow-sm">
         {getAvatarDisplay()}
-        <AvatarFallback className="bg-slate-100 text-slate-600 text-2xl">
+        <AvatarFallback className="bg-slate-100 text-slate-700 text-2xl font-semibold">
           {getInitials()}
         </AvatarFallback>
       </Avatar>
