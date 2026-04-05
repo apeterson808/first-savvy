@@ -122,10 +122,19 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
   };
 
   const tasksWithCompletions = tasks.map(task => {
-    const completion = completions.find(c => c.task_id === task.id &&
-      (c.status === 'pending' || (isParentViewing && (c.status === 'approved' || c.status === 'rejected')))
-    );
-    return { task, completion };
+    const taskCompletions = completions.filter(c => c.task_id === task.id);
+
+    const pendingCompletion = taskCompletions.find(c => c.status === 'pending');
+    if (pendingCompletion) {
+      return { task, completion: pendingCompletion };
+    }
+
+    if (isParentViewing) {
+      const approvedOrRejected = taskCompletions.find(c => c.status === 'approved' || c.status === 'rejected');
+      return { task, completion: approvedOrRejected };
+    }
+
+    return { task, completion: undefined };
   });
 
   const availableRewards = rewards.filter(r => r.status === 'available');
