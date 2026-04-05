@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { tasksAPI } from '@/api/tasks';
@@ -34,7 +34,7 @@ const TASK_COLORS = [
   { name: 'Coral', hex: '#FF9B82' }
 ];
 
-export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
+export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, task = null }) {
   const { user } = useAuth();
   const { currentProfile } = useProfile();
   const [formData, setFormData] = useState({
@@ -47,6 +47,26 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [activeTab, setActiveTab] = useState('icon');
+
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title || '',
+        description: task.description || '',
+        star_reward: task.star_reward || 1,
+        icon: task.icon || 'Star',
+        color: task.color || '#52A5CE'
+      });
+    } else {
+      setFormData({
+        title: '',
+        description: '',
+        star_reward: 1,
+        icon: 'Star',
+        color: '#52A5CE'
+      });
+    }
+  }, [task]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -78,24 +98,34 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
       const parentProfileId = profileId || currentProfile?.id;
 
       if (!parentProfileId) {
-        toast.error('Unable to create task: Profile not found');
+        toast.error(`Unable to ${task ? 'update' : 'create'} task: Profile not found`);
         return;
       }
 
-      await tasksAPI.createTask(parentProfileId, {
-        assigned_to_child_id: childId,
-        title: formData.title,
-        description: formData.description || null,
-        star_reward: parseInt(formData.star_reward),
-        icon: formData.icon,
-        color: formData.color,
-        frequency: 'always_available',
-        repeatable: true,
-        requires_approval: true,
-        created_by_user_id: user.id
-      });
-
-      toast.success(`Task "${formData.title}" created`);
+      if (task) {
+        await tasksAPI.updateTask(task.id, {
+          title: formData.title,
+          description: formData.description || null,
+          star_reward: parseInt(formData.star_reward),
+          icon: formData.icon,
+          color: formData.color
+        });
+        toast.success(`Task "${formData.title}" updated`);
+      } else {
+        await tasksAPI.createTask(parentProfileId, {
+          assigned_to_child_id: childId,
+          title: formData.title,
+          description: formData.description || null,
+          star_reward: parseInt(formData.star_reward),
+          icon: formData.icon,
+          color: formData.color,
+          frequency: 'always_available',
+          repeatable: true,
+          requires_approval: true,
+          created_by_user_id: user.id
+        });
+        toast.success(`Task "${formData.title}" created`);
+      }
 
       setFormData({
         title: '',
@@ -112,8 +142,8 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
 
       onClose();
     } catch (error) {
-      console.error('Error creating task:', error);
-      toast.error('Failed to create task');
+      console.error(`Error ${task ? 'updating' : 'creating'} task:`, error);
+      toast.error(`Failed to ${task ? 'update' : 'create'} task`);
     } finally {
       setLoading(false);
     }
@@ -137,9 +167,9 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create Task</DialogTitle>
+          <DialogTitle>{task ? 'Edit Task' : 'Create Task'}</DialogTitle>
           <DialogDescription>
-            Add a new task for your child to complete and earn stars.
+            {task ? 'Update task details and settings.' : 'Add a new task for your child to complete and earn stars.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -252,7 +282,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess }) {
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Task'}
+              {loading ? (task ? 'Updating...' : 'Creating...') : (task ? 'Update Task' : 'Create Task')}
             </Button>
           </DialogFooter>
         </form>

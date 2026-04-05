@@ -5,7 +5,7 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, CheckCircle, Clock, XCircle, Star } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star, Edit } from 'lucide-react';
 import { toast } from 'sonner';
 import { TaskDialog } from './TaskDialog';
 
@@ -23,6 +23,7 @@ export function TasksTab({ childId, profileId, onUpdate }) {
   const [loading, setLoading] = useState(true);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isBeginnerProfile, setIsBeginnerProfile] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -146,15 +147,7 @@ export function TasksTab({ childId, profileId, onUpdate }) {
             const displayStatus = completion ? 'completed' : task.status;
 
             return (
-              <Card
-                key={task.id}
-                className={displayStatus === 'in_progress' ? 'cursor-pointer hover:shadow-md hover:border-blue-400 transition-all' : ''}
-                onClick={() => {
-                  if (displayStatus === 'in_progress') {
-                    handleMarkComplete(task.id);
-                  }
-                }}
-              >
+              <Card key={task.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="space-y-1 flex-1">
@@ -169,9 +162,16 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                         </div>
                       )}
                     </div>
-                    <Badge className={STATUS_COLORS[displayStatus]}>
-                      {displayStatus}
-                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setEditingTask(task);
+                        setIsTaskDialogOpen(true);
+                      }}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -192,29 +192,12 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                           {task.points_value} points
                         </span>
                       )}
-                      {task.frequency && task.frequency !== 'one_time' && (
-                        <Badge variant="outline" className="text-xs">
-                          {task.frequency}
-                        </Badge>
-                      )}
                       {task.due_date && (
                         <span className="text-slate-600">
                           Due: {new Date(task.due_date).toLocaleDateString()}
                         </span>
                       )}
                     </div>
-                    {displayStatus === 'in_progress' && (
-                      <Button
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleMarkComplete(task.id);
-                        }}
-                      >
-                        <CheckCircle className="mr-2 h-4 w-4" />
-                        Complete
-                      </Button>
-                    )}
                     {displayStatus === 'completed' && (
                       <div className="flex space-x-2">
                         <Button
@@ -250,10 +233,14 @@ export function TasksTab({ childId, profileId, onUpdate }) {
 
       <TaskDialog
         isOpen={isTaskDialogOpen}
-        onClose={() => setIsTaskDialogOpen(false)}
+        onClose={() => {
+          setIsTaskDialogOpen(false);
+          setEditingTask(null);
+        }}
         childId={childId}
         profileId={profileId}
         onSuccess={handleTaskSuccess}
+        task={editingTask}
       />
     </div>
   );
