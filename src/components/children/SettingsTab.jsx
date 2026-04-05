@@ -149,34 +149,13 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
     try {
       let avatarUrl = null;
 
-      if (newAvatar.type === 'upload' && newAvatar.file) {
-        const fileExt = newAvatar.file.name.split('.').pop();
-        const fileName = `${currentProfileId}/${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabase.storage
-          .from('avatars')
-          .upload(fileName, newAvatar.file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        if (uploadError) {
-          console.error('Avatar upload error:', uploadError);
-          toast.error('Failed to upload avatar');
-          return;
-        } else {
-          const { data: { publicUrl } } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(fileName);
-          avatarUrl = publicUrl;
-        }
-      } else if (newAvatar.type === 'preset') {
-        avatarUrl = `preset:${newAvatar.value}`;
+      if (newAvatar.type === 'color') {
+        avatarUrl = `color:${newAvatar.value}`;
       }
 
       if (avatarUrl) {
         await childProfilesAPI.updateChildProfile(child.id, { avatar_url: avatarUrl });
-        toast.success('Avatar updated successfully');
+        toast.success('Avatar color updated');
         setAvatar(null);
         onUpdate();
       }
@@ -245,9 +224,6 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-0 border-t">
             <div className="lg:col-span-2 p-6 space-y-6 border-r">
               <div>
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                  Avatar
-                </h3>
                 <AvatarSelector
                   value={avatar}
                   onChange={handleAvatarChange}
