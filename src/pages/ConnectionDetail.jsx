@@ -6,7 +6,8 @@ import { tasksAPI } from '@/api/tasks';
 import { rewardsAPI } from '@/api/rewards';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { PageTabs } from '@/components/common/PageTabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
 import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
@@ -36,6 +37,10 @@ export default function ConnectionDetail() {
   const [loading, setLoading] = useState(true);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [activeTab, setActiveTab] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('tab') || 'tasks';
+  });
   const [stats, setStats] = useState({
     completedTasks: 0,
     pendingTasks: 0,
@@ -169,14 +174,9 @@ export default function ConnectionDetail() {
         </Card>
       </div>
 
-      <Tabs defaultValue="tasks" className="flex-1 flex flex-col">
-        <TabsList className="mb-4 bg-slate-50">
-          <TabsTrigger value="tasks">Tasks</TabsTrigger>
-          <TabsTrigger value="rewards">Rewards</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-        </TabsList>
+      <PageTabs tabs={['tasks', 'rewards', 'activity', 'settings']} defaultTab="tasks" />
 
+      <Tabs value={activeTab} className="flex-1 flex flex-col">
         <TabsContent value="tasks" className="flex-1 mt-0 pb-6">
           <TasksTab childId={child.id} profileId={child.parent_profile_id} onUpdate={loadChildData} />
         </TabsContent>
