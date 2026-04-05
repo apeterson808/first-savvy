@@ -183,7 +183,7 @@ export const tasksAPI = {
         status: 'completed',
         approved_by_user_id: userId,
         approved_at: new Date().toISOString(),
-        related_task_id: taskId,
+        related_chore_id: taskId,
         balance_after: updatedChild.points_balance,
       });
 
