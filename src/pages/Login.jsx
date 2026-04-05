@@ -9,9 +9,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
+import ChildLogin from '@/components/children/ChildLogin';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [isChildLogin, setIsChildLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -34,29 +36,8 @@ export default function Login() {
 
     try {
       if (isLogin) {
-        let authSuccess = false;
-
-        try {
-          await firstsavvy.auth.signIn(email, password);
-          authSuccess = true;
-          navigate('/Dashboard');
-        } catch (parentAuthError) {
-          try {
-            const childProfile = await childProfilesAPI.authenticateChild(email, password);
-
-            sessionStorage.setItem('viewingChildProfile', JSON.stringify({
-              childProfileId: childProfile.id,
-              profileId: childProfile.parent_profile_id,
-              childName: childProfile.child_name,
-              loginType: 'direct'
-            }));
-
-            authSuccess = true;
-            navigate('/Dashboard');
-          } catch (childAuthError) {
-            throw new Error('Invalid credentials');
-          }
-        }
+        await firstsavvy.auth.signIn(email, password);
+        navigate('/Dashboard');
       } else {
         await firstsavvy.auth.signUp(email, password, fullName);
         navigate('/Dashboard');
@@ -79,6 +60,10 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  if (isChildLogin) {
+    return <ChildLogin onBackToParentLogin={() => setIsChildLogin(false)} />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
@@ -201,20 +186,33 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="text-center text-sm">
+          <div className="text-center text-sm space-y-2">
             <button
               type="button"
               onClick={() => {
                 setIsLogin(!isLogin);
                 setError('');
               }}
-              className="text-slate-600 hover:text-slate-900 underline underline-offset-4"
+              className="text-slate-600 hover:text-slate-900 underline underline-offset-4 block w-full"
               disabled={loading}
             >
               {isLogin
                 ? "Don't have an account? Sign up"
                 : 'Already have an account? Sign in'}
             </button>
+            {isLogin && (
+              <>
+                <Separator className="my-2" />
+                <button
+                  type="button"
+                  onClick={() => setIsChildLogin(true)}
+                  className="text-blue-600 hover:text-blue-800 font-medium underline underline-offset-4 block w-full"
+                  disabled={loading}
+                >
+                  Child Login
+                </button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
