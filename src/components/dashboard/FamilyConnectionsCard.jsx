@@ -160,11 +160,6 @@ export default function FamilyConnectionsCard() {
                   <p className="text-xs font-medium text-slate-900 truncate">
                     {child.child_name.split(' ')[0]}
                   </p>
-                  {pendingCount > 0 && (
-                    <p className="text-[10px] text-red-500 font-medium">
-                      {pendingCount} pending
-                    </p>
-                  )}
                 </div>
               </div>
             );
