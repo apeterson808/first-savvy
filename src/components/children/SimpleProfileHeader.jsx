@@ -41,7 +41,7 @@ export function SimpleProfileHeader({ child }) {
   return (
     <div className="flex items-center gap-4 mb-6">
       <div className={cn(
-        'h-20 w-20 rounded-full border-4 border-slate-200 shadow-sm flex items-center justify-center text-white',
+        'h-20 w-20 rounded-full flex items-center justify-center text-white',
         avatarColor.bg
       )}>
         <span className="text-2xl font-bold">{getInitials()}</span>

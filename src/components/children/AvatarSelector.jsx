@@ -61,7 +61,7 @@ export default function AvatarSelector({ value, onChange, firstName = '', lastNa
   if (compact) {
     return (
       <div className="relative inline-block">
-        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-200 shadow-sm flex-shrink-0">
+        <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0">
           {renderPreview()}
         </div>
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
@@ -109,7 +109,7 @@ export default function AvatarSelector({ value, onChange, firstName = '', lastNa
   return (
     <div className="flex items-center gap-4">
       <div className="relative inline-block">
-        <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-200 shadow-sm flex-shrink-0">
+        <div className="w-24 h-24 rounded-full overflow-hidden flex-shrink-0">
           {renderPreview()}
         </div>
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>

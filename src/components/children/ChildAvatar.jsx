@@ -82,7 +82,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
   const colorClass = AVATAR_COLORS[colorId] || AVATAR_COLORS.slate;
 
   return (
-    <div className={cn('rounded-full flex items-center justify-center shadow-xl text-white font-bold', sizeClasses[size], colorClass, className)}>
+    <div className={cn('rounded-full flex items-center justify-center text-white font-bold', sizeClasses[size], colorClass, className)}>
       {getInitials()}
     </div>
   );
