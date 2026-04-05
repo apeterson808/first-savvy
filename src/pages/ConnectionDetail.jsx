@@ -10,7 +10,7 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { PageTabs } from '@/components/common/PageTabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
-import { ProfileHeaderCard } from '@/components/children/ProfileHeaderCard';
+import { SimpleProfileHeader } from '@/components/children/SimpleProfileHeader';
 import { TasksTab } from '@/components/children/TasksTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
 import { ActivityTab } from '@/components/children/ActivityTab';
@@ -116,13 +116,8 @@ export default function ConnectionDetail() {
   }
 
   return (
-    <div className="h-full flex flex-col pb-6">
-      <ProfileHeaderCard
-        child={child}
-        currentProfileId={activeProfile?.id}
-        onUpdate={loadChildData}
-        onDelete={() => setShowDeleteDialog(true)}
-      />
+    <div className="h-full flex flex-col pb-6 p-4 md:p-6">
+      <SimpleProfileHeader child={child} />
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6 mb-6">
         <Card>
@@ -190,7 +185,12 @@ export default function ConnectionDetail() {
         </TabsContent>
 
         <TabsContent value="settings" className="flex-1 mt-0 pb-6">
-          <SettingsTab child={child} onUpdate={loadChildData} currentProfileId={activeProfile?.id} />
+          <SettingsTab
+            child={child}
+            currentProfileId={activeProfile?.id}
+            onUpdate={loadChildData}
+            onDelete={() => setShowDeleteDialog(true)}
+          />
         </TabsContent>
       </Tabs>
 
