@@ -49,7 +49,7 @@ export function SimpleProfileHeader({ child }) {
       </div>
       <div className="space-y-1.5">
         <h2 className="text-2xl font-semibold text-slate-900">
-          {child.first_name} {child.last_name}
+          {child.display_name || `${child.first_name} ${child.last_name}`}
         </h2>
         <div className="flex items-center gap-2">
           <Badge variant="secondary" className="text-xs font-normal">

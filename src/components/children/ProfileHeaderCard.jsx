@@ -260,7 +260,7 @@ export function ProfileHeaderCard({ child, currentProfileId, onUpdate, onDelete 
                     </div>
                   ) : (
                     <h2 className="text-2xl font-semibold text-slate-900">
-                      {child.first_name} {child.last_name}
+                      {child.display_name || `${child.first_name} ${child.last_name}`}
                     </h2>
                   )}
                   <div className="flex flex-col gap-1.5">

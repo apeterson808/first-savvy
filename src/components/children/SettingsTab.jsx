@@ -30,6 +30,7 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    display_name: '',
     date_of_birth: '',
     gender: '',
     notes: '',
@@ -53,6 +54,7 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
       const data = {
         first_name: child.first_name || '',
         last_name: child.last_name || '',
+        display_name: child.display_name || '',
         date_of_birth: child.date_of_birth || '',
         gender: child.gender || '',
         notes: child.notes || '',
@@ -268,6 +270,31 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                       <div className="text-sm text-slate-900">
                         {child.last_name || <span className="text-slate-400">Not set</span>}
                       </div>
+                    )}
+                  </div>
+
+                  <div className="col-span-2 space-y-1">
+                    <Label className="text-xs text-slate-500">Display Name</Label>
+                    {isEditMode ? (
+                      <Input
+                        value={formData.display_name}
+                        onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                        placeholder={`${formData.first_name} ${formData.last_name}`.trim() || 'Display name'}
+                        className="text-sm"
+                      />
+                    ) : (
+                      <div className="text-sm text-slate-900">
+                        {child.display_name || (
+                          <span className="text-slate-600">
+                            {`${child.first_name || ''} ${child.last_name || ''}`.trim() || <span className="text-slate-400">Not set</span>}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {isEditMode && (
+                      <p className="text-xs text-slate-500 mt-1">
+                        Leave blank to use first and last name
+                      </p>
                     )}
                   </div>
 

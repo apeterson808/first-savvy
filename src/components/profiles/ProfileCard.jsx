@@ -114,7 +114,9 @@ export function ProfileCard({
                           <ChildAvatar child={child} size="sm" />
                           <div>
                             <div className="flex items-center gap-2">
-                              <p className="font-medium text-sm">{child.child_name}</p>
+                              <p className="font-medium text-sm">
+                                {child.display_name || child.child_name || `${child.first_name || ''} ${child.last_name || ''}`.trim()}
+                              </p>
                               <Badge className="bg-slate-100 text-slate-800" variant="secondary">
                                 Beginner
                               </Badge>

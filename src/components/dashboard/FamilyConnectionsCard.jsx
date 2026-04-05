@@ -133,7 +133,8 @@ export default function FamilyConnectionsCard() {
       <CardContent className="px-3 pb-3">
         <div className="grid grid-cols-3 gap-3">
           {childProfiles.slice(0, 6).map((child) => {
-            const initials = getInitials(child.child_name);
+            const displayName = child.display_name || child.child_name || `${child.first_name || ''} ${child.last_name || ''}`.trim();
+            const initials = getInitials(displayName);
             const pendingCount = pendingCounts[child.id] || 0;
 
             return (
@@ -158,7 +159,7 @@ export default function FamilyConnectionsCard() {
                 </div>
                 <div className="text-center w-full">
                   <p className="text-xs font-medium text-slate-900 truncate">
-                    {child.child_name.split(' ')[0]}
+                    {displayName.split(' ')[0]}
                   </p>
                 </div>
               </div>
