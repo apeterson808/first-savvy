@@ -157,10 +157,16 @@ export function TasksTab({ childId, profileId, onUpdate }) {
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1">
+                    <div className="space-y-1 flex-1">
                       <CardTitle className="text-base">{task.title}</CardTitle>
                       {task.description && (
                         <p className="text-sm text-slate-600">{task.description}</p>
+                      )}
+                      {completion?.submission_notes && (
+                        <div className="mt-2 p-2 bg-blue-100 rounded text-sm border border-blue-200">
+                          <p className="font-medium text-blue-900 text-xs">Notes from child:</p>
+                          <p className="text-blue-800 text-xs mt-0.5">{completion.submission_notes}</p>
+                        </div>
                       )}
                     </div>
                     <Badge className={STATUS_COLORS[displayStatus]}>
