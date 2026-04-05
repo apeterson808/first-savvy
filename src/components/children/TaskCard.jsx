@@ -20,8 +20,7 @@ export function TaskCard({
   completion,
   onComplete,
   onApprove,
-  onReject,
-  isParentViewing = false
+  onReject
 }) {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [showReviewDialog, setShowReviewDialog] = useState(false);
@@ -32,7 +31,7 @@ export function TaskCard({
   const isApproved = completion?.status === 'approved';
   const isRejected = completion?.status === 'rejected';
 
-  const showCompletion = isPending || (isApproved && isParentViewing) || (isRejected && isParentViewing);
+  const showCompletion = isPending;
 
   const IconComponent = task.icon ? getIconComponent(task.icon) : Star;
 
@@ -105,10 +104,10 @@ export function TaskCard({
         transition={{ duration: 0.3 }}
       >
         <Card
-          className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${!showCompletion && !isParentViewing ? 'cursor-pointer hover:border-blue-400' : ''}`}
+          className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${!showCompletion ? 'cursor-pointer hover:border-blue-400' : ''}`}
           style={{ borderColor: task.color || undefined }}
           onClick={() => {
-            if (!showCompletion && !isParentViewing) {
+            if (!showCompletion) {
               handleCompleteClick();
             }
           }}
@@ -168,22 +167,6 @@ export function TaskCard({
                   <Check className="w-4 h-4 mr-2" />
                   Complete Task
                 </Button>
-              )}
-
-              {showCompletion && isPending && isParentViewing && (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleApproveClick();
-                    }}
-                    className="border-green-500 text-green-600 hover:bg-green-50"
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Review
-                  </Button>
-                </>
               )}
             </div>
           </CardContent>

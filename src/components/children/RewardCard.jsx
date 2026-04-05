@@ -21,8 +21,7 @@ export function RewardCard({
   reward,
   starBalance,
   onRedeem,
-  isRedeemed = false,
-  isParentViewing = false
+  isRedeemed = false
 }) {
   const [showRedeemDialog, setShowRedeemDialog] = useState(false);
 
@@ -124,29 +123,27 @@ export function RewardCard({
                   <Progress value={progress} className="h-2" />
                 </div>
 
-                {!isParentViewing && (
-                  <Button
-                    onClick={handleRedeemClick}
-                    disabled={!canAfford}
-                    className={`w-full ${
-                      canAfford
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                        : 'bg-slate-300'
-                    }`}
-                  >
-                    {canAfford ? (
-                      <>
-                        <Sparkles className="w-4 h-4 mr-2" />
-                        Redeem Now
-                      </>
-                    ) : (
+                <Button
+                  onClick={handleRedeemClick}
+                  disabled={!canAfford}
+                  className={`w-full ${
+                    canAfford
+                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
+                      : 'bg-slate-300'
+                  }`}
+                >
+                  {canAfford ? (
+                    <>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Redeem Now
+                    </>
+                  ) : (
                       <>
                         <Lock className="w-4 h-4 mr-2" />
                         Locked
                       </>
                     )}
-                  </Button>
-                )}
+                </Button>
               </>
             )}
 

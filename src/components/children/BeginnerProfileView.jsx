@@ -13,7 +13,7 @@ import { TaskCard } from './TaskCard';
 import { RewardCard } from './RewardCard';
 import { toast } from 'sonner';
 
-export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
+export function BeginnerProfileView({ childProfile }) {
   const [starBalance, setStarBalance] = useState(0);
   const [starsPending, setStarsPending] = useState(0);
   const [tasks, setTasks] = useState([]);
@@ -129,11 +129,6 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
       return { task, completion: pendingCompletion };
     }
 
-    if (isParentViewing) {
-      const approvedOrRejected = taskCompletions.find(c => c.status === 'approved' || c.status === 'rejected');
-      return { task, completion: approvedOrRejected };
-    }
-
     return { task, completion: undefined };
   });
 
@@ -188,12 +183,10 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                 <p className="text-6xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
               </div>
             </div>
-            {!isParentViewing && (
-              <Button variant="ghost" size="sm" onClick={handleLogout} className="bg-white/90 hover:bg-white shadow-md">
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-              </Button>
-            )}
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="bg-white/90 hover:bg-white shadow-md">
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
           </div>
         </div>
 
@@ -243,7 +236,6 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                     onComplete={handleTaskComplete}
                     onApprove={handleApproveCompletion}
                     onReject={handleRejectCompletion}
-                    isParentViewing={isParentViewing}
                   />
                 ))}
               </>
@@ -277,7 +269,6 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                     reward={reward}
                     starBalance={starBalance}
                     onRedeem={handleRedeemReward}
-                    isParentViewing={isParentViewing}
                   />
                 ))}
                 {redeemedRewards.length > 0 && (
@@ -291,7 +282,6 @@ export function BeginnerProfileView({ childProfile, isParentViewing = false }) {
                         reward={reward}
                         starBalance={starBalance}
                         isRedeemed
-                        isParentViewing={isParentViewing}
                       />
                     ))}
                   </div>

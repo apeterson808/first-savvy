@@ -50,7 +50,7 @@ export default function ChildDashboard() {
   });
 
   if (childProfile && childProfile.current_permission_level === 1) {
-    return <BeginnerProfileView childProfile={childProfile} isParentViewing={!!viewingChildProfile} />;
+    return <BeginnerProfileView childProfile={childProfile} />;
   }
 
   const { data: tasks = [] } = useQuery({
