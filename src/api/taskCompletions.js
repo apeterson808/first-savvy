@@ -87,16 +87,20 @@ export const taskCompletionsAPI = {
 
     const { data: completion } = await supabase
       .from('task_completions')
-      .select('task_id')
+      .select('task_id, tasks(repeatable, frequency)')
       .eq('id', completionId)
       .single();
 
     if (completion?.task_id) {
+      const task = completion.tasks;
+      const isRepeatable = task.repeatable || task.frequency === 'always_available';
+
       await supabase
         .from('tasks')
         .update({
-          status: 'approved',
+          status: isRepeatable ? 'in_progress' : 'approved',
           approved_at: new Date().toISOString(),
+          completed_at: null,
         })
         .eq('id', completion.task_id);
     }
