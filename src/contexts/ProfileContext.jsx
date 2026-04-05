@@ -302,8 +302,20 @@ export const ProfileProvider = ({ children }) => {
   };
 
   useEffect(() => {
+    const storedViewingChild = sessionStorage.getItem('viewingChildProfile');
+    if (storedViewingChild) {
+      try {
+        const childData = JSON.parse(storedViewingChild);
+        if (childData.loginType === 'direct') {
+          setViewingChildProfile(null);
+        } else {
+          setViewingChildProfile(childData);
+        }
+      } catch (e) {
+        sessionStorage.removeItem('viewingChildProfile');
+      }
+    }
     loadProfiles();
-    sessionStorage.removeItem('viewingChildProfile');
   }, [loadProfiles]);
 
   useEffect(() => {
