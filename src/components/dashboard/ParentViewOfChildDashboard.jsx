@@ -58,6 +58,19 @@ export default function ParentViewOfChildDashboard() {
     enabled: !!childProfileId
   });
 
+  const { data: taskCompletions = [] } = useQuery({
+    queryKey: ['task-completions', childProfileId],
+    queryFn: async () => {
+      const { data } = await firstsavvy
+        .from('task_completions')
+        .select('*')
+        .eq('child_profile_id', childProfileId)
+        .order('submitted_at', { ascending: false });
+      return data || [];
+    },
+    enabled: !!childProfileId
+  });
+
   const { data: rewards = [] } = useQuery({
     queryKey: ['rewards', childProfileId],
     queryFn: async () => {
@@ -74,6 +87,10 @@ export default function ParentViewOfChildDashboard() {
   const assignedTasks = tasks.filter(c => c.status === 'in_progress');
   const completedTasks = tasks.filter(c => c.status === 'completed');
   const approvedTasks = tasks.filter(c => c.status === 'approved');
+
+  const getLatestCompletion = (taskId) => {
+    return taskCompletions.find(tc => tc.task_id === taskId);
+  };
 
   const markTaskComplete = useMutation({
     mutationFn: async (taskId) => {
@@ -227,80 +244,89 @@ export default function ParentViewOfChildDashboard() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {tasks.map((chore) => (
-                    <div
-                      key={chore.id}
-                      className={`p-4 rounded-lg border-2 transition-all ${
-                        chore.status === 'approved'
-                          ? 'border-green-200 bg-green-50'
-                          : chore.status === 'completed'
-                          ? 'border-amber-200 bg-amber-50'
-                          : 'border-blue-200 bg-blue-50 hover:border-blue-400 hover:shadow-md cursor-pointer'
-                      }`}
-                      onClick={() => {
-                        if (chore.status === 'in_progress') {
-                          markTaskComplete.mutate(chore.id);
-                        }
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-start gap-3 flex-1">
-                          {chore.status === 'approved' ? (
-                            <CheckCircle className="w-5 h-5 text-green-600 fill-green-600 shrink-0 mt-0.5" />
-                          ) : chore.status === 'completed' ? (
-                            <CheckCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                          ) : (
-                            <div className="w-5 h-5 rounded-full border-2 border-blue-500 shrink-0 mt-0.5 hover:bg-blue-100" />
-                          )}
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-slate-900">{chore.title}</p>
-                            {chore.description && (
-                              <p className="text-xs text-slate-600 mt-1">{chore.description}</p>
+                  {tasks.map((chore) => {
+                    const completion = getLatestCompletion(chore.id);
+                    return (
+                      <div
+                        key={chore.id}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          chore.status === 'approved'
+                            ? 'border-green-200 bg-green-50'
+                            : chore.status === 'completed'
+                            ? 'border-amber-200 bg-amber-50'
+                            : 'border-blue-200 bg-blue-50 hover:border-blue-400 hover:shadow-md cursor-pointer'
+                        }`}
+                        onClick={() => {
+                          if (chore.status === 'in_progress') {
+                            markTaskComplete.mutate(chore.id);
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 flex-1">
+                            {chore.status === 'approved' ? (
+                              <CheckCircle className="w-5 h-5 text-green-600 fill-green-600 shrink-0 mt-0.5" />
+                            ) : chore.status === 'completed' ? (
+                              <CheckCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            ) : (
+                              <div className="w-5 h-5 rounded-full border-2 border-blue-500 shrink-0 mt-0.5 hover:bg-blue-100" />
                             )}
-                            <div className="flex items-center gap-3 mt-2">
-                              {chore.due_date && (
-                                <div className="flex items-center gap-1 text-xs text-slate-500">
-                                  <Calendar className="w-3 h-3" />
-                                  {format(new Date(chore.due_date), 'MMM d')}
+                            <div className="flex-1">
+                              <p className="text-sm font-semibold text-slate-900">{chore.title}</p>
+                              {chore.description && (
+                                <p className="text-xs text-slate-600 mt-1">{chore.description}</p>
+                              )}
+                              {completion?.submission_notes && chore.status === 'completed' && (
+                                <div className="mt-2 p-2 bg-blue-100 rounded text-sm border border-blue-200">
+                                  <p className="font-medium text-blue-900 text-xs">Notes from {activeProfile?.display_name}:</p>
+                                  <p className="text-blue-800 text-xs mt-0.5">{completion.submission_notes}</p>
                                 </div>
                               )}
-                              {(chore.points_reward > 0 || chore.cash_reward > 0) && (
-                                <div className="flex items-center gap-2">
-                                  {chore.points_reward > 0 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      <Star className="w-3 h-3 mr-1 text-amber-500 fill-amber-500" />
-                                      {chore.points_reward}
-                                    </Badge>
-                                  )}
-                                  {chore.cash_reward > 0 && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      <DollarSign className="w-3 h-3 mr-1 text-green-600" />
-                                      {chore.cash_reward.toFixed(2)}
-                                    </Badge>
-                                  )}
-                                </div>
-                              )}
+                              <div className="flex items-center gap-3 mt-2">
+                                {chore.due_date && (
+                                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                                    <Calendar className="w-3 h-3" />
+                                    {format(new Date(chore.due_date), 'MMM d')}
+                                  </div>
+                                )}
+                                {(chore.points_reward > 0 || chore.cash_reward > 0) && (
+                                  <div className="flex items-center gap-2">
+                                    {chore.points_reward > 0 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <Star className="w-3 h-3 mr-1 text-amber-500 fill-amber-500" />
+                                        {chore.points_reward}
+                                      </Badge>
+                                    )}
+                                    {chore.cash_reward > 0 && (
+                                      <Badge variant="secondary" className="text-xs">
+                                        <DollarSign className="w-3 h-3 mr-1 text-green-600" />
+                                        {chore.cash_reward.toFixed(2)}
+                                      </Badge>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
+                          {chore.status === 'completed' && (
+                            <Button
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                approveTask.mutate(chore.id);
+                              }}
+                              disabled={approveTask.isPending}
+                            >
+                              Approve
+                            </Button>
+                          )}
+                          {chore.status === 'approved' && (
+                            <Badge className="bg-green-100 text-green-700">Approved</Badge>
+                          )}
                         </div>
-                        {chore.status === 'completed' && (
-                          <Button
-                            size="sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              approveTask.mutate(chore.id);
-                            }}
-                            disabled={approveTask.isPending}
-                          >
-                            Approve
-                          </Button>
-                        )}
-                        {chore.status === 'approved' && (
-                          <Badge className="bg-green-100 text-green-700">Approved</Badge>
-                        )}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
