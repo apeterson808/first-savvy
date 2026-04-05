@@ -238,42 +238,44 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
 
               <div>
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                  Profile Information
+                  Basic Information
                 </h3>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">First Name</Label>
-                    {isEditMode ? (
-                      <Input
-                        value={formData.first_name}
-                        onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                        placeholder="First name"
-                        className="text-sm"
-                      />
-                    ) : (
-                      <div className="text-sm text-slate-900">
-                        {child.first_name || <span className="text-slate-400">Not set</span>}
-                      </div>
-                    )}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">First Name</Label>
+                      {isEditMode ? (
+                        <Input
+                          value={formData.first_name}
+                          onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
+                          placeholder="First name"
+                          className="text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-slate-900">
+                          {child.first_name || <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">Last Name</Label>
+                      {isEditMode ? (
+                        <Input
+                          value={formData.last_name}
+                          onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
+                          placeholder="Last name"
+                          className="text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-slate-900">
+                          {child.last_name || <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Last Name</Label>
-                    {isEditMode ? (
-                      <Input
-                        value={formData.last_name}
-                        onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                        placeholder="Last name"
-                        className="text-sm"
-                      />
-                    ) : (
-                      <div className="text-sm text-slate-900">
-                        {child.last_name || <span className="text-slate-400">Not set</span>}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="col-span-2 space-y-1">
                     <Label className="text-xs text-slate-500">Display Name</Label>
                     {isEditMode ? (
                       <Input
@@ -298,66 +300,89 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                     )}
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Date of Birth</Label>
-                    {isEditMode ? (
-                      <Input
-                        type="date"
-                        value={formData.date_of_birth}
-                        onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
-                        className="text-sm"
-                      />
-                    ) : (
-                      <div className="text-sm text-slate-900">
-                        {child.date_of_birth ? format(new Date(child.date_of_birth), 'MMMM d, yyyy') : <span className="text-slate-400">Not set</span>}
-                      </div>
-                    )}
-                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">Date of Birth</Label>
+                      {isEditMode ? (
+                        <Input
+                          type="date"
+                          value={formData.date_of_birth}
+                          onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
+                          className="text-sm"
+                        />
+                      ) : (
+                        <div className="text-sm text-slate-900">
+                          {child.date_of_birth ? format(new Date(child.date_of_birth), 'MMMM d, yyyy') : <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
+                    </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Gender</Label>
-                    {isEditMode ? (
-                      <Select
-                        value={formData.gender}
-                        onValueChange={(value) => setFormData({ ...formData, gender: value })}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select gender" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="male">Male</SelectItem>
-                          <SelectItem value="female">Female</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <div className="text-sm text-slate-900">
-                        {child.gender ? child.gender.charAt(0).toUpperCase() + child.gender.slice(1) : <span className="text-slate-400">Not set</span>}
-                      </div>
-                    )}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">Gender</Label>
+                      {isEditMode ? (
+                        <Select
+                          value={formData.gender}
+                          onValueChange={(value) => setFormData({ ...formData, gender: value })}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select gender" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="male">Male</SelectItem>
+                            <SelectItem value="female">Female</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      ) : (
+                        <div className="text-sm text-slate-900">
+                          {child.gender ? child.gender.charAt(0).toUpperCase() + child.gender.slice(1) : <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div>
                 <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">
-                  Login Credentials
+                  Account & Security
                 </h3>
-                <div className="grid grid-cols-2 gap-x-8 gap-y-4">
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Username</Label>
-                    {isEditMode ? (
-                      <Input
-                        value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
-                        placeholder="username"
-                        className="font-mono text-sm"
-                        maxLength={20}
-                      />
-                    ) : (
-                      <div className="text-sm font-mono text-slate-900">
-                        {child.username || <span className="text-slate-400">Not set</span>}
-                      </div>
-                    )}
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">Username</Label>
+                      {isEditMode ? (
+                        <Input
+                          value={formData.username}
+                          onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                          placeholder="username"
+                          className="font-mono text-sm"
+                          maxLength={20}
+                        />
+                      ) : (
+                        <div className="text-sm font-mono text-slate-900">
+                          {child.username || <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">PIN</Label>
+                      {isEditMode ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowPINDialog(true)}
+                          className="w-full justify-between h-9 font-mono"
+                        >
+                          {child.pin_hash ? '••••' : 'Not set'}
+                          <Edit className="h-3 w-3 ml-2" />
+                        </Button>
+                      ) : (
+                        <div className="text-sm font-mono text-slate-900">
+                          {child.pin_hash ? '••••' : <span className="text-slate-400">Not set</span>}
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -377,44 +402,27 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                     )}
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">PIN</Label>
-                    {isEditMode ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowPINDialog(true)}
-                        className="w-full justify-between h-9 font-mono"
-                      >
-                        {child.pin_hash ? '••••' : 'Not set'}
-                        <Edit className="h-3 w-3 ml-2" />
-                      </Button>
-                    ) : (
-                      <div className="text-sm font-mono text-slate-900">
-                        {child.pin_hash ? '••••' : <span className="text-slate-400">Not set</span>}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">Connection Status</Label>
+                      <div>
+                        <Badge
+                          variant={getInvitationStatus().variant === 'success' ? 'default' : 'outline'}
+                          className={`text-xs ${getInvitationStatus().variant !== 'success' ? 'cursor-pointer hover:bg-slate-100' : ''}`}
+                          onClick={handleInviteClick}
+                        >
+                          {getInvitationStatus().text}
+                        </Badge>
                       </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs text-slate-500">Last Login</Label>
-                    <div className="text-sm text-slate-600">
-                      {child.last_login_at
-                        ? formatDistanceToNow(new Date(child.last_login_at), { addSuffix: true })
-                        : 'Never'}
                     </div>
-                  </div>
 
-                  <div className="col-span-2 space-y-1">
-                    <Label className="text-xs text-slate-500">Connection Status</Label>
-                    <div>
-                      <Badge
-                        variant={getInvitationStatus().variant === 'success' ? 'default' : 'outline'}
-                        className={`text-xs ${getInvitationStatus().variant !== 'success' ? 'cursor-pointer hover:bg-slate-100' : ''}`}
-                        onClick={handleInviteClick}
-                      >
-                        {getInvitationStatus().text}
-                      </Badge>
+                    <div className="space-y-1">
+                      <Label className="text-xs text-slate-500">Last Login</Label>
+                      <div className="text-sm text-slate-600">
+                        {child.last_login_at
+                          ? formatDistanceToNow(new Date(child.last_login_at), { addSuffix: true })
+                          : 'Never'}
+                      </div>
                     </div>
                   </div>
                 </div>
