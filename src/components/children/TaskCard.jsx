@@ -153,22 +153,6 @@ export function TaskCard({
                 </div>
               </div>
             </div>
-
-            <div className="flex items-center justify-end gap-2">
-              {!showCompletion && (
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCompleteClick();
-                  }}
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold"
-                  size="lg"
-                >
-                  <Check className="w-4 h-4 mr-2" />
-                  Complete Task
-                </Button>
-              )}
-            </div>
           </CardContent>
         </Card>
       </motion.div>
