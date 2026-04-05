@@ -20,6 +20,7 @@ import Affiliate from "./Affiliate";
 import Connections from "./Connections";
 import ConnectionDetail from "./ConnectionDetail";
 import ClaimProfile from "./ClaimProfile";
+import ChildProfileSelector from "@/components/children/ChildProfileSelector";
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 
@@ -78,7 +79,8 @@ export default function Pages() {
 
     const isAuthRoute = location.pathname === '/login' ||
                         location.pathname === '/auth/callback' ||
-                        location.pathname.startsWith('/invite/');
+                        location.pathname.startsWith('/invite/') ||
+                        location.pathname === '/select-child-profile';
 
     if (isAuthRoute) {
         return (
@@ -86,6 +88,7 @@ export default function Pages() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/invite/:token" element={<ClaimProfile />} />
+                <Route path="/select-child-profile" element={<ChildProfileSelector />} />
             </Routes>
         );
     }

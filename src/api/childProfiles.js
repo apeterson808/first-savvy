@@ -393,6 +393,74 @@ export const childProfilesAPI = {
     }
   },
 
+  async verifyChildPinForParent(childId, pin) {
+    if (!childId || !pin) {
+      throw new Error('Child ID and PIN are required');
+    }
+
+    const { data: child, error: fetchError } = await supabase
+      .from('child_profiles')
+      .select('*')
+      .eq('id', childId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+
+    if (!child) {
+      await this.logLoginAttempt(childId, false, 'Child profile not found');
+      throw new Error('Child profile not found');
+    }
+
+    if (!child.login_enabled) {
+      await this.logLoginAttempt(childId, false, 'Login not enabled');
+      throw new Error('Login is not enabled for this account');
+    }
+
+    if (child.account_locked) {
+      await this.logLoginAttempt(childId, false, 'Account locked');
+      throw new Error('Account is locked');
+    }
+
+    if (!child.pin_hash) {
+      await this.logLoginAttempt(childId, false, 'No PIN set');
+      throw new Error('No PIN has been set for this account');
+    }
+
+    const pinMatches = await this.verifyPin(pin, child.pin_hash);
+
+    if (!pinMatches) {
+      const newFailedAttempts = child.failed_login_attempts + 1;
+      const shouldLock = newFailedAttempts >= 5;
+
+      await supabase
+        .from('child_profiles')
+        .update({
+          failed_login_attempts: newFailedAttempts,
+          account_locked: shouldLock
+        })
+        .eq('id', child.id);
+
+      await this.logLoginAttempt(child.id, false, `Invalid PIN (attempt ${newFailedAttempts})`);
+
+      return false;
+    }
+
+    return true;
+  },
+
+  async recordSuccessfulLogin(childId) {
+    await supabase
+      .from('child_profiles')
+      .update({
+        failed_login_attempts: 0,
+        last_login_at: new Date().toISOString()
+      })
+      .eq('id', childId);
+
+    await this.logLoginAttempt(childId, true, null);
+  },
+
   async getLoginHistory(childId, limit = 20) {
     const { data, error } = await supabase
       .from('child_login_audit_log')

@@ -19,6 +19,7 @@ import { ProfileTabBar } from '@/components/common/ProfileTabBar';
 import { ProfileSelector } from '@/components/common/ProfileSelector';
 import { useProfile } from '@/contexts/ProfileContext';
 import { Button } from '@/components/ui/button';
+import ChildAvatar from '@/components/children/ChildAvatar';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -30,7 +31,7 @@ export default function Layout({ children, currentPageName }) {
   const [childPermissionLevel, setChildPermissionLevel] = useState(1);
   const navigate = useNavigate();
   const location = useLocation();
-  const { activeProfile } = useProfile();
+  const { activeProfile, viewingChildProfile } = useProfile();
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
@@ -263,6 +264,40 @@ export default function Layout({ children, currentPageName }) {
           {/* Prominent horizontal border line - spans full width */}
           <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-300 z-0"></div>
         </header>
+
+        {/* Child View Mode Banner */}
+        {viewingChildProfile && (
+          <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-6 py-3 flex items-center justify-between shadow-md">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">
+                    Viewing as {viewingChildProfile.display_name || viewingChildProfile.childName}
+                  </p>
+                  <p className="text-xs text-blue-100">
+                    Child Profile View
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => {
+                sessionStorage.removeItem('viewingChildProfile');
+                navigate('/Dashboard');
+                window.location.reload();
+              }}
+              className="bg-white/20 hover:bg-white/30 text-white border-white/40"
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Exit to Parent View
+            </Button>
+          </div>
+        )}
 
         {/* Page Content */}
         <main className="flex-1 flex flex-col overflow-hidden bg-slate-100">

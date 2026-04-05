@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { firstsavvy } from '@/api/firstsavvyClient';
-import { childProfilesAPI } from '@/api/childProfiles';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,11 +8,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import ChildLogin from '@/components/children/ChildLogin';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
-  const [isChildLogin, setIsChildLogin] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -61,9 +58,14 @@ export default function Login() {
     }
   };
 
-  if (isChildLogin) {
-    return <ChildLogin onBackToParentLogin={() => setIsChildLogin(false)} />;
-  }
+  const handleChildProfileAccess = async () => {
+    const { data } = await firstsavvy.auth.getUser();
+    if (data?.user) {
+      navigate('/select-child-profile');
+    } else {
+      setError('Please log in first to access child profiles');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center p-4">
@@ -205,11 +207,11 @@ export default function Login() {
                 <Separator className="my-2" />
                 <button
                   type="button"
-                  onClick={() => setIsChildLogin(true)}
+                  onClick={handleChildProfileAccess}
                   className="text-blue-600 hover:text-blue-800 font-medium underline underline-offset-4 block w-full"
                   disabled={loading}
                 >
-                  Child Login
+                  View Child Profile
                 </button>
               </>
             )}
