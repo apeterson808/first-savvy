@@ -54,6 +54,29 @@ export default function ConnectionDetail() {
     }
   }, [id]);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const newTab = urlParams.get('tab') || 'tasks';
+      setActiveTab(newTab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    const interval = setInterval(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentTab = urlParams.get('tab') || 'tasks';
+      if (currentTab !== activeTab) {
+        setActiveTab(currentTab);
+      }
+    }, 100);
+
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+      clearInterval(interval);
+    };
+  }, [activeTab]);
+
   const loadChildData = async () => {
     try {
       setLoading(true);
