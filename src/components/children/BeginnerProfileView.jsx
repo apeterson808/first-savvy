@@ -147,7 +147,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-4 md:p-8">
       <AnimatePresence>
         {celebrationStars > 0 && (
           <motion.div
@@ -156,66 +156,66 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             exit={{ opacity: 0, scale: 0, y: -200 }}
             className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-none"
           >
-            <div className="flex items-center gap-3 text-6xl font-bold text-yellow-500">
-              <Star className="w-20 h-20 fill-yellow-500" />
+            <div className="flex items-center gap-2 sm:gap-3 text-4xl sm:text-6xl font-bold text-yellow-500">
+              <Star className="w-12 h-12 sm:w-20 sm:h-20 fill-yellow-500" />
               <span>+{celebrationStars}</span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-5">
+      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
             <ChildAvatar child={childProfile} size="lg" />
-            <div>
-              <h1 className="text-4xl font-bold text-slate-900">
+            <div className="flex-1">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900">
                 Hi, {childProfile.child_name}!
               </h1>
-              <p className="text-lg text-slate-600 mt-1">Ready to earn some stars?</p>
+              <p className="text-sm sm:text-base md:text-lg text-slate-600 mt-1">Ready to earn some stars?</p>
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative flex items-center gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-8 py-5 rounded-3xl shadow-2xl border-3 border-yellow-300 animate-pulse-subtle">
-              <Star className="w-16 h-16 text-amber-500 fill-amber-500 drop-shadow-md" />
+          <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+            <div className="relative flex items-center gap-2 sm:gap-3 md:gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border-2 sm:border-3 border-yellow-300 animate-pulse-subtle flex-1 sm:flex-initial">
+              <Star className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-amber-500 fill-amber-500 drop-shadow-md" />
               <div>
-                <p className="text-sm font-bold text-yellow-100 uppercase tracking-widest drop-shadow-sm">Your Stars</p>
-                <p className="text-6xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
+                <p className="text-xs sm:text-sm font-bold text-yellow-100 uppercase tracking-wide sm:tracking-widest drop-shadow-sm">Your Stars</p>
+                <p className="text-3xl sm:text-4xl md:text-6xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
               </div>
             </div>
-            <Button variant="ghost" size="sm" onClick={handleLogout} className="bg-white/90 hover:bg-white shadow-md">
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
+            <Button variant="ghost" size="sm" onClick={handleLogout} className="bg-white/90 hover:bg-white shadow-md shrink-0">
+              <LogOut className="w-4 h-4 sm:mr-2" />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
 
         {starsPending > 0 && (
           <Card className="bg-gradient-to-r from-purple-100 via-blue-100 to-cyan-100 border-2 border-purple-200 shadow-md">
-            <CardContent className="py-4 px-6">
-              <div className="flex items-center justify-center gap-3">
-                <Sparkles className="w-6 h-6 text-purple-600 animate-pulse" />
+            <CardContent className="py-3 sm:py-4 px-4 sm:px-6">
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 animate-pulse" />
                 <div className="text-center">
-                  <p className="text-sm font-semibold text-purple-900">
-                    <span className="text-2xl font-black">{starsPending}</span> stars waiting for approval!
+                  <p className="text-xs sm:text-sm font-semibold text-purple-900">
+                    <span className="text-xl sm:text-2xl font-black">{starsPending}</span> stars waiting for approval!
                   </p>
                 </div>
-                <Sparkles className="w-6 h-6 text-purple-600 animate-pulse" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 animate-pulse" />
               </div>
             </CardContent>
           </Card>
         )}
 
-        <div className="grid md:grid-cols-2 gap-6">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50 p-4 rounded-xl border-2 border-blue-200">
-              <h2 className="text-2xl font-bold text-blue-900 flex items-center gap-3">
-                <div className="bg-blue-500 rounded-full p-2">
-                  <Trophy className="w-6 h-6 text-white" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-blue-900 flex items-center gap-2 sm:gap-3">
+                <div className="bg-blue-500 rounded-full p-1.5 sm:p-2">
+                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 Your Tasks
               </h2>
-              <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
+              <Badge className="bg-green-500 hover:bg-green-600 text-white text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-1.5 shadow-md">
                 {tasksWithCompletions.length} total
               </Badge>
             </div>
@@ -243,15 +243,15 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             )}
           </div>
 
-          <div className="space-y-4">
-            <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border-2 border-purple-200">
-              <h2 className="text-2xl font-bold text-purple-900 flex items-center gap-3">
-                <div className="bg-purple-500 rounded-full p-2">
-                  <Sparkles className="w-6 h-6 text-white" />
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-xl border-2 border-purple-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-purple-900 flex items-center gap-2 sm:gap-3">
+                <div className="bg-purple-500 rounded-full p-1.5 sm:p-2">
+                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 Rewards
               </h2>
-              <Badge className="bg-green-500 hover:bg-green-600 text-white text-base px-4 py-1.5 shadow-md">
+              <Badge className="bg-green-500 hover:bg-green-600 text-white text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-1.5 shadow-md">
                 {availableRewards.length} available
               </Badge>
             </div>

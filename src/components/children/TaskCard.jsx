@@ -105,51 +105,51 @@ export function TaskCard({
         transition={{ duration: 0.3 }}
       >
         <Card
-          className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${!showCompletion ? 'cursor-pointer hover:border-blue-400' : ''}`}
+          className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${!showCompletion && !isParentView ? 'cursor-pointer hover:border-blue-400' : ''}`}
           style={{ borderColor: task.color || undefined }}
           onClick={() => {
-            if (!showCompletion) {
+            if (!showCompletion && !isParentView) {
               handleCompleteClick();
             }
           }}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-start gap-3 flex-1">
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6 pb-4 sm:pb-6">
+            <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+              <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                 <div
-                  className="p-3 rounded-lg"
+                  className="p-2 sm:p-3 rounded-lg shrink-0"
                   style={{ backgroundColor: task.color ? `${task.color}20` : '#EFF6FF' }}
                 >
                   <IconComponent
-                    className="w-6 h-6"
+                    className="w-5 h-5 sm:w-6 sm:h-6"
                     style={{ color: task.color || '#3B82F6' }}
                   />
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-semibold text-lg text-slate-900">{task.title}</h3>
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
+                    <h3 className="font-semibold text-base sm:text-lg text-slate-900 break-words">{task.title}</h3>
                     {getStatusBadge()}
                   </div>
                   {task.description && (
-                    <p className="text-sm text-slate-600 mt-1">{task.description}</p>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1 break-words">{task.description}</p>
                   )}
                   {completion?.submission_notes && isParentView && isPending && (
-                    <div className="mt-2 p-2 bg-blue-100 rounded text-sm border border-blue-200">
-                      <p className="font-medium text-blue-900 text-xs">Notes from child:</p>
-                      <p className="text-blue-800 text-xs mt-0.5">{completion.submission_notes}</p>
+                    <div className="mt-2 p-2 bg-blue-100 rounded text-xs sm:text-sm border border-blue-200">
+                      <p className="font-medium text-blue-900">Notes from child:</p>
+                      <p className="text-blue-800 mt-0.5 break-words">{completion.submission_notes}</p>
                     </div>
                   )}
                   {completion?.review_notes && showCompletion && (
-                    <div className="mt-2 p-2 bg-purple-50 rounded text-sm">
+                    <div className="mt-2 p-2 bg-purple-50 rounded text-xs sm:text-sm">
                       <p className="font-medium text-purple-900">Parent's Feedback:</p>
-                      <p className="text-purple-700">{completion.review_notes}</p>
+                      <p className="text-purple-700 break-words">{completion.review_notes}</p>
                     </div>
                   )}
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-2">
-                <div className="flex items-center gap-1 text-yellow-600 font-bold text-lg">
-                  <Star className="w-5 h-5 fill-yellow-500" />
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex items-center gap-1 text-yellow-600 font-bold text-base sm:text-lg">
+                  <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-500" />
                   {task.star_reward || 1}
                 </div>
               </div>

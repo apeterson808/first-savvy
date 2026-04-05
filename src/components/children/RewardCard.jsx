@@ -62,9 +62,9 @@ export function RewardCard({
             filter: !canAfford && !isRedeemed ? 'grayscale(70%)' : 'none',
           }}
         >
-          <CardContent className="pt-6">
+          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6 pb-4 sm:pb-6">
             {reward.image_url && (
-              <div className="mb-4 rounded-lg overflow-hidden h-32 bg-slate-100 relative">
+              <div className="mb-3 sm:mb-4 rounded-lg overflow-hidden h-24 sm:h-32 bg-slate-100 relative">
                 <img
                   src={reward.image_url}
                   alt={reward.title}
@@ -72,39 +72,39 @@ export function RewardCard({
                 />
                 {!canAfford && !isRedeemed && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Lock className="w-12 h-12 text-white" />
+                    <Lock className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
                   </div>
                 )}
                 {isRedeemed && (
                   <div className="absolute inset-0 bg-green-500/40 flex items-center justify-center">
-                    <Check className="w-12 h-12 text-white" />
+                    <Check className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
                   </div>
                 )}
               </div>
             )}
 
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-start gap-3 flex-1">
+            <div className="flex items-start justify-between mb-3 gap-2">
+              <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                 <div
-                  className="p-3 rounded-lg"
+                  className="p-2 sm:p-3 rounded-lg shrink-0"
                   style={{
                     backgroundColor: reward.color ? `${reward.color}20` : '#F3E8FF',
                   }}
                 >
                   <IconComponent
-                    className="w-6 h-6"
+                    className="w-5 h-5 sm:w-6 sm:h-6"
                     style={{ color: reward.color || '#A855F7' }}
                   />
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-slate-900">{reward.title}</h3>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-base sm:text-lg text-slate-900 break-words">{reward.title}</h3>
                   {reward.description && (
-                    <p className="text-sm text-slate-600 mt-1">{reward.description}</p>
+                    <p className="text-xs sm:text-sm text-slate-600 mt-1 break-words">{reward.description}</p>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1 text-purple-600 font-bold text-xl">
-                <Star className="w-6 h-6 fill-purple-500" />
+              <div className="flex items-center gap-1 text-purple-600 font-bold text-lg sm:text-xl shrink-0">
+                <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-purple-500" />
                 {reward.star_cost}
               </div>
             </div>
@@ -113,10 +113,10 @@ export function RewardCard({
               <>
                 <div className="mb-3">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-xs sm:text-sm font-medium text-slate-700">
                       {canAfford ? 'You can get this!' : `Need ${starsNeeded} more stars`}
                     </span>
-                    <span className="text-sm text-slate-500">
+                    <span className="text-xs sm:text-sm text-slate-500">
                       {starBalance} / {reward.star_cost}
                     </span>
                   </div>
@@ -126,20 +126,21 @@ export function RewardCard({
                 <Button
                   onClick={handleRedeemClick}
                   disabled={!canAfford}
-                  className={`w-full ${
+                  className={`w-full text-sm sm:text-base ${
                     canAfford
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
                       : 'bg-slate-300'
                   }`}
+                  size="sm"
                 >
                   {canAfford ? (
                     <>
-                      <Sparkles className="w-4 h-4 mr-2" />
+                      <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                       Redeem Now
                     </>
                   ) : (
                       <>
-                        <Lock className="w-4 h-4 mr-2" />
+                        <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
                         Locked
                       </>
                     )}
@@ -148,11 +149,13 @@ export function RewardCard({
             )}
 
             {isRedeemed && (
-              <div className="flex items-center justify-center gap-2 py-2 bg-green-100 rounded-lg">
-                <Check className="w-5 h-5 text-green-600" />
-                <span className="font-semibold text-green-700">Redeemed!</span>
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 bg-green-100 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
+                  <span className="font-semibold text-green-700 text-sm sm:text-base">Redeemed!</span>
+                </div>
                 {reward.redeemed_at && (
-                  <span className="text-sm text-green-600">
+                  <span className="text-xs sm:text-sm text-green-600">
                     on {new Date(reward.redeemed_at).toLocaleDateString()}
                   </span>
                 )}
