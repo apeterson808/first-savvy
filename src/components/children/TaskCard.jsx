@@ -128,7 +128,10 @@ export function TaskCard({
                   />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-slate-900">{task.title}</h3>
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-lg text-slate-900">{task.title}</h3>
+                    {getStatusBadge()}
+                  </div>
                   {task.description && (
                     <p className="text-sm text-slate-600 mt-1">{task.description}</p>
                   )}
@@ -147,7 +150,6 @@ export function TaskCard({
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2">
-                {getStatusBadge()}
                 <div className="flex items-center gap-1 text-yellow-600 font-bold text-lg">
                   <Star className="w-5 h-5 fill-yellow-500" />
                   {task.star_reward || 1}
