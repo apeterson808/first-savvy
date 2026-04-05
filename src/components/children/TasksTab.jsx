@@ -39,8 +39,16 @@ export function TasksTab({ childId, profileId, onUpdate }) {
 
   const handleApprove = async (taskId) => {
     try {
+      const task = tasks.find(t => t.id === taskId);
+      const starsAwarded = task?.star_reward || task?.points_value || 0;
+
       await tasksAPI.approveTask(taskId, null, null);
-      toast.success('Task approved!');
+
+      toast.success('Task approved!', {
+        description: starsAwarded > 0 ? `+${starsAwarded} stars earned!` : undefined,
+        icon: '⭐',
+      });
+
       loadTasks();
       onUpdate();
     } catch (error) {

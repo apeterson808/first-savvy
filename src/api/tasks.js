@@ -189,12 +189,16 @@ export const tasksAPI = {
 
     if (txError) throw txError;
 
+    const isRepeatable = task.repeatable || task.frequency === 'always_available';
+    const newStatus = isRepeatable ? 'in_progress' : 'approved';
+
     const { data, error } = await supabase
       .from('tasks')
       .update({
-        status: 'approved',
+        status: newStatus,
         approved_by_user_id: userId,
         approved_at: new Date().toISOString(),
+        completed_at: null,
       })
       .eq('id', taskId)
       .select()
