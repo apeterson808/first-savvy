@@ -5,18 +5,18 @@ import { cn } from '@/lib/utils';
 import { ICON_MAP } from '@/components/utils/iconMapper';
 
 const AVATAR_COLORS = {
-  blue: 'bg-blue-500',
-  green: 'bg-green-500',
-  red: 'bg-red-500',
-  yellow: 'bg-yellow-500',
-  orange: 'bg-orange-500',
-  pink: 'bg-pink-500',
-  cyan: 'bg-cyan-500',
-  teal: 'bg-teal-500',
-  emerald: 'bg-emerald-500',
-  lime: 'bg-lime-500',
-  amber: 'bg-amber-500',
-  slate: 'bg-slate-500',
+  'sky-blue': { bg: 'bg-sky-blue', text: 'text-white' },
+  'soft-green': { bg: 'bg-soft-green', text: 'text-slate-800' },
+  'pink': { bg: 'bg-pink', text: 'text-white' },
+  'orange': { bg: 'bg-orange', text: 'text-white' },
+  'yellow': { bg: 'bg-yellow', text: 'text-slate-800' },
+  'peach': { bg: 'bg-peach', text: 'text-slate-800' },
+  'lavender': { bg: 'bg-lavender', text: 'text-slate-800' },
+  'forest-green': { bg: 'bg-forest-green', text: 'text-white' },
+  'burgundy': { bg: 'bg-burgundy', text: 'text-white' },
+  'olive': { bg: 'bg-olive', text: 'text-white' },
+  'brown': { bg: 'bg-brown', text: 'text-white' },
+  'slate': { bg: 'bg-slate-500', text: 'text-white' },
 };
 
 export default function ChildAvatar({ child, size = 'default', className }) {
@@ -79,10 +79,10 @@ export default function ChildAvatar({ child, size = 'default', className }) {
 
   const isColorAvatar = child?.avatar_url?.startsWith('color:');
   const colorId = isColorAvatar ? child.avatar_url.replace('color:', '') : 'slate';
-  const colorClass = AVATAR_COLORS[colorId] || AVATAR_COLORS.slate;
+  const colorStyles = AVATAR_COLORS[colorId] || AVATAR_COLORS.slate;
 
   return (
-    <div className={cn('rounded-full flex items-center justify-center text-white font-bold', sizeClasses[size], colorClass, className)}>
+    <div className={cn('rounded-full flex items-center justify-center font-bold', sizeClasses[size], colorStyles.bg, colorStyles.text, className)}>
       {getInitials()}
     </div>
   );

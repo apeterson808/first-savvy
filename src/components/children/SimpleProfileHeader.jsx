@@ -2,18 +2,18 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 const AVATAR_COLORS = [
-  { id: 'blue', bg: 'bg-blue-500' },
-  { id: 'green', bg: 'bg-green-500' },
-  { id: 'red', bg: 'bg-red-500' },
-  { id: 'yellow', bg: 'bg-yellow-500' },
-  { id: 'orange', bg: 'bg-orange-500' },
-  { id: 'pink', bg: 'bg-pink-500' },
-  { id: 'cyan', bg: 'bg-cyan-500' },
-  { id: 'teal', bg: 'bg-teal-500' },
-  { id: 'emerald', bg: 'bg-emerald-500' },
-  { id: 'lime', bg: 'bg-lime-500' },
-  { id: 'amber', bg: 'bg-amber-500' },
-  { id: 'slate', bg: 'bg-slate-500' },
+  { id: 'sky-blue', bg: 'bg-sky-blue', text: 'text-white' },
+  { id: 'soft-green', bg: 'bg-soft-green', text: 'text-slate-800' },
+  { id: 'pink', bg: 'bg-pink', text: 'text-white' },
+  { id: 'orange', bg: 'bg-orange', text: 'text-white' },
+  { id: 'yellow', bg: 'bg-yellow', text: 'text-slate-800' },
+  { id: 'peach', bg: 'bg-peach', text: 'text-slate-800' },
+  { id: 'lavender', bg: 'bg-lavender', text: 'text-slate-800' },
+  { id: 'forest-green', bg: 'bg-forest-green', text: 'text-white' },
+  { id: 'burgundy', bg: 'bg-burgundy', text: 'text-white' },
+  { id: 'olive', bg: 'bg-olive', text: 'text-white' },
+  { id: 'brown', bg: 'bg-brown', text: 'text-white' },
+  { id: 'slate', bg: 'bg-slate-500', text: 'text-white' },
 ];
 
 export function SimpleProfileHeader({ child }) {
@@ -41,8 +41,9 @@ export function SimpleProfileHeader({ child }) {
   return (
     <div className="flex items-center gap-4 mb-6">
       <div className={cn(
-        'h-20 w-20 rounded-full flex items-center justify-center text-white',
-        avatarColor.bg
+        'h-20 w-20 rounded-full flex items-center justify-center',
+        avatarColor.bg,
+        avatarColor.text
       )}>
         <span className="text-2xl font-bold">{getInitials()}</span>
       </div>
