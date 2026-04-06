@@ -21,7 +21,8 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   const [completions, setCompletions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [celebrationStars, setCelebrationStars] = useState(0);
-  const { exitChildView, currentProfile } = useProfile();
+  const { exitChildView, currentProfile, viewingChildProfile } = useProfile();
+  const isParentViewingChild = viewingChildProfile && viewingChildProfile.loginType === 'parent-selected';
 
   useEffect(() => {
     if (childProfile?.id) {
@@ -117,8 +118,13 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   };
 
   const handleLogout = async () => {
-    await firstsavvy.auth.signOut();
-    window.location.href = '/login';
+    if (isParentViewingChild) {
+      sessionStorage.removeItem('viewingChildProfile');
+      window.location.href = '/Dashboard';
+    } else {
+      await firstsavvy.auth.signOut();
+      window.location.href = '/login';
+    }
   };
 
   const tasksWithCompletions = tasks.map(task => {
@@ -155,7 +161,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
         className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-8 md:right-8 bg-white/90 hover:bg-white shadow-md z-10"
       >
         <LogOut className="w-4 h-4 sm:mr-2" />
-        <span className="hidden sm:inline">Logout</span>
+        <span className="hidden sm:inline">{isParentViewingChild ? 'Back to Parent' : 'Logout'}</span>
       </Button>
 
       <AnimatePresence>

@@ -35,6 +35,8 @@ export default function Layout({ children, currentPageName }) {
 
   const { isOpen, dialogData, handleConfirm, handleCancel, setIsOpen } = useProtectedChangeDialog();
 
+  const isParentViewingChild = viewingChildProfile && viewingChildProfile.loginType === 'parent-selected';
+
   // Save current page to localStorage
   React.useEffect(() => {
     if (currentPageName) {
@@ -139,6 +141,28 @@ export default function Layout({ children, currentPageName }) {
           </ErrorBoundary>
         </main>
         <NetworkStatus />
+      </div>
+    );
+  }
+
+  if (isParentViewingChild) {
+    return (
+      <div className="h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
+        <NetworkStatus />
+        <ProtectedChangeWarningDialog
+          isOpen={isOpen}
+          onClose={() => setIsOpen(false)}
+          onConfirm={handleConfirm}
+          onCancel={handleCancel}
+          dialogData={dialogData}
+        />
+        <ProfileSelector
+          open={profileSelectorOpen}
+          onOpenChange={setProfileSelectorOpen}
+        />
       </div>
     );
   }
