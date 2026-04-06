@@ -82,25 +82,6 @@ export default function ChildDashboard() {
     enabled: !!childProfileId && !!childProfile?.parent_profile_id
   });
 
-  if (childProfile && childProfile.current_permission_level === 1) {
-    return <BeginnerProfileView childProfile={childProfile} />;
-  }
-
-  const pointsBalance = childProfile?.points_balance || 0;
-  const cashBalance = parseFloat(childProfile?.cash_balance || 0);
-
-  const assignedTasks = tasks.filter(c => c.status === 'in_progress');
-  const completedTasks = tasks.filter(c => c.status === 'completed');
-  const approvedTasks = tasks.filter(c => c.status === 'approved');
-
-  const affordableRewards = rewards.filter(r =>
-    r.reward_type === 'points' ? r.points_cost <= pointsBalance : r.cash_cost <= cashBalance
-  );
-
-  const completionRate = tasks.length > 0
-    ? Math.round(((completedTasks.length + approvedTasks.length) / tasks.length) * 100)
-    : 0;
-
   const markTaskComplete = useMutation({
     mutationFn: async (taskId) => {
       const { error } = await firstsavvy
@@ -135,6 +116,25 @@ export default function ChildDashboard() {
       toast.error(error.message || 'Failed to redeem reward');
     }
   });
+
+  if (childProfile && childProfile.current_permission_level === 1) {
+    return <BeginnerProfileView childProfile={childProfile} />;
+  }
+
+  const pointsBalance = childProfile?.points_balance || 0;
+  const cashBalance = parseFloat(childProfile?.cash_balance || 0);
+
+  const assignedTasks = tasks.filter(c => c.status === 'in_progress');
+  const completedTasks = tasks.filter(c => c.status === 'completed');
+  const approvedTasks = tasks.filter(c => c.status === 'approved');
+
+  const affordableRewards = rewards.filter(r =>
+    r.reward_type === 'points' ? r.points_cost <= pointsBalance : r.cash_cost <= cashBalance
+  );
+
+  const completionRate = tasks.length > 0
+    ? Math.round(((completedTasks.length + approvedTasks.length) / tasks.length) * 100)
+    : 0;
 
   return (
     <div className="p-4 md:p-6 bg-gradient-to-br from-slate-50 to-slate-100 min-h-screen">
