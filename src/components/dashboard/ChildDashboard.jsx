@@ -50,17 +50,13 @@ export default function ChildDashboard() {
     enabled: !!childProfileId
   });
 
-  if (childProfile && childProfile.current_permission_level === 1) {
-    return <BeginnerProfileView childProfile={childProfile} />;
-  }
-
   const { data: tasks = [] } = useQuery({
     queryKey: ['child-tasks', childProfileId],
     queryFn: async () => {
       const { data, error } = await firstsavvy
         .from('tasks')
         .select('*')
-        .eq('child_profile_id', childProfileId)
+        .eq('assigned_to_child_id', childProfileId)
         .eq('is_active', true)
         .order('due_date', { ascending: true, nullsFirst: false });
       if (error) throw error;
@@ -70,19 +66,25 @@ export default function ChildDashboard() {
   });
 
   const { data: rewards = [] } = useQuery({
-    queryKey: ['child-rewards', childProfileId],
+    queryKey: ['child-rewards', childProfileId, childProfile?.parent_profile_id],
     queryFn: async () => {
+      if (!childProfile?.parent_profile_id) return [];
       const { data, error } = await firstsavvy
         .from('rewards')
         .select('*')
-        .eq('child_profile_id', childProfileId)
+        .eq('profile_id', childProfile.parent_profile_id)
+        .or(`assigned_to_child_id.eq.${childProfileId},assigned_to_child_id.is.null`)
         .eq('is_active', true)
         .order('points_cost', { ascending: true });
       if (error) throw error;
       return data;
     },
-    enabled: !!childProfileId
+    enabled: !!childProfileId && !!childProfile?.parent_profile_id
   });
+
+  if (childProfile && childProfile.current_permission_level === 1) {
+    return <BeginnerProfileView childProfile={childProfile} />;
+  }
 
   const pointsBalance = childProfile?.points_balance || 0;
   const cashBalance = parseFloat(childProfile?.cash_balance || 0);
