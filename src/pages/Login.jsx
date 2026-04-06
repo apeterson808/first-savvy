@@ -147,11 +147,11 @@ export default function Login() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Email or Username</Label>
+              <Label htmlFor="email">Username</Label>
               <Input
                 id="email"
                 type="text"
-                placeholder="you@example.com or username"
+                placeholder="username"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -160,7 +160,7 @@ export default function Login() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password or PIN</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
                 type="password"
