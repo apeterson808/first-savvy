@@ -31,8 +31,9 @@ export default function ChildDashboard() {
   const { activeProfile, viewingChildProfile } = useProfile();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+
+  const childProfileId = viewingChildProfile?.childProfileId || activeProfile?.child_profile_id;
   const permissionLevel = activeProfile?.permission_level || 1;
-  const childProfileId = activeProfile?.child_profile_id;
   const [selectedTask, setSelectedTask] = useState(null);
 
   const { data: childProfile } = useQuery({
