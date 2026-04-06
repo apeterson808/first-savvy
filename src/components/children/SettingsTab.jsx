@@ -440,30 +440,24 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
 
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-slate-600">PIN</Label>
-                        {isEditMode ? (
-                          <div className="flex gap-2">
-                            {[0, 1, 2, 3].map((index) => (
-                              <Input
-                                key={index}
-                                ref={pinInputRefs[index]}
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={1}
-                                value={pinValue[index]}
-                                onChange={(e) => handlePinChange(index, e.target.value)}
-                                onKeyDown={(e) => handlePinKeyDown(index, e)}
-                                onFocus={handlePinFocus}
-                                onBlur={handlePinBlur}
-                                placeholder={isPinFocused || pinValue[index] ? '' : '•'}
-                                className="w-12 h-12 text-center text-xl font-mono"
-                              />
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-sm font-mono text-slate-900 py-2">
-                            {child.pin_hash ? '••••' : <span className="text-slate-400">Not set</span>}
-                          </div>
-                        )}
+                        <div className="flex gap-2">
+                          {[0, 1, 2, 3].map((index) => (
+                            <Input
+                              key={index}
+                              ref={pinInputRefs[index]}
+                              type="text"
+                              inputMode="numeric"
+                              maxLength={1}
+                              value={pinValue[index]}
+                              onChange={(e) => handlePinChange(index, e.target.value)}
+                              onKeyDown={(e) => handlePinKeyDown(index, e)}
+                              onFocus={handlePinFocus}
+                              onBlur={handlePinBlur}
+                              disabled={!isEditMode}
+                              className="w-12 h-12 text-center text-xl font-mono disabled:opacity-100 disabled:cursor-default"
+                            />
+                          ))}
+                        </div>
                       </div>
 
                       <div className="col-span-2 space-y-2">
