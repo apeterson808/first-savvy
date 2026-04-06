@@ -32,7 +32,14 @@ export default function ChildProfileSelector() {
     try {
       setLoading(true);
       setError('');
-      const profiles = await childProfilesAPI.getChildProfiles();
+
+      if (!currentProfile?.id) {
+        setError('No profile selected. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      const profiles = await childProfilesAPI.getChildProfiles(currentProfile.id);
 
       const loginEnabledProfiles = profiles.filter(p => p.login_enabled && p.is_active);
       setChildProfiles(loginEnabledProfiles);
