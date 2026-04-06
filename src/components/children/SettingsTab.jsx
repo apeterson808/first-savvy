@@ -71,9 +71,9 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
   }, [child]);
 
   useEffect(() => {
-    const changed = JSON.stringify(formData) !== JSON.stringify(originalData);
+    const changed = JSON.stringify(formData) !== JSON.stringify(originalData) || (pinValue && pinValue.length === 4);
     setHasChanges(changed);
-  }, [formData, originalData]);
+  }, [formData, originalData, pinValue]);
 
   const loadAccessData = async () => {
     try {
