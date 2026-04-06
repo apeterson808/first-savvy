@@ -20,6 +20,7 @@ import { ProfileSelector } from '@/components/common/ProfileSelector';
 import { useProfile } from '@/contexts/ProfileContext';
 import { Button } from '@/components/ui/button';
 import ChildAvatar from '@/components/children/ChildAvatar';
+import ChildHeader from '@/components/children/ChildHeader';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -29,6 +30,7 @@ export default function Layout({ children, currentPageName }) {
   const [profileSelectorOpen, setProfileSelectorOpen] = useState(false);
   const [isLoggedInAsChild, setIsLoggedInAsChild] = useState(false);
   const [childPermissionLevel, setChildPermissionLevel] = useState(1);
+  const [childDisplayName, setChildDisplayName] = useState('');
   const navigate = useNavigate();
   const location = useLocation();
   const { activeProfile, viewingChildProfile } = useProfile();
@@ -54,10 +56,9 @@ export default function Layout({ children, currentPageName }) {
           const profile = await getUserProfile(authUser.id);
           setUserProfile(profile);
 
-          // Check if the logged-in user is a child user
           const { data: childProfile } = await firstsavvy
             .from('child_profiles')
-            .select('current_permission_level')
+            .select('current_permission_level, display_name, child_name')
             .eq('user_id', authUser.id)
             .eq('is_active', true)
             .maybeSingle();
@@ -65,9 +66,11 @@ export default function Layout({ children, currentPageName }) {
           if (childProfile) {
             setIsLoggedInAsChild(true);
             setChildPermissionLevel(childProfile.current_permission_level || 1);
+            setChildDisplayName(childProfile.display_name || childProfile.child_name || 'Child');
           } else {
             setIsLoggedInAsChild(false);
             setChildPermissionLevel(1);
+            setChildDisplayName('');
           }
         }
       } catch (error) {
@@ -134,12 +137,15 @@ export default function Layout({ children, currentPageName }) {
 
   if (isLoggedInAsChild) {
     return (
-      <div className="flex h-screen overflow-hidden bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <ErrorBoundary>
-            {children}
-          </ErrorBoundary>
-        </main>
+      <div className="flex h-screen overflow-hidden bg-gradient-to-br from-slate-50 to-slate-100">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          <ChildHeader childName={childDisplayName} displayName={childDisplayName} />
+          <main className="flex-1 overflow-y-auto">
+            <ErrorBoundary>
+              {children}
+            </ErrorBoundary>
+          </main>
+        </div>
         <NetworkStatus />
       </div>
     );

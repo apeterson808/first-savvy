@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { childProfilesAPI } from '@/api/childProfiles';
+import { firstsavvy } from '@/api/firstsavvyClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -22,6 +23,19 @@ export default function ChildLogin({ onBackToParentLogin }) {
 
     try {
       const childProfile = await childProfilesAPI.authenticateChild(username, pin);
+
+      if (!childProfile.user_id) {
+        throw new Error('This child account has not been set up yet. Please contact your parent.');
+      }
+
+      const { data: authData, error: authError } = await firstsavvy.auth.signInWithPassword({
+        email: childProfile.email,
+        password: childProfile.user_id
+      });
+
+      if (authError) {
+        throw new Error('Failed to authenticate. Please contact your parent.');
+      }
 
       sessionStorage.setItem('viewingChildProfile', JSON.stringify({
         childProfileId: childProfile.id,
