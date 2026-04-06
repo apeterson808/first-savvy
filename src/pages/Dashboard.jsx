@@ -46,7 +46,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { activeProfile } = useProfile();
+  const { activeProfile, viewingChildProfile } = useProfile();
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [chartView, setChartView] = useState('spending');
   const [timeRange, setTimeRange] = useState('ytd');
@@ -507,15 +507,21 @@ export default function Dashboard() {
 
   const upcomingBills = [];
 
-  // Scenario 1: Logged-in user IS a child (Tucker logs in)
+  // Scenario 1: Logged-in user IS a child (Tucker logs in directly)
   // Show simplified, gamified ChildDashboard
   if (isLoggedInAsChild) {
     return <ChildDashboard />;
   }
 
-  // Scenario 2: Logged-in user is NOT a child BUT is viewing a child profile (Andrew views Tucker's tab)
+  // Scenario 2: Parent is viewing a child profile via the selector (parent-selected mode)
+  // Show simplified, gamified ChildDashboard (same as Scenario 1)
+  if (viewingChildProfile && viewingChildProfile.loginType === 'parent-selected') {
+    return <ChildDashboard />;
+  }
+
+  // Scenario 3: Logged-in user is NOT a child BUT is viewing a child profile tab (Andrew views Tucker's tab)
   // Show ParentViewOfChildDashboard with full controls and child's data
-  if (!isLoggedInAsChild && activeProfile?.is_child_profile) {
+  if (!isLoggedInAsChild && activeProfile?.is_child_profile && !viewingChildProfile) {
     return <ParentViewOfChildDashboard />;
   }
 

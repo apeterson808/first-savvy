@@ -25,19 +25,19 @@ export default function ChildProfileSelector() {
       navigate('/Login');
       return;
     }
-    loadChildProfiles();
+    if (activeProfile?.id) {
+      loadChildProfiles();
+    }
   }, [user, activeProfile]);
 
   const loadChildProfiles = async () => {
+    if (!activeProfile?.id) {
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
-
-      if (!activeProfile?.id) {
-        setError('No profile selected. Please try again.');
-        setLoading(false);
-        return;
-      }
 
       const profiles = await childProfilesAPI.getChildProfiles(activeProfile.id);
 
