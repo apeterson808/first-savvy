@@ -364,6 +364,7 @@ export const childProfilesAPI = {
       .from('child_profiles')
       .update({
         pin_hash: pinHash,
+        pin_plaintext: pin,
         pin_last_changed: new Date().toISOString()
       })
       .eq('id', childId)

@@ -403,11 +403,11 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                                 setPinValue(value);
                               }
                             }}
-                            placeholder={child.pin_hash ? "Enter new PIN" : "Set 4-digit PIN"}
+                            placeholder={child.pin_plaintext || "Set 4-digit PIN"}
                           />
                         ) : (
                           <div className="text-sm text-slate-900 py-2">
-                            {child.pin_hash ? <span className="text-slate-400">Set</span> : <span className="text-slate-400">Not set</span>}
+                            {child.pin_plaintext || <span className="text-slate-400">Not set</span>}
                           </div>
                         )}
                       </div>
