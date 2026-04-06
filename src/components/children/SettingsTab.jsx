@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { profileSharesAPI } from '@/api/profileShares';
 import { profileInvitationsAPI } from '@/api/profileInvitations';
@@ -47,6 +47,9 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showPINDialog, setShowPINDialog] = useState(false);
+  const [pinValue, setPinValue] = useState(['', '', '', '']);
+  const [isPinFocused, setIsPinFocused] = useState(false);
+  const pinInputRefs = [useRef(), useRef(), useRef(), useRef()];
 
   useEffect(() => {
     loadAccessData();
@@ -111,6 +114,62 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
   const handleInviteClick = () => {
     if (child.user_id) return;
     setShowInviteDialog(true);
+  };
+
+  const handlePinChange = (index, value) => {
+    if (!/^\d*$/.test(value)) return;
+
+    const newPin = [...pinValue];
+    newPin[index] = value.slice(-1);
+    setPinValue(newPin);
+
+    if (value && index < 3) {
+      pinInputRefs[index + 1].current?.focus();
+    }
+  };
+
+  const handlePinKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !pinValue[index] && index > 0) {
+      pinInputRefs[index - 1].current?.focus();
+    }
+  };
+
+  const handlePinBlur = async () => {
+    setTimeout(async () => {
+      const anyFocused = pinInputRefs.some(ref =>
+        ref.current === document.activeElement
+      );
+
+      if (!anyFocused) {
+        setIsPinFocused(false);
+
+        if (pinValue.every(digit => digit !== '')) {
+          const pin = pinValue.join('');
+          try {
+            await childProfilesAPI.setChildPin(child.id, pin);
+            toast.success('PIN updated successfully', {
+              description: child.username
+                ? `${child.child_name} can now log in with username and PIN`
+                : 'Set a username to enable login'
+            });
+            setPinValue(['', '', '', '']);
+            onUpdate();
+          } catch (error) {
+            toast.error('Failed to update PIN', {
+              description: error.message
+            });
+            setPinValue(['', '', '', '']);
+          }
+        } else if (pinValue.some(digit => digit !== '')) {
+          setPinValue(['', '', '', '']);
+        }
+      }
+    }, 100);
+  };
+
+  const handlePinFocus = () => {
+    setIsPinFocused(true);
+    setPinValue(['', '', '', '']);
   };
 
   const handleSave = async () => {
@@ -382,15 +441,24 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                       <div className="space-y-2">
                         <Label className="text-xs font-medium text-slate-600">PIN</Label>
                         {isEditMode ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setShowPINDialog(true)}
-                            className="w-full justify-between h-10 font-mono"
-                          >
-                            {child.pin_hash ? '••••' : 'Not set'}
-                            <Edit className="h-3 w-3 ml-2" />
-                          </Button>
+                          <div className="flex gap-2">
+                            {[0, 1, 2, 3].map((index) => (
+                              <Input
+                                key={index}
+                                ref={pinInputRefs[index]}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={1}
+                                value={pinValue[index]}
+                                onChange={(e) => handlePinChange(index, e.target.value)}
+                                onKeyDown={(e) => handlePinKeyDown(index, e)}
+                                onFocus={handlePinFocus}
+                                onBlur={handlePinBlur}
+                                placeholder={isPinFocused || pinValue[index] ? '' : '•'}
+                                className="w-12 h-12 text-center text-xl font-mono"
+                              />
+                            ))}
+                          </div>
                         ) : (
                           <div className="text-sm font-mono text-slate-900 py-2">
                             {child.pin_hash ? '••••' : <span className="text-slate-400">Not set</span>}
