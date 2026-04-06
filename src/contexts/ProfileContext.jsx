@@ -88,6 +88,50 @@ export const ProfileProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
+      const { data: childCheck } = await firstsavvy
+        .from('child_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      if (childCheck) {
+        const childProfile = {
+          id: childCheck.owned_by_profile_id,
+          child_profile_id: childCheck.id,
+          display_name: childCheck.display_name || childCheck.child_name,
+          profile_type: 'child',
+          is_child_profile: true,
+          parent_profile_id: childCheck.parent_profile_id,
+          owned_by_profile_id: childCheck.owned_by_profile_id,
+          permission_level: childCheck.current_permission_level,
+          current_permission_level: childCheck.current_permission_level,
+          points_balance: childCheck.points_balance || 0,
+          cash_balance: childCheck.cash_balance || 0,
+          daily_spending_limit: childCheck.daily_spending_limit,
+          weekly_spending_limit: childCheck.weekly_spending_limit,
+          monthly_spending_limit: childCheck.monthly_spending_limit,
+          date_of_birth: childCheck.date_of_birth,
+          avatar_url: childCheck.avatar_url,
+          child_name: childCheck.child_name,
+          first_name: childCheck.first_name,
+          last_name: childCheck.last_name,
+          role: 'child'
+        };
+
+        setProfiles([childProfile]);
+        setActiveProfile(childProfile);
+        setViewingChildProfile({
+          childProfileId: childCheck.id,
+          profileId: childCheck.parent_profile_id,
+          childName: childCheck.child_name,
+          display_name: childCheck.display_name || childCheck.child_name,
+          loginType: 'direct'
+        });
+        setLoading(false);
+        return;
+      }
+
       const { data: memberships, error: membershipsError } = await firstsavvy
         .from('profile_memberships')
         .select(`
@@ -302,19 +346,6 @@ export const ProfileProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    const storedViewingChild = sessionStorage.getItem('viewingChildProfile');
-    if (storedViewingChild) {
-      try {
-        const childData = JSON.parse(storedViewingChild);
-        if (childData.loginType === 'direct') {
-          setViewingChildProfile(null);
-        } else {
-          setViewingChildProfile(childData);
-        }
-      } catch (e) {
-        sessionStorage.removeItem('viewingChildProfile');
-      }
-    }
     loadProfiles();
   }, [loadProfiles]);
 
