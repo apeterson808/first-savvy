@@ -18,7 +18,7 @@ export default function ChildProfileSelector() {
   const [showPinDialog, setShowPinDialog] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { currentProfile } = useProfile();
+  const { activeProfile } = useProfile();
 
   useEffect(() => {
     if (!user) {
@@ -26,20 +26,20 @@ export default function ChildProfileSelector() {
       return;
     }
     loadChildProfiles();
-  }, [user, currentProfile]);
+  }, [user, activeProfile]);
 
   const loadChildProfiles = async () => {
     try {
       setLoading(true);
       setError('');
 
-      if (!currentProfile?.id) {
+      if (!activeProfile?.id) {
         setError('No profile selected. Please try again.');
         setLoading(false);
         return;
       }
 
-      const profiles = await childProfilesAPI.getChildProfiles(currentProfile.id);
+      const profiles = await childProfilesAPI.getChildProfiles(activeProfile.id);
 
       const loginEnabledProfiles = profiles.filter(p => p.login_enabled && p.is_active);
       setChildProfiles(loginEnabledProfiles);
