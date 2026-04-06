@@ -121,6 +121,17 @@ export const childProfilesAPI = {
       .single();
 
     if (error) throw error;
+
+    if (!data.user_id && data.username && data.pin_hash && updates.username) {
+      try {
+        await supabase.functions.invoke('create-child-user', {
+          body: { childProfileId: childId }
+        });
+      } catch (createError) {
+        console.error('Failed to auto-create user account:', createError);
+      }
+    }
+
     return data;
   },
 
@@ -360,6 +371,17 @@ export const childProfilesAPI = {
       .single();
 
     if (error) throw error;
+
+    if (!data.user_id && data.username) {
+      try {
+        await supabase.functions.invoke('create-child-user', {
+          body: { childProfileId: childId }
+        });
+      } catch (createError) {
+        console.error('Failed to auto-create user account:', createError);
+      }
+    }
+
     return data;
   },
 

@@ -113,44 +113,6 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
     setShowInviteDialog(true);
   };
 
-  const handleEnableLogin = async () => {
-    if (child.user_id) return;
-
-    if (!child.username) {
-      toast.error('Please set a username first');
-      setIsEditMode(true);
-      return;
-    }
-
-    if (!child.pin_hash) {
-      toast.error('Please set a PIN first');
-      setShowPINDialog(true);
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase.functions.invoke('create-child-user', {
-        body: {
-          childProfileId: child.id,
-        }
-      });
-
-      if (error) throw error;
-
-      toast.success('Login enabled successfully', {
-        description: `${child.child_name} can now log in with username and PIN`
-      });
-
-      await loadAccessData();
-      onUpdate();
-    } catch (error) {
-      console.error('Error enabling login:', error);
-      toast.error('Failed to enable login', {
-        description: error.message
-      });
-    }
-  };
-
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -288,17 +250,6 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                       >
                         {getInvitationStatus().text}
                       </Badge>
-                      {!child.user_id && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={handleEnableLogin}
-                          className="h-7 text-xs"
-                        >
-                          <Shield className="h-3 w-3 mr-1" />
-                          Enable Login
-                        </Button>
-                      )}
                       {child.last_login_at && (
                         <span className="text-xs text-slate-500">
                           Last login {formatDistanceToNow(new Date(child.last_login_at), { addSuffix: true })}

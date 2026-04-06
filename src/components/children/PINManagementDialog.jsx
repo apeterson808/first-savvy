@@ -97,8 +97,12 @@ export function PINManagementDialog({ open, onOpenChange, childProfile, onSucces
     try {
       await childProfilesAPI.setChildPin(childProfile.id, pin.join(''));
 
+      const hasUsername = childProfile.username && childProfile.username.trim().length > 0;
+
       toast.success('PIN set successfully', {
-        description: `Login PIN has been set for ${childProfile.child_name}`
+        description: hasUsername
+          ? `${childProfile.child_name} can now log in with username and PIN`
+          : `Login PIN has been set for ${childProfile.child_name}`
       });
 
       onSuccess?.();
