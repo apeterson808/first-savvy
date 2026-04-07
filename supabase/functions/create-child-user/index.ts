@@ -7,10 +7,7 @@ const corsHeaders = {
 };
 
 interface CreateChildRequest {
-  childEmail: string;
-  childPassword: string;
-  childName: string;
-  permissionLevel: number;
+  childProfileId: string;
 }
 
 Deno.serve(async (req: Request) => {
@@ -57,11 +54,33 @@ Deno.serve(async (req: Request) => {
       throw new Error('Unauthorized');
     }
 
-    const { childEmail, childPassword, childName, permissionLevel }: CreateChildRequest = await req.json();
+    const { childProfileId }: CreateChildRequest = await req.json();
 
-    if (!childEmail || !childPassword || !childName) {
-      throw new Error('Missing required fields');
+    if (!childProfileId) {
+      throw new Error('childProfileId is required');
     }
+
+    const { data: childProfile, error: childProfileError } = await supabaseAdmin
+      .from('child_profiles')
+      .select('*')
+      .eq('id', childProfileId)
+      .single();
+
+    if (childProfileError || !childProfile) {
+      throw new Error('Child profile not found');
+    }
+
+    if (childProfile.user_id) {
+      throw new Error('Child profile already has an associated user account');
+    }
+
+    if (!childProfile.username || !childProfile.pin_plaintext) {
+      throw new Error('Child profile must have username and PIN set before creating auth account');
+    }
+
+    const childEmail = `child_${childProfileId}@firstsavvy.internal`;
+    const childPassword = childProfile.pin_plaintext;
+    const childName = childProfile.display_name || childProfile.child_name || `${childProfile.first_name} ${childProfile.last_name}`;
 
     const { data: signUpData, error: signUpError } = await supabaseAdmin.auth.admin.createUser({
       email: childEmail,
@@ -69,6 +88,8 @@ Deno.serve(async (req: Request) => {
       email_confirm: true,
       user_metadata: {
         full_name: childName,
+        is_child_account: true,
+        child_profile_id: childProfileId,
       },
     });
 
@@ -138,29 +159,16 @@ Deno.serve(async (req: Request) => {
       throw new Error(`Failed to create chart of accounts: ${chartError.message}`);
     }
 
-    const { data: parentProfile } = await supabaseAdmin
-      .from('profile_memberships')
-      .select('profile_id')
-      .eq('user_id', parentUser.id)
-      .eq('role', 'owner')
-      .single();
-
-    if (!parentProfile) {
-      throw new Error('Parent profile not found');
-    }
-
-    const { error: childProfileError } = await supabaseAdmin
+    const { error: updateChildProfileError } = await supabaseAdmin
       .from('child_profiles')
-      .insert({
-        parent_profile_id: parentProfile.profile_id,
+      .update({
         user_id: childUserId,
-        child_name: childName,
-        current_permission_level: permissionLevel,
         is_active: true,
-      });
+      })
+      .eq('id', childProfileId);
 
-    if (childProfileError) {
-      throw new Error(`Failed to create child profile: ${childProfileError.message}`);
+    if (updateChildProfileError) {
+      throw new Error(`Failed to update child profile: ${updateChildProfileError.message}`);
     }
 
     return new Response(
@@ -168,6 +176,7 @@ Deno.serve(async (req: Request) => {
         success: true,
         childUserId,
         profileId: profile.id,
+        message: 'Child authentication account created successfully',
       }),
       {
         headers: {

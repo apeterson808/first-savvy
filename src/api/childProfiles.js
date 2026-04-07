@@ -339,6 +339,26 @@ export const childProfilesAPI = {
     }
   },
 
+  async verifyChildPin(childId, pin) {
+    try {
+      const { data: child, error: fetchError } = await supabase
+        .from('child_profiles')
+        .select('pin_hash')
+        .eq('id', childId)
+        .single();
+
+      if (fetchError || !child) {
+        return { valid: false };
+      }
+
+      const isValid = await this.verifyPin(pin, child.pin_hash);
+      return { valid: isValid };
+    } catch (error) {
+      console.error('PIN verification error:', error);
+      return { valid: false };
+    }
+  },
+
   async hashPin(pin) {
     try {
       const response = await supabase.functions.invoke('hash-child-pin', {

@@ -22,28 +22,36 @@ export default function ChildLogin({ onBackToParentLogin }) {
     setLoading(true);
 
     try {
-      const childProfile = await childProfilesAPI.authenticateChild(username, pin);
+      const { data: childProfile, error: lookupError } = await firstsavvy
+        .from('child_profiles')
+        .select('*')
+        .eq('username', username.toLowerCase())
+        .single();
+
+      if (lookupError || !childProfile) {
+        throw new Error('Invalid username or PIN');
+      }
 
       if (!childProfile.user_id) {
         throw new Error('This child account has not been set up yet. Please contact your parent.');
       }
 
+      const verifyResult = await childProfilesAPI.verifyChildPin(childProfile.id, pin);
+
+      if (!verifyResult.valid) {
+        throw new Error('Invalid username or PIN');
+      }
+
+      const childEmail = `child_${childProfile.id}@firstsavvy.internal`;
+
       const { data: authData, error: authError } = await firstsavvy.auth.signInWithPassword({
-        email: childProfile.email,
-        password: childProfile.user_id
+        email: childEmail,
+        password: pin
       });
 
       if (authError) {
-        throw new Error('Failed to authenticate. Please contact your parent.');
+        throw new Error('Invalid username or PIN');
       }
-
-      sessionStorage.setItem('viewingChildProfile', JSON.stringify({
-        childProfileId: childProfile.id,
-        profileId: childProfile.parent_profile_id,
-        childName: childProfile.child_name,
-        display_name: childProfile.display_name,
-        loginType: 'direct'
-      }));
 
       navigate('/Dashboard');
     } catch (err) {

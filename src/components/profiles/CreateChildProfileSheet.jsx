@@ -216,7 +216,7 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         pin: '',
       });
 
-      toast.success('Child profile created successfully');
+      toast.success('Child profile and login account created successfully');
       onOpenChange(false);
       if (onChildCreated) {
         onChildCreated();
