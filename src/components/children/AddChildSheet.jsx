@@ -118,12 +118,8 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
-    display_name: '',
     date_of_birth: '',
     sex: '',
-    username: '',
-    pin: '',
-    email: '',
     avatar_icon: 'User',
     avatar_color: '#52A5CE',
     notes: '',
@@ -175,33 +171,14 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
       return;
     }
 
-    if (!formData.username.trim()) {
-      toast.error('Please enter a username');
-      return;
-    }
-
-    if (formData.username.length < 3 || formData.username.length > 30) {
-      toast.error('Username must be between 3 and 30 characters');
-      return;
-    }
-
-    if (!formData.pin || formData.pin.length !== 4) {
-      toast.error('PIN must be exactly 4 digits');
-      return;
-    }
-
     try {
       setLoading(true);
       await childProfilesAPI.createChildProfile(profileId, {
         first_name: formData.first_name,
         last_name: formData.last_name,
-        display_name: formData.display_name || null,
         child_name: `${formData.first_name} ${formData.last_name}`,
         date_of_birth: formData.date_of_birth || null,
         sex: formData.sex || null,
-        username: formData.username,
-        pin_plaintext: formData.pin,
-        email: formData.email || null,
         avatar_icon: formData.avatar_icon,
         avatar_color: formData.avatar_color,
         notes: formData.notes || null,
@@ -210,12 +187,8 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
       setFormData({
         first_name: '',
         last_name: '',
-        display_name: '',
         date_of_birth: '',
         sex: '',
-        username: '',
-        pin: '',
-        email: '',
         avatar_icon: 'User',
         avatar_color: '#52A5CE',
         notes: '',
@@ -225,7 +198,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
       onChildAdded();
     } catch (error) {
       console.error('Error creating child:', error);
-      toast.error(error.message || 'Failed to create child profile');
+      toast.error('Failed to create child profile');
     } finally {
       setLoading(false);
     }
@@ -237,7 +210,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
         <SheetHeader>
           <SheetTitle>Add Child Profile</SheetTitle>
           <SheetDescription>
-            Create a child profile to teach financial responsibility
+            Create a new child profile to start teaching financial responsibility
           </SheetDescription>
         </SheetHeader>
 
@@ -256,6 +229,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
                   maxLength={50}
                   required
                 />
+                <p className="text-xs text-slate-500">{formData.first_name.length}/50</p>
               </div>
 
               <div className="space-y-2">
@@ -268,21 +242,8 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
                   maxLength={50}
                   required
                 />
+                <p className="text-xs text-slate-500">{formData.last_name.length}/50</p>
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="display_name">Display Name</Label>
-              <Input
-                id="display_name"
-                value={formData.display_name}
-                onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
-                placeholder="Nickname or preferred name (optional)"
-                maxLength={50}
-              />
-              <p className="text-xs text-slate-500">
-                Leave blank to use first name
-              </p>
             </div>
 
             <div className="space-y-2">
@@ -300,71 +261,19 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="sex">Sex</Label>
+              <Label htmlFor="sex">Sex (Optional)</Label>
               <Select
                 value={formData.sex}
                 onValueChange={(value) => setFormData({ ...formData, sex: value })}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
+                  <SelectValue placeholder="Select sex" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="male">Male</SelectItem>
                   <SelectItem value="female">Female</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-          </div>
-
-          <Separator />
-
-          <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-slate-700">Login Credentials</h3>
-            <p className="text-xs text-slate-500">
-              Set up a username and PIN for your child to log in directly
-            </p>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2">
-                <Label htmlFor="username">Username *</Label>
-                <Input
-                  id="username"
-                  value={formData.username}
-                  onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '') })}
-                  placeholder="username"
-                  maxLength={30}
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="pin">PIN (4 digits) *</Label>
-                <Input
-                  id="pin"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]{4}"
-                  value={formData.pin}
-                  onChange={(e) => setFormData({ ...formData, pin: e.target.value.replace(/\D/g, '').slice(0, 4) })}
-                  placeholder="1234"
-                  maxLength={4}
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email (Optional)</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="child@example.com"
-              />
-              <p className="text-xs text-slate-500">
-                Can be used as an alternative login method
-              </p>
             </div>
           </div>
 
