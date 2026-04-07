@@ -125,7 +125,8 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
         await childProfilesAPI.setChildPin(child.id, pinValue);
       }
 
-      await childProfilesAPI.updateChildProfile(child.id, formData);
+      const { pin, ...updateData } = formData;
+      await childProfilesAPI.updateChildProfile(child.id, updateData);
       toast.success('Changes saved successfully');
       setOriginalData(formData);
       setHasChanges(false);
