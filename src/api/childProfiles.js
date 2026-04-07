@@ -91,6 +91,7 @@ export const childProfilesAPI = {
         first_name: childData.first_name,
         last_name: childData.last_name,
         child_name: childData.child_name,
+        display_name: childData.display_name || null,
         date_of_birth: childData.date_of_birth,
         gender: childData.sex || childData.gender,
         avatar_url: avatarUrl,

@@ -118,6 +118,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    display_name: '',
     date_of_birth: '',
     sex: '',
     avatar_icon: 'User',
@@ -177,6 +178,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
         first_name: formData.first_name,
         last_name: formData.last_name,
         child_name: `${formData.first_name} ${formData.last_name}`,
+        display_name: formData.display_name || null,
         date_of_birth: formData.date_of_birth || null,
         sex: formData.sex || null,
         avatar_icon: formData.avatar_icon,
@@ -187,6 +189,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
       setFormData({
         first_name: '',
         last_name: '',
+        display_name: '',
         date_of_birth: '',
         sex: '',
         avatar_icon: 'User',
@@ -244,6 +247,19 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
                 />
                 <p className="text-xs text-slate-500">{formData.last_name.length}/50</p>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="display_name">Display Name</Label>
+              <Input
+                id="display_name"
+                value={formData.display_name}
+                onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                placeholder={`${formData.first_name} ${formData.last_name}`.trim() || 'Display name'}
+              />
+              <p className="text-xs text-slate-500">
+                Leave blank to use first and last name
+              </p>
             </div>
 
             <div className="space-y-2">

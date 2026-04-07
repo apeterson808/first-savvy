@@ -38,6 +38,7 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
   const [formData, setFormData] = useState({
     first_name: '',
     last_name: '',
+    display_name: '',
     date_of_birth: '',
     sex: '',
     avatar: { icon: 'Circle', color: '#52A5CE' },
@@ -193,6 +194,7 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
         first_name: formData.first_name,
         last_name: formData.last_name,
         child_name: `${formData.first_name} ${formData.last_name}`,
+        display_name: formData.display_name || null,
         date_of_birth: formData.date_of_birth || null,
         sex: formData.sex || null,
         avatar: formData.avatar,
@@ -207,6 +209,7 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
       setFormData({
         first_name: '',
         last_name: '',
+        display_name: '',
         date_of_birth: '',
         sex: '',
         avatar: { icon: 'Circle', color: '#52A5CE' },
@@ -378,6 +381,19 @@ export function CreateChildProfileSheet({ open, onOpenChange, onChildCreated, pr
                   required
                 />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="display-name">Display Name</Label>
+              <Input
+                id="display-name"
+                value={formData.display_name}
+                onChange={(e) => setFormData({ ...formData, display_name: e.target.value })}
+                placeholder={`${formData.first_name} ${formData.last_name}`.trim() || 'Display name'}
+              />
+              <p className="text-xs text-slate-500">
+                Leave blank to use first and last name
+              </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
