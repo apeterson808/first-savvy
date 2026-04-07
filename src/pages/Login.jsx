@@ -26,7 +26,7 @@ export default function Login() {
     }).catch(() => {});
   }, [navigate]);
 
-  const handleEmailAuth = async (e, forChild = false) => {
+  const handleEmailAuth = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
@@ -34,11 +34,7 @@ export default function Login() {
     try {
       if (isLogin) {
         await firstsavvy.auth.signIn(email, password);
-        if (forChild) {
-          navigate('/select-child-profile');
-        } else {
-          navigate('/Dashboard');
-        }
+        navigate('/Dashboard');
       } else {
         await firstsavvy.auth.signUp(email, password, fullName);
         navigate('/Dashboard');
@@ -147,75 +143,43 @@ export default function Login() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="email">Username</Label>
+              <Label htmlFor="email">{isLogin ? 'Email or Username' : 'Email'}</Label>
               <Input
                 id="email"
-                type="text"
-                placeholder="username"
+                type={isLogin ? 'text' : 'email'}
+                placeholder={isLogin ? 'you@example.com or username' : 'you@example.com'}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="username"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{isLogin ? 'Password or PIN' : 'Password'}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder={isLogin ? '•••••••• or PIN' : '••••••••'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={loading}
+                autoComplete="current-password"
               />
             </div>
 
-            {isLogin ? (
-              <div className="flex gap-2">
-                <Button type="submit" className="flex-1" disabled={loading}>
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Please wait
-                    </>
-                  ) : (
-                    'Sign In'
-                  )}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="flex-1"
-                  disabled={loading}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleEmailAuth(e, true);
-                  }}
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Please wait
-                    </>
-                  ) : (
-                    'Sign In for Child'
-                  )}
-                </Button>
-              </div>
-            ) : (
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Please wait
-                  </>
-                ) : (
-                  'Sign Up'
-                )}
-              </Button>
-            )}
+            <Button type="submit" className="w-full" disabled={loading}>
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Please wait
+                </>
+              ) : (
+                isLogin ? 'Sign In' : 'Sign Up'
+              )}
+            </Button>
           </form>
 
           <div className="text-center text-sm">

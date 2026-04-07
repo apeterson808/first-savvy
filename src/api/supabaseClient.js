@@ -301,8 +301,25 @@ export const createSupabaseClient = () => {
         if (error) throw error;
         return data;
       },
-      async signIn(email, password) {
-        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      async signIn(emailOrUsername, password) {
+        let loginEmail = emailOrUsername;
+
+        if (!emailOrUsername.includes('@')) {
+          const { data: childProfile, error: lookupError } = await supabase
+            .from('child_profiles')
+            .select('id')
+            .eq('username', emailOrUsername.toLowerCase())
+            .maybeSingle();
+
+          if (!lookupError && childProfile) {
+            loginEmail = `child_${childProfile.id}@firstsavvy.internal`;
+          }
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: loginEmail,
+          password
+        });
         if (error) throw error;
         return data;
       },
