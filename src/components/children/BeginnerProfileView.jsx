@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkles, Trophy, LogOut } from 'lucide-react';
+import { Star, Sparkles, Trophy } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -117,15 +117,6 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     }
   };
 
-  const handleLogout = async () => {
-    if (isParentViewingChild) {
-      sessionStorage.removeItem('viewingChildProfile');
-      window.location.href = '/Dashboard';
-    } else {
-      await firstsavvy.auth.signOut();
-      window.location.href = '/login';
-    }
-  };
 
   const tasksWithCompletions = tasks.map(task => {
     const taskCompletions = completions.filter(c => c.task_id === task.id);
@@ -154,15 +145,6 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-4 md:p-8 relative">
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={handleLogout}
-        className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-8 md:right-8 bg-white/90 hover:bg-white shadow-md z-10"
-      >
-        <LogOut className="w-4 h-4 sm:mr-2" />
-        <span className="hidden sm:inline">{isParentViewingChild ? 'Back to Parent' : 'Logout'}</span>
-      </Button>
 
       <AnimatePresence>
         {celebrationStars > 0 && (
