@@ -107,7 +107,7 @@ export default function ConnectionDetail() {
       await childProfilesAPI.deleteChildProfile(child.id);
       await refreshProfiles();
       toast.success('Profile deleted successfully');
-      navigate('/Connections');
+      navigate('/Contacts');
     } catch (error) {
       console.error('Error deleting profile:', error);
       toast.error('Failed to delete profile');
@@ -131,8 +131,8 @@ export default function ConnectionDetail() {
     return (
       <div className="text-center py-12">
         <p className="text-slate-600">Child not found</p>
-        <Button onClick={() => navigate('/Connections')} className="mt-4">
-          Back to Connections
+        <Button onClick={() => navigate('/Contacts')} className="mt-4">
+          Back to Contacts
         </Button>
       </div>
     );

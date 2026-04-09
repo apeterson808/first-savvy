@@ -38,7 +38,7 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
 
   const handleManageProfiles = () => {
     onOpenChange(false);
-    navigate('/Connections');
+    navigate('/Contacts');
   };
 
   const getInitials = (name) => {
@@ -103,7 +103,7 @@ export function ProfileSelector({ open, onOpenChange, onOpenChildTab }) {
         <DialogHeader>
           <DialogTitle>Open Profile</DialogTitle>
           <DialogDescription>
-            Select a profile to open. Create or manage profiles from the Connections page.
+            Select a profile to open. Create or manage profiles from the Contacts page.
           </DialogDescription>
         </DialogHeader>
 

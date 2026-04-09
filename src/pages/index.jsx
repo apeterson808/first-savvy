@@ -17,7 +17,6 @@ import Calendar from "./Calendar";
 import PasswordVault from "./PasswordVault";
 import Integrations from "./Integrations";
 import Affiliate from "./Affiliate";
-import Connections from "./Connections";
 import ConnectionDetail from "./ConnectionDetail";
 import ClaimProfile from "./ClaimProfile";
 import ChildProfileSelector from "@/components/children/ChildProfileSelector";
@@ -43,8 +42,6 @@ const PAGES = {
     CreditScore: CreditScore,
 
     Contacts: Contacts,
-
-    Connections: Connections,
 
     Integrations: Integrations,
 
@@ -110,8 +107,9 @@ export default function Pages() {
                     <Route path="/CreditScore" element={<CreditScore />} />
                     <Route path="/Contacts" element={<Contacts />} />
                     <Route path="/Contacts/:id" element={<ContactDetail />} />
-                    <Route path="/Connections" element={<Connections />} />
-                    <Route path="/Connections/:id" element={<ConnectionDetail />} />
+                    <Route path="/Contacts/family/:id" element={<ConnectionDetail />} />
+                    <Route path="/Connections" element={<Navigate to="/Contacts" replace />} />
+                    <Route path="/Connections/:id" element={<Navigate to="/Contacts" replace />} />
                     <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/PasswordVault" element={<PasswordVault />} />
                     <Route path="/Affiliate" element={<Affiliate />} />

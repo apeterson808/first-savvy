@@ -4,7 +4,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
-  Calendar, CreditCard, Banknote, Lock, Users, Cable, UserCheck,
+  Calendar, CreditCard, Banknote, Lock, Users, Cable,
   Menu, X, Bell, Search, LogOut, User, ChevronLeft, CheckCircle,
   Star, Settings, ArrowLeft, ArrowRight, RefreshCw, TrendingUp
 } from 'lucide-react';
@@ -103,7 +103,6 @@ export default function Layout({ children, currentPageName }) {
         { name: 'Net Worth', icon: Banknote, page: 'NetWorth', availableForChildProfile: false },
         { name: 'Investments', icon: TrendingUp, page: 'Investments', availableForChildProfile: false },
         { name: 'Contacts', icon: Users, page: 'Contacts', availableForChildProfile: false },
-        { name: 'Connections', icon: UserCheck, page: 'Connections', availableForChildProfile: false },
         { name: 'Integrations', icon: Cable, page: 'Integrations', availableForChildProfile: false },
         { name: 'Password Vault', icon: Lock, page: 'PasswordVault', availableForChildProfile: false },
         { name: 'Affiliate', icon: Users, page: 'Affiliate', availableForChildProfile: false }

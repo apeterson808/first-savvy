@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   Collapsible,
   CollapsibleContent,
@@ -19,9 +20,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X, Home, Briefcase } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
+import { CreateChildProfileSheet } from '@/components/profiles/CreateChildProfileSheet';
 import { useProfile } from '@/contexts/ProfileContext';
+import { supabase } from '@/api/supabaseClient';
+import { differenceInYears } from 'date-fns';
 import { toast } from "sonner";
 
 const ROWS_PER_PAGE = 10;
@@ -127,22 +131,84 @@ function ContactsTable({ contacts, isLoading, onContactClick, currentPage, setCu
 export default function Contacts() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showCreateChild, setShowCreateChild] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPages, setCurrentPages] = useState({});
   const [collapsedGroups, setCollapsedGroups] = useState({});
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingValue, setEditingValue] = useState('');
+  const [childProfiles, setChildProfiles] = useState([]);
+  const [businessProfiles, setBusinessProfiles] = useState([]);
+  const [profilesLoading, setProfilesLoading] = useState(true);
   const queryClient = useQueryClient();
-  const { activeProfile } = useProfile();
+  const { activeProfile, refreshProfiles } = useProfile();
 
   React.useEffect(() => {
     const handleProfileSwitch = () => {
       queryClient.invalidateQueries();
+      loadAllProfiles();
     };
 
     window.addEventListener('profileSwitched', handleProfileSwitch);
     return () => window.removeEventListener('profileSwitched', handleProfileSwitch);
   }, [queryClient]);
+
+  useEffect(() => {
+    loadAllProfiles();
+  }, [activeProfile?.id]);
+
+  const loadAllProfiles = async () => {
+    try {
+      setProfilesLoading(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: ownerProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('profile_type', 'personal')
+        .eq('is_deleted', false)
+        .maybeSingle();
+
+      if (!ownerProfile) return;
+
+      const { data: children } = await supabase
+        .from('child_profiles')
+        .select('*')
+        .eq('parent_profile_id', ownerProfile.id)
+        .order('child_name', { ascending: true });
+
+      const { data: businesses } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('profile_type', 'business')
+        .eq('is_deleted', false)
+        .order('display_name', { ascending: true });
+
+      setChildProfiles(children || []);
+      setBusinessProfiles(businesses || []);
+    } catch (error) {
+      console.error('Error loading profiles:', error);
+    } finally {
+      setProfilesLoading(false);
+    }
+  };
+
+  const getAge = (dateOfBirth) => {
+    if (!dateOfBirth) return null;
+    return differenceInYears(new Date(), new Date(dateOfBirth));
+  };
+
+  const getTierInfo = (level) => {
+    const tiers = {
+      1: { name: 'Basic Access', color: 'bg-slate-100 text-slate-700' },
+      2: { name: 'Rewards', color: 'bg-blue-100 text-blue-700' },
+      3: { name: 'Money', color: 'bg-green-100 text-green-700' },
+    };
+    return tiers[level] || tiers[1];
+  };
 
   const { data: contacts = [], isLoading } = useQuery({
     queryKey: ['contacts', activeProfile?.id],
@@ -253,6 +319,143 @@ export default function Contacts() {
           </Button>
         </div>
       </div>
+
+      <Card className="shadow-sm border-slate-200">
+        <CardHeader className="pb-2 pt-4 px-4 border-b">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Home className="w-4 h-4 text-blue-600" />
+              <CardTitle className="text-base font-semibold">Family</CardTitle>
+              <Badge variant="secondary" className="text-xs">{childProfiles.length}</Badge>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 text-xs"
+              onClick={() => setShowCreateChild(true)}
+            >
+              <Plus className="w-3 h-3 mr-1" />
+              Add Member
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {profilesLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
+            </div>
+          ) : childProfiles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
+                <Home className="w-5 h-5 text-blue-600" />
+              </div>
+              <p className="text-sm text-slate-500">No family members yet</p>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-2 h-7 text-xs"
+                onClick={() => setShowCreateChild(true)}
+              >
+                <Plus className="w-3 h-3 mr-1" />
+                Add Family Member
+              </Button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {childProfiles.map((child) => {
+                const age = getAge(child.date_of_birth);
+                const tierInfo = getTierInfo(child.current_permission_level);
+                const initials = child.child_name
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+
+                return (
+                  <div
+                    key={child.id}
+                    className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer transition-all bg-white"
+                    onClick={() => navigate(`/Contacts/family/${child.id}`)}
+                  >
+                    <Avatar className="w-12 h-12">
+                      <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-base">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="w-full">
+                      <p className="font-medium text-sm truncate">{child.child_name}</p>
+                      {age !== null && (
+                        <p className="text-xs text-slate-500">Age {age}</p>
+                      )}
+                      <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] rounded-full font-medium ${tierInfo.color}`}>
+                        {tierInfo.name}
+                      </span>
+                    </div>
+                    {!child.is_active && (
+                      <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-500">
+                        Inactive
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-sm border-slate-200">
+        <CardHeader className="pb-2 pt-4 px-4 border-b">
+          <div className="flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-orange-600" />
+            <CardTitle className="text-base font-semibold">Business</CardTitle>
+            <Badge variant="secondary" className="text-xs">{businessProfiles.length}</Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          {businessProfiles.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center mb-2">
+                <Briefcase className="w-5 h-5 text-orange-600" />
+              </div>
+              <p className="text-sm text-slate-500">No business profiles yet</p>
+              <p className="text-xs text-slate-400 mt-1">Coming soon</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+              {businessProfiles.map((biz) => {
+                const initials = (biz.display_name || 'B')
+                  .split(' ')
+                  .map(n => n[0])
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+
+                return (
+                  <div
+                    key={biz.id}
+                    className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer transition-all bg-white"
+                    onClick={() => navigate(`/Contacts/business/${biz.id}`)}
+                  >
+                    <Avatar className="w-12 h-12">
+                      <AvatarFallback className="bg-orange-100 text-orange-600 font-semibold text-base">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="w-full">
+                      <p className="font-medium text-sm truncate">{biz.display_name}</p>
+                      <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] rounded-full font-medium bg-orange-100 text-orange-700">
+                        Business
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <Collapsible open={!collapsedGroups['ungrouped']} onOpenChange={() => toggleGroupCollapse('ungrouped')}>
         <Card className="shadow-sm border-slate-200">
@@ -379,6 +582,16 @@ export default function Contacts() {
       <AddContactSheet
         open={dialogOpen}
         onOpenChange={setDialogOpen}
+      />
+
+      <CreateChildProfileSheet
+        open={showCreateChild}
+        onOpenChange={setShowCreateChild}
+        onChildCreated={async () => {
+          await loadAllProfiles();
+          await refreshProfiles();
+        }}
+        profileId={activeProfile?.id}
       />
     </div>
   );

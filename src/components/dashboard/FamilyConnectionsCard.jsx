@@ -58,7 +58,7 @@ export default function FamilyConnectionsCard() {
   };
 
   const handleChildClick = (child) => {
-    navigate(`/Connections/${child.id}`);
+    navigate(`/Contacts/family/${child.id}`);
   };
 
   const getInitials = (name) => {
@@ -96,7 +96,7 @@ export default function FamilyConnectionsCard() {
             <Button
               variant="link"
               className="text-xs p-0 h-auto text-sky-blue"
-              onClick={() => navigate('/Connections')}
+              onClick={() => navigate('/Contacts')}
             >
               Add family
             </Button>
@@ -124,7 +124,7 @@ export default function FamilyConnectionsCard() {
           <Button
             variant="link"
             className="text-xs p-0 h-auto text-sky-blue"
-            onClick={() => navigate('/Connections')}
+            onClick={() => navigate('/Contacts')}
           >
             View all
           </Button>
