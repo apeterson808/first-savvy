@@ -7,31 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Gift, Star, Trophy, IceCream, Gamepad, Tv, Book,
-  Pizza, Cake, Music, Film, PartyPopper, Heart,
-  Sparkles, Crown, Award, Smile, Candy
-} from 'lucide-react';
-
-const REWARD_ICONS = {
-  Gift, Star, Trophy, IceCream, Gamepad, Tv, Book,
-  Pizza, Cake, Music, Film, PartyPopper, Heart,
-  Sparkles, Crown, Award, Smile
-};
-
-const REWARD_ICON_NAMES = Object.keys(REWARD_ICONS);
-
-const REWARD_COLORS = [
-  { name: 'Gold', hex: '#EFCE7B' },
-  { name: 'Orange', hex: '#EF6F3C' },
-  { name: 'Pink', hex: '#FF7BAC' },
-  { name: 'Purple', hex: '#C8B6E2' },
-  { name: 'Blue', hex: '#52A5CE' },
-  { name: 'Green', hex: '#4DB8A8' },
-  { name: 'Coral', hex: '#FF9B82' },
-  { name: 'Teal', hex: '#4DB8A8' }
-];
+import AppearancePicker from '@/components/common/AppearancePicker';
 
 export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess }) {
   const { user } = useAuth();
@@ -44,7 +20,6 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [activeTab, setActiveTab] = useState('icon');
 
   const validateForm = () => {
     const newErrors = {};
@@ -120,8 +95,6 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
     onClose();
   };
 
-  const SelectedIcon = REWARD_ICONS[formData.icon] || Gift;
-
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
@@ -175,65 +148,15 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
 
           <div className="space-y-2">
             <Label>Icon & Color</Label>
-            <div className="flex items-center gap-3 mb-3">
-              <div
-                className="flex items-center justify-center w-12 h-12 rounded-lg"
-                style={{ backgroundColor: formData.color }}
-              >
-                <SelectedIcon className="w-6 h-6 text-white" />
-              </div>
-              <div className="text-sm text-muted-foreground">
-                Preview
-              </div>
-            </div>
-
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="icon">Icon</TabsTrigger>
-                <TabsTrigger value="color">Color</TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="icon" className="mt-3">
-                <div className="grid grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1">
-                  {REWARD_ICON_NAMES.map((iconName) => {
-                    const IconComponent = REWARD_ICONS[iconName];
-                    return (
-                      <button
-                        key={iconName}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, icon: iconName })}
-                        className={`p-2 rounded-md border-2 hover:bg-accent transition-colors ${
-                          formData.icon === iconName
-                            ? 'border-primary bg-accent'
-                            : 'border-transparent'
-                        }`}
-                      >
-                        <IconComponent className="w-5 h-5 mx-auto" />
-                      </button>
-                    );
-                  })}
-                </div>
-              </TabsContent>
-
-              <TabsContent value="color" className="mt-3">
-                <div className="grid grid-cols-4 gap-2">
-                  {REWARD_COLORS.map((color) => (
-                    <button
-                      key={color.hex}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, color: color.hex })}
-                      className={`h-12 rounded-md border-2 transition-all ${
-                        formData.color === color.hex
-                          ? 'border-primary scale-105'
-                          : 'border-transparent hover:scale-105'
-                      }`}
-                      style={{ backgroundColor: color.hex }}
-                      title={color.name}
-                    />
-                  ))}
-                </div>
-              </TabsContent>
-            </Tabs>
+            <AppearancePicker
+              inline
+              useTabs
+              showPreview
+              color={formData.color}
+              icon={formData.icon}
+              onColorChange={(c) => setFormData({ ...formData, color: c })}
+              onIconChange={(i) => setFormData({ ...formData, icon: i })}
+            />
           </div>
 
           <DialogFooter>
