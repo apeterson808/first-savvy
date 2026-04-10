@@ -5,7 +5,17 @@ import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, CheckCircle, Clock, XCircle, Star, Edit } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { TaskDialog } from './TaskDialog';
 
@@ -24,6 +34,7 @@ export function TasksTab({ childId, profileId, onUpdate }) {
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [isBeginnerProfile, setIsBeginnerProfile] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
+  const [deletingTask, setDeletingTask] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -89,6 +100,20 @@ export function TasksTab({ childId, profileId, onUpdate }) {
     } catch (error) {
       console.error('Error rejecting task:', error);
       toast.error('Failed to reject task');
+    }
+  };
+
+  const handleDeleteTask = async () => {
+    if (!deletingTask) return;
+    try {
+      await tasksAPI.deleteTask(deletingTask.id);
+      toast.success(`Task "${deletingTask.title}" deleted`);
+      setDeletingTask(null);
+      loadTasks();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      toast.error('Failed to delete task');
     }
   };
 
@@ -162,16 +187,26 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                         </div>
                       )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setEditingTask(task);
-                        setIsTaskDialogOpen(true);
-                      }}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setEditingTask(task);
+                          setIsTaskDialogOpen(true);
+                        }}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => setDeletingTask(task)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -242,6 +277,26 @@ export function TasksTab({ childId, profileId, onUpdate }) {
         onSuccess={handleTaskSuccess}
         task={editingTask}
       />
+
+      <AlertDialog open={!!deletingTask} onOpenChange={(open) => { if (!open) setDeletingTask(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingTask?.title}"? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleDeleteTask}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
