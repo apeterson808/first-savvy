@@ -80,6 +80,8 @@ const ICON_MAP = {
   Cigarette
 };
 
+export const PICKER_ICON_MAP = ICON_MAP;
+
 const ICON_NAMES = Object.keys(ICON_MAP);
 
 const CUSTOM_COLOR_PALETTE = [

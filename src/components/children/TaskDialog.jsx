@@ -9,19 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import AppearancePicker from '@/components/common/AppearancePicker';
+import AppearancePicker, { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import { Star } from 'lucide-react';
-import {
-  Trophy, Gift, Book, Home, Utensils, Car, Shirt,
-  Dumbbell, Scissors, Bike, Music, Gamepad, Apple, Briefcase,
-  PiggyBank, Lightbulb, Heart, Smile, GraduationCap, Wrench
-} from 'lucide-react';
-
-const ICON_MAP = {
-  Trophy, Star, Gift, Book, Home, Utensils, Car, Shirt,
-  Dumbbell, Scissors, Bike, Music, Gamepad, Apple, Briefcase,
-  PiggyBank, Lightbulb, Heart, Smile, GraduationCap, Wrench
-};
 
 export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, task = null }) {
   const { user } = useAuth();
@@ -210,7 +199,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
                   style={{ backgroundColor: formData.color }}
                 >
                   {(() => {
-                    const IconComp = ICON_MAP[formData.icon] || Star;
+                    const IconComp = PICKER_ICON_MAP[formData.icon] || Star;
                     return <IconComp className="w-6 h-6 text-white" />;
                   })()}
                 </button>
