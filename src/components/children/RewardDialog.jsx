@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { rewardsAPI } from '@/api/rewards';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
@@ -10,18 +10,38 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import AppearancePicker, { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 
-export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess }) {
+const DEFAULT_FORM = {
+  title: '',
+  description: '',
+  star_cost: 10,
+  icon: 'Gift',
+  color: '#EFCE7B'
+};
+
+export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess, reward }) {
   const { user } = useAuth();
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    star_cost: 10,
-    icon: 'Gift',
-    color: '#EFCE7B'
-  });
+  const isEditing = !!reward;
+  const [formData, setFormData] = useState(DEFAULT_FORM);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [pickerOpen, setPickerOpen] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (reward) {
+        setFormData({
+          title: reward.title || '',
+          description: reward.description || '',
+          star_cost: reward.star_cost || 10,
+          icon: reward.icon || 'Gift',
+          color: reward.color || '#EFCE7B',
+        });
+      } else {
+        setFormData(DEFAULT_FORM);
+      }
+      setErrors({});
+    }
+  }, [isOpen, reward]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -50,27 +70,28 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
     setLoading(true);
 
     try {
-      await rewardsAPI.createReward(profileId, {
-        title: formData.title,
-        description: formData.description || null,
-        star_cost: parseInt(formData.star_cost),
-        icon: formData.icon,
-        color: formData.color,
-        assigned_to_child_id: childId,
-        status: 'available',
-        created_by_user_id: user.id
-      });
-
-      toast.success(`Reward "${formData.title}" created`);
-
-      setFormData({
-        title: '',
-        description: '',
-        star_cost: 10,
-        icon: 'Gift',
-        color: '#EFCE7B'
-      });
-      setErrors({});
+      if (isEditing) {
+        await rewardsAPI.updateReward(reward.id, {
+          title: formData.title,
+          description: formData.description || null,
+          star_cost: parseInt(formData.star_cost),
+          icon: formData.icon,
+          color: formData.color,
+        });
+        toast.success(`Reward "${formData.title}" updated`);
+      } else {
+        await rewardsAPI.createReward(profileId, {
+          title: formData.title,
+          description: formData.description || null,
+          star_cost: parseInt(formData.star_cost),
+          icon: formData.icon,
+          color: formData.color,
+          assigned_to_child_id: childId,
+          status: 'available',
+          created_by_user_id: user.id
+        });
+        toast.success(`Reward "${formData.title}" created`);
+      }
 
       if (onSuccess) {
         onSuccess();
@@ -78,21 +99,14 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
 
       onClose();
     } catch (error) {
-      console.error('Error creating reward:', error);
-      toast.error('Failed to create reward');
+      console.error('Error saving reward:', error);
+      toast.error(`Failed to ${isEditing ? 'update' : 'create'} reward`);
     } finally {
       setLoading(false);
     }
   };
 
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      star_cost: 10,
-      icon: 'Gift',
-      color: '#EFCE7B'
-    });
     setErrors({});
     onClose();
   };
@@ -101,9 +115,11 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Create Reward</DialogTitle>
+          <DialogTitle>{isEditing ? 'Edit Reward' : 'Create Reward'}</DialogTitle>
           <DialogDescription>
-            Add a new reward that your child can redeem with stars.
+            {isEditing
+              ? 'Update the details for this reward.'
+              : 'Add a new reward that your child can redeem with stars.'}
           </DialogDescription>
         </DialogHeader>
 
@@ -158,7 +174,7 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
                   style={{ backgroundColor: formData.color }}
                 >
                   {(() => {
-                    const IconComp = PICKER_ICON_MAP[formData.icon];
+                    const IconComp = PICKER_ICON_MAP[formData.icon] || PICKER_ICON_MAP['Gift'];
                     return <IconComp className="w-6 h-6 text-white" />;
                   })()}
                 </button>
@@ -181,7 +197,7 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
-              {loading ? 'Creating...' : 'Create Reward'}
+              {loading ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Reward')}
             </Button>
           </DialogFooter>
         </form>

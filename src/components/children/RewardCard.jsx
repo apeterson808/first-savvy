@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Lock, Gift, Check, Sparkles } from 'lucide-react';
+import { Star, Lock, Gift, Check, Sparkles, MoreVertical, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { motion } from 'framer-motion';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import { getIconComponent } from '@/components/utils/iconMapper';
@@ -22,9 +29,12 @@ export function RewardCard({
   reward,
   starBalance,
   onRedeem,
+  onEdit,
+  onDelete,
   isRedeemed = false
 }) {
   const [showRedeemDialog, setShowRedeemDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const canAfford = starBalance >= reward.star_cost;
   const progress = Math.min((starBalance / reward.star_cost) * 100, 100);
@@ -74,9 +84,38 @@ export function RewardCard({
                   <h3 className="font-semibold text-base sm:text-lg text-slate-900 leading-tight break-words">
                     {reward.title}
                   </h3>
-                  <div className="flex items-center gap-1 text-amber-500 font-bold text-base sm:text-lg shrink-0">
-                    <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
-                    {reward.star_cost}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 text-amber-500 font-bold text-base sm:text-lg">
+                      <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
+                      {reward.star_cost}
+                    </div>
+                    {(onEdit || onDelete) && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-400 hover:text-slate-600">
+                            <MoreVertical className="w-4 h-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          {onEdit && (
+                            <DropdownMenuItem onClick={() => onEdit(reward)}>
+                              <Pencil className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          {onEdit && onDelete && <DropdownMenuSeparator />}
+                          {onDelete && (
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onClick={() => setShowDeleteDialog(true)}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
                   </div>
                 </div>
                 {reward.description && (
@@ -144,6 +183,26 @@ export function RewardCard({
           </CardContent>
         </Card>
       </motion.div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Reward?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-semibold text-slate-900">{reward.title}</span>? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => { onDelete(reward.id); setShowDeleteDialog(false); }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showRedeemDialog} onOpenChange={setShowRedeemDialog}>
         <AlertDialogContent>

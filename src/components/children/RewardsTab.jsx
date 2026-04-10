@@ -13,6 +13,7 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
   const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isRewardDialogOpen, setIsRewardDialogOpen] = useState(false);
+  const [editingReward, setEditingReward] = useState(null);
 
   useEffect(() => {
     loadRewardsData();
@@ -55,7 +56,7 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Reward Catalog</h3>
-          <Button size="sm" onClick={() => setIsRewardDialogOpen(true)}>
+          <Button size="sm" onClick={() => { setEditingReward(null); setIsRewardDialogOpen(true); }}>
             <Plus className="mr-2 h-4 w-4" />
             Add Reward
           </Button>
@@ -81,6 +82,17 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
                 key={reward.id}
                 reward={reward}
                 starBalance={child?.stars_balance ?? 0}
+                onEdit={(r) => { setEditingReward(r); setIsRewardDialogOpen(true); }}
+                onDelete={async (rewardId) => {
+                  try {
+                    await rewardsAPI.deleteReward(rewardId);
+                    toast.success('Reward deleted');
+                    loadRewardsData();
+                    if (onUpdate) onUpdate();
+                  } catch (error) {
+                    toast.error('Failed to delete reward');
+                  }
+                }}
                 onRedeem={async (rewardId) => {
                   try {
                     await rewardsAPI.redeemReward(childId, rewardId);
@@ -135,10 +147,11 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
 
       <RewardDialog
         isOpen={isRewardDialogOpen}
-        onClose={() => setIsRewardDialogOpen(false)}
+        onClose={() => { setIsRewardDialogOpen(false); setEditingReward(null); }}
         profileId={profileId}
         childId={childId}
         onSuccess={handleRewardSuccess}
+        reward={editingReward}
       />
     </div>
   );
