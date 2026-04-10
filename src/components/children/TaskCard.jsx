@@ -119,11 +119,10 @@ export function TaskCard({
               <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                 <div
                   className="p-2 sm:p-3 rounded-lg shrink-0"
-                  style={{ backgroundColor: task.color ? `${task.color}20` : '#EFF6FF' }}
+                  style={{ backgroundColor: task.color || '#3B82F6' }}
                 >
                   <IconComponent
-                    className="w-5 h-5 sm:w-6 sm:h-6"
-                    style={{ color: task.color || '#3B82F6' }}
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
