@@ -167,7 +167,6 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
                 <AppearancePicker
                   inline
                   useTabs
-                  showPreview
                   color={formData.color}
                   icon={formData.icon}
                   onColorChange={(c) => setFormData({ ...formData, color: c })}
