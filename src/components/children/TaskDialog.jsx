@@ -221,8 +221,8 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
                   useTabs
                   color={formData.color}
                   icon={formData.icon}
-                  onColorChange={(c) => setFormData({ ...formData, color: c })}
-                  onIconChange={(i) => setFormData({ ...formData, icon: i })}
+                  onColorChange={(c) => setFormData(prev => ({ ...prev, color: c }))}
+                  onIconChange={(i) => setFormData(prev => ({ ...prev, icon: i }))}
                 />
               </PopoverContent>
             </Popover>
