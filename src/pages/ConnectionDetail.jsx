@@ -150,7 +150,7 @@ export default function ConnectionDetail() {
         </TabsContent>
 
         <TabsContent value="rewards" className="flex-1 mt-0 pb-6">
-          <RewardsTab childId={child.id} child={child} onUpdate={loadChildData} />
+          <RewardsTab childId={child.id} child={child} profileId={child.parent_profile_id} onUpdate={loadChildData} />
         </TabsContent>
 
         <TabsContent value="activity" className="flex-1 mt-0 pb-6">

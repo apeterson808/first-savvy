@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useProfile } from '@/contexts/ProfileContext';
 import { rewardsAPI } from '@/api/rewards';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,8 +7,7 @@ import { Plus, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import { RewardDialog } from './RewardDialog';
 
-export function RewardsTab({ childId, child, onUpdate }) {
-  const { selectedProfile } = useProfile();
+export function RewardsTab({ childId, child, profileId, onUpdate }) {
   const [rewards, setRewards] = useState([]);
   const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,14 +18,14 @@ export function RewardsTab({ childId, child, onUpdate }) {
   }, [childId]);
 
   const loadRewardsData = async () => {
-    if (!selectedProfile?.id || !childId) {
+    if (!profileId || !childId) {
       setLoading(false);
       return;
     }
     try {
       setLoading(true);
       const [rewardsData, redemptionsData] = await Promise.all([
-        rewardsAPI.getRewards(selectedProfile.id),
+        rewardsAPI.getRewards(profileId),
         rewardsAPI.getRedemptions(childId),
       ]);
       setRewards(rewardsData || []);
@@ -156,7 +154,7 @@ export function RewardsTab({ childId, child, onUpdate }) {
       <RewardDialog
         isOpen={isRewardDialogOpen}
         onClose={() => setIsRewardDialogOpen(false)}
-        profileId={selectedProfile?.id}
+        profileId={profileId}
         childId={childId}
         onSuccess={handleRewardSuccess}
       />
