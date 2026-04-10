@@ -239,8 +239,11 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
                   })()}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-72 p-4" align="start">
+              <PopoverContent className="w-80 p-0" align="start">
                 <AppearancePicker
+                  inline
+                  useTabs
+                  showPreview
                   color={formData.color}
                   icon={formData.icon}
                   onColorChange={(c) => setFormData({ ...formData, color: c })}
