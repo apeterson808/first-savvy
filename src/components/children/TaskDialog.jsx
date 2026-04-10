@@ -219,7 +219,6 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
                 <AppearancePicker
                   inline
                   useTabs
-                  showPreview
                   color={formData.color}
                   icon={formData.icon}
                   onColorChange={(c) => setFormData({ ...formData, color: c })}
