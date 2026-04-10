@@ -8,83 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
-import AppearancePicker from '@/components/common/AppearancePicker';
-import { Circle } from 'lucide-react';
-import {
-  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
-  Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
-  Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
-  Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
-  Shirt, Watch, Scissors, Paintbrush, Palette,
-  Gift, PartyPopper, Beer, Pizza, IceCream, Cake,
-  Bus, Train, Bike, Fuel, Wrench, Hammer,
-  Lightbulb, Zap, Droplet, Wifi, Phone, Mail,
-  ShoppingBag, Package, Tag, Store, Building, Factory,
-  Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
-  Moon, Star, Sparkles, Crown, Trophy, Award,
-  Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Baby,
-  Sandwich, Salad, Soup, Wine, CupSoda, Cherry, Carrot, Croissant, Milk,
-  ChefHat, UtensilsCrossed, CookingPot, ConciergeBell,
-  Truck, Ship, Sailboat, Rocket, Ambulance,
-  Navigation, MapPin, Compass,
-  Sofa, Bed, Bath, Refrigerator, WashingMachine, AirVent, Heater, Fan,
-  Drill, PaintRoller, Ruler, Shovel, Key,
-  Flame, Thermometer, BatteryCharging,
-  ShoppingBasket, Ticket, Receipt, Banknote, Coins, HandCoins,
-  Barcode, QrCode, Percent, BadgeDollarSign,
-  Syringe, Glasses, Bandage,
-  Droplets, Wind, TreePine,
-  Popcorn, Guitar, Piano,
-  Mountain, Tent, Footprints,
-  TrendingDown, Calculator, FileText, ChartBar, ChartLine, ChartPie,
-  Globe, Handshake, Users, UserPlus, Building2,
-  Smile, Flower,
-  School, BookOpen, Bookmark, Library, Pencil, PenTool, NotebookPen,
-  Repeat, RefreshCw, Calendar, Bell, Newspaper,
-  MessageCircle, Send, Monitor,
-  Rabbit, Squirrel,
-  AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
-  Cigarette
-} from 'lucide-react';
-
-const ICON_MAP = {
-  Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
-  Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
-  Briefcase, DollarSign, CreditCard, Wallet, PiggyBank, TrendingUp,
-  Heart, Activity, Pill, Stethoscope, Dumbbell, Apple,
-  Shirt, Watch, Scissors, Paintbrush, Palette,
-  Gift, PartyPopper, Beer, Pizza, IceCream, Cake,
-  Bus, Train, Bike, Fuel, Wrench, Hammer,
-  Lightbulb, Zap, Droplet, Wifi, Phone, Mail,
-  ShoppingBag, Package, Tag, Store, Building, Factory,
-  Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
-  Moon, Star, Sparkles, Crown, Trophy, Award,
-  Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby,
-  Sandwich, Salad, Soup, Wine, CupSoda, Cherry, Carrot, Croissant, Milk,
-  ChefHat, UtensilsCrossed, CookingPot, ConciergeBell,
-  Truck, Ship, Sailboat, Rocket, Ambulance,
-  Navigation, MapPin, Compass,
-  Sofa, Bed, Bath, Refrigerator, WashingMachine, AirVent, Heater, Fan,
-  Drill, PaintRoller, Ruler, Shovel, Key,
-  Flame, Thermometer, BatteryCharging,
-  ShoppingBasket, Ticket, Receipt, Banknote, Coins, HandCoins,
-  Barcode, QrCode, Percent, BadgeDollarSign,
-  Syringe, Glasses, Bandage,
-  Droplets, Wind, TreePine,
-  Popcorn, Guitar, Piano,
-  Mountain, Tent, Footprints,
-  TrendingDown, Calculator, FileText, ChartBar, ChartLine, ChartPie,
-  Globe, Handshake, Users, UserPlus, Building2,
-  Smile, Flower,
-  School, BookOpen, Bookmark, Library, Pencil, PenTool, NotebookPen,
-  Repeat, RefreshCw, Calendar, Bell, Newspaper,
-  MessageCircle, Send, Monitor,
-  Rabbit, Squirrel,
-  AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
-  Cigarette
-};
+import AppearancePicker, { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 
 export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess }) {
   const { user } = useAuth();
@@ -234,7 +158,7 @@ export function RewardDialog({ isOpen, onClose, profileId, childId, onSuccess })
                   style={{ backgroundColor: formData.color }}
                 >
                   {(() => {
-                    const IconComp = ICON_MAP[formData.icon] || Circle;
+                    const IconComp = PICKER_ICON_MAP[formData.icon];
                     return <IconComp className="w-6 h-6 text-white" />;
                   })()}
                 </button>
