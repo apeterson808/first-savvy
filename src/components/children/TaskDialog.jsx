@@ -3,12 +3,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useProfile } from '@/contexts/ProfileContext';
 import { tasksAPI } from '@/api/tasks';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import AppearancePicker from '@/components/common/AppearancePicker';
+import { Star } from 'lucide-react';
+import {
+  Trophy, Gift, Book, Home, Utensils, Car, Shirt,
+  Dumbbell, Scissors, Bike, Music, Gamepad, Apple, Briefcase,
+  PiggyBank, Lightbulb, Heart, Smile, GraduationCap, Wrench
+} from 'lucide-react';
+
+const ICON_MAP = {
+  Trophy, Star, Gift, Book, Home, Utensils, Car, Shirt,
+  Dumbbell, Scissors, Bike, Music, Gamepad, Apple, Briefcase,
+  PiggyBank, Lightbulb, Heart, Smile, GraduationCap, Wrench
+};
 
 export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, task = null }) {
   const { user } = useAuth();
@@ -189,15 +202,31 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
 
           <div className="space-y-2">
             <Label>Icon & Color</Label>
-            <AppearancePicker
-              inline
-              useTabs
-              showPreview
-              color={formData.color}
-              icon={formData.icon}
-              onColorChange={(c) => setFormData({ ...formData, color: c })}
-              onIconChange={(i) => setFormData({ ...formData, icon: i })}
-            />
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="w-12 h-12 rounded-lg flex items-center justify-center hover:opacity-80 transition-opacity shadow-sm border border-slate-200"
+                  style={{ backgroundColor: formData.color }}
+                >
+                  {(() => {
+                    const IconComp = ICON_MAP[formData.icon] || Star;
+                    return <IconComp className="w-6 h-6 text-white" />;
+                  })()}
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-80 p-0" align="start">
+                <AppearancePicker
+                  inline
+                  useTabs
+                  showPreview
+                  color={formData.color}
+                  icon={formData.icon}
+                  onColorChange={(c) => setFormData({ ...formData, color: c })}
+                  onIconChange={(i) => setFormData({ ...formData, icon: i })}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           <DialogFooter>
