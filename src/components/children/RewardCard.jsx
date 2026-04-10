@@ -72,12 +72,22 @@ export function RewardCard({
         >
           <CardContent className="pt-4 sm:pt-5 px-4 sm:px-5 pb-4 sm:pb-5">
             <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
-              <div
-                className="p-2 sm:p-3 rounded-lg shrink-0"
-                style={{ backgroundColor: reward.color || '#f59e0b' }}
-              >
-                <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-              </div>
+              {reward.image_url ? (
+                <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg shrink-0 overflow-hidden border border-slate-200">
+                  <img
+                    src={reward.image_url}
+                    alt={reward.title}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              ) : (
+                <div
+                  className="p-2 sm:p-3 rounded-lg shrink-0"
+                  style={{ backgroundColor: reward.color || '#f59e0b' }}
+                >
+                  <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+              )}
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
