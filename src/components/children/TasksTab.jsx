@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { TaskDialog } from './TaskDialog';
+import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 
 const STATUS_COLORS = {
   pending: 'bg-slate-100 text-slate-800',
@@ -175,7 +176,19 @@ export function TasksTab({ childId, profileId, onUpdate }) {
               <Card key={task.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-3 flex-1">
+                    {(() => {
+                      const IconComp = PICKER_ICON_MAP[task.icon] || Star;
+                      return (
+                        <div
+                          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                          style={{ backgroundColor: task.color || '#52A5CE' }}
+                        >
+                          <IconComp className="w-4 h-4 text-white" />
+                        </div>
+                      );
+                    })()}
+                  <div className="space-y-1 flex-1">
                       <CardTitle className="text-base">{task.title}</CardTitle>
                       {task.description && (
                         <p className="text-sm text-slate-600">{task.description}</p>
@@ -187,6 +200,7 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                         </div>
                       )}
                     </div>
+                  </div>
                     <div className="flex items-center gap-1">
                       <Button
                         variant="ghost"
