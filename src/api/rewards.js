@@ -45,6 +45,7 @@ export const rewardsAPI = {
         profile_id: profileId,
         title: rewardData.title,
         description: rewardData.description,
+        star_cost: rewardData.star_cost || 0,
         points_cost: rewardData.points_cost || 0,
         cash_cost: rewardData.cash_cost || 0,
         category: rewardData.category,
@@ -56,6 +57,8 @@ export const rewardsAPI = {
         expires_at: rewardData.expires_at,
         age_restriction: rewardData.age_restriction,
         created_by_user_id: rewardData.created_by_user_id,
+        assigned_to_child_id: rewardData.assigned_to_child_id,
+        status: rewardData.status || 'available',
         metadata: rewardData.metadata,
       })
       .select()

@@ -20,14 +20,18 @@ export function RewardsTab({ childId, child, onUpdate }) {
   }, [childId]);
 
   const loadRewardsData = async () => {
+    if (!selectedProfile?.id || !childId) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const [rewardsData, redemptionsData] = await Promise.all([
         rewardsAPI.getRewards(selectedProfile.id),
         rewardsAPI.getRedemptions(childId),
       ]);
-      setRewards(rewardsData);
-      setRedemptions(redemptionsData);
+      setRewards(rewardsData || []);
+      setRedemptions(redemptionsData || []);
     } catch (error) {
       console.error('Error loading rewards:', error);
       toast.error('Failed to load rewards');
@@ -84,7 +88,12 @@ export function RewardsTab({ childId, child, onUpdate }) {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div>
-                      {reward.points_cost > 0 && (
+                      {reward.star_cost > 0 && (
+                        <span className="font-semibold text-amber-600">
+                          {reward.star_cost} stars
+                        </span>
+                      )}
+                      {reward.star_cost === 0 && reward.points_cost > 0 && (
                         <span className="font-semibold text-green-600">
                           {reward.points_cost} points
                         </span>
@@ -147,7 +156,7 @@ export function RewardsTab({ childId, child, onUpdate }) {
       <RewardDialog
         isOpen={isRewardDialogOpen}
         onClose={() => setIsRewardDialogOpen(false)}
-        profileId={selectedProfile.id}
+        profileId={selectedProfile?.id}
         childId={childId}
         onSuccess={handleRewardSuccess}
       />
