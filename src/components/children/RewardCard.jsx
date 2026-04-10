@@ -43,93 +43,71 @@ export function RewardCard({
     setShowRedeemDialog(false);
   };
 
+  const borderClass = isRedeemed
+    ? 'border-green-300'
+    : canAfford
+    ? 'border-amber-400 shadow-md shadow-amber-100'
+    : 'border-slate-200';
+
   return (
     <>
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3 }}
         whileHover={canAfford && !isRedeemed ? { scale: 1.02 } : {}}
       >
         <Card
-          className={`border-2 transition-all ${
-            isRedeemed
-              ? 'border-green-300 bg-green-50/50 opacity-75'
-              : canAfford
-              ? 'border-purple-400 shadow-lg shadow-purple-200 hover:shadow-xl'
-              : 'border-slate-300 opacity-60'
-          }`}
-          style={{
-            filter: !canAfford && !isRedeemed ? 'grayscale(70%)' : 'none',
-          }}
+          className={`border-2 transition-all ${borderClass} ${!canAfford && !isRedeemed ? 'opacity-60' : ''}`}
         >
-          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6 pb-4 sm:pb-6">
-            {reward.image_url && (
-              <div className="mb-3 sm:mb-4 rounded-lg overflow-hidden h-24 sm:h-32 bg-slate-100 relative">
-                <img
-                  src={reward.image_url}
-                  alt={reward.title}
-                  className="w-full h-full object-cover"
-                />
-                {!canAfford && !isRedeemed && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                    <Lock className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
-                  </div>
-                )}
-                {isRedeemed && (
-                  <div className="absolute inset-0 bg-green-500/40 flex items-center justify-center">
-                    <Check className="w-8 h-8 sm:w-12 sm:h-12 text-white" />
-                  </div>
-                )}
+          <CardContent className="pt-4 sm:pt-5 px-4 sm:px-5 pb-4 sm:pb-5">
+            <div className="flex items-start gap-3 sm:gap-4 mb-3 sm:mb-4">
+              <div
+                className="p-2 sm:p-3 rounded-lg shrink-0"
+                style={{ backgroundColor: reward.color || '#f59e0b' }}
+              >
+                <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
               </div>
-            )}
 
-            <div className="flex items-start justify-between mb-3 gap-2">
-              <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
-                <div
-                  className="p-2 sm:p-3 rounded-lg shrink-0"
-                  style={{ backgroundColor: reward.color || '#A855F7' }}
-                >
-                  <IconComponent
-                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
-                  />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-semibold text-base sm:text-lg text-slate-900 leading-tight break-words">
+                    {reward.title}
+                  </h3>
+                  <div className="flex items-center gap-1 text-amber-500 font-bold text-base sm:text-lg shrink-0">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-amber-400 text-amber-400" />
+                    {reward.star_cost}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-semibold text-base sm:text-lg text-slate-900 break-words">{reward.title}</h3>
-                  {reward.description && (
-                    <p className="text-xs sm:text-sm text-slate-600 mt-1 break-words">{reward.description}</p>
-                  )}
-                </div>
-              </div>
-              <div className="flex items-center gap-1 text-purple-600 font-bold text-lg sm:text-xl shrink-0">
-                <Star className="w-5 h-5 sm:w-6 sm:h-6 fill-purple-500" />
-                {reward.star_cost}
+                {reward.description && (
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5 break-words">{reward.description}</p>
+                )}
               </div>
             </div>
 
             {!isRedeemed && (
               <>
                 <div className="mb-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs sm:text-sm font-medium text-slate-700">
-                      {canAfford ? 'You can get this!' : `Need ${starsNeeded} more stars`}
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-xs font-medium text-slate-600">
+                      {canAfford ? 'You can get this!' : `${starsNeeded} more stars needed`}
                     </span>
-                    <span className="text-xs sm:text-sm text-slate-500">
+                    <span className="text-xs text-slate-400">
                       {starBalance} / {reward.star_cost}
                     </span>
                   </div>
-                  <Progress value={progress} className="h-2" />
+                  <Progress value={progress} className="h-1.5" />
                 </div>
 
                 <Button
                   onClick={handleRedeemClick}
                   disabled={!canAfford}
-                  className={`w-full text-sm sm:text-base ${
-                    canAfford
-                      ? 'bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600'
-                      : 'bg-slate-300'
-                  }`}
                   size="sm"
+                  className={`w-full text-sm ${
+                    canAfford
+                      ? 'bg-amber-500 hover:bg-amber-600 text-white'
+                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                  }`}
                 >
                   {canAfford ? (
                     <>
@@ -137,31 +115,29 @@ export function RewardCard({
                       Redeem Now
                     </>
                   ) : (
-                      <>
-                        <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
-                        Locked
-                      </>
-                    )}
+                    <>
+                      <Lock className="w-3 h-3 sm:w-4 sm:h-4 mr-2" />
+                      Locked
+                    </>
+                  )}
                 </Button>
               </>
             )}
 
             {isRedeemed && (
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-2 bg-green-100 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                  <span className="font-semibold text-green-700 text-sm sm:text-base">Redeemed!</span>
-                </div>
+              <div className="flex items-center justify-center gap-2 py-2 bg-green-50 rounded-lg border border-green-200">
+                <Check className="w-4 h-4 text-green-600" />
+                <span className="font-semibold text-green-700 text-sm">Redeemed!</span>
                 {reward.redeemed_at && (
-                  <span className="text-xs sm:text-sm text-green-600">
-                    on {new Date(reward.redeemed_at).toLocaleDateString()}
+                  <span className="text-xs text-green-500">
+                    {new Date(reward.redeemed_at).toLocaleDateString()}
                   </span>
                 )}
               </div>
             )}
 
             {reward.stock_quantity !== null && reward.stock_quantity > 0 && (
-              <Badge variant="outline" className="mt-2">
+              <Badge variant="outline" className="mt-2 text-xs">
                 {reward.stock_quantity} left
               </Badge>
             )}
@@ -173,18 +149,18 @@ export function RewardCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Sparkles className="w-6 h-6 text-purple-500" />
+              <Sparkles className="w-5 h-5 text-amber-500" />
               Redeem Reward?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-base">
               Are you sure you want to redeem{' '}
               <span className="font-semibold text-slate-900">{reward.title}</span> for{' '}
-              <span className="font-bold text-purple-600">{reward.star_cost} stars</span>?
-              <div className="mt-4 p-3 bg-purple-50 rounded-lg">
-                <p className="text-sm text-purple-900">
+              <span className="font-bold text-amber-600">{reward.star_cost} stars</span>?
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-sm text-amber-900">
                   You currently have: <span className="font-bold">{starBalance} stars</span>
                 </p>
-                <p className="text-sm text-purple-900">
+                <p className="text-sm text-amber-900">
                   After redemption: <span className="font-bold">{starBalance - reward.star_cost} stars</span>
                 </p>
               </div>
@@ -194,7 +170,7 @@ export function RewardCard({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleConfirmRedeem}
-              className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+              className="bg-amber-500 hover:bg-amber-600 text-white"
             >
               <Gift className="w-4 h-4 mr-2" />
               Redeem Now
