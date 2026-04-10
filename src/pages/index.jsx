@@ -17,6 +17,7 @@ import Calendar from "./Calendar";
 import PasswordVault from "./PasswordVault";
 import Integrations from "./Integrations";
 import Affiliate from "./Affiliate";
+import EstatePlanning from "./EstatePlanning";
 import ConnectionDetail from "./ConnectionDetail";
 import ClaimProfile from "./ClaimProfile";
 import ChildProfileSelector from "@/components/children/ChildProfileSelector";
@@ -48,6 +49,8 @@ const PAGES = {
     PasswordVault: PasswordVault,
 
     Affiliate: Affiliate,
+
+    EstatePlanning: EstatePlanning,
 
     Settings: Settings,
 
@@ -113,6 +116,7 @@ export default function Pages() {
                     <Route path="/Integrations" element={<Integrations />} />
                     <Route path="/PasswordVault" element={<PasswordVault />} />
                     <Route path="/Affiliate" element={<Affiliate />} />
+                    <Route path="/EstatePlanning" element={<EstatePlanning />} />
                     <Route path="/Rules" element={<Navigate to="/Banking?tab=rules" replace />} />
                     <Route path="/Settings" element={<Settings />} />
                 </Routes>
