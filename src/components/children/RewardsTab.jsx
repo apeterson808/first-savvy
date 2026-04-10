@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { rewardsAPI } from '@/api/rewards';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Award, Star } from 'lucide-react';
+import { Plus, Award } from 'lucide-react';
 import { toast } from 'sonner';
 import { RewardDialog } from './RewardDialog';
-import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
+import { RewardCard } from './RewardCard';
 
 export function RewardsTab({ childId, child, profileId, onUpdate }) {
   const [rewards, setRewards] = useState([]);
@@ -75,35 +75,24 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {rewards.map((reward) => {
-              const IconComp = PICKER_ICON_MAP[reward.icon] || PICKER_ICON_MAP['Gift'];
-              return (
-                <Card key={reward.id} className="overflow-hidden">
-                  <div
-                    className="flex items-center justify-center py-5"
-                    style={{ backgroundColor: reward.color || '#EFCE7B' }}
-                  >
-                    <IconComp className="w-8 h-8 text-white" />
-                  </div>
-                  <CardContent className="p-3">
-                    <p className="font-semibold text-sm leading-tight truncate">{reward.title}</p>
-                    {reward.description && (
-                      <p className="text-xs text-slate-500 mt-0.5 line-clamp-2">{reward.description}</p>
-                    )}
-                    <div className="flex items-center gap-1 mt-2">
-                      <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
-                      <span className="text-xs font-semibold text-amber-600">{reward.star_cost}</span>
-                    </div>
-                    {reward.stock_quantity !== null && (
-                      <Badge variant="outline" className="mt-1.5 text-xs px-1.5 py-0">
-                        {reward.stock_quantity} left
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+          <div className="space-y-3">
+            {rewards.map((reward) => (
+              <RewardCard
+                key={reward.id}
+                reward={reward}
+                starBalance={child?.star_balance ?? 0}
+                onRedeem={async (rewardId) => {
+                  try {
+                    await rewardsAPI.redeemReward(childId, rewardId);
+                    toast.success('Reward redeemed!');
+                    loadRewardsData();
+                    if (onUpdate) onUpdate();
+                  } catch (error) {
+                    toast.error('Failed to redeem reward');
+                  }
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
