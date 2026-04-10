@@ -15,6 +15,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { motion } from 'framer-motion';
+import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import { getIconComponent } from '@/components/utils/iconMapper';
 
 export function RewardCard({
@@ -29,7 +30,7 @@ export function RewardCard({
   const progress = Math.min((starBalance / reward.star_cost) * 100, 100);
   const starsNeeded = Math.max(reward.star_cost - starBalance, 0);
 
-  const IconComponent = reward.icon ? getIconComponent(reward.icon) : Gift;
+  const IconComponent = reward.icon ? (PICKER_ICON_MAP[reward.icon] || getIconComponent(reward.icon)) : Gift;
 
   const handleRedeemClick = () => {
     if (canAfford && !isRedeemed) {
@@ -87,13 +88,10 @@ export function RewardCard({
               <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                 <div
                   className="p-2 sm:p-3 rounded-lg shrink-0"
-                  style={{
-                    backgroundColor: reward.color ? `${reward.color}20` : '#F3E8FF',
-                  }}
+                  style={{ backgroundColor: reward.color || '#A855F7' }}
                 >
                   <IconComponent
-                    className="w-5 h-5 sm:w-6 sm:h-6"
-                    style={{ color: reward.color || '#A855F7' }}
+                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
                   />
                 </div>
                 <div className="flex-1 min-w-0">
