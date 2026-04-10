@@ -13,6 +13,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
+import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import { getIconComponent } from '@/components/utils/iconMapper';
 
 export function TaskCard({
@@ -34,7 +35,7 @@ export function TaskCard({
 
   const showCompletion = isPending;
 
-  const IconComponent = task.icon ? getIconComponent(task.icon) : Star;
+  const IconComponent = task.icon ? (PICKER_ICON_MAP[task.icon] || getIconComponent(task.icon)) : Star;
 
   const handleCompleteClick = () => {
     setShowCompleteDialog(true);
