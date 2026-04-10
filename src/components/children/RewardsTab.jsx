@@ -80,7 +80,7 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
               <RewardCard
                 key={reward.id}
                 reward={reward}
-                starBalance={child?.star_balance ?? 0}
+                starBalance={child?.stars_balance ?? 0}
                 onRedeem={async (rewardId) => {
                   try {
                     await rewardsAPI.redeemReward(childId, rewardId);
