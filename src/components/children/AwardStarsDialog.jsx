@@ -122,9 +122,9 @@ export function AwardStarsDialog({ open, onOpenChange, onAward, task = null, chi
           <Button
             onClick={handleAward}
             disabled={loading}
-            className="bg-yellow-500 hover:bg-yellow-600 text-white"
+            className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
           >
-            <Star className="w-4 h-4 mr-2 fill-white" />
+            <Star className="w-4 h-4 mr-2 fill-slate-900" />
             Award {stars} {stars === 1 ? 'Star' : 'Stars'}
           </Button>
         </DialogFooter>
