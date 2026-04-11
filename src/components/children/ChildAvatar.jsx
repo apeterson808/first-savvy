@@ -77,8 +77,22 @@ export default function ChildAvatar({ child, size = 'default', className }) {
     );
   }
 
-  const isColorAvatar = child?.avatar_url?.startsWith('color:');
-  const colorId = isColorAvatar ? child.avatar_url.replace('color:', '') : 'slate';
+  const avatarUrl = child?.avatar_url;
+  const isColorAvatar = avatarUrl?.startsWith('color:');
+  const isImageAvatar = avatarUrl && !isColorAvatar;
+
+  if (isImageAvatar) {
+    return (
+      <Avatar className={cn(sizeClasses[size], 'shadow-xl', className)}>
+        <AvatarImage src={avatarUrl} alt={child?.child_name || child?.first_name || 'Avatar'} />
+        <AvatarFallback className={cn('font-bold', AVATAR_COLORS.slate.bg, AVATAR_COLORS.slate.text)}>
+          {getInitials()}
+        </AvatarFallback>
+      </Avatar>
+    );
+  }
+
+  const colorId = isColorAvatar ? avatarUrl.replace('color:', '') : 'slate';
   const colorStyles = AVATAR_COLORS[colorId] || AVATAR_COLORS.slate;
 
   return (

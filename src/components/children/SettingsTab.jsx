@@ -164,11 +164,24 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
 
       if (newAvatar.type === 'color') {
         avatarUrl = `color:${newAvatar.value}`;
+      } else if (newAvatar.type === 'upload' && newAvatar.file) {
+        const file = newAvatar.file;
+        const ext = file.name.split('.').pop();
+        const path = `children/${child.id}/avatar.${ext}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(path, file, { upsert: true, contentType: file.type });
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
+        avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
       }
 
       if (avatarUrl) {
         await childProfilesAPI.updateChildProfile(child.id, { avatar_url: avatarUrl });
-        toast.success('Avatar color updated');
+        toast.success('Avatar updated');
         setAvatar(null);
         onUpdate();
       }
