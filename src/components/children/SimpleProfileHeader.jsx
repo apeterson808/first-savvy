@@ -36,10 +36,25 @@ export function SimpleProfileHeader({ child }) {
     return Math.floor((new Date() - new Date(child.date_of_birth)) / 31557600000);
   };
 
+  const isImageAvatar = child.avatar_url && !child.avatar_url.startsWith('color:');
   const avatarColor = getAvatarColor();
 
   return (
     <div className="flex items-center gap-4 mb-6">
+      {isImageAvatar ? (
+        <div className="h-20 w-20 rounded-full overflow-hidden flex-shrink-0">
+          <img
+            src={child.avatar_url}
+            alt={child.display_name || child.first_name || 'Avatar'}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.parentElement.classList.add(avatarColor.bg, avatarColor.text, 'flex', 'items-center', 'justify-center');
+              e.currentTarget.parentElement.innerHTML = `<span class="text-2xl font-bold">${getInitials()}</span>`;
+            }}
+          />
+        </div>
+      ) : (
       <div className={cn(
         'h-20 w-20 rounded-full flex items-center justify-center',
         avatarColor.bg,
@@ -47,6 +62,7 @@ export function SimpleProfileHeader({ child }) {
       )}>
         <span className="text-2xl font-bold">{getInitials()}</span>
       </div>
+      )}
       <div className="space-y-1.5">
         <h2 className="text-2xl font-semibold text-slate-900">
           {child.display_name || `${child.first_name} ${child.last_name}`}
