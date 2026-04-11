@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Users } from 'lucide-react';
 import { supabase } from '@/api/supabaseClient';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -145,6 +145,9 @@ export default function FamilyConnectionsCard() {
               >
                 <div className="relative">
                   <Avatar className="w-12 h-12">
+                    {child.avatar_url && !child.avatar_url.startsWith('color:') && (
+                      <AvatarImage src={child.avatar_url} alt={displayName} className="object-cover" />
+                    )}
                     <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm">
                       {initials}
                     </AvatarFallback>
