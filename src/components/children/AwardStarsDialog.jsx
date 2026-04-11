@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Star, Sparkles, Minus, Plus } from 'lucide-react';
+import { Star, Minus, Plus } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
@@ -43,7 +44,6 @@ export function AwardStarsDialog({ open, onOpenChange, onAward, task = null, chi
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-yellow-500" />
             {task ? 'Award Stars for Task' : 'Award One-Time Stars'}
           </DialogTitle>
           <DialogDescription>
@@ -84,9 +84,19 @@ export function AwardStarsDialog({ open, onOpenChange, onAward, task = null, chi
               >
                 <Minus className="w-4 h-4" />
               </Button>
-              <div className="flex items-center gap-2 min-w-[60px] justify-center">
-                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-                <span className="text-2xl font-bold text-slate-800">{stars}</span>
+              <div className="flex items-center gap-2">
+                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400 flex-shrink-0" />
+                <Input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={stars}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value, 10);
+                    if (!isNaN(val)) setStars(Math.min(50, Math.max(1, val)));
+                  }}
+                  className="w-16 text-center text-xl font-bold text-slate-800 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                />
               </div>
               <Button
                 type="button"
@@ -122,9 +132,9 @@ export function AwardStarsDialog({ open, onOpenChange, onAward, task = null, chi
           <Button
             onClick={handleAward}
             disabled={loading}
-            className="bg-yellow-500 hover:bg-yellow-600 text-slate-900 font-semibold"
+            className="bg-amber-500 hover:bg-amber-600 text-white font-semibold shadow-md shadow-amber-200"
           >
-            <Star className="w-4 h-4 mr-2 fill-slate-900" />
+            <Star className="w-4 h-4 mr-2 fill-white" />
             Award {stars} {stars === 1 ? 'Star' : 'Stars'}
           </Button>
         </DialogFooter>
