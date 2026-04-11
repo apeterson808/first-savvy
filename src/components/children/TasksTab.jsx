@@ -286,15 +286,17 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-yellow-400 text-yellow-700 hover:bg-yellow-50 h-8 text-xs"
-                        onClick={() => setAwardingTask(task)}
-                      >
-                        <Star className="mr-1 h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                        Award Stars
-                      </Button>
+                      {displayStatus !== 'completed' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-yellow-400 text-yellow-700 hover:bg-yellow-50 h-8 text-xs"
+                          onClick={() => setAwardingTask(task)}
+                        >
+                          <Star className="mr-1 h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                          Award Stars
+                        </Button>
+                      )}
                       {displayStatus === 'completed' && (
                         <>
                           <Button
