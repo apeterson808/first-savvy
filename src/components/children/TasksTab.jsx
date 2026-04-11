@@ -95,11 +95,16 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
     }
   };
 
-  const handleReject = async (taskId) => {
+  const handleReject = async (taskId, completionId = null) => {
     try {
-      await tasksAPI.rejectTask(taskId, null, 'Did not meet requirements');
+      if (isBeginnerProfile && completionId) {
+        await taskCompletionsAPI.rejectCompletion(completionId);
+      } else {
+        await tasksAPI.rejectTask(taskId, null, 'Did not meet requirements');
+      }
       toast.success('Task rejected');
       loadTasks();
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error('Error rejecting task:', error);
       toast.error('Failed to reject task');
@@ -304,7 +309,7 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                             variant="outline"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleReject(task.id);
+                              handleReject(task.id, completion?.id);
                             }}
                           >
                             <XCircle className="mr-2 h-4 w-4" />
