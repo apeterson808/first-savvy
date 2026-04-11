@@ -27,6 +27,18 @@ export const rewardsAPI = {
     return data;
   },
 
+  async getRewardsByChild(childId) {
+    const { data, error } = await supabase
+      .from('rewards')
+      .select('*')
+      .eq('assigned_to_child_id', childId)
+      .eq('is_active', true)
+      .order('points_cost', { ascending: true });
+
+    if (error) throw error;
+    return data;
+  },
+
   async getRewardById(rewardId) {
     const { data, error } = await supabase
       .from('rewards')

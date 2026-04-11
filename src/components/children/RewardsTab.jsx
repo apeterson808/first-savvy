@@ -27,7 +27,7 @@ export function RewardsTab({ childId, child, profileId, onUpdate }) {
     try {
       setLoading(true);
       const [rewardsData, redemptionsData] = await Promise.all([
-        rewardsAPI.getRewards(profileId),
+        rewardsAPI.getRewardsByChild(childId),
         rewardsAPI.getRedemptions(childId),
       ]);
       setRewards(rewardsData || []);
