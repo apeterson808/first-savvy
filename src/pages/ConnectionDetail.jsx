@@ -154,7 +154,7 @@ export default function ConnectionDetail() {
         </TabsContent>
 
         <TabsContent value="activity" className="flex-1 mt-0 pb-6">
-          <ActivityTab childId={child.id} />
+          <ActivityTab childId={child.id} child={child} />
         </TabsContent>
 
         <TabsContent value="settings" className="flex-1 mt-0 pb-6">
