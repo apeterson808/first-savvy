@@ -239,7 +239,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
               onChange={(e) => setSearch(e.target.value)}
               className="h-9 text-sm"
             />
-            <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+            <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1 touch-pan-y" onWheel={(e) => e.stopPropagation()}>
               {filteredIcons.map((iconName) => {
                 const Icon = ICON_MAP[iconName];
                 if (!Icon) return null;
@@ -308,7 +308,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
             onChange={(e) => setSearch(e.target.value)}
             className="h-9 text-sm mb-3"
           />
-          <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+          <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1 touch-pan-y" onWheel={(e) => e.stopPropagation()}>
             {filteredIcons.map((iconName) => {
               const Icon = ICON_MAP[iconName];
               if (!Icon) return null;
@@ -345,7 +345,7 @@ export default function AppearancePicker({ color, icon, onColorChange, onIconCha
             onChange={(e) => setSearch(e.target.value)}
             className="h-9 text-sm mb-3"
           />
-          <div className="grid grid-cols-6 gap-1 max-h-56 overflow-y-auto overflow-x-hidden pr-1" onWheel={(e) => e.stopPropagation()}>
+          <div className="grid grid-cols-6 gap-1 max-h-48 overflow-y-auto overflow-x-hidden pr-1 touch-pan-y" onWheel={(e) => e.stopPropagation()}>
             {filteredIcons.map((iconName) => {
               const Icon = ICON_MAP[iconName];
               if (!Icon) return null;

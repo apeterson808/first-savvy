@@ -140,7 +140,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90dvh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle>{task ? 'Edit Task' : 'Create Task'}</DialogTitle>
           <DialogDescription>
@@ -148,7 +148,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
@@ -204,7 +204,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
                   })()}
                 </button>
               </PopoverTrigger>
-              <PopoverContent className="w-80 p-0" align="start">
+              <PopoverContent className="w-[min(320px,calc(100vw-32px))] p-0" align="start" side="bottom" avoidCollisions={true}>
                 <AppearancePicker
                   inline
                   useTabs
