@@ -156,6 +156,46 @@ export const taskCompletionsAPI = {
     return data;
   },
 
+  async awardStarsDirectly(childProfileId, stars, note = null, taskId = null) {
+    const { data: childData, error: fetchError } = await supabase
+      .from('child_profiles')
+      .select('stars_balance')
+      .eq('id', childProfileId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    const newBalance = (childData.stars_balance || 0) + stars;
+
+    const { error: updateError } = await supabase
+      .from('child_profiles')
+      .update({ stars_balance: newBalance })
+      .eq('id', childProfileId);
+
+    if (updateError) throw updateError;
+
+    if (taskId) {
+      const { data: task } = await supabase
+        .from('tasks')
+        .select('repeatable, frequency')
+        .eq('id', taskId)
+        .maybeSingle();
+
+      const isRepeatable = task?.repeatable || task?.frequency === 'always_available';
+
+      await supabase
+        .from('tasks')
+        .update({
+          status: isRepeatable ? 'in_progress' : 'approved',
+          approved_at: new Date().toISOString(),
+          completed_at: null,
+        })
+        .eq('id', taskId);
+    }
+
+    return { stars_balance: newBalance, stars_awarded: stars };
+  },
+
   async getPendingCompletionsCount(childProfileId) {
     const { count, error } = await supabase
       .from('task_completions')

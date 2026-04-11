@@ -4,8 +4,7 @@ import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2 } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { TaskDialog } from './TaskDialog';
+import { AwardStarsDialog } from './AwardStarsDialog';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 
 const STATUS_COLORS = {
@@ -28,7 +28,7 @@ const STATUS_COLORS = {
   rejected: 'bg-red-100 text-red-800',
 };
 
-export function TasksTab({ childId, profileId, onUpdate }) {
+export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
   const [tasks, setTasks] = useState([]);
   const [completions, setCompletions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -36,6 +36,8 @@ export function TasksTab({ childId, profileId, onUpdate }) {
   const [isBeginnerProfile, setIsBeginnerProfile] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [deletingTask, setDeletingTask] = useState(null);
+  const [awardingTask, setAwardingTask] = useState(null);
+  const [showOneTimeAward, setShowOneTimeAward] = useState(false);
 
   useEffect(() => {
     loadTasks();
@@ -130,6 +132,31 @@ export function TasksTab({ childId, profileId, onUpdate }) {
     }
   };
 
+  const handleDirectAward = async (stars, note) => {
+    try {
+      await taskCompletionsAPI.awardStarsDirectly(childId, stars, note, awardingTask?.id);
+      toast.success(`Awarded ${stars} ${stars === 1 ? 'star' : 'stars'} to ${childName || 'child'}!`);
+      setAwardingTask(null);
+      loadTasks();
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error awarding stars:', error);
+      toast.error('Failed to award stars');
+    }
+  };
+
+  const handleOneTimeAward = async (stars, note) => {
+    try {
+      await taskCompletionsAPI.awardStarsDirectly(childId, stars, note, null);
+      toast.success(`Awarded ${stars} ${stars === 1 ? 'star' : 'stars'} to ${childName || 'child'}!`);
+      setShowOneTimeAward(false);
+      if (onUpdate) onUpdate();
+    } catch (error) {
+      console.error('Error awarding stars:', error);
+      toast.error('Failed to award stars');
+    }
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading tasks...</div>;
   }
@@ -145,10 +172,21 @@ export function TasksTab({ childId, profileId, onUpdate }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Tasks</h3>
-        <Button size="sm" onClick={() => setIsTaskDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Add Task
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-yellow-400 text-yellow-700 hover:bg-yellow-50"
+            onClick={() => setShowOneTimeAward(true)}
+          >
+            <Sparkles className="mr-2 h-4 w-4 text-yellow-500" />
+            Award Stars
+          </Button>
+          <Button size="sm" onClick={() => setIsTaskDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Task
+          </Button>
+        </div>
       </div>
 
       {tasks.length === 0 ? (
@@ -247,31 +285,42 @@ export function TasksTab({ childId, profileId, onUpdate }) {
                         </span>
                       )}
                     </div>
-                    {displayStatus === 'completed' && (
-                      <div className="flex space-x-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleReject(task.id);
-                          }}
-                        >
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Reject
-                        </Button>
-                        <Button
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleApprove(task.id, completion?.id);
-                          }}
-                        >
-                          <CheckCircle className="mr-2 h-4 w-4" />
-                          Approve
-                        </Button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-yellow-400 text-yellow-700 hover:bg-yellow-50 h-8 text-xs"
+                        onClick={() => setAwardingTask(task)}
+                      >
+                        <Star className="mr-1 h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                        Award Stars
+                      </Button>
+                      {displayStatus === 'completed' && (
+                        <>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleReject(task.id);
+                            }}
+                          >
+                            <XCircle className="mr-2 h-4 w-4" />
+                            Reject
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleApprove(task.id, completion?.id);
+                            }}
+                          >
+                            <CheckCircle className="mr-2 h-4 w-4" />
+                            Approve
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -290,6 +339,22 @@ export function TasksTab({ childId, profileId, onUpdate }) {
         profileId={profileId}
         onSuccess={handleTaskSuccess}
         task={editingTask}
+      />
+
+      <AwardStarsDialog
+        open={!!awardingTask}
+        onOpenChange={(val) => { if (!val) setAwardingTask(null); }}
+        onAward={handleDirectAward}
+        task={awardingTask}
+        childName={childName}
+      />
+
+      <AwardStarsDialog
+        open={showOneTimeAward}
+        onOpenChange={setShowOneTimeAward}
+        onAward={handleOneTimeAward}
+        task={null}
+        childName={childName}
       />
 
       <AlertDialog open={!!deletingTask} onOpenChange={(open) => { if (!open) setDeletingTask(null); }}>
