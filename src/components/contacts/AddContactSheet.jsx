@@ -101,6 +101,17 @@ const BLANK_FAMILY = {
   pin: '',
 };
 
+const FAMILY_ROLES = [
+  { value: 'child', label: 'Child' },
+  { value: 'spouse_partner', label: 'Spouse / Partner' },
+  { value: 'parent', label: 'Parent' },
+  { value: 'sibling', label: 'Sibling' },
+  { value: 'grandparent', label: 'Grandparent' },
+  { value: 'other', label: 'Other' },
+];
+
+const ADULT_ROLES = ['spouse_partner', 'parent', 'sibling', 'grandparent', 'other'];
+
 function typeFromGroup(groupValue) {
   if (groupValue === '__family__') return 'family';
   if (groupValue === '__business__') return 'business';
@@ -133,6 +144,7 @@ export default function AddContactSheet({
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [inviteMode, setInviteMode] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
+  const [familyRole, setFamilyRole] = useState('child');
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -188,6 +200,17 @@ export default function AddContactSheet({
     return () => clearTimeout(t);
   }, [familyForm.username]);
 
+  const isAdultRole = ADULT_ROLES.includes(familyRole);
+
+  useEffect(() => {
+    if (isAdultRole) {
+      setInviteMode(true);
+      setInviteEmail('');
+    } else {
+      setInviteMode(false);
+    }
+  }, [isAdultRole]);
+
   const createMutation = useMutation({
     mutationFn: (data) => firstsavvy.entities.Contact.create(data),
     onSuccess: (newContact) => {
@@ -213,6 +236,7 @@ export default function AddContactSheet({
     setUsernameAvailable(null);
     setInviteMode(false);
     setInviteEmail('');
+    setFamilyRole('child');
   };
 
   const updateGeneral = (field, value) => {
@@ -338,6 +362,7 @@ export default function AddContactSheet({
         username: familyForm.username,
         email: familyForm.email,
         login_enabled: true,
+        family_role: familyRole,
       });
       await childProfilesAPI.setChildPin(childProfile.id, familyForm.pin);
       toast.success('Family member created successfully');
@@ -367,6 +392,7 @@ export default function AddContactSheet({
         email: inviteEmail,
         login_enabled: false,
         invitation_pending: true,
+        family_role: familyRole,
       });
       await profileInvitationsAPI.createInvitation(tempProfile.id, inviteEmail, activeProfile?.id);
       toast.success(`Invitation sent to ${inviteEmail}`);
@@ -430,52 +456,66 @@ export default function AddContactSheet({
 
         <div className="mt-4 space-y-4">
           <div>
-            <Label htmlFor="group-select" className="mb-1.5 block">Group</Label>
-            {!isCreatingNewGroup ? (
-              <Select value={groupValue} onValueChange={handleGroupChange}>
-                <SelectTrigger id="group-select">
-                  <SelectValue>{displayGroupLabel}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {SYSTEM_GROUPS.map(({ value, label }) => (
-                    <SelectItem key={value} value={value}>{label}</SelectItem>
-                  ))}
-                  {existingGroups.length > 0 && (
-                    <>
-                      <div className="mx-2 my-1 border-t border-slate-100" />
-                      {existingGroups.map(group => (
-                        <SelectItem key={group} value={group}>{group}</SelectItem>
-                      ))}
-                    </>
-                  )}
-                  <div className="mx-2 my-1 border-t border-slate-100" />
-                  <SelectItem value="__new__">
-                    <span className="flex items-center"><Plus className="w-3 h-3 mr-2" />Create new group</span>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            ) : (
-              <div className="flex gap-2">
-                <Input
-                  value={generalForm.group_name}
-                  onChange={(e) => updateGeneral('group_name', e.target.value)}
-                  placeholder="Enter new group name..."
-                  autoFocus
-                />
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setIsCreatingNewGroup(false);
-                    setGroupValue('__general__');
-                    updateGeneral('group_name', '');
-                  }}
-                >
-                  <X className="w-4 h-4" />
-                </Button>
-              </div>
-            )}
+            <Label className="mb-1.5 block">Group</Label>
+            <div className="flex gap-2">
+              {!isCreatingNewGroup ? (
+                <Select value={groupValue} onValueChange={handleGroupChange}>
+                  <SelectTrigger id="group-select" className={contactType === 'family' ? 'flex-1' : 'w-full'}>
+                    <SelectValue>{displayGroupLabel}</SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SYSTEM_GROUPS.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                    {existingGroups.length > 0 && (
+                      <>
+                        <div className="mx-2 my-1 border-t border-slate-100" />
+                        {existingGroups.map(group => (
+                          <SelectItem key={group} value={group}>{group}</SelectItem>
+                        ))}
+                      </>
+                    )}
+                    <div className="mx-2 my-1 border-t border-slate-100" />
+                    <SelectItem value="__new__">
+                      <span className="flex items-center"><Plus className="w-3 h-3 mr-2" />Create new group</span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="flex gap-2 flex-1">
+                  <Input
+                    value={generalForm.group_name}
+                    onChange={(e) => updateGeneral('group_name', e.target.value)}
+                    placeholder="Enter new group name..."
+                    autoFocus
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setIsCreatingNewGroup(false);
+                      setGroupValue('__general__');
+                      updateGeneral('group_name', '');
+                    }}
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+              {contactType === 'family' && !isCreatingNewGroup && (
+                <Select value={familyRole} onValueChange={(v) => setFamilyRole(v)}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FAMILY_ROLES.map(({ value, label }) => (
+                      <SelectItem key={value} value={value}>{label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
           </div>
 
           <Separator />
@@ -656,19 +696,27 @@ export default function AddContactSheet({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  {inviteMode ? (
+                  {isAdultRole ? (
+                    <p className="text-sm text-slate-600">
+                      {familyRole === 'spouse_partner'
+                        ? "They'll create their own account and be linked to yours."
+                        : "They'll receive an invite to create their own account."}
+                    </p>
+                  ) : inviteMode ? (
                     <p className="text-sm text-slate-600">Send an email invite — they'll set up their own profile.</p>
                   ) : (
                     <p className="text-sm text-slate-600">Create a profile manually with login credentials.</p>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => { setInviteMode(v => !v); setInviteEmail(''); }}
-                  className="text-xs font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2 whitespace-nowrap ml-3 shrink-0"
-                >
-                  {inviteMode ? 'Set up manually instead' : 'Send invite by email'}
-                </button>
+                {!isAdultRole && (
+                  <button
+                    type="button"
+                    onClick={() => { setInviteMode(v => !v); setInviteEmail(''); }}
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2 whitespace-nowrap ml-3 shrink-0"
+                  >
+                    {inviteMode ? 'Set up manually instead' : 'Send invite by email'}
+                  </button>
+                )}
               </div>
 
               {inviteMode ? (
@@ -684,7 +732,11 @@ export default function AddContactSheet({
                       autoFocus
                       required
                     />
-                    <p className="text-xs text-slate-500">They'll receive an email to create their own profile and data.</p>
+                    <p className="text-xs text-slate-500">
+                      {familyRole === 'spouse_partner'
+                        ? "They'll set up their own account and be connected with full shared access by default."
+                        : "They'll receive an email to create their own profile and data."}
+                    </p>
                   </div>
                   <SheetFooter className="pt-2">
                     <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
