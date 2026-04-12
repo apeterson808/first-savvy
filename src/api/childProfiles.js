@@ -105,6 +105,7 @@ export const childProfilesAPI = {
         username: childData.username,
         email: childData.email || null,
         login_enabled: childData.login_enabled || false,
+        family_role: childData.family_role || 'child',
       })
       .select()
       .single();

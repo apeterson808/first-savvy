@@ -11,11 +11,14 @@ import { PageTabs } from '@/components/common/PageTabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { ArrowLeft, TrendingUp, Award, CheckCircle, Clock } from 'lucide-react';
 import { SimpleProfileHeader } from '@/components/children/SimpleProfileHeader';
+import { AdultFamilyMemberView } from '@/components/children/AdultFamilyMemberView';
 import { TasksTab } from '@/components/children/TasksTab';
 import { RewardsTab } from '@/components/children/RewardsTab';
 import { ActivityTab } from '@/components/children/ActivityTab';
 import { SettingsTab } from '@/components/children/SettingsTab';
 import { toast } from 'sonner';
+
+const ADULT_FAMILY_ROLES = ['spouse_partner', 'parent', 'sibling', 'grandparent', 'other'];
 
 const TIER_COLORS = {
   1: 'bg-slate-100 text-slate-800',
@@ -135,6 +138,16 @@ export default function ConnectionDetail() {
           Back to Contacts
         </Button>
       </div>
+    );
+  }
+
+  if (ADULT_FAMILY_ROLES.includes(child.family_role)) {
+    return (
+      <AdultFamilyMemberView
+        child={child}
+        onUpdate={loadChildData}
+        onDelete={() => {}}
+      />
     );
   }
 
