@@ -63,7 +63,11 @@ export function AdultFamilyMemberView({ child, onUpdate, onDelete }) {
     if (!invitation) return;
     try {
       setResending(true);
-      await profileInvitationsAPI.resendInvitation(invitation.id, activeProfile?.id);
+      await profileInvitationsAPI.resendInvitation(invitation.id, activeProfile?.id, {
+        inviterName: activeProfile?.display_name || activeProfile?.name,
+        familyRole: child.family_role,
+        invitedEmail: child.email || child.child_name,
+      });
       await refetchInvitation();
       toast.success('Invitation resent successfully');
     } catch (error) {

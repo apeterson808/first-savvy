@@ -394,7 +394,10 @@ export default function AddContactSheet({
         invitation_pending: true,
         family_role: familyRole,
       });
-      await profileInvitationsAPI.createInvitation(tempProfile.id, inviteEmail, activeProfile?.id);
+      await profileInvitationsAPI.createInvitation(tempProfile.id, inviteEmail, activeProfile?.id, {
+        inviterName: activeProfile?.display_name || activeProfile?.name,
+        familyRole,
+      });
       toast.success(`Invitation sent to ${inviteEmail}`);
       resetForm();
       onOpenChange(false);

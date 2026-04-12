@@ -48,7 +48,14 @@ export const profileInvitationsAPI = {
     return data;
   },
 
-  async createInvitation(childProfileId, invitedEmail, invitedByProfileId) {
+  async sendInvitationEmail({ invitationToken, invitedEmail, inviterName, familyRole }) {
+    const appUrl = window.location.origin;
+    await supabase.functions.invoke('send-invitation-email', {
+      body: { invitationToken, invitedEmail, inviterName, familyRole, appUrl },
+    });
+  },
+
+  async createInvitation(childProfileId, invitedEmail, invitedByProfileId, { inviterName, familyRole } = {}) {
     const token = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -67,10 +74,18 @@ export const profileInvitationsAPI = {
       .single();
 
     if (error) throw error;
+
+    await profileInvitationsAPI.sendInvitationEmail({
+      invitationToken: token,
+      invitedEmail,
+      inviterName,
+      familyRole,
+    });
+
     return data;
   },
 
-  async resendInvitation(invitationId, invitedByProfileId) {
+  async resendInvitation(invitationId, invitedByProfileId, { inviterName, familyRole, invitedEmail } = {}) {
     const newToken = crypto.randomUUID();
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -88,6 +103,16 @@ export const profileInvitationsAPI = {
       .single();
 
     if (error) throw error;
+
+    if (invitedEmail) {
+      await profileInvitationsAPI.sendInvitationEmail({
+        invitationToken: newToken,
+        invitedEmail,
+        inviterName,
+        familyRole,
+      });
+    }
+
     return data;
   },
 
