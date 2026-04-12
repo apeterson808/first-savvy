@@ -200,7 +200,19 @@ export default function Contacts() {
     return differenceInYears(new Date(), new Date(dateOfBirth));
   };
 
-  const getTierInfo = (level) => {
+  const ADULT_FAMILY_ROLES = ['spouse_partner', 'parent', 'sibling', 'grandparent', 'other'];
+
+  const getTierInfo = (level, familyRole) => {
+    if (familyRole && ADULT_FAMILY_ROLES.includes(familyRole)) {
+      const labels = {
+        spouse_partner: 'Shared Access',
+        parent: 'Family Access',
+        sibling: 'Family Access',
+        grandparent: 'Family Access',
+        other: 'Family Access',
+      };
+      return { name: labels[familyRole] || 'Family Access', color: 'bg-teal-100 text-teal-700' };
+    }
     const tiers = {
       1: { name: 'Basic Access', color: 'bg-slate-100 text-slate-700' },
       2: { name: 'Rewards', color: 'bg-blue-100 text-blue-700' },
@@ -361,7 +373,7 @@ export default function Contacts() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {childProfiles.map((child) => {
                     const age = getAge(child.date_of_birth);
-                    const tierInfo = getTierInfo(child.current_permission_level);
+                    const tierInfo = getTierInfo(child.current_permission_level, child.family_role);
                     const initials = child.child_name
                       .split(' ')
                       .map(n => n[0])
