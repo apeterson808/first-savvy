@@ -333,15 +333,6 @@ export default function Contacts() {
                 <CardTitle className="text-base font-semibold">Family</CardTitle>
                 <Badge variant="secondary" className="text-xs">{childProfiles.length}</Badge>
               </CollapsibleTrigger>
-              <Button
-                size="sm"
-                variant="outline"
-                className="h-7 text-xs"
-                onClick={() => { setDialogInitialType('family'); setDialogOpen(true); }}
-              >
-                <Plus className="w-3 h-3 mr-1" />
-                Add Member
-              </Button>
             </div>
           </CardHeader>
           <CollapsibleContent>
