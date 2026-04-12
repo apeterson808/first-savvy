@@ -22,7 +22,6 @@ import {
 } from "@/components/ui/table";
 import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X, Home, Briefcase } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
-import { CreateChildProfileSheet } from '@/components/profiles/CreateChildProfileSheet';
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabase } from '@/api/supabaseClient';
 import { differenceInYears } from 'date-fns';
@@ -131,7 +130,7 @@ function ContactsTable({ contacts, isLoading, onContactClick, currentPage, setCu
 export default function Contacts() {
   const navigate = useNavigate();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [showCreateChild, setShowCreateChild] = useState(false);
+  const [dialogInitialType, setDialogInitialType] = useState('general');
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPages, setCurrentPages] = useState({});
   const [collapsedGroups, setCollapsedGroups] = useState({});
@@ -311,7 +310,7 @@ export default function Contacts() {
         <div className="flex gap-2">
           <Button
             size="sm"
-            onClick={() => setDialogOpen(true)}
+            onClick={() => { setDialogInitialType('general'); setDialogOpen(true); }}
             className="bg-primary hover:bg-primary/90 h-9"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -338,7 +337,7 @@ export default function Contacts() {
                 size="sm"
                 variant="outline"
                 className="h-7 text-xs"
-                onClick={() => setShowCreateChild(true)}
+                onClick={() => { setDialogInitialType('family'); setDialogOpen(true); }}
               >
                 <Plus className="w-3 h-3 mr-1" />
                 Add Member
@@ -361,7 +360,7 @@ export default function Contacts() {
                     size="sm"
                     variant="outline"
                     className="mt-2 h-7 text-xs"
-                    onClick={() => setShowCreateChild(true)}
+                    onClick={() => { setDialogInitialType('family'); setDialogOpen(true); }}
                   >
                     <Plus className="w-3 h-3 mr-1" />
                     Add Family Member
@@ -599,17 +598,15 @@ export default function Contacts() {
 
       <AddContactSheet
         open={dialogOpen}
-        onOpenChange={setDialogOpen}
-      />
-
-      <CreateChildProfileSheet
-        open={showCreateChild}
-        onOpenChange={setShowCreateChild}
+        onOpenChange={(open) => {
+          setDialogOpen(open);
+          if (!open) setDialogInitialType('general');
+        }}
+        initialType={dialogInitialType}
         onChildCreated={async () => {
           await loadAllProfiles();
           await refreshProfiles();
         }}
-        profileId={activeProfile?.id}
       />
     </div>
   );
