@@ -32,7 +32,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import AccountDetectionField from './AccountDetectionField';
 import { toast } from 'sonner';
-import { X, Plus, Info, Home, Briefcase, Users, Check, Loader2 as LoaderIcon, Pencil } from 'lucide-react';
+import { X, Plus, Info, Briefcase, Check, Loader2 as LoaderIcon, Pencil } from 'lucide-react';
 import { useProfile } from '@/contexts/ProfileContext';
 import { differenceInYears } from 'date-fns';
 
@@ -68,10 +68,10 @@ const CUSTOM_COLOR_PALETTE = [
   { name: 'Dusty Rose', hex: '#D4A5A5' },
 ];
 
-const CONTACT_TYPES = [
-  { value: 'general', label: 'General Contact', icon: Users },
-  { value: 'family', label: 'My Family', icon: Home },
-  { value: 'business', label: 'My Businesses', icon: Briefcase },
+const SYSTEM_GROUPS = [
+  { value: '__general__', label: 'General Contact' },
+  { value: '__family__', label: 'My Family' },
+  { value: '__business__', label: 'My Business' },
 ];
 
 const BLANK_GENERAL = {
@@ -101,6 +101,12 @@ const BLANK_FAMILY = {
   pin: '',
 };
 
+function typeFromGroup(groupValue) {
+  if (groupValue === '__family__') return 'family';
+  if (groupValue === '__business__') return 'business';
+  return 'general';
+}
+
 export default function AddContactSheet({
   open,
   onOpenChange,
@@ -110,7 +116,9 @@ export default function AddContactSheet({
   onChildCreated = null,
   initialType = 'general',
 }) {
-  const [contactType, setContactType] = useState(initialType);
+  const initialGroup = initialType === 'family' ? '__family__' : initialType === 'business' ? '__business__' : '__general__';
+  const [groupValue, setGroupValue] = useState(initialGroup);
+  const contactType = typeFromGroup(groupValue);
   const [generalForm, setGeneralForm] = useState(BLANK_GENERAL);
   const [familyForm, setFamilyForm] = useState(BLANK_FAMILY);
   const [tagInput, setTagInput] = useState('');
@@ -147,7 +155,7 @@ export default function AddContactSheet({
   }, [open, initialName]);
 
   useEffect(() => {
-    if (open) setContactType(initialType);
+    if (open) setGroupValue(initialType === 'family' ? '__family__' : initialType === 'business' ? '__business__' : '__general__');
   }, [open, initialType]);
 
   useEffect(() => {
@@ -193,6 +201,7 @@ export default function AddContactSheet({
   });
 
   const resetForm = () => {
+    setGroupValue('__general__');
     setGeneralForm(BLANK_GENERAL);
     setFamilyForm(BLANK_FAMILY);
     setTagInput('');
@@ -357,7 +366,27 @@ export default function AddContactSheet({
     return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
   };
 
-  const typeConfig = CONTACT_TYPES.find(t => t.value === contactType);
+  const handleGroupChange = (value) => {
+    if (value === '__new__') {
+      setIsCreatingNewGroup(true);
+      updateGeneral('group_name', '');
+      return;
+    }
+    setIsCreatingNewGroup(false);
+    if (value === '__general__' || value === '__family__' || value === '__business__') {
+      setGroupValue(value);
+      updateGeneral('group_name', '');
+    } else {
+      setGroupValue('__general__');
+      updateGeneral('group_name', value);
+    }
+  };
+
+  const displayGroupLabel = isCreatingNewGroup
+    ? (generalForm.group_name || 'New group...')
+    : groupValue === '__family__' ? 'My Family'
+    : groupValue === '__business__' ? 'My Business'
+    : generalForm.group_name || 'General Contact';
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
@@ -368,24 +397,52 @@ export default function AddContactSheet({
 
         <div className="mt-4 space-y-4">
           <div>
-            <Label className="mb-1.5 block">Contact Type</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {CONTACT_TYPES.map(({ value, label, icon: Icon }) => (
-                <button
-                  key={value}
+            <Label htmlFor="group-select" className="mb-1.5 block">Group</Label>
+            {!isCreatingNewGroup ? (
+              <Select value={groupValue} onValueChange={handleGroupChange}>
+                <SelectTrigger id="group-select">
+                  <SelectValue>{displayGroupLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {SYSTEM_GROUPS.map(({ value, label }) => (
+                    <SelectItem key={value} value={value}>{label}</SelectItem>
+                  ))}
+                  {existingGroups.length > 0 && (
+                    <>
+                      <div className="mx-2 my-1 border-t border-slate-100" />
+                      {existingGroups.map(group => (
+                        <SelectItem key={group} value={group}>{group}</SelectItem>
+                      ))}
+                    </>
+                  )}
+                  <div className="mx-2 my-1 border-t border-slate-100" />
+                  <SelectItem value="__new__">
+                    <span className="flex items-center"><Plus className="w-3 h-3 mr-2" />Create new group</span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  value={generalForm.group_name}
+                  onChange={(e) => updateGeneral('group_name', e.target.value)}
+                  placeholder="Enter new group name..."
+                  autoFocus
+                />
+                <Button
                   type="button"
-                  onClick={() => setContactType(value)}
-                  className={`flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 text-sm font-medium transition-all ${
-                    contactType === value
-                      ? 'border-blue-500 bg-blue-50 text-blue-700'
-                      : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50'
-                  }`}
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setIsCreatingNewGroup(false);
+                    setGroupValue('__general__');
+                    updateGeneral('group_name', '');
+                  }}
                 >
-                  <Icon className={`w-5 h-5 ${contactType === value ? 'text-blue-600' : 'text-slate-400'}`} />
-                  <span className="text-xs text-center leading-tight">{label}</span>
-                </button>
-              ))}
-            </div>
+                  <X className="w-4 h-4" />
+                </Button>
+              </div>
+            )}
           </div>
 
           <Separator />
@@ -499,45 +556,6 @@ export default function AddContactSheet({
                   placeholder="12345"
                   maxLength={10}
                 />
-              </div>
-
-              <div>
-                <Label htmlFor="group_name">Group</Label>
-                {!isCreatingNewGroup ? (
-                  <Select
-                    value={generalForm.group_name || '__none__'}
-                    onValueChange={(value) => {
-                      if (value === '__new__') { setIsCreatingNewGroup(true); updateGeneral('group_name', ''); }
-                      else if (value === '__none__') { updateGeneral('group_name', ''); }
-                      else { updateGeneral('group_name', value); }
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue>{generalForm.group_name || 'General Contact'}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">General Contact</SelectItem>
-                      {existingGroups.map(group => (
-                        <SelectItem key={group} value={group}>{group}</SelectItem>
-                      ))}
-                      <SelectItem value="__new__">
-                        <span className="flex items-center"><Plus className="w-3 h-3 mr-2" />Create new group</span>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="flex gap-2">
-                    <Input
-                      value={generalForm.group_name}
-                      onChange={(e) => updateGeneral('group_name', e.target.value)}
-                      placeholder="Enter new group name..."
-                      autoFocus
-                    />
-                    <Button type="button" size="sm" variant="ghost" onClick={() => { setIsCreatingNewGroup(false); if (!generalForm.group_name) updateGeneral('group_name', ''); }}>
-                      <X className="w-4 h-4" />
-                    </Button>
-                  </div>
-                )}
               </div>
 
               <div>
