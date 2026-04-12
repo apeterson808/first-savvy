@@ -131,6 +131,8 @@ export default function AddContactSheet({
   const [uploading, setUploading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [inviteMode, setInviteMode] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
 
@@ -209,6 +211,8 @@ export default function AddContactSheet({
     setDetectedUser(null);
     setAge(null);
     setUsernameAvailable(null);
+    setInviteMode(false);
+    setInviteEmail('');
   };
 
   const updateGeneral = (field, value) => {
@@ -342,6 +346,35 @@ export default function AddContactSheet({
       if (onChildCreated) onChildCreated();
     } catch (error) {
       toast.error(error.message || 'Failed to create family member');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmitInvite = async (e) => {
+    e.preventDefault();
+    if (!inviteEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+      toast.error('Please enter a valid email address');
+      return;
+    }
+    try {
+      setLoading(true);
+      const { profileInvitationsAPI } = await import('@/api/profileInvitations');
+      const tempProfile = await childProfilesAPI.createChildProfile(activeProfile?.id, {
+        first_name: 'Invited',
+        last_name: 'Member',
+        child_name: inviteEmail,
+        email: inviteEmail,
+        login_enabled: false,
+        invitation_pending: true,
+      });
+      await profileInvitationsAPI.createInvitation(tempProfile.id, inviteEmail, activeProfile?.id);
+      toast.success(`Invitation sent to ${inviteEmail}`);
+      resetForm();
+      onOpenChange(false);
+      if (onChildCreated) onChildCreated();
+    } catch (error) {
+      toast.error(error.message || 'Failed to send invitation');
     } finally {
       setLoading(false);
     }
@@ -620,6 +653,47 @@ export default function AddContactSheet({
           )}
 
           {contactType === 'family' && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  {inviteMode ? (
+                    <p className="text-sm text-slate-600">Send an email invite — they'll set up their own profile.</p>
+                  ) : (
+                    <p className="text-sm text-slate-600">Create a profile manually with login credentials.</p>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => { setInviteMode(v => !v); setInviteEmail(''); }}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2 whitespace-nowrap ml-3 shrink-0"
+                >
+                  {inviteMode ? 'Set up manually instead' : 'Send invite by email'}
+                </button>
+              </div>
+
+              {inviteMode ? (
+                <form onSubmit={handleSubmitInvite} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="invite-email">Email Address <span className="text-red-500">*</span></Label>
+                    <Input
+                      id="invite-email"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      placeholder="family@example.com"
+                      autoFocus
+                      required
+                    />
+                    <p className="text-xs text-slate-500">They'll receive an email to create their own profile and data.</p>
+                  </div>
+                  <SheetFooter className="pt-2">
+                    <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
+                    <Button type="submit" disabled={loading || !inviteEmail.trim()}>
+                      {loading ? 'Sending...' : 'Send Invite'}
+                    </Button>
+                  </SheetFooter>
+                </form>
+              ) : (
             <form onSubmit={handleSubmitFamily} className="space-y-5">
               <div className="flex justify-center">
                 <div className="relative">
@@ -828,6 +902,8 @@ export default function AddContactSheet({
                 </Button>
               </SheetFooter>
             </form>
+              )}
+            </div>
           )}
 
           {contactType === 'business' && (
