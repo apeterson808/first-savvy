@@ -54,7 +54,9 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
       ]);
 
       setStarBalance(balanceData.stars_balance || 0);
-      setStarsPending(balanceData.stars_pending || 0);
+      const pendingCompletions = (completionsData || []).filter(c => c.status === 'pending');
+      const pendingStarsTotal = pendingCompletions.reduce((sum, c) => sum + (c.stars_earned || 0), 0);
+      setStarsPending(pendingStarsTotal);
       setTasks(tasksData || []);
       setRewards(rewardsData.data || []);
       setCompletions(completionsData || []);
@@ -191,7 +193,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 animate-pulse" />
                 <div className="text-center">
                   <p className="text-xs sm:text-sm font-semibold text-purple-900">
-                    <span className="text-xl sm:text-2xl font-black">{starsPending}</span> stars waiting for approval!
+                    <span className="text-xl sm:text-2xl font-black">{starsPending}</span> {starsPending === 1 ? 'star' : 'stars'} waiting for approval!
                   </p>
                 </div>
                 <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 animate-pulse" />
