@@ -168,7 +168,7 @@ export function EditJournalEntryDialog({ open, onOpenChange, entryId, onSuccess 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Edit Journal Entry {entryNumber}</DialogTitle>
           <DialogDescription>

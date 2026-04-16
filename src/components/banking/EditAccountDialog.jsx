@@ -75,7 +75,7 @@ export default function EditAccountDialog({ open, onOpenChange, account, onSucce
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px]" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Edit {getAccountDisplayName(account)}</DialogTitle>
         </DialogHeader>

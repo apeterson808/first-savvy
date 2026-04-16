@@ -289,7 +289,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <div className="flex items-start justify-between pr-8">
             <div className="flex items-center gap-3">

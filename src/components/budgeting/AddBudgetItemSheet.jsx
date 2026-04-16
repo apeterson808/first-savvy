@@ -380,7 +380,7 @@ export default function AddBudgetItemSheet({
       if (!isOpen) resetForm();
       onOpenChange(isOpen);
     }}>
-      <SheetContent className="overflow-y-auto max-h-screen flex flex-col">
+      <SheetContent className="overflow-y-auto max-h-screen flex flex-col" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
           <SheetTitle>{isEditMode ? 'Edit Budget Item' : 'Add Budget Item'}</SheetTitle>
         </SheetHeader>

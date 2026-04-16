@@ -209,7 +209,7 @@ export function AddChildSheet({ open, onOpenChange, onChildAdded, profileId }) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="sm:max-w-[540px] overflow-y-auto">
+      <SheetContent className="sm:max-w-[540px] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
           <SheetTitle>Add Child Profile</SheetTitle>
           <SheetDescription>

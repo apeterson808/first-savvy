@@ -452,7 +452,7 @@ export default function AddContactSheet({
 
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
-      <SheetContent className="sm:max-w-[540px] overflow-y-auto">
+      <SheetContent className="sm:max-w-[540px] overflow-y-auto" onOpenAutoFocus={(e) => e.preventDefault()}>
         <SheetHeader>
           <SheetTitle>Add Contact</SheetTitle>
         </SheetHeader>
