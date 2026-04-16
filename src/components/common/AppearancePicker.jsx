@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Toothbrush, Tooth } from '@/components/utils/customIcons';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -91,7 +92,8 @@ const ICON_MAP = {
   Sunrise, Sunset, BellRing,
   Cookie, Banana, Grape, CakeSlice, Drumstick,
   BicepsFlexed, PersonStanding, UserCheck, HeartHandshake,
-  Sprout, TreeDeciduous, Medal, CheckCheck, CircleCheck, Ham
+  Sprout, TreeDeciduous, Medal, CheckCheck, CircleCheck, Ham,
+  Toothbrush, Tooth
 };
 
 export const PICKER_ICON_MAP = ICON_MAP;

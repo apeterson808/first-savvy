@@ -1,3 +1,4 @@
+import { Toothbrush, Tooth } from './customIcons';
 import {
   Home, ShoppingCart, Coffee, Utensils, Car, Plane, Hotel,
   Smartphone, Laptop, Tv, Music, Gamepad, Book, GraduationCap,
@@ -27,7 +28,8 @@ export const ICON_MAP = {
   Trees, Flower2, Leaf, Umbrella, CloudRain, Sun,
   Moon, Star, Sparkles, Crown, Trophy, Award,
   Film, Camera, Video, Headphones, Mic, Radio,
-  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby
+  Dog, Cat, Fish, Bird, Bone, PawPrint, Circle, Baby,
+  Toothbrush, Tooth
 };
 
 export const getIconComponent = (iconName) => {
