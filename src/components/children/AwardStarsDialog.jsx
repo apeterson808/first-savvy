@@ -48,7 +48,7 @@ export function AwardStarsDialog({ open, onOpenChange, onAward, task = null, chi
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {task ? 'Award Stars for Task' : 'Award One-Time Stars'}
