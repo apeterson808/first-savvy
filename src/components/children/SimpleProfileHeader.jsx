@@ -82,20 +82,20 @@ export function SimpleProfileHeader({ child, starsBalance = 0, starsPending = 0 
         </div>
       </div>
 
-      <div className="flex items-center gap-2 flex-shrink-0">
-        <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-2xl px-4 py-2.5 shadow-sm">
-          <Star className="w-5 h-5 fill-white text-white" />
-          <div className="text-right">
-            <p className="text-white/80 text-[10px] font-semibold uppercase tracking-wide leading-none mb-0.5">Stars</p>
-            <p className="text-white font-black text-xl leading-none">{starsBalance}</p>
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-2xl px-5 py-3 shadow-md">
+          <Star className="w-7 h-7 fill-white text-white" />
+          <div>
+            <p className="text-yellow-100 text-xs font-semibold uppercase tracking-wide leading-none mb-1">Total Stars</p>
+            <p className="text-white font-black text-3xl leading-none">{starsBalance}</p>
           </div>
         </div>
         {starsPending > 0 && (
-          <div className="flex items-center gap-1.5 bg-orange-100 border border-orange-200 rounded-2xl px-3 py-2.5">
-            <Clock className="w-4 h-4 text-orange-500" />
-            <div className="text-right">
-              <p className="text-orange-600 text-[10px] font-semibold uppercase tracking-wide leading-none mb-0.5">Pending</p>
-              <p className="text-orange-700 font-black text-xl leading-none">{starsPending}</p>
+          <div className="flex items-center gap-2 bg-orange-50 border-2 border-orange-300 rounded-2xl px-4 py-3">
+            <Clock className="w-6 h-6 text-orange-500" />
+            <div>
+              <p className="text-orange-500 text-xs font-semibold uppercase tracking-wide leading-none mb-1">Pending</p>
+              <p className="text-orange-700 font-black text-3xl leading-none">{starsPending}</p>
             </div>
           </div>
         )}
