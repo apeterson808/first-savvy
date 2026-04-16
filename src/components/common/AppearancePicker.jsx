@@ -39,7 +39,14 @@ import {
   MessageCircle, Send, Monitor,
   Rabbit, Squirrel,
   AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
-  Cigarette
+  Cigarette,
+  Brush, ShowerHead, Toilet, Trash2, Recycle,
+  BedDouble, BedSingle, AlarmClock, Timer, Hourglass,
+  Backpack, BookOpenCheck, ClipboardCheck, PenLine, ListChecks,
+  Sunrise, Sunset, BellRing,
+  Cookie, Banana, Grape, CakeSlice, Drumstick,
+  BicepsFlexed, PersonStanding, UserCheck, HeartHandshake,
+  Sprout, TreeDeciduous, Medal, CheckCheck, CircleCheck, Ham
 } from 'lucide-react';
 
 const ICON_MAP = {
@@ -77,7 +84,14 @@ const ICON_MAP = {
   MessageCircle, Send, Monitor,
   Rabbit, Squirrel,
   AlertCircle, CheckCircle, XCircle, HelpCircle, Info, Settings, Archive, Folder,
-  Cigarette
+  Cigarette,
+  Brush, ShowerHead, Toilet, Trash2, Recycle,
+  BedDouble, BedSingle, AlarmClock, Timer, Hourglass,
+  Backpack, BookOpenCheck, ClipboardCheck, PenLine, ListChecks,
+  Sunrise, Sunset, BellRing,
+  Cookie, Banana, Grape, CakeSlice, Drumstick,
+  BicepsFlexed, PersonStanding, UserCheck, HeartHandshake,
+  Sprout, TreeDeciduous, Medal, CheckCheck, CircleCheck, Ham
 };
 
 export const PICKER_ICON_MAP = ICON_MAP;
