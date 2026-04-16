@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Star, Minus, Plus } from 'lucide-react';
 import {
   Dialog,
@@ -18,6 +18,13 @@ export function AwardStarsDialog({ open, onOpenChange, onAward, task = null, chi
   const [stars, setStars] = useState(task?.star_reward || 1);
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setStars(task?.star_reward || 1);
+      setNote('');
+    }
+  }, [open, task?.star_reward]);
 
   const handleOpenChange = (val) => {
     if (!val) {
