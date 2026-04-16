@@ -83,10 +83,10 @@ export function SimpleProfileHeader({ child, starsBalance = 0, starsPending = 0 
       </div>
 
       <div className="flex items-center gap-3 flex-shrink-0">
-        <div className="flex items-center gap-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-2xl px-5 py-3 shadow-md">
-          <Star className="w-7 h-7 fill-white text-white" />
+        <div className="flex items-center gap-3 bg-amber-500 rounded-2xl px-5 py-3 shadow-lg ring-2 ring-amber-600">
+          <Star className="w-7 h-7 fill-amber-100 text-amber-100" />
           <div>
-            <p className="text-yellow-100 text-xs font-semibold uppercase tracking-wide leading-none mb-1">Total Stars</p>
+            <p className="text-amber-100 text-xs font-bold uppercase tracking-wide leading-none mb-1">Total Stars</p>
             <p className="text-white font-black text-3xl leading-none">{starsBalance}</p>
           </div>
         </div>
