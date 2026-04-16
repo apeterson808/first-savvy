@@ -159,7 +159,7 @@ export function TaskCard({
       </motion.div>
 
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Complete Task</DialogTitle>
             <DialogDescription>
@@ -184,7 +184,7 @@ export function TaskCard({
       </Dialog>
 
       <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>Review Task Completion</DialogTitle>
             <DialogDescription>
