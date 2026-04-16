@@ -41,8 +41,8 @@ export function SimpleProfileHeader({ child, starsBalance = 0, starsPending = 0 
   const avatarColor = getAvatarColor();
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-      <div className="flex items-center gap-4">
+    <div className="flex items-center justify-between gap-3 mb-6">
+      <div className="flex items-center gap-4 min-w-0">
         {isImageAvatar ? (
           <div className="h-20 w-20 rounded-full overflow-hidden flex-shrink-0">
             <img
@@ -82,20 +82,20 @@ export function SimpleProfileHeader({ child, starsBalance = 0, starsPending = 0 
         </div>
       </div>
 
-      <div className="flex items-center gap-3 sm:flex-shrink-0">
-        <div className="flex items-center gap-3 bg-amber-500 rounded-2xl px-5 py-3 shadow-lg ring-2 ring-amber-600 w-full sm:w-auto">
-          <Star className="w-7 h-7 fill-amber-100 text-amber-100" />
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 bg-amber-500 rounded-xl px-3 py-2 shadow-lg ring-2 ring-amber-600">
+          <Star className="w-4 h-4 fill-amber-100 text-amber-100 flex-shrink-0" />
           <div>
-            <p className="text-amber-100 text-xs font-bold uppercase tracking-wide leading-none mb-1">Total Stars</p>
-            <p className="text-white font-black text-3xl leading-none">{starsBalance}</p>
+            <p className="text-amber-100 text-[10px] font-bold uppercase tracking-wide leading-none mb-0.5">Stars</p>
+            <p className="text-white font-black text-lg leading-none">{starsBalance}</p>
           </div>
         </div>
         {starsPending > 0 && (
-          <div className="flex items-center gap-2 bg-orange-50 border-2 border-orange-300 rounded-2xl px-4 py-3">
-            <Clock className="w-6 h-6 text-orange-500" />
+          <div className="flex items-center gap-2 bg-orange-50 border-2 border-orange-300 rounded-xl px-3 py-2">
+            <Clock className="w-4 h-4 text-orange-500 flex-shrink-0" />
             <div>
-              <p className="text-orange-500 text-xs font-semibold uppercase tracking-wide leading-none mb-1">Pending</p>
-              <p className="text-orange-700 font-black text-3xl leading-none">{starsPending}</p>
+              <p className="text-orange-500 text-[10px] font-semibold uppercase tracking-wide leading-none mb-0.5">Pending</p>
+              <p className="text-orange-700 font-black text-lg leading-none">{starsPending}</p>
             </div>
           </div>
         )}
