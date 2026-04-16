@@ -1,5 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
+import { Star, Clock } from 'lucide-react';
 
 const AVATAR_COLORS = [
   { id: 'sky-blue', bg: 'bg-sky-blue', text: 'text-white' },
@@ -16,7 +17,7 @@ const AVATAR_COLORS = [
   { id: 'slate', bg: 'bg-slate-500', text: 'text-white' },
 ];
 
-export function SimpleProfileHeader({ child }) {
+export function SimpleProfileHeader({ child, starsBalance = 0, starsPending = 0 }) {
   const getInitials = () => {
     const first = child.first_name?.[0] || '';
     const last = child.last_name?.[0] || '';
@@ -40,43 +41,64 @@ export function SimpleProfileHeader({ child }) {
   const avatarColor = getAvatarColor();
 
   return (
-    <div className="flex items-center gap-4 mb-6">
-      {isImageAvatar ? (
-        <div className="h-20 w-20 rounded-full overflow-hidden flex-shrink-0">
-          <img
-            src={child.avatar_url}
-            alt={child.display_name || child.first_name || 'Avatar'}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-              e.currentTarget.parentElement.classList.add(avatarColor.bg, avatarColor.text, 'flex', 'items-center', 'justify-center');
-              e.currentTarget.parentElement.innerHTML = `<span class="text-2xl font-bold">${getInitials()}</span>`;
-            }}
-          />
+    <div className="flex items-center justify-between gap-4 mb-6">
+      <div className="flex items-center gap-4">
+        {isImageAvatar ? (
+          <div className="h-20 w-20 rounded-full overflow-hidden flex-shrink-0">
+            <img
+              src={child.avatar_url}
+              alt={child.display_name || child.first_name || 'Avatar'}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement.classList.add(avatarColor.bg, avatarColor.text, 'flex', 'items-center', 'justify-center');
+                e.currentTarget.parentElement.innerHTML = `<span class="text-2xl font-bold">${getInitials()}</span>`;
+              }}
+            />
+          </div>
+        ) : (
+          <div className={cn(
+            'h-20 w-20 rounded-full flex items-center justify-center',
+            avatarColor.bg,
+            avatarColor.text
+          )}>
+            <span className="text-2xl font-bold">{getInitials()}</span>
+          </div>
+        )}
+        <div className="space-y-1.5">
+          <h2 className="text-2xl font-semibold text-slate-900">
+            {child.display_name || `${child.first_name} ${child.last_name}`}
+          </h2>
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="text-xs font-normal">
+              Beginner
+            </Badge>
+            {calculateAge() && (
+              <span className="text-sm text-slate-500">
+                Age {calculateAge()}
+              </span>
+            )}
+          </div>
         </div>
-      ) : (
-      <div className={cn(
-        'h-20 w-20 rounded-full flex items-center justify-center',
-        avatarColor.bg,
-        avatarColor.text
-      )}>
-        <span className="text-2xl font-bold">{getInitials()}</span>
       </div>
-      )}
-      <div className="space-y-1.5">
-        <h2 className="text-2xl font-semibold text-slate-900">
-          {child.display_name || `${child.first_name} ${child.last_name}`}
-        </h2>
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs font-normal">
-            Beginner
-          </Badge>
-          {calculateAge() && (
-            <span className="text-sm text-slate-500">
-              Age {calculateAge()}
-            </span>
-          )}
+
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 bg-gradient-to-r from-yellow-400 to-amber-500 rounded-2xl px-4 py-2.5 shadow-sm">
+          <Star className="w-5 h-5 fill-white text-white" />
+          <div className="text-right">
+            <p className="text-white/80 text-[10px] font-semibold uppercase tracking-wide leading-none mb-0.5">Stars</p>
+            <p className="text-white font-black text-xl leading-none">{starsBalance}</p>
+          </div>
         </div>
+        {starsPending > 0 && (
+          <div className="flex items-center gap-1.5 bg-orange-100 border border-orange-200 rounded-2xl px-3 py-2.5">
+            <Clock className="w-4 h-4 text-orange-500" />
+            <div className="text-right">
+              <p className="text-orange-600 text-[10px] font-semibold uppercase tracking-wide leading-none mb-0.5">Pending</p>
+              <p className="text-orange-700 font-black text-xl leading-none">{starsPending}</p>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

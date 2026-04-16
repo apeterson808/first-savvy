@@ -153,7 +153,7 @@ export default function ConnectionDetail() {
 
   return (
     <div className="h-full flex flex-col pb-6 p-4 md:p-6">
-      <SimpleProfileHeader child={child} />
+      <SimpleProfileHeader child={child} starsBalance={child.stars_balance || 0} starsPending={child.stars_pending || 0} />
 
       <PageTabs tabs={['tasks', 'rewards', 'activity', 'settings']} defaultTab="tasks" />
 
