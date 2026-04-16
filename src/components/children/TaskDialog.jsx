@@ -148,7 +148,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-1">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 px-1 pb-1">
           <div className="space-y-2">
             <Label htmlFor="title">Title</Label>
             <Input
