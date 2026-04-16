@@ -159,27 +159,48 @@ export function TaskCard({
       </motion.div>
 
       <Dialog open={showCompleteDialog} onOpenChange={setShowCompleteDialog}>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Complete Task</DialogTitle>
-            <DialogDescription>
-              Add any notes about how you completed this task (optional)
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            placeholder="Tell your parent what you did..."
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            rows={4}
-          />
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowCompleteDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleConfirmComplete}>
-              Submit for Approval
-            </Button>
-          </DialogFooter>
+        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()} className="max-w-sm overflow-hidden p-0">
+          <div
+            className="px-6 pt-6 pb-4 text-white"
+            style={{ backgroundColor: task.color || '#3B82F6' }}
+          >
+            <div className="flex items-center gap-3 mb-1">
+              <div className="p-2 rounded-lg bg-white/20">
+                {(() => { const I = PICKER_ICON_MAP[task.icon] || Star; return <I className="w-5 h-5 text-white" />; })()}
+              </div>
+              <div>
+                <p className="text-white/80 text-xs font-medium uppercase tracking-wide">Complete Task</p>
+                <h2 className="font-bold text-lg leading-tight">{task.title}</h2>
+              </div>
+              <div className="ml-auto flex items-center gap-1 bg-white/20 rounded-full px-3 py-1">
+                <Star className="w-4 h-4 fill-yellow-300 text-yellow-300" />
+                <span className="font-bold text-sm">{task.star_reward || 1}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="px-6 py-4 space-y-3">
+            <Textarea
+              placeholder="Any notes for your parent? (optional)"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              className="resize-none"
+            />
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setShowCompleteDialog(false)}>
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 font-semibold text-white"
+                style={{ backgroundColor: task.color || '#3B82F6' }}
+                onClick={handleConfirmComplete}
+              >
+                <Sparkles className="w-4 h-4 mr-1.5" />
+                Submit for Approval
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
