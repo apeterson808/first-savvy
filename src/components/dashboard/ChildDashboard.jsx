@@ -234,9 +234,6 @@ export default function ChildDashboard() {
                 </div>
                 <CardTitle className="text-lg font-bold text-slate-900">My Tasks</CardTitle>
               </div>
-              <Badge variant="secondary" className="text-xs px-3 py-1">
-                {assignedTasks.length} active
-              </Badge>
             </div>
           </CardHeader>
           <CardContent className="px-6 pb-6">
@@ -333,11 +330,6 @@ export default function ChildDashboard() {
                 </div>
                 <CardTitle className="text-lg font-bold text-slate-900">Rewards Store</CardTitle>
               </div>
-              {affordableRewards.length > 0 && (
-                <Badge className="bg-green-100 text-green-700 text-xs px-3 py-1">
-                  {affordableRewards.length} available
-                </Badge>
-              )}
             </div>
           </CardHeader>
           <CardContent className="px-6 pb-6">

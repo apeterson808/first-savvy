@@ -204,16 +204,13 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
+            <div className="flex items-center bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
               <h2 className="text-xl sm:text-2xl font-bold text-blue-900 flex items-center gap-2 sm:gap-3">
                 <div className="bg-blue-500 rounded-full p-1.5 sm:p-2">
                   <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 Your Tasks
               </h2>
-              <Badge className="bg-green-500 hover:bg-green-600 text-white text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-1.5 shadow-md">
-                {tasksWithCompletions.length} total
-              </Badge>
             </div>
 
             {tasksWithCompletions.length === 0 ? (
@@ -240,16 +237,13 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
           </div>
 
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center justify-between bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-xl border-2 border-purple-200">
+            <div className="flex items-center bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-xl border-2 border-purple-200">
               <h2 className="text-xl sm:text-2xl font-bold text-purple-900 flex items-center gap-2 sm:gap-3">
                 <div className="bg-purple-500 rounded-full p-1.5 sm:p-2">
                   <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 Rewards
               </h2>
-              <Badge className="bg-green-500 hover:bg-green-600 text-white text-sm sm:text-base px-3 sm:px-4 py-1 sm:py-1.5 shadow-md">
-                {availableRewards.length} available
-              </Badge>
             </div>
 
             {availableRewards.length === 0 && redeemedRewards.length === 0 ? (
