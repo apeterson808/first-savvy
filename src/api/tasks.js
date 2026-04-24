@@ -24,10 +24,6 @@ export const tasksAPI = {
       query = query.eq('status', filters.status);
     }
 
-    if (filters.recurring !== undefined) {
-      query = query.eq('is_recurring', filters.recurring);
-    }
-
     query = query.order('created_at', { ascending: false });
 
     const { data, error } = await query;
@@ -60,18 +56,11 @@ export const tasksAPI = {
       metadata: taskData.metadata,
       source: taskData.source || 'web',
       created_by_profile_id: taskData.created_by_profile_id || null,
+      reset_mode: taskData.reset_mode || 'daily',
     };
 
     if (taskData.star_reward !== undefined) {
       insertData.star_reward = taskData.star_reward;
-    }
-
-    if (taskData.frequency !== undefined) {
-      insertData.frequency = taskData.frequency;
-    }
-
-    if (taskData.repeatable !== undefined) {
-      insertData.repeatable = taskData.repeatable;
     }
 
     if (taskData.requires_approval !== undefined) {
@@ -86,22 +75,6 @@ export const tasksAPI = {
 
     if (taskData.due_date !== undefined) {
       insertData.due_date = taskData.due_date;
-    }
-
-    if (taskData.recurrence_pattern !== undefined) {
-      insertData.recurrence_pattern = taskData.recurrence_pattern;
-    } else if (!taskData.frequency) {
-      insertData.recurrence_pattern = 'once';
-    }
-
-    if (taskData.is_recurring !== undefined) {
-      insertData.is_recurring = taskData.is_recurring;
-    } else {
-      insertData.is_recurring = false;
-    }
-
-    if (taskData.next_recurrence_date !== undefined) {
-      insertData.next_recurrence_date = taskData.next_recurrence_date;
     }
 
     const { data, error } = await supabase
@@ -191,8 +164,8 @@ export const tasksAPI = {
 
     if (txError) throw txError;
 
-    const isRepeatable = task.repeatable || task.frequency === 'always_available' || task.reset_mode === 'instant';
-    const newStatus = isRepeatable ? 'in_progress' : 'approved';
+    const shouldReset = task.reset_mode === 'instant';
+    const newStatus = shouldReset ? 'in_progress' : 'approved';
 
     const { data, error } = await supabase
       .from('tasks')
@@ -207,10 +180,6 @@ export const tasksAPI = {
       .single();
 
     if (error) throw error;
-
-    if (task.is_recurring && task.next_recurrence_date) {
-      await this.createRecurringTaskInstance(task, profileId, userId);
-    }
 
     return data;
   },
@@ -230,60 +199,6 @@ export const tasksAPI = {
 
     if (error) throw error;
     return data;
-  },
-
-  async createRecurringTaskInstance(originalTask, profileId, userId) {
-    const nextDate = this.calculateNextRecurrence(
-      originalTask.next_recurrence_date,
-      originalTask.recurrence_pattern
-    );
-
-    const { data, error } = await supabase
-      .from('tasks')
-      .insert({
-        profile_id: profileId,
-        assigned_to_child_id: originalTask.assigned_to_child_id,
-        title: originalTask.title,
-        description: originalTask.description,
-        points_value: originalTask.points_value,
-        status: 'in_progress',
-        due_date: nextDate,
-        recurrence_pattern: originalTask.recurrence_pattern,
-        is_recurring: true,
-        next_recurrence_date: this.calculateNextRecurrence(nextDate, originalTask.recurrence_pattern),
-        created_by_user_id: userId,
-        icon: originalTask.icon,
-        color: originalTask.color,
-        metadata: originalTask.metadata,
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  calculateNextRecurrence(fromDate, pattern) {
-    const date = new Date(fromDate);
-
-    switch (pattern) {
-      case 'daily':
-        date.setDate(date.getDate() + 1);
-        break;
-      case 'weekly':
-        date.setDate(date.getDate() + 7);
-        break;
-      case 'biweekly':
-        date.setDate(date.getDate() + 14);
-        break;
-      case 'monthly':
-        date.setMonth(date.getMonth() + 1);
-        break;
-      default:
-        return null;
-    }
-
-    return date.toISOString();
   },
 
   async deleteTask(taskId) {

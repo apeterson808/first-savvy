@@ -156,16 +156,16 @@ export const taskCompletionsAPI = {
     if (taskId) {
       const { data: task } = await supabase
         .from('tasks')
-        .select('repeatable, frequency, reset_mode')
+        .select('reset_mode')
         .eq('id', taskId)
         .maybeSingle();
 
-      const isRepeatable = task?.repeatable || task?.frequency === 'always_available' || task?.reset_mode === 'instant';
+      const shouldReset = task?.reset_mode === 'instant';
 
       await supabase
         .from('tasks')
         .update({
-          status: isRepeatable ? 'in_progress' : 'approved',
+          status: shouldReset ? 'in_progress' : 'approved',
           approved_at: new Date().toISOString(),
           completed_at: null,
         })
