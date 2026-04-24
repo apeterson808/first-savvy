@@ -58,6 +58,8 @@ export const tasksAPI = {
       icon: taskData.icon,
       color: taskData.color,
       metadata: taskData.metadata,
+      source: taskData.source || 'web',
+      created_by_profile_id: taskData.created_by_profile_id || null,
     };
 
     if (taskData.star_reward !== undefined) {
@@ -189,7 +191,7 @@ export const tasksAPI = {
 
     if (txError) throw txError;
 
-    const isRepeatable = task.repeatable || task.frequency === 'always_available';
+    const isRepeatable = task.repeatable || task.frequency === 'always_available' || task.reset_mode === 'instant';
     const newStatus = isRepeatable ? 'in_progress' : 'approved';
 
     const { data, error } = await supabase
