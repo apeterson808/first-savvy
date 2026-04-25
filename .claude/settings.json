@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /tmp/cc-agent/61486229/project/.claude/sync-mobile.sh 2>/dev/null || true",
+            "statusMessage": "Syncing mobile repo state...",
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
