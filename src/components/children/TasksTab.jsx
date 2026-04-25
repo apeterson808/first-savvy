@@ -269,21 +269,10 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                 <CardContent>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4 text-sm">
-                      {task.star_reward ? (
-                        <span className="font-semibold text-yellow-600 flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-500" />
-                          {task.star_reward} {task.star_reward === 1 ? 'star' : 'stars'}
-                        </span>
-                      ) : task.points_reward ? (
-                        <span className="font-semibold text-yellow-600 flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-yellow-500" />
-                          {task.points_reward} {task.points_reward === 1 ? 'star' : 'stars'}
-                        </span>
-                      ) : (
-                        <span className="font-semibold text-green-600">
-                          {task.points_value} points
-                        </span>
-                      )}
+                      <span className="font-semibold text-yellow-600 flex items-center gap-1">
+                        <Star className="w-4 h-4 fill-yellow-500" />
+                        {task.star_reward || 1} {(task.star_reward || 1) === 1 ? 'star' : 'stars'}
+                      </span>
                       <span className="flex items-center gap-1 text-slate-500">
                         {task.reset_mode === 'instant' || !task.reset_mode ? (
                           'Instant reset'

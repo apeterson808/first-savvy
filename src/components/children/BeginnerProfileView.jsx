@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkles, Trophy } from 'lucide-react';
+import { Star, Sparkles, Trophy, Gift } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { tasksAPI } from '@/api/tasks';
-import { firstsavvy } from '@/api/firstsavvyClient';
+import { rewardsAPI } from '@/api/rewards';
 import { useProfile } from '@/contexts/ProfileContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import ChildAvatar from './ChildAvatar';
@@ -21,8 +19,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   const [completions, setCompletions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [celebrationStars, setCelebrationStars] = useState(0);
-  const { exitChildView, currentProfile, viewingChildProfile } = useProfile();
-  const isParentViewingChild = viewingChildProfile && viewingChildProfile.loginType === 'parent-selected';
+  const { viewingChildProfile } = useProfile();
 
   useEffect(() => {
     if (childProfile?.id) {
@@ -34,22 +31,10 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     try {
       setLoading(true);
 
-      const { data: childData } = await firstsavvy
-        .from('child_profiles')
-        .select('parent_profile_id')
-        .eq('id', childProfile.id)
-        .single();
-
       const [balanceData, tasksData, rewardsData, completionsData] = await Promise.all([
         taskCompletionsAPI.getChildStarBalance(childProfile.id),
         tasksAPI.getTasksByChild(childProfile.id),
-        firstsavvy
-          .from('rewards')
-          .select('*')
-          .eq('profile_id', childData.parent_profile_id)
-          .or(`assigned_to_child_id.eq.${childProfile.id},assigned_to_child_id.is.null`)
-          .eq('is_active', true)
-          .order('created_at', { ascending: false }),
+        rewardsAPI.getRewardsByChild(childProfile.id),
         taskCompletionsAPI.getCompletions(childProfile.id),
       ]);
 
@@ -58,7 +43,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
       const pendingStarsTotal = pendingCompletions.reduce((sum, c) => sum + (c.stars_earned || 0), 0);
       setStarsPending(pendingStarsTotal);
       setTasks(tasksData || []);
-      setRewards(rewardsData.data || []);
+      setRewards(rewardsData || []);
       setCompletions(completionsData || []);
     } catch (error) {
       console.error('Error loading beginner profile data:', error);
@@ -119,16 +104,10 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     }
   };
 
-
   const tasksWithCompletions = tasks.map(task => {
     const taskCompletions = completions.filter(c => c.task_id === task.id);
-
     const pendingCompletion = taskCompletions.find(c => c.status === 'pending');
-    if (pendingCompletion) {
-      return { task, completion: pendingCompletion };
-    }
-
-    return { task, completion: undefined };
+    return { task, completion: pendingCompletion };
   });
 
   const availableRewards = rewards.filter(r => r.status === 'available');
@@ -138,7 +117,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
-          <Sparkles className="w-12 h-12 animate-spin text-purple-500 mx-auto mb-4" />
+          <Sparkles className="w-12 h-12 animate-spin text-amber-500 mx-auto mb-4" />
           <p className="text-lg text-slate-600">Loading your adventure...</p>
         </div>
       </div>
@@ -146,7 +125,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 p-3 sm:p-4 md:p-8 relative">
+    <div className="min-h-screen bg-gradient-to-br from-sky-50 via-blue-50 to-cyan-50 p-3 sm:p-4 md:p-8 relative">
 
       <AnimatePresence>
         {celebrationStars > 0 && (
@@ -165,6 +144,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
       </AnimatePresence>
 
       <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+        {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
             <ChildAvatar child={childProfile} size="lg" />
@@ -176,7 +156,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="relative flex items-center gap-2 sm:gap-3 md:gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border-2 sm:border-3 border-yellow-300 animate-pulse-subtle flex-1 sm:flex-initial">
+            <div className="relative flex items-center gap-2 sm:gap-3 md:gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border-2 sm:border-3 border-yellow-300 flex-1 sm:flex-initial">
               <Star className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-amber-500 fill-amber-500 drop-shadow-md" />
               <div>
                 <p className="text-xs sm:text-sm font-bold text-yellow-100 uppercase tracking-wide sm:tracking-widest drop-shadow-sm">Your Stars</p>
@@ -186,23 +166,26 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
           </div>
         </div>
 
+        {/* Pending approval banner */}
         {starsPending > 0 && (
-          <Card className="bg-gradient-to-r from-purple-100 via-blue-100 to-cyan-100 border-2 border-purple-200 shadow-md">
+          <Card className="bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-2 border-amber-200 shadow-md">
             <CardContent className="py-3 sm:py-4 px-4 sm:px-6">
               <div className="flex items-center justify-center gap-2 sm:gap-3">
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 animate-pulse" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 animate-pulse" />
                 <div className="text-center">
-                  <p className="text-xs sm:text-sm font-semibold text-purple-900">
+                  <p className="text-xs sm:text-sm font-semibold text-amber-900">
                     <span className="text-xl sm:text-2xl font-black">{starsPending}</span> {starsPending === 1 ? 'star' : 'stars'} waiting for approval!
                   </p>
                 </div>
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600 animate-pulse" />
+                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 animate-pulse" />
               </div>
             </CardContent>
           </Card>
         )}
 
+        {/* Tasks + Rewards grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          {/* Tasks column */}
           <div className="space-y-3 sm:space-y-4">
             <div className="flex items-center bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
               <h2 className="text-xl sm:text-2xl font-bold text-blue-900 flex items-center gap-2 sm:gap-3">
@@ -220,27 +203,26 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
                 </CardContent>
               </Card>
             ) : (
-              <>
-                {tasksWithCompletions.map(({ task, completion }) => (
-                  <TaskCard
-                    key={task.id}
-                    task={task}
-                    completion={completion}
-                    onComplete={handleTaskComplete}
-                    onApprove={handleApproveCompletion}
-                    onReject={handleRejectCompletion}
-                    isParentView={isParentView}
-                  />
-                ))}
-              </>
+              tasksWithCompletions.map(({ task, completion }) => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  completion={completion}
+                  onComplete={handleTaskComplete}
+                  onApprove={handleApproveCompletion}
+                  onReject={handleRejectCompletion}
+                  isParentView={isParentView}
+                />
+              ))
             )}
           </div>
 
+          {/* Rewards column */}
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center bg-gradient-to-r from-purple-50 to-pink-50 p-3 sm:p-4 rounded-xl border-2 border-purple-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-purple-900 flex items-center gap-2 sm:gap-3">
-                <div className="bg-purple-500 rounded-full p-1.5 sm:p-2">
-                  <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+            <div className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50 p-3 sm:p-4 rounded-xl border-2 border-amber-200">
+              <h2 className="text-xl sm:text-2xl font-bold text-amber-900 flex items-center gap-2 sm:gap-3">
+                <div className="bg-amber-500 rounded-full p-1.5 sm:p-2">
+                  <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 Rewards
               </h2>
@@ -263,10 +245,8 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
                   />
                 ))}
                 {redeemedRewards.length > 0 && (
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold text-slate-700 mb-3">
-                      Redeemed Rewards
-                    </h3>
+                  <div className="mt-6">
+                    <h3 className="text-base font-semibold text-slate-600 mb-3">Redeemed</h3>
                     {redeemedRewards.map((reward) => (
                       <RewardCard
                         key={reward.id}
@@ -282,7 +262,6 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
           </div>
         </div>
       </div>
-
     </div>
   );
 }
