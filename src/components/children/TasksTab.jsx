@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tasksAPI } from '@/api/tasks';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
-import { firstsavvy } from '@/api/firstsavvyClient';
+import { supabase } from '@/api/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, CalendarClock } from 'lucide-react';
@@ -47,11 +47,11 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
     try {
       setLoading(true);
 
-      const { data: childProfile } = await firstsavvy
+      const { data: childProfile } = await supabase
         .from('child_profiles')
         .select('current_permission_level')
         .eq('id', childId)
-        .single();
+        .maybeSingle();
 
       const isBeginner = childProfile?.current_permission_level === 1;
       setIsBeginnerProfile(isBeginner);
@@ -74,7 +74,7 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
   const handleApprove = async (taskId, completionId = null) => {
     try {
       const task = tasks.find(t => t.id === taskId);
-      const starsAwarded = task?.star_reward || task?.points_value || 0;
+      const starsAwarded = task?.star_reward || 0;
 
       if (isBeginnerProfile && completionId) {
         await taskCompletionsAPI.approveCompletion(completionId);

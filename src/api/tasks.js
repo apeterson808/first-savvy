@@ -69,12 +69,6 @@ export const tasksAPI = {
       insertData.requires_approval = taskData.requires_approval;
     }
 
-    if (taskData.points_value !== undefined) {
-      insertData.points_value = taskData.points_value;
-    } else {
-      insertData.points_value = 0;
-    }
-
     if (taskData.due_date !== undefined) {
       insertData.due_date = taskData.due_date;
     }
@@ -130,41 +124,24 @@ export const tasksAPI = {
   async approveTask(taskId, userId, profileId) {
     const { data: task, error: fetchError } = await supabase
       .from('tasks')
-      .select('*, child_profiles(*)')
+      .select('*, child_profiles(id, stars_balance)')
       .eq('id', taskId)
       .single();
 
     if (fetchError) throw fetchError;
 
-    const pointsToAward = Math.round(task.points_value * (task.bonus_multiplier || 1.0));
+    const starsToAward = Math.round((task.star_reward || 0) * (task.bonus_multiplier || 1.0));
 
-    const { data: updatedChild, error: balanceError } = await supabase
-      .from('child_profiles')
-      .update({
-        points_balance: task.child_profiles.points_balance + pointsToAward,
-      })
-      .eq('id', task.assigned_to_child_id)
-      .select()
-      .single();
+    if (starsToAward > 0) {
+      const { error: balanceError } = await supabase
+        .from('child_profiles')
+        .update({
+          stars_balance: (task.child_profiles.stars_balance || 0) + starsToAward,
+        })
+        .eq('id', task.assigned_to_child_id);
 
-    if (balanceError) throw balanceError;
-
-    const { error: txError } = await supabase
-      .from('child_transactions')
-      .insert({
-        child_profile_id: task.assigned_to_child_id,
-        transaction_type: 'chore_payment',
-        amount: pointsToAward,
-        currency_type: 'points',
-        description: `Completed: ${task.title}`,
-        status: 'completed',
-        approved_by_user_id: userId,
-        approved_at: new Date().toISOString(),
-        related_chore_id: taskId,
-        balance_after: updatedChild.points_balance,
-      });
-
-    if (txError) throw txError;
+      if (balanceError) throw balanceError;
+    }
 
     const shouldReset = task.reset_mode === 'instant' || task.repeatable === true || task.frequency === 'always_available';
     const newStatus = shouldReset ? 'in_progress' : 'approved';

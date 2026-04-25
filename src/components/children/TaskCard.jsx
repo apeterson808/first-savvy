@@ -140,9 +140,9 @@ export function TaskCard({
                     </div>
                   )}
                   {completion?.review_notes && showCompletion && (
-                    <div className="mt-2 p-2 bg-purple-50 rounded text-xs sm:text-sm">
-                      <p className="font-medium text-purple-900">Parent's Feedback:</p>
-                      <p className="text-purple-700 break-words">{completion.review_notes}</p>
+                    <div className="mt-2 p-2 bg-slate-50 rounded text-xs sm:text-sm border border-slate-200">
+                      <p className="font-medium text-slate-700">Parent's Feedback:</p>
+                      <p className="text-slate-600 break-words">{completion.review_notes}</p>
                     </div>
                   )}
                 </div>
