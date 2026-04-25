@@ -133,10 +133,10 @@ export function TaskCard({
                   {task.description && (
                     <p className="text-xs sm:text-sm text-slate-600 mt-1 break-words">{task.description}</p>
                   )}
-                  {completion?.submission_notes && isParentView && isPending && (
+                  {(completion?.note || completion?.submission_notes) && isParentView && isPending && (
                     <div className="mt-2 p-2 bg-blue-100 rounded text-xs sm:text-sm border border-blue-200">
                       <p className="font-medium text-blue-900">Notes from child:</p>
-                      <p className="text-blue-800 mt-0.5 break-words">{completion.submission_notes}</p>
+                      <p className="text-blue-800 mt-0.5 break-words">{completion.note || completion.submission_notes}</p>
                     </div>
                   )}
                   {completion?.review_notes && showCompletion && (
@@ -212,10 +212,10 @@ export function TaskCard({
               Add feedback for your child (optional)
             </DialogDescription>
           </DialogHeader>
-          {completion?.submission_notes && (
+          {(completion?.note || completion?.submission_notes) && (
             <div className="p-3 bg-blue-50 rounded">
               <p className="font-medium text-sm text-blue-900">Child's Notes:</p>
-              <p className="text-sm text-blue-700">{completion.submission_notes}</p>
+              <p className="text-sm text-blue-700">{completion.note || completion.submission_notes}</p>
             </div>
           )}
           <Textarea

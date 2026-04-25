@@ -236,10 +236,10 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                       {task.description && (
                         <p className="text-sm text-slate-600">{task.description}</p>
                       )}
-                      {completion?.submission_notes && (
+                      {(completion?.note || completion?.submission_notes) && (
                         <div className="mt-2 p-2 bg-blue-100 rounded text-sm border border-blue-200">
                           <p className="font-medium text-blue-900 text-xs">Notes from child:</p>
-                          <p className="text-blue-800 text-xs mt-0.5">{completion.submission_notes}</p>
+                          <p className="text-blue-800 text-xs mt-0.5">{completion.note || completion.submission_notes}</p>
                         </div>
                       )}
                     </div>

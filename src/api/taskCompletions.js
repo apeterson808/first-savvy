@@ -43,6 +43,7 @@ export const taskCompletionsAPI = {
         task_id: taskId,
         child_profile_id: childProfileId,
         stars_earned: task.star_reward,
+        note: submissionNotes,
         submission_notes: submissionNotes,
         status: 'pending',
       })
