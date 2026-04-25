@@ -4,7 +4,7 @@ import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, Zap, RotateCcw } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, CalendarClock } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -285,10 +285,11 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                         </span>
                       )}
                       <span className="flex items-center gap-1 text-slate-500">
-                        {task.reset_mode === 'instant' ? (
-                          <><Zap className="w-3.5 h-3.5" /> Instant</>
+                        {task.reset_mode === 'instant' || !task.reset_mode ? (
+                          'Instant reset'
                         ) : (
-                          <><RotateCcw className="w-3.5 h-3.5" /> Daily</>
+                          <><CalendarClock className="w-3.5 h-3.5" />
+                          {task.reset_mode.charAt(0).toUpperCase() + task.reset_mode.slice(1)}</>
                         )}
                       </span>
                       {task.due_date && (

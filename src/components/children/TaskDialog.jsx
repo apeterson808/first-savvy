@@ -8,24 +8,25 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import AppearancePicker, { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
-import { Star, Zap, RotateCcw } from 'lucide-react';
+import { Star } from 'lucide-react';
 
-const RESET_MODE_OPTIONS = [
-  {
-    value: 'instant',
-    label: 'Instant',
-    description: 'Resets immediately after approval',
-    icon: Zap,
-  },
-  {
-    value: 'daily',
-    label: 'Daily',
-    description: 'Resets once per day',
-    icon: RotateCcw,
-  },
+const SCHEDULE_CHIPS = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
 ];
+
+function getInitialScheduleState(task) {
+  if (!task) return { scheduleEnabled: false, scheduleInterval: 'daily' };
+  const scheduled = ['daily', 'weekly', 'monthly'].includes(task.reset_mode);
+  return {
+    scheduleEnabled: scheduled,
+    scheduleInterval: scheduled ? task.reset_mode : 'daily',
+  };
+}
 
 export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, task = null }) {
   const { user } = useAuth();
@@ -36,8 +37,9 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
     star_reward: 1,
     icon: 'Star',
     color: '#52A5CE',
-    reset_mode: 'daily',
   });
+  const [scheduleEnabled, setScheduleEnabled] = useState(false);
+  const [scheduleInterval, setScheduleInterval] = useState('daily');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
@@ -49,53 +51,47 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
         star_reward: task.star_reward || 1,
         icon: task.icon || 'Star',
         color: task.color || '#52A5CE',
-        reset_mode: task.reset_mode || 'daily',
       });
+      const { scheduleEnabled: se, scheduleInterval: si } = getInitialScheduleState(task);
+      setScheduleEnabled(se);
+      setScheduleInterval(si);
     } else {
-      setFormData({
-        title: '',
-        description: '',
-        star_reward: 1,
-        icon: 'Star',
-        color: '#52A5CE',
-        reset_mode: 'daily',
-      });
+      setFormData({ title: '', description: '', star_reward: 1, icon: 'Star', color: '#52A5CE' });
+      setScheduleEnabled(false);
+      setScheduleInterval('daily');
     }
   }, [task]);
 
+  const getResetMode = () => scheduleEnabled ? scheduleInterval : 'instant';
+
   const validateForm = () => {
     const newErrors = {};
-
     if (!formData.title.trim()) {
       newErrors.title = 'Title is required';
     } else if (formData.title.length > 100) {
       newErrors.title = 'Title must be 100 characters or less';
     }
-
     if (formData.star_reward < 1 || !Number.isInteger(Number(formData.star_reward))) {
       newErrors.star_reward = 'Star reward must be a positive integer';
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
-
     try {
       const parentProfileId = profileId || currentProfile?.id;
-
       if (!parentProfileId) {
         toast.error(`Unable to ${task ? 'update' : 'create'} task: Profile not found`);
         return;
       }
+
+      const reset_mode = getResetMode();
+      const isInstant = reset_mode === 'instant';
 
       if (task) {
         await tasksAPI.updateTask(task.id, {
@@ -104,7 +100,9 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
           star_reward: parseInt(formData.star_reward),
           icon: formData.icon,
           color: formData.color,
-          reset_mode: formData.reset_mode,
+          reset_mode,
+          repeatable: isInstant,
+          frequency: isInstant ? 'always_available' : 'once',
         });
         toast.success(`Task "${formData.title}" updated`);
       } else {
@@ -115,27 +113,20 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
           star_reward: parseInt(formData.star_reward),
           icon: formData.icon,
           color: formData.color,
-          reset_mode: formData.reset_mode,
+          reset_mode,
+          repeatable: isInstant,
+          frequency: isInstant ? 'always_available' : 'once',
           requires_approval: true,
           created_by_user_id: user.id,
         });
         toast.success(`Task "${formData.title}" created`);
       }
 
-      setFormData({
-        title: '',
-        description: '',
-        star_reward: 1,
-        icon: 'Star',
-        color: '#52A5CE',
-        reset_mode: 'daily',
-      });
+      setFormData({ title: '', description: '', star_reward: 1, icon: 'Star', color: '#52A5CE' });
+      setScheduleEnabled(false);
+      setScheduleInterval('daily');
       setErrors({});
-
-      if (onSuccess) {
-        onSuccess();
-      }
-
+      if (onSuccess) onSuccess();
       onClose();
     } catch (error) {
       console.error(`Error ${task ? 'updating' : 'creating'} task:`, error);
@@ -146,14 +137,9 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
   };
 
   const handleClose = () => {
-    setFormData({
-      title: '',
-      description: '',
-      star_reward: 1,
-      icon: 'Star',
-      color: '#52A5CE',
-      reset_mode: 'daily',
-    });
+    setFormData({ title: '', description: '', star_reward: 1, icon: 'Star', color: '#52A5CE' });
+    setScheduleEnabled(false);
+    setScheduleInterval('daily');
     setErrors({});
     onClose();
   };
@@ -178,9 +164,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
               placeholder="e.g., Clean your room"
               maxLength={100}
             />
-            {errors.title && (
-              <p className="text-sm text-destructive">{errors.title}</p>
-            )}
+            {errors.title && <p className="text-sm text-destructive">{errors.title}</p>}
           </div>
 
           <div className="space-y-2">
@@ -204,41 +188,39 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
               value={formData.star_reward}
               onChange={(e) => setFormData({ ...formData, star_reward: e.target.value })}
             />
-            {errors.star_reward && (
-              <p className="text-sm text-destructive">{errors.star_reward}</p>
-            )}
+            {errors.star_reward && <p className="text-sm text-destructive">{errors.star_reward}</p>}
           </div>
 
-          <div className="space-y-2">
-            <Label>Frequency</Label>
-            <div className="grid grid-cols-2 gap-2">
-              {RESET_MODE_OPTIONS.map((option) => {
-                const Icon = option.icon;
-                const isSelected = formData.reset_mode === option.value;
-                return (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between py-2 border rounded-lg px-3">
+              <div>
+                <p className="text-sm font-medium text-slate-900">Set a schedule</p>
+                <p className="text-xs text-slate-500">Reset on a recurring interval</p>
+              </div>
+              <Switch
+                checked={scheduleEnabled}
+                onCheckedChange={setScheduleEnabled}
+              />
+            </div>
+
+            {scheduleEnabled && (
+              <div className="flex gap-2">
+                {SCHEDULE_CHIPS.map((chip) => (
                   <button
-                    key={option.value}
+                    key={chip.value}
                     type="button"
-                    onClick={() => setFormData({ ...formData, reset_mode: option.value })}
-                    className={`flex items-start gap-2.5 p-3 rounded-lg border-2 text-left transition-all ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                    onClick={() => setScheduleInterval(chip.value)}
+                    className={`flex-1 py-1.5 px-3 rounded-full text-sm font-medium border transition-all ${
+                      scheduleInterval === chip.value
+                        ? 'bg-blue-500 text-white border-blue-500'
+                        : 'bg-white text-slate-600 border-slate-300 hover:border-slate-400'
                     }`}
                   >
-                    <Icon className={`w-4 h-4 mt-0.5 shrink-0 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
-                    <div>
-                      <p className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-slate-700'}`}>
-                        {option.label}
-                      </p>
-                      <p className={`text-xs mt-0.5 ${isSelected ? 'text-blue-600' : 'text-slate-500'}`}>
-                        {option.description}
-                      </p>
-                    </div>
+                    {chip.label}
                   </button>
-                );
-              })}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">

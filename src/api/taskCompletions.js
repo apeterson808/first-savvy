@@ -156,11 +156,11 @@ export const taskCompletionsAPI = {
     if (taskId) {
       const { data: task } = await supabase
         .from('tasks')
-        .select('reset_mode')
+        .select('reset_mode, repeatable, frequency')
         .eq('id', taskId)
         .maybeSingle();
 
-      const shouldReset = task?.reset_mode === 'instant';
+      const shouldReset = task?.reset_mode === 'instant' || task?.repeatable === true || task?.frequency === 'always_available';
 
       await supabase
         .from('tasks')

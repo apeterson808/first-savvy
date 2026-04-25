@@ -56,7 +56,9 @@ export const tasksAPI = {
       metadata: taskData.metadata,
       source: taskData.source || 'web',
       created_by_profile_id: taskData.created_by_profile_id || null,
-      reset_mode: taskData.reset_mode || 'daily',
+      reset_mode: taskData.reset_mode || 'instant',
+      repeatable: taskData.repeatable !== undefined ? taskData.repeatable : true,
+      frequency: taskData.frequency || 'always_available',
     };
 
     if (taskData.star_reward !== undefined) {
@@ -164,7 +166,7 @@ export const tasksAPI = {
 
     if (txError) throw txError;
 
-    const shouldReset = task.reset_mode === 'instant';
+    const shouldReset = task.reset_mode === 'instant' || task.repeatable === true || task.frequency === 'always_available';
     const newStatus = shouldReset ? 'in_progress' : 'approved';
 
     const { data, error } = await supabase
