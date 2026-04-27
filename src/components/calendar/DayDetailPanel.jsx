@@ -324,7 +324,7 @@ export default function DayDetailPanel({
                       ) : (
                         <ArrowDownRight className="w-4 h-4 text-red-400 shrink-0" />
                       )}
-                      <p className="flex-1 text-xs truncate text-foreground/80">{txn.description || txn.memo || 'Transaction'}</p>
+                      <p className="flex-1 text-xs truncate text-foreground/80">{txn.description || txn.notes || 'Transaction'}</p>
                       <span className={cn(
                         'text-xs font-semibold shrink-0',
                         txn.type === 'income' ? 'text-green-600' : 'text-red-500'

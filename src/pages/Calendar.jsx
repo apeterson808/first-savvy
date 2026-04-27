@@ -379,7 +379,7 @@ export default function CalendarPage() {
       if (!profileId || !showFinancials) return [];
       const { data, error } = await supabase
         .from('transactions')
-        .select('id, date, amount, type, status, description, memo')
+        .select('id, date, amount, type, status, description, notes')
         .eq('profile_id', profileId)
         .gte('date', monthRange.start)
         .lte('date', monthRange.end)
