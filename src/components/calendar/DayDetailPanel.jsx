@@ -58,7 +58,7 @@ export default function DayDetailPanel({
     return isSameDay(d, selectedDate);
   });
 
-  const dayTasks = tasks.filter(t => t.due_date === dateStr);
+  const dayTasks = tasks; // already filtered by caller to match this day
 
   const dayEvents = calendarEvents.filter(e => e.event_date === dateStr);
 

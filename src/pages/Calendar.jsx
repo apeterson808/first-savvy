@@ -18,8 +18,41 @@ import { toast } from 'sonner';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addMonths, subMonths, isSameDay, isSameMonth,
-  addDays, isToday, startOfDay
+  addDays, isToday, startOfDay, isBefore
 } from 'date-fns';
+
+// Returns true if a recurring task should appear on a given calendar day
+function taskAppearsOnDay(task, day) {
+  // One-off task with a specific due date
+  if (task.due_date) {
+    const dueDateStr = task.due_date.startsWith
+      ? task.due_date.slice(0, 10)
+      : format(new Date(task.due_date), 'yyyy-MM-dd');
+    return dueDateStr === format(day, 'yyyy-MM-dd');
+  }
+
+  const today = startOfDay(new Date());
+  const dayStart = startOfDay(day);
+
+  // Don't show recurring tasks on past days
+  if (isBefore(dayStart, today)) return false;
+
+  const { reset_mode, frequency } = task;
+  const isRecurring = frequency === 'always_available' || reset_mode === 'daily' || reset_mode === 'weekly';
+
+  if (!isRecurring) return false;
+
+  if (reset_mode === 'daily' || frequency === 'always_available') return true;
+
+  if (reset_mode === 'weekly') {
+    // Show on every day of the current week only
+    const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+    return !isBefore(dayStart, weekStart) && !isBefore(weekEnd, dayStart);
+  }
+
+  return false;
+}
 
 import { mealRecipesAPI } from '@/api/mealRecipes';
 import { mealPlanEntriesAPI } from '@/api/mealPlanEntries';
@@ -62,13 +95,13 @@ function MonthGrid({
         : format(e.scheduled_date, 'yyyy-MM-dd');
       return d === dateStr;
     });
-    const allDayTasks = tasks.filter(t => t.due_date === dateStr);
+    const allDayTasks = tasks.filter(t => taskAppearsOnDay(t, day));
     const dayTasks = activeChildFilters.length > 0
       ? allDayTasks.filter(t => activeChildFilters.includes(t.assigned_to_child_id))
       : allDayTasks;
-    const pendingCount = taskCompletions.filter(c =>
-      c.status === 'pending' && allDayTasks.some(t => t.id === c.task_id)
-    ).length;
+    const pendingCount = isToday(day)
+      ? taskCompletions.filter(c => c.status === 'pending').length
+      : 0;
     const dayEvents = calendarEvents.filter(e => e.event_date === dateStr);
     const dayTxns = transactions.filter(t => (t.date || '').startsWith(dateStr));
     const income = dayTxns.filter(t => t.type === 'income' && t.status === 'posted')
@@ -197,7 +230,7 @@ function AgendaView({ startDate, mealEntries, tasks, calendarEvents, transaction
   const hasContent = useCallback((day) => {
     const dateStr = format(day, 'yyyy-MM-dd');
     return mealEntries.some(e => (e.scheduled_date || '').startsWith(dateStr)) ||
-      tasks.some(t => t.due_date === dateStr) ||
+      tasks.some(t => taskAppearsOnDay(t, day)) ||
       calendarEvents.some(e => e.event_date === dateStr) ||
       (showFinancials && transactions.some(t => (t.date || '').startsWith(dateStr)));
   }, [mealEntries, tasks, calendarEvents, transactions, showFinancials]);
@@ -219,7 +252,7 @@ function AgendaView({ startDate, mealEntries, tasks, calendarEvents, transaction
       {activeDays.map(day => {
         const dateStr = format(day, 'yyyy-MM-dd');
         const dayMeals = mealEntries.filter(e => (e.scheduled_date || '').startsWith(dateStr));
-        const dayTasks = tasks.filter(t => t.due_date === dateStr);
+        const dayTasks = tasks.filter(t => taskAppearsOnDay(t, day));
         const dayEvents = calendarEvents.filter(e => e.event_date === dateStr);
         const dayTxns = showFinancials ? transactions.filter(t => (t.date || '').startsWith(dateStr)) : [];
 
@@ -787,7 +820,7 @@ export default function CalendarPage() {
                   selectedDate={selectedDate}
                   onClose={() => setSelectedDate(null)}
                   mealEntries={mealEntries}
-                  tasks={tasks}
+                  tasks={selectedDate ? tasks.filter(t => taskAppearsOnDay(t, selectedDate)) : []}
                   taskCompletions={allCompletions}
                   calendarEvents={calendarEvents}
                   transactions={transactions}
