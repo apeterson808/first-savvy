@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { profileSharesAPI } from '@/api/profileShares';
 import { profileInvitationsAPI } from '@/api/profileInvitations';
+import { calendarPreferencesAPI } from '@/api/calendarPreferences';
 import { supabase } from '@/api/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,13 +12,25 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Users, Edit, Lock, LockOpen, Shield, Trash2 } from 'lucide-react';
+import { Users, Edit, Lock, LockOpen, Shield, Trash2, Check } from 'lucide-react';
 import { InviteChildDialog } from './InviteChildDialog';
 import { ShareProfileDialog } from './ShareProfileDialog';
 import { PINManagementDialog } from './PINManagementDialog';
 import AvatarSelector from './AvatarSelector';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
+
+const COLOR_PALETTE = [
+  { hex: '#3b82f6', label: 'Blue' },
+  { hex: '#10b981', label: 'Emerald' },
+  { hex: '#f59e0b', label: 'Amber' },
+  { hex: '#ef4444', label: 'Red' },
+  { hex: '#ec4899', label: 'Pink' },
+  { hex: '#06b6d4', label: 'Cyan' },
+  { hex: '#84cc16', label: 'Lime' },
+  { hex: '#f97316', label: 'Orange' },
+  { hex: '#64748b', label: 'Slate' },
+];
 
 const PERMISSION_LEVELS = {
   view_only: 'View Only',
@@ -48,9 +61,11 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [showPINDialog, setShowPINDialog] = useState(false);
   const [pinValue, setPinValue] = useState('');
+  const [profileColor, setProfileColor] = useState('#3b82f6');
 
   useEffect(() => {
     loadAccessData();
+    loadProfileColor();
     if (child) {
       const data = {
         first_name: child.first_name || '',
@@ -69,6 +84,30 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
       setPinValue('');
     }
   }, [child]);
+
+  const loadProfileColor = async () => {
+    if (!currentProfileId || !child?.id) return;
+    try {
+      const prefs = await calendarPreferencesAPI.getPreferences(currentProfileId);
+      const colors = prefs?.child_colors || {};
+      if (colors[child.id]) setProfileColor(colors[child.id]);
+    } catch {}
+  };
+
+  const handleColorChange = async (hex) => {
+    setProfileColor(hex);
+    if (!currentProfileId || !child?.id) return;
+    try {
+      const prefs = await calendarPreferencesAPI.getPreferences(currentProfileId);
+      const existing = prefs?.child_colors || {};
+      await calendarPreferencesAPI.upsertPreferences(currentProfileId, {
+        child_colors: { ...existing, [child.id]: hex },
+      });
+      toast.success('Profile color updated');
+    } catch {
+      toast.error('Failed to update color');
+    }
+  };
 
   useEffect(() => {
     const changed = JSON.stringify(formData) !== JSON.stringify(originalData) || (pinValue && pinValue.length === 4);
@@ -279,6 +318,26 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                           Last login {formatDistanceToNow(new Date(child.last_login_at), { addSuffix: true })}
                         </span>
                       )}
+                    </div>
+                    <div className="mt-3">
+                      <div className="text-xs font-medium text-slate-500 mb-2">Calendar Color</div>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {COLOR_PALETTE.map(({ hex, label }) => (
+                          <button
+                            key={hex}
+                            title={label}
+                            onClick={() => handleColorChange(hex)}
+                            className="w-6 h-6 rounded-full border-2 transition-transform hover:scale-110 flex items-center justify-center"
+                            style={{
+                              backgroundColor: hex,
+                              borderColor: profileColor === hex ? 'white' : 'transparent',
+                              boxShadow: profileColor === hex ? `0 0 0 2px ${hex}` : 'none',
+                            }}
+                          >
+                            {profileColor === hex && <Check className="h-3 w-3 text-white stroke-[3]" />}
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
