@@ -16,21 +16,9 @@ import { Users, Lock, LockOpen, Shield, Trash2, Check } from 'lucide-react';
 import { InviteChildDialog } from './InviteChildDialog';
 import { ShareProfileDialog } from './ShareProfileDialog';
 import { PINManagementDialog } from './PINManagementDialog';
-import AvatarSelector from './AvatarSelector';
+import AvatarSelector, { PROFILE_COLORS } from './AvatarSelector';
 import { toast } from 'sonner';
 import { formatDistanceToNow, format } from 'date-fns';
-
-const CALENDAR_COLORS = [
-  { hex: '#3b82f6', label: 'Blue' },
-  { hex: '#10b981', label: 'Emerald' },
-  { hex: '#f59e0b', label: 'Amber' },
-  { hex: '#ef4444', label: 'Red' },
-  { hex: '#ec4899', label: 'Pink' },
-  { hex: '#06b6d4', label: 'Cyan' },
-  { hex: '#84cc16', label: 'Lime' },
-  { hex: '#f97316', label: 'Orange' },
-  { hex: '#64748b', label: 'Slate' },
-];
 
 const PERMISSION_LEVELS = {
   view_only: 'View Only',
@@ -128,10 +116,11 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
       // Avatar
       if (pendingAvatar) {
         let avatarUrl = null;
-        if (pendingAvatar.type === 'color') {
-          avatarUrl = `color:${pendingAvatar.colorId}`;
+        if (pendingAvatar.type === 'remove-photo' || pendingAvatar.type === 'remove-icon') {
+          avatarUrl = null; // clear to initials
+          await childProfilesAPI.updateChildProfile(child.id, { avatar_url: null });
         } else if (pendingAvatar.type === 'icon') {
-          avatarUrl = `icon:${pendingAvatar.icon}`;
+          avatarUrl = `icon:${pendingAvatar.iconName}`;
         } else if (pendingAvatar.type === 'upload' && pendingAvatar.file) {
           const file = pendingAvatar.file;
           const ext = file.name.split('.').pop();
@@ -143,7 +132,7 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
           const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path);
           avatarUrl = `${urlData.publicUrl}?t=${Date.now()}`;
         }
-        if (avatarUrl) {
+        if (avatarUrl !== null && pendingAvatar.type !== 'remove-photo' && pendingAvatar.type !== 'remove-icon') {
           await childProfilesAPI.updateChildProfile(child.id, { avatar_url: avatarUrl });
         }
       }
@@ -271,13 +260,14 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                     firstName={formData.first_name}
                     lastName={formData.last_name}
                     currentAvatar={child.avatar_url}
+                    currentColor={calendarColor}
                   />
 
-                  {/* Calendar color */}
+                  {/* Profile & calendar color (single unified color) */}
                   <div>
-                    <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Calendar Color</Label>
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      {CALENDAR_COLORS.map(({ hex, label }) => (
+                    <div className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Profile Color</div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {PROFILE_COLORS.map(({ hex, label }) => (
                         <button
                           key={hex}
                           type="button"
@@ -294,7 +284,7 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
                         </button>
                       ))}
                     </div>
-                    <p className="text-xs text-slate-400 mt-1.5">Used for this profile's tasks and events in the calendar</p>
+                    <p className="text-xs text-slate-400 mt-1.5">Used as avatar background and for calendar events</p>
                   </div>
                 </div>
 
