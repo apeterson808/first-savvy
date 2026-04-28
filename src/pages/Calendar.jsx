@@ -38,8 +38,11 @@ function taskAppearsOnDay(task, day) {
   if (isBefore(dayStart, today)) return false;
 
   const { reset_mode, frequency } = task;
-  const isRecurring = frequency === 'always_available' || reset_mode === 'daily' || reset_mode === 'weekly';
 
+  // Instant-reset tasks are grab-whenever — not scheduled on the calendar
+  if (reset_mode === 'instant') return false;
+
+  const isRecurring = frequency === 'always_available' || reset_mode === 'daily' || reset_mode === 'weekly';
   if (!isRecurring) return false;
 
   if (reset_mode === 'daily' || frequency === 'always_available') return true;
@@ -321,7 +324,7 @@ export default function CalendarPage() {
   const navigate = useNavigate();
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
   const [view, setView] = useState('month');
   const [activeChildFilters, setActiveChildFilters] = useState([]);
   const [weekPlannerOpen, setWeekPlannerOpen] = useState(false);
@@ -786,7 +789,7 @@ export default function CalendarPage() {
                 <MonthGrid
                   currentMonth={currentMonth}
                   selectedDate={selectedDate}
-                  onSelectDate={(day) => setSelectedDate(prev => prev && isSameDay(prev, day) ? null : day)}
+                  onSelectDate={(day) => setSelectedDate(day)}
                   mealEntries={mealEntries}
                   tasks={tasks}
                   taskCompletions={allCompletions}
