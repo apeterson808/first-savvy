@@ -110,8 +110,13 @@ export function SettingsTab({ child, currentProfileId, onUpdate, onDelete }) {
         await childProfilesAPI.setChildPin(child.id, pinValue);
       }
 
-      // Profile fields
-      await childProfilesAPI.updateChildProfile(child.id, formData);
+      // Profile fields — normalize optional unique fields: empty string → null
+      const profileUpdate = {
+        ...formData,
+        email: formData.email?.trim() || null,
+        username: formData.username?.trim() || null,
+      };
+      await childProfilesAPI.updateChildProfile(child.id, profileUpdate);
 
       // Avatar
       if (pendingAvatar) {
