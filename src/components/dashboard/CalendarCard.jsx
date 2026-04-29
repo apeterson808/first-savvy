@@ -107,7 +107,7 @@ export default function CalendarCard() {
   }, [calendarEvents, tasks, childColors]);
 
   const handleDayClick = (day) => {
-    navigate(createPageUrl('Calendar'));
+    navigate(createPageUrl('Calendar'), { state: { selectedDate: format(day, 'yyyy-MM-dd') } });
   };
 
   const week1 = allDays.slice(0, 7);

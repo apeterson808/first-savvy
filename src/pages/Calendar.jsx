@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useProfile } from '@/contexts/ProfileContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Settings2, CalendarDays, List,
   LayoutGrid, ChefHat, CalendarRange
@@ -322,9 +322,16 @@ export default function CalendarPage() {
   const { activeProfile } = useProfile();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(() => startOfDay(new Date()));
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const d = location.state?.selectedDate;
+    return d ? startOfDay(new Date(d)) : new Date();
+  });
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const d = location.state?.selectedDate;
+    return d ? startOfDay(new Date(d)) : startOfDay(new Date());
+  });
   const [view, setView] = useState('month');
   const [activeChildFilters, setActiveChildFilters] = useState([]);
   const [weekPlannerOpen, setWeekPlannerOpen] = useState(false);
