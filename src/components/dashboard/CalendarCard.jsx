@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,11 +10,9 @@ import { tasksAPI } from '@/api/tasks';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/pages/utils';
 import {
-  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
-  eachDayOfInterval, addMonths, subMonths, isSameMonth,
-  isToday, startOfDay, isBefore
+  format, startOfWeek, endOfWeek, addDays,
+  eachDayOfInterval, isToday, startOfDay, isBefore
 } from 'date-fns';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 function taskAppearsOnDay(task, day) {
@@ -36,19 +34,29 @@ function taskAppearsOnDay(task, day) {
   return false;
 }
 
-const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarCard() {
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
   const profileId = activeProfile?.id;
 
-  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const { thisWeekStart, nextWeekEnd, rangeStart, rangeEnd } = useMemo(() => {
+    const today = new Date();
+    const thisWeekStart = startOfWeek(today, { weekStartsOn: 0 });
+    const nextWeekEnd = endOfWeek(addDays(thisWeekStart, 7), { weekStartsOn: 0 });
+    return {
+      thisWeekStart,
+      nextWeekEnd,
+      rangeStart: format(thisWeekStart, 'yyyy-MM-dd'),
+      rangeEnd: format(nextWeekEnd, 'yyyy-MM-dd'),
+    };
+  }, []);
 
-  const monthRange = useMemo(() => ({
-    start: format(startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }), 'yyyy-MM-dd'),
-    end: format(endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 }), 'yyyy-MM-dd'),
-  }), [currentMonth]);
+  const allDays = useMemo(() =>
+    eachDayOfInterval({ start: thisWeekStart, end: nextWeekEnd }),
+    [thisWeekStart, nextWeekEnd]
+  );
 
   const { data: preferences } = useQuery({
     queryKey: ['calendarPreferences', profileId],
@@ -65,8 +73,8 @@ export default function CalendarCard() {
   });
 
   const { data: calendarEvents = [] } = useQuery({
-    queryKey: ['calendarEvents', profileId, monthRange.start, monthRange.end],
-    queryFn: () => calendarEventsAPI.getEventsForRange(profileId, monthRange.start, monthRange.end),
+    queryKey: ['calendarEvents', profileId, rangeStart, rangeEnd],
+    queryFn: () => calendarEventsAPI.getEventsForRange(profileId, rangeStart, rangeEnd),
     enabled: !!profileId,
     staleTime: 30000,
   });
@@ -84,114 +92,82 @@ export default function CalendarCard() {
     return calendarPreferencesAPI.assignColorsToChildren(childProfiles, {});
   }, [preferences?.child_colors, childProfiles]);
 
-  const allDays = useMemo(() => {
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(currentMonth);
-    const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
-    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
-    return eachDayOfInterval({ start: calStart, end: calEnd });
-  }, [currentMonth]);
-
   const getDayDots = useCallback((day) => {
     const dateStr = format(day, 'yyyy-MM-dd');
     const dots = [];
-
-    // Calendar events — use their own color
     calendarEvents
       .filter(e => e.event_date === dateStr)
-      .slice(0, 2)
+      .slice(0, 3)
       .forEach(e => dots.push(e.color || '#10b981'));
-
-    // Tasks — use child's assigned color
     tasks
       .filter(t => taskAppearsOnDay(t, day))
-      .slice(0, Math.max(0, 4 - dots.length))
+      .slice(0, Math.max(0, 5 - dots.length))
       .forEach(t => dots.push(childColors[t.assigned_to_child_id] || '#3b82f6'));
-
-    return dots.slice(0, 4);
+    return dots.slice(0, 5);
   }, [calendarEvents, tasks, childColors]);
+
+  const handleDayClick = (day) => {
+    navigate(createPageUrl('Calendar'));
+  };
+
+  const week1 = allDays.slice(0, 7);
+  const week2 = allDays.slice(7, 14);
 
   return (
     <Card className="shadow-sm border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3 px-3">
-        <div className="flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => setCurrentMonth(m => subMonths(m, 1))}
-          >
-            <ChevronLeft className="w-3 h-3" />
-          </Button>
-          <p className="text-xs font-semibold text-slate-700 min-w-[100px] text-center select-none">
-            {format(currentMonth, 'MMMM yyyy')}
-          </p>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6"
-            onClick={() => setCurrentMonth(m => addMonths(m, 1))}
-          >
-            <ChevronRight className="w-3 h-3" />
-          </Button>
-        </div>
+      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-4">
+        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Upcoming</p>
         <Button
           variant="link"
-          className="text-[10px] p-0 h-auto text-sky-blue"
+          className="text-[11px] p-0 h-auto text-sky-blue"
           onClick={() => navigate(createPageUrl('Calendar'))}
         >
-          Open
+          Open calendar
         </Button>
       </CardHeader>
 
-      <CardContent className="px-2 pb-3 pt-1">
-        {/* Day-of-week headers */}
-        <div className="grid grid-cols-7 mb-0.5">
+      <CardContent className="px-3 pb-3 pt-0">
+        <div className="grid grid-cols-7 mb-1">
           {DOW.map((d, i) => (
-            <div key={i} className="text-center text-[9px] font-medium text-slate-400 py-0.5">
-              {d}
+            <div key={i} className="text-center text-[10px] font-medium text-slate-400">
+              {d.slice(0, 2)}
             </div>
           ))}
         </div>
 
-        {/* Day grid */}
-        <div className="grid grid-cols-7">
-          {allDays.map((day) => {
-            const isCurrentMonth = isSameMonth(day, currentMonth);
-            const todayDay = isToday(day);
-            const dots = getDayDots(day);
-
-            return (
-              <div
-                key={day.toISOString()}
-                onClick={() => navigate(createPageUrl('Calendar'))}
-                className={cn(
-                  'flex flex-col items-center py-0.5 cursor-pointer rounded transition-colors hover:bg-slate-50',
-                  !isCurrentMonth && 'opacity-25'
-                )}
-              >
-                <span className={cn(
-                  'text-[10px] font-medium w-5 h-5 flex items-center justify-center rounded-full leading-none',
-                  todayDay ? 'bg-sky-500 text-white font-semibold' : 'text-slate-700'
-                )}>
-                  {format(day, 'd')}
-                </span>
-                {dots.length > 0 && (
-                  <div className="flex gap-0.5 mt-0.5 h-1.5">
+        {[week1, week2].map((week, wi) => (
+          <div key={wi} className={cn('grid grid-cols-7', wi === 0 && 'mb-1')}>
+            {week.map((day) => {
+              const dots = getDayDots(day);
+              const todayDay = isToday(day);
+              return (
+                <div
+                  key={day.toISOString()}
+                  onClick={() => handleDayClick(day)}
+                  className="flex flex-col items-center py-1.5 cursor-pointer rounded-lg transition-colors hover:bg-slate-50 group"
+                >
+                  <span className={cn(
+                    'text-[11px] font-medium w-6 h-6 flex items-center justify-center rounded-full leading-none transition-colors',
+                    todayDay
+                      ? 'bg-sky-500 text-white font-semibold'
+                      : 'text-slate-700 group-hover:bg-slate-200'
+                  )}>
+                    {format(day, 'd')}
+                  </span>
+                  <div className="flex gap-0.5 mt-1 min-h-[6px]">
                     {dots.map((color, i) => (
                       <div
                         key={i}
-                        className="w-1 h-1 rounded-full"
+                        className="w-1.5 h-1.5 rounded-full"
                         style={{ backgroundColor: color }}
                       />
                     ))}
                   </div>
-                )}
-                {dots.length === 0 && <div className="h-1.5" />}
-              </div>
-            );
-          })}
-        </div>
+                </div>
+              );
+            })}
+          </div>
+        ))}
       </CardContent>
     </Card>
   );
