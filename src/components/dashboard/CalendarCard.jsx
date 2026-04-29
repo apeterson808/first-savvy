@@ -12,7 +12,7 @@ import { createPageUrl } from '@/pages/utils';
 import {
   format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
   eachDayOfInterval, addMonths, subMonths, isSameMonth,
-  isSameDay, isToday, startOfDay, isBefore
+  isToday, startOfDay, isBefore
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -36,7 +36,7 @@ function taskAppearsOnDay(task, day) {
   return false;
 }
 
-const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 export default function CalendarCard() {
   const navigate = useNavigate();
@@ -92,17 +92,29 @@ export default function CalendarCard() {
     return eachDayOfInterval({ start: calStart, end: calEnd });
   }, [currentMonth]);
 
-  const getDayData = useCallback((day) => {
+  const getDayDots = useCallback((day) => {
     const dateStr = format(day, 'yyyy-MM-dd');
-    const dayEvents = calendarEvents.filter(e => e.event_date === dateStr);
-    const dayTasks = tasks.filter(t => taskAppearsOnDay(t, day));
-    return { dayEvents, dayTasks };
-  }, [calendarEvents, tasks]);
+    const dots = [];
+
+    // Calendar events — use their own color
+    calendarEvents
+      .filter(e => e.event_date === dateStr)
+      .slice(0, 2)
+      .forEach(e => dots.push(e.color || '#10b981'));
+
+    // Tasks — use child's assigned color
+    tasks
+      .filter(t => taskAppearsOnDay(t, day))
+      .slice(0, Math.max(0, 4 - dots.length))
+      .forEach(t => dots.push(childColors[t.assigned_to_child_id] || '#3b82f6'));
+
+    return dots.slice(0, 4);
+  }, [calendarEvents, tasks, childColors]);
 
   return (
     <Card className="shadow-sm border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-        <div className="flex items-center gap-1">
+      <CardHeader className="flex flex-row items-center justify-between pb-1 pt-3 px-3">
+        <div className="flex items-center gap-0.5">
           <Button
             variant="ghost"
             size="icon"
@@ -111,7 +123,7 @@ export default function CalendarCard() {
           >
             <ChevronLeft className="w-3 h-3" />
           </Button>
-          <p className="text-sm font-semibold text-slate-700 min-w-[110px] text-center select-none">
+          <p className="text-xs font-semibold text-slate-700 min-w-[100px] text-center select-none">
             {format(currentMonth, 'MMMM yyyy')}
           </p>
           <Button
@@ -125,85 +137,57 @@ export default function CalendarCard() {
         </div>
         <Button
           variant="link"
-          className="text-xs p-0 h-auto text-sky-blue"
+          className="text-[10px] p-0 h-auto text-sky-blue"
           onClick={() => navigate(createPageUrl('Calendar'))}
         >
-          Open calendar
+          Open
         </Button>
       </CardHeader>
 
-      <CardContent className="px-3 pb-3">
+      <CardContent className="px-2 pb-3 pt-1">
         {/* Day-of-week headers */}
-        <div className="grid grid-cols-7 mb-1">
-          {DOW.map(d => (
-            <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-1">
-              {d.slice(0, 2)}
+        <div className="grid grid-cols-7 mb-0.5">
+          {DOW.map((d, i) => (
+            <div key={i} className="text-center text-[9px] font-medium text-slate-400 py-0.5">
+              {d}
             </div>
           ))}
         </div>
 
         {/* Day grid */}
-        <div className="grid grid-cols-7 border-l border-t border-slate-100">
-          {allDays.map((day, idx) => {
-            const { dayEvents, dayTasks } = getDayData(day);
+        <div className="grid grid-cols-7">
+          {allDays.map((day) => {
             const isCurrentMonth = isSameMonth(day, currentMonth);
             const todayDay = isToday(day);
-            const visibleEvents = dayEvents.slice(0, 2);
-            const visibleTasks = dayTasks.slice(0, Math.max(0, 2 - visibleEvents.length));
-            const overflow = (dayEvents.length + dayTasks.length) - visibleEvents.length - visibleTasks.length;
+            const dots = getDayDots(day);
 
             return (
               <div
                 key={day.toISOString()}
                 onClick={() => navigate(createPageUrl('Calendar'))}
                 className={cn(
-                  'min-h-[72px] border-b border-r border-slate-100 p-1 cursor-pointer transition-colors',
-                  isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100/50',
+                  'flex flex-col items-center py-0.5 cursor-pointer rounded transition-colors hover:bg-slate-50',
+                  !isCurrentMonth && 'opacity-25'
                 )}
               >
-                <div className="flex items-center justify-end mb-0.5">
-                  <span className={cn(
-                    'text-[10px] font-semibold w-5 h-5 flex items-center justify-center rounded-full',
-                    todayDay
-                      ? 'bg-sky-500 text-white'
-                      : isCurrentMonth
-                        ? 'text-slate-700'
-                        : 'text-slate-300'
-                  )}>
-                    {format(day, 'd')}
-                  </span>
-                </div>
-
-                {visibleEvents.map(event => (
-                  <div
-                    key={event.id}
-                    className="text-[9px] font-medium px-1 py-0.5 rounded mb-0.5 truncate leading-tight"
-                    style={{
-                      backgroundColor: `${event.color || '#10b981'}18`,
-                      color: event.color || '#10b981',
-                    }}
-                  >
-                    {event.title}
+                <span className={cn(
+                  'text-[10px] font-medium w-5 h-5 flex items-center justify-center rounded-full leading-none',
+                  todayDay ? 'bg-sky-500 text-white font-semibold' : 'text-slate-700'
+                )}>
+                  {format(day, 'd')}
+                </span>
+                {dots.length > 0 && (
+                  <div className="flex gap-0.5 mt-0.5 h-1.5">
+                    {dots.map((color, i) => (
+                      <div
+                        key={i}
+                        className="w-1 h-1 rounded-full"
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
                   </div>
-                ))}
-
-                {visibleTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="text-[9px] font-medium px-1 py-0.5 rounded mb-0.5 truncate leading-tight border-l-2"
-                    style={{
-                      backgroundColor: `${childColors[task.assigned_to_child_id] || '#3b82f6'}12`,
-                      color: childColors[task.assigned_to_child_id] || '#3b82f6',
-                      borderLeftColor: childColors[task.assigned_to_child_id] || '#3b82f6',
-                    }}
-                  >
-                    {task.title}
-                  </div>
-                ))}
-
-                {overflow > 0 && (
-                  <span className="text-[8px] text-slate-400 pl-1">+{overflow}</span>
                 )}
+                {dots.length === 0 && <div className="h-1.5" />}
               </div>
             );
           })}

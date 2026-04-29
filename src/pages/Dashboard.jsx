@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import AccountDropdown from '../components/common/AccountDropdown';
 import TimeRangeDropdown from '../components/common/TimeRangeDropdown';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowUp, Plus, Upload, Target, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { ArrowUp, Plus, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
@@ -744,11 +744,9 @@ export default function Dashboard() {
     </Card>
   </div>
 
-  {/* Calendar quick-view */}
-  <CalendarCard />
   </div>
 
-        {/* Right Column - Net Worth & Quick Actions */}
+        {/* Right Column - Net Worth, Credit Score, Family, Calendar */}
         <div className="flex flex-col gap-4 flex-1 max-w-[350px]">
           {/* Net Worth Card */}
           <Link to={createPageUrl('NetWorth')}>
@@ -767,7 +765,7 @@ export default function Dashboard() {
                       <ArrowUp className="w-4 h-4 mr-1 rotate-180" />
                     )}
                     <span>
-                      {netWorthChange.change >= 0 ? '+' : ''}{netWorthChange.percentChange.toFixed(1)}% 
+                      {netWorthChange.change >= 0 ? '+' : ''}{netWorthChange.percentChange.toFixed(1)}%
                       {netWorthChange.change >= 0 ? ' Up' : ' Down'} from last month
                     </span>
                   </div>
@@ -782,27 +780,8 @@ export default function Dashboard() {
           {/* Family Connections Card */}
           <FamilyConnectionsCard />
 
-          {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-4">
-            <Button
-              variant="outline"
-              className="w-full h-10"
-              onClick={() => setWizardOpen(true)}
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Account
-            </Button>
-            <Button variant="outline" className="w-full h-10">
-              <Upload className="w-4 h-4 mr-2" />
-              Upload Receipt
-            </Button>
-            <Link to={createPageUrl('Goals')}>
-              <Button variant="outline" className="w-full h-10">
-                <Target className="w-4 h-4 mr-2" />
-                Create Goal
-              </Button>
-            </Link>
-          </div>
+          {/* Calendar */}
+          <CalendarCard />
 
         </div>
         </div>
