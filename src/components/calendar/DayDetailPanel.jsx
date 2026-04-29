@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   ChefHat, CheckSquare, CalendarDays, DollarSign, Plus, X,
   Check, Clock, Star, ChevronRight, Pencil, Trash2,
-  ArrowUpRight, ArrowDownRight
+  ArrowUpRight, ArrowDownRight, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +19,126 @@ const MEAL_TYPE_LABELS = { breakfast: 'Breakfast', lunch: 'Lunch', dinner: 'Dinn
 
 function getMealDisplay(entries, mealType) {
   return entries.filter(e => e.meal_type === mealType);
+}
+
+function ChildTaskRow({ child, tasks, childColor, taskCompletions, onApproveTask, onRejectTask }) {
+  const [open, setOpen] = useState(false);
+
+  const incomplete = tasks.filter(t => {
+    const completion = taskCompletions.find(c => c.task_id === t.id && c.status === 'pending');
+    return !completion && t.status !== 'completed';
+  }).length;
+  const pending = tasks.filter(t =>
+    taskCompletions.find(c => c.task_id === t.id && c.status === 'pending')
+  ).length;
+
+  const initials = (child?.child_name || child?.display_name || '?').charAt(0).toUpperCase();
+  const name = child?.child_name || child?.display_name || 'Child';
+
+  return (
+    <div className="rounded-lg border overflow-hidden">
+      <button
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-muted/40 transition-colors text-left"
+        onClick={() => setOpen(o => !o)}
+      >
+        <div
+          className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+          style={{ backgroundColor: childColor }}
+        >
+          {child?.avatar_url ? (
+            <img src={child.avatar_url} alt={name} className="w-8 h-8 rounded-full object-cover" />
+          ) : initials}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium">{name}</p>
+          <p className="text-xs text-muted-foreground">
+            {incomplete > 0 ? `${incomplete} task${incomplete > 1 ? 's' : ''} remaining` : 'All done'}
+            {pending > 0 && (
+              <span className="ml-1.5 inline-flex items-center gap-0.5 text-amber-600 font-medium">
+                <Clock className="w-3 h-3" />{pending} pending
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="text-xs font-semibold tabular-nums w-4 text-center text-muted-foreground">{tasks.length}</span>
+          <ChevronDown className={cn('w-4 h-4 text-muted-foreground transition-transform', open && 'rotate-180')} />
+        </div>
+      </button>
+
+      {open && (
+        <div className="border-t divide-y">
+          {tasks.map(task => {
+            const completion = taskCompletions.find(c => c.task_id === task.id && c.status === 'pending');
+            const done = task.status === 'completed';
+            return (
+              <div key={task.id} className="flex items-center gap-2 px-3 py-2 bg-muted/20">
+                <div className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: childColor }} />
+                <div className="flex-1 min-w-0">
+                  <p className={cn('text-sm truncate', done && 'line-through text-muted-foreground')}>{task.title}</p>
+                  {task.star_reward > 0 && (
+                    <span className="inline-flex items-center gap-0.5 text-xs text-amber-600 font-medium">
+                      <Star className="w-3 h-3 fill-amber-500" />{task.star_reward}
+                    </span>
+                  )}
+                </div>
+                {completion ? (
+                  <div className="flex gap-1 shrink-0">
+                    <Button size="icon" className="h-6 w-6 bg-green-500 hover:bg-green-600" onClick={() => onApproveTask(completion.id)}>
+                      <Check className="w-3 h-3" />
+                    </Button>
+                    <Button size="icon" variant="outline" className="h-6 w-6 border-red-300 text-red-500 hover:bg-red-50" onClick={() => onRejectTask(completion.id)}>
+                      <X className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Badge variant="outline" className={cn('text-xs shrink-0', done && 'border-green-300 text-green-600')}>
+                    {done ? 'Done' : task.status === 'in_progress' ? 'Active' : task.status}
+                  </Badge>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function TasksByChildSection({ tasks, taskCompletions, childProfiles, childColors, onApproveTask, onRejectTask }) {
+  const grouped = tasks.reduce((acc, task) => {
+    const id = task.assigned_to_child_id || 'unassigned';
+    if (!acc[id]) acc[id] = [];
+    acc[id].push(task);
+    return acc;
+  }, {});
+
+  return (
+    <section>
+      <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">
+        <CheckSquare className="w-4 h-4 text-blue-500" />
+        Tasks
+        <Badge variant="secondary" className="text-xs h-5">{tasks.length}</Badge>
+      </div>
+      <div className="space-y-2">
+        {Object.entries(grouped).map(([childId, childTasks]) => {
+          const child = childProfiles.find(c => c.id === childId);
+          const color = childColors[childId] || '#3b82f6';
+          return (
+            <ChildTaskRow
+              key={childId}
+              child={child}
+              tasks={childTasks}
+              childColor={color}
+              taskCompletions={taskCompletions}
+              onApproveTask={onApproveTask}
+              onRejectTask={onRejectTask}
+            />
+          );
+        })}
+      </div>
+    </section>
+  );
 }
 
 export default function DayDetailPanel({
@@ -156,78 +276,16 @@ export default function DayDetailPanel({
               </div>
             </section>
 
-            {/* Tasks */}
+            {/* Tasks grouped by child */}
             {dayTasks.length > 0 && (
-              <section>
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
-                    <CheckSquare className="w-4 h-4 text-blue-500" />
-                    Tasks
-                    <Badge variant="secondary" className="text-xs h-5">{dayTasks.length}</Badge>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {dayTasks.map(task => {
-                    const completion = getCompletionForTask(task.id);
-                    const childColor = getChildColor(task.assigned_to_child_id);
-                    return (
-                      <div
-                        key={task.id}
-                        className="p-2.5 rounded-lg border-l-4 bg-muted/30"
-                        style={{ borderLeftColor: childColor }}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{task.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {getChildName(task.assigned_to_child_id)}
-                              {task.star_reward > 0 && (
-                                <span className="ml-2 inline-flex items-center gap-0.5 text-amber-600 font-medium">
-                                  <Star className="w-3 h-3 fill-amber-500" />
-                                  {task.star_reward}
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                          {completion ? (
-                            <div className="flex gap-1 shrink-0">
-                              <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">
-                                <Clock className="w-3 h-3 mr-1" />
-                                Pending
-                              </Badge>
-                              <Button
-                                size="icon"
-                                className="h-6 w-6 bg-green-500 hover:bg-green-600"
-                                onClick={() => onApproveTask(completion.id)}
-                              >
-                                <Check className="w-3 h-3" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="outline"
-                                className="h-6 w-6 border-red-300 text-red-500 hover:bg-red-50"
-                                onClick={() => onRejectTask(completion.id)}
-                              >
-                                <X className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                'text-xs shrink-0',
-                                task.status === 'completed' ? 'border-green-300 text-green-600' : ''
-                              )}
-                            >
-                              {task.status === 'in_progress' ? 'Active' : task.status}
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </section>
+              <TasksByChildSection
+                tasks={dayTasks}
+                taskCompletions={taskCompletions}
+                childProfiles={childProfiles}
+                childColors={childColors}
+                onApproveTask={onApproveTask}
+                onRejectTask={onRejectTask}
+              />
             )}
 
             {/* Calendar Events */}
