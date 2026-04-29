@@ -1,49 +1,128 @@
-import React from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useProfile } from '@/contexts/ProfileContext';
 import { calendarEventsAPI } from '@/api/calendarEvents';
+import { calendarPreferencesAPI } from '@/api/calendarPreferences';
+import { childProfilesAPI } from '@/api/childProfiles';
+import { tasksAPI } from '@/api/tasks';
 import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/pages/utils';
-import { format, startOfDay, addDays, isSameDay, isToday, isTomorrow, parseISO } from 'date-fns';
-import * as Icons from 'lucide-react';
-import { Calendar } from 'lucide-react';
+import {
+  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek,
+  eachDayOfInterval, addMonths, subMonths, isSameMonth,
+  isSameDay, isToday, startOfDay, isBefore
+} from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+function taskAppearsOnDay(task, day) {
+  if (task.due_date) {
+    const s = typeof task.due_date === 'string' ? task.due_date.slice(0, 10) : format(new Date(task.due_date), 'yyyy-MM-dd');
+    return s === format(day, 'yyyy-MM-dd');
+  }
+  const today = startOfDay(new Date());
+  const dayStart = startOfDay(day);
+  if (isBefore(dayStart, today)) return false;
+  const { reset_mode, frequency } = task;
+  if (reset_mode === 'instant') return false;
+  if (frequency === 'always_available' || reset_mode === 'daily') return true;
+  if (reset_mode === 'weekly') {
+    const weekStart = startOfWeek(today, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(today, { weekStartsOn: 0 });
+    return !isBefore(dayStart, weekStart) && !isBefore(weekEnd, dayStart);
+  }
+  return false;
+}
+
+const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export default function CalendarCard() {
   const navigate = useNavigate();
   const { activeProfile } = useProfile();
+  const profileId = activeProfile?.id;
 
-  const today = startOfDay(new Date());
-  const rangeStart = format(today, 'yyyy-MM-dd');
-  const rangeEnd = format(addDays(today, 13), 'yyyy-MM-dd');
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  const { data: events = [] } = useQuery({
-    queryKey: ['calendar-events-dashboard', activeProfile?.id, rangeStart, rangeEnd],
-    queryFn: () => calendarEventsAPI.getEventsForRange(activeProfile.id, rangeStart, rangeEnd),
-    enabled: !!activeProfile?.id,
+  const monthRange = useMemo(() => ({
+    start: format(startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 }), 'yyyy-MM-dd'),
+    end: format(endOfWeek(endOfMonth(currentMonth), { weekStartsOn: 0 }), 'yyyy-MM-dd'),
+  }), [currentMonth]);
+
+  const { data: preferences } = useQuery({
+    queryKey: ['calendarPreferences', profileId],
+    queryFn: () => calendarPreferencesAPI.getPreferences(profileId),
+    enabled: !!profileId,
     staleTime: 60000,
   });
 
-  const days = Array.from({ length: 14 }, (_, i) => addDays(today, i));
+  const { data: childProfiles = [] } = useQuery({
+    queryKey: ['childProfiles', profileId],
+    queryFn: () => childProfilesAPI.getChildProfiles(profileId),
+    enabled: !!profileId,
+    staleTime: 60000,
+  });
 
-  const eventsForDay = (date) =>
-    events.filter(e => isSameDay(parseISO(e.event_date), date));
+  const { data: calendarEvents = [] } = useQuery({
+    queryKey: ['calendarEvents', profileId, monthRange.start, monthRange.end],
+    queryFn: () => calendarEventsAPI.getEventsForRange(profileId, monthRange.start, monthRange.end),
+    enabled: !!profileId,
+    staleTime: 30000,
+  });
 
-  const upcoming = events.slice(0, 5);
+  const { data: tasks = [] } = useQuery({
+    queryKey: ['tasks', profileId],
+    queryFn: () => tasksAPI.getTasks(profileId),
+    enabled: !!profileId,
+    staleTime: 30000,
+  });
 
-  function dayLabel(date) {
-    if (isToday(date)) return 'Today';
-    if (isTomorrow(date)) return 'Tomorrow';
-    return format(date, 'EEE, MMM d');
-  }
+  const childColors = useMemo(() => {
+    const existing = preferences?.child_colors || {};
+    if (Object.keys(existing).length > 0) return existing;
+    return calendarPreferencesAPI.assignColorsToChildren(childProfiles, {});
+  }, [preferences?.child_colors, childProfiles]);
+
+  const allDays = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+    const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
+    return eachDayOfInterval({ start: calStart, end: calEnd });
+  }, [currentMonth]);
+
+  const getDayData = useCallback((day) => {
+    const dateStr = format(day, 'yyyy-MM-dd');
+    const dayEvents = calendarEvents.filter(e => e.event_date === dateStr);
+    const dayTasks = tasks.filter(t => taskAppearsOnDay(t, day));
+    return { dayEvents, dayTasks };
+  }, [calendarEvents, tasks]);
 
   return (
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4 px-4">
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Upcoming Calendar</p>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setCurrentMonth(m => subMonths(m, 1))}
+          >
+            <ChevronLeft className="w-3 h-3" />
+          </Button>
+          <p className="text-sm font-semibold text-slate-700 min-w-[110px] text-center select-none">
+            {format(currentMonth, 'MMMM yyyy')}
+          </p>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6"
+            onClick={() => setCurrentMonth(m => addMonths(m, 1))}
+          >
+            <ChevronRight className="w-3 h-3" />
+          </Button>
+        </div>
         <Button
           variant="link"
           className="text-xs p-0 h-auto text-sky-blue"
@@ -52,75 +131,83 @@ export default function CalendarCard() {
           Open calendar
         </Button>
       </CardHeader>
-      <CardContent className="px-4 pb-4 space-y-4">
-        {/* Mini 2-week grid */}
-        <div>
-          <div className="grid grid-cols-7 mb-1">
-            {DAYS.map(d => (
-              <div key={d} className="text-center text-[10px] font-medium text-slate-400">{d}</div>
-            ))}
-          </div>
-          {[0, 1].map(week => (
-            <div key={week} className="grid grid-cols-7 gap-y-1">
-              {days.slice(week * 7, week * 7 + 7).map((date, i) => {
-                const dayEvents = eventsForDay(date);
-                const isT = isToday(date);
-                return (
-                  <div key={i} className="flex flex-col items-center">
-                    <div
-                      className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium transition-colors
-                        ${isT ? 'bg-sky-blue text-white' : 'text-slate-700 hover:bg-slate-100 cursor-default'}`}
-                    >
-                      {format(date, 'd')}
-                    </div>
-                    <div className="flex gap-0.5 mt-0.5 h-1.5">
-                      {dayEvents.slice(0, 3).map((e, ei) => (
-                        <div
-                          key={ei}
-                          className="w-1 h-1 rounded-full"
-                          style={{ backgroundColor: e.color || '#3b82f6' }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+
+      <CardContent className="px-3 pb-3">
+        {/* Day-of-week headers */}
+        <div className="grid grid-cols-7 mb-1">
+          {DOW.map(d => (
+            <div key={d} className="text-center text-[10px] font-medium text-slate-400 py-1">
+              {d.slice(0, 2)}
             </div>
           ))}
         </div>
 
-        <div className="border-t border-slate-100" />
+        {/* Day grid */}
+        <div className="grid grid-cols-7 border-l border-t border-slate-100">
+          {allDays.map((day, idx) => {
+            const { dayEvents, dayTasks } = getDayData(day);
+            const isCurrentMonth = isSameMonth(day, currentMonth);
+            const todayDay = isToday(day);
+            const visibleEvents = dayEvents.slice(0, 2);
+            const visibleTasks = dayTasks.slice(0, Math.max(0, 2 - visibleEvents.length));
+            const overflow = (dayEvents.length + dayTasks.length) - visibleEvents.length - visibleTasks.length;
 
-        {upcoming.length === 0 ? (
-          <div className="flex flex-col items-center py-4 text-center">
-            <Calendar className="w-8 h-8 text-slate-300 mb-2" />
-            <p className="text-xs text-slate-500">No upcoming events in the next 2 weeks</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {upcoming.map(event => {
-              const date = parseISO(event.event_date);
-              const IconComp = Icons[event.icon] || Icons.Calendar;
-              return (
-                <div key={event.id} className="flex items-start gap-2.5">
-                  <div
-                    className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ backgroundColor: `${event.color || '#3b82f6'}18` }}
-                  >
-                    <IconComp className="w-3.5 h-3.5" style={{ color: event.color || '#3b82f6' }} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-slate-800 truncate">{event.title}</p>
-                    <p className="text-[10px] text-slate-400">
-                      {dayLabel(date)}
-                      {event.start_time && ` · ${event.start_time.slice(0, 5)}`}
-                    </p>
-                  </div>
+            return (
+              <div
+                key={day.toISOString()}
+                onClick={() => navigate(createPageUrl('Calendar'))}
+                className={cn(
+                  'min-h-[72px] border-b border-r border-slate-100 p-1 cursor-pointer transition-colors',
+                  isCurrentMonth ? 'bg-white hover:bg-slate-50' : 'bg-slate-50/50 hover:bg-slate-100/50',
+                )}
+              >
+                <div className="flex items-center justify-end mb-0.5">
+                  <span className={cn(
+                    'text-[10px] font-semibold w-5 h-5 flex items-center justify-center rounded-full',
+                    todayDay
+                      ? 'bg-sky-500 text-white'
+                      : isCurrentMonth
+                        ? 'text-slate-700'
+                        : 'text-slate-300'
+                  )}>
+                    {format(day, 'd')}
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+
+                {visibleEvents.map(event => (
+                  <div
+                    key={event.id}
+                    className="text-[9px] font-medium px-1 py-0.5 rounded mb-0.5 truncate leading-tight"
+                    style={{
+                      backgroundColor: `${event.color || '#10b981'}18`,
+                      color: event.color || '#10b981',
+                    }}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+
+                {visibleTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="text-[9px] font-medium px-1 py-0.5 rounded mb-0.5 truncate leading-tight border-l-2"
+                    style={{
+                      backgroundColor: `${childColors[task.assigned_to_child_id] || '#3b82f6'}12`,
+                      color: childColors[task.assigned_to_child_id] || '#3b82f6',
+                      borderLeftColor: childColors[task.assigned_to_child_id] || '#3b82f6',
+                    }}
+                  >
+                    {task.title}
+                  </div>
+                ))}
+
+                {overflow > 0 && (
+                  <span className="text-[8px] text-slate-400 pl-1">+{overflow}</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </CardContent>
     </Card>
   );
