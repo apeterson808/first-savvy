@@ -115,28 +115,28 @@ export default function CalendarCard() {
 
   return (
     <Card className="shadow-sm border-slate-200">
-      <CardHeader className="flex flex-row items-center justify-between pb-2 pt-3 px-4">
-        <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide">Upcoming</p>
+      <CardHeader className="flex flex-row items-center justify-between pb-3 pt-3 px-4">
+        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Calendar</p>
         <Button
           variant="link"
-          className="text-[11px] p-0 h-auto text-sky-blue"
+          className="text-[10px] p-0 h-auto text-sky-blue font-medium"
           onClick={() => navigate(createPageUrl('Calendar'))}
         >
-          Open calendar
+          View all
         </Button>
       </CardHeader>
 
       <CardContent className="px-3 pb-3 pt-0">
         <div className="grid grid-cols-7 mb-1">
           {DOW.map((d, i) => (
-            <div key={i} className="text-center text-[10px] font-medium text-slate-400">
+            <div key={i} className="text-center text-[9px] font-medium text-slate-400 pb-1">
               {d.slice(0, 2)}
             </div>
           ))}
         </div>
 
         {[week1, week2].map((week, wi) => (
-          <div key={wi} className={cn('grid grid-cols-7', wi === 0 && 'mb-1')}>
+          <div key={wi} className={cn('grid grid-cols-7 gap-px', wi === 0 && 'mb-1')}>
             {week.map((day) => {
               const dots = getDayDots(day);
               const todayDay = isToday(day);
@@ -144,25 +144,28 @@ export default function CalendarCard() {
                 <div
                   key={day.toISOString()}
                   onClick={() => handleDayClick(day)}
-                  className="flex flex-col items-center py-1.5 cursor-pointer rounded-lg transition-colors hover:bg-slate-50 group"
+                  className={cn(
+                    'relative flex flex-col min-h-[64px] p-1 cursor-pointer border border-slate-100 rounded transition-colors hover:bg-slate-50',
+                    todayDay ? 'bg-sky-50 border-sky-200' : 'bg-white'
+                  )}
                 >
                   <span className={cn(
-                    'text-[11px] font-medium w-6 h-6 flex items-center justify-center rounded-full leading-none transition-colors',
-                    todayDay
-                      ? 'bg-sky-500 text-white font-semibold'
-                      : 'text-slate-700 group-hover:bg-slate-200'
+                    'text-[10px] font-semibold leading-none w-4 h-4 flex items-center justify-center rounded-full',
+                    todayDay ? 'bg-sky-500 text-white' : 'text-slate-600'
                   )}>
                     {format(day, 'd')}
                   </span>
-                  <div className="flex gap-0.5 mt-1 min-h-[6px]">
-                    {dots.map((color, i) => (
-                      <div
-                        key={i}
-                        className="w-1.5 h-1.5 rounded-full"
-                        style={{ backgroundColor: color }}
-                      />
-                    ))}
-                  </div>
+                  {dots.length > 0 && (
+                    <div className="flex flex-wrap gap-0.5 mt-1.5 px-0.5">
+                      {dots.map((color, i) => (
+                        <div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  )}
                 </div>
               );
             })}
