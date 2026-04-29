@@ -108,41 +108,8 @@ Deno.serve(async (req: Request) => {
 </html>
     `.trim();
 
-    const resendApiKey = Deno.env.get("RESEND_API_KEY");
-
-    if (resendApiKey) {
-      const emailResponse = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "First Savvy <noreply@firstsavvy.app>",
-          to: [invitedEmail],
-          subject: `${inviterName ? `${inviterName} invited you to` : "You've been invited to"} First Savvy`,
-          html: emailBody,
-        }),
-      });
-
-      if (!emailResponse.ok) {
-        const errorText = await emailResponse.text();
-        console.error("Resend error:", errorText);
-        return new Response(
-          JSON.stringify({ error: "Failed to send email", details: errorText }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-        );
-      }
-
-      const result = await emailResponse.json();
-      return new Response(
-        JSON.stringify({ success: true, messageId: result.id }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     return new Response(
-      JSON.stringify({ success: false, reason: "No email provider configured. Please add RESEND_API_KEY to send emails." }),
+      JSON.stringify({ success: false, reason: "Email sending is not configured." }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
