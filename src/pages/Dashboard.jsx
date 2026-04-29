@@ -16,7 +16,6 @@ import CreditScoreCard from '../components/dashboard/CreditScoreCard';
 import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCard';
 import AnimatedProgressBar from '../components/dashboard/AnimatedProgressBar';
 import FamilyConnectionsCard from '../components/dashboard/FamilyConnectionsCard';
-import CalendarCard from '../components/dashboard/CalendarCard';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import ChildDashboard from '../components/dashboard/ChildDashboard';
@@ -743,9 +742,6 @@ export default function Dashboard() {
       </CardContent>
     </Card>
   </div>
-
-  {/* Calendar quick-view */}
-  <CalendarCard />
   </div>
 
         {/* Right Column - Net Worth & Quick Actions */}
