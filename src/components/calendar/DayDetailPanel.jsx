@@ -163,6 +163,7 @@ export default function DayDetailPanel({
   onUpdateEvent,
   onDeleteEvent,
   onOpenTaskDialog,
+  hideHeader = false,
 }) {
   const navigate = useNavigate();
   const [mealPickerState, setMealPickerState] = useState(null);
@@ -214,18 +215,20 @@ export default function DayDetailPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background border-l">
-      <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
-        <div>
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
-            {format(selectedDate, 'EEEE')}
-          </p>
-          <h3 className="font-semibold text-base">{format(selectedDate, 'MMMM d, yyyy')}</h3>
+    <div className="flex flex-col h-full bg-background">
+      {!hideHeader && (
+        <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
+              {format(selectedDate, 'EEEE')}
+            </p>
+            <h3 className="font-semibold text-base">{format(selectedDate, 'MMMM d, yyyy')}</h3>
+          </div>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-          <X className="w-4 h-4" />
-        </Button>
-      </div>
+      )}
 
       {mealPickerState ? (
         <MealPickerPanel

@@ -4,7 +4,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, Settings2, CalendarDays, List,
-  LayoutGrid, ChefHat, CalendarRange
+  LayoutGrid, ChefHat, CalendarRange, ArrowLeft
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -88,7 +88,7 @@ function MonthGrid({
   const calStart = startOfWeek(monthStart, { weekStartsOn: 0 });
   const calEnd = endOfWeek(monthEnd, { weekStartsOn: 0 });
   const allDays = eachDayOfInterval({ start: calStart, end: calEnd });
-  const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const DOW = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   const getDayData = useCallback((day) => {
     const dateStr = format(day, 'yyyy-MM-dd');
@@ -125,98 +125,43 @@ function MonthGrid({
       </div>
       <div className="grid grid-cols-7">
         {allDays.map((day, idx) => {
-          const { dayMeals, dayTasks, pendingCount, dayEvents, income, expense } = getDayData(day);
+          const { dayMeals, dayTasks, pendingCount, dayEvents } = getDayData(day);
           const isCurrentMonth = isSameMonth(day, currentMonth);
           const isSelected = selectedDate && isSameDay(day, selectedDate);
           const todayDay = isToday(day);
-          const totalItems = dayMeals.length + dayTasks.length + dayEvents.length;
-          const visibleMeals = dayMeals.slice(0, 2);
-          const visibleTasks = dayTasks.slice(0, Math.max(0, 3 - visibleMeals.length));
-          const visibleEvents = dayEvents.slice(0, Math.max(0, 3 - visibleMeals.length - visibleTasks.length));
-          const overflow = totalItems - visibleMeals.length - visibleTasks.length - visibleEvents.length;
+
+          // Collect up to 4 indicator dots
+          const taskDots = dayTasks.slice(0, 4).map(t => childColors[t.assigned_to_child_id] || '#3b82f6');
+          const remaining = 4 - taskDots.length;
+          const eventDots = dayEvents.slice(0, remaining).map(e => e.color || '#10b981');
+          const mealDot = dayMeals.length > 0 && taskDots.length + eventDots.length < 4 ? ['#f59e0b'] : [];
+          const dots = [...taskDots, ...eventDots, ...mealDot].slice(0, 4);
 
           return (
             <div
               key={day.toISOString()}
               onClick={() => onSelectDate(day)}
               className={cn(
-                'min-h-[100px] border-b border-r p-1.5 cursor-pointer transition-colors select-none',
-                isCurrentMonth ? 'bg-background hover:bg-muted/40' : 'bg-muted/10 hover:bg-muted/20',
+                'border-b border-r cursor-pointer transition-colors select-none flex flex-col items-center py-2 gap-1 min-h-[64px]',
+                isCurrentMonth ? 'bg-background hover:bg-muted/40 active:bg-muted/60' : 'bg-muted/10 hover:bg-muted/20',
                 isSelected ? 'ring-2 ring-inset ring-primary bg-primary/5' : '',
                 idx % 7 === 0 ? 'border-l' : ''
               )}
             >
-              <div className="flex items-center justify-between mb-1">
-                <span className={cn(
-                  'text-xs font-semibold w-6 h-6 flex items-center justify-center rounded-full',
-                  todayDay ? 'bg-primary text-primary-foreground' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/40'
-                )}>
-                  {format(day, 'd')}
-                </span>
+              <span className={cn(
+                'text-sm font-semibold w-7 h-7 flex items-center justify-center rounded-full transition-colors',
+                todayDay ? 'bg-primary text-primary-foreground' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/30'
+              )}>
+                {format(day, 'd')}
+              </span>
+              <div className="flex gap-0.5 h-2 items-center flex-wrap justify-center max-w-[28px]">
+                {dots.map((color, i) => (
+                  <span key={i} className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                ))}
                 {pendingCount > 0 && (
-                  <span className="w-4 h-4 rounded-full bg-amber-500 text-white text-[9px] font-bold flex items-center justify-center">
-                    {pendingCount}
-                  </span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
                 )}
               </div>
-
-              {visibleMeals.map(meal => {
-                const mealName = meal.meal_recipes?.name || meal.custom_meal_name;
-                return (
-                  <div key={meal.id} className="flex items-center gap-0.5 mb-0.5 px-1 py-0.5 rounded bg-amber-50 border border-amber-100 dark:bg-amber-950/30 dark:border-amber-900">
-                    <span className="text-[9px] shrink-0">{getMealIcon(meal.meal_type)}</span>
-                    <span className="text-[10px] text-amber-800 dark:text-amber-300 font-medium truncate leading-tight">{mealName}</span>
-                  </div>
-                );
-              })}
-
-              {visibleTasks.map(task => (
-                <div
-                  key={task.id}
-                  className="flex items-center gap-1 mb-0.5 px-1 py-0.5 rounded text-[10px] font-medium truncate border-l-2"
-                  style={{
-                    backgroundColor: `${childColors[task.assigned_to_child_id] || '#3b82f6'}15`,
-                    color: childColors[task.assigned_to_child_id] || '#3b82f6',
-                    borderLeftColor: childColors[task.assigned_to_child_id] || '#3b82f6'
-                  }}
-                >
-                  {task.title}
-                </div>
-              ))}
-
-              {visibleEvents.map(event => (
-                <div
-                  key={event.id}
-                  className="flex items-center gap-1 mb-0.5 px-1 py-0.5 rounded text-[10px] font-medium truncate"
-                  style={{
-                    backgroundColor: `${event.color || '#10b981'}15`,
-                    color: event.color || '#10b981',
-                  }}
-                >
-                  {event.title}
-                </div>
-              ))}
-
-              {showFinancials && (income > 0 || expense > 0) && (
-                <div className="flex gap-1 mt-0.5">
-                  {income > 0 && (
-                    <span className="text-[9px] font-semibold text-green-600 bg-green-50 dark:bg-green-950/30 px-1 rounded">
-                      +${income < 1000 ? income.toFixed(0) : `${(income / 1000).toFixed(1)}k`}
-                    </span>
-                  )}
-                  {expense > 0 && (
-                    <span className="text-[9px] font-semibold text-red-500 bg-red-50 dark:bg-red-950/30 px-1 rounded">
-                      -${expense < 1000 ? expense.toFixed(0) : `${(expense / 1000).toFixed(1)}k`}
-                    </span>
-                  )}
-                </div>
-              )}
-
-              {overflow > 0 && (
-                <span className="text-[9px] text-muted-foreground mt-0.5 block pl-1">
-                  +{overflow} more
-                </span>
-              )}
             </div>
           );
         })}
@@ -332,7 +277,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = location.state?.selectedDate;
     if (d) { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }
-    return startOfDay(new Date());
+    return null;
   });
   const [view, setView] = useState('month');
   const [activeChildFilters, setActiveChildFilters] = useState([]);
@@ -576,201 +521,175 @@ export default function CalendarPage() {
 
   const COLOR_SWATCHES = ['#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#64748b'];
 
+  const handleDaySelect = (day) => {
+    setSelectedDate(day);
+    setCurrentMonth(day);
+  };
+
+  const handleDayNav = (delta) => {
+    if (!selectedDate) return;
+    const next = addDays(selectedDate, delta);
+    setSelectedDate(next);
+    setCurrentMonth(next);
+  };
+
+  const settingsPopover = (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
+          <Settings2 className="w-4 h-4" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-64">
+        <div className="space-y-4">
+          <div>
+            <h4 className="font-semibold text-sm mb-3">Calendar Settings</h4>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="show-fin" className="text-sm cursor-pointer">Show financial info</Label>
+              <Switch id="show-fin" checked={showFinancials} onCheckedChange={(val) => savePreference({ show_financials: val })} />
+            </div>
+          </div>
+          {childProfiles.length > 0 && (
+            <>
+              <Separator />
+              <div>
+                <h4 className="font-semibold text-sm mb-2.5">Child Colors</h4>
+                <div className="space-y-2">
+                  {childProfiles.map(child => (
+                    <div key={child.id} className="flex items-center justify-between gap-2">
+                      <span className="text-sm flex-1 truncate">{child.child_name || child.display_name}</span>
+                      <div className="flex gap-1">
+                        {COLOR_SWATCHES.map(c => (
+                          <button
+                            key={c}
+                            className="w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none"
+                            style={{ backgroundColor: c, borderColor: childColors[child.id] === c ? 'currentColor' : 'transparent' }}
+                            onClick={() => handleChildColorChange(child.id, c)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="shrink-0 px-4 py-3 border-b bg-background">
-        <div className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2">
-            {activeTab === 'calendar' && (
-              <>
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <h2 className="text-base font-semibold min-w-[140px] text-center select-none">
-                  {format(currentMonth, 'MMMM yyyy')}
-                </h2>
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" className="h-8 text-xs"
-                  onClick={() => setCurrentMonth(new Date())}>
-                  Today
-                </Button>
-              </>
-            )}
-            {activeTab === 'meals' && (
-              <h2 className="text-base font-semibold">Recipe Library</h2>
-            )}
+
+      {/* ── Header changes based on whether we're in day view ── */}
+      <div className="shrink-0 px-3 py-2 border-b bg-background">
+        {selectedDate ? (
+          /* Day view header: back | prev | date | next | settings */
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setSelectedDate(null)}>
+              <ArrowLeft className="w-4 h-4" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleDayNav(-1)}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <div className="flex-1 text-center min-w-0">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium leading-none mb-0.5">
+                {format(selectedDate, 'EEEE')}
+              </p>
+              <p className="text-sm font-semibold leading-none truncate">
+                {format(selectedDate, 'MMMM d, yyyy')}
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleDayNav(1)}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            {settingsPopover}
           </div>
-
-          <div className="flex items-center gap-2 flex-wrap">
-            {activeTab === 'calendar' && (
-              <>
-                {showFinancials && (monthStats.income > 0 || monthStats.expense > 0) && (
-                  <div className="hidden md:flex items-center gap-3 text-xs border rounded-lg px-3 py-1.5 bg-muted/30 mr-1">
-                    <span className="text-green-600 font-semibold">+${monthStats.income.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className="text-red-500 font-semibold">-${monthStats.expense.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    <span className="text-muted-foreground">·</span>
-                    <span className={cn('font-semibold', monthStats.net >= 0 ? 'text-green-600' : 'text-red-500')}>
-                      {monthStats.net >= 0 ? '+' : ''}${monthStats.net.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                    </span>
-                  </div>
-                )}
-
-                {monthStats.pending > 0 && (
-                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs cursor-default">
-                    {monthStats.pending} pending approval
-                  </Badge>
-                )}
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="h-8 gap-1.5 text-xs hidden sm:flex"
-                  onClick={() => {
-                    setWeekPlannerStart(startOfWeek(new Date(), { weekStartsOn: 0 }));
-                    setWeekPlannerOpen(true);
-                  }}
-                >
-                  <CalendarRange className="w-3.5 h-3.5" />
-                  Plan Week
-                </Button>
-
-                <div className="flex border rounded-lg overflow-hidden">
-                  <Button
-                    variant={view === 'month' ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8 rounded-none"
-                    onClick={() => setView('month')}
-                    title="Month view"
-                  >
-                    <LayoutGrid className="w-3.5 h-3.5" />
-                  </Button>
-                  <Button
-                    variant={view === 'agenda' ? 'default' : 'ghost'}
-                    size="icon"
-                    className="h-8 w-8 rounded-none border-l"
-                    onClick={() => setView('agenda')}
-                    title="Agenda view"
-                  >
-                    <List className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </>
-            )}
-
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
-                  <Settings2 className="w-4 h-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent align="end" className="w-72">
-                <div className="space-y-4">
-                  <div>
-                    <h4 className="font-semibold text-sm mb-3">Calendar Settings</h4>
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="show-fin" className="text-sm cursor-pointer">Show financial info</Label>
-                      <Switch
-                        id="show-fin"
-                        checked={showFinancials}
-                        onCheckedChange={(val) => savePreference({ show_financials: val })}
-                      />
-                    </div>
-                  </div>
-
-                  {childProfiles.length > 0 && (
-                    <>
-                      <Separator />
-                      <div>
-                        <h4 className="font-semibold text-sm mb-2.5">Child Colors</h4>
-                        <div className="space-y-2.5">
-                          {childProfiles.map(child => (
-                            <div key={child.id} className="flex items-center justify-between gap-2">
-                              <span className="text-sm flex-1 truncate">{child.child_name || child.display_name}</span>
-                              <div className="flex gap-1">
-                                {COLOR_SWATCHES.map(c => (
-                                  <button
-                                    key={c}
-                                    className="w-5 h-5 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none"
-                                    style={{
-                                      backgroundColor: c,
-                                      borderColor: childColors[child.id] === c ? 'currentColor' : 'transparent',
-                                      outlineOffset: '2px',
-                                    }}
-                                    onClick={() => handleChildColorChange(child.id, c)}
-                                    title={c}
-                                  />
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </PopoverContent>
-            </Popover>
-          </div>
-        </div>
-
-        {/* Child filter chips */}
-        {activeTab === 'calendar' && childProfiles.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
-            <span className="text-xs text-muted-foreground mr-0.5">Filter:</span>
-            <button
-              onClick={() => setActiveChildFilters([])}
-              className={cn(
-                'text-xs px-2.5 py-1 rounded-full border font-medium transition-colors',
-                activeChildFilters.length === 0
-                  ? 'bg-foreground text-background border-foreground'
-                  : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
+        ) : (
+          /* Calendar view header */
+          <div className="space-y-2">
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <h2 className="flex-1 text-sm font-semibold text-center select-none">
+                {format(currentMonth, 'MMMM yyyy')}
+              </h2>
+              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <Button variant="outline" size="sm" className="h-7 text-xs px-2 shrink-0"
+                onClick={() => setCurrentMonth(new Date())}>
+                Today
+              </Button>
+              {monthStats.pending > 0 && (
+                <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
+                  {monthStats.pending}
+                </Badge>
               )}
-            >
-              All
-            </button>
-            {childProfiles.map(child => {
-              const color = childColors[child.id] || '#3b82f6';
-              const isActive = activeChildFilters.includes(child.id);
-              return (
+              <div className="flex border rounded-md overflow-hidden shrink-0">
+                <Button variant={view === 'month' ? 'default' : 'ghost'} size="icon"
+                  className="h-7 w-7 rounded-none" onClick={() => setView('month')}>
+                  <LayoutGrid className="w-3 h-3" />
+                </Button>
+                <Button variant={view === 'agenda' ? 'default' : 'ghost'} size="icon"
+                  className="h-7 w-7 rounded-none border-l" onClick={() => setView('agenda')}>
+                  <List className="w-3 h-3" />
+                </Button>
+              </div>
+              {settingsPopover}
+            </div>
+
+            {/* Child filter chips — scrollable single row */}
+            {activeTab === 'calendar' && childProfiles.length > 0 && (
+              <div className="flex items-center gap-1 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
                 <button
-                  key={child.id}
-                  onClick={() => handleChildFilterToggle(child.id)}
-                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border font-medium transition-all"
-                  style={{
-                    backgroundColor: isActive ? color : 'transparent',
-                    borderColor: color,
-                    color: isActive ? '#fff' : color,
-                  }}
+                  onClick={() => setActiveChildFilters([])}
+                  className={cn(
+                    'text-xs px-2 py-0.5 rounded-full border font-medium transition-colors whitespace-nowrap shrink-0',
+                    activeChildFilters.length === 0
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
+                  )}
                 >
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: isActive ? 'rgba(255,255,255,0.5)' : color }}
-                  />
-                  {child.child_name || child.display_name}
+                  All
                 </button>
-              );
-            })}
+                {childProfiles.map(child => {
+                  const color = childColors[child.id] || '#3b82f6';
+                  const isActive = activeChildFilters.includes(child.id);
+                  return (
+                    <button
+                      key={child.id}
+                      onClick={() => handleChildFilterToggle(child.id)}
+                      className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium transition-all whitespace-nowrap shrink-0"
+                      style={{
+                        backgroundColor: isActive ? color : 'transparent',
+                        borderColor: color,
+                        color: isActive ? '#fff' : color,
+                      }}
+                    >
+                      {child.child_name || child.display_name}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Tabs */}
-      <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+      {/* ── Tabs (only visible when on calendar view, not day view) ── */}
+      {!selectedDate && (
         <div className="shrink-0 border-b px-4">
           <div className="flex gap-4">
             <button
               onClick={() => setActiveTab('calendar')}
               className={cn(
-                'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium',
-                activeTab === 'calendar'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                'flex items-center gap-1.5 text-sm py-2 border-b-2 transition-colors font-medium',
+                activeTab === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
             >
               <CalendarDays className="w-3.5 h-3.5" />
@@ -779,10 +698,8 @@ export default function CalendarPage() {
             <button
               onClick={() => setActiveTab('meals')}
               className={cn(
-                'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium',
-                activeTab === 'meals'
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground'
+                'flex items-center gap-1.5 text-sm py-2 border-b-2 transition-colors font-medium',
+                activeTab === 'meals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
               )}
             >
               <ChefHat className="w-3.5 h-3.5" />
@@ -790,73 +707,70 @@ export default function CalendarPage() {
             </button>
           </div>
         </div>
+      )}
 
-        {activeTab === 'calendar' && (
-          <div className="flex-1 min-h-0 flex overflow-hidden">
-            <div className="flex-1 flex flex-col min-h-0 min-w-0 overflow-hidden">
-              {view === 'month' ? (
-                <MonthGrid
-                  currentMonth={currentMonth}
-                  selectedDate={selectedDate}
-                  onSelectDate={(day) => setSelectedDate(day)}
-                  mealEntries={mealEntries}
-                  tasks={tasks}
-                  taskCompletions={allCompletions}
-                  calendarEvents={calendarEvents}
-                  transactions={transactions}
-                  childColors={childColors}
-                  activeChildFilters={activeChildFilters}
-                  showFinancials={showFinancials}
-                />
-              ) : (
-                <AgendaView
-                  startDate={new Date()}
-                  mealEntries={mealEntries}
-                  tasks={tasks}
-                  calendarEvents={calendarEvents}
-                  transactions={transactions}
-                  childColors={childColors}
-                  showFinancials={showFinancials}
-                  onSelectDate={(day) => {
-                    setSelectedDate(day);
-                    setCurrentMonth(day);
-                    setView('month');
-                  }}
-                />
-              )}
-            </div>
+      {/* ── Content ── */}
+      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
 
-            {selectedDate && (
-              <div className="w-72 lg:w-80 shrink-0 overflow-hidden flex flex-col border-l">
-                <DayDetailPanel
-                  selectedDate={selectedDate}
-                  onClose={() => setSelectedDate(null)}
-                  mealEntries={mealEntries}
-                  tasks={selectedDate ? tasks.filter(t => taskAppearsOnDay(t, selectedDate)) : []}
-                  taskCompletions={allCompletions}
-                  calendarEvents={calendarEvents}
-                  transactions={transactions}
-                  recipes={recipes}
-                  childProfiles={childProfiles}
-                  childColors={childColors}
-                  showFinancials={showFinancials}
-                  onAddMealEntry={(data) => addMealEntry.mutateAsync(data)}
-                  onUpdateMealEntry={(id, data) => updateMealEntry.mutateAsync({ id, data })}
-                  onRemoveMealEntry={(id) => removeMealEntry.mutateAsync(id)}
-                  onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
-                  onApproveTask={(id) => approveTask.mutateAsync(id)}
-                  onRejectTask={(id) => rejectTask.mutateAsync(id)}
-                  onCreateEvent={(data) => createEvent.mutateAsync(data)}
-                  onUpdateEvent={(id, data) => updateEvent.mutateAsync({ id, data })}
-                  onDeleteEvent={(id) => deleteEvent.mutateAsync(id)}
-                  onOpenTaskDialog={(date) => navigate(`/Dashboard`)}
-                />
-              </div>
-            )}
-          </div>
+        {/* Full-screen day detail */}
+        {selectedDate && (
+          <DayDetailPanel
+            selectedDate={selectedDate}
+            onClose={() => setSelectedDate(null)}
+            mealEntries={mealEntries}
+            tasks={tasks.filter(t => taskAppearsOnDay(t, selectedDate))}
+            taskCompletions={allCompletions}
+            calendarEvents={calendarEvents}
+            transactions={transactions}
+            recipes={recipes}
+            childProfiles={childProfiles}
+            childColors={childColors}
+            showFinancials={showFinancials}
+            onAddMealEntry={(data) => addMealEntry.mutateAsync(data)}
+            onUpdateMealEntry={(id, data) => updateMealEntry.mutateAsync({ id, data })}
+            onRemoveMealEntry={(id) => removeMealEntry.mutateAsync(id)}
+            onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
+            onApproveTask={(id) => approveTask.mutateAsync(id)}
+            onRejectTask={(id) => rejectTask.mutateAsync(id)}
+            onCreateEvent={(data) => createEvent.mutateAsync(data)}
+            onUpdateEvent={(id, data) => updateEvent.mutateAsync({ id, data })}
+            onDeleteEvent={(id) => deleteEvent.mutateAsync(id)}
+            onOpenTaskDialog={() => navigate('/Dashboard')}
+            hideHeader
+          />
         )}
 
-        {activeTab === 'meals' && (
+        {/* Calendar grid / agenda */}
+        {!selectedDate && activeTab === 'calendar' && (
+          view === 'month' ? (
+            <MonthGrid
+              currentMonth={currentMonth}
+              selectedDate={selectedDate}
+              onSelectDate={handleDaySelect}
+              mealEntries={mealEntries}
+              tasks={tasks}
+              taskCompletions={allCompletions}
+              calendarEvents={calendarEvents}
+              transactions={transactions}
+              childColors={childColors}
+              activeChildFilters={activeChildFilters}
+              showFinancials={showFinancials}
+            />
+          ) : (
+            <AgendaView
+              startDate={new Date()}
+              mealEntries={mealEntries}
+              tasks={tasks}
+              calendarEvents={calendarEvents}
+              transactions={transactions}
+              childColors={childColors}
+              showFinancials={showFinancials}
+              onSelectDate={handleDaySelect}
+            />
+          )
+        )}
+
+        {!selectedDate && activeTab === 'meals' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4">
             <RecipeLibrary
               recipes={recipes}
