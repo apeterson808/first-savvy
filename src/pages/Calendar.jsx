@@ -326,11 +326,13 @@ export default function CalendarPage() {
 
   const [currentMonth, setCurrentMonth] = useState(() => {
     const d = location.state?.selectedDate;
-    return d ? startOfDay(new Date(d)) : new Date();
+    if (d) { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }
+    return new Date();
   });
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = location.state?.selectedDate;
-    return d ? startOfDay(new Date(d)) : startOfDay(new Date());
+    if (d) { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }
+    return startOfDay(new Date());
   });
   const [view, setView] = useState('month');
   const [activeChildFilters, setActiveChildFilters] = useState([]);
