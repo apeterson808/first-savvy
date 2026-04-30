@@ -245,10 +245,14 @@ export default function DayDetailPanel({
             {/* Meals */}
             <section>
               <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                <button
+                  onClick={() => navigate('/Calendar?tab=meals')}
+                  className="flex items-center gap-1.5 text-sm font-semibold text-foreground hover:text-primary transition-colors group"
+                >
                   <ChefHat className="w-4 h-4 text-amber-500" />
                   Meals
-                </div>
+                  <ChevronRight className="w-3.5 h-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                </button>
               </div>
               <div className="grid grid-cols-3 gap-2">
                 {MEAL_TYPES.filter(t => t !== 'snack').map(mealType => {

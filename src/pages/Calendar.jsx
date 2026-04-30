@@ -4,7 +4,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ChevronLeft, ChevronRight, CalendarDays,
-  ChefHat, Check, X
+  Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -277,7 +277,7 @@ export default function CalendarPage() {
   const [activeChildFilters, setActiveChildFilters] = useState([]);
   const [weekPlannerOpen, setWeekPlannerOpen] = useState(false);
   const [weekPlannerStart, setWeekPlannerStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
-  const [activeTab, setActiveTab] = useState('calendar');
+  const activeTab = new URLSearchParams(location.search).get('tab') || 'calendar';
 
   const profileId = activeProfile?.id;
 
@@ -523,30 +523,6 @@ export default function CalendarPage() {
 
       {/* ── Header ── */}
       <div className="shrink-0 bg-background border-b">
-        {/* Top row: tabs */}
-        <div className="flex items-center gap-1 px-4 border-b">
-          <button
-            onClick={() => setActiveTab('calendar')}
-            className={cn(
-              'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium mr-2',
-              activeTab === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <CalendarDays className="w-3.5 h-3.5" />
-            Calendar
-          </button>
-          <button
-            onClick={() => setActiveTab('meals')}
-            className={cn(
-              'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium',
-              activeTab === 'meals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <ChefHat className="w-3.5 h-3.5" />
-            Meals
-          </button>
-        </div>
-
         {/* Calendar controls row — only shown on Calendar tab */}
         {activeTab === 'calendar' && (
           <div className="flex items-center justify-center gap-2 px-3 py-2">
@@ -643,13 +619,21 @@ export default function CalendarPage() {
 
         {/* Meals tab */}
         {activeTab === 'meals' && (
-          <div className="p-4">
-            <RecipeLibrary
-              recipes={recipes}
-              onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
-              onUpdateRecipe={(id, data) => updateRecipe.mutateAsync({ id, data })}
-              onDeleteRecipe={(id) => deleteRecipe.mutateAsync(id)}
-            />
+          <div className="flex flex-col">
+            <div className="flex items-center gap-2 px-4 py-2.5 border-b bg-background shrink-0">
+              <Button variant="ghost" size="sm" className="h-7 gap-1.5 text-xs px-2" onClick={() => navigate('/Calendar')}>
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Back to Calendar
+              </Button>
+            </div>
+            <div className="p-4">
+              <RecipeLibrary
+                recipes={recipes}
+                onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
+                onUpdateRecipe={(id, data) => updateRecipe.mutateAsync({ id, data })}
+                onDeleteRecipe={(id) => deleteRecipe.mutateAsync(id)}
+              />
+            </div>
           </div>
         )}
       </div>
