@@ -673,17 +673,6 @@ export default function CalendarPage() {
                     {monthStats.pending}
                   </Badge>
                 )}
-                <div className="flex border rounded-md overflow-hidden shrink-0">
-                  <Button variant={view === 'month' ? 'default' : 'ghost'} size="icon"
-                    className="h-7 w-7 rounded-none" onClick={() => setView('month')}>
-                    <LayoutGrid className="w-3 h-3" />
-                  </Button>
-                  <Button variant={view === 'agenda' ? 'default' : 'ghost'} size="icon"
-                    className="h-7 w-7 rounded-none border-l" onClick={() => setView('agenda')}>
-                    <List className="w-3 h-3" />
-                  </Button>
-                </div>
-                {filterPopover}
               </div>
             )}
           </>
