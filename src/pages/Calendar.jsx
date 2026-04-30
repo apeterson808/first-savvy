@@ -521,43 +521,38 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col min-h-full">
 
-      {/* ── Header ── */}
-      <div className="shrink-0 bg-background border-b">
-        {/* Calendar controls row — only shown on Calendar tab */}
-        {activeTab === 'calendar' && (
-          <div className="flex items-center justify-center gap-2 px-3 py-2">
-            <div className="flex items-center border rounded-md overflow-hidden">
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-r"
-                onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className="text-sm font-semibold px-3 select-none whitespace-nowrap">
-                {format(currentMonth, 'MMMM yyyy')}
-              </span>
-              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-l"
-                onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-            </div>
-            <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
-              onClick={() => setCurrentMonth(new Date())}>
-              Today
-            </Button>
-            {monthStats.pending > 0 && (
-              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
-                {monthStats.pending}
-              </Badge>
-            )}
-          </div>
-        )}
-      </div>
-
       {/* ── Content ── */}
       <div className="flex-1 flex flex-col">
 
         {/* Calendar tab */}
         {activeTab === 'calendar' && (
           <>
+            {/* Controls — left-aligned, no background */}
+            <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8"
+                  onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-base font-semibold px-1 select-none whitespace-nowrap min-w-[110px] text-center">
+                  {format(currentMonth, 'MMMM yyyy')}
+                </span>
+                <Button variant="ghost" size="icon" className="h-8 w-8"
+                  onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+              <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
+                onClick={() => setCurrentMonth(new Date())}>
+                Today
+              </Button>
+              {monthStats.pending > 0 && (
+                <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
+                  {monthStats.pending}
+                </Badge>
+              )}
+            </div>
+
             <MonthGrid
               currentMonth={currentMonth}
               selectedDate={selectedDate}
@@ -574,19 +569,17 @@ export default function CalendarPage() {
               showFinancials={showFinancials}
             />
 
-            {/* Day detail panel — flows below the grid */}
+            {/* Day detail panel — card below the grid */}
             {selectedDate && (
-              <div className="border-t flex flex-col">
-                {/* Day detail mini-header */}
-                <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium leading-none mb-0.5">
-                      {format(selectedDate, 'EEEE')}
-                    </p>
-                    <p className="text-sm font-semibold leading-none">
-                      {format(selectedDate, 'MMMM d, yyyy')}
-                    </p>
-                  </div>
+              <div className="mx-4 my-4 rounded-xl border bg-card shadow-sm overflow-hidden">
+                {/* Card header — date centered */}
+                <div className="px-4 py-3 border-b text-center">
+                  <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium leading-none mb-1">
+                    {format(selectedDate, 'EEEE')}
+                  </p>
+                  <p className="text-sm font-semibold leading-none">
+                    {format(selectedDate, 'MMMM d, yyyy')}
+                  </p>
                 </div>
                 <DayDetailPanel
                   selectedDate={selectedDate}
