@@ -652,19 +652,21 @@ export default function CalendarPage() {
 
             {/* Calendar controls row — only shown on Calendar tab */}
             {activeTab === 'calendar' && (
-              <div className="flex items-center gap-1 px-3 py-2">
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                  onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <h2 className="flex-1 text-sm font-semibold text-center select-none">
-                  {format(currentMonth, 'MMMM yyyy')}
-                </h2>
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                  onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs px-2 shrink-0"
+              <div className="flex items-center justify-center gap-2 px-3 py-2">
+                <div className="flex items-center border rounded-md overflow-hidden">
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-r"
+                    onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-sm font-semibold px-3 select-none whitespace-nowrap">
+                    {format(currentMonth, 'MMMM yyyy')}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-l"
+                    onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
                   onClick={() => setCurrentMonth(new Date())}>
                   Today
                 </Button>
