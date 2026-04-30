@@ -118,7 +118,6 @@ function TasksByChildSection({ tasks, taskCompletions, childProfiles, childColor
       <div className="flex items-center gap-1.5 text-sm font-semibold text-foreground mb-2">
         <CheckSquare className="w-4 h-4 text-blue-500" />
         Tasks
-        <Badge variant="secondary" className="text-xs h-5">{tasks.length}</Badge>
       </div>
       <div className="space-y-2">
         {Object.entries(grouped).map(([childId, childTasks]) => {
@@ -254,7 +253,7 @@ export default function DayDetailPanel({
                   Meals
                 </div>
               </div>
-              <div className="space-y-1.5">
+              <div className="grid grid-cols-3 gap-2">
                 {MEAL_TYPES.filter(t => t !== 'snack').map(mealType => {
                   const entry = dayMeals.find(e => e.meal_type === mealType);
                   const mealName = entry?.meal_recipes?.name || entry?.custom_meal_name;
@@ -262,17 +261,16 @@ export default function DayDetailPanel({
                     <button
                       key={mealType}
                       onClick={() => setMealPickerState(mealType)}
-                      className="w-full flex items-center gap-3 p-2.5 rounded-lg border hover:border-primary hover:bg-primary/5 transition-all text-left group"
+                      className="flex flex-col items-start gap-1 p-2.5 rounded-lg border hover:border-primary hover:bg-primary/5 transition-all text-left group"
                     >
-                      <span className="text-xs text-muted-foreground font-medium w-16 shrink-0 uppercase tracking-wide">
+                      <span className="text-xs text-muted-foreground font-medium uppercase tracking-wide">
                         {MEAL_TYPE_LABELS[mealType]}
                       </span>
                       {mealName ? (
-                        <span className="flex-1 text-sm font-medium text-foreground truncate">{mealName}</span>
+                        <span className="text-xs font-medium text-foreground line-clamp-2 leading-snug">{mealName}</span>
                       ) : (
-                        <span className="flex-1 text-sm text-muted-foreground/60 italic">Not planned</span>
+                        <span className="text-xs text-muted-foreground/60 italic">Not planned</span>
                       )}
-                      <Pencil className="w-3.5 h-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                     </button>
                   );
                 })}
