@@ -600,11 +600,11 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
-      {/* ── Header changes based on whether we're in day view ── */}
-      <div className="shrink-0 px-3 py-2 border-b bg-background">
+      {/* ── Header ── */}
+      <div className="shrink-0 bg-background border-b">
         {selectedDate ? (
-          /* Day view header: back | prev | date | next | settings */
-          <div className="flex items-center gap-1">
+          /* Day view header: back | prev | date | next | filter */
+          <div className="flex items-center gap-1 px-3 py-2">
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setSelectedDate(null)}>
               <ArrowLeft className="w-4 h-4" />
             </Button>
@@ -625,70 +625,70 @@ export default function CalendarPage() {
             {filterPopover}
           </div>
         ) : (
-          /* Calendar view header */
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-              onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <h2 className="flex-1 text-sm font-semibold text-center select-none">
-              {format(currentMonth, 'MMMM yyyy')}
-            </h2>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-              onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            <Button variant="outline" size="sm" className="h-7 text-xs px-2 shrink-0"
-              onClick={() => setCurrentMonth(new Date())}>
-              Today
-            </Button>
-            {monthStats.pending > 0 && (
-              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
-                {monthStats.pending}
-              </Badge>
-            )}
-            <div className="flex border rounded-md overflow-hidden shrink-0">
-              <Button variant={view === 'month' ? 'default' : 'ghost'} size="icon"
-                className="h-7 w-7 rounded-none" onClick={() => setView('month')}>
-                <LayoutGrid className="w-3 h-3" />
-              </Button>
-              <Button variant={view === 'agenda' ? 'default' : 'ghost'} size="icon"
-                className="h-7 w-7 rounded-none border-l" onClick={() => setView('agenda')}>
-                <List className="w-3 h-3" />
-              </Button>
+          <>
+            {/* Top row: tabs */}
+            <div className="flex items-center gap-1 px-4 border-b">
+              <button
+                onClick={() => setActiveTab('calendar')}
+                className={cn(
+                  'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium mr-2',
+                  activeTab === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <CalendarDays className="w-3.5 h-3.5" />
+                Calendar
+              </button>
+              <button
+                onClick={() => setActiveTab('meals')}
+                className={cn(
+                  'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium',
+                  activeTab === 'meals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <ChefHat className="w-3.5 h-3.5" />
+                Meals
+              </button>
             </div>
-            {filterPopover}
-          </div>
+
+            {/* Calendar controls row — only shown on Calendar tab */}
+            {activeTab === 'calendar' && (
+              <div className="flex items-center gap-1 px-3 py-2">
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                  onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <h2 className="flex-1 text-sm font-semibold text-center select-none">
+                  {format(currentMonth, 'MMMM yyyy')}
+                </h2>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+                  onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <Button variant="outline" size="sm" className="h-7 text-xs px-2 shrink-0"
+                  onClick={() => setCurrentMonth(new Date())}>
+                  Today
+                </Button>
+                {monthStats.pending > 0 && (
+                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
+                    {monthStats.pending}
+                  </Badge>
+                )}
+                <div className="flex border rounded-md overflow-hidden shrink-0">
+                  <Button variant={view === 'month' ? 'default' : 'ghost'} size="icon"
+                    className="h-7 w-7 rounded-none" onClick={() => setView('month')}>
+                    <LayoutGrid className="w-3 h-3" />
+                  </Button>
+                  <Button variant={view === 'agenda' ? 'default' : 'ghost'} size="icon"
+                    className="h-7 w-7 rounded-none border-l" onClick={() => setView('agenda')}>
+                    <List className="w-3 h-3" />
+                  </Button>
+                </div>
+                {filterPopover}
+              </div>
+            )}
+          </>
         )}
       </div>
-
-      {/* ── Tabs (only visible when on calendar view, not day view) ── */}
-      {!selectedDate && (
-        <div className="shrink-0 border-b px-4">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setActiveTab('calendar')}
-              className={cn(
-                'flex items-center gap-1.5 text-sm py-2 border-b-2 transition-colors font-medium',
-                activeTab === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <CalendarDays className="w-3.5 h-3.5" />
-              Calendar
-            </button>
-            <button
-              onClick={() => setActiveTab('meals')}
-              className={cn(
-                'flex items-center gap-1.5 text-sm py-2 border-b-2 transition-colors font-medium',
-                activeTab === 'meals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <ChefHat className="w-3.5 h-3.5" />
-              Meals
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* ── Content ── */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
