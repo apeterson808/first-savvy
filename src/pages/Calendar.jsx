@@ -3,16 +3,11 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  ChevronLeft, ChevronRight, SlidersHorizontal, CalendarDays, List,
-  LayoutGrid, ChefHat, CalendarRange, ArrowLeft, Check
+  ChevronLeft, ChevronRight, CalendarDays,
+  ChefHat, Check, X
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import {
@@ -279,7 +274,6 @@ export default function CalendarPage() {
     if (d) { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }
     return null;
   });
-  const [view, setView] = useState('month');
   const [activeChildFilters, setActiveChildFilters] = useState([]);
   const [weekPlannerOpen, setWeekPlannerOpen] = useState(false);
   const [weekPlannerStart, setWeekPlannerStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 0 }));
@@ -519,230 +513,141 @@ export default function CalendarPage() {
     setCurrentMonth(day);
   };
 
-  const handleDayNav = (delta) => {
-    if (!selectedDate) return;
-    const next = addDays(selectedDate, delta);
-    setSelectedDate(next);
-    setCurrentMonth(next);
-  };
-
-  const filterPopover = (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn('h-8 w-8 shrink-0 relative', activeChildFilters.length > 0 && 'text-primary')}
-        >
-          <SlidersHorizontal className="w-4 h-4" />
-          {activeChildFilters.length > 0 && (
-            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent align="end" className="w-64 p-0">
-        <div className="p-3 border-b">
-          <h4 className="font-semibold text-sm">Filters &amp; Settings</h4>
-        </div>
-        <div className="p-3 space-y-4">
-          {/* Show financials toggle */}
-          <div className="flex items-center justify-between">
-            <Label htmlFor="show-fin" className="text-sm cursor-pointer">Show financial info</Label>
-            <Switch id="show-fin" checked={showFinancials} onCheckedChange={(val) => savePreference({ show_financials: val })} />
-          </div>
-
-          {/* People filter */}
-          {childProfiles.length > 0 && (
-            <>
-              <Separator />
-              <div>
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Show people</h4>
-                <div className="space-y-1">
-                  {/* All option */}
-                  <button
-                    onClick={() => setActiveChildFilters([])}
-                    className={cn(
-                      'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors text-left',
-                      activeChildFilters.length === 0 ? 'bg-muted font-medium' : 'hover:bg-muted/50'
-                    )}
-                  >
-                    <span className="w-2 h-2 rounded-full bg-foreground/30 shrink-0" />
-                    <span className="flex-1">Everyone</span>
-                    {activeChildFilters.length === 0 && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
-                  </button>
-                  {childProfiles.map(child => {
-                    const color = childColors[child.id] || '#3b82f6';
-                    const isActive = activeChildFilters.includes(child.id);
-                    return (
-                      <button
-                        key={child.id}
-                        onClick={() => handleChildFilterToggle(child.id)}
-                        className={cn(
-                          'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors text-left',
-                          isActive ? 'bg-muted font-medium' : 'hover:bg-muted/50'
-                        )}
-                      >
-                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
-                        <span className="flex-1 truncate">{child.child_name || child.display_name}</span>
-                        {isActive && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
-
   return (
     <div className="flex flex-col h-full overflow-hidden">
 
       {/* ── Header ── */}
       <div className="shrink-0 bg-background border-b">
-        {selectedDate ? (
-          /* Day view header: back | prev | date | next | filter */
-          <div className="flex items-center gap-1 px-3 py-2">
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => setSelectedDate(null)}>
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleDayNav(-1)}>
-              <ChevronLeft className="w-4 h-4" />
-            </Button>
-            <div className="flex-1 text-center min-w-0">
-              <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-medium leading-none mb-0.5">
-                {format(selectedDate, 'EEEE')}
-              </p>
-              <p className="text-sm font-semibold leading-none truncate">
-                {format(selectedDate, 'MMMM d, yyyy')}
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleDayNav(1)}>
-              <ChevronRight className="w-4 h-4" />
-            </Button>
-            {filterPopover}
-          </div>
-        ) : (
-          <>
-            {/* Top row: tabs */}
-            <div className="flex items-center gap-1 px-4 border-b">
-              <button
-                onClick={() => setActiveTab('calendar')}
-                className={cn(
-                  'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium mr-2',
-                  activeTab === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <CalendarDays className="w-3.5 h-3.5" />
-                Calendar
-              </button>
-              <button
-                onClick={() => setActiveTab('meals')}
-                className={cn(
-                  'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium',
-                  activeTab === 'meals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <ChefHat className="w-3.5 h-3.5" />
-                Meals
-              </button>
-            </div>
-
-            {/* Calendar controls row — only shown on Calendar tab */}
-            {activeTab === 'calendar' && (
-              <div className="flex items-center justify-center gap-2 px-3 py-2">
-                <div className="flex items-center border rounded-md overflow-hidden">
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-r"
-                    onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-                    <ChevronLeft className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm font-semibold px-3 select-none whitespace-nowrap">
-                    {format(currentMonth, 'MMMM yyyy')}
-                  </span>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-l"
-                    onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-                    <ChevronRight className="w-4 h-4" />
-                  </Button>
-                </div>
-                <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
-                  onClick={() => setCurrentMonth(new Date())}>
-                  Today
-                </Button>
-                {monthStats.pending > 0 && (
-                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
-                    {monthStats.pending}
-                  </Badge>
-                )}
-              </div>
+        {/* Top row: tabs */}
+        <div className="flex items-center gap-1 px-4 border-b">
+          <button
+            onClick={() => setActiveTab('calendar')}
+            className={cn(
+              'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium mr-2',
+              activeTab === 'calendar' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
-          </>
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            Calendar
+          </button>
+          <button
+            onClick={() => setActiveTab('meals')}
+            className={cn(
+              'flex items-center gap-1.5 text-sm py-2.5 border-b-2 transition-colors font-medium',
+              activeTab === 'meals' ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+            )}
+          >
+            <ChefHat className="w-3.5 h-3.5" />
+            Meals
+          </button>
+        </div>
+
+        {/* Calendar controls row — only shown on Calendar tab */}
+        {activeTab === 'calendar' && (
+          <div className="flex items-center justify-center gap-2 px-3 py-2">
+            <div className="flex items-center border rounded-md overflow-hidden">
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-r"
+                onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <span className="text-sm font-semibold px-3 select-none whitespace-nowrap">
+                {format(currentMonth, 'MMMM yyyy')}
+              </span>
+              <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none border-l"
+                onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
+            <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
+              onClick={() => setCurrentMonth(new Date())}>
+              Today
+            </Button>
+            {monthStats.pending > 0 && (
+              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
+                {monthStats.pending}
+              </Badge>
+            )}
+          </div>
         )}
       </div>
 
       {/* ── Content ── */}
       <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
 
-        {/* Full-screen day detail */}
-        {selectedDate && (
-          <DayDetailPanel
-            selectedDate={selectedDate}
-            onClose={() => setSelectedDate(null)}
-            mealEntries={mealEntries}
-            tasks={tasks.filter(t => taskAppearsOnDay(t, selectedDate))}
-            taskCompletions={allCompletions}
-            calendarEvents={calendarEvents}
-            transactions={transactions}
-            recipes={recipes}
-            childProfiles={childProfiles}
-            childColors={childColors}
-            showFinancials={showFinancials}
-            onAddMealEntry={(data) => addMealEntry.mutateAsync(data)}
-            onUpdateMealEntry={(id, data) => updateMealEntry.mutateAsync({ id, data })}
-            onRemoveMealEntry={(id) => removeMealEntry.mutateAsync(id)}
-            onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
-            onApproveTask={(id) => approveTask.mutateAsync(id)}
-            onRejectTask={(id) => rejectTask.mutateAsync(id)}
-            onCreateEvent={(data) => createEvent.mutateAsync(data)}
-            onUpdateEvent={(id, data) => updateEvent.mutateAsync({ id, data })}
-            onDeleteEvent={(id) => deleteEvent.mutateAsync(id)}
-            onOpenTaskDialog={() => navigate('/Dashboard')}
-            hideHeader
-          />
+        {/* Calendar tab */}
+        {activeTab === 'calendar' && (
+          <>
+            {/* Calendar grid — always visible, shrinks to make room for day panel */}
+            <div className={cn('shrink-0', selectedDate ? 'overflow-hidden' : 'flex-1 overflow-auto')}>
+              <MonthGrid
+                currentMonth={currentMonth}
+                selectedDate={selectedDate}
+                onSelectDate={(day) => {
+                  if (selectedDate && isSameDay(day, selectedDate)) {
+                    setSelectedDate(null);
+                  } else {
+                    handleDaySelect(day);
+                  }
+                }}
+                mealEntries={mealEntries}
+                tasks={tasks}
+                taskCompletions={allCompletions}
+                calendarEvents={calendarEvents}
+                transactions={transactions}
+                childColors={childColors}
+                activeChildFilters={activeChildFilters}
+                showFinancials={showFinancials}
+              />
+            </div>
+
+            {/* Day detail panel — slides in below the grid */}
+            {selectedDate && (
+              <div className="flex-1 min-h-0 flex flex-col border-t overflow-hidden">
+                {/* Day detail mini-header */}
+                <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium leading-none mb-0.5">
+                      {format(selectedDate, 'EEEE')}
+                    </p>
+                    <p className="text-sm font-semibold leading-none">
+                      {format(selectedDate, 'MMMM d, yyyy')}
+                    </p>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setSelectedDate(null)}>
+                    <X className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <DayDetailPanel
+                  selectedDate={selectedDate}
+                  onClose={() => setSelectedDate(null)}
+                  mealEntries={mealEntries}
+                  tasks={tasks.filter(t => taskAppearsOnDay(t, selectedDate))}
+                  taskCompletions={allCompletions}
+                  calendarEvents={calendarEvents}
+                  transactions={transactions}
+                  recipes={recipes}
+                  childProfiles={childProfiles}
+                  childColors={childColors}
+                  showFinancials={showFinancials}
+                  onAddMealEntry={(data) => addMealEntry.mutateAsync(data)}
+                  onUpdateMealEntry={(id, data) => updateMealEntry.mutateAsync({ id, data })}
+                  onRemoveMealEntry={(id) => removeMealEntry.mutateAsync(id)}
+                  onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
+                  onApproveTask={(id) => approveTask.mutateAsync(id)}
+                  onRejectTask={(id) => rejectTask.mutateAsync(id)}
+                  onCreateEvent={(data) => createEvent.mutateAsync(data)}
+                  onUpdateEvent={(id, data) => updateEvent.mutateAsync({ id, data })}
+                  onDeleteEvent={(id) => deleteEvent.mutateAsync(id)}
+                  onOpenTaskDialog={() => navigate('/Dashboard')}
+                  hideHeader
+                />
+              </div>
+            )}
+          </>
         )}
 
-        {/* Calendar grid / agenda */}
-        {!selectedDate && activeTab === 'calendar' && (
-          view === 'month' ? (
-            <MonthGrid
-              currentMonth={currentMonth}
-              selectedDate={selectedDate}
-              onSelectDate={handleDaySelect}
-              mealEntries={mealEntries}
-              tasks={tasks}
-              taskCompletions={allCompletions}
-              calendarEvents={calendarEvents}
-              transactions={transactions}
-              childColors={childColors}
-              activeChildFilters={activeChildFilters}
-              showFinancials={showFinancials}
-            />
-          ) : (
-            <AgendaView
-              startDate={new Date()}
-              mealEntries={mealEntries}
-              tasks={tasks}
-              calendarEvents={calendarEvents}
-              transactions={transactions}
-              childColors={childColors}
-              showFinancials={showFinancials}
-              onSelectDate={handleDaySelect}
-            />
-          )
-        )}
-
-        {!selectedDate && activeTab === 'meals' && (
+        {/* Meals tab */}
+        {activeTab === 'meals' && (
           <div className="flex-1 min-h-0 overflow-y-auto p-4">
             <RecipeLibrary
               recipes={recipes}
