@@ -281,6 +281,11 @@ export default function CalendarPage() {
 
   const profileId = activeProfile?.id;
 
+  useEffect(() => {
+    const el = document.getElementById('main-scroll-area');
+    if (el) el.scrollTop = 0;
+  }, []);
+
   // ── Queries ────────────────────────────────────────────────────────────────
 
   const { data: preferences } = useQuery({

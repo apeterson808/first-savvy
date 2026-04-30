@@ -356,7 +356,7 @@ export default function Layout({ children, currentPageName }) {
           </div>
 
           {/* Scrollable Content Area */}
-          <div className="flex-1 overflow-y-auto p-6">
+          <div id="main-scroll-area" className="flex-1 overflow-y-auto p-6">
             <ErrorBoundary>
               {children}
             </ErrorBoundary>
