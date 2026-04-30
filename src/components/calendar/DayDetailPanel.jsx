@@ -215,7 +215,7 @@ export default function DayDetailPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col bg-background">
       {!hideHeader && (
         <div className="flex items-center justify-between px-4 py-3 border-b shrink-0">
           <div>
@@ -243,7 +243,7 @@ export default function DayDetailPanel({
           onAddRecipe={() => {/* handled in parent */}}
         />
       ) : (
-        <ScrollArea className="flex-1">
+        <div>
           <div className="px-4 py-3 space-y-5">
 
             {/* Meals */}
@@ -416,7 +416,7 @@ export default function DayDetailPanel({
               </Button>
             </div>
           </div>
-        </ScrollArea>
+        </div>
       )}
 
       <EventDialog

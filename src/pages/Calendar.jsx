@@ -110,8 +110,8 @@ function MonthGrid({
   }, [mealEntries, tasks, taskCompletions, calendarEvents, transactions, activeChildFilters]);
 
   return (
-    <div className="flex-1 overflow-auto">
-      <div className="grid grid-cols-7 border-b sticky top-0 bg-background z-10">
+    <div>
+      <div className="grid grid-cols-7 border-b bg-background z-10">
         {DOW.map(d => (
           <div key={d} className="py-2 text-center text-xs font-medium text-muted-foreground uppercase tracking-wide">
             {d}
@@ -514,7 +514,7 @@ export default function CalendarPage() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="flex flex-col min-h-full">
 
       {/* ── Header ── */}
       <div className="shrink-0 bg-background border-b">
@@ -572,39 +572,36 @@ export default function CalendarPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+      <div className="flex-1 flex flex-col">
 
         {/* Calendar tab */}
         {activeTab === 'calendar' && (
           <>
-            {/* Calendar grid — always visible, shrinks to make room for day panel */}
-            <div className={cn('shrink-0', selectedDate ? 'overflow-hidden' : 'flex-1 overflow-auto')}>
-              <MonthGrid
-                currentMonth={currentMonth}
-                selectedDate={selectedDate}
-                onSelectDate={(day) => {
-                  if (selectedDate && isSameDay(day, selectedDate)) {
-                    setSelectedDate(null);
-                  } else {
-                    handleDaySelect(day);
-                  }
-                }}
-                mealEntries={mealEntries}
-                tasks={tasks}
-                taskCompletions={allCompletions}
-                calendarEvents={calendarEvents}
-                transactions={transactions}
-                childColors={childColors}
-                activeChildFilters={activeChildFilters}
-                showFinancials={showFinancials}
-              />
-            </div>
+            <MonthGrid
+              currentMonth={currentMonth}
+              selectedDate={selectedDate}
+              onSelectDate={(day) => {
+                if (selectedDate && isSameDay(day, selectedDate)) {
+                  setSelectedDate(null);
+                } else {
+                  handleDaySelect(day);
+                }
+              }}
+              mealEntries={mealEntries}
+              tasks={tasks}
+              taskCompletions={allCompletions}
+              calendarEvents={calendarEvents}
+              transactions={transactions}
+              childColors={childColors}
+              activeChildFilters={activeChildFilters}
+              showFinancials={showFinancials}
+            />
 
-            {/* Day detail panel — slides in below the grid */}
+            {/* Day detail panel — flows below the grid */}
             {selectedDate && (
-              <div className="flex-1 min-h-0 flex flex-col border-t overflow-hidden">
+              <div className="border-t flex flex-col">
                 {/* Day detail mini-header */}
-                <div className="shrink-0 flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
+                <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium leading-none mb-0.5">
                       {format(selectedDate, 'EEEE')}
@@ -648,7 +645,7 @@ export default function CalendarPage() {
 
         {/* Meals tab */}
         {activeTab === 'meals' && (
-          <div className="flex-1 min-h-0 overflow-y-auto p-4">
+          <div className="p-4">
             <RecipeLibrary
               recipes={recipes}
               onCreateRecipe={(data) => createRecipe.mutateAsync(data)}
