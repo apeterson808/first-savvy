@@ -528,7 +528,7 @@ export default function CalendarPage() {
         {activeTab === 'calendar' && (
           <>
             {/* Controls — left-aligned, no background */}
-            <div className="flex items-center gap-2 px-4 pt-4 pb-2">
+            <div className="flex items-center gap-2 px-3 pt-3 pb-2">
               <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" className="h-8 w-8"
                   onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
@@ -571,7 +571,7 @@ export default function CalendarPage() {
 
             {/* Day detail panel — card below the grid */}
             {selectedDate && (
-              <div className="mx-3 my-4 rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="mx-2 my-3 rounded-xl border bg-card shadow-sm overflow-hidden">
                 {/* Card header — date centered */}
                 <div className="px-4 py-3 border-b text-center">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium leading-none mb-1">
