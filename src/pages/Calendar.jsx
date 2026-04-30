@@ -272,7 +272,7 @@ export default function CalendarPage() {
   const [selectedDate, setSelectedDate] = useState(() => {
     const d = location.state?.selectedDate;
     if (d) { const [y, m, day] = d.split('-').map(Number); return new Date(y, m - 1, day); }
-    return null;
+    return new Date();
   });
   const [activeChildFilters, setActiveChildFilters] = useState([]);
   const [weekPlannerOpen, setWeekPlannerOpen] = useState(false);
