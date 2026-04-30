@@ -528,7 +528,7 @@ export default function CalendarPage() {
         {activeTab === 'calendar' && (
           <>
             {/* Calendar card */}
-            <div className="mx-2 mt-3 mb-0 rounded-xl border bg-card shadow-sm overflow-hidden">
+            <div className="mx-2 mt-3 mb-0 md:mx-0 md:mt-0 rounded-xl border bg-card shadow-sm overflow-hidden">
               {/* Controls */}
               <div className="flex items-center gap-2 px-3 pt-3 pb-2">
                 <div className="flex items-center gap-1">
@@ -574,7 +574,7 @@ export default function CalendarPage() {
 
             {/* Day detail panel — card below the grid */}
             {selectedDate && (
-              <div className="mx-2 mt-2 mb-3 rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="mx-2 mt-2 mb-3 md:mx-0 rounded-xl border bg-card shadow-sm overflow-hidden">
                 {/* Card header — date centered */}
                 <div className="px-4 py-3 border-b text-center">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium leading-none mb-1">
