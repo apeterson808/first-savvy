@@ -527,31 +527,33 @@ export default function CalendarPage() {
         {/* Calendar tab */}
         {activeTab === 'calendar' && (
           <>
-            {/* Controls — left-aligned, no background */}
-            <div className="flex items-center gap-2 px-3 pt-3 pb-2">
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-                  <ChevronLeft className="w-4 h-4" />
+            {/* Calendar card */}
+            <div className="mx-2 mt-3 mb-0 rounded-xl border bg-card shadow-sm overflow-hidden">
+              {/* Controls */}
+              <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+                <div className="flex items-center gap-1">
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="text-base font-semibold px-1 select-none whitespace-nowrap min-w-[110px] text-center">
+                    {format(currentMonth, 'MMMM yyyy')}
+                  </span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8"
+                    onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
+                  onClick={() => setCurrentMonth(new Date())}>
+                  Today
                 </Button>
-                <span className="text-base font-semibold px-1 select-none whitespace-nowrap min-w-[110px] text-center">
-                  {format(currentMonth, 'MMMM yyyy')}
-                </span>
-                <Button variant="ghost" size="icon" className="h-8 w-8"
-                  onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
+                {monthStats.pending > 0 && (
+                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
+                    {monthStats.pending}
+                  </Badge>
+                )}
               </div>
-              <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
-                onClick={() => setCurrentMonth(new Date())}>
-                Today
-              </Button>
-              {monthStats.pending > 0 && (
-                <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
-                  {monthStats.pending}
-                </Badge>
-              )}
-            </div>
 
             <MonthGrid
               currentMonth={currentMonth}
@@ -568,10 +570,11 @@ export default function CalendarPage() {
               activeChildFilters={activeChildFilters}
               showFinancials={showFinancials}
             />
+            </div>{/* end calendar card */}
 
             {/* Day detail panel — card below the grid */}
             {selectedDate && (
-              <div className="mx-2 my-3 rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="mx-2 mt-2 mb-3 rounded-xl border bg-card shadow-sm overflow-hidden">
                 {/* Card header — date centered */}
                 <div className="px-4 py-3 border-b text-center">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium leading-none mb-1">
