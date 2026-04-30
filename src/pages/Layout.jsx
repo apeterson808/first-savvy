@@ -216,10 +216,9 @@ export default function Layout({ children, currentPageName }) {
                     key={item.name}
                     onClick={() => {
                       if (isDisabled) return;
-                      // Navigate to page with default tab
+                      setSidebarOpen(false);
                       const basePath = createPageUrl(item.page).split('?')[0];
                       navigate(basePath);
-                      // Force URL update to trigger tab reset
                       window.history.replaceState({}, '', basePath);
                       window.dispatchEvent(new PopStateEvent('popstate'));
                     }}
