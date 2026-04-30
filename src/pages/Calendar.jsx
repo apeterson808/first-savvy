@@ -571,7 +571,7 @@ export default function CalendarPage() {
 
             {/* Day detail panel — card below the grid */}
             {selectedDate && (
-              <div className="mx-4 my-4 rounded-xl border bg-card shadow-sm overflow-hidden">
+              <div className="my-4 border-t border-b bg-card shadow-sm overflow-hidden">
                 {/* Card header — date centered */}
                 <div className="px-4 py-3 border-b text-center">
                   <p className="text-xs text-muted-foreground uppercase tracking-widest font-medium leading-none mb-1">
