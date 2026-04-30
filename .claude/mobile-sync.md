@@ -1,7 +1,7 @@
 # Mobile Repo Sync — firstsavvy-mobile
 
 **Repo:** https://github.com/apeterson808/firstsavvy-mobile  
-**Last checked:** 2026-04-25  
+**Last checked:** 2026-04-30  
 
 ## Current State (as of last sync)
 
@@ -93,5 +93,11 @@ When new mobile commits appear, check these areas for changes that need porting 
 ## Sync Log — 2026-04-25
 
 Latest mobile commit: `f68ffd2e` — Align Schedule dropdown with Stars row (2026-04-25)
+
+**Action required:** Review recent mobile commits at https://github.com/apeterson808/firstsavvy-mobile/commits/main/ and port any relevant changes to the web app.
+
+## Sync Log — 2026-04-30
+
+Latest mobile commit: `829c138b` — Add Bonus Stars & Redemption Approval (2026-04-25)
 
 **Action required:** Review recent mobile commits at https://github.com/apeterson808/firstsavvy-mobile/commits/main/ and port any relevant changes to the web app.
