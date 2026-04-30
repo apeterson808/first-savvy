@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="gold" x1="20%" y1="5%" x2="80%" y2="95%">
+      <stop offset="0%"   stop-color="#b8742a"/>
+      <stop offset="25%"  stop-color="#e8c06a"/>
+      <stop offset="55%"  stop-color="#d4952a"/>
+      <stop offset="80%"  stop-color="#c07830"/>
+      <stop offset="100%" stop-color="#8b5e18"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#d4a040" stop-opacity="0.20"/>
+      <stop offset="100%" stop-color="#d4a040" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background: near-black -->
+  <rect width="512" height="512" fill="#1a1a2e"/>
+
+  <!-- Warm center glow -->
+  <circle cx="256" cy="256" r="210" fill="url(#glow)"/>
+
+  <!--
+    The First Savvy logo mark is two interlocked thick-stroke arcs,
+    resembling linked Cs or a stylized infinity/chain symbol.
+
+    Geometry (all coordinates in 512x512 space, logo occupies ~220px wide x 260px tall centered):
+
+    Left arc:
+      Center: (220, 236)
+      Outer radius: 90  Inner radius: 52  → stroke weight 38px
+      Arc span: from 315° clockwise to 135° (i.e., open gap on right side)
+      Top end: vertical flat cut going up from ~315° position
+
+    Right arc:
+      Center: (292, 276)
+      Same radii
+      Arc span: from 135° clockwise to 315° (open gap on left side)
+      Bottom end: vertical flat cut going down from ~315° position
+
+    They interlock because the right arc's center is offset right+down,
+    and the arcs cross each other.
+  -->
+
+  <g fill="url(#gold)">
+
+    <!-- LEFT ARC — opens to the right, with vertical top-right termination -->
+    <!--
+      Center (cx,cy) = (220, 238)
+      Outer r=90, inner r=52
+      Start angle: ~315deg (upper right), sweep clockwise ~270deg to ~225deg (lower right)
+
+      315deg point on outer circle from (220,238): (220 + 90*cos315, 238 + 90*sin315)
+        cos315 = 0.707, sin315 = -0.707
+        = (220+63.6, 238-63.6) = (283.6, 174.4) ≈ (284, 174)
+
+      225deg point on outer circle: (220 + 90*cos225, 238 + 90*sin225)
+        cos225 = -0.707, sin225 = -0.707... wait, 225 = 180+45
+        cos225 = -0.707, sin225 = -0.707
+        Hmm, I want it to go from top-right, sweep left (counterclockwise through top, left, bottom),
+        ending at bottom-right — open gap on the right side.
+
+      Let me use: open on RIGHT side
+      Start: angle 315° (top-right of circle)
+      End:   angle 45°  (bottom-right of circle, going CW through top=0, left=270, bottom=180...
+
+      Actually let's think in standard math angles (0=right, CCW positive):
+      "Open on right" means the gap is on the right side.
+      Arc goes from bottom-right (approx -45° = 315°) counterclockwise to top-right (45°),
+      i.e., sweeps 270° counterclockwise through bottom (270°), left (180°), top (90°).
+
+      In SVG (y-axis down, angles CW from right):
+      Open right means arc from top-right to bottom-right going CW via top, left, bottom.
+      Start: -45° → (cx + r*cos(-45), cy + r*sin(-45))
+      End:   +45° → (cx + r*cos(+45), cy + r*sin(+45))
+      Large arc flag = 1, sweep = 1 (clockwise in SVG)
+
+      cx=220, cy=238
+      Outer r=90:
+        Start (-45°): (220+90*0.707, 238-90*0.707) = (283.6, 174.4) → (284, 174)
+        End   (+45°): (220+90*0.707, 238+90*0.707) = (283.6, 301.6) → (284, 302)
+      Inner r=52:
+        Start (-45°): (220+52*0.707, 238-52*0.707) = (256.8, 201.2) → (257, 201)
+        End   (+45°): (220+52*0.707, 238+52*0.707) = (256.8, 274.8) → (257, 275)
+
+      The "flat vertical top end": at the start (-45°), instead of a rounded cap,
+      the logo shows a vertical slice cut — the outer arc start point and inner arc
+      start point are connected by a vertical line (same x or straight cut).
+      Looking at the logo, the top-right end is cut straight/vertical.
+
+      Path:
+        Move to inner start (257, 201)
+        Line to outer start (284, 174)  ← this IS the straight diagonal cut at top
+        Arc (outer, large, CW) from (284,174) to (284,302), r=90
+        Line to inner end (257, 275)
+        Arc (inner, large, CCW) from (257,275) back to (257,201), r=52
+        Close
+    -->
+    <path d="
+      M 257,201
+      L 284,174
+      A 90,90 0 1,1 284,302
+      L 257,275
+      A 52,52 0 1,0 257,201
+      Z
+    "/>
+
+    <!-- RIGHT ARC — opens to the left, with vertical bottom-left termination -->
+    <!--
+      Center (cx,cy) = (292, 274)
+      Same outer r=90, inner r=52
+      Open on LEFT side: arc from top-left to bottom-left going CCW via top, right, bottom
+      In SVG: from top-left (-135° from right = 225° standard) to bottom-left (135° standard)
+
+      Open left: gap on left side
+      Start: top-left of circle (225° SVG angle, i.e., upper-left)
+        Actually "open left" → arc goes from bottom-left to top-left CW via bottom, right, top
+        OR from top-left to bottom-left CCW via top, right, bottom
+        Let me use: start top-left (-135° = 225°), sweep CW (large arc), end bottom-left (135° = 135°)
+
+        Wait, in the logo the right arc is the MIRROR of the left arc.
+        Left arc: open right, vertical cut at TOP-right
+        Right arc: open left, vertical cut at BOTTOM-left
+
+        Right arc in SVG:
+        Start angle: 225° (top-left), End angle: 135° (bottom-left), CW sweep = 270°
+
+        cx=292, cy=274
+        225° in SVG = upper-left: (292 + 90*cos(225°), 274 + 90*sin(225°))
+          cos225° = -0.707, sin225° = 0.707 (SVG y-down)
+          = (292 - 63.6, 274 + 63.6) = (228.4, 337.6) → (228, 338)
+        135° in SVG = upper-right... wait I need to be careful.
+
+        SVG angles: 0°=right, 90°=down, 180°=left, 270°=up (CW from right).
+
+        For open-left arc (mirror of open-right):
+        Open-right arc went from angle -45°(=315°) to +45° CW through 180° (left).
+        Mirror (open-left): from angle 315°+180°=135° to 45°+180°=225° CW through 0° (right).
+        But going CW from 135° to 225° is only 90°, not 270°.
+        Going CW from 135° with large arc (270°) ends at 225°... that's going through 180°, 270°, 0°, 90°...
+        No. CW from 135°: 135→90→0→270→180→135 is full circle.
+        CW from 135°, 270° sweep → ends at 135°+270°=405°=45°. Hmm.
+
+        Let me just mirror the left arc path around the center point (256, 256):
+
+        Left arc center: (220, 238), offset from canvas center: (-36, -18)
+        Right arc center should be: (+36, +18) from canvas center = (292, 274) ✓
+
+        Left arc path points mirrored through (256,256):
+        (257,201) → (255, 311)
+        (284,174) → (228, 338)
+        (284,302) → (228, 210)
+        (257,275) → (255, 237)
+
+        Mirror path:
+        M 255,311  (was inner start, now inner "start" of mirrored = bottom-left end)
+        L 228,338  (was outer start, now outer bottom-left)
+        A 90,90 0 1,0 228,210  (was CW large arc, now CCW large arc)
+        L 255,237
+        A 52,52 0 1,1 255,311
+        Z
+    -->
+    <path d="
+      M 255,311
+      L 228,338
+      A 90,90 0 1,0 228,210
+      L 255,237
+      A 52,52 0 1,1 255,311
+      Z
+    "/>
+
+  </g>
+</svg>
