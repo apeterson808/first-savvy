@@ -223,9 +223,6 @@ export default function DayDetailPanel({
             </p>
             <h3 className="font-semibold text-base">{format(selectedDate, 'MMMM d, yyyy')}</h3>
           </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-            <X className="w-4 h-4" />
-          </Button>
         </div>
       )}
 

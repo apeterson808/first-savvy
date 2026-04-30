@@ -586,11 +586,7 @@ export default function CalendarPage() {
               currentMonth={currentMonth}
               selectedDate={selectedDate}
               onSelectDate={(day) => {
-                if (selectedDate && isSameDay(day, selectedDate)) {
-                  setSelectedDate(null);
-                } else {
-                  handleDaySelect(day);
-                }
+                handleDaySelect(day);
               }}
               mealEntries={mealEntries}
               tasks={tasks}
@@ -615,9 +611,6 @@ export default function CalendarPage() {
                       {format(selectedDate, 'MMMM d, yyyy')}
                     </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => setSelectedDate(null)}>
-                    <X className="w-3.5 h-3.5" />
-                  </Button>
                 </div>
                 <DayDetailPanel
                   selectedDate={selectedDate}
