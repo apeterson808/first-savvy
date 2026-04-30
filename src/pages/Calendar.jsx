@@ -3,8 +3,8 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import { useProfile } from '@/contexts/ProfileContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  ChevronLeft, ChevronRight, Settings2, CalendarDays, List,
-  LayoutGrid, ChefHat, CalendarRange, ArrowLeft
+  ChevronLeft, ChevronRight, SlidersHorizontal, CalendarDays, List,
+  LayoutGrid, ChefHat, CalendarRange, ArrowLeft, Check
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -514,13 +514,6 @@ export default function CalendarPage() {
     );
   };
 
-  const handleChildColorChange = async (childId, newColor) => {
-    const updated = { ...childColors, [childId]: newColor };
-    await savePreference({ child_colors: updated });
-  };
-
-  const COLOR_SWATCHES = ['#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#64748b'];
-
   const handleDaySelect = (day) => {
     setSelectedDate(day);
     setCurrentMonth(day);
@@ -533,43 +526,68 @@ export default function CalendarPage() {
     setCurrentMonth(next);
   };
 
-  const settingsPopover = (
+  const filterPopover = (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-          <Settings2 className="w-4 h-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn('h-8 w-8 shrink-0 relative', activeChildFilters.length > 0 && 'text-primary')}
+        >
+          <SlidersHorizontal className="w-4 h-4" />
+          {activeChildFilters.length > 0 && (
+            <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-primary" />
+          )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" className="w-64">
-        <div className="space-y-4">
-          <div>
-            <h4 className="font-semibold text-sm mb-3">Calendar Settings</h4>
-            <div className="flex items-center justify-between">
-              <Label htmlFor="show-fin" className="text-sm cursor-pointer">Show financial info</Label>
-              <Switch id="show-fin" checked={showFinancials} onCheckedChange={(val) => savePreference({ show_financials: val })} />
-            </div>
+      <PopoverContent align="end" className="w-64 p-0">
+        <div className="p-3 border-b">
+          <h4 className="font-semibold text-sm">Filters &amp; Settings</h4>
+        </div>
+        <div className="p-3 space-y-4">
+          {/* Show financials toggle */}
+          <div className="flex items-center justify-between">
+            <Label htmlFor="show-fin" className="text-sm cursor-pointer">Show financial info</Label>
+            <Switch id="show-fin" checked={showFinancials} onCheckedChange={(val) => savePreference({ show_financials: val })} />
           </div>
+
+          {/* People filter */}
           {childProfiles.length > 0 && (
             <>
               <Separator />
               <div>
-                <h4 className="font-semibold text-sm mb-2.5">Child Colors</h4>
-                <div className="space-y-2">
-                  {childProfiles.map(child => (
-                    <div key={child.id} className="flex items-center justify-between gap-2">
-                      <span className="text-sm flex-1 truncate">{child.child_name || child.display_name}</span>
-                      <div className="flex gap-1">
-                        {COLOR_SWATCHES.map(c => (
-                          <button
-                            key={c}
-                            className="w-4 h-4 rounded-full border-2 transition-transform hover:scale-110 focus:outline-none"
-                            style={{ backgroundColor: c, borderColor: childColors[child.id] === c ? 'currentColor' : 'transparent' }}
-                            onClick={() => handleChildColorChange(child.id, c)}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Show people</h4>
+                <div className="space-y-1">
+                  {/* All option */}
+                  <button
+                    onClick={() => setActiveChildFilters([])}
+                    className={cn(
+                      'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors text-left',
+                      activeChildFilters.length === 0 ? 'bg-muted font-medium' : 'hover:bg-muted/50'
+                    )}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-foreground/30 shrink-0" />
+                    <span className="flex-1">Everyone</span>
+                    {activeChildFilters.length === 0 && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                  </button>
+                  {childProfiles.map(child => {
+                    const color = childColors[child.id] || '#3b82f6';
+                    const isActive = activeChildFilters.includes(child.id);
+                    return (
+                      <button
+                        key={child.id}
+                        onClick={() => handleChildFilterToggle(child.id)}
+                        className={cn(
+                          'w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-sm transition-colors text-left',
+                          isActive ? 'bg-muted font-medium' : 'hover:bg-muted/50'
+                        )}
+                      >
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                        <span className="flex-1 truncate">{child.child_name || child.display_name}</span>
+                        {isActive && <Check className="w-3.5 h-3.5 text-primary shrink-0" />}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </>
@@ -604,79 +622,42 @@ export default function CalendarPage() {
             <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleDayNav(1)}>
               <ChevronRight className="w-4 h-4" />
             </Button>
-            {settingsPopover}
+            {filterPopover}
           </div>
         ) : (
           /* Calendar view header */
-          <div className="space-y-2">
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <h2 className="flex-1 text-sm font-semibold text-center select-none">
-                {format(currentMonth, 'MMMM yyyy')}
-              </h2>
-              <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
-                onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
-                <ChevronRight className="w-4 h-4" />
-              </Button>
-              <Button variant="outline" size="sm" className="h-7 text-xs px-2 shrink-0"
-                onClick={() => setCurrentMonth(new Date())}>
-                Today
-              </Button>
-              {monthStats.pending > 0 && (
-                <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
-                  {monthStats.pending}
-                </Badge>
-              )}
-              <div className="flex border rounded-md overflow-hidden shrink-0">
-                <Button variant={view === 'month' ? 'default' : 'ghost'} size="icon"
-                  className="h-7 w-7 rounded-none" onClick={() => setView('month')}>
-                  <LayoutGrid className="w-3 h-3" />
-                </Button>
-                <Button variant={view === 'agenda' ? 'default' : 'ghost'} size="icon"
-                  className="h-7 w-7 rounded-none border-l" onClick={() => setView('agenda')}>
-                  <List className="w-3 h-3" />
-                </Button>
-              </div>
-              {settingsPopover}
-            </div>
-
-            {/* Child filter chips — scrollable single row */}
-            {activeTab === 'calendar' && childProfiles.length > 0 && (
-              <div className="flex items-center gap-1 overflow-x-auto pb-0.5" style={{ scrollbarWidth: 'none' }}>
-                <button
-                  onClick={() => setActiveChildFilters([])}
-                  className={cn(
-                    'text-xs px-2 py-0.5 rounded-full border font-medium transition-colors whitespace-nowrap shrink-0',
-                    activeChildFilters.length === 0
-                      ? 'bg-foreground text-background border-foreground'
-                      : 'border-border text-muted-foreground hover:border-foreground hover:text-foreground'
-                  )}
-                >
-                  All
-                </button>
-                {childProfiles.map(child => {
-                  const color = childColors[child.id] || '#3b82f6';
-                  const isActive = activeChildFilters.includes(child.id);
-                  return (
-                    <button
-                      key={child.id}
-                      onClick={() => handleChildFilterToggle(child.id)}
-                      className="flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium transition-all whitespace-nowrap shrink-0"
-                      style={{
-                        backgroundColor: isActive ? color : 'transparent',
-                        borderColor: color,
-                        color: isActive ? '#fff' : color,
-                      }}
-                    >
-                      {child.child_name || child.display_name}
-                    </button>
-                  );
-                })}
-              </div>
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+              onClick={() => setCurrentMonth(m => subMonths(m, 1))}>
+              <ChevronLeft className="w-4 h-4" />
+            </Button>
+            <h2 className="flex-1 text-sm font-semibold text-center select-none">
+              {format(currentMonth, 'MMMM yyyy')}
+            </h2>
+            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0"
+              onClick={() => setCurrentMonth(m => addMonths(m, 1))}>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+            <Button variant="outline" size="sm" className="h-7 text-xs px-2 shrink-0"
+              onClick={() => setCurrentMonth(new Date())}>
+              Today
+            </Button>
+            {monthStats.pending > 0 && (
+              <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs shrink-0 h-6 px-1.5">
+                {monthStats.pending}
+              </Badge>
             )}
+            <div className="flex border rounded-md overflow-hidden shrink-0">
+              <Button variant={view === 'month' ? 'default' : 'ghost'} size="icon"
+                className="h-7 w-7 rounded-none" onClick={() => setView('month')}>
+                <LayoutGrid className="w-3 h-3" />
+              </Button>
+              <Button variant={view === 'agenda' ? 'default' : 'ghost'} size="icon"
+                className="h-7 w-7 rounded-none border-l" onClick={() => setView('agenda')}>
+                <List className="w-3 h-3" />
+              </Button>
+            </div>
+            {filterPopover}
           </div>
         )}
       </div>
