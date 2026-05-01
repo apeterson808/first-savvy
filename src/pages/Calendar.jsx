@@ -545,7 +545,7 @@ export default function CalendarPage() {
                   </Button>
                 </div>
                 <Button variant="outline" size="sm" className="h-8 text-xs px-2.5 shrink-0"
-                  onClick={() => setCurrentMonth(new Date())}>
+                  onClick={() => { const t = new Date(); setCurrentMonth(t); setSelectedDate(t); }}>
                   Today
                 </Button>
                 {monthStats.pending > 0 && (
