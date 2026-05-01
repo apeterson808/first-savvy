@@ -137,19 +137,19 @@ function MonthGrid({
               key={day.toISOString()}
               onClick={() => onSelectDate(day)}
               className={cn(
-                'border-b border-r cursor-pointer transition-colors select-none flex flex-col items-start pt-1.5 pb-1.5 px-1.5 gap-1 min-h-[52px]',
+                'border-b border-r cursor-pointer transition-colors select-none flex flex-col p-1 min-h-[56px]',
                 isCurrentMonth ? 'bg-background hover:bg-muted/40 active:bg-muted/60' : 'bg-muted/10 hover:bg-muted/20',
                 isSelected ? 'ring-2 ring-inset ring-primary bg-primary/5' : '',
                 idx % 7 === 0 ? 'border-l' : ''
               )}
             >
               <span className={cn(
-                'text-xs font-medium w-5 h-5 flex items-center justify-center rounded-full transition-colors leading-none',
+                'text-[10px] font-semibold leading-none w-4 h-4 flex items-center justify-center rounded-full transition-colors shrink-0',
                 todayDay ? 'bg-primary text-primary-foreground' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground/30'
               )}>
                 {format(day, 'd')}
               </span>
-              <div className="flex gap-0.5 items-center flex-wrap max-w-[28px]">
+              <div className="flex flex-wrap gap-0.5 mt-1.5 px-0.5">
                 {dots.map((color, i) => (
                   <span key={i} className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
                 ))}
