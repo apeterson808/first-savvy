@@ -4,7 +4,7 @@ import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { supabase } from '@/api/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, CalendarClock } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, CalendarClock, X, Check } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -208,7 +208,13 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
         </Card>
       ) : (
         <div className="space-y-3">
-          {tasks.map((task) => {
+          {[...tasks].sort((a, b) => {
+            const aCompletion = isBeginnerProfile ? completions.find(c => c.task_id === a.id && c.status === 'pending') : null;
+            const bCompletion = isBeginnerProfile ? completions.find(c => c.task_id === b.id && c.status === 'pending') : null;
+            const aNeedsAttention = aCompletion ? 1 : 0;
+            const bNeedsAttention = bCompletion ? 1 : 0;
+            return bNeedsAttention - aNeedsAttention;
+          }).map((task) => {
             const completion = isBeginnerProfile
               ? completions.find(c => c.task_id === task.id && c.status === 'pending')
               : null;
@@ -301,27 +307,20 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                       )}
                       {displayStatus === 'completed' && (
                         <>
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="h-8 w-8 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleReject(task.id, completion?.id);
-                            }}
+                          <button
+                            className="h-7 px-2.5 rounded-full text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors flex items-center gap-1"
+                            onClick={(e) => { e.stopPropagation(); handleReject(task.id, completion?.id); }}
                           >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            className="h-8 w-8 bg-green-500 hover:bg-green-600"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleApprove(task.id, completion?.id);
-                            }}
+                            <X className="h-3 w-3" />
+                            Reject
+                          </button>
+                          <button
+                            className="h-7 px-2.5 rounded-full text-xs font-medium text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center gap-1"
+                            onClick={(e) => { e.stopPropagation(); handleApprove(task.id, completion?.id); }}
                           >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
+                            <Check className="h-3 w-3" />
+                            Approve
+                          </button>
                         </>
                       )}
                     </div>
