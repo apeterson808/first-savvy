@@ -54,8 +54,6 @@ export const tasksAPI = {
       icon: taskData.icon,
       color: taskData.color,
       metadata: taskData.metadata,
-      source: taskData.source || 'web',
-      created_by_profile_id: taskData.created_by_profile_id || null,
       reset_mode: taskData.reset_mode || 'instant',
       repeatable: taskData.repeatable !== undefined ? taskData.repeatable : true,
       frequency: taskData.frequency || 'always_available',
