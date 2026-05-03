@@ -1,4 +1,5 @@
 import React from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import MonthSelectorArrows from '../common/MonthSelectorArrows';
 import AccountDropdown from '../common/AccountDropdown';
@@ -24,6 +25,7 @@ export default function SpendingChartCard({
   setSelectedPastMonth,
   onPointClick
 }) {
+  const isMobile = useIsMobile();
   const generateChartData = () => {
     const today = new Date();
     const targetDate = subMonths(today, parseInt(selectedMonth));
@@ -175,7 +177,7 @@ export default function SpendingChartCard({
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-2">
-        <ResponsiveContainer width="100%" height={230}>
+        <ResponsiveContainer width="100%" height={isMobile ? 160 : 230}>
           <AreaChart 
             data={chartData} 
             margin={{ top: 10, right: 5, left: 5, bottom: 0 }}
