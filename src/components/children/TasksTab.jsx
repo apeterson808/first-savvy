@@ -302,25 +302,25 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                       {displayStatus === 'completed' && (
                         <>
                           <Button
-                            size="sm"
+                            size="icon"
                             variant="outline"
+                            className="h-8 w-8 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleReject(task.id, completion?.id);
                             }}
                           >
-                            <XCircle className="mr-2 h-4 w-4" />
-                            Reject
+                            <XCircle className="h-4 w-4" />
                           </Button>
                           <Button
-                            size="sm"
+                            size="icon"
+                            className="h-8 w-8 bg-green-500 hover:bg-green-600"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleApprove(task.id, completion?.id);
                             }}
                           >
-                            <CheckCircle className="mr-2 h-4 w-4" />
-                            Approve
+                            <CheckCircle className="h-4 w-4" />
                           </Button>
                         </>
                       )}
