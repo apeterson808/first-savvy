@@ -694,6 +694,11 @@ export default function Dashboard() {
 
   {/* Two-column section below chart */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {/* Family card — mobile only, above recent transactions */}
+    <div className="md:hidden">
+      <FamilyConnectionsCard />
+    </div>
+
     {/* Recent Transactions */}
     <RecentTransactionsCard />
 
@@ -777,8 +782,10 @@ export default function Dashboard() {
           {/* Credit Score Card */}
           <CreditScoreCard creditScore={latestCreditScore} />
 
-          {/* Family Connections Card */}
-          <FamilyConnectionsCard />
+          {/* Family Connections Card — hidden on mobile, shown via inline slot above */}
+          <div className="hidden md:block">
+            <FamilyConnectionsCard />
+          </div>
 
           {/* Calendar */}
           <CalendarCard />
