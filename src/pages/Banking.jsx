@@ -125,7 +125,7 @@ export default function Banking() {
     .reduce((sum, acc) => sum + (acc.current_balance || 0), 0);
 
   return (
-    <div className="p-4 md:p-6">
+    <div className="p-4 md:p-6 overflow-x-hidden">
       <PageTabs tabs={['spending', 'transactions', 'rules', 'recurring', 'accounts']} defaultTab="spending" />
       <Tabs value={activeTab} className="w-full">
 

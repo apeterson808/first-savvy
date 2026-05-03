@@ -174,14 +174,16 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
   };
 
   return (
-    <div className="flex items-center justify-between mb-4">
-      <div className="inline-flex items-center gap-1">
-        <div className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5">
-          {tabs.map((tab) => renderTab(tab))}
+    <div className="flex items-center justify-between mb-4 min-w-0">
+      <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+        <div className="overflow-x-auto scrollbar-none flex-shrink min-w-0">
+          <div className="inline-flex items-center rounded-lg bg-muted p-1 gap-0.5 min-w-max">
+            {tabs.map((tab) => renderTab(tab))}
+          </div>
         </div>
-        {inlineActions && <div className="flex items-center">{inlineActions}</div>}
+        {inlineActions && <div className="flex items-center flex-shrink-0">{inlineActions}</div>}
       </div>
-      {actions && <div className="flex items-center gap-2">{actions}</div>}
+      {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}
     </div>
   );
 }
