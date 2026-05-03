@@ -6,6 +6,12 @@ import ComparisonPeriodDropdown from '../common/ComparisonPeriodDropdown';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format, subMonths, startOfMonth, endOfMonth } from 'date-fns';
 import { createPageUrl } from '../../pages/utils';
+import { MoreVertical } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 export default function SpendingChartCard({ 
   transactions, 
@@ -125,7 +131,8 @@ export default function SpendingChartCard({
   return (
     <Card className="shadow-sm border-slate-200 lg:col-span-2">
       <CardHeader className="pb-2 pt-4 px-4">
-        <div className="flex items-center gap-2 flex-nowrap min-w-0">
+        {/* Desktop: all controls inline */}
+        <div className="hidden sm:flex items-center gap-2 flex-nowrap min-w-0">
           <MonthSelectorArrows value={selectedMonth} onValueChange={setSelectedMonth} />
           <AccountDropdown
             value={selectedAccount}
@@ -134,6 +141,37 @@ export default function SpendingChartCard({
             triggerClassName="h-8 text-xs gap-1 whitespace-nowrap max-w-[130px] hover:bg-slate-50"
           />
           <ComparisonPeriodDropdown value={selectedPastMonth} onValueChange={setSelectedPastMonth} />
+        </div>
+
+        {/* Mobile: month arrows + three-dot menu */}
+        <div className="flex sm:hidden items-center justify-between">
+          <MonthSelectorArrows value={selectedMonth} onValueChange={setSelectedMonth} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-8 w-8 flex items-center justify-center rounded-md hover:bg-slate-100 transition-colors">
+                <MoreVertical className="h-4 w-4 text-slate-500" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56 p-3 space-y-3">
+              <div>
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Account</p>
+                <AccountDropdown
+                  value={selectedAccount}
+                  onValueChange={setSelectedAccount}
+                  accounts={accounts}
+                  triggerClassName="h-8 text-xs w-full hover:bg-slate-50"
+                />
+              </div>
+              <div>
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide mb-1.5">Compare</p>
+                <ComparisonPeriodDropdown
+                  value={selectedPastMonth}
+                  onValueChange={setSelectedPastMonth}
+                  triggerClassName="h-8 text-xs w-full hover:bg-slate-50"
+                />
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-2">
