@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Star, Clock } from 'lucide-react';
+import { Star } from 'lucide-react';
 
 const AVATAR_COLORS = [
   { id: 'sky-blue', bg: 'bg-sky-blue', text: 'text-white' },
@@ -83,22 +83,20 @@ export function SimpleProfileHeader({ child, starsBalance = 0, starsPending = 0 
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        <div className="flex items-center gap-2 bg-amber-500 rounded-xl px-3 py-2 shadow-lg ring-2 ring-amber-600">
-          <Star className="w-4 h-4 fill-amber-100 text-amber-100 flex-shrink-0" />
-          <div>
-            <p className="text-amber-100 text-[10px] font-bold uppercase tracking-wide leading-none mb-0.5">Stars</p>
-            <p className="text-white font-black text-lg leading-none">{starsBalance}</p>
-          </div>
-        </div>
-        {starsPending > 0 && (
-          <div className="flex items-center gap-2 bg-orange-50 border-2 border-orange-300 rounded-xl px-3 py-2">
-            <Clock className="w-4 h-4 text-orange-500 flex-shrink-0" />
+        <div className="relative">
+          <div className="flex items-center gap-2 bg-amber-500 rounded-xl px-3 py-2 shadow-lg ring-2 ring-amber-600">
+            <Star className="w-4 h-4 fill-amber-100 text-amber-100 flex-shrink-0" />
             <div>
-              <p className="text-orange-500 text-[10px] font-semibold uppercase tracking-wide leading-none mb-0.5">Pending</p>
-              <p className="text-orange-700 font-black text-lg leading-none">{starsPending}</p>
+              <p className="text-amber-100 text-[10px] font-bold uppercase tracking-wide leading-none mb-0.5">Stars</p>
+              <p className="text-white font-black text-lg leading-none">{starsBalance}</p>
             </div>
           </div>
-        )}
+          {starsPending > 0 && (
+            <div className="absolute -top-2 -right-2 min-w-[20px] h-5 bg-red-500 rounded-full flex items-center justify-center px-1 shadow-sm ring-2 ring-white">
+              <span className="text-white text-[10px] font-bold leading-none">{starsPending}</span>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
