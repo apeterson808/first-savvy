@@ -171,6 +171,19 @@ export const taskCompletionsAPI = {
           completed_at: null,
         })
         .eq('id', taskId);
+    } else {
+      // One-time award — write a completion record so it appears in the activity log
+      const now = new Date().toISOString();
+      await supabase.from('task_completions').insert({
+        task_id: null,
+        child_profile_id: childProfileId,
+        stars_earned: stars,
+        note: note,
+        submission_notes: note,
+        status: 'approved',
+        submitted_at: now,
+        reviewed_at: now,
+      });
     }
 
     return { stars_balance: newBalance, stars_awarded: stars };

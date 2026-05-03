@@ -67,6 +67,17 @@ export function ActivityTab({ childId, child }) {
       ]);
 
       const completionEvents = (completionsResult.data || []).map((c) => {
+        // One-time direct award (no task linked)
+        if (!c.tasks) {
+          return {
+            id: `tc-${c.id}`,
+            type: 'stars_awarded',
+            description: c.note || c.submission_notes || 'Direct star award',
+            starsDelta: c.stars_earned || 0,
+            time: c.reviewed_at || c.submitted_at,
+          };
+        }
+
         let type = 'task_pending';
         let starsDelta = 0;
         let sortTime = c.submitted_at;
