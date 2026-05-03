@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { tasksAPI } from '@/api/tasks';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { supabase } from '@/api/supabaseClient';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, CalendarClock, X, Check } from 'lucide-react';
+import { Plus, CheckCircle, Clock, XCircle, Star, Edit, Trash2, Sparkles, CalendarClock, X, Check, MoreVertical } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,6 +18,12 @@ import {
 import { toast } from 'sonner';
 import { TaskDialog } from './TaskDialog';
 import { AwardStarsDialog } from './AwardStarsDialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 
 const STATUS_COLORS = {
@@ -221,110 +227,86 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
 
             const displayStatus = completion ? 'completed' : task.status;
 
+            const IconComp = PICKER_ICON_MAP[task.icon] || Star;
+            const stars = task.star_reward || 1;
+
             return (
-              <Card key={task.id}>
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3 flex-1">
-                    {(() => {
-                      const IconComp = PICKER_ICON_MAP[task.icon] || Star;
-                      return (
-                        <div
-                          className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: task.color || '#52A5CE' }}
-                        >
-                          <IconComp className="w-4 h-4 text-white" />
-                        </div>
-                      );
-                    })()}
-                  <div className="space-y-1 flex-1">
-                      <CardTitle className="text-base">{task.title}</CardTitle>
-                      {task.description && (
-                        <p className="text-sm text-slate-600">{task.description}</p>
-                      )}
-                      {(completion?.note || completion?.submission_notes) && (
-                        <div className="mt-2 p-2 bg-blue-100 rounded text-sm border border-blue-200">
-                          <p className="font-medium text-blue-900 text-xs">Notes from child:</p>
-                          <p className="text-blue-800 text-xs mt-0.5">{completion.note || completion.submission_notes}</p>
-                        </div>
-                      )}
+              <Card key={task.id} className={displayStatus === 'completed' ? 'border-amber-300 bg-amber-50/40' : ''}>
+                <CardContent className="px-4 py-3">
+                  {/* Main row: icon + title/stars + three-dot menu */}
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                      style={{ backgroundColor: task.color || '#52A5CE' }}
+                    >
+                      <IconComp className="w-4 h-4 text-white" />
                     </div>
-                  </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingTask(task);
-                          setIsTaskDialogOpen(true);
-                        }}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => setDeletingTask(task)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4 text-sm">
-                      <span className="font-semibold text-yellow-600 flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-yellow-500" />
-                        {task.star_reward || 1} {(task.star_reward || 1) === 1 ? 'star' : 'stars'}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-slate-900 leading-tight truncate">{task.title}</p>
+                      <span className="text-xs font-medium text-yellow-600 flex items-center gap-0.5 mt-0.5">
+                        <Star className="w-3 h-3 fill-yellow-500" />
+                        {stars} {stars === 1 ? 'star' : 'stars'}
                       </span>
-                      <span className="flex items-center gap-1 text-slate-500">
-                        {task.reset_mode === 'instant' || !task.reset_mode ? (
-                          'Instant reset'
-                        ) : (
-                          <><CalendarClock className="w-3.5 h-3.5" />
-                          {task.reset_mode.charAt(0).toUpperCase() + task.reset_mode.slice(1)}</>
-                        )}
-                      </span>
-                      {task.due_date && (
-                        <span className="text-slate-600">
-                          Due: {new Date(task.due_date).toLocaleDateString()}
-                        </span>
-                      )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      {displayStatus !== 'completed' && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="border-yellow-400 text-yellow-700 hover:bg-yellow-50 h-8 text-xs"
-                          onClick={() => setAwardingTask(task)}
-                        >
-                          <Star className="mr-1 h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                          Award Stars
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-slate-600">
+                          <MoreVertical className="h-4 w-4" />
                         </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => { setEditingTask(task); setIsTaskDialogOpen(true); }}>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setAwardingTask(task)}>
+                          <Star className="h-4 w-4 mr-2" />
+                          Award Stars
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600 focus:text-red-600"
+                          onClick={() => setDeletingTask(task)}
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  {/* Pending approval row */}
+                  {displayStatus === 'completed' && (
+                    <div className="mt-3 pt-3 border-t border-amber-200">
+                      {(completion?.note || completion?.submission_notes) && (
+                        <div className="mb-2 p-2 bg-blue-50 rounded text-xs border border-blue-200">
+                          <p className="font-medium text-blue-900">Notes from child:</p>
+                          <p className="text-blue-800 mt-0.5">{completion.note || completion.submission_notes}</p>
+                        </div>
                       )}
-                      {displayStatus === 'completed' && (
-                        <>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-amber-700 font-medium flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          Waiting for approval
+                        </span>
+                        <div className="flex items-center gap-1.5">
                           <button
-                            className="h-7 px-2.5 rounded-full text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 transition-colors flex items-center gap-1"
+                            className="h-7 px-3 rounded-full text-xs font-medium text-red-600 bg-white hover:bg-red-50 border border-red-200 transition-colors flex items-center gap-1"
                             onClick={(e) => { e.stopPropagation(); handleReject(task.id, completion?.id); }}
                           >
                             <X className="h-3 w-3" />
                             Reject
                           </button>
                           <button
-                            className="h-7 px-2.5 rounded-full text-xs font-medium text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center gap-1"
+                            className="h-7 px-3 rounded-full text-xs font-medium text-white bg-green-500 hover:bg-green-600 transition-colors flex items-center gap-1"
                             onClick={(e) => { e.stopPropagation(); handleApprove(task.id, completion?.id); }}
                           >
                             <Check className="h-3 w-3" />
                             Approve
                           </button>
-                        </>
-                      )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </CardContent>
               </Card>
             );
