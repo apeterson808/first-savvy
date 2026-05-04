@@ -75,7 +75,7 @@ export default function FamilyConnectionsCard() {
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-2 pt-3 px-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Family Connections</p>
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Family</p>
           </div>
         </CardHeader>
         <CardContent className="px-3 pb-3">
@@ -92,7 +92,7 @@ export default function FamilyConnectionsCard() {
       <Card className="shadow-sm border-slate-200">
         <CardHeader className="pb-2 pt-3 px-3">
           <div className="flex items-center justify-between">
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Family Connections</p>
+            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Family</p>
             <Button
               variant="link"
               className="text-xs p-0 h-auto text-sky-blue"
@@ -120,7 +120,7 @@ export default function FamilyConnectionsCard() {
     <Card className="shadow-sm border-slate-200">
       <CardHeader className="pb-2 pt-3 px-3">
         <div className="flex items-center justify-between">
-          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Family Connections</p>
+          <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Family</p>
           <Button
             variant="link"
             className="text-xs p-0 h-auto text-sky-blue"
@@ -132,7 +132,9 @@ export default function FamilyConnectionsCard() {
       </CardHeader>
       <CardContent className="px-3 pb-3">
         <div className="grid grid-cols-3 gap-3">
-          {childProfiles.slice(0, 6).map((child) => {
+          {[...childProfiles]
+            .sort((a, b) => (pendingCounts[b.id] || 0) - (pendingCounts[a.id] || 0))
+            .slice(0, 6).map((child) => {
             const displayName = child.display_name || child.child_name || `${child.first_name || ''} ${child.last_name || ''}`.trim();
             const initials = getInitials(displayName);
             const pendingCount = pendingCounts[child.id] || 0;
