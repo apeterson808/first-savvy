@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Star, Sparkles, Trophy, Gift } from 'lucide-react';
+import { Star, Sparkles, Trophy, Gift, Activity, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { tasksAPI } from '@/api/tasks';
@@ -9,7 +9,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ChildAvatar from './ChildAvatar';
 import { TaskCard } from './TaskCard';
 import { RewardCard } from './RewardCard';
+import { ActivityTab } from './ActivityTab';
 import { toast } from 'sonner';
+
+const TABS = [
+  { key: 'tasks', label: 'Tasks', icon: Trophy },
+  { key: 'rewards', label: 'Rewards', icon: Gift },
+  { key: 'activity', label: 'Activity', icon: Activity },
+];
 
 export function BeginnerProfileView({ childProfile, isParentView = false }) {
   const [starBalance, setStarBalance] = useState(0);
@@ -19,6 +26,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
   const [completions, setCompletions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [celebrationStars, setCelebrationStars] = useState(0);
+  const [activeTab, setActiveTab] = useState('tasks');
   const { viewingChildProfile } = useProfile();
 
   useEffect(() => {
@@ -64,33 +72,6 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     }
   };
 
-  const handleApproveCompletion = async (completionId, notes) => {
-    try {
-      const result = await taskCompletionsAPI.approveCompletion(completionId, notes);
-      const starsEarned = result.stars_balance - starBalance;
-
-      setCelebrationStars(starsEarned);
-      setTimeout(() => setCelebrationStars(0), 3000);
-
-      toast.success(`Approved! +${starsEarned} stars earned`);
-      await loadData();
-    } catch (error) {
-      console.error('Error approving completion:', error);
-      toast.error('Failed to approve task');
-    }
-  };
-
-  const handleRejectCompletion = async (completionId, notes) => {
-    try {
-      await taskCompletionsAPI.rejectCompletion(completionId, notes);
-      toast.info('Task completion rejected');
-      await loadData();
-    } catch (error) {
-      console.error('Error rejecting completion:', error);
-      toast.error('Failed to reject task');
-    }
-  };
-
   const handleRedeemReward = async (rewardId) => {
     try {
       const result = await taskCompletionsAPI.redeemReward(rewardId, childProfile.id);
@@ -104,14 +85,18 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     }
   };
 
-  const tasksWithCompletions = tasks.map(task => {
+  // Build tasks with their most recent completion for the "last requested" note
+  const tasksWithLastCompletion = tasks.map(task => {
     const taskCompletions = completions.filter(c => c.task_id === task.id);
-    const pendingCompletion = taskCompletions.find(c => c.status === 'pending');
-    return { task, completion: pendingCompletion };
+    // Most recent completion regardless of status
+    const lastCompletion = taskCompletions[0] || null;
+    return { task, lastCompletion };
   });
 
   const availableRewards = rewards.filter(r => r.status === 'available');
   const redeemedRewards = rewards.filter(r => r.status === 'redeemed');
+
+  const pendingCount = completions.filter(c => c.status === 'pending').length;
 
   if (loading) {
     return (
@@ -143,7 +128,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
         )}
       </AnimatePresence>
 
-      <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
+      <div className="max-w-2xl mx-auto space-y-4 sm:space-y-5">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3 sm:gap-5 w-full sm:w-auto">
@@ -156,11 +141,11 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="relative flex items-center gap-2 sm:gap-3 md:gap-4 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 md:px-8 py-3 sm:py-4 md:py-5 rounded-2xl sm:rounded-3xl shadow-xl sm:shadow-2xl border-2 sm:border-3 border-yellow-300 flex-1 sm:flex-initial">
-              <Star className="w-10 h-10 sm:w-12 sm:h-12 md:w-16 md:h-16 text-amber-500 fill-amber-500 drop-shadow-md" />
+            <div className="relative flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 py-3 sm:py-4 rounded-2xl sm:rounded-3xl shadow-xl border-2 border-yellow-300 flex-1 sm:flex-initial">
+              <Star className="w-10 h-10 sm:w-12 sm:h-12 text-amber-500 fill-amber-500 drop-shadow-md" />
               <div>
-                <p className="text-xs sm:text-sm font-bold text-yellow-100 uppercase tracking-wide sm:tracking-widest drop-shadow-sm">Your Stars</p>
-                <p className="text-3xl sm:text-4xl md:text-6xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
+                <p className="text-xs sm:text-sm font-bold text-yellow-100 uppercase tracking-wide drop-shadow-sm">Your Stars</p>
+                <p className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
               </div>
             </div>
           </div>
@@ -183,51 +168,58 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
           </Card>
         )}
 
-        {/* Tasks + Rewards grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-          {/* Tasks column */}
-          <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center bg-gradient-to-r from-blue-50 to-cyan-50 p-3 sm:p-4 rounded-xl border-2 border-blue-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-blue-900 flex items-center gap-2 sm:gap-3">
-                <div className="bg-blue-500 rounded-full p-1.5 sm:p-2">
-                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                Your Tasks
-              </h2>
-            </div>
+        {/* Tabs */}
+        <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
+          {TABS.map(({ key, label, icon: Icon }) => {
+            const isActive = activeTab === key;
+            const showBadge = key === 'activity' && pendingCount > 0;
+            return (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-semibold transition-all relative ${
+                  isActive
+                    ? 'bg-blue-500 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                }`}
+              >
+                <Icon className="w-4 h-4" />
+                <span className="hidden sm:inline">{label}</span>
+                {showBadge && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {pendingCount > 9 ? '9+' : pendingCount}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
 
-            {tasksWithCompletions.length === 0 ? (
+        {/* Tab content */}
+        {activeTab === 'tasks' && (
+          <div className="space-y-3 sm:space-y-4">
+            {tasksWithLastCompletion.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
                   <p className="text-slate-500">No tasks right now. Check back soon!</p>
                 </CardContent>
               </Card>
             ) : (
-              tasksWithCompletions.map(({ task, completion }) => (
+              tasksWithLastCompletion.map(({ task, lastCompletion }) => (
                 <TaskCard
                   key={task.id}
                   task={task}
-                  completion={completion}
+                  lastCompletion={lastCompletion}
                   onComplete={handleTaskComplete}
-                  onApprove={handleApproveCompletion}
-                  onReject={handleRejectCompletion}
                   isParentView={isParentView}
                 />
               ))
             )}
           </div>
+        )}
 
-          {/* Rewards column */}
+        {activeTab === 'rewards' && (
           <div className="space-y-3 sm:space-y-4">
-            <div className="flex items-center bg-gradient-to-r from-amber-50 to-yellow-50 p-3 sm:p-4 rounded-xl border-2 border-amber-200">
-              <h2 className="text-xl sm:text-2xl font-bold text-amber-900 flex items-center gap-2 sm:gap-3">
-                <div className="bg-amber-500 rounded-full p-1.5 sm:p-2">
-                  <Gift className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
-                </div>
-                Rewards
-              </h2>
-            </div>
-
             {availableRewards.length === 0 && redeemedRewards.length === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
@@ -245,7 +237,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
                   />
                 ))}
                 {redeemedRewards.length > 0 && (
-                  <div className="mt-6">
+                  <div className="mt-4">
                     <h3 className="text-base font-semibold text-slate-600 mb-3">Redeemed</h3>
                     {redeemedRewards.map((reward) => (
                       <RewardCard
@@ -260,7 +252,16 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
               </>
             )}
           </div>
-        </div>
+        )}
+
+        {activeTab === 'activity' && (
+          <ActivityTab
+            childId={childProfile.id}
+            child={{ stars_balance: starBalance }}
+            onUpdate={loadData}
+            isChildView={true}
+          />
+        )}
       </div>
     </div>
   );

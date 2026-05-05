@@ -1,45 +1,35 @@
 import React, { useState } from 'react';
-import { Star, Check, X, Clock, Sparkles } from 'lucide-react';
+import { Star, Sparkles, Clock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogFooter,
-  DialogHeader,
-  DialogTitle,
 } from '@/components/ui/dialog';
 import { motion } from 'framer-motion';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import { getIconComponent } from '@/components/utils/iconMapper';
 
+function formatShort(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    + ' at '
+    + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
 export function TaskCard({
   task,
-  completion,
+  lastCompletion,
   onComplete,
-  onApprove,
-  onReject,
-  isParentView = false
+  isParentView = false,
 }) {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
   const [notes, setNotes] = useState('');
-  const [reviewNotes, setReviewNotes] = useState('');
-
-  const isPending = completion?.status === 'pending';
-  const isApproved = completion?.status === 'approved';
-  const isRejected = completion?.status === 'rejected';
-
-  const showCompletion = isPending;
 
   const IconComponent = task.icon ? (PICKER_ICON_MAP[task.icon] || getIconComponent(task.icon)) : Star;
-
-  const handleCompleteClick = () => {
-    setShowCompleteDialog(true);
-  };
 
   const handleConfirmComplete = () => {
     onComplete(task.id, notes);
@@ -47,56 +37,7 @@ export function TaskCard({
     setNotes('');
   };
 
-  const handleApproveClick = () => {
-    setShowReviewDialog(true);
-  };
-
-  const handleConfirmApprove = () => {
-    onApprove(completion.id, reviewNotes);
-    setShowReviewDialog(false);
-    setReviewNotes('');
-  };
-
-  const handleConfirmReject = () => {
-    onReject(completion.id, reviewNotes);
-    setShowReviewDialog(false);
-    setReviewNotes('');
-  };
-
-  const getBorderColor = () => {
-    if (isPending && showCompletion) return 'border-yellow-400 shadow-yellow-200';
-    if (isApproved && showCompletion) return 'border-green-400 shadow-green-200';
-    if (isRejected && showCompletion) return 'border-red-400 shadow-red-200';
-    return 'border-blue-400 shadow-blue-200';
-  };
-
-  const getStatusBadge = () => {
-    if (isPending && showCompletion) {
-      return (
-        <Badge className="!bg-yellow-500 hover:!bg-yellow-500 !text-white !border-0 shadow-md">
-          <Clock className="w-3 h-3 mr-1" />
-          Pending Approval
-        </Badge>
-      );
-    }
-    if (isApproved && showCompletion) {
-      return (
-        <Badge className="!bg-green-500 hover:!bg-green-500 !text-white !border-0 shadow-md">
-          <Check className="w-3 h-3 mr-1" />
-          Approved
-        </Badge>
-      );
-    }
-    if (isRejected && showCompletion) {
-      return (
-        <Badge className="!bg-red-500 hover:!bg-red-500 !text-white !border-0 shadow-md">
-          <X className="w-3 h-3 mr-1" />
-          Rejected
-        </Badge>
-      );
-    }
-    return null;
-  };
+  const lastRequested = lastCompletion?.submitted_at;
 
   return (
     <>
@@ -106,44 +47,31 @@ export function TaskCard({
         transition={{ duration: 0.3 }}
       >
         <Card
-          className={`border-2 ${getBorderColor()} transition-all hover:shadow-lg ${!showCompletion && !isParentView ? 'cursor-pointer hover:border-blue-400' : ''}`}
+          className="border-2 transition-all hover:shadow-lg cursor-pointer hover:border-blue-400"
           style={{ borderColor: task.color || undefined }}
           onClick={() => {
-            if (!showCompletion && !isParentView) {
-              handleCompleteClick();
-            }
+            if (!isParentView) setShowCompleteDialog(true);
           }}
         >
-          <CardContent className="pt-4 sm:pt-6 px-4 sm:px-6 pb-4 sm:pb-6">
-            <div className="flex items-start justify-between mb-3 sm:mb-4 gap-2">
+          <CardContent className="pt-4 sm:pt-5 px-4 sm:px-5 pb-4">
+            <div className="flex items-start justify-between gap-2">
               <div className="flex items-start gap-2 sm:gap-3 flex-1 min-w-0">
                 <div
-                  className="p-2 sm:p-3 rounded-lg shrink-0"
+                  className="p-2 sm:p-2.5 rounded-lg shrink-0"
                   style={{ backgroundColor: task.color || '#3B82F6' }}
                 >
-                  <IconComponent
-                    className="w-5 h-5 sm:w-6 sm:h-6 text-white"
-                  />
+                  <IconComponent className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-1">
-                    <h3 className="font-semibold text-base sm:text-lg text-slate-900 break-words">{task.title}</h3>
-                    {getStatusBadge()}
-                  </div>
+                  <h3 className="font-semibold text-base sm:text-lg text-slate-900 break-words leading-tight">{task.title}</h3>
                   {task.description && (
-                    <p className="text-xs sm:text-sm text-slate-600 mt-1 break-words">{task.description}</p>
+                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5 break-words">{task.description}</p>
                   )}
-                  {(completion?.note || completion?.submission_notes) && isParentView && isPending && (
-                    <div className="mt-2 p-2 bg-blue-100 rounded text-xs sm:text-sm border border-blue-200">
-                      <p className="font-medium text-blue-900">Notes from child:</p>
-                      <p className="text-blue-800 mt-0.5 break-words">{completion.note || completion.submission_notes}</p>
-                    </div>
-                  )}
-                  {completion?.review_notes && showCompletion && (
-                    <div className="mt-2 p-2 bg-slate-50 rounded text-xs sm:text-sm border border-slate-200">
-                      <p className="font-medium text-slate-700">Parent's Feedback:</p>
-                      <p className="text-slate-600 break-words">{completion.review_notes}</p>
-                    </div>
+                  {lastRequested && (
+                    <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+                      <Clock className="w-3 h-3 shrink-0" />
+                      Last requested: {formatShort(lastRequested)}
+                    </p>
                   )}
                 </div>
               </div>
@@ -201,46 +129,6 @@ export function TaskCard({
               </Button>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent onOpenAutoFocus={(e) => e.preventDefault()}>
-          <DialogHeader>
-            <DialogTitle>Review Task Completion</DialogTitle>
-            <DialogDescription>
-              Add feedback for your child (optional)
-            </DialogDescription>
-          </DialogHeader>
-          {(completion?.note || completion?.submission_notes) && (
-            <div className="p-3 bg-blue-50 rounded">
-              <p className="font-medium text-sm text-blue-900">Child's Notes:</p>
-              <p className="text-sm text-blue-700">{completion.note || completion.submission_notes}</p>
-            </div>
-          )}
-          <Textarea
-            placeholder="Great job! Keep it up..."
-            value={reviewNotes}
-            onChange={(e) => setReviewNotes(e.target.value)}
-            rows={3}
-          />
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              onClick={handleConfirmReject}
-              className="border-red-500 text-red-600 hover:bg-red-50"
-            >
-              <X className="w-4 h-4 mr-2" />
-              Reject
-            </Button>
-            <Button
-              onClick={handleConfirmApprove}
-              className="bg-green-500 hover:bg-green-600"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Approve & Award Stars
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>

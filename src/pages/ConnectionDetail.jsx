@@ -159,7 +159,13 @@ export default function ConnectionDetail() {
 
       <Tabs value={activeTab} className="flex-1 flex flex-col">
         <TabsContent value="tasks" className="flex-1 mt-0 pb-6">
-          <TasksTab childId={child.id} profileId={child.parent_profile_id} childName={child.display_name || child.child_name} onUpdate={loadChildData} />
+          <TasksTab
+            childId={child.id}
+            profileId={child.parent_profile_id}
+            childName={child.display_name || child.child_name}
+            onUpdate={loadChildData}
+            onGoToActivity={() => setActiveTab('activity')}
+          />
         </TabsContent>
 
         <TabsContent value="rewards" className="flex-1 mt-0 pb-6">
@@ -167,7 +173,7 @@ export default function ConnectionDetail() {
         </TabsContent>
 
         <TabsContent value="activity" className="flex-1 mt-0 pb-6">
-          <ActivityTab childId={child.id} child={child} />
+          <ActivityTab childId={child.id} child={child} onUpdate={loadChildData} />
         </TabsContent>
 
         <TabsContent value="settings" className="flex-1 mt-0 pb-6">
