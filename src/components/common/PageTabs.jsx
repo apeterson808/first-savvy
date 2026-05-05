@@ -9,7 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { format, subMonths, startOfMonth } from 'date-fns';
 
-export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions, dynamicTabConfig, inlineActions }) {
+export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], actions, dynamicTabConfig, inlineActions, tabBadges = {} }) {
   const [activeTab, setActiveTab] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || defaultTab;
@@ -160,7 +160,7 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
           window.history.pushState({}, '', newUrl);
           window.dispatchEvent(new PopStateEvent('popstate'));
         }}
-        className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
+        className={`relative inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium capitalize transition-all ${
           isActive
             ? 'bg-background text-foreground shadow-sm'
             : isDisabled
@@ -169,6 +169,11 @@ export function PageTabs({ tabs, defaultTab = 'overview', disabledTabs = [], act
         }`}
       >
         {tab.replace(/_/g, ' ')}
+        {tabBadges[tab] > 0 && (
+          <span className="absolute -top-1 -right-1 min-w-[16px] h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1 leading-none">
+            {tabBadges[tab] > 9 ? '9+' : tabBadges[tab]}
+          </span>
+        )}
       </button>
     );
   };

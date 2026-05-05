@@ -4,6 +4,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { tasksAPI } from '@/api/tasks';
 import { rewardsAPI } from '@/api/rewards';
+import { supabase } from '@/api/supabaseClient';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
@@ -44,6 +45,7 @@ export default function ConnectionDetail() {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('tab') || 'tasks';
   });
+  const [pendingApprovalCount, setPendingApprovalCount] = useState(0);
   const [stats, setStats] = useState({
     completedTasks: 0,
     pendingTasks: 0,
@@ -86,10 +88,14 @@ export default function ConnectionDetail() {
       const childData = await childProfilesAPI.getChildProfileById(id);
       setChild(childData);
 
-      const tasks = await tasksAPI.getTasksByChild(id);
-      const redemptions = await rewardsAPI.getRedemptions(id);
-      const achievements = await childProfilesAPI.getChildAchievements(id);
+      const [tasks, redemptions, achievements, pendingResult] = await Promise.all([
+        tasksAPI.getTasksByChild(id),
+        rewardsAPI.getRedemptions(id),
+        childProfilesAPI.getChildAchievements(id),
+        supabase.from('task_completions').select('*', { count: 'exact', head: true }).eq('child_profile_id', id).eq('status', 'pending'),
+      ]);
 
+      setPendingApprovalCount(pendingResult.count || 0);
       setStats({
         completedTasks: tasks.filter(c => c.status === 'approved').length,
         pendingTasks: tasks.filter(c => c.status === 'completed').length,
@@ -155,7 +161,7 @@ export default function ConnectionDetail() {
     <div className="h-full flex flex-col pb-6 p-4 md:p-6">
       <SimpleProfileHeader child={child} starsBalance={child.stars_balance || 0} starsPending={child.stars_pending || 0} />
 
-      <PageTabs tabs={['tasks', 'rewards', 'activity', 'settings']} defaultTab="tasks" />
+      <PageTabs tabs={['tasks', 'rewards', 'activity', 'settings']} defaultTab="tasks" tabBadges={{ activity: pendingApprovalCount }} />
 
       <Tabs value={activeTab} className="flex-1 flex flex-col">
         <TabsContent value="tasks" className="flex-1 mt-0 pb-6">
@@ -164,7 +170,6 @@ export default function ConnectionDetail() {
             profileId={child.parent_profile_id}
             childName={child.display_name || child.child_name}
             onUpdate={loadChildData}
-            onGoToActivity={() => setActiveTab('activity')}
           />
         </TabsContent>
 

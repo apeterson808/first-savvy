@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { tasksAPI } from '@/api/tasks';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
-import { supabase } from '@/api/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Star, Edit, Trash2, Sparkles, Clock, MoreVertical } from 'lucide-react';
+import { Plus, Star, Edit, Trash2, Sparkles, MoreVertical } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,9 +25,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 
-export function TasksTab({ childId, profileId, childName = '', onUpdate, onGoToActivity }) {
+export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
   const [tasks, setTasks] = useState([]);
-  const [pendingCounts, setPendingCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -46,18 +44,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate, onGoToA
 
       const data = await tasksAPI.getTasksByChild(childId);
       setTasks(data);
-
-      const { data: pendingCompletions } = await supabase
-        .from('task_completions')
-        .select('task_id')
-        .eq('child_profile_id', childId)
-        .eq('status', 'pending');
-
-      const counts = {};
-      for (const c of pendingCompletions || []) {
-        counts[c.task_id] = (counts[c.task_id] || 0) + 1;
-      }
-      setPendingCounts(counts);
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast.error('Failed to load tasks');
@@ -110,8 +96,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate, onGoToA
     if (onUpdate) onUpdate();
   };
 
-  const totalPending = Object.values(pendingCounts).reduce((s, n) => s + n, 0);
-
   if (loading) {
     return <div className="text-center py-8">Loading tasks...</div>;
   }
@@ -137,22 +121,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate, onGoToA
         </div>
       </div>
 
-      {/* Pending review banner */}
-      {totalPending > 0 && (
-        <button
-          className="w-full flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-left hover:bg-amber-100 transition-colors"
-          onClick={() => onGoToActivity?.()}
-        >
-          <div className="flex items-center justify-center w-5 h-5 rounded-full bg-amber-500 text-white text-xs font-bold shrink-0">
-            {totalPending}
-          </div>
-          <p className="text-sm text-amber-800 font-medium flex-1">
-            {totalPending} task {totalPending === 1 ? 'request' : 'requests'} waiting for your review
-          </p>
-          <span className="text-xs text-amber-600 underline">Go to Activity</span>
-        </button>
-      )}
-
       {tasks.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
@@ -167,15 +135,12 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate, onGoToA
         </Card>
       ) : (
         <div className="space-y-3">
-          {[...tasks]
-            .sort((a, b) => (pendingCounts[b.id] || 0) - (pendingCounts[a.id] || 0))
-            .map((task) => {
-              const pendingCount = pendingCounts[task.id] || 0;
+          {tasks.map((task) => {
               const IconComp = PICKER_ICON_MAP[task.icon] || Star;
               const stars = task.star_reward || 1;
 
               return (
-                <Card key={task.id} className={pendingCount > 0 ? 'border-amber-300 bg-amber-50/30' : ''}>
+                <Card key={task.id}>
                   <CardContent className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div
@@ -191,16 +156,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate, onGoToA
                           {stars} {stars === 1 ? 'star' : 'stars'}
                         </span>
                       </div>
-                      {pendingCount > 0 && (
-                        <button
-                          className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 hover:bg-amber-200 border border-amber-300 transition-colors"
-                          onClick={() => onGoToActivity?.()}
-                          title="Review in Activity tab"
-                        >
-                          <Clock className="w-3 h-3 text-amber-700" />
-                          <span className="text-xs font-semibold text-amber-800">{pendingCount} pending</span>
-                        </button>
-                      )}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-slate-600">
