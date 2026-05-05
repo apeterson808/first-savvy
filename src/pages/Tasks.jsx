@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useProfile } from '@/contexts/ProfileContext';
-import { useAuth } from '@/contexts/AuthContext';
 import { tasksAPI } from '@/api/tasks';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { childProfilesAPI } from '@/api/childProfiles';
@@ -39,8 +38,7 @@ const SCHEDULE_LABELS = {
 };
 
 export default function Tasks() {
-  const { currentProfile } = useProfile();
-  const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [tasks, setTasks] = useState([]);
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +47,7 @@ export default function Tasks() {
   const [editingTask, setEditingTask] = useState(null);
   const [deletingTask, setDeletingTask] = useState(null);
 
-  const profileId = currentProfile?.id;
+  const profileId = activeProfile?.id;
 
   useEffect(() => {
     if (profileId) loadData();
@@ -318,3 +316,6 @@ export default function Tasks() {
     </div>
   );
 }
+
+
+export default Tasks
