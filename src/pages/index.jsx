@@ -1,6 +1,7 @@
 import Layout from "./Layout.jsx";
 import Login from "./Login";
 import AuthCallback from "./AuthCallback";
+import Tasks from "./Tasks";
 import Dashboard from "./Dashboard";
 import Banking from "./Banking";
 import Budgeting from "./Budgeting";
@@ -27,6 +28,8 @@ import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 const PAGES = {
 
     Dashboard: Dashboard,
+
+    Tasks: Tasks,
 
     Banking: Banking,
 
@@ -103,6 +106,7 @@ export default function Pages() {
                     <Route path="/Banking/account/:id" element={<AccountDetail />} />
                     <Route path="/Budgeting" element={<Budgeting />} />
                     <Route path="/Budgeting/category/:id" element={<AccountDetail />} />
+                    <Route path="/Tasks" element={<Tasks />} />
                     <Route path="/Goals" element={<Goals />} />
                     <Route path="/Calendar" element={<Calendar />} />
                     <Route path="/NetWorth" element={<NetWorth />} />

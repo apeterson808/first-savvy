@@ -6,7 +6,7 @@ import {
   LayoutDashboard, CircleDollarSign, ClipboardList, PiggyBank,
   Calendar, CreditCard, Banknote, Lock, Users, Cable, ScrollText,
   Menu, X, Bell, Search, LogOut, User, ChevronLeft, CheckCircle,
-  Star, Settings, ArrowLeft, ArrowRight, RefreshCw, TrendingUp
+  Star, Settings, ArrowLeft, ArrowRight, RefreshCw, TrendingUp, ListTodo
 } from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
@@ -95,6 +95,7 @@ export default function Layout({ children, currentPageName }) {
     if (!isLoggedInAsChild) {
       return [
         { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard', availableForChildProfile: true },
+        { name: 'Tasks', icon: ListTodo, page: 'Tasks', availableForChildProfile: false },
         { name: 'Banking', icon: CircleDollarSign, page: 'Banking', availableForChildProfile: false },
         { name: 'Budgeting', icon: ClipboardList, page: 'Budgeting', availableForChildProfile: false },
         { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', availableForChildProfile: false },

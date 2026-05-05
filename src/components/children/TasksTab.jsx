@@ -1,41 +1,21 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { tasksAPI } from '@/api/tasks';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
 import { childProfilesAPI } from '@/api/childProfiles';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Star, Edit, Trash2, Sparkles, MoreVertical, Users } from 'lucide-react';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { Star, Sparkles, Users, ListTodo } from 'lucide-react';
 import { toast } from 'sonner';
-import { TaskDialog } from './TaskDialog';
 import { AwardStarsDialog } from './AwardStarsDialog';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import ChildAvatar from './ChildAvatar';
 
-// When viewing from a specific child's profile, childId and childName are passed in.
-// The component always loads ALL tasks for the parent profile so edits propagate everywhere.
 export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
   const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
-  const [editingTask, setEditingTask] = useState(null);
-  const [deletingTask, setDeletingTask] = useState(null);
   const [awardingTask, setAwardingTask] = useState(null);
   const [showOneTimeAward, setShowOneTimeAward] = useState(false);
 
@@ -51,7 +31,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
         childProfilesAPI.getChildProfiles(profileId),
       ]);
 
-      // If viewing from a child's profile, filter to only their tasks
       const filtered = childId
         ? allTasks.filter(t =>
             (t.assignments || []).some(a => a.child_profile_id === childId)
@@ -65,20 +44,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
       toast.error('Failed to load tasks');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleDeleteTask = async () => {
-    if (!deletingTask) return;
-    try {
-      await tasksAPI.deleteTask(deletingTask.id);
-      toast.success(`Task "${deletingTask.title}" deleted`);
-      setDeletingTask(null);
-      loadData();
-      if (onUpdate) onUpdate();
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      toast.error('Failed to delete task');
     }
   };
 
@@ -109,11 +74,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
     }
   };
 
-  const handleTaskSuccess = () => {
-    loadData();
-    if (onUpdate) onUpdate();
-  };
-
   const getAssignedChildren = (task) => {
     return (task.assignments || [])
       .map(a => children.find(c => c.id === a.child_profile_id))
@@ -127,12 +87,7 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-semibold">Tasks</h3>
-          {!childId && (
-            <p className="text-xs text-slate-500 mt-0.5">Changes apply to all assigned family members</p>
-          )}
-        </div>
+        <h3 className="text-lg font-semibold">Tasks</h3>
         <div className="flex items-center gap-2">
           {childId && (
             <Button
@@ -145,9 +100,9 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
               Award Stars
             </Button>
           )}
-          <Button size="sm" onClick={() => setIsTaskDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Add Task
+          <Button size="sm" variant="outline" onClick={() => navigate('/Tasks')}>
+            <ListTodo className="mr-2 h-4 w-4" />
+            Manage Tasks
           </Button>
         </div>
       </div>
@@ -156,10 +111,12 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-8">
-              <p className="text-slate-600">No tasks yet</p>
-              <Button className="mt-4" size="sm" onClick={() => setIsTaskDialogOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create First Task
+              <ListTodo className="w-8 h-8 text-slate-300 mx-auto mb-3" />
+              <p className="text-slate-600 font-medium">No tasks yet</p>
+              <p className="text-slate-400 text-sm mt-1">Create tasks from the Tasks page</p>
+              <Button className="mt-4" size="sm" variant="outline" onClick={() => navigate('/Tasks')}>
+                <ListTodo className="mr-2 h-4 w-4" />
+                Manage Tasks
               </Button>
             </div>
           </CardContent>
@@ -200,32 +157,17 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                         )}
                       </div>
                     </div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-slate-400 hover:text-slate-600">
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => { setEditingTask(task); setIsTaskDialogOpen(true); }}>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        {childId && (
-                          <DropdownMenuItem onClick={() => setAwardingTask(task)}>
-                            <Star className="h-4 w-4 mr-2" />
-                            Award Stars
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem
-                          className="text-red-600 focus:text-red-600"
-                          onClick={() => setDeletingTask(task)}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {childId && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 px-2 text-xs text-yellow-600 hover:bg-yellow-50 flex-shrink-0"
+                        onClick={() => setAwardingTask(task)}
+                      >
+                        <Star className="w-3 h-3 mr-1 fill-yellow-500" />
+                        Award
+                      </Button>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -233,19 +175,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
           })}
         </div>
       )}
-
-      <TaskDialog
-        isOpen={isTaskDialogOpen}
-        onClose={() => {
-          setIsTaskDialogOpen(false);
-          setEditingTask(null);
-        }}
-        profileId={profileId}
-        childProfiles={children}
-        defaultChildIds={childId ? [childId] : []}
-        onSuccess={handleTaskSuccess}
-        task={editingTask}
-      />
 
       {childId && (
         <>
@@ -266,26 +195,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
           />
         </>
       )}
-
-      <AlertDialog open={!!deletingTask} onOpenChange={(open) => { if (!open) setDeletingTask(null); }}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Task</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete &quot;{deletingTask?.title}&quot;? This will remove it for all assigned family members and cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700 text-white"
-              onClick={handleDeleteTask}
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }
