@@ -1,11 +1,52 @@
 import { supabase } from './supabaseClient';
 
 export const tasksAPI = {
-  async getTasks(profileId, filters = {}) {
-    let query = supabase
+  // All task definitions for a parent profile, with their assigned children
+  async getTasks(profileId) {
+    const { data, error } = await supabase
       .from('tasks')
       .select(`
         *,
+        task_assignments!inner (
+          id,
+          child_profile_id,
+          is_active,
+          child_profiles (
+            id,
+            child_name,
+            avatar_url,
+            current_permission_level
+          )
+        )
+      `)
+      .eq('profile_id', profileId)
+      .eq('is_active', true)
+      .eq('task_assignments.is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  },
+
+  // All task definitions for a parent profile (without requiring an assignment)
+  async getAllTasks(profileId) {
+    const { data: tasks, error: tasksError } = await supabase
+      .from('tasks')
+      .select('*')
+      .eq('profile_id', profileId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (tasksError) throw tasksError;
+
+    if (!tasks || tasks.length === 0) return [];
+
+    const taskIds = tasks.map(t => t.id);
+    const { data: assignments, error: assignError } = await supabase
+      .from('task_assignments')
+      .select(`
+        task_id,
+        child_profile_id,
         child_profiles (
           id,
           child_name,
@@ -13,72 +54,100 @@ export const tasksAPI = {
           current_permission_level
         )
       `)
-      .eq('profile_id', profileId)
+      .in('task_id', taskIds)
       .eq('is_active', true);
 
-    if (filters.childId) {
-      query = query.eq('assigned_to_child_id', filters.childId);
-    }
+    if (assignError) throw assignError;
 
-    if (filters.status) {
-      query = query.eq('status', filters.status);
-    }
-
-    query = query.order('created_at', { ascending: false });
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
+    return tasks.map(task => ({
+      ...task,
+      assignments: (assignments || []).filter(a => a.task_id === task.id),
+    }));
   },
 
+  // Tasks assigned to a specific child (child-facing view)
   async getTasksByChild(childId) {
     const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .eq('assigned_to_child_id', childId)
+      .from('task_assignments')
+      .select(`
+        task_id,
+        tasks (
+          id,
+          profile_id,
+          title,
+          description,
+          icon,
+          color,
+          star_reward,
+          requires_approval,
+          reset_mode,
+          repeatable,
+          frequency,
+          is_active,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('child_profile_id', childId)
       .eq('is_active', true)
-      .order('due_date', { ascending: true, nullsFirst: false });
+      .eq('tasks.is_active', true);
 
     if (error) throw error;
-    return data;
+
+    return (data || [])
+      .filter(row => row.tasks)
+      .map(row => row.tasks);
   },
 
   async createTask(profileId, taskData) {
+    const { childIds, ...rest } = taskData;
+
     const insertData = {
       profile_id: profileId,
-      assigned_to_child_id: taskData.assigned_to_child_id,
-      title: taskData.title,
-      description: taskData.description,
-      created_by_user_id: taskData.created_by_user_id,
+      title: rest.title,
+      description: rest.description || null,
+      created_by_user_id: rest.created_by_user_id,
       status: 'in_progress',
-      icon: taskData.icon,
-      color: taskData.color,
-      metadata: taskData.metadata,
-      reset_mode: taskData.reset_mode || 'instant',
-      repeatable: taskData.repeatable !== undefined ? taskData.repeatable : true,
-      frequency: taskData.frequency || 'always_available',
+      icon: rest.icon,
+      color: rest.color,
+      metadata: rest.metadata || null,
+      reset_mode: rest.reset_mode || 'instant',
+      repeatable: rest.repeatable !== undefined ? rest.repeatable : true,
+      frequency: rest.frequency || 'always_available',
+      star_reward: rest.star_reward !== undefined ? rest.star_reward : 1,
+      requires_approval: rest.requires_approval !== undefined ? rest.requires_approval : true,
     };
 
-    if (taskData.star_reward !== undefined) {
-      insertData.star_reward = taskData.star_reward;
+    if (rest.due_date !== undefined) {
+      insertData.due_date = rest.due_date;
     }
 
-    if (taskData.requires_approval !== undefined) {
-      insertData.requires_approval = taskData.requires_approval;
-    }
-
-    if (taskData.due_date !== undefined) {
-      insertData.due_date = taskData.due_date;
-    }
-
-    const { data, error } = await supabase
+    const { data: task, error } = await supabase
       .from('tasks')
       .insert(insertData)
       .select()
       .single();
 
     if (error) throw error;
-    return data;
+
+    const assignTo = childIds && childIds.length > 0
+      ? childIds
+      : rest.assigned_to_child_id
+      ? [rest.assigned_to_child_id]
+      : [];
+
+    if (assignTo.length > 0) {
+      const { error: assignError } = await supabase
+        .from('task_assignments')
+        .insert(assignTo.map(childId => ({
+          task_id: task.id,
+          child_profile_id: childId,
+          is_active: true,
+        })));
+      if (assignError) throw assignError;
+    }
+
+    return task;
   },
 
   async updateTask(taskId, updates) {
@@ -93,7 +162,75 @@ export const tasksAPI = {
     return data;
   },
 
-  async completeTask(taskId, userId) {
+  async assignTaskToChild(taskId, childId) {
+    const { error } = await supabase
+      .from('task_assignments')
+      .upsert({
+        task_id: taskId,
+        child_profile_id: childId,
+        is_active: true,
+      }, { onConflict: 'task_id,child_profile_id' });
+
+    if (error) throw error;
+  },
+
+  async unassignTaskFromChild(taskId, childId) {
+    const { error } = await supabase
+      .from('task_assignments')
+      .update({ is_active: false })
+      .eq('task_id', taskId)
+      .eq('child_profile_id', childId);
+
+    if (error) throw error;
+  },
+
+  async setTaskAssignments(taskId, childIds) {
+    const { data: existing } = await supabase
+      .from('task_assignments')
+      .select('child_profile_id, is_active')
+      .eq('task_id', taskId);
+
+    const currentlyActive = new Set(
+      (existing || []).filter(a => a.is_active).map(a => a.child_profile_id)
+    );
+    const desired = new Set(childIds);
+
+    const toActivate = childIds.filter(id => !currentlyActive.has(id));
+    const toDeactivate = [...currentlyActive].filter(id => !desired.has(id));
+
+    if (toActivate.length > 0) {
+      await supabase
+        .from('task_assignments')
+        .upsert(
+          toActivate.map(childId => ({
+            task_id: taskId,
+            child_profile_id: childId,
+            is_active: true,
+          })),
+          { onConflict: 'task_id,child_profile_id' }
+        );
+    }
+
+    if (toDeactivate.length > 0) {
+      await supabase
+        .from('task_assignments')
+        .update({ is_active: false })
+        .eq('task_id', taskId)
+        .in('child_profile_id', toDeactivate);
+    }
+  },
+
+  async deleteTask(taskId) {
+    const { error } = await supabase
+      .from('tasks')
+      .update({ is_active: false })
+      .eq('id', taskId);
+
+    if (error) throw error;
+  },
+
+  // Legacy: kept for backward compat with ChildDashboard / ParentView queries
+  async completeTask(taskId) {
     const { data, error } = await supabase
       .from('tasks')
       .update({
@@ -101,45 +238,21 @@ export const tasksAPI = {
         completed_at: new Date().toISOString(),
       })
       .eq('id', taskId)
-      .select(`
-        *,
-        child_profiles (
-          id,
-          child_name,
-          current_permission_level
-        )
-      `)
+      .select()
       .single();
 
     if (error) throw error;
     return data;
   },
 
-  async markTaskComplete(taskId, userId) {
-    return this.completeTask(taskId, userId);
-  },
-
-  async approveTask(taskId, userId, profileId) {
+  async approveTask(taskId, userId) {
     const { data: task, error: fetchError } = await supabase
       .from('tasks')
-      .select('*, child_profiles(id, stars_balance)')
+      .select('star_reward, bonus_multiplier, reset_mode, repeatable, frequency')
       .eq('id', taskId)
       .single();
 
     if (fetchError) throw fetchError;
-
-    const starsToAward = Math.round((task.star_reward || 0) * (task.bonus_multiplier || 1.0));
-
-    if (starsToAward > 0) {
-      const { error: balanceError } = await supabase
-        .from('child_profiles')
-        .update({
-          stars_balance: (task.child_profiles.stars_balance || 0) + starsToAward,
-        })
-        .eq('id', task.assigned_to_child_id);
-
-      if (balanceError) throw balanceError;
-    }
 
     const shouldReset = task.reset_mode === 'instant' || task.repeatable === true || task.frequency === 'always_available';
     const newStatus = shouldReset ? 'in_progress' : 'approved';
@@ -157,7 +270,6 @@ export const tasksAPI = {
       .single();
 
     if (error) throw error;
-
     return data;
   },
 
@@ -176,57 +288,5 @@ export const tasksAPI = {
 
     if (error) throw error;
     return data;
-  },
-
-  async deleteTask(taskId) {
-    const { error } = await supabase
-      .from('tasks')
-      .update({ is_active: false })
-      .eq('id', taskId);
-
-    if (error) throw error;
-  },
-
-  async getTaskTemplates(profileId = null) {
-    let query = supabase
-      .from('task_templates')
-      .select('*');
-
-    if (profileId) {
-      query = query.or(`profile_id.eq.${profileId},is_public.eq.true`);
-    } else {
-      query = query.eq('is_public', true);
-    }
-
-    query = query.order('times_used', { ascending: false });
-
-    const { data, error } = await query;
-    if (error) throw error;
-    return data;
-  },
-
-  async createTaskFromTemplate(profileId, templateId, childId, userId) {
-    const { data: template, error: templateError } = await supabase
-      .from('task_templates')
-      .select('*')
-      .eq('id', templateId)
-      .single();
-
-    if (templateError) throw templateError;
-
-    await supabase
-      .from('task_templates')
-      .update({ times_used: template.times_used + 1 })
-      .eq('id', templateId);
-
-    return await this.createTask(profileId, {
-      assigned_to_child_id: childId,
-      title: template.title,
-      description: template.description,
-      points_value: template.suggested_points,
-      icon: template.icon,
-      color: template.color,
-      created_by_user_id: userId,
-    });
   },
 };

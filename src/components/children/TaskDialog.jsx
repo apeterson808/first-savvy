@@ -9,9 +9,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import AppearancePicker, { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
 import { Star } from 'lucide-react';
+import ChildAvatar from './ChildAvatar';
 
 const SCHEDULE_OPTIONS = [
   { value: 'instant', label: 'Instant reset' },
@@ -28,11 +30,20 @@ function getInitialResetMode(task) {
 
 const DEFAULT_FORM = { title: '', description: '', star_reward: 1, icon: 'Star', color: '#52A5CE' };
 
-export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, task = null }) {
+export function TaskDialog({
+  isOpen,
+  onClose,
+  profileId,
+  childProfiles = [],
+  defaultChildIds = [],
+  onSuccess,
+  task = null,
+}) {
   const { user } = useAuth();
   const { currentProfile } = useProfile();
   const [formData, setFormData] = useState(DEFAULT_FORM);
   const [resetMode, setResetMode] = useState('instant');
+  const [selectedChildIds, setSelectedChildIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [pickerOpen, setPickerOpen] = useState(false);
@@ -48,13 +59,23 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
           color: task.color || '#52A5CE',
         });
         setResetMode(getInitialResetMode(task));
+        // When editing, pre-select currently assigned children
+        const assignedIds = (task.assignments || []).map(a => a.child_profile_id);
+        setSelectedChildIds(assignedIds.length > 0 ? assignedIds : defaultChildIds);
       } else {
         setFormData(DEFAULT_FORM);
         setResetMode('instant');
+        setSelectedChildIds(defaultChildIds);
       }
       setErrors({});
     }
-  }, [isOpen, task]);
+  }, [isOpen, task, defaultChildIds]);
+
+  const toggleChild = (childId) => {
+    setSelectedChildIds(prev =>
+      prev.includes(childId) ? prev.filter(id => id !== childId) : [...prev, childId]
+    );
+  };
 
   const stepStars = (delta) => {
     setFormData(prev => ({ ...prev, star_reward: Math.max(1, (parseInt(prev.star_reward) || 1) + delta) }));
@@ -65,6 +86,7 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     else if (formData.title.length > 100) newErrors.title = 'Title must be 100 characters or less';
     if (!formData.star_reward || parseInt(formData.star_reward) < 1) newErrors.star_reward = 'Must be at least 1';
+    if (childProfiles.length > 0 && selectedChildIds.length === 0) newErrors.children = 'Assign to at least one family member';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -91,11 +113,14 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
 
       if (task) {
         await tasksAPI.updateTask(task.id, payload);
+        if (childProfiles.length > 0) {
+          await tasksAPI.setTaskAssignments(task.id, selectedChildIds);
+        }
         toast.success(`Task "${formData.title}" updated`);
       } else {
         await tasksAPI.createTask(parentProfileId, {
           ...payload,
-          assigned_to_child_id: childId,
+          childIds: selectedChildIds,
           requires_approval: true,
           created_by_user_id: user.id,
         });
@@ -226,6 +251,28 @@ export function TaskDialog({ isOpen, onClose, childId, profileId, onSuccess, tas
               </SelectContent>
             </Select>
           </div>
+
+          {childProfiles.length > 0 && (
+            <div className="space-y-2">
+              <Label>Assign to</Label>
+              <div className="space-y-2">
+                {childProfiles.map(child => (
+                  <label
+                    key={child.id}
+                    className="flex items-center gap-3 p-2.5 rounded-lg border border-input hover:bg-accent/30 cursor-pointer transition-colors"
+                  >
+                    <Checkbox
+                      checked={selectedChildIds.includes(child.id)}
+                      onCheckedChange={() => toggleChild(child.id)}
+                    />
+                    <ChildAvatar child={child} size="sm" />
+                    <span className="text-sm font-medium">{child.display_name || child.child_name}</span>
+                  </label>
+                ))}
+              </div>
+              {errors.children && <p className="text-xs text-destructive">{errors.children}</p>}
+            </div>
+          )}
 
           <DialogFooter className="pt-2">
             <Button type="button" variant="outline" onClick={onClose} disabled={loading}>

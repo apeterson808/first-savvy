@@ -54,13 +54,13 @@ export default function ChildDashboard() {
     queryKey: ['child-tasks', childProfileId],
     queryFn: async () => {
       const { data, error } = await firstsavvy
-        .from('tasks')
-        .select('*')
-        .eq('assigned_to_child_id', childProfileId)
+        .from('task_assignments')
+        .select('tasks!inner(*)')
+        .eq('child_profile_id', childProfileId)
         .eq('is_active', true)
-        .order('due_date', { ascending: true, nullsFirst: false });
+        .eq('tasks.is_active', true);
       if (error) throw error;
-      return data;
+      return (data || []).map(row => row.tasks).filter(Boolean);
     },
     enabled: !!childProfileId
   });
