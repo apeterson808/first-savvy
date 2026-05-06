@@ -108,7 +108,7 @@ export function TaskDialog({
         color: formData.color,
         reset_mode: resetMode,
         repeatable: isInstant,
-        frequency: isInstant ? 'always_available' : 'once',
+        frequency: isInstant ? 'always_available' : resetMode === 'daily' ? 'daily' : resetMode === 'weekly' ? 'weekly' : 'one_time',
       };
 
       if (task) {
@@ -131,7 +131,7 @@ export function TaskDialog({
       onClose();
     } catch (error) {
       console.error(`Error ${task ? 'updating' : 'creating'} task:`, error);
-      toast.error(`Failed to ${task ? 'update' : 'create'} task: ${error?.message || JSON.stringify(error)}`);
+      toast.error(`Failed to ${task ? 'update' : 'create'} task`);
     } finally {
       setLoading(false);
     }
