@@ -148,7 +148,7 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
             type: 'stars_awarded',
             title: c.note || c.submission_notes || 'Direct star award',
             starsDelta: c.stars_earned || 0,
-            time: c.reviewed_at || c.submitted_at,
+            time: c.submitted_at,
             completionId: c.id,
           };
         }
@@ -170,7 +170,7 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
           type: c.status === 'approved' ? 'task_approved' : 'task_rejected',
           title: c.tasks?.title || 'Task',
           starsDelta: c.status === 'approved' ? (c.stars_earned || 0) : 0,
-          time: c.reviewed_at || c.submitted_at,
+          time: c.submitted_at,
           completionId: c.id,
         };
       });
