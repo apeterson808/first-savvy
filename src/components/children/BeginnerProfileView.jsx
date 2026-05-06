@@ -141,22 +141,25 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="relative flex items-center gap-2 sm:gap-3 bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 px-4 sm:px-6 py-2.5 sm:py-3 rounded-2xl sm:rounded-3xl shadow-xl border-2 border-yellow-300 flex-1 sm:flex-initial">
-              <Star className="w-9 h-9 sm:w-10 sm:h-10 text-amber-500 fill-amber-500 drop-shadow-md shrink-0" />
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div>
-                  <p className="text-xs sm:text-sm font-bold text-yellow-100 uppercase tracking-wide drop-shadow-sm">Your Stars</p>
-                  <p className="text-3xl sm:text-4xl font-black text-white drop-shadow-lg leading-tight" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
-                </div>
-                {starsPending > 0 && (
-                  <div className="flex flex-col items-center justify-center bg-white/20 rounded-xl px-2.5 py-1.5 border border-white/30">
-                    <p className="text-lg sm:text-xl font-black text-white leading-none">+{starsPending}</p>
-                    <p className="text-[10px] sm:text-[11px] text-yellow-100 font-semibold flex items-center gap-0.5 mt-0.5">
-                      <Sparkles className="w-2.5 h-2.5" /> pending
-                    </p>
-                  </div>
-                )}
+            <div className="relative flex items-center bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-2xl shadow-xl border-2 border-yellow-300 overflow-hidden flex-1 sm:flex-initial">
+              {/* Star + balance */}
+              <div className="flex items-center gap-2 px-4 py-2.5">
+                <Star className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-white drop-shadow-md shrink-0" />
+                <p className="text-3xl sm:text-4xl font-black text-white leading-none" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>{starBalance}</p>
               </div>
+              {/* Pending section — separated by a translucent divider */}
+              {starsPending > 0 && (
+                <>
+                  <div className="w-px self-stretch bg-white/30 mx-0" />
+                  <div className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/15">
+                    <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
+                    <div>
+                      <p className="text-base sm:text-lg font-black text-white leading-none">+{starsPending}</p>
+                      <p className="text-[10px] text-yellow-100 font-semibold leading-none mt-0.5">pending</p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
