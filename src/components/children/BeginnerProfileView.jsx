@@ -141,24 +141,16 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="relative flex items-center bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-2xl shadow-xl border-2 border-yellow-300 overflow-hidden flex-1 sm:flex-initial">
-              {/* Star + balance */}
-              <div className="flex items-center gap-2 px-4 py-2.5">
+            <div className="relative flex items-center justify-between bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-2xl shadow-xl border-2 border-yellow-300 px-4 py-2.5 gap-4 flex-1 sm:flex-initial">
+              <div className="flex items-center gap-2">
                 <Star className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-white drop-shadow-md shrink-0" />
                 <p className="text-3xl sm:text-4xl font-black text-white leading-none" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>{starBalance}</p>
               </div>
-              {/* Pending section — separated by a translucent divider */}
               {starsPending > 0 && (
-                <>
-                  <div className="w-px self-stretch bg-white/30 mx-0" />
-                  <div className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white/15">
-                    <Sparkles className="w-3.5 h-3.5 text-white shrink-0" />
-                    <div>
-                      <p className="text-base sm:text-lg font-black text-white leading-none">+{starsPending}</p>
-                      <p className="text-[10px] text-yellow-100 font-semibold leading-none mt-0.5">pending</p>
-                    </div>
-                  </div>
-                </>
+                <div className="flex items-center gap-1 ml-auto">
+                  <Sparkles className="w-3.5 h-3.5 text-white/80 shrink-0" />
+                  <p className="text-sm font-bold text-white/90">+{starsPending} pending</p>
+                </div>
               )}
             </div>
           </div>
