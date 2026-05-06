@@ -12,6 +12,34 @@ import { RewardCard } from './RewardCard';
 import { ActivityTab } from './ActivityTab';
 import { toast } from 'sonner';
 
+function isTaskLocked(task, lastCompletion) {
+  if (!lastCompletion) return false;
+  // Only lock if the last completion is pending or was approved today/this week
+  const { frequency } = task;
+  const lastTime = new Date(lastCompletion.submitted_at);
+  const now = new Date();
+
+  if (frequency === 'daily') {
+    // Locked until the next calendar day
+    const nextReset = new Date(lastTime);
+    nextReset.setDate(nextReset.getDate() + 1);
+    nextReset.setHours(0, 0, 0, 0);
+    return now < nextReset;
+  }
+  if (frequency === 'weekly') {
+    // Locked for 7 days from submission
+    const nextReset = new Date(lastTime);
+    nextReset.setDate(nextReset.getDate() + 7);
+    return now < nextReset;
+  }
+  if (frequency === 'one_time') {
+    // Locked once submitted (until rejected)
+    return lastCompletion.status === 'pending' || lastCompletion.status === 'approved';
+  }
+  // always_available: never locked
+  return false;
+}
+
 const TABS = [
   { key: 'tasks', label: 'Tasks', icon: Trophy },
   { key: 'rewards', label: 'Rewards', icon: Gift },
@@ -85,12 +113,12 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     }
   };
 
-  // Build tasks with their most recent completion for the "last requested" note
+  // Build tasks with their most recent completion and lock state
   const tasksWithLastCompletion = tasks.map(task => {
     const taskCompletions = completions.filter(c => c.task_id === task.id);
-    // Most recent completion regardless of status
     const lastCompletion = taskCompletions[0] || null;
-    return { task, lastCompletion };
+    const locked = isTaskLocked(task, lastCompletion);
+    return { task, lastCompletion, locked };
   });
 
   const availableRewards = rewards.filter(r => r.status === 'available');
@@ -193,13 +221,14 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
                 </CardContent>
               </Card>
             ) : (
-              tasksWithLastCompletion.map(({ task, lastCompletion }) => (
+              tasksWithLastCompletion.map(({ task, lastCompletion, locked }) => (
                 <TaskCard
                   key={task.id}
                   task={task}
                   lastCompletion={lastCompletion}
                   onComplete={handleTaskComplete}
                   isParentView={isParentView}
+                  locked={locked}
                 />
               ))
             )}

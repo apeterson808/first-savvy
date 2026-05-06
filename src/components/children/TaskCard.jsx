@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Star, Sparkles, Clock } from 'lucide-react';
+import { Star, Sparkles, Clock, Lock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +25,7 @@ export function TaskCard({
   lastCompletion,
   onComplete,
   isParentView = false,
+  locked = false,
 }) {
   const [showCompleteDialog, setShowCompleteDialog] = useState(false);
   const [notes, setNotes] = useState('');
@@ -47,10 +48,10 @@ export function TaskCard({
         transition={{ duration: 0.3 }}
       >
         <Card
-          className="border-2 transition-all hover:shadow-lg cursor-pointer hover:border-blue-400"
-          style={{ borderColor: task.color || undefined }}
+          className={`border-2 transition-all ${locked ? 'opacity-60 cursor-not-allowed bg-slate-50' : 'hover:shadow-lg cursor-pointer hover:border-blue-400'}`}
+          style={{ borderColor: locked ? '#CBD5E1' : (task.color || undefined) }}
           onClick={() => {
-            if (!isParentView) setShowCompleteDialog(true);
+            if (!isParentView && !locked) setShowCompleteDialog(true);
           }}
         >
           <CardContent className="pt-4 sm:pt-5 px-4 sm:px-5 pb-4">
@@ -76,10 +77,17 @@ export function TaskCard({
                 </div>
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
-                <div className="flex items-center gap-1 text-yellow-600 font-bold text-base sm:text-lg">
-                  <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-500" />
-                  {task.star_reward || 1}
-                </div>
+                {locked ? (
+                  <div className="flex items-center gap-1 text-slate-400 font-medium text-sm">
+                    <Lock className="w-4 h-4" />
+                    <span>Done</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1 text-yellow-600 font-bold text-base sm:text-lg">
+                    <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-yellow-500" />
+                    {task.star_reward || 1}
+                  </div>
+                )}
               </div>
             </div>
           </CardContent>
