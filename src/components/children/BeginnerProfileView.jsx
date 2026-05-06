@@ -113,13 +113,15 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
     }
   };
 
-  // Build tasks with their most recent completion and lock state
-  const tasksWithLastCompletion = tasks.map(task => {
-    const taskCompletions = completions.filter(c => c.task_id === task.id);
-    const lastCompletion = taskCompletions[0] || null;
-    const locked = isTaskLocked(task, lastCompletion);
-    return { task, lastCompletion, locked };
-  });
+  // Build tasks with their most recent completion and lock state, unlocked first
+  const tasksWithLastCompletion = tasks
+    .map(task => {
+      const taskCompletions = completions.filter(c => c.task_id === task.id);
+      const lastCompletion = taskCompletions[0] || null;
+      const locked = isTaskLocked(task, lastCompletion);
+      return { task, lastCompletion, locked };
+    })
+    .sort((a, b) => (a.locked === b.locked ? 0 : a.locked ? 1 : -1));
 
   const availableRewards = rewards.filter(r => r.status === 'available');
   const redeemedRewards = rewards.filter(r => r.status === 'redeemed');
