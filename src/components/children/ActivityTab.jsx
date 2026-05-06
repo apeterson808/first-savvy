@@ -106,12 +106,18 @@ function PendingActions({ item, onApprove, onReject }) {
   );
 }
 
+const PAGE_SIZE = 10;
+
 export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   useEffect(() => {
-    if (childId) loadActivity();
+    if (childId) {
+      setVisibleCount(PAGE_SIZE);
+      loadActivity();
+    }
   }, [childId]);
 
   const loadActivity = async () => {
@@ -249,7 +255,7 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
           <CardContent className="p-0">
             {/* Mobile: card-style rows */}
             <div className="sm:hidden divide-y divide-slate-100">
-              {rows.map(row => {
+              {rows.slice(0, visibleCount).map(row => {
                 const cfg = TYPE_CONFIG[row.type];
                 const isPending = row.type === 'pending';
                 return (
@@ -321,10 +327,10 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, idx) => {
+                  {rows.slice(0, visibleCount).map((row, idx) => {
                     const cfg = TYPE_CONFIG[row.type];
                     const isPending = row.type === 'pending';
-                    const isLast = idx === rows.length - 1;
+                    const isLast = idx === Math.min(visibleCount, rows.length) - 1;
                     return (
                       <tr
                         key={row.id}
@@ -395,6 +401,17 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {rows.length > visibleCount && (
+        <div className="flex justify-center pt-1">
+          <button
+            onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
+            className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors"
+          >
+            Load more ({Math.min(PAGE_SIZE, rows.length - visibleCount)} of {rows.length - visibleCount} remaining)
+          </button>
+        </div>
       )}
     </div>
   );
