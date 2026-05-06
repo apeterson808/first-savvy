@@ -141,7 +141,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             </div>
           </div>
           <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-            <div className="relative flex items-center justify-between bg-gradient-to-r from-yellow-400 via-amber-400 to-yellow-500 rounded-2xl shadow-xl border-2 border-yellow-300 px-4 py-2.5 gap-4 flex-1 sm:flex-initial">
+            <div className="relative flex items-center justify-between bg-amber-500 rounded-2xl shadow-xl border-2 border-amber-600 px-4 py-2.5 gap-4 flex-1 sm:flex-initial">
               <div className="flex items-center gap-2">
                 <Star className="w-8 h-8 sm:w-9 sm:h-9 text-white fill-white drop-shadow-md shrink-0" />
                 <p className="text-3xl sm:text-4xl font-black text-white leading-none" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.3)' }}>{starBalance}</p>
