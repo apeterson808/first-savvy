@@ -409,7 +409,7 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
             onClick={() => setVisibleCount(c => c + PAGE_SIZE)}
             className="px-4 py-2 text-sm font-medium text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 hover:border-slate-300 transition-colors"
           >
-            Load more ({Math.min(PAGE_SIZE, rows.length - visibleCount)} of {rows.length - visibleCount} remaining)
+            Load more
           </button>
         </div>
       )}
