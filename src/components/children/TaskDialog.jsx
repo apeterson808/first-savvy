@@ -131,7 +131,7 @@ export function TaskDialog({
       onClose();
     } catch (error) {
       console.error(`Error ${task ? 'updating' : 'creating'} task:`, error);
-      toast.error(`Failed to ${task ? 'update' : 'create'} task`);
+      toast.error(`Failed to ${task ? 'update' : 'create'} task: ${error?.message || JSON.stringify(error)}`);
     } finally {
       setLoading(false);
     }
