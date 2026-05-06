@@ -146,27 +146,16 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
               <div>
                 <p className="text-xs sm:text-sm font-bold text-yellow-100 uppercase tracking-wide drop-shadow-sm">Your Stars</p>
                 <p className="text-3xl sm:text-4xl md:text-5xl font-black text-white drop-shadow-lg" style={{ textShadow: '0 3px 15px rgba(0,0,0,0.4)' }}>{starBalance}</p>
+                {starsPending > 0 && (
+                  <p className="text-[11px] sm:text-xs text-yellow-100 font-semibold mt-0.5 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3" />
+                    +{starsPending} pending
+                  </p>
+                )}
               </div>
             </div>
           </div>
         </div>
-
-        {/* Pending approval banner */}
-        {starsPending > 0 && (
-          <Card className="bg-gradient-to-r from-amber-50 via-yellow-50 to-amber-50 border-2 border-amber-200 shadow-md">
-            <CardContent className="py-3 sm:py-4 px-4 sm:px-6">
-              <div className="flex items-center justify-center gap-2 sm:gap-3">
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 animate-pulse" />
-                <div className="text-center">
-                  <p className="text-xs sm:text-sm font-semibold text-amber-900">
-                    <span className="text-xl sm:text-2xl font-black">{starsPending}</span> {starsPending === 1 ? 'star' : 'stars'} waiting for approval!
-                  </p>
-                </div>
-                <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500 animate-pulse" />
-              </div>
-            </CardContent>
-          </Card>
-        )}
 
         {/* Tabs */}
         <div className="flex gap-1 bg-white rounded-xl p-1 border border-slate-200 shadow-sm">
