@@ -159,20 +159,33 @@ export const ProfileProvider = ({ children }) => {
         }
       }
 
-      // If user joined a household as spouse/member, hide their own empty profile
-      // and only show the shared household profile.
+      // If user joined a household as spouse/member, they share that profile.
+      // Show only one tab — the shared profile — but label it with the user's own name.
       const householdMemberships = memberships.filter(
         m => m.profile && !m.profile.is_deleted && m.role === 'member'
       );
       const hasHouseholdMembership = householdMemberships.length > 0;
 
-      // Determine which memberships to actually show as tabs
+      let selfDisplayName = null;
+      if (hasHouseholdMembership) {
+        const { data: selfSettings } = await firstsavvy
+          .from('user_settings')
+          .select('display_name, full_name, first_name')
+          .eq('id', user.id)
+          .maybeSingle();
+        selfDisplayName = selfSettings?.display_name || selfSettings?.full_name || selfSettings?.first_name || null;
+      }
+
+      // Determine which memberships to actually show as tabs:
+      // spouse members see only the shared profile (labeled with their own name)
       const visibleMemberships = hasHouseholdMembership
         ? memberships.filter(m => m.profile && !m.profile.is_deleted && m.role !== 'owner')
         : memberships.filter(m => m.profile && !m.profile.is_deleted);
 
       const profilesList = visibleMemberships.map(m => ({
         ...m.profile,
+        // Use user's own name so the tab reads "Jenna", not "Andrew Peterson"
+        display_name: (hasHouseholdMembership && selfDisplayName) ? selfDisplayName : m.profile.display_name,
         role: m.role
       }));
 
