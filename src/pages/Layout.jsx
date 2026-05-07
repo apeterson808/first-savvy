@@ -97,23 +97,18 @@ export default function Layout({ children, currentPageName }) {
 
   const loadJoinRequests = useCallback(async () => {
     try {
-      const { data: ownerMembership } = await supabase
-        .from('profile_memberships')
-        .select('profile_id')
-        .eq('role', 'owner')
-        .maybeSingle();
-
-      if (!ownerMembership?.profile_id) return;
-
-      const { data } = await supabase
+      // Fetch all pending requests targeting any profile the current user owns
+      const { data, error } = await supabase
         .from('household_join_requests')
         .select('*')
-        .eq('target_profile_id', ownerMembership.profile_id)
         .eq('status', 'pending')
         .order('created_at', { ascending: false });
 
+      if (error) throw error;
       setJoinRequests(data || []);
-    } catch {}
+    } catch (err) {
+      console.error('loadJoinRequests error:', err);
+    }
   }, []);
 
   useEffect(() => {
@@ -279,7 +274,7 @@ export default function Layout({ children, currentPageName }) {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top Bar */}
-        <header className="bg-white px-4 relative overflow-y-hidden">
+        <header className="bg-white px-4 relative overflow-visible">
           <div className="flex flex-col">
             <div className="flex items-center justify-between pt-3 pb-2">
               <div className="flex items-center gap-4">
