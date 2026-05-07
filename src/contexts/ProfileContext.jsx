@@ -329,6 +329,7 @@ export const ProfileProvider = ({ children }) => {
         if (membership) {
           activeProfileToSet = {
             ...activeTabs.profile,
+            display_name: (hasHouseholdMembership && selfDisplayName) ? selfDisplayName : activeTabs.profile.display_name,
             role: membership.role
           };
         }

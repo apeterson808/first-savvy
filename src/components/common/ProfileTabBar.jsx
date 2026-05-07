@@ -19,7 +19,12 @@ export function ProfileTabBar({ onAddProfileClick }) {
       setOpenTabs(prev => {
         const prevKeys = new Set(prev.map(getProfileKey));
         const toAdd = profiles.filter(p => !p.is_child_profile && !prevKeys.has(getProfileKey(p)));
-        return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+        // Update display_name for existing tabs in case it was renamed (e.g. spouse sharing)
+        const updated = prev.map(tab => {
+          const match = profiles.find(p => getProfileKey(p) === getProfileKey(tab));
+          return match ? { ...tab, display_name: match.display_name } : tab;
+        });
+        return toAdd.length > 0 ? [...updated, ...toAdd] : updated;
       });
     }
   }, [profiles]);
