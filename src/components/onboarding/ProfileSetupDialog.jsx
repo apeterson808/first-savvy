@@ -126,39 +126,12 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Find the child_profile record the other user created for us
-      const { data: existing } = await supabase
-        .from('child_profiles')
-        .select('id')
-        .eq('user_id', searchResult.user_id)
-        .is('user_id', null)
-        .maybeSingle();
+      const { data: result, error: rpcErr } = await supabase
+        .rpc('join_household', { p_owner_user_id: searchResult.user_id });
 
-      if (existing) {
-        // They already have a placeholder for us — link it
-        await supabase
-          .from('child_profiles')
-          .update({ user_id: user.id })
-          .eq('id', existing.id);
-      } else {
-        // No placeholder yet — store the connection request so they can link later
-        // We update our own child_profile entry under their profile if one exists
-        const { data: theirPlaceholder } = await supabase
-          .from('child_profiles')
-          .select('id')
-          .eq('email', user.email)
-          .is('user_id', null)
-          .maybeSingle();
+      if (rpcErr) throw rpcErr;
 
-        if (theirPlaceholder) {
-          await supabase
-            .from('child_profiles')
-            .update({ user_id: user.id })
-            .eq('id', theirPlaceholder.id);
-        }
-      }
-
-      toast.success(`Connected to ${searchResult.display_name || searchResult.email}`);
+      toast.success(`Connected to ${searchResult.display_name || searchResult.email}'s household`);
       onClose();
     } catch {
       toast.error('Failed to connect. Please try again.');
