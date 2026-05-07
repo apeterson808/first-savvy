@@ -142,8 +142,9 @@ export default function AddContactSheet({
   const [uploading, setUploading] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  const [inviteMode, setInviteMode] = useState(false);
-  const [inviteEmail, setInviteEmail] = useState('');
+  const [linkEmail, setLinkEmail] = useState('');
+  const [linkSearchResult, setLinkSearchResult] = useState(null); // null | 'not_found' | { user_id, email, display_name }
+  const [linkSearching, setLinkSearching] = useState(false);
   const [familyRole, setFamilyRole] = useState('child');
   const queryClient = useQueryClient();
   const { activeProfile } = useProfile();
@@ -204,10 +205,8 @@ export default function AddContactSheet({
 
   useEffect(() => {
     if (isAdultRole) {
-      setInviteMode(true);
-      setInviteEmail('');
-    } else {
-      setInviteMode(false);
+      setLinkEmail('');
+      setLinkSearchResult(null);
     }
   }, [isAdultRole]);
 
@@ -234,8 +233,8 @@ export default function AddContactSheet({
     setDetectedUser(null);
     setAge(null);
     setUsernameAvailable(null);
-    setInviteMode(false);
-    setInviteEmail('');
+    setLinkEmail('');
+    setLinkSearchResult(null);
     setFamilyRole('child');
   };
 
@@ -376,34 +375,52 @@ export default function AddContactSheet({
     }
   };
 
-  const handleSubmitInvite = async (e) => {
+  const handleSearchUser = async (e) => {
     e.preventDefault();
-    if (!inviteEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) {
+    if (!linkEmail.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(linkEmail)) {
       toast.error('Please enter a valid email address');
       return;
     }
+    setLinkSearching(true);
+    setLinkSearchResult(null);
+    try {
+      const { supabase } = await import('@/api/supabaseClient');
+      const { data, error } = await supabase.rpc('find_user_by_email', { p_email: linkEmail.trim().toLowerCase() });
+      if (error) throw error;
+      if (!data || data.length === 0) {
+        setLinkSearchResult('not_found');
+      } else {
+        setLinkSearchResult(data[0]);
+      }
+    } catch (error) {
+      toast.error('Search failed: ' + (error.message || 'Unknown error'));
+    } finally {
+      setLinkSearching(false);
+    }
+  };
+
+  const handleSubmitLink = async () => {
+    if (!linkSearchResult || linkSearchResult === 'not_found') return;
     try {
       setLoading(true);
-      const { profileInvitationsAPI } = await import('@/api/profileInvitations');
-      const tempProfile = await childProfilesAPI.createChildProfile(activeProfile?.id, {
-        first_name: 'Invited',
-        last_name: 'Member',
-        child_name: inviteEmail,
-        email: inviteEmail,
+      const nameParts = (linkSearchResult.display_name || linkSearchResult.full_name || linkSearchResult.email).split(' ');
+      const firstName = nameParts[0] || 'Family';
+      const lastName = nameParts.slice(1).join(' ') || 'Member';
+      await childProfilesAPI.createChildProfile(activeProfile?.id, {
+        first_name: firstName,
+        last_name: lastName,
+        child_name: linkSearchResult.display_name || linkSearchResult.email,
+        email: linkSearchResult.email,
+        user_id: linkSearchResult.user_id,
         login_enabled: false,
-        invitation_pending: true,
         family_role: familyRole,
       });
-      await profileInvitationsAPI.createInvitation(tempProfile.id, inviteEmail, activeProfile?.id, {
-        inviterName: activeProfile?.display_name || activeProfile?.name,
-        familyRole,
-      });
-      toast.success(`Invitation sent to ${inviteEmail}`);
+      toast.success(`${linkSearchResult.display_name || linkSearchResult.email} linked successfully`);
       resetForm();
       onOpenChange(false);
       if (onChildCreated) onChildCreated();
     } catch (error) {
-      toast.error(error.message || 'Failed to send invitation');
+      toast.error(error.message || 'Failed to link account');
     } finally {
       setLoading(false);
     }
@@ -697,57 +714,63 @@ export default function AddContactSheet({
 
           {contactType === 'family' && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  {isAdultRole ? (
-                    <p className="text-sm text-slate-600">
-                      {familyRole === 'spouse_partner'
-                        ? "They'll create their own account and be linked to yours."
-                        : "They'll receive an invite to create their own account."}
-                    </p>
-                  ) : inviteMode ? (
-                    <p className="text-sm text-slate-600">Send an email invite — they'll set up their own profile.</p>
-                  ) : (
-                    <p className="text-sm text-slate-600">Create a profile manually with login credentials.</p>
-                  )}
-                </div>
-                {!isAdultRole && (
-                  <button
-                    type="button"
-                    onClick={() => { setInviteMode(v => !v); setInviteEmail(''); }}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 underline underline-offset-2 whitespace-nowrap ml-3 shrink-0"
-                  >
-                    {inviteMode ? 'Set up manually instead' : 'Send invite by email'}
-                  </button>
-                )}
-              </div>
+              {!isAdultRole && (
+                <p className="text-sm text-slate-600">Create a profile manually with login credentials.</p>
+              )}
 
-              {inviteMode ? (
-                <form onSubmit={handleSubmitInvite} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="invite-email">Email Address <span className="text-red-500">*</span></Label>
-                    <Input
-                      id="invite-email"
-                      type="email"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                      placeholder="family@example.com"
-                      autoFocus
-                      required
-                    />
-                    <p className="text-xs text-slate-500">
-                      {familyRole === 'spouse_partner'
-                        ? "They'll set up their own account and be connected with full shared access by default."
-                        : "They'll receive an email to create their own profile and data."}
-                    </p>
-                  </div>
+              {isAdultRole ? (
+                <div className="space-y-4">
+                  <p className="text-sm text-slate-600">
+                    Enter their email address to find and link their existing account.
+                  </p>
+                  <form onSubmit={handleSearchUser} className="space-y-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="link-email">Email Address <span className="text-red-500">*</span></Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="link-email"
+                          type="email"
+                          value={linkEmail}
+                          onChange={(e) => { setLinkEmail(e.target.value); setLinkSearchResult(null); }}
+                          placeholder="their@email.com"
+                          autoFocus
+                          disabled={linkSearching || loading}
+                        />
+                        <Button type="submit" variant="outline" disabled={linkSearching || !linkEmail.trim() || loading}>
+                          {linkSearching ? <LoaderIcon className="w-4 h-4 animate-spin" /> : 'Search'}
+                        </Button>
+                      </div>
+                    </div>
+                  </form>
+
+                  {linkSearchResult === 'not_found' && (
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      No account found with that email address. Make sure they have already signed up.
+                    </div>
+                  )}
+
+                  {linkSearchResult && linkSearchResult !== 'not_found' && (
+                    <div className="rounded-lg border border-green-200 bg-green-50 p-4 space-y-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-slate-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                          {(linkSearchResult.display_name || linkSearchResult.email).slice(0, 2).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-medium text-slate-900">{linkSearchResult.display_name || linkSearchResult.email}</p>
+                          <p className="text-xs text-slate-500">{linkSearchResult.email}</p>
+                        </div>
+                        <Check className="w-5 h-5 text-green-600 ml-auto shrink-0" />
+                      </div>
+                      <Button className="w-full" onClick={handleSubmitLink} disabled={loading}>
+                        {loading ? 'Linking...' : `Link as ${FAMILY_ROLES.find(r => r.value === familyRole)?.label}`}
+                      </Button>
+                    </div>
+                  )}
+
                   <SheetFooter className="pt-2">
                     <Button type="button" variant="outline" onClick={() => handleOpenChange(false)} disabled={loading}>Cancel</Button>
-                    <Button type="submit" disabled={loading || !inviteEmail.trim()}>
-                      {loading ? 'Sending...' : 'Send Invite'}
-                    </Button>
                   </SheetFooter>
-                </form>
+                </div>
               ) : (
             <form onSubmit={handleSubmitFamily} className="space-y-5">
               <div className="flex justify-center">
