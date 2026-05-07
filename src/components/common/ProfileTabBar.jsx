@@ -15,11 +15,19 @@ export function ProfileTabBar({ onAddProfileClick }) {
   };
 
   useEffect(() => {
+    if (profiles && profiles.length > 0) {
+      setOpenTabs(prev => {
+        const prevKeys = new Set(prev.map(getProfileKey));
+        const toAdd = profiles.filter(p => !p.is_child_profile && !prevKeys.has(getProfileKey(p)));
+        return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+      });
+    }
+  }, [profiles]);
+
+  useEffect(() => {
     if (activeProfile) {
       setOpenTabs(prev => {
-        if (prev.length === 0) {
-          return [activeProfile];
-        }
+        if (prev.length === 0) return [activeProfile];
         const activeKey = getProfileKey(activeProfile);
         if (!prev.find(t => getProfileKey(t) === activeKey)) {
           return [...prev, activeProfile];

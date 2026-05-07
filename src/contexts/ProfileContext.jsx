@@ -170,14 +170,40 @@ export const ProfileProvider = ({ children }) => {
         .filter(m => m.profile && m.role === 'owner')
         .map(m => m.profile.id);
 
+      // Members can also see children of profiles they belong to
+      const allAccessibleProfileIds = memberships
+        .filter(m => m.profile && !m.profile.is_deleted)
+        .map(m => m.profile.id);
+
+      // Ensure profile_tabs exist for every accessible profile
+      for (const membership of memberships.filter(m => m.profile && !m.profile.is_deleted && m.role !== 'owner')) {
+        const { data: existingTab } = await firstsavvy
+          .from('profile_tabs')
+          .select('id')
+          .eq('owner_user_id', user.id)
+          .eq('profile_id', membership.profile.id)
+          .maybeSingle();
+
+        if (!existingTab) {
+          await firstsavvy.from('profile_tabs').insert({
+            owner_user_id: user.id,
+            profile_id: membership.profile.id,
+            display_name: membership.profile.display_name,
+            profile_type: membership.profile.profile_type || 'personal',
+            tab_order: 99,
+            is_active: false,
+          });
+        }
+      }
+
       let childProfilesList = [];
       let allChildProfiles = [];
 
-      if (ownerProfileIds.length > 0) {
+      if (allAccessibleProfileIds.length > 0) {
         const { data: childProfiles, error: childError } = await firstsavvy
           .from('child_profiles')
           .select('*')
-          .in('parent_profile_id', ownerProfileIds)
+          .in('parent_profile_id', allAccessibleProfileIds)
           .eq('is_active', true);
 
         if (!childError && childProfiles) {
@@ -211,7 +237,7 @@ export const ProfileProvider = ({ children }) => {
             child_profile_id,
             child_profiles!inner (*)
           `)
-          .in('parent_profile_id', ownerProfileIds)
+          .in('parent_profile_id', allAccessibleProfileIds)
           .eq('is_active', true)
           .is('revoked_at', null);
 
