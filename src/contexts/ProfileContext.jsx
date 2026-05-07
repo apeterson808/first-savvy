@@ -159,21 +159,25 @@ export const ProfileProvider = ({ children }) => {
         }
       }
 
-      const profilesList = memberships
-        .filter(m => m.profile && !m.profile.is_deleted)
-        .map(m => ({
-          ...m.profile,
-          role: m.role
-        }));
+      // If user joined a household as spouse/member, hide their own empty profile
+      // and only show the shared household profile.
+      const householdMemberships = memberships.filter(
+        m => m.profile && !m.profile.is_deleted && m.role === 'member'
+      );
+      const hasHouseholdMembership = householdMemberships.length > 0;
 
-      const ownerProfileIds = memberships
-        .filter(m => m.profile && m.role === 'owner')
-        .map(m => m.profile.id);
+      // Determine which memberships to actually show as tabs
+      const visibleMemberships = hasHouseholdMembership
+        ? memberships.filter(m => m.profile && !m.profile.is_deleted && m.role !== 'owner')
+        : memberships.filter(m => m.profile && !m.profile.is_deleted);
+
+      const profilesList = visibleMemberships.map(m => ({
+        ...m.profile,
+        role: m.role
+      }));
 
       // Members can also see children of profiles they belong to
-      const allAccessibleProfileIds = memberships
-        .filter(m => m.profile && !m.profile.is_deleted)
-        .map(m => m.profile.id);
+      const allAccessibleProfileIds = visibleMemberships.map(m => m.profile.id);
 
       // Ensure profile_tabs exist for every accessible profile
       for (const membership of memberships.filter(m => m.profile && !m.profile.is_deleted && m.role !== 'owner')) {
