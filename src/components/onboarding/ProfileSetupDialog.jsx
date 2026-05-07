@@ -27,6 +27,7 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
   const [searchResult, setSearchResult] = useState(null); // null | 'not_found' | { user_id, email, display_name }
   const [searching, setSearching] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
 
   useEffect(() => {
     if (currentFullName) {
@@ -119,22 +120,28 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
     }
   };
 
-  const handleConnect = async () => {
+  const handleSendRequest = async () => {
     if (!searchResult || searchResult === 'not_found') return;
     setConnecting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      const { data: result, error: rpcErr } = await supabase
-        .rpc('join_household', { p_owner_user_id: searchResult.user_id });
+      const { data: result, error: rpcErr } = await supabase.rpc('request_join_household', {
+        p_owner_user_id: searchResult.user_id,
+        p_requester_display_name: displayName.trim() || firstName.trim(),
+      });
 
       if (rpcErr) throw rpcErr;
 
-      toast.success(`Connected to ${searchResult.display_name || searchResult.email}'s household`);
-      onClose();
+      if (result?.already_member) {
+        toast.success('You are already connected to this household');
+        onClose();
+      } else {
+        setRequestSent(true);
+      }
     } catch {
-      toast.error('Failed to connect. Please try again.');
+      toast.error('Failed to send request. Please try again.');
     } finally {
       setConnecting(false);
     }
@@ -244,88 +251,108 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
               </div>
               <DialogTitle className="text-center text-xl">Joining a Household?</DialogTitle>
               <DialogDescription className="text-center">
-                If someone has already set up a First Savvy account and added you, you can connect your accounts now.
+                Request to join an existing household. The account owner will be notified to approve you.
               </DialogDescription>
             </DialogHeader>
 
-            {connectChoice === null && (
-              <div className="space-y-3 pt-2">
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex flex-col items-center gap-1 border-2 hover:border-teal-400 hover:bg-teal-50 transition-colors"
-                  onClick={() => setConnectChoice('yes')}
-                >
-                  <span className="font-semibold text-slate-800">Yes, connect me to an existing account</span>
-                  <span className="text-xs text-slate-500 font-normal">I know someone who is already using First Savvy</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full h-auto py-4 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors"
-                  onClick={handleSkip}
-                >
-                  <span className="font-semibold text-slate-800">No, I'm starting fresh</span>
-                  <span className="text-xs text-slate-500 font-normal">Set up my own independent account</span>
-                </Button>
+            {requestSent ? (
+              <div className="space-y-4 pt-2 text-center">
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-green-100 mx-auto">
+                  <CheckCircle className="w-8 h-8 text-green-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-900">Request sent!</p>
+                  <p className="text-sm text-slate-500 mt-1">
+                    <span className="font-medium">{searchResult?.display_name || searchResult?.email}</span> will be notified and can approve your request. You'll get full access once they accept.
+                  </p>
+                </div>
+                <Button className="w-full" onClick={onClose}>Done</Button>
               </div>
-            )}
-
-            {connectChoice === 'yes' && (
-              <div className="space-y-4 pt-2">
-                <p className="text-sm text-slate-600 text-center">
-                  Enter the email of the person whose household you're joining.
-                </p>
-
-                <form onSubmit={handleSearchUser} className="flex gap-2">
-                  <Input
-                    type="email"
-                    value={connectEmail}
-                    onChange={(e) => { setConnectEmail(e.target.value); setSearchResult(null); }}
-                    placeholder="their@email.com"
-                    disabled={searching || connecting}
-                    className="flex-1"
-                    autoFocus
-                  />
-                  <Button type="submit" variant="outline" disabled={searching || !connectEmail.trim() || connecting}>
-                    {searching ? <LoaderIcon className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                  </Button>
-                </form>
-
-                {searchResult === 'not_found' && (
-                  <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
-                    No account found with that email. Double-check the address or ask them to add you from their Contacts first.
-                  </div>
-                )}
-
-                {searchResult && searchResult !== 'not_found' && (
-                  <div className="rounded-lg border border-green-200 bg-green-50 p-3 space-y-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-slate-500 flex items-center justify-center text-white font-semibold text-sm shrink-0">
-                        {(searchResult.display_name || searchResult.email).slice(0, 2).toUpperCase()}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-slate-900 text-sm">{searchResult.display_name || searchResult.email}</p>
-                        <p className="text-xs text-slate-500 truncate">{searchResult.email}</p>
-                      </div>
-                      <CheckCircle className="w-5 h-5 text-green-600 shrink-0" />
-                    </div>
-                    <Button className="w-full" onClick={handleConnect} disabled={connecting}>
-                      {connecting ? 'Connecting...' : 'Connect to this account'}
+            ) : (
+              <>
+                {connectChoice === null && (
+                  <div className="space-y-3 pt-2">
+                    <Button
+                      variant="outline"
+                      className="w-full h-auto py-4 flex flex-col items-center gap-1 border-2 hover:border-teal-400 hover:bg-teal-50 transition-colors"
+                      onClick={() => setConnectChoice('yes')}
+                    >
+                      <span className="font-semibold text-slate-800">Yes, request to join a household</span>
+                      <span className="text-xs text-slate-500 font-normal">Send a request to someone already on First Savvy</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full h-auto py-4 flex flex-col items-center gap-1 hover:bg-slate-50 transition-colors"
+                      onClick={handleSkip}
+                    >
+                      <span className="font-semibold text-slate-800">No, I'm starting fresh</span>
+                      <span className="text-xs text-slate-500 font-normal">Set up my own independent account</span>
                     </Button>
                   </div>
                 )}
 
-                <Button
-                  variant="ghost"
-                  className="w-full text-slate-500 text-sm"
-                  onClick={() => { setConnectChoice(null); setConnectEmail(''); setSearchResult(null); }}
-                  disabled={connecting}
-                >
-                  Back
-                </Button>
-              </div>
+                {connectChoice === 'yes' && (
+                  <div className="space-y-4 pt-2">
+                    <p className="text-sm text-slate-600 text-center">
+                      Enter the email of the household owner you want to join.
+                    </p>
+
+                    <form onSubmit={handleSearchUser} className="flex gap-2">
+                      <Input
+                        type="email"
+                        value={connectEmail}
+                        onChange={(e) => { setConnectEmail(e.target.value); setSearchResult(null); }}
+                        placeholder="their@email.com"
+                        disabled={searching || connecting}
+                        className="flex-1"
+                        autoFocus
+                      />
+                      <Button type="submit" variant="outline" disabled={searching || !connectEmail.trim() || connecting}>
+                        {searching ? <LoaderIcon className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                      </Button>
+                    </form>
+
+                    {searchResult === 'not_found' && (
+                      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-sm text-amber-800">
+                        No account found with that email. Make sure they have a First Savvy account.
+                      </div>
+                    )}
+
+                    {searchResult && searchResult !== 'not_found' && (
+                      <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-slate-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                            {(searchResult.display_name || searchResult.email).slice(0, 2).toUpperCase()}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-slate-900 text-sm">{searchResult.display_name || searchResult.email}</p>
+                            <p className="text-xs text-slate-500 truncate">{searchResult.email}</p>
+                          </div>
+                          <CheckCircle className="w-5 h-5 text-teal-600 shrink-0" />
+                        </div>
+                        <div className="rounded-md bg-teal-50 border border-teal-200 px-3 py-2 text-xs text-teal-800">
+                          Your request will be sent for approval. They choose your role (e.g. Spouse, View-only).
+                        </div>
+                        <Button className="w-full" onClick={handleSendRequest} disabled={connecting}>
+                          {connecting ? <><LoaderIcon className="w-4 h-4 animate-spin mr-2" />Sending...</> : 'Send join request'}
+                        </Button>
+                      </div>
+                    )}
+
+                    <Button
+                      variant="ghost"
+                      className="w-full text-slate-500 text-sm"
+                      onClick={() => { setConnectChoice(null); setConnectEmail(''); setSearchResult(null); }}
+                      disabled={connecting}
+                    >
+                      Back
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
 
-            <p className="text-center text-xs text-slate-400">Step 2 of 2</p>
+            {!requestSent && <p className="text-center text-xs text-slate-400">Step 2 of 2</p>}
           </>
         )}
 

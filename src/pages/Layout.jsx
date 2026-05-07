@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import {
@@ -9,6 +9,7 @@ import {
   Star, Settings, ArrowLeft, ArrowRight, RefreshCw, TrendingUp, ListTodo
 } from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
+import { supabase } from '@/api/supabaseClient';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
 import NetworkStatus from '@/components/common/NetworkStatus';
 import { UserAvatarDropdown } from '@/components/common/UserAvatarDropdown';
@@ -21,6 +22,7 @@ import { useProfile } from '@/contexts/ProfileContext';
 import { Button } from '@/components/ui/button';
 import ChildAvatar from '@/components/children/ChildAvatar';
 import ChildHeader from '@/components/children/ChildHeader';
+import HouseholdJoinRequestDialog from '@/components/common/HouseholdJoinRequestDialog';
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -31,6 +33,9 @@ export default function Layout({ children, currentPageName }) {
   const [isLoggedInAsChild, setIsLoggedInAsChild] = useState(false);
   const [childPermissionLevel, setChildPermissionLevel] = useState(1);
   const [childDisplayName, setChildDisplayName] = useState('');
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [activeRequest, setActiveRequest] = useState(null);
+  const [notifOpen, setNotifOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { activeProfile, viewingChildProfile } = useProfile();
@@ -89,6 +94,33 @@ export default function Layout({ children, currentPageName }) {
       window.removeEventListener('profileUpdated', handleProfileUpdate);
     };
   }, []);
+
+  const loadJoinRequests = useCallback(async () => {
+    try {
+      const { data: ownerMembership } = await supabase
+        .from('profile_memberships')
+        .select('profile_id')
+        .eq('role', 'owner')
+        .maybeSingle();
+
+      if (!ownerMembership?.profile_id) return;
+
+      const { data } = await supabase
+        .from('household_join_requests')
+        .select('*')
+        .eq('target_profile_id', ownerMembership.profile_id)
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      setJoinRequests(data || []);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadJoinRequests();
+    const interval = setInterval(loadJoinRequests, 30000);
+    return () => clearInterval(interval);
+  }, [loadJoinRequests]);
 
   const getNavigation = () => {
     // If the logged-in user is NOT a child, show full parent navigation
@@ -280,10 +312,50 @@ export default function Layout({ children, currentPageName }) {
                 <button className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors">
                   <Search className="w-4 h-4" />
                 </button>
-                <button className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors relative">
-                  <Bell className="w-4 h-4" />
-                  <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-burgundy rounded-full"></span>
-                </button>
+                <div className="relative">
+                  <button
+                    className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-md transition-colors relative"
+                    onClick={() => setNotifOpen(o => !o)}
+                  >
+                    <Bell className="w-4 h-4" />
+                    {joinRequests.length > 0 && (
+                      <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />
+                    )}
+                  </button>
+                  {notifOpen && (
+                    <div className="absolute right-0 top-9 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                      <div className="px-4 py-3 border-b border-slate-100">
+                        <p className="text-sm font-semibold text-slate-900">Notifications</p>
+                      </div>
+                      {joinRequests.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-sm text-slate-500">No new notifications</div>
+                      ) : (
+                        <div className="divide-y divide-slate-100">
+                          {joinRequests.map(req => (
+                            <button
+                              key={req.id}
+                              className="w-full text-left px-4 py-3 hover:bg-slate-50 transition-colors"
+                              onClick={() => { setActiveRequest(req); setNotifOpen(false); }}
+                            >
+                              <div className="flex items-start gap-3">
+                                <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-sm shrink-0">
+                                  {(req.requester_display_name || req.requester_email).slice(0, 2).toUpperCase()}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-slate-900 truncate">
+                                    {req.requester_display_name || req.requester_email}
+                                  </p>
+                                  <p className="text-xs text-slate-500">wants to join your household</p>
+                                  <p className="text-xs text-blue-600 mt-0.5 font-medium">Tap to review</p>
+                                </div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <UserAvatarDropdown />
               </div>
             </div>
@@ -368,6 +440,13 @@ export default function Layout({ children, currentPageName }) {
       {/* Global Components */}
       <NetworkStatus />
 
+      <HouseholdJoinRequestDialog
+        request={activeRequest}
+        open={!!activeRequest}
+        onOpenChange={(o) => { if (!o) setActiveRequest(null); }}
+        onResolved={() => { setActiveRequest(null); loadJoinRequests(); }}
+      />
+
       <ProtectedChangeWarningDialog
         open={isOpen}
         onOpenChange={setIsOpen}
@@ -392,6 +471,10 @@ export default function Layout({ children, currentPageName }) {
           pointer-events: auto !important;
         }
       `}</style>
+
+      {notifOpen && (
+        <div className="fixed inset-0 z-40" onClick={() => setNotifOpen(false)} />
+      )}
 
       {/* Overlay */}
       {sidebarOpen && (
