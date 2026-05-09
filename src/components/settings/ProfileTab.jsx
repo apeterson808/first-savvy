@@ -31,7 +31,30 @@ export default function ProfileTab() {
 
       setIsLoading(true);
       try {
-        const profile = await getUserProfile(user.id);
+        let profile = await getUserProfile(user.id);
+
+        if (!profile) {
+          // Seed from auth metadata (populated when the account was created)
+          const meta = user.user_metadata || {};
+          const fullName = meta.full_name || meta.name || '';
+          const parts = fullName.trim().split(/\s+/);
+          const firstName = meta.first_name || parts[0] || '';
+          const lastName = meta.last_name || (parts.length > 1 ? parts.slice(1).join(' ') : '');
+
+          const seedData = {
+            first_name: firstName,
+            last_name: lastName,
+            display_name: fullName,
+            full_name: fullName,
+            email: user.email,
+            phone: meta.phone || '',
+            bio: '',
+            avatar_url: meta.avatar_url || '',
+          };
+
+          profile = await upsertUserProfile(user.id, seedData);
+        }
+
         if (profile) {
           setFormData({
             first_name: profile.first_name || '',
