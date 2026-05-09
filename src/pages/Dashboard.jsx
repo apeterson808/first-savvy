@@ -131,17 +131,19 @@ export default function Dashboard() {
       try {
         const { data: userProfile } = await firstsavvy
           .from('user_settings')
-          .select('full_name')
+          .select('full_name, first_name')
           .eq('id', user.id)
-          .single();
+          .maybeSingle();
 
         const shouldShowDialog =
-          !userProfile?.full_name ||
-          userProfile.full_name === '' ||
-          (activeProfile?.display_name === 'Personal' && !userProfile?.full_name);
+          !userProfile ||
+          !userProfile.first_name ||
+          userProfile.first_name === '';
 
         if (shouldShowDialog) {
-          setUserProfileData(userProfile);
+          const authMeta = user.user_metadata || {};
+          const metaFullName = authMeta.full_name || [authMeta.first_name, authMeta.last_name].filter(Boolean).join(' ');
+          setUserProfileData({ ...userProfile, full_name: userProfile?.full_name || metaFullName });
           setProfileSetupOpen(true);
           sessionStorage.setItem('profileSetupShown', 'true');
         }

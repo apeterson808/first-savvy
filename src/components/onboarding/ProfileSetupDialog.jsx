@@ -70,14 +70,14 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
 
       await firstsavvy
         .from('user_settings')
-        .update({
+        .upsert({
+          id: userId,
           first_name: firstName.trim(),
           last_name: lastName.trim(),
           full_name: fullName,
           display_name: displayName.trim(),
           phone: phone.trim(),
-        })
-        .eq('id', userId);
+        }, { onConflict: 'id' });
 
       const { data: membership } = await firstsavvy
         .from('profile_memberships')
