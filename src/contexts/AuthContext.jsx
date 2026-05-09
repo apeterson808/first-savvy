@@ -48,9 +48,9 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     connectionError,
-    signUp: async (email, password, fullName) => {
+    signUp: async (email, password, meta) => {
       try {
-        const data = await firstsavvy.auth.signUp(email, password, fullName);
+        const data = await firstsavvy.auth.signUp(email, password, typeof meta === 'string' ? { firstName: meta } : meta);
         return { user: data.user, error: null };
       } catch (error) {
         return { user: null, error };

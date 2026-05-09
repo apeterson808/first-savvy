@@ -285,16 +285,19 @@ export const createSupabaseClient = () => {
       TransactionRule: createEntityAPI('transaction_rules')
     },
     auth: {
-      async signUp(email, password, fullName) {
-        const signUpParams = {
-          email,
-          password
-        };
+      async signUp(email, password, { firstName, lastName, phone } = {}) {
+        const signUpParams = { email, password };
 
-        if (fullName) {
-          signUpParams.options = {
-            data: { full_name: fullName }
-          };
+        const meta = {};
+        if (firstName || lastName) {
+          meta.full_name = [firstName, lastName].filter(Boolean).join(' ');
+          meta.first_name = firstName || '';
+          meta.last_name = lastName || '';
+        }
+        if (phone) meta.phone = phone;
+
+        if (Object.keys(meta).length > 0) {
+          signUpParams.options = { data: meta };
         }
 
         const { data, error } = await supabase.auth.signUp(signUpParams);
