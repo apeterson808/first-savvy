@@ -324,12 +324,20 @@ export const ProfileProvider = ({ children }) => {
 
       let activeProfileToSet = null;
 
-      if (activeTabs && activeTabs.profile && !activeTabs.profile.is_deleted) {
+      // Household members (spouse/partner) must always use the shared profile — never their own owner profile
+      if (hasHouseholdMembership) {
+        const sharedMembership = householdMemberships[0];
+        activeProfileToSet = {
+          ...sharedMembership.profile,
+          display_name: selfDisplayName || sharedMembership.profile.display_name,
+          role: sharedMembership.role
+        };
+      } else if (activeTabs && activeTabs.profile && !activeTabs.profile.is_deleted) {
         const membership = memberships.find(m => m.profile?.id === activeTabs.profile.id);
         if (membership) {
           activeProfileToSet = {
             ...activeTabs.profile,
-            display_name: (hasHouseholdMembership && selfDisplayName) ? selfDisplayName : activeTabs.profile.display_name,
+            display_name: activeTabs.profile.display_name,
             role: membership.role
           };
         }

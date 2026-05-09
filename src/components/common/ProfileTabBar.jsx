@@ -32,8 +32,11 @@ export function ProfileTabBar({ onAddProfileClick }) {
   useEffect(() => {
     if (activeProfile) {
       setOpenTabs(prev => {
-        if (prev.length === 0) return [activeProfile];
         const activeKey = getProfileKey(activeProfile);
+        if (prev.length === 0) return [activeProfile];
+        // Only add to tabs if it's already in the profiles list (prevents owner profile leaking in for household members)
+        const isInProfiles = allAvailableProfiles.some(p => getProfileKey(p) === activeKey);
+        if (!isInProfiles) return prev;
         if (!prev.find(t => getProfileKey(t) === activeKey)) {
           return [...prev, activeProfile];
         }
