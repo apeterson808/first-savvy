@@ -20,12 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X, Home, Briefcase } from 'lucide-react';
+import { Plus, Search, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Check, X, Home, Briefcase, Clock } from 'lucide-react';
 import AddContactSheet from '@/components/contacts/AddContactSheet';
 import { useProfile } from '@/contexts/ProfileContext';
 import { supabase } from '@/api/supabaseClient';
 import { differenceInYears } from 'date-fns';
 import { toast } from "sonner";
+import ChildAvatar from '@/components/children/ChildAvatar';
 
 const ROWS_PER_PAGE = 10;
 
@@ -139,6 +140,7 @@ export default function Contacts() {
   const [childProfiles, setChildProfiles] = useState([]);
   const [businessProfiles, setBusinessProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
+  const [pendingCounts, setPendingCounts] = useState({});
   const queryClient = useQueryClient();
   const { activeProfile, refreshProfiles } = useProfile();
 
@@ -188,6 +190,21 @@ export default function Contacts() {
 
       setChildProfiles(children || []);
       setBusinessProfiles(businesses || []);
+
+      if (children && children.length > 0) {
+        const childIds = children.map(c => c.id);
+        const { data: pendingRows } = await supabase
+          .from('task_completions')
+          .select('child_profile_id')
+          .in('child_profile_id', childIds)
+          .eq('status', 'pending');
+
+        const counts = {};
+        (pendingRows || []).forEach(row => {
+          counts[row.child_profile_id] = (counts[row.child_profile_id] || 0) + 1;
+        });
+        setPendingCounts(counts);
+      }
     } catch (error) {
       console.error('Error loading profiles:', error);
     } finally {
@@ -372,30 +389,32 @@ export default function Contacts() {
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
                   {childProfiles.map((child) => {
-                    const age = getAge(child.date_of_birth);
                     const tierInfo = getTierInfo(child.current_permission_level, child.family_role);
-                    const initials = child.child_name
-                      .split(' ')
-                      .map(n => n[0])
-                      .join('')
-                      .toUpperCase()
-                      .slice(0, 2);
+                    const pending = pendingCounts[child.id] || 0;
 
                     return (
                       <div
                         key={child.id}
-                        className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer transition-all bg-white"
+                        className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer transition-all bg-white relative"
                         onClick={() => navigate(`/Contacts/family/${child.id}`)}
                       >
-                        <Avatar className="w-12 h-12">
-                          <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-base">
-                            {initials}
-                          </AvatarFallback>
-                        </Avatar>
+                        <div className="relative">
+                          <ChildAvatar child={child} size="default" />
+                          {pending > 0 && (
+                            <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-amber-500 text-white text-[10px] font-bold flex items-center justify-center shadow-sm">
+                              {pending}
+                            </span>
+                          )}
+                        </div>
                         <div className="w-full">
                           <p className="font-medium text-sm truncate">{child.child_name}</p>
-                          {age !== null && (
-                            <p className="text-xs text-slate-500">Age {age}</p>
+                          {pending > 0 ? (
+                            <p className="text-xs text-amber-600 font-medium flex items-center justify-center gap-0.5 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              {pending} pending
+                            </p>
+                          ) : (
+                            <p className="text-xs text-slate-400 mt-0.5">No pending tasks</p>
                           )}
                           <span className={`inline-block mt-1 px-1.5 py-0.5 text-[10px] rounded-full font-medium ${tierInfo.color}`}>
                             {tierInfo.name}
