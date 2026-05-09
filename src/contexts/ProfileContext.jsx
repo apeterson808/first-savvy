@@ -75,6 +75,7 @@ export const ProfileProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [viewingChildProfile, setViewingChildProfile] = useState(null);
   const [availableChildProfiles, setAvailableChildProfiles] = useState([]);
+  const [householdPending, setHouseholdPending] = useState(false);
 
   const loadProfiles = useCallback(async () => {
     if (!user) {
@@ -158,6 +159,26 @@ export const ProfileProvider = ({ children }) => {
           throw new Error('Failed to create default profile');
         }
       }
+
+      // Check if any of the user's own profiles are in pending household state
+      const ownerProfileIds = memberships
+        .filter(m => m.role === 'owner' && m.profile && !m.profile.is_deleted)
+        .map(m => m.profile.id);
+
+      if (ownerProfileIds.length > 0) {
+        const { data: pendingProfiles } = await firstsavvy
+          .from('profiles')
+          .select('household_status')
+          .in('id', ownerProfileIds)
+          .eq('household_status', 'pending');
+
+        if (pendingProfiles && pendingProfiles.length > 0) {
+          setHouseholdPending(true);
+          setLoading(false);
+          return;
+        }
+      }
+      setHouseholdPending(false);
 
       // If user joined a household as spouse/member, they share that profile.
       // Show only one tab — the shared profile — but label it with the user's own name.
@@ -478,8 +499,10 @@ export const ProfileProvider = ({ children }) => {
     refreshProfiles,
     viewingChildProfile,
     exitChildView,
-    availableChildProfiles
-  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles, viewingChildProfile, exitChildView, availableChildProfiles]);
+    availableChildProfiles,
+    householdPending,
+    refreshHouseholdStatus: loadProfiles,
+  }), [profiles, activeProfile, loading, error, switchProfile, refreshProfiles, viewingChildProfile, exitChildView, availableChildProfiles, householdPending, loadProfiles]);
 
   return (
     <ProfileContext.Provider value={value}>

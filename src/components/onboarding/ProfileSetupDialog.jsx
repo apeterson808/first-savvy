@@ -8,8 +8,10 @@ import { Loader2 as LoaderIcon } from 'lucide-react';
 import { firstsavvy } from '@/api/firstsavvyClient';
 import { supabase } from '@/api/supabaseClient';
 import { toast } from 'sonner';
+import { useProfile } from '@/contexts/ProfileContext';
 
 export default function ProfileSetupDialog({ open, onClose, currentFullName = '', currentDisplayName = 'Personal' }) {
+  const { refreshHouseholdStatus } = useProfile();
   const [step, setStep] = useState(1);
 
   // Step 1 — profile fields
@@ -139,6 +141,8 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
         onClose();
       } else {
         setRequestSent(true);
+        // Refresh profile context so the pending screen shows immediately
+        setTimeout(() => refreshHouseholdStatus(), 500);
       }
     } catch {
       toast.error('Failed to send request. Please try again.');
@@ -266,7 +270,7 @@ export default function ProfileSetupDialog({ open, onClose, currentFullName = ''
                     <span className="font-medium">{searchResult?.display_name || searchResult?.email}</span> will be notified and can approve your request. You'll get full access once they accept.
                   </p>
                 </div>
-                <Button className="w-full" onClick={onClose}>Done</Button>
+                <Button className="w-full" onClick={() => { onClose(); refreshHouseholdStatus(); }}>Done</Button>
               </div>
             ) : (
               <>

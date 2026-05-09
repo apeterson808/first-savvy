@@ -22,8 +22,10 @@ import EstatePlanning from "./EstatePlanning";
 import ConnectionDetail from "./ConnectionDetail";
 import ClaimProfile from "./ClaimProfile";
 import ChildProfileSelector from "@/components/children/ChildProfileSelector";
+import PendingHouseholdScreen from "./PendingHouseholdScreen";
 import { Route, Routes, useLocation, Navigate } from 'react-router-dom';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { useProfile } from '@/contexts/ProfileContext';
 
 const PAGES = {
 
@@ -79,6 +81,7 @@ function _getCurrentPage(url) {
 export default function Pages() {
     const location = useLocation();
     const currentPage = _getCurrentPage(location.pathname);
+    const { householdPending, refreshHouseholdStatus } = useProfile();
 
     const isAuthRoute = location.pathname === '/login' ||
                         location.pathname === '/auth/callback' ||
@@ -93,6 +96,14 @@ export default function Pages() {
                 <Route path="/invite/:token" element={<ClaimProfile />} />
                 <Route path="/select-child-profile" element={<ChildProfileSelector />} />
             </Routes>
+        );
+    }
+
+    if (householdPending) {
+        return (
+            <ProtectedRoute>
+                <PendingHouseholdScreen onStatusChange={refreshHouseholdStatus} />
+            </ProtectedRoute>
         );
     }
 
