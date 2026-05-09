@@ -7,6 +7,7 @@ import SecurityTab from '../components/settings/SecurityTab';
 import PreferencesTab from '../components/settings/PreferencesTab';
 import NotificationsTab from '../components/settings/NotificationsTab';
 import ProtectedConfigurationsTab from '../components/settings/ProtectedConfigurationsTab';
+import HouseholdActivityFeed from '../components/dashboard/HouseholdActivityFeed';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -35,7 +36,7 @@ export default function Settings() {
     <div className="p-4 md:p-6">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
-      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'protected']} defaultTab="profile" />
+      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'household', 'protected']} defaultTab="profile" />
 
       <Tabs value={activeTab} className="w-full">
         <TabsContent value="profile" className="mt-4">
@@ -52,6 +53,19 @@ export default function Settings() {
 
         <TabsContent value="notifications" className="mt-4">
           <NotificationsTab />
+        </TabsContent>
+
+        <TabsContent value="household" className="mt-4">
+          <div className="max-w-2xl">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-slate-800">Household Activity</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                A complete record of all actions taken by household members — who categorized transactions,
+                approved tasks, managed budgets, and more.
+              </p>
+            </div>
+            <HouseholdActivityFeed compact={false} />
+          </div>
         </TabsContent>
 
         <TabsContent value="protected" className="mt-4">

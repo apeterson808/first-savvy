@@ -7,6 +7,9 @@ import { Star, Gift, CheckCircle, XCircle, Clock, Check, X } from 'lucide-react'
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
+import { logHouseholdAction, AUDIT_ACTIONS } from '@/api/auditLog';
+import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 
 function formatDateTime(iso) {
   const d = new Date(iso);
@@ -113,6 +116,8 @@ function PendingActions({ item, onApprove, onReject }) {
 const PAGE_SIZE = 10;
 
 export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
+  const { user } = useAuth();
+  const { activeProfile } = useProfile();
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -223,6 +228,18 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
   const handleApprove = async (completionId, reviewNotes) => {
     try {
       await taskCompletionsAPI.approveCompletion(completionId, reviewNotes);
+      const completionRow = rows.find(r => r.completionId === completionId);
+      if (user && activeProfile?.id) {
+        logHouseholdAction({
+          profileId: activeProfile.id,
+          userId: user.id,
+          actorName: user.user_metadata?.full_name || user.email || 'Unknown',
+          action: AUDIT_ACTIONS.APPROVE_TASK,
+          entityType: 'task_completion',
+          entityId: completionId,
+          description: `Approved task: ${completionRow?.title || 'Task'} for ${child?.child_name || child?.display_name || 'child'}`,
+        });
+      }
       toast.success('Task approved!');
       await loadActivity();
       if (onUpdate) onUpdate();
@@ -235,6 +252,18 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
   const handleReject = async (completionId, reviewNotes) => {
     try {
       await taskCompletionsAPI.rejectCompletion(completionId, reviewNotes);
+      const completionRow = rows.find(r => r.completionId === completionId);
+      if (user && activeProfile?.id) {
+        logHouseholdAction({
+          profileId: activeProfile.id,
+          userId: user.id,
+          actorName: user.user_metadata?.full_name || user.email || 'Unknown',
+          action: AUDIT_ACTIONS.REJECT_TASK,
+          entityType: 'task_completion',
+          entityId: completionId,
+          description: `Rejected task: ${completionRow?.title || 'Task'} for ${child?.child_name || child?.display_name || 'child'}`,
+        });
+      }
       toast.success('Task rejected');
       await loadActivity();
       if (onUpdate) onUpdate();

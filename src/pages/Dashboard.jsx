@@ -17,6 +17,7 @@ import RecentTransactionsCard from '../components/dashboard/RecentTransactionsCa
 import AnimatedProgressBar from '../components/dashboard/AnimatedProgressBar';
 import FamilyConnectionsCard from '../components/dashboard/FamilyConnectionsCard';
 import CalendarCard from '../components/dashboard/CalendarCard';
+import HouseholdActivityFeed from '../components/dashboard/HouseholdActivityFeed';
 import AccountCreationWizard from '../components/banking/AccountCreationWizard';
 import ProfileSetupDialog from '../components/onboarding/ProfileSetupDialog';
 import ChildDashboard from '../components/dashboard/ChildDashboard';
@@ -787,6 +788,9 @@ export default function Dashboard() {
           <div className="hidden md:block">
             <FamilyConnectionsCard />
           </div>
+
+          {/* Household Activity Feed */}
+          <HouseholdActivityFeed compact={true} />
 
           {/* Calendar */}
           <CalendarCard />

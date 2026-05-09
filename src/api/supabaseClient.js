@@ -152,6 +152,16 @@ const createEntityAPI = (tableName) => {
         }
       }
 
+      // Stamp actor on tables that support it
+      if (tableName === 'budgets' || tableName === 'journal_entries') {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user && !recordToInsert.created_by_user_id) {
+            recordToInsert = { ...recordToInsert, created_by_user_id: user.id };
+          }
+        } catch { /* non-fatal */ }
+      }
+
       const { data, error } = await supabase
         .from(tableName)
         .insert(recordToInsert)
@@ -211,9 +221,21 @@ const createEntityAPI = (tableName) => {
         }
       }
 
+      let updatesWithActor = { ...updates };
+
+      // Stamp who last modified transactions and budgets
+      if (tableName === 'transactions' || tableName === 'budgets') {
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            updatesWithActor.last_modified_by_user_id = user.id;
+          }
+        } catch { /* non-fatal */ }
+      }
+
       let query = supabase
         .from(tableName)
-        .update(updates)
+        .update(updatesWithActor)
         .eq('id', id);
 
       if (requiresProfileId) {

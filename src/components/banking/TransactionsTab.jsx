@@ -56,6 +56,7 @@ import { deleteViewPreferences } from '@/api/viewPreferences';
 import { useAuth } from '@/contexts/AuthContext';
 import { findSimilarUncategorized, findSimilarWithoutContact } from '@/utils/similarTransactions';
 import { autoLearnRule } from '@/utils/autoLearnRule';
+import { logHouseholdAction, AUDIT_ACTIONS } from '@/api/auditLog';
 import { EditJournalEntryDialog } from '../accounting/EditJournalEntryDialog';
 
 export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
@@ -776,6 +777,18 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
         }
         if (activeProfile?.id) {
           autoLearnRule(activeProfile.id, source, { categoryId: variables.data.category_account_id });
+        }
+        // Audit: record who categorized this transaction
+        if (user && activeProfile?.id) {
+          logHouseholdAction({
+            profileId: activeProfile.id,
+            userId: user.id,
+            actorName: user.user_metadata?.full_name || user.email || 'Unknown',
+            action: AUDIT_ACTIONS.CATEGORIZE_TRANSACTION,
+            entityType: 'transaction',
+            entityId: variables.id,
+            description: `Categorized transaction: ${source.description || source.original_description || ''}`,
+          });
         }
       }
 
