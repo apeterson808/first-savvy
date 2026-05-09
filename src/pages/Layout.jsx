@@ -122,7 +122,6 @@ export default function Layout({ children, currentPageName }) {
     if (!isLoggedInAsChild) {
       return [
         { name: 'Dashboard', icon: LayoutDashboard, page: 'Dashboard', availableForChildProfile: true },
-        { name: 'Tasks', icon: ListTodo, page: 'Tasks', availableForChildProfile: false },
         { name: 'Banking', icon: CircleDollarSign, page: 'Banking', availableForChildProfile: false },
         { name: 'Budgeting', icon: ClipboardList, page: 'Budgeting', availableForChildProfile: false },
         { name: 'Goals & Savings', icon: PiggyBank, page: 'Goals', availableForChildProfile: false },
