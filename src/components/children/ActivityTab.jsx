@@ -145,16 +145,13 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
 
       const allCompletions = completionsResult.data || [];
 
-      // Batch-fetch reviewer names
+      // Batch-fetch reviewer names via RPC (falls back to auth.users metadata)
       const reviewerIds = [...new Set(allCompletions.map(c => c.reviewed_by).filter(Boolean))];
       let reviewerNames = {};
       if (reviewerIds.length > 0) {
-        const { data: reviewers } = await supabase
-          .from('user_settings')
-          .select('id, display_name, full_name, first_name')
-          .in('id', reviewerIds);
+        const { data: reviewers } = await supabase.rpc('get_reviewer_names', { p_user_ids: reviewerIds });
         (reviewers || []).forEach(r => {
-          reviewerNames[r.id] = r.display_name || r.full_name || r.first_name || 'Parent';
+          reviewerNames[r.user_id] = r.display_name || 'Parent';
         });
       }
 
