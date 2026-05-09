@@ -28,35 +28,39 @@ function formatTimeAgo(iso) {
 
 const TYPE_CONFIG = {
   pending: {
-    label: 'Needs Review',
     badgeClass: 'bg-amber-100 text-amber-800 border-amber-200',
     rowClass: 'bg-amber-50/60',
   },
   task_approved: {
-    label: 'Task Approved',
     icon: <CheckCircle className="h-3.5 w-3.5 text-green-600 shrink-0" />,
     badgeClass: 'bg-green-100 text-green-800 border-green-200',
     rowClass: '',
   },
   task_rejected: {
-    label: 'Task Rejected',
     icon: <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />,
     badgeClass: 'bg-red-100 text-red-800 border-red-200',
     rowClass: '',
   },
   stars_awarded: {
-    label: 'Stars Awarded',
     icon: <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-400 shrink-0" />,
     badgeClass: 'bg-yellow-100 text-yellow-800 border-yellow-200',
     rowClass: '',
   },
   reward_redeemed: {
-    label: 'Reward Claimed',
     icon: <Gift className="h-3.5 w-3.5 text-blue-500 shrink-0" />,
     badgeClass: 'bg-blue-100 text-blue-800 border-blue-200',
     rowClass: '',
   },
 };
+
+function rowLabel(row) {
+  if (row.type === 'pending') return 'Needs Review';
+  if (row.type === 'task_approved') return row.reviewerName ? `Approved by ${row.reviewerName}` : 'Task Approved';
+  if (row.type === 'task_rejected') return row.reviewerName ? `Rejected by ${row.reviewerName}` : 'Task Rejected';
+  if (row.type === 'stars_awarded') return 'Stars Awarded';
+  if (row.type === 'reward_redeemed') return 'Reward Claimed';
+  return '';
+}
 
 function PendingActions({ item, onApprove, onReject }) {
   const [note, setNote] = useState('');
@@ -310,16 +314,9 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
                             </span>
                           )}
                           <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium leading-5 ${cfg.badgeClass}`}>
-                            {cfg.label}
+                            {rowLabel(row)}
                           </Badge>
                         </div>
-
-                        {row.reviewerName && (
-                          <p className="text-[11px] text-slate-400">
-                            by {row.reviewerName}
-                            {row.reviewedAt ? ` · ${formatDateTime(row.reviewedAt)}` : ''}
-                          </p>
-                        )}
 
                         {row.note && (
                           <p className="text-[11px] text-slate-500 italic">"{row.note}"</p>
@@ -378,9 +375,6 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
                             )}
                             <div>
                               <span className="font-medium text-slate-800">{row.title}</span>
-                              {row.reviewerName && (
-                                <p className="text-xs text-slate-400 mt-0.5">by {row.reviewerName}</p>
-                              )}
                               {row.note && (
                                 <p className="text-xs text-slate-400 italic mt-0.5">"{row.note}"</p>
                               )}
@@ -389,7 +383,7 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
                         </td>
                         <td className="px-4 py-3 align-top">
                           <Badge variant="outline" className={`text-xs font-medium ${cfg.badgeClass}`}>
-                            {cfg.label}
+                            {rowLabel(row)}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right whitespace-nowrap align-top">
