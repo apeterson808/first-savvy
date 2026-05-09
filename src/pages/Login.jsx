@@ -11,6 +11,7 @@ import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const [isLogin, setIsLogin] = useState(true);
+  const [signUpSuccess, setSignUpSuccess] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,8 +55,12 @@ export default function Login() {
         await firstsavvy.auth.signIn(email, password);
         navigate('/Dashboard');
       } else {
-        await firstsavvy.auth.signUp(email, password, { firstName, lastName, phone });
-        navigate('/Dashboard');
+        const result = await firstsavvy.auth.signUp(email, password, { firstName, lastName, phone });
+        if (result?.session) {
+          navigate('/Dashboard');
+        } else {
+          setSignUpSuccess(true);
+        }
       }
     } catch (err) {
       setError(err.message || 'An error occurred');
@@ -105,6 +110,29 @@ export default function Login() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {signUpSuccess ? (
+            <div className="text-center space-y-4 py-4">
+              <div className="w-14 h-14 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                <svg className="w-7 h-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-semibold text-slate-900 text-lg">Check your email</p>
+                <p className="text-sm text-slate-500 mt-1">
+                  We sent a confirmation link to <span className="font-medium text-slate-700">{email}</span>. Click it to activate your account.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => { setSignUpSuccess(false); setIsLogin(true); }}
+                className="text-sm text-slate-600 hover:text-slate-900 underline underline-offset-4"
+              >
+                Back to Sign In
+              </button>
+            </div>
+          ) : (
+          <>
           {error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
@@ -278,6 +306,8 @@ export default function Login() {
                 : 'Already have an account? Sign in'}
             </button>
           </div>
+          </>
+          )}
         </CardContent>
       </Card>
     </div>
