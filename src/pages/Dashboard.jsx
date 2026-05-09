@@ -747,8 +747,7 @@ export default function Dashboard() {
       </CardContent>
     </Card>
   </div>
-
-  </div>
+        </div>
 
         {/* Right Column - Net Worth, Credit Score, Family, Calendar */}
         <div className="flex flex-col gap-4 flex-1 max-w-[350px]">
