@@ -256,10 +256,9 @@ export default function Contacts() {
 
   const groupedContacts = useMemo(() => {
     const groups = { ungrouped: [] };
-    const householdIds = new Set(householdMembers.map(m => m.id));
 
     contacts.forEach(contact => {
-      if (householdIds.has(contact.id)) return;
+      if (contact.linked_user_id) return;
       const matchesSearch = searchTerm === '' || contact.name.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return;
 

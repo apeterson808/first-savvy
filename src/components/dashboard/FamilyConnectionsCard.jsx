@@ -123,86 +123,60 @@ export default function FamilyConnectionsCard() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="px-3 pb-3 space-y-3">
-        {/* Household members (spouse/partner) */}
-        {householdMembers.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            {householdMembers.map((member) => (
-              <div
-                key={member.id}
-                className="flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg p-2 transition-colors"
-                onClick={() => navigate('/Contacts')}
-              >
-                <div className="relative">
-                  <Avatar className="w-12 h-12">
-                    <AvatarFallback className="bg-rose-100 text-rose-700 font-semibold text-sm">
-                      {getInitials(member.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                    <Badge className="text-[8px] px-1 py-0 h-3.5 bg-rose-500 text-white border-0 font-medium">
-                      Partner
-                    </Badge>
-                  </span>
-                </div>
-                <div className="text-center w-full mt-1.5">
-                  <p className="text-xs font-medium text-slate-900 truncate">
-                    {(member.name || member.email).split(' ')[0]}
+      <CardContent className="px-3 pb-3">
+        <div className="grid grid-cols-3 gap-3">
+          {householdMembers.map((member) => (
+            <div
+              key={member.id}
+              className="flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg p-2 transition-colors"
+              onClick={() => navigate('/Contacts')}
+            >
+              <Avatar className="w-12 h-12">
+                <AvatarFallback className="bg-teal-100 text-teal-700 font-semibold text-sm">
+                  {getInitials(member.name)}
+                </AvatarFallback>
+              </Avatar>
+              <p className="text-xs font-medium text-slate-900 truncate w-full text-center">
+                {(member.name || member.email).split(' ')[0]}
+              </p>
+            </div>
+          ))}
+          {[...childProfiles]
+            .sort((a, b) => (pendingCounts[b.id] || 0) - (pendingCounts[a.id] || 0))
+            .slice(0, 6)
+            .map((child) => {
+              const displayName = child.display_name || child.child_name || `${child.first_name || ''} ${child.last_name || ''}`.trim();
+              const pendingCount = pendingCounts[child.id] || 0;
+              return (
+                <div
+                  key={child.id}
+                  className="flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg p-2 transition-colors"
+                  onClick={() => navigate(`/Contacts/family/${child.id}`)}
+                >
+                  <div className="relative">
+                    <Avatar className="w-12 h-12">
+                      {child.avatar_url && !child.avatar_url.startsWith('color:') && (
+                        <AvatarImage src={child.avatar_url} alt={displayName} className="object-cover" />
+                      )}
+                      <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm">
+                        {getInitials(displayName)}
+                      </AvatarFallback>
+                    </Avatar>
+                    {pendingCount > 0 && (
+                      <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-[10px] font-bold">
+                          {pendingCount > 9 ? '9+' : pendingCount}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <p className="text-xs font-medium text-slate-900 truncate w-full text-center">
+                    {displayName.split(' ')[0]}
                   </p>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Divider if both sections present */}
-        {householdMembers.length > 0 && childProfiles.length > 0 && (
-          <div className="border-t border-slate-100" />
-        )}
-
-        {/* Children */}
-        {childProfiles.length > 0 && (
-          <div className="grid grid-cols-3 gap-3">
-            {[...childProfiles]
-              .sort((a, b) => (pendingCounts[b.id] || 0) - (pendingCounts[a.id] || 0))
-              .slice(0, 6)
-              .map((child) => {
-                const displayName = child.display_name || child.child_name || `${child.first_name || ''} ${child.last_name || ''}`.trim();
-                const pendingCount = pendingCounts[child.id] || 0;
-
-                return (
-                  <div
-                    key={child.id}
-                    className="flex flex-col items-center gap-2 cursor-pointer hover:bg-slate-50 rounded-lg p-2 transition-colors"
-                    onClick={() => navigate(`/Contacts/family/${child.id}`)}
-                  >
-                    <div className="relative">
-                      <Avatar className="w-12 h-12">
-                        {child.avatar_url && !child.avatar_url.startsWith('color:') && (
-                          <AvatarImage src={child.avatar_url} alt={displayName} className="object-cover" />
-                        )}
-                        <AvatarFallback className="bg-blue-100 text-blue-600 font-semibold text-sm">
-                          {getInitials(displayName)}
-                        </AvatarFallback>
-                      </Avatar>
-                      {pendingCount > 0 && (
-                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-[10px] font-bold">
-                            {pendingCount > 9 ? '9+' : pendingCount}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="text-center w-full">
-                      <p className="text-xs font-medium text-slate-900 truncate">
-                        {displayName.split(' ')[0]}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        )}
+              );
+            })}
+        </div>
       </CardContent>
     </Card>
   );
