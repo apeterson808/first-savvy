@@ -533,10 +533,6 @@ export default function Dashboard() {
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left Column - Chart & Transactions */}
         <div className="flex-[2] space-y-4">
-          {/* Family card — mobile only, top of feed */}
-          <div className="lg:hidden">
-            <FamilyConnectionsCard />
-          </div>
           {/* Main Chart Card */}
           <Card className="shadow-sm border-slate-200">
             <CardHeader className="pb-1 pt-3 px-3">
@@ -695,6 +691,11 @@ export default function Dashboard() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+
+  {/* Family card — mobile only */}
+  <div className="lg:hidden">
+    <FamilyConnectionsCard />
+  </div>
 
   {/* Two-column section below chart */}
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
