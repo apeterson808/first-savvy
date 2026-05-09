@@ -99,6 +99,14 @@ Deno.serve(async (req: Request) => {
     await supabase.from("user_settings").delete().eq("id", userId);
     await supabase.from("audit_logs").delete().eq("user_id", userId);
 
+    // Clear actor-tracking FK references to this user in all profiles
+    // These columns reference auth.users and block deletion if not cleared first
+    await supabase.from("transactions").update({ last_modified_by_user_id: null }).eq("last_modified_by_user_id", userId);
+    await supabase.from("journal_entries").update({ created_by_user_id: null }).eq("created_by_user_id", userId);
+    await supabase.from("budgets").update({ created_by_user_id: null, last_modified_by_user_id: null }).eq("created_by_user_id", userId);
+    await supabase.from("budgets").update({ last_modified_by_user_id: null }).eq("last_modified_by_user_id", userId);
+    await supabase.from("task_completions").update({ reviewed_by: null }).eq("reviewed_by", userId);
+
     // Finally delete the auth user itself
     const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
