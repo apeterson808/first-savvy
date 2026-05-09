@@ -127,7 +127,7 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
       const [completionsResult, redemptionsResult] = await Promise.all([
         supabase
           .from('task_completions')
-          .select('id, status, stars_earned, submitted_at, reviewed_at, note, submission_notes, tasks(id, title, icon, color)')
+          .select('id, status, stars_earned, submitted_at, reviewed_at, reviewed_by, note, submission_notes, tasks(id, title, icon, color)')
           .eq('child_profile_id', childId)
           .order('submitted_at', { ascending: false })
           .limit(100),
@@ -140,6 +140,19 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
       ]);
 
       const allCompletions = completionsResult.data || [];
+
+      // Batch-fetch reviewer names
+      const reviewerIds = [...new Set(allCompletions.map(c => c.reviewed_by).filter(Boolean))];
+      let reviewerNames = {};
+      if (reviewerIds.length > 0) {
+        const { data: reviewers } = await supabase
+          .from('user_settings')
+          .select('id, display_name, full_name, first_name')
+          .in('id', reviewerIds);
+        (reviewers || []).forEach(r => {
+          reviewerNames[r.id] = r.display_name || r.full_name || r.first_name || 'Parent';
+        });
+      }
 
       const completionRows = allCompletions.map(c => {
         if (!c.tasks) {
@@ -171,6 +184,8 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
           title: c.tasks?.title || 'Task',
           starsDelta: c.status === 'approved' ? (c.stars_earned || 0) : 0,
           time: c.submitted_at,
+          reviewedAt: c.reviewed_at,
+          reviewerName: c.reviewed_by ? (reviewerNames[c.reviewed_by] || 'Parent') : null,
           completionId: c.id,
         };
       });
@@ -299,6 +314,13 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
                           </Badge>
                         </div>
 
+                        {row.reviewerName && (
+                          <p className="text-[11px] text-slate-400">
+                            by {row.reviewerName}
+                            {row.reviewedAt ? ` · ${formatDateTime(row.reviewedAt)}` : ''}
+                          </p>
+                        )}
+
                         {row.note && (
                           <p className="text-[11px] text-slate-500 italic">"{row.note}"</p>
                         )}
@@ -356,6 +378,9 @@ export function ActivityTab({ childId, child, onUpdate, isChildView = false }) {
                             )}
                             <div>
                               <span className="font-medium text-slate-800">{row.title}</span>
+                              {row.reviewerName && (
+                                <p className="text-xs text-slate-400 mt-0.5">by {row.reviewerName}</p>
+                              )}
                               {row.note && (
                                 <p className="text-xs text-slate-400 italic mt-0.5">"{row.note}"</p>
                               )}
