@@ -65,8 +65,16 @@ export default function AuditHistoryModal({ open, onClose, journalEntryId, entry
                         <div className="flex items-center gap-3">
                           <Clock className="h-4 w-4 text-muted-foreground" />
                           <div className="text-left">
-                            <div className="font-medium">
+                            <div className="font-medium flex items-center gap-2">
                               {format(new Date(edit.created_at), 'MMM d, yyyy h:mm a')}
+                              {edit.actor_display_name && (
+                                <span className="inline-flex items-center gap-1 text-xs font-normal text-muted-foreground bg-slate-100 rounded-full px-2 py-0.5">
+                                  <span className="inline-flex h-3.5 w-3.5 rounded-full bg-slate-400 items-center justify-center text-[8px] font-bold text-white">
+                                    {edit.actor_display_name.charAt(0).toUpperCase()}
+                                  </span>
+                                  {edit.actor_display_name}
+                                </span>
+                              )}
                             </div>
                             <div className="text-sm text-muted-foreground">
                               {editReason || edit.description}
