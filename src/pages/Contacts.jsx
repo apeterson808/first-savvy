@@ -175,10 +175,35 @@ export default function Contacts() {
 
       if (!ownerProfile) return;
 
+      const activeProfileId = localStorage.getItem('activeProfileId') || ownerProfile.id;
+
+      // Fetch linked household members from the current profile's contacts
+      const { data: householdContacts } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('profile_id', activeProfileId)
+        .not('linked_user_id', 'is', null)
+        .order('name', { ascending: true });
+
+      // Collect all profile IDs whose children we should display:
+      // own profile + any linked household member profiles
+      const linkedUserIds = (householdContacts || []).map(c => c.linked_user_id).filter(Boolean);
+      let linkedProfileIds = [];
+      if (linkedUserIds.length > 0) {
+        const { data: linkedProfiles } = await supabase
+          .from('profiles')
+          .select('id')
+          .in('user_id', linkedUserIds)
+          .eq('profile_type', 'personal')
+          .eq('is_deleted', false);
+        linkedProfileIds = (linkedProfiles || []).map(p => p.id);
+      }
+      const allParentProfileIds = [...new Set([ownerProfile.id, ...linkedProfileIds])];
+
       const { data: children } = await supabase
         .from('child_profiles')
         .select('*')
-        .eq('parent_profile_id', ownerProfile.id)
+        .in('parent_profile_id', allParentProfileIds)
         .order('child_name', { ascending: true });
 
       const { data: businesses } = await supabase
@@ -188,14 +213,6 @@ export default function Contacts() {
         .eq('profile_type', 'business')
         .eq('is_deleted', false)
         .order('display_name', { ascending: true });
-
-      const activeProfileId = localStorage.getItem('activeProfileId') || ownerProfile.id;
-      const { data: householdContacts } = await supabase
-        .from('contacts')
-        .select('*')
-        .eq('profile_id', activeProfileId)
-        .not('linked_user_id', 'is', null)
-        .order('name', { ascending: true });
 
       setChildProfiles(children || []);
       setHouseholdMembers(householdContacts || []);
