@@ -123,6 +123,9 @@ export default function Login() {
                   We sent a confirmation link to <span className="font-medium text-slate-700">{email}</span>. Click it to activate your account.
                 </p>
               </div>
+              <p className="text-xs text-slate-400">
+                After confirming your email and signing in, you'll be able to connect to an existing household.
+              </p>
               <button
                 type="button"
                 onClick={() => { setSignUpSuccess(false); setIsLogin(true); }}
@@ -293,6 +296,12 @@ export default function Login() {
               )}
             </Button>
           </form>
+
+          {!isLogin && (
+            <div className="rounded-md bg-slate-50 border border-slate-200 px-4 py-3 text-sm text-slate-600 text-center">
+              Joining an existing household? Create your account first — you'll be able to connect to a household on the next screen.
+            </div>
+          )}
 
           <div className="text-center text-sm">
             <button
