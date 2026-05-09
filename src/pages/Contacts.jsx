@@ -138,6 +138,7 @@ export default function Contacts() {
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingValue, setEditingValue] = useState('');
   const [childProfiles, setChildProfiles] = useState([]);
+  const [householdMembers, setHouseholdMembers] = useState([]);
   const [businessProfiles, setBusinessProfiles] = useState([]);
   const [profilesLoading, setProfilesLoading] = useState(true);
   const [pendingCounts, setPendingCounts] = useState({});
@@ -188,7 +189,16 @@ export default function Contacts() {
         .eq('is_deleted', false)
         .order('display_name', { ascending: true });
 
+      const activeProfileId = localStorage.getItem('activeProfileId') || ownerProfile.id;
+      const { data: householdContacts } = await supabase
+        .from('contacts')
+        .select('*')
+        .eq('profile_id', activeProfileId)
+        .not('linked_user_id', 'is', null)
+        .order('name', { ascending: true });
+
       setChildProfiles(children || []);
+      setHouseholdMembers(householdContacts || []);
       setBusinessProfiles(businesses || []);
 
       if (children && children.length > 0) {
@@ -246,8 +256,10 @@ export default function Contacts() {
 
   const groupedContacts = useMemo(() => {
     const groups = { ungrouped: [] };
+    const householdIds = new Set(householdMembers.map(m => m.id));
 
     contacts.forEach(contact => {
+      if (householdIds.has(contact.id)) return;
       const matchesSearch = searchTerm === '' || contact.name.toLowerCase().includes(searchTerm.toLowerCase());
       if (!matchesSearch) return;
 
@@ -360,7 +372,7 @@ export default function Contacts() {
                 )}
                 <Home className="w-4 h-4 text-blue-600" />
                 <CardTitle className="text-base font-semibold">Family</CardTitle>
-                <Badge variant="secondary" className="text-xs">{childProfiles.length}</Badge>
+                <Badge variant="secondary" className="text-xs">{childProfiles.length + householdMembers.length}</Badge>
               </CollapsibleTrigger>
             </div>
           </CardHeader>
@@ -370,7 +382,7 @@ export default function Contacts() {
                 <div className="flex items-center justify-center py-6">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-slate-900"></div>
                 </div>
-              ) : childProfiles.length === 0 ? (
+              ) : childProfiles.length === 0 && householdMembers.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-6 text-center">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mb-2">
                     <Home className="w-5 h-5 text-blue-600" />
@@ -388,6 +400,26 @@ export default function Contacts() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3">
+                  {householdMembers.map((member) => {
+                    const initials = member.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+                    return (
+                      <div
+                        key={member.id}
+                        className="flex flex-col items-center text-center gap-1.5 p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:shadow-sm cursor-pointer transition-all bg-white"
+                        onClick={() => navigate(`/Contacts/${member.id}`)}
+                      >
+                        <div className="w-12 h-12 rounded-full bg-teal-600 flex items-center justify-center text-white font-semibold text-sm">
+                          {initials}
+                        </div>
+                        <p className="font-medium text-sm truncate w-full">{member.name}</p>
+                        {member.group_name && (
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-teal-50 text-teal-700">
+                            {member.group_name}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })}
                   {childProfiles.map((child) => {
                     const pending = pendingCounts[child.id] || 0;
 
