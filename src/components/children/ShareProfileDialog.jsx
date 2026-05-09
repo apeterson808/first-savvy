@@ -123,7 +123,7 @@ export function ShareProfileDialog({ open, onOpenChange, childProfile, currentPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
-          <DialogTitle>Share {childProfile?.child_name}'s Profile</DialogTitle>
+          <DialogTitle>Share {childProfile?.display_name || childProfile?.child_name}'s Profile</DialogTitle>
           <DialogDescription>
             Share access with other trusted adults to help manage this child's financial profile.
           </DialogDescription>

@@ -405,7 +405,7 @@ export default function Contacts() {
                             </span>
                           )}
                         </div>
-                        <p className="font-medium text-sm truncate w-full">{child.child_name}</p>
+                        <p className="font-medium text-sm truncate w-full">{child.display_name || child.child_name}</p>
                         {!child.is_active && (
                           <span className="px-2 py-0.5 text-xs rounded-full bg-slate-100 text-slate-500">
                             Inactive

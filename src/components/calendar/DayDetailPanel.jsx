@@ -32,8 +32,8 @@ function ChildTaskRow({ child, tasks, childColor, taskCompletions, onApproveTask
     taskCompletions.find(c => c.task_id === t.id && c.status === 'pending')
   ).length;
 
-  const initials = (child?.child_name || child?.display_name || '?').charAt(0).toUpperCase();
-  const name = child?.child_name || child?.display_name || 'Child';
+  const initials = (child?.display_name || child?.child_name || '?').charAt(0).toUpperCase();
+  const name = child?.display_name || child?.child_name || 'Child';
 
   return (
     <div className="rounded-lg border overflow-hidden">
@@ -192,7 +192,7 @@ export default function DayDetailPanel({
 
   const getChildName = (childId) => {
     const child = childProfiles.find(c => c.id === childId);
-    return child?.child_name || child?.display_name || 'Child';
+    return child?.display_name || child?.child_name || 'Child';
   };
 
   const getChildColor = (childId) => childColors[childId] || '#3b82f6';
@@ -327,7 +327,7 @@ export default function DayDetailPanel({
                         )}
                         {event.child_profiles && (
                           <p className="text-xs text-muted-foreground">
-                            {event.child_profiles.child_name || event.child_profiles.display_name}
+                            {event.child_profiles.display_name || event.child_profiles.child_name}
                           </p>
                         )}
                       </div>

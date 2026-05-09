@@ -128,7 +128,7 @@ export default function EventDialog({ open, onOpenChange, event, defaultDate, ch
                   <SelectItem value="none">Whole family</SelectItem>
                   {childProfiles.map(child => (
                     <SelectItem key={child.id} value={child.id}>
-                      {child.child_name || child.display_name}
+                      {child.display_name || child.child_name}
                     </SelectItem>
                   ))}
                 </SelectContent>

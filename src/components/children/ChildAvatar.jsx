@@ -35,21 +35,20 @@ export default function ChildAvatar({ child, size = 'default', className }) {
   };
 
   const getInitials = () => {
-    const first = child?.first_name?.trim() || '';
-    const last = child?.last_name?.trim() || '';
-
-    if (first && last) {
-      return `${first[0]}${last[0]}`.toUpperCase();
-    }
-
-    if (child?.child_name) {
-      return child.child_name
+    const displayName = child?.display_name || child?.child_name;
+    if (displayName) {
+      return displayName
         .split(' ')
         .map(n => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2);
     }
+
+    const first = child?.first_name?.trim() || '';
+    const last = child?.last_name?.trim() || '';
+    if (first && last) return `${first[0]}${last[0]}`.toUpperCase();
+    if (first) return first[0].toUpperCase();
 
     return '?';
   };
@@ -59,7 +58,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
   if (avatar?.imageUrl) {
     return (
       <Avatar className={cn(sizeClasses[size], 'shadow-xl', className)}>
-        <AvatarImage src={avatar.imageUrl} alt={child?.child_name || child?.first_name || 'Avatar'} />
+        <AvatarImage src={avatar.imageUrl} alt={child?.display_name || child?.child_name || 'Avatar'} />
         <AvatarFallback>{getInitials()}</AvatarFallback>
       </Avatar>
     );
@@ -84,7 +83,7 @@ export default function ChildAvatar({ child, size = 'default', className }) {
   if (isImageAvatar) {
     return (
       <Avatar className={cn(sizeClasses[size], 'shadow-xl', className)}>
-        <AvatarImage src={avatarUrl} alt={child?.child_name || child?.first_name || 'Avatar'} />
+        <AvatarImage src={avatarUrl} alt={child?.display_name || child?.child_name || 'Avatar'} />
         <AvatarFallback className={cn('font-bold', AVATAR_COLORS.slate.bg, AVATAR_COLORS.slate.text)}>
           {getInitials()}
         </AvatarFallback>

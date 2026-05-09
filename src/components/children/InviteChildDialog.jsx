@@ -59,9 +59,9 @@ export function InviteChildDialog({ open, onOpenChange, childProfile, currentPro
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>Invite {childProfile?.child_name} to Claim Profile</DialogTitle>
+          <DialogTitle>Invite {childProfile?.display_name || childProfile?.child_name} to Claim Profile</DialogTitle>
           <DialogDescription>
-            Send an email invitation to {childProfile?.child_name} to create their own account
+            Send an email invitation to {childProfile?.display_name || childProfile?.child_name} to create their own account
             and take control of their financial profile.
           </DialogDescription>
         </DialogHeader>
@@ -70,7 +70,7 @@ export function InviteChildDialog({ open, onOpenChange, childProfile, currentPro
           <Alert>
             <Mail className="h-4 w-4" />
             <AlertDescription>
-              Once {childProfile?.child_name} accepts the invitation and creates an account,
+              Once {childProfile?.display_name || childProfile?.child_name} accepts the invitation and creates an account,
               you'll still be able to view and manage their profile as a parent.
             </AlertDescription>
           </Alert>

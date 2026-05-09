@@ -207,11 +207,11 @@ export default function ClaimProfile() {
               <Avatar className="h-16 w-16">
                 <AvatarImage src={childProfile?.avatar_url} />
                 <AvatarFallback className="text-lg">
-                  {childProfile?.child_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  {(childProfile?.display_name || childProfile?.child_name)?.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
-                <h3 className="text-xl font-bold">{childProfile?.child_name}</h3>
+                <h3 className="text-xl font-bold">{childProfile?.display_name || childProfile?.child_name}</h3>
                 {childProfile?.date_of_birth && (
                   <p className="text-sm text-slate-600 flex items-center gap-1">
                     <Calendar className="h-3 w-3" />

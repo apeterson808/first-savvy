@@ -196,7 +196,7 @@ export default function ConnectionDetail() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{child.child_name}'s</strong> profile and all associated data.
+              This will permanently delete <strong>{child.display_name || child.child_name}'s</strong> profile and all associated data.
               This action cannot be undone and all data will be lost forever.
             </AlertDialogDescription>
           </AlertDialogHeader>

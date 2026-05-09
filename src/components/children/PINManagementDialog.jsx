@@ -101,8 +101,8 @@ export function PINManagementDialog({ open, onOpenChange, childProfile, onSucces
 
       toast.success('PIN set successfully', {
         description: hasUsername
-          ? `${childProfile.child_name} can now log in with username and PIN`
-          : `Login PIN has been set for ${childProfile.child_name}`
+          ? `${childProfile.display_name || childProfile.child_name} can now log in with username and PIN`
+          : `Login PIN has been set for ${childProfile.display_name || childProfile.child_name}`
       });
 
       onSuccess?.();
@@ -132,7 +132,7 @@ export function PINManagementDialog({ open, onOpenChange, childProfile, onSucces
             {childProfile?.pin_hash ? 'Change PIN' : 'Set PIN'}
           </DialogTitle>
           <DialogDescription>
-            Create a 4-digit PIN for {childProfile?.child_name} to log in with their username.
+            Create a 4-digit PIN for {childProfile?.display_name || childProfile?.child_name} to log in with their username.
           </DialogDescription>
         </DialogHeader>
 

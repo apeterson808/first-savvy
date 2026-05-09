@@ -93,7 +93,7 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
         <DialogHeader>
           <DialogTitle>Manage Permission Tier</DialogTitle>
           <DialogDescription>
-            Change {child.child_name}'s permission tier based on demonstrated responsibility
+            Change {child.display_name || child.child_name}'s permission tier based on demonstrated responsibility
           </DialogDescription>
         </DialogHeader>
 
@@ -152,7 +152,7 @@ export function LevelTransitionDialog({ open, onOpenChange, child, onLevelChange
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
-                Downgrading will restrict {child.child_name}'s access to certain features. Make sure to explain the
+                Downgrading will restrict {child.display_name || child.child_name}'s access to certain features. Make sure to explain the
                 reasons clearly.
               </AlertDescription>
             </Alert>

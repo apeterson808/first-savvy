@@ -165,7 +165,7 @@ export function BeginnerProfileView({ childProfile, isParentView = false }) {
             <ChildAvatar child={childProfile} size="lg" />
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900">
-                Hi, {childProfile.child_name}!
+                Hi, {childProfile.display_name || childProfile.child_name}!
               </h1>
               <p className="text-sm sm:text-base md:text-lg text-slate-600 mt-1">Ready to earn some stars?</p>
             </div>
