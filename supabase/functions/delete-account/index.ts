@@ -39,7 +39,38 @@ Deno.serve(async (req: Request) => {
     const userId = user.id;
     console.log(`Deleting account for user: ${userId}`);
 
-    // Get all profiles owned by this user
+    // Step 1: Null out every FK reference to this user across ALL tables.
+    // Must happen BEFORE deleting owned data and BEFORE deleting the auth user,
+    // because these columns may point at rows in other users' profiles.
+    const nullifyOps = [
+      supabase.from("transactions").update({ last_modified_by_user_id: null }).eq("last_modified_by_user_id", userId),
+      supabase.from("journal_entries").update({ created_by_user_id: null }).eq("created_by_user_id", userId),
+      supabase.from("journal_entries").update({ posted_by: null }).eq("posted_by", userId),
+      supabase.from("journal_entry_attachments").update({ uploaded_by: null }).eq("uploaded_by", userId),
+      supabase.from("budgets").update({ created_by_user_id: null }).eq("created_by_user_id", userId),
+      supabase.from("budgets").update({ last_modified_by_user_id: null }).eq("last_modified_by_user_id", userId),
+      supabase.from("task_completions").update({ reviewed_by: null }).eq("reviewed_by", userId),
+      supabase.from("reward_redemptions").update({ approved_by_user_id: null }).eq("approved_by_user_id", userId),
+      supabase.from("reward_redemptions").update({ fulfilled_by_user_id: null }).eq("fulfilled_by_user_id", userId),
+      supabase.from("rewards").update({ created_by_user_id: null }).eq("created_by_user_id", userId),
+      supabase.from("allowance_schedules").update({ created_by_user_id: null }).eq("created_by_user_id", userId),
+      supabase.from("vault_items").update({ user_id: null }).eq("user_id", userId),
+      supabase.from("vault_shares").update({ shared_by_user_id: null }).eq("shared_by_user_id", userId),
+      supabase.from("vault_shares").update({ shared_with_user_id: null }).eq("shared_with_user_id", userId),
+      supabase.from("household_join_requests").update({ requester_user_id: null }).eq("requester_user_id", userId),
+      supabase.from("transaction_match_history").update({ decided_by: null }).eq("decided_by", userId),
+      supabase.from("transfer_match_history").update({ decided_by: null }).eq("decided_by", userId),
+      supabase.from("cc_payment_match_history").update({ decided_by: null }).eq("decided_by", userId),
+    ];
+
+    // Run all nullify ops, ignoring errors for tables that may not exist
+    await Promise.allSettled(nullifyOps);
+
+    // Step 2: Remove this user from any household memberships they belong to (non-owner)
+    await supabase.from("profile_memberships").delete().eq("user_id", userId).neq("role", "owner");
+    await supabase.from("household_join_requests").delete().eq("requester_user_id", userId);
+
+    // Step 3: Get all profiles owned by this user
     const { data: memberships } = await supabase
       .from("profile_memberships")
       .select("profile_id")
@@ -48,7 +79,7 @@ Deno.serve(async (req: Request) => {
 
     const profileIds = (memberships || []).map((m: any) => m.profile_id);
 
-    // Delete all profile-scoped data in FK-safe order
+    // Step 4: Delete all profile-scoped data in FK-safe order
     const profileScopedTables = [
       "vault_items",
       "vault_folders",
@@ -68,6 +99,7 @@ Deno.serve(async (req: Request) => {
       "profile_invitations",
       "profile_shares",
       "parent_access_grants",
+      "journal_entry_attachments",
       "journal_entry_lines",
       "journal_entries",
       "journal_entry_counters",
@@ -78,9 +110,19 @@ Deno.serve(async (req: Request) => {
       "csv_column_mapping_configs",
       "transaction_rules",
       "transfer_match_suggestions",
+      "transfer_match_history",
+      "cc_payment_match_history",
+      "transaction_match_history",
+      "transfer_registry",
+      "transfer_patterns",
+      "credit_card_payment_registry",
+      "credit_card_payment_patterns",
+      "transaction_categorization_memory",
+      "household_join_requests",
       "user_chart_of_accounts",
       "profile_view_preferences",
       "profile_tabs",
+      "audit_logs",
       "profile_memberships",
       "profiles",
     ];
@@ -90,24 +132,16 @@ Deno.serve(async (req: Request) => {
         try {
           await supabase.from(table).delete().eq("profile_id", profileId);
         } catch (_) {
-          // Some tables may not have profile_id — skip silently
+          // Table may not have profile_id — skip silently
         }
       }
     }
 
-    // Delete user-scoped data
+    // Step 5: Delete user-level data
     await supabase.from("user_settings").delete().eq("id", userId);
     await supabase.from("audit_logs").delete().eq("user_id", userId);
 
-    // Clear actor-tracking FK references to this user in all profiles
-    // These columns reference auth.users and block deletion if not cleared first
-    await supabase.from("transactions").update({ last_modified_by_user_id: null }).eq("last_modified_by_user_id", userId);
-    await supabase.from("journal_entries").update({ created_by_user_id: null }).eq("created_by_user_id", userId);
-    await supabase.from("budgets").update({ created_by_user_id: null, last_modified_by_user_id: null }).eq("created_by_user_id", userId);
-    await supabase.from("budgets").update({ last_modified_by_user_id: null }).eq("last_modified_by_user_id", userId);
-    await supabase.from("task_completions").update({ reviewed_by: null }).eq("reviewed_by", userId);
-
-    // Finally delete the auth user itself
+    // Step 6: Delete the auth user itself
     const { error: deleteAuthError } = await supabase.auth.admin.deleteUser(userId);
     if (deleteAuthError) {
       console.error("Error deleting auth user:", deleteAuthError);
