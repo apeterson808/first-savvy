@@ -164,7 +164,7 @@ export default function Login() {
                     <span className="font-medium">{householdSearchResult?.display_name || householdSearchResult?.email}</span> will be notified and can approve your request.
                   </p>
                 </div>
-                <Button className="w-full" onClick={() => navigate('/Dashboard')}>Go to Dashboard</Button>
+                <Button className="w-full" onClick={() => navigate('/')}>Continue</Button>
               </div>
             ) : postSignupStep === 'household-search' ? (
               <div className="space-y-4">

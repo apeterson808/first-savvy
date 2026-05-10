@@ -160,6 +160,20 @@ export const ProfileProvider = ({ children }) => {
         }
       }
 
+      // Check if the user has a pending household join request (submitted but not yet approved)
+      const { data: pendingJoinRequest } = await firstsavvy
+        .from('household_join_requests')
+        .select('id')
+        .eq('requester_user_id', user.id)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (pendingJoinRequest) {
+        setHouseholdPending(true);
+        setLoading(false);
+        return;
+      }
+
       // Check if any of the user's own profiles are in pending household state
       const ownerProfileIds = memberships
         .filter(m => m.role === 'owner' && m.profile && !m.profile.is_deleted)
