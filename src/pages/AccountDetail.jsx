@@ -801,6 +801,33 @@ export default function AccountDetail() {
       calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
+    // Recalculate running balance using the same method as the register:
+    // accumulate chronologically (oldest→newest), using raw debit/credit amounts.
+    // The DB's running_balance is relative and paginated; recompute from the
+    // oldest item on this page so the numbers match the register.
+    if (activitiesWithBalance.length > 0) {
+      // Array is newest-first after sort, so iterate backwards (oldest→newest)
+      // Seed from the DB running_balance of the oldest item on this page so that
+      // when viewing page 1 (all history, no filter) it starts from 0 and
+      // accumulates correctly matching the register.
+      const oldest = activitiesWithBalance[activitiesWithBalance.length - 1];
+      const oldestDebit = parseFloat(oldest.debitAmount || 0);
+      const oldestCredit = parseFloat(oldest.creditAmount || 0);
+      const oldestChange = isDebitNormal ? (oldestDebit - oldestCredit) : (oldestCredit - oldestDebit);
+      // beginningBalance = running balance of oldest item minus its own contribution
+      const beginningBal = parseFloat(oldest.runningBalance || 0) - oldestChange;
+
+      let runningBal = beginningBal;
+      for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
+        const activity = activitiesWithBalance[i];
+        const debit = parseFloat(activity.debitAmount || 0);
+        const credit = parseFloat(activity.creditAmount || 0);
+        const change = isDebitNormal ? (debit - credit) : (credit - debit);
+        runningBal += change;
+        activity.runningBalance = runningBal;
+      }
+    }
+
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
     const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
 
