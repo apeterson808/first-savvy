@@ -664,52 +664,29 @@ export default function AccountDetail() {
       return dateDiff;
     });
 
-    // All items are posted with pre-calculated running balance from database
     // Use natural accounting presentation:
     // - For expenses: debits = expenses (money out), credits = refunds (money in)
-    // - For income: credits = earnings (money in), debits = refunds (money out)
     // - For assets: debits = increases (money in), credits = decreases (money out)
-    // - For liabilities/credit cards: debits = payments (money in), credits = purchases (money out)
+    // - For liabilities/credit cards: debits = payments, credits = purchases
     const isExpenseAccount = accountClass === 'expense';
 
-    let activitiesWithBalance = combined.map(activity => ({
+    // The DB already computes running_balance as a cumulative window function over
+    // ALL rows for this account. Use it directly — never re-accumulate in the frontend,
+    // as that breaks on any page > 1 and gives wrong values when rows are paginated.
+    const activitiesWithBalance = combined.map(activity => ({
       ...activity,
       calculatedDebit: isExpenseAccount ? activity.creditAmount || 0 : activity.debitAmount || 0,
       calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
-    // Recalculate running balance in chronological order
-    // Array is sorted newest first (DESC), so we loop backwards to go oldest to newest
-    if (activitiesWithBalance.length > 0) {
-      // Start from the end (oldest transaction) and work backward to index 0 (newest)
-      let runningBal = 0;
-      for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
-        const activity = activitiesWithBalance[i];
-        // Use original debit/credit amounts for balance calculation, not the swapped display values
-        const debit = activity.debitAmount || 0;
-        const credit = activity.creditAmount || 0;
-        const change = isDebitNormal
-          ? (debit - credit)
-          : (credit - debit);
-        runningBal += change;
-        activity.runningBalance = runningBal;
-      }
-    }
-
+    // Beginning balance: balance of the oldest visible row minus its own net change
     let beginningBal = null;
     if (dateRange.start && activitiesWithBalance.length > 0) {
       const oldestActivity = activitiesWithBalance[activitiesWithBalance.length - 1];
-      const oldestBalance = oldestActivity.runningBalance;
-      // Use original debit/credit amounts, not the swapped display values
       const oldestDebit = oldestActivity.debitAmount || 0;
       const oldestCredit = oldestActivity.creditAmount || 0;
       const oldestChange = isDebitNormal ? (oldestDebit - oldestCredit) : (oldestCredit - oldestDebit);
-
-      beginningBal = oldestBalance - oldestChange;
-
-      activitiesWithBalance.forEach(activity => {
-        activity.runningBalance += beginningBal;
-      });
+      beginningBal = parseFloat(oldestActivity.runningBalance || 0) - oldestChange;
     }
 
     const endingBal = activitiesWithBalance.length > 0
@@ -795,41 +772,14 @@ export default function AccountDetail() {
     // Use natural accounting presentation for audit history
     const isExpenseAccount = accountClass === 'expense';
 
-    let activitiesWithBalance = combined.map(activity => ({
+    // The DB already computes running_balance as a cumulative window function over
+    // ALL rows (undo rows have bl_net_change=0 so they don't move the balance).
+    // Use the DB value directly — never re-accumulate in the frontend.
+    const activitiesWithBalance = combined.map(activity => ({
       ...activity,
       calculatedDebit: isExpenseAccount ? activity.creditAmount || 0 : activity.debitAmount || 0,
       calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
-
-    // Recalculate running balance using the same method as the register:
-    // accumulate chronologically (oldest→newest), using raw debit/credit amounts.
-    // The DB's running_balance is relative and paginated; recompute from the
-    // oldest item on this page so the numbers match the register.
-    if (activitiesWithBalance.length > 0) {
-      // Array is newest-first after sort, so iterate backwards (oldest→newest).
-      // Seed from the DB running_balance of the oldest non-undo row (undo rows
-      // don't affect balance so we can't use them to derive the starting point).
-      const oldestNonUndo = [...activitiesWithBalance].reverse().find(a => a.entryType !== 'undo');
-      const oldest = oldestNonUndo || activitiesWithBalance[activitiesWithBalance.length - 1];
-      const oldestDebit = parseFloat(oldest.debitAmount || 0);
-      const oldestCredit = parseFloat(oldest.creditAmount || 0);
-      const oldestChange = isDebitNormal ? (oldestDebit - oldestCredit) : (oldestCredit - oldestDebit);
-      // beginningBalance = running balance of oldest item minus its own contribution
-      const beginningBal = parseFloat(oldest.runningBalance || 0) - oldestChange;
-
-      let runningBal = beginningBal;
-      for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
-        const activity = activitiesWithBalance[i];
-        // Undo rows are informational — they don't change the balance
-        if (activity.entryType !== 'undo') {
-          const debit = parseFloat(activity.debitAmount || 0);
-          const credit = parseFloat(activity.creditAmount || 0);
-          const change = isDebitNormal ? (debit - credit) : (credit - debit);
-          runningBal += change;
-        }
-        activity.runningBalance = runningBal;
-      }
-    }
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
     const totalCredits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedCredit || 0), 0);
