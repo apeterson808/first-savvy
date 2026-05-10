@@ -203,21 +203,27 @@ export const ProfileProvider = ({ children }) => {
 
       let selfDisplayName = null;
       if (hasHouseholdMembership) {
-        // Try user_settings first
-        const { data: selfSettings } = await firstsavvy
-          .from('user_settings')
-          .select('display_name, full_name, first_name')
-          .eq('id', user.id)
-          .maybeSingle();
-        selfDisplayName = selfSettings?.display_name || selfSettings?.full_name || selfSettings?.first_name || null;
+        // 1. Auth user metadata — always available from session, no DB round-trip needed
+        const meta = user.user_metadata || {};
+        selfDisplayName = (meta.full_name || meta.first_name)?.trim() || null;
 
-        // Fall back to the user's own profile display_name (even if soft-deleted)
+        // 2. User's own profile display_name (already loaded in memberships)
         if (!selfDisplayName) {
           const ownerMembership = memberships.find(m => m.role === 'owner' && m.profile);
-          selfDisplayName = ownerMembership?.profile?.display_name || null;
+          selfDisplayName = ownerMembership?.profile?.display_name?.trim() || null;
         }
 
-        // Last resort: use the email prefix
+        // 3. user_settings table
+        if (!selfDisplayName) {
+          const { data: selfSettings } = await firstsavvy
+            .from('user_settings')
+            .select('display_name, full_name, first_name')
+            .eq('id', user.id)
+            .maybeSingle();
+          selfDisplayName = selfSettings?.display_name?.trim() || selfSettings?.full_name?.trim() || selfSettings?.first_name?.trim() || null;
+        }
+
+        // 4. Last resort: email prefix
         if (!selfDisplayName) {
           selfDisplayName = user.email?.split('@')[0] || null;
         }
