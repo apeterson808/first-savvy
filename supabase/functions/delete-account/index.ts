@@ -70,15 +70,15 @@ Deno.serve(async (req: Request) => {
     await supabase.from("profile_memberships").delete().eq("user_id", userId).neq("role", "owner");
     await supabase.from("household_join_requests").delete().eq("requester_user_id", userId);
 
-    // Step 3: Get all profiles owned by this user
-    const { data: memberships } = await supabase
-      .from("profile_memberships")
-      .select("profile_id")
-      .eq("user_id", userId)
-      .eq("role", "owner");
+    // Step 3: Get all profiles belonging to this user.
+    // Query profiles.user_id directly — profile_memberships may be out of sync.
+    const { data: ownedProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("user_id", userId);
 
-    const profileIds = (memberships || []).map((m: any) => m.profile_id);
-    console.log(`Found ${profileIds.length} owned profiles`);
+    const profileIds = (ownedProfiles || []).map((p: any) => p.id);
+    console.log(`Found ${profileIds.length} profiles for user`);
 
     // Step 4: Delete all profile-scoped data in FK-safe order
     const profileScopedTables = [
