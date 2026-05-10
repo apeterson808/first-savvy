@@ -1687,6 +1687,7 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                             <TableHead className="py-1.5 text-[11px] font-semibold">By</TableHead>
                             <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
+                            <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
                             <TableHead className="w-[40px] py-1.5"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1760,6 +1761,13 @@ export default function AccountDetail() {
                                     </span>
                                   );
                                 })()}
+                              </TableCell>
+                              <TableCell className="text-right text-[11px] py-1 font-medium text-slate-700">
+                                {activity.entryType === 'undo' ? (
+                                  <span className="text-slate-300">{'\u2014'}</span>
+                                ) : (
+                                  formatCurrency(activity.runningBalance || 0)
+                                )}
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
@@ -2804,6 +2812,7 @@ export default function AccountDetail() {
                           <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
                           <TableHead className="py-1.5 text-[11px] font-semibold">By</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
+                          <TableHead className="text-right py-1.5 text-[11px] font-semibold">Balance</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2877,6 +2886,13 @@ export default function AccountDetail() {
                                   </span>
                                 );
                               })()}
+                            </TableCell>
+                            <TableCell className="text-right text-[11px] py-1 font-medium text-slate-700">
+                              {activity.entryType === 'undo' ? (
+                                <span className="text-slate-300">—</span>
+                              ) : (
+                                formatCurrency(activity.runningBalance || 0)
+                              )}
                             </TableCell>
                             <TableCell className="py-1">
                               <div className="flex items-center gap-1">
