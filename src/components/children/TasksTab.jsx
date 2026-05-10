@@ -2,22 +2,21 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { tasksAPI } from '@/api/tasks';
 import { taskCompletionsAPI } from '@/api/taskCompletions';
-import { childProfilesAPI } from '@/api/childProfiles';
+import { supabase } from '@/api/supabaseClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Star, Sparkles, Users, ListTodo } from 'lucide-react';
+import { Star, Sparkles, ListTodo } from 'lucide-react';
 import { toast } from 'sonner';
 import { AwardStarsDialog } from './AwardStarsDialog';
 import { PICKER_ICON_MAP } from '@/components/common/AppearancePicker';
-import ChildAvatar from './ChildAvatar';
 
 export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
-  const [children, setChildren] = useState([]);
   const [loading, setLoading] = useState(true);
   const [awardingTask, setAwardingTask] = useState(null);
   const [showOneTimeAward, setShowOneTimeAward] = useState(false);
+  const [todaySubmittedTaskIds, setTodaySubmittedTaskIds] = useState(new Set());
 
   useEffect(() => {
     if (profileId) loadData();
@@ -26,9 +25,21 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [allTasks, allChildren] = await Promise.all([
+
+      const todayStart = new Date();
+      todayStart.setHours(0, 0, 0, 0);
+
+      const [allTasks, todayCompletions] = await Promise.all([
         tasksAPI.getAllTasks(profileId),
-        childProfilesAPI.getChildProfiles(profileId),
+        childId
+          ? supabase
+              .from('task_completions')
+              .select('task_id')
+              .eq('child_profile_id', childId)
+              .in('status', ['pending', 'approved'])
+              .gte('submitted_at', todayStart.toISOString())
+              .then(({ data }) => data || [])
+          : Promise.resolve([]),
       ]);
 
       const filtered = childId
@@ -38,7 +49,7 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
         : allTasks;
 
       setTasks(filtered);
-      setChildren(allChildren || []);
+      setTodaySubmittedTaskIds(new Set(todayCompletions.map(c => c.task_id).filter(Boolean)));
     } catch (error) {
       console.error('Error loading tasks:', error);
       toast.error('Failed to load tasks');
@@ -72,12 +83,6 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
       console.error('Error awarding stars:', error);
       toast.error('Failed to award stars');
     }
-  };
-
-  const getAssignedChildren = (task) => {
-    return (task.assignments || [])
-      .map(a => children.find(c => c.id === a.child_profile_id))
-      .filter(Boolean);
   };
 
   if (loading) {
@@ -126,7 +131,7 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
           {tasks.map((task) => {
             const IconComp = PICKER_ICON_MAP[task.icon] || Star;
             const stars = task.star_reward || 1;
-            const assignedChildren = getAssignedChildren(task);
+            const alreadySubmittedToday = todaySubmittedTaskIds.has(task.id);
 
             return (
               <Card key={task.id}>
@@ -140,32 +145,23 @@ export function TasksTab({ childId, profileId, childName = '', onUpdate }) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="font-semibold text-sm text-slate-900 leading-tight truncate">{task.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                        <span className="text-xs font-medium text-yellow-600 flex items-center gap-0.5">
-                          <Star className="w-3 h-3 fill-yellow-500" />
-                          {stars} {stars === 1 ? 'star' : 'stars'}
-                        </span>
-                        {assignedChildren.length > 0 && (
-                          <div className="flex items-center gap-1">
-                            <Users className="w-3 h-3 text-slate-400" />
-                            <div className="flex items-center gap-0.5">
-                              {assignedChildren.map(child => (
-                                <ChildAvatar key={child.id} child={child} size="sm" className="w-5 h-5 text-[10px] shadow-none" />
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
+                      <span className="text-xs font-medium text-yellow-600 flex items-center gap-0.5 mt-0.5">
+                        <Star className="w-3 h-3 fill-yellow-500" />
+                        {stars} {stars === 1 ? 'star' : 'stars'}
+                      </span>
                     </div>
                     {childId && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-7 px-2 text-xs text-yellow-600 hover:bg-yellow-50 flex-shrink-0"
-                        onClick={() => setAwardingTask(task)}
+                        className="h-7 px-2 text-xs flex-shrink-0 disabled:opacity-50"
+                        disabled={alreadySubmittedToday}
+                        onClick={() => !alreadySubmittedToday && setAwardingTask(task)}
+                        title={alreadySubmittedToday ? 'Already submitted today' : undefined}
+                        style={alreadySubmittedToday ? {} : { color: '#ca8a04' }}
                       >
-                        <Star className="w-3 h-3 mr-1 fill-yellow-500" />
-                        Award
+                        <Star className={`w-3 h-3 mr-1 ${alreadySubmittedToday ? '' : 'fill-yellow-500'}`} />
+                        {alreadySubmittedToday ? 'Submitted' : 'Award'}
                       </Button>
                     )}
                   </div>
