@@ -1715,7 +1715,10 @@ export default function AccountDetail() {
                                 </span>
                               </TableCell>
                               <TableCell className="py-1">
-                                <Badge variant="outline" className="text-[10px] h-5 capitalize">
+                                <Badge
+                                  variant="outline"
+                                  className={`text-[10px] h-5 capitalize ${activity.entryType === 'undo' ? 'border-amber-300 text-amber-700 bg-amber-50' : ''}`}
+                                >
                                   {activity.entryType.replace('_', ' ')}
                                 </Badge>
                               </TableCell>
@@ -1747,7 +1750,9 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
-                                {(() => {
+                                {activity.entryType === 'undo' ? (
+                                  <span className="text-slate-300">{'\u2014'}</span>
+                                ) : (() => {
                                   const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
                                   return (
                                     <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
@@ -1783,7 +1788,7 @@ export default function AccountDetail() {
                                     </>
                                   ) : (
                                     <>
-                                      {activity.journalEntryId && (
+                                      {activity.entryType !== 'undo' && activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -1805,7 +1810,7 @@ export default function AccountDetail() {
                                           <History className="w-3 h-3 text-slate-400" />
                                         </Button>
                                       )}
-                                      {activity.transactionId && activity.journalEntryId && (
+                                      {activity.entryType !== 'undo' && activity.transactionId && activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -2672,7 +2677,7 @@ export default function AccountDetail() {
                                     </>
                                   ) : (
                                     <>
-                                      {activity.journalEntryId && (
+                                      {activity.entryType !== 'undo' && activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -2694,7 +2699,7 @@ export default function AccountDetail() {
                                           <History className="w-3 h-3 text-slate-400" />
                                         </Button>
                                       )}
-                                      {activity.transactionId && activity.journalEntryId && (
+                                      {activity.entryType !== 'undo' && activity.transactionId && activity.journalEntryId && (
                                         <Button
                                           variant="ghost"
                                           size="sm"
@@ -2827,7 +2832,10 @@ export default function AccountDetail() {
                               </span>
                             </TableCell>
                             <TableCell className="py-1">
-                              <Badge variant="outline" className="text-[10px] h-5 capitalize">
+                              <Badge
+                                variant="outline"
+                                className={`text-[10px] h-5 capitalize ${activity.entryType === 'undo' ? 'border-amber-300 text-amber-700 bg-amber-50' : ''}`}
+                              >
                                 {activity.entryType.replace('_', ' ')}
                               </Badge>
                             </TableCell>
@@ -2859,7 +2867,9 @@ export default function AccountDetail() {
                               )}
                             </TableCell>
                             <TableCell className="text-right text-[11px] py-1">
-                              {(() => {
+                              {activity.entryType === 'undo' ? (
+                                <span className="text-slate-300">—</span>
+                              ) : (() => {
                                 const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                 return (
                                   <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
