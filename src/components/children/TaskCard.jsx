@@ -78,9 +78,9 @@ export function TaskCard({
               </div>
               <div className="flex flex-col items-end gap-2 shrink-0">
                 {locked ? (
-                  <div className="flex items-center gap-1 text-slate-400 font-medium text-sm">
+                  <div className={`flex items-center gap-1 font-medium text-sm ${lastCompletion?.status === 'pending' ? 'text-amber-500' : 'text-slate-400'}`}>
                     <Lock className="w-4 h-4" />
-                    <span>Done</span>
+                    <span>{lastCompletion?.status === 'pending' ? 'Pending' : 'Done'}</span>
                   </div>
                 ) : (
                   <div className="flex items-center gap-1 text-yellow-600 font-bold text-base sm:text-lg">
