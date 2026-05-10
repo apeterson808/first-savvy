@@ -1,4 +1,11 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(npm run build)",
+      "Bash(npm run build 2>&1 | tail *)",
+      "mcp__supabase__execute_sql"
+    ]
+  },
   "hooks": {
     "Stop": [
       {
