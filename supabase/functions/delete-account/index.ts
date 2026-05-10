@@ -65,10 +65,11 @@ Deno.serve(async (req: Request) => {
     await Promise.allSettled(nullifyOps);
     console.log(`Nullified all FK references for user: ${userId}`);
 
-    // Step 2: Remove non-owner household memberships and join requests
-    // (these are not profile-scoped so won't be caught in the profile loop)
+    // Step 2: Remove non-owner household memberships, join requests, and any
+    // contact records in other profiles that link back to this user.
     await supabase.from("profile_memberships").delete().eq("user_id", userId).neq("role", "owner");
     await supabase.from("household_join_requests").delete().eq("requester_user_id", userId);
+    await supabase.from("contacts").delete().eq("linked_user_id", userId);
 
     // Step 3: Get all profiles belonging to this user.
     // Query profiles.user_id directly — profile_memberships may be out of sync.
