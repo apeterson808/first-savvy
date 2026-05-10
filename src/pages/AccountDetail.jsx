@@ -2797,6 +2797,7 @@ export default function AccountDetail() {
                             <TableHead className="py-1.5 text-[11px] font-semibold">Account</TableHead>
                           )}
                           <TableHead className="py-1.5 text-[11px] font-semibold">From/To</TableHead>
+                          <TableHead className="py-1.5 text-[11px] font-semibold">By</TableHead>
                           <TableHead className="text-right py-1.5 text-[11px] font-semibold">Amount</TableHead>
                           <TableHead className="w-[40px] py-1.5"></TableHead>
                         </TableRow>
@@ -2844,6 +2845,18 @@ export default function AccountDetail() {
                             )}
                             <TableCell className="text-[11px] text-slate-600 py-1">
                               {activity.offsettingAccounts || '—'}
+                            </TableCell>
+                            <TableCell className="text-[11px] py-1">
+                              {activity.actorName ? (
+                                <span className="inline-flex items-center gap-1 text-slate-500">
+                                  <span className="inline-flex h-4 w-4 rounded-full bg-slate-200 items-center justify-center text-[9px] font-semibold text-slate-600 flex-shrink-0">
+                                    {activity.actorName.charAt(0).toUpperCase()}
+                                  </span>
+                                  {activity.actorName.split(' ')[0]}
+                                </span>
+                              ) : (
+                                <span className="text-slate-300">—</span>
+                              )}
                             </TableCell>
                             <TableCell className="text-right text-[11px] py-1">
                               {(() => {
