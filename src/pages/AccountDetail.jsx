@@ -806,11 +806,11 @@ export default function AccountDetail() {
     // The DB's running_balance is relative and paginated; recompute from the
     // oldest item on this page so the numbers match the register.
     if (activitiesWithBalance.length > 0) {
-      // Array is newest-first after sort, so iterate backwards (oldest→newest)
-      // Seed from the DB running_balance of the oldest item on this page so that
-      // when viewing page 1 (all history, no filter) it starts from 0 and
-      // accumulates correctly matching the register.
-      const oldest = activitiesWithBalance[activitiesWithBalance.length - 1];
+      // Array is newest-first after sort, so iterate backwards (oldest→newest).
+      // Seed from the DB running_balance of the oldest non-undo row (undo rows
+      // don't affect balance so we can't use them to derive the starting point).
+      const oldestNonUndo = [...activitiesWithBalance].reverse().find(a => a.entryType !== 'undo');
+      const oldest = oldestNonUndo || activitiesWithBalance[activitiesWithBalance.length - 1];
       const oldestDebit = parseFloat(oldest.debitAmount || 0);
       const oldestCredit = parseFloat(oldest.creditAmount || 0);
       const oldestChange = isDebitNormal ? (oldestDebit - oldestCredit) : (oldestCredit - oldestDebit);
@@ -820,10 +820,13 @@ export default function AccountDetail() {
       let runningBal = beginningBal;
       for (let i = activitiesWithBalance.length - 1; i >= 0; i--) {
         const activity = activitiesWithBalance[i];
-        const debit = parseFloat(activity.debitAmount || 0);
-        const credit = parseFloat(activity.creditAmount || 0);
-        const change = isDebitNormal ? (debit - credit) : (credit - debit);
-        runningBal += change;
+        // Undo rows are informational — they don't change the balance
+        if (activity.entryType !== 'undo') {
+          const debit = parseFloat(activity.debitAmount || 0);
+          const credit = parseFloat(activity.creditAmount || 0);
+          const change = isDebitNormal ? (debit - credit) : (credit - debit);
+          runningBal += change;
+        }
         activity.runningBalance = runningBal;
       }
     }
