@@ -59,6 +59,22 @@ import CategoryDropdown from '@/components/common/CategoryDropdown';
 import ContactDropdown from '@/components/common/ContactDropdown';
 import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '@/components/common/TransactionTableConfig';
 
+function getAuditEntryTypeLabel(entryType, accountClass, debitAmount, creditAmount) {
+  if (entryType !== 'adjustment' && entryType !== 'transaction') {
+    return entryType.replace(/_/g, ' ');
+  }
+  const cls = (accountClass || '').toLowerCase();
+  const hasDebit = parseFloat(debitAmount || 0) > 0;
+  if (cls === 'liability') {
+    return hasDebit ? 'payment' : 'charge';
+  }
+  if (cls === 'expense') {
+    return hasDebit ? 'expense' : 'refund';
+  }
+  // asset, bank, or default
+  return hasDebit ? 'deposit' : 'withdrawal';
+}
+
 export default function AccountDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -1701,7 +1717,7 @@ export default function AccountDetail() {
                                   variant="outline"
                                   className={`text-[10px] h-5 capitalize ${activity.entryType === 'undo' ? 'border-amber-300 text-amber-700 bg-amber-50' : ''}`}
                                 >
-                                  {activity.entryType.replace('_', ' ')}
+                                  {getAuditEntryTypeLabel(activity.entryType, accountClass, activity.debitAmount, activity.creditAmount)}
                                 </Badge>
                               </TableCell>
                               <TableCell className="py-1 max-w-[250px]">
@@ -2820,7 +2836,7 @@ export default function AccountDetail() {
                                 variant="outline"
                                 className={`text-[10px] h-5 capitalize ${activity.entryType === 'undo' ? 'border-amber-300 text-amber-700 bg-amber-50' : ''}`}
                               >
-                                {activity.entryType.replace('_', ' ')}
+                                {getAuditEntryTypeLabel(activity.entryType, accountClass, activity.debitAmount, activity.creditAmount)}
                               </Badge>
                             </TableCell>
                             <TableCell className="py-1 max-w-[250px]">
