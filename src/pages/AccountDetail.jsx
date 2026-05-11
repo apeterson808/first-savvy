@@ -1482,7 +1482,7 @@ export default function AccountDetail() {
                                 {activity.account_name || '\u2014'}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[2])}>
-                                {editingTransactionId === activity.transactionId ? (
+                                {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                   <input
                                     type="text"
                                     value={editDescription}
@@ -1501,7 +1501,7 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[3])}>
-                                {editingTransactionId === activity.transactionId ? (
+                                {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
                                     onChange={setEditContactId}
@@ -1520,7 +1520,7 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[4])}>
-                                {editingTransactionId === activity.transactionId ? (
+                                {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
                                     onChange={setEditCategoryId}
@@ -1549,7 +1549,7 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className={getBodyCellClassName(TRANSACTION_TABLE_CONFIG.columns[6])}>
                                 {activity.transactionId && activity.journalEntryId && (
-                                  editingTransactionId === activity.transactionId ? (
+                                  editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                     <div className="flex items-center gap-1">
                                       <button
                                         onClick={(e) => {
@@ -1746,7 +1746,7 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
-                                  {editingTransactionId === activity.transactionId ? (
+                                  {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                     <>
                                       <Button
                                         variant="ghost"
@@ -2573,7 +2573,7 @@ export default function AccountDetail() {
                                 </span>
                               </TableCell>
                               <TableCell className="whitespace-nowrap py-1 max-w-[300px]">
-                                {editingTransactionId === activity.transactionId ? (
+                                {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                   <Input
                                     value={editDescription}
                                     onChange={(e) => setEditDescription(e.target.value)}
@@ -2584,7 +2584,7 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
+                                {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                   <CategoryDropdown
                                     value={editCategoryId}
                                     onChange={setEditCategoryId}
@@ -2602,7 +2602,7 @@ export default function AccountDetail() {
                                 )}
                               </TableCell>
                               <TableCell className="whitespace-nowrap text-[11px] text-slate-600 py-1">
-                                {editingTransactionId === activity.transactionId ? (
+                                {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                   <ContactDropdown
                                     value={editContactId}
                                     onChange={setEditContactId}
@@ -2635,7 +2635,7 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="py-1">
                                 <div className="flex items-center gap-1">
-                                  {editingTransactionId === activity.transactionId ? (
+                                  {editingTransactionId !== null && editingTransactionId === activity.transactionId ? (
                                     <>
                                       <Button
                                         variant="ghost"
