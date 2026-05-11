@@ -668,15 +668,16 @@ export default function AccountDetail() {
     // - For expenses: debits = expenses (money out), credits = refunds (money in)
     // - For assets: debits = increases (money in), credits = decreases (money out)
     // - For liabilities/credit cards: debits = payments, credits = purchases
-    const isExpenseAccount = accountClass === 'expense';
+    // - For equity: credits = increases (positive), debits = decreases (negative) — same flip as expense
+    const flipDebitsCredits = accountClass === 'expense' || accountClass === 'equity';
 
     // The DB already computes running_balance as a cumulative window function over
     // ALL rows for this account. Use it directly — never re-accumulate in the frontend,
     // as that breaks on any page > 1 and gives wrong values when rows are paginated.
     const activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: isExpenseAccount ? activity.creditAmount || 0 : activity.debitAmount || 0,
-      calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
+      calculatedDebit: flipDebitsCredits ? activity.creditAmount || 0 : activity.debitAmount || 0,
+      calculatedCredit: flipDebitsCredits ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
     // Beginning balance: balance of the oldest visible row minus its own net change
@@ -770,15 +771,15 @@ export default function AccountDetail() {
     });
 
     // Use natural accounting presentation for audit history
-    const isExpenseAccount = accountClass === 'expense';
+    const flipDebitsCredits = accountClass === 'expense' || accountClass === 'equity';
 
     // The DB already computes running_balance as a cumulative window function over
     // ALL rows (undo rows have bl_net_change=0 so they don't move the balance).
     // Use the DB value directly — never re-accumulate in the frontend.
     const activitiesWithBalance = combined.map(activity => ({
       ...activity,
-      calculatedDebit: isExpenseAccount ? activity.creditAmount || 0 : activity.debitAmount || 0,
-      calculatedCredit: isExpenseAccount ? activity.debitAmount || 0 : activity.creditAmount || 0
+      calculatedDebit: flipDebitsCredits ? activity.creditAmount || 0 : activity.debitAmount || 0,
+      calculatedCredit: flipDebitsCredits ? activity.debitAmount || 0 : activity.creditAmount || 0
     }));
 
     const totalDebits = activitiesWithBalance.reduce((sum, a) => sum + (a.calculatedDebit || 0), 0);
