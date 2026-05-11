@@ -1733,7 +1733,7 @@ export default function AccountDetail() {
                               </TableCell>
                               <TableCell className="text-right text-[11px] py-1">
                                 {(() => {
-                                  const amount = (activity.calculatedCredit || 0) - (activity.calculatedDebit || 0);
+                                  const amount = (activity.calculatedDebit || 0) - (activity.calculatedCredit || 0);
                                   return (
                                     <span className={amount < 0 ? 'text-red-600' : amount > 0 ? 'text-green-600' : ''}>
                                       {formatCurrency(amount)}
