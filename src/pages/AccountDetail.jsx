@@ -60,18 +60,20 @@ import ContactDropdown from '@/components/common/ContactDropdown';
 import { TRANSACTION_TABLE_CONFIG, getRowClassName, getHeaderCellClassName, getBodyCellClassName } from '@/components/common/TransactionTableConfig';
 
 function getAuditEntryTypeLabel(entryType, accountClass, debitAmount, creditAmount) {
-  if (entryType !== 'adjustment' && entryType !== 'transaction') {
+  // New specific types — just clean up the name
+  if (!['adjustment', 'transaction'].includes(entryType)) {
     return entryType.replace(/_/g, ' ');
   }
+  // Fallback derivation for old adjustment entries not yet backfilled
   const cls = (accountClass || '').toLowerCase();
   const hasDebit = parseFloat(debitAmount || 0) > 0;
   if (cls === 'liability') {
-    return hasDebit ? 'payment' : 'charge';
+    // debit on cc = charge (spending); credit = payment
+    return hasDebit ? 'charge' : 'payment';
   }
   if (cls === 'expense') {
     return hasDebit ? 'expense' : 'refund';
   }
-  // asset, bank, or default
   return hasDebit ? 'deposit' : 'withdrawal';
 }
 
