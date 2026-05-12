@@ -518,6 +518,25 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
   const transactions = [...fullPendingTransactions, ...fullPostedTransactions, ...fullExcludedTransactions];
 
+  // Fetch JE entry numbers for display in transaction rows
+  const { data: jeNumberRows = [] } = useQuery({
+    queryKey: ['je-entry-numbers', activeProfile?.id],
+    queryFn: async () => {
+      const { data, error } = await firstsavvy
+        .from('journal_entries')
+        .select('id, entry_number, status')
+        .eq('profile_id', activeProfile.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!activeProfile?.id
+  });
+  const jeNumberMap = React.useMemo(() => {
+    const map = {};
+    jeNumberRows.forEach(je => { map[je.id] = je; });
+    return map;
+  }, [jeNumberRows]);
+
   const [matchSuggestions, setMatchSuggestions] = React.useState({});
 
   React.useEffect(() => {
@@ -809,8 +828,8 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
     }
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id) => withRetry(() => firstsavvy.entities.Transaction.delete(id), { maxRetries: 2 }),
+  const voidMutation = useMutation({
+    mutationFn: (id) => transactionService.voidTransaction(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['fullPendingTransactions'] });
       queryClient.invalidateQueries({ queryKey: ['fullPostedTransactions'] });
@@ -819,9 +838,11 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
       queryClient.invalidateQueries({ queryKey: ['transactions'] });
       queryClient.invalidateQueries({ queryKey: ['journal-lines-paginated'] });
       queryClient.invalidateQueries({ queryKey: ['account-journal-lines'] });
+      queryClient.invalidateQueries({ queryKey: ['je-entry-numbers'] });
+      toast.success('Transaction voided');
     },
     onError: (error) => {
-      logError(error, { action: 'deleteTransaction' });
+      logError(error, { action: 'voidTransaction' });
       showErrorToast(error);
     }
   });
@@ -987,6 +1008,7 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
 
     queryClient.invalidateQueries(['fullPendingTransactions']);
     queryClient.invalidateQueries(['fullPostedTransactions']);
+    queryClient.invalidateQueries(['je-entry-numbers']);
     toast.success('Transaction posted');
     return true;
   };
@@ -1269,9 +1291,25 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                           }}
                         >
                           <td className="text-sm border-r border-slate-200 py-1 pl-2 pr-1">
-                            {transaction.date && !isNaN(new Date(transaction.date).getTime())
-                              ? format(parseISO(transaction.date), 'MM/dd/yy')
-                              : 'Invalid'}
+                            <div className="flex flex-col gap-0.5">
+                              <span>
+                                {transaction.date && !isNaN(new Date(transaction.date).getTime())
+                                  ? format(parseISO(transaction.date), 'MM/dd/yy')
+                                  : 'Invalid'}
+                              </span>
+                              {transaction.journal_entry_id && jeNumberMap[transaction.journal_entry_id] && (
+                                <span className={`text-[9px] font-mono leading-none ${
+                                  jeNumberMap[transaction.journal_entry_id]?.status === 'draft'
+                                    ? 'text-amber-600'
+                                    : jeNumberMap[transaction.journal_entry_id]?.status === 'voided'
+                                    ? 'text-red-400 line-through'
+                                    : 'text-slate-400'
+                                }`}>
+                                  {jeNumberMap[transaction.journal_entry_id]?.entry_number}
+                                  {jeNumberMap[transaction.journal_entry_id]?.status === 'draft' && ' ●'}
+                                </span>
+                              )}
+                            </div>
                           </td>
                         {selectedAccount === 'all' && (
                                                         <td className="text-sm border-r border-slate-200 py-1 px-4 pl-2 whitespace-nowrap overflow-hidden text-ellipsis" style={{ width: columnWidths.account, minWidth: columnWidths.account, maxWidth: columnWidths.account }}>
@@ -1707,6 +1745,17 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                         }}
                                       >
                                         Exclude
+                                      </ClickThroughDropdownMenuItem>
+                                      <ClickThroughDropdownMenuItem
+                                        onClick={(e) => {
+                                          e?.stopPropagation();
+                                          if (confirm('Void this transaction? It will remain in the register but be excluded from reports and balances.')) {
+                                            voidMutation.mutate(transaction.id);
+                                          }
+                                        }}
+                                        className="text-red-600 hover:text-red-700"
+                                      >
+                                        Void
                                       </ClickThroughDropdownMenuItem>
                                       <ClickThroughDropdownMenuItem
                                         onClick={async (e) => {

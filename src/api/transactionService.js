@@ -118,6 +118,30 @@ export async function editJournalEntry(entryId, description, lines, reason = nul
 }
 
 /**
+ * Void a transaction (replaces delete)
+ * Sets transaction status to 'voided' and voids the linked journal entry.
+ * This is permanent — voided transactions remain in the register with a strikethrough.
+ *
+ * @param {string} transactionId - UUID of transaction to void
+ * @returns {Promise<{data: object, error: object}>}
+ */
+export async function voidTransaction(transactionId) {
+  try {
+    const { data, error } = await firstsavvy.rpc('void_transaction', {
+      p_transaction_id: transactionId
+    });
+
+    if (error) {
+      return { data: null, error };
+    }
+
+    return { data, error: null };
+  } catch (err) {
+    return { data: null, error: err };
+  }
+}
+
+/**
  * Post multiple transactions in batch
  *
  * @param {string[]} transactionIds - Array of transaction UUIDs

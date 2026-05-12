@@ -8,6 +8,7 @@ import PreferencesTab from '../components/settings/PreferencesTab';
 import NotificationsTab from '../components/settings/NotificationsTab';
 import ProtectedConfigurationsTab from '../components/settings/ProtectedConfigurationsTab';
 import HouseholdActivityFeed from '../components/dashboard/HouseholdActivityFeed';
+import AccountingPeriodsTab from '../components/settings/AccountingPeriodsTab';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -36,7 +37,7 @@ export default function Settings() {
     <div className="p-4 md:p-6">
       <h1 className="text-3xl font-bold mb-6">Settings</h1>
 
-      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'household', 'protected']} defaultTab="profile" />
+      <PageTabs tabs={['profile', 'security', 'preferences', 'notifications', 'household', 'protected', 'periods']} defaultTab="profile" />
 
       <Tabs value={activeTab} className="w-full">
         <TabsContent value="profile" className="mt-4">
@@ -70,6 +71,10 @@ export default function Settings() {
 
         <TabsContent value="protected" className="mt-4">
           <ProtectedConfigurationsTab />
+        </TabsContent>
+
+        <TabsContent value="periods" className="mt-4">
+          <AccountingPeriodsTab />
         </TabsContent>
       </Tabs>
     </div>
