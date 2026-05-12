@@ -16,9 +16,11 @@ import { toast } from 'sonner';
 import { updatePassword } from '@/api/userSettings';
 import { supabase } from '@/api/supabaseClient';
 import { useAuth } from '@/contexts/AuthContext';
+import { useProfile } from '@/contexts/ProfileContext';
 
 export default function SecurityTab() {
   const { signOut } = useAuth();
+  const { activeProfile } = useProfile();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -26,6 +28,9 @@ export default function SecurityTab() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showResetTransactionsDialog, setShowResetTransactionsDialog] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState('');
+  const [isResettingTransactions, setIsResettingTransactions] = useState(false);
 
   const handlePasswordUpdate = async (e) => {
     e.preventDefault();
@@ -89,6 +94,25 @@ export default function SecurityTab() {
     }
   };
 
+  const handleResetTransactions = async () => {
+    if (resetConfirmText !== 'RESET' || !activeProfile?.id) return;
+    setIsResettingTransactions(true);
+    try {
+      const { error } = await supabase.rpc('reset_transactions_to_pending', {
+        p_profile_id: activeProfile.id,
+      });
+      if (error) throw error;
+      toast.success('All transactions moved back to pending');
+      setShowResetTransactionsDialog(false);
+      setResetConfirmText('');
+    } catch (error) {
+      console.error('Reset transactions error:', error);
+      toast.error(error.message || 'Failed to reset transactions');
+    } finally {
+      setIsResettingTransactions(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -139,22 +163,86 @@ export default function SecurityTab() {
           </form>
         </CardContent>
       </Card>
-      <Card className="border-red-200">
+      <Card className="border-orange-200">
         <CardHeader>
-          <CardTitle className="text-red-600">Danger Zone</CardTitle>
+          <CardTitle className="text-orange-600">Danger Zone</CardTitle>
           <CardDescription>
-            Permanently delete your account and all associated data. This action cannot be undone.
+            These actions affect your financial data and cannot be undone.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button
-            variant="destructive"
-            onClick={() => { setDeleteConfirmText(''); setShowDeleteDialog(true); }}
-          >
-            Delete Account
-          </Button>
+        <CardContent className="space-y-4">
+          <div className="flex items-start justify-between gap-4 py-3 border-b border-orange-100">
+            <div>
+              <p className="font-medium text-sm">Reset Transactions to Pending</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Move all posted transactions back to pending and clear the audit history. Opening balances are preserved. All accounts, categories, and rules are kept.
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              className="shrink-0 border-orange-300 text-orange-700 hover:bg-orange-50"
+              onClick={() => { setResetConfirmText(''); setShowResetTransactionsDialog(true); }}
+            >
+              Reset Transactions
+            </Button>
+          </div>
+          <div className="flex items-start justify-between gap-4 pt-1">
+            <div>
+              <p className="font-medium text-sm">Delete Account</p>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Permanently delete your account and all associated data. This cannot be undone.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              className="shrink-0"
+              onClick={() => { setDeleteConfirmText(''); setShowDeleteDialog(true); }}
+            >
+              Delete Account
+            </Button>
+          </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={showResetTransactionsDialog} onOpenChange={setShowResetTransactionsDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset transactions to pending?</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <span className="block">
+                This will move all posted transactions back to pending and erase the entire audit history for <strong>{activeProfile?.name || 'this profile'}</strong>.
+              </span>
+              <span className="block">
+                <strong>Preserved:</strong> all transactions (moved to pending), accounts, categories, rules, opening balances.
+              </span>
+              <span className="block">
+                <strong>Cleared:</strong> posted status, journal entries, audit history.
+              </span>
+              <span className="block pt-1">
+                Type <strong>RESET</strong> below to confirm.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <Input
+            value={resetConfirmText}
+            onChange={(e) => setResetConfirmText(e.target.value)}
+            placeholder="Type RESET to confirm"
+            className="my-2"
+            disabled={isResettingTransactions}
+          />
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResettingTransactions}>Cancel</AlertDialogCancel>
+            <Button
+              variant="outline"
+              className="border-orange-300 text-orange-700 hover:bg-orange-50"
+              disabled={resetConfirmText !== 'RESET' || isResettingTransactions}
+              onClick={handleResetTransactions}
+            >
+              {isResettingTransactions ? 'Resetting...' : 'Reset Transactions'}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
