@@ -1891,7 +1891,7 @@ export default function AccountDetail() {
           </>
         ) : (
           <Card>
-            <CardHeader className="pb-3 pt-4">
+            <CardHeader className="pb-2 pt-3">
               {isEditMode ? (
               <div className="flex items-start justify-between">
                 <div className="flex-1 space-y-3">
@@ -2048,6 +2048,12 @@ export default function AccountDetail() {
                       </Badge>
                     )}
                   </div>
+                  {account.entityType === 'Liability' && (account.institution || account.institution_name) && (
+                    <div className="flex items-center gap-1.5 text-slate-500">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span className="text-xs">{account.institution || account.institution_name}</span>
+                    </div>
+                  )}
 
                 </div>
                 {(account.entityType === 'Asset' || account.entityType === 'Liability' || account.entityType === 'Equity') && (
@@ -2186,15 +2192,6 @@ export default function AccountDetail() {
                     </>
                   ) : account.entityType === 'Liability' ? (
                     <>
-                      {(account.institution || account.institution_name) && (
-                        <div className="flex items-start gap-2.5">
-                          <Building2 className="w-4 h-4 text-slate-400 mt-0.5" />
-                          <div>
-                            <p className="text-xs font-medium text-slate-500">Lender</p>
-                            <p className="text-sm">{account.institution || account.institution_name}</p>
-                          </div>
-                        </div>
-                      )}
                       {account.interest_rate && (
                         <div className="flex items-start gap-2.5">
                           <Hash className="w-4 h-4 text-slate-400 mt-0.5" />
