@@ -1297,18 +1297,6 @@ export default function TransactionsTab({ initialFilters, onFiltersApplied }) {
                                   ? format(parseISO(transaction.date), 'MM/dd/yy')
                                   : 'Invalid'}
                               </span>
-                              {transaction.journal_entry_id && jeNumberMap[transaction.journal_entry_id] && (
-                                <span className={`text-[9px] font-mono leading-none ${
-                                  jeNumberMap[transaction.journal_entry_id]?.status === 'draft'
-                                    ? 'text-amber-600'
-                                    : jeNumberMap[transaction.journal_entry_id]?.status === 'voided'
-                                    ? 'text-red-400 line-through'
-                                    : 'text-slate-400'
-                                }`}>
-                                  {jeNumberMap[transaction.journal_entry_id]?.entry_number}
-                                  {jeNumberMap[transaction.journal_entry_id]?.status === 'draft' && ' ●'}
-                                </span>
-                              )}
                             </div>
                           </td>
                         {selectedAccount === 'all' && (
