@@ -783,8 +783,8 @@ export default function AccountDetail() {
     }
 
     combined.sort((a, b) => {
-      const dateA = new Date(a.displayDate);
-      const dateB = new Date(b.displayDate);
+      const dateA = new Date(a.createdAt || a.displayDate);
+      const dateB = new Date(b.createdAt || b.displayDate);
       return dateB - dateA;
     });
 
