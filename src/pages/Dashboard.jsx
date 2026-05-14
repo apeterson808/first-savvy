@@ -49,7 +49,7 @@ export default function Dashboard() {
   const { user } = useAuth();
   const { activeProfile, viewingChildProfile } = useProfile();
   const [selectedAccount, setSelectedAccount] = useState('all');
-  const [chartView, setChartView] = useState('spending');
+  const [chartView, setChartView] = useState('networth');
   const [timeRange, setTimeRange] = useState('ytd');
   const [wizardOpen, setWizardOpen] = useState(false);
   const [profileSetupOpen, setProfileSetupOpen] = useState(false);
@@ -455,7 +455,57 @@ export default function Dashboard() {
         }
       }
     }
-    
+
+    if (chartView === 'networth') {
+      // All accounts that affect net worth
+      const allAccounts = [...assets, ...liabilities].filter(a => a.is_active);
+      const allAccountIds = allAccounts.map(a => a.id);
+
+      const networthTransactions = transactions.filter(t =>
+        t.date && !isNaN(new Date(t.date).getTime()) && allAccountIds.includes(t.bank_account_id)
+      );
+
+      const { startDate } = getTimeRangeConfig(timeRange);
+      const finalStartDate = timeRange === 'all'
+        ? (networthTransactions.length > 0
+            ? new Date(Math.min(...networthTransactions.map(t => new Date(t.date).getTime())))
+            : subMonths(today, 12))
+        : startDate;
+
+      const days = eachDayOfInterval({ start: finalStartDate, end: today });
+
+      // Start from current net worth and work backwards
+      days.forEach(currentDayDate => {
+        const currentDayStr = format(currentDayDate, 'yyyy-MM-dd');
+        let networthAtDay = netWorth;
+
+        networthTransactions.forEach(t => {
+          const tDateStr = t.date.substring(0, 10);
+          if (tDateStr > currentDayStr) {
+            const acc = allAccounts.find(a => a.id === t.bank_account_id);
+            if (!acc) return;
+            if (acc.class === 'asset') {
+              if (t.type === 'income') networthAtDay -= t.amount;
+              else if (t.type === 'expense') networthAtDay += Math.abs(t.amount);
+            } else if (acc.class === 'liability') {
+              if (t.type === 'expense') networthAtDay -= Math.abs(t.amount);
+              else if (t.type === 'income') networthAtDay += t.amount;
+            }
+          }
+        });
+
+        const isFirstDayOfMonth = currentDayDate.getDate() === 1;
+        data.push({
+          date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
+          fullDate: currentDayDate,
+          networth: networthAtDay,
+          balance: 0,
+          spending: 0,
+          income: 0,
+        });
+      });
+    }
+
     return data;
   };
 
@@ -542,6 +592,7 @@ export default function Dashboard() {
                 <div className="flex items-center gap-4">
                   <Tabs value={chartView} onValueChange={setChartView}>
                     <TabsList className="h-8">
+                      <TabsTrigger value="networth" className="text-xs px-3">Net Worth</TabsTrigger>
                       <TabsTrigger value="spending" className="text-xs px-3">Spending</TabsTrigger>
                       <TabsTrigger value="income" className="text-xs px-3">Money In/Out</TabsTrigger>
                       <TabsTrigger value="balance" className="text-xs px-3">Cash Balance</TabsTrigger>
@@ -562,11 +613,13 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <AccountDropdown
-                    value={selectedAccount}
-                    onValueChange={setSelectedAccount}
-                    triggerClassName="w-44 h-8 text-xs hover:bg-slate-50"
-                  />
+                  {chartView !== 'networth' && (
+                    <AccountDropdown
+                      value={selectedAccount}
+                      onValueChange={setSelectedAccount}
+                      triggerClassName="w-44 h-8 text-xs hover:bg-slate-50"
+                    />
+                  )}
                   <TimeRangeDropdown value={timeRange} onValueChange={setTimeRange} />
                 </div>
               </div>
@@ -593,8 +646,8 @@ export default function Dashboard() {
                   >
                     <defs>
                       <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="hsl(var(--sky-blue))" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="hsl(var(--sky-blue))" stopOpacity={0}/>
+                        <stop offset="5%" stopColor={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'} stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'} stopOpacity={0}/>
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
@@ -604,7 +657,7 @@ export default function Dashboard() {
                       tick={{ fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      ticks={(chartView === 'spending' || chartView === 'balance') ? chartData.filter((d, i) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
+                      ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartData.filter((d) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
                       padding={{ left: 10, right: 10 }}
                     />
                     <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
@@ -630,6 +683,19 @@ export default function Dashboard() {
                               <div className="grid grid-cols-2 gap-4 mt-1">
                                 <span className="font-medium text-sky-blue text-center">${data.dailySpending?.toFixed(2) || '0.00'}</span>
                                 <span className="font-medium text-sky-blue text-center">${data.spending?.toFixed(2) || '0.00'}</span>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        if (chartView === 'networth') {
+                          const dateLabel = data.fullDate ? format(data.fullDate, 'MMM d, yyyy') : data.date;
+                          const nw = data.networth ?? 0;
+                          return (
+                            <div className="bg-white/95 backdrop-blur-sm p-3 rounded-lg border border-slate-200 shadow-lg text-sm">
+                              <div className="text-xs text-slate-500 mb-1">{dateLabel}</div>
+                              <div className={`text-lg font-semibold ${nw >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                                {nw < 0 ? '-' : ''}${Math.abs(nw).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                               </div>
                             </div>
                           );
@@ -667,8 +733,8 @@ export default function Dashboard() {
                     />
                     <Area
                       type="monotone"
-                      dataKey={chartView === 'spending' ? 'spending' : 'balance'}
-                      stroke="hsl(var(--sky-blue))"
+                      dataKey={chartView === 'networth' ? 'networth' : chartView === 'spending' ? 'spending' : 'balance'}
+                      stroke={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'}
                       fillOpacity={1}
                       fill="url(#colorValue)"
                       activeDot={(props) => {
@@ -679,7 +745,7 @@ export default function Dashboard() {
                             cx={cx}
                             cy={cy}
                             r={6}
-                            fill="hsl(var(--sky-blue))"
+                            fill={chartView === 'networth' ? '#10b981' : 'hsl(var(--sky-blue))'}
                             stroke="#fff"
                             strokeWidth={2}
                             style={{ cursor: (chartView === 'spending' || chartView === 'balance') ? 'pointer' : 'default' }}
