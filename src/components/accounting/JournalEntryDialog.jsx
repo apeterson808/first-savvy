@@ -20,9 +20,10 @@ import {
   getJournalEntryAttachments,
   uploadJournalEntryAttachment,
   deleteJournalEntryAttachment,
-  getAttachmentUrl
+  getAttachmentUrl,
+  getTransactionAuditLog
 } from '@/api/journalEntries';
-import { FileText, Calendar, User, CheckCircle2, AlertCircle, Edit2, X, Save, Upload, Paperclip, Download, Trash2, Lock } from 'lucide-react';
+import { FileText, Calendar, AlertCircle, Edit2, X, Save, Upload, Paperclip, Download, Trash2, Lock, History, ChevronDown, ChevronUp, Tag, CheckCircle, RotateCcw } from 'lucide-react';
 import { getIconComponent } from '@/components/utils/iconMapper';
 import { toast } from 'sonner';
 import { useProfile } from '@/contexts/ProfileContext';
@@ -40,6 +41,7 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
   const [editedLines, setEditedLines] = useState([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [auditExpanded, setAuditExpanded] = useState(false);
 
   const { data: entry, isLoading } = useQuery({
     queryKey: ['journal-entry', entryId],
@@ -51,6 +53,12 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
     queryKey: ['journal-entry-attachments', entryId],
     queryFn: () => getJournalEntryAttachments(entryId),
     enabled: open && !!entryId
+  });
+
+  const { data: auditLog = [], isLoading: auditLoading } = useQuery({
+    queryKey: ['transaction-audit-log', entry?.transaction_id],
+    queryFn: () => getTransactionAuditLog(entry.transaction_id),
+    enabled: open && !!entry?.transaction_id
   });
 
   const updateMutation = useMutation({
@@ -577,6 +585,66 @@ export default function JournalEntryDialog({ entryId, open, onClose }) {
                   </>
                 )}
               </div>
+            </div>
+          )}
+
+          {entry.transaction_id && (
+            <div className="border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setAuditExpanded(v => !v)}
+                className="w-full flex items-center justify-between px-4 py-3 bg-muted/20 hover:bg-muted/40 transition-colors text-sm font-medium"
+              >
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <History className="h-4 w-4" />
+                  Transaction History
+                  {!auditLoading && auditLog.length > 0 && (
+                    <span className="bg-muted text-muted-foreground rounded-full px-2 py-0.5 text-xs font-normal">
+                      {auditLog.length}
+                    </span>
+                  )}
+                </div>
+                {auditExpanded ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+              </button>
+
+              {auditExpanded && (
+                <div className="divide-y">
+                  {auditLoading ? (
+                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">Loading history...</div>
+                  ) : auditLog.length === 0 ? (
+                    <div className="px-4 py-6 text-center text-sm text-muted-foreground">No history recorded for this transaction.</div>
+                  ) : (
+                    auditLog.map((entry) => {
+                      const icon = entry.action === 'post_transaction' ? CheckCircle
+                        : entry.action === 'undo_transaction' ? RotateCcw
+                        : entry.action === 'categorize_transaction' ? Tag
+                        : History;
+                      const Icon = icon;
+                      const color = entry.action === 'post_transaction' ? 'text-green-600'
+                        : entry.action === 'undo_transaction' ? 'text-amber-600'
+                        : 'text-blue-600';
+                      return (
+                        <div key={entry.id} className="flex items-start gap-3 px-4 py-3">
+                          <div className={`mt-0.5 flex-shrink-0 ${color}`}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm">{entry.description}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              {entry.actor_display_name && (
+                                <span className="text-xs text-muted-foreground">{entry.actor_display_name}</span>
+                              )}
+                              <span className="text-xs text-muted-foreground">
+                                {format(new Date(entry.created_at), 'MMM d, yyyy h:mm a')}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

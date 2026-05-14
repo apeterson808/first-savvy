@@ -328,6 +328,18 @@ export async function getJournalEntryEditHistory(journalEntryId) {
   return data || [];
 }
 
+export async function getTransactionAuditLog(transactionId) {
+  const { data, error } = await supabase
+    .from('audit_logs')
+    .select('id, action, description, actor_display_name, created_at, metadata')
+    .eq('entity_type', 'transaction')
+    .eq('entity_id', transactionId)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data || [];
+}
+
 export async function getAccountAuditHistoryPaginated({
   profileId,
   accountId,
