@@ -284,7 +284,7 @@ export default function Dashboard() {
 
         const isFirstDayOfMonth = currentDayDate.getDate() === 1;
         data.push({
-          date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
+          date: format(currentDayDate, 'MMM d'),
           fullDate: currentDayDate,
           spending: cumulativeSpending,
           dailySpending: dailySpending,
@@ -435,7 +435,7 @@ export default function Dashboard() {
           const isFirstDayOfMonth = currentDayDate.getDate() === 1;
 
           dailyCashBalanceData.push({
-            date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
+            date: format(currentDayDate, 'MMM d'),
             fullDate: currentDayDate,
             spending: daySpending,
             income: dayIncome,
@@ -494,9 +494,8 @@ export default function Dashboard() {
           }
         });
 
-        const isFirstDayOfMonth = currentDayDate.getDate() === 1;
         data.push({
-          date: isFirstDayOfMonth ? format(currentDayDate, 'MMM') : format(currentDayDate, 'MMM dd'),
+          date: format(currentDayDate, 'MMM d'),
           fullDate: currentDayDate,
           networth: networthAtDay,
           balance: 0,
@@ -511,35 +510,39 @@ export default function Dashboard() {
 
   const chartData = generateChartData();
 
-  // X axis: show month label for first data point of each calendar month
+  // X axis: one label per calendar month, positioned on the first data point of that month
   const chartXTicks = (() => {
     const seen = new Set();
-    return chartData
-      .filter(d => {
-        if (!d.fullDate) return false;
-        const key = `${d.fullDate.getFullYear()}-${d.fullDate.getMonth()}`;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      })
-      .map(d => d.date);
+    const ticks = [];
+    chartData.forEach(d => {
+      if (!d.fullDate) return;
+      const key = `${d.fullDate.getFullYear()}-${d.fullDate.getMonth()}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      ticks.push({ date: d.date, label: format(d.fullDate, 'MMM') });
+    });
+    return ticks;
   })();
 
-  // Y axis: clean round ticks (5 steps, multiples of a nice step size)
+  // Y axis: 5 clean round ticks spanning min→max
   const chartYTicks = (() => {
     const dataKey = chartView === 'networth' ? 'networth' : chartView === 'spending' ? 'spending' : 'balance';
-    const values = chartData.map(d => d[dataKey] ?? 0).filter(v => v != null && isFinite(v));
+    const values = chartData.map(d => d[dataKey]).filter(v => v != null && isFinite(v));
     if (values.length === 0) return [0];
-    const min = Math.min(0, ...values);
-    const max = Math.max(...values);
-    if (max === min) return [min];
+    const rawMin = Math.min(...values);
+    const rawMax = Math.max(...values);
+    const min = rawMin >= 0 ? 0 : rawMin;
+    const max = rawMax;
+    if (max === min) return [0, max || 1];
     const range = max - min;
-    const rawStep = range / 4;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
-    const step = Math.ceil(rawStep / magnitude) * magnitude;
+    // Pick a step that gives 4-5 nice round ticks
+    const roughStep = range / 4;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(roughStep)));
+    const niceSteps = [1, 2, 2.5, 5, 10];
+    const step = niceSteps.map(s => s * magnitude).find(s => s >= roughStep) || roughStep;
     const start = Math.floor(min / step) * step;
     const ticks = [];
-    for (let v = start; v <= max + step * 0.1; v += step) {
+    for (let v = start; ticks.length < 6 && v <= max + step * 0.01; v += step) {
       ticks.push(Math.round(v));
     }
     return ticks;
@@ -691,7 +694,11 @@ export default function Dashboard() {
                       tick={{ fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartXTicks : undefined}
+                      ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartXTicks.map(t => t.date) : undefined}
+                      tickFormatter={(val) => {
+                        const found = chartXTicks.find(t => t.date === val);
+                        return found ? found.label : val;
+                      }}
                       padding={{ left: 10, right: 10 }}
                     />
                     <YAxis
