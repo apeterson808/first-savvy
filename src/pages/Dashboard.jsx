@@ -511,6 +511,40 @@ export default function Dashboard() {
 
   const chartData = generateChartData();
 
+  // X axis: show month label for first data point of each calendar month
+  const chartXTicks = (() => {
+    const seen = new Set();
+    return chartData
+      .filter(d => {
+        if (!d.fullDate) return false;
+        const key = `${d.fullDate.getFullYear()}-${d.fullDate.getMonth()}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      })
+      .map(d => d.date);
+  })();
+
+  // Y axis: clean round ticks (5 steps, multiples of a nice step size)
+  const chartYTicks = (() => {
+    const dataKey = chartView === 'networth' ? 'networth' : chartView === 'spending' ? 'spending' : 'balance';
+    const values = chartData.map(d => d[dataKey] ?? 0).filter(v => v != null && isFinite(v));
+    if (values.length === 0) return [0];
+    const min = Math.min(0, ...values);
+    const max = Math.max(...values);
+    if (max === min) return [min];
+    const range = max - min;
+    const rawStep = range / 4;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+    const step = Math.ceil(rawStep / magnitude) * magnitude;
+    const start = Math.floor(min / step) * step;
+    const ticks = [];
+    for (let v = start; v <= max + step * 0.1; v += step) {
+      ticks.push(Math.round(v));
+    }
+    return ticks;
+  })();
+
   const budgetUtilization = budgetData
     .filter(b => b.chartAccount?.class === 'expense')
     .map(budget => {
@@ -657,10 +691,19 @@ export default function Dashboard() {
                       tick={{ fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
-                      ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartData.filter((d) => d.fullDate && d.fullDate.getDate() === 1).map(d => d.date) : undefined}
+                      ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartXTicks : undefined}
                       padding={{ left: 10, right: 10 }}
                     />
-                    <YAxis stroke="#64748b" tick={{ fontSize: 11 }} width={45} tickFormatter={(value) => value >= 1000 ? `$${(value / 1000).toFixed(0)}k` : `$${value}`} orientation="right" axisLine={false} tickLine={false} />
+                    <YAxis
+                      stroke="#64748b"
+                      tick={{ fontSize: 11 }}
+                      width={50}
+                      ticks={(chartView === 'spending' || chartView === 'balance' || chartView === 'networth') ? chartYTicks : undefined}
+                      tickFormatter={(value) => value >= 1000 || value <= -1000 ? `$${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k` : `$${value}`}
+                      orientation="right"
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <Tooltip
                       position={{ y: 0 }}
                       offset={20}
