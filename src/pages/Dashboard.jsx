@@ -578,7 +578,7 @@ export default function Dashboard() {
         });
 
         // Compute "needed at retirement" for the needs line
-        const annualRate = retirementSettings.assumed_growth_rate ?? 0.07;
+        const annualRate = retirementSettings?.assumed_growth_rate ?? 0.07;
         const retirementYears = endAge - retirementAge;
         const neededAtRetirement = retirementYears > 0
           ? monthlySpend * 12 * ((1 - Math.pow(1 + annualRate, -retirementYears)) / annualRate)
