@@ -264,6 +264,17 @@ export default function Dashboard() {
     }
   };
 
+  // Average monthly savings (computed before chart data so projection can use it as default)
+  const avgMonthlySavings = (() => {
+    if (transactions.length === 0) return 2000;
+    const recentMonths = 3;
+    const cutoff = format(subMonths(new Date(), recentMonths), 'yyyy-MM-dd');
+    const recent = transactions.filter(t => t.date >= cutoff);
+    const income = recent.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expenses = recent.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
+    return Math.max(0, Math.round((income - expenses) / recentMonths));
+  })();
+
   // Generate chart data
     const generateChartData = () => {
       const data = [];
@@ -526,16 +537,16 @@ export default function Dashboard() {
         });
       });
 
-      // --- Forward projection ---
-      if (retirementSettings) {
+      // --- Forward projection (always shown for net worth, uses defaults if no settings saved) ---
+      if (chartView === 'networth') {
         const currentAge = dateOfBirth
           ? Math.floor((today.getTime() - new Date(dateOfBirth).getTime()) / (365.25 * 24 * 3600 * 1000))
           : 35;
-        const retirementAge = retirementSettings.retirement_age ?? 65;
-        const monthlyRate = (retirementSettings.assumed_growth_rate ?? 0.07) / 12;
-        const monthlySavings = retirementSettings.monthly_savings ?? 0;
-        const monthlySpend = (retirementSettings.monthly_retirement_spending ?? 0) *
-          ({ thrifty: 0.7, moderate: 1.0, spendy: 1.5 }[retirementSettings.spending_style ?? 'moderate'] ?? 1.0);
+        const retirementAge = retirementSettings?.retirement_age ?? 65;
+        const monthlyRate = (retirementSettings?.assumed_growth_rate ?? 0.07) / 12;
+        const monthlySavings = retirementSettings?.monthly_savings ?? avgMonthlySavings;
+        const monthlySpend = (retirementSettings?.monthly_retirement_spending ?? 5000) *
+          ({ thrifty: 0.7, moderate: 1.0, spendy: 1.5 }[retirementSettings?.spending_style ?? 'moderate'] ?? 1.0);
         const endAge = 90;
 
         // Emit one data point per 5-year age milestone
@@ -687,16 +698,6 @@ export default function Dashboard() {
     return makeYTicks(values);
   })();
 
-  // Average monthly savings for pre-filling retirement modal
-  const avgMonthlySavings = (() => {
-    if (transactions.length === 0) return 2000;
-    const recentMonths = 3;
-    const cutoff = format(subMonths(new Date(), recentMonths), 'yyyy-MM-dd');
-    const recent = transactions.filter(t => t.date >= cutoff);
-    const income = recent.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-    const expenses = recent.filter(t => t.type === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0);
-    return Math.max(0, Math.round((income - expenses) / recentMonths));
-  })();
 
   const budgetUtilization = budgetData
     .filter(b => b.chartAccount?.class === 'expense')
